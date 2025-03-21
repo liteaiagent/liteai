@@ -1,0 +1,125 @@
+name: Nightly
+
+on:
+  schedule:
+    # Every day at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  LITEAI_CHANNEL: nightly
+  GH_REPO: liteaiagent/liteai
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build all targets
+        working-directory: packages/liteai
+        run: bun run script/build.ts
+
+      - name: Archive binaries
+        working-directory: packages/liteai
+        run: |
+          for dir in dist/*/; do
+            name=$(basename "$dir")
+            bin="dist/$name/bin"
+            [ -d "$bin" ] || continue
+            if [[ "$name" == *linux* ]]; then
+              tar -czf "dist/$name.tar.gz" -C "$bin" .
+            else
+              (cd "$bin" && zip -r "../../$name.zip" .)
+            fi
+          done
+
+      - name: Resolve version
+        id: version
+        working-directory: packages/liteai
+        run: |
+          VERSION=$(LITEAI_CHANNEL=nightly bun run -e "
+            const { Script } = await import('./script/script.ts')
+            console.log(Script.version)
+          ")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=nightly" >> "$GITHUB_OUTPUT"
+          echo "Nightly version: $VERSION"
+
+      - name: Create or update nightly release
+        working-directory: packages/liteai
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="nightly"
+          TITLE="Nightly (${{ steps.version.outputs.version }})"
+
+          # Collect release assets
+          ASSETS=(dist/*.tar.gz dist/*.zip)
+          ASSETS+=(../../install ../../install.ps1)
+
+          # Delete existing nightly release if present
+          gh release delete "$TAG" --repo "$GH_REPO" --yes 2>/dev/null || true
+          git push origin :"$TAG" 2>/dev/null || true
+
+          # Create fresh prerelease
+          gh release create "$TAG" \
+            --repo "$GH_REPO" \
+            --title "$TITLE" \
+            --prerelease \
+            --notes "Automated nightly build from \`main\` at $(date -u +%Y-%m-%dT%H:%M:%SZ)." \
+            "${ASSETS[@]}"
+
+  docker:
+    name: Docker Image
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download nightly binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd packages/liteai
+          mkdir -p dist/liteai-linux-x64-musl/bin dist/liteai-linux-arm64-musl/bin
+          gh release download nightly --pattern "liteai-linux-x64-musl.tar.gz" --dir /tmp --repo "$GH_REPO"
+          gh release download nightly --pattern "liteai-linux-arm64-musl.tar.gz" --dir /tmp --repo "$GH_REPO"
+          tar -xzf /tmp/liteai-linux-x64-musl.tar.gz -C dist/liteai-linux-x64-musl/bin
+          tar -xzf /tmp/liteai-linux-arm64-musl.tar.gz -C dist/liteai-linux-arm64-musl/bin
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: packages/liteai
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/liteaiagent/liteai:nightly

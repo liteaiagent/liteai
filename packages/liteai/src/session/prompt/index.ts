@@ -1,0 +1,1 @@
+export { SessionPrompt } from "./namespace"

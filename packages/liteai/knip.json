@@ -1,0 +1,19 @@
+{
+  "entry": ["src/index.ts", "script/*.ts", "script/*.mjs", "test/**/*.ts", "test/**/*.js"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreUnresolved": ["\\.tar\\.gz$", "\\.zip$", "\\.git$"],
+  "ignoreBinaries": ["biome", "pull", "sparse-checkout", "tar", "powershell", "gh", "build", "HEAD", "sha256sum"],
+  "ignoreDependencies": [
+    "@parcel/watcher-darwin-arm64",
+    "@parcel/watcher-darwin-x64",
+    "@parcel/watcher-linux-arm64-glibc",
+    "@parcel/watcher-linux-arm64-musl",
+    "@parcel/watcher-linux-x64-glibc",
+    "@parcel/watcher-linux-x64-musl",
+    "@parcel/watcher-win32-arm64",
+    "@parcel/watcher-win32-x64",
+    "@standard-schema/spec",
+    "sst",
+    "tree-sitter-bash"
+  ]
+}
