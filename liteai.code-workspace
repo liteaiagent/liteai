@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"name": "liteai",
+			"path": "."
+		},
+		{
+			"name": "liteai",
+			"path": "packages/liteai"
+		},
+		{
+			"name": "liteai-app",
+			"path": "packages/liteai-app"
+		},
+		{
+			"name": "desktop",
+			"path": "packages/desktop"
+		},
+		{
+			"name": "desktop-electron",
+			"path": "packages/desktop-electron"
+		},
+		{
+			"name": "script",
+			"path": "packages/script"
+		},
+		{
+			"name": "ui",
+			"path": "packages/ui"
+		},
+		{
+			"name": "util",
+			"path": "packages/util"
+		},
+		{
+			"name": "liteai-api",
+			"path": "packages/liteai-api"
+		},
+		{
+			"name": "liteai-vscode",
+			"path": "packages/liteai-vscode"
+		},
+		{
+			"path": "packages/liteai-sdk"
+		}
+	],
+	"settings": {
+		"typescript.tsdk": "liteai\\node_modules\\typescript\\lib"
+	}
+}

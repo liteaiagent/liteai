@@ -1,0 +1,22 @@
+{
+  "$schema": "https://v2-8-13.turborepo.dev/schema.json",
+  "globalEnv": ["CI", "LITEAI_DISABLE_SHARE"],
+  "globalPassThroughEnv": ["CI", "LITEAI_DISABLE_SHARE"],
+  "tasks": {
+    "typecheck": {},
+    "lint": {},
+    "lint:fix": {},
+    "build": {
+      "dependsOn": [],
+      "outputs": ["dist/**"]
+    },
+    "liteai#test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "liteai-app#test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    }
+  }
+}
