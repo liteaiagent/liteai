@@ -1,8 +1,8 @@
 [data-component="file-icon"] {
-	display: block;
-	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
+  display: block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
 }
 
 /*
@@ -10,17 +10,17 @@
   On hover, show the original file-type colors.
 */
 [data-component="filetree"] .filetree-icon--mono {
-	color: var(--icon-base);
+  color: var(--icon-base);
 }
 
 [data-component="filetree"] .filetree-iconpair {
-	position: relative;
-	display: inline-flex;
-	width: 16px;
-	height: 16px;
+  position: relative;
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
 }
 
 [data-component="filetree"] .filetree-iconpair [data-component="file-icon"] {
-	position: absolute;
-	inset: 0;
+  position: absolute;
+  inset: 0;
 }

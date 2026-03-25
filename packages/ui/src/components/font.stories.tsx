@@ -1,5 +1,5 @@
 // @ts-nocheck
-import * as mod from "./font";
+import * as mod from "./font"
 
 const docs = `### Overview
 Loads LiteAI typography assets and mono nerd fonts.
@@ -21,32 +21,28 @@ Render once at the app root or Storybook preview.
 ### Theming/tokens
 - Provides font families used by theme tokens.
 
-`;
+`
 
 export default {
-	title: "UI/Font",
-	id: "components-font",
-	component: mod.Font,
-	tags: ["autodocs"],
-	parameters: {
-		docs: {
-			description: {
-				component: docs,
-			},
-		},
-	},
-};
+  title: "UI/Font",
+  id: "components-font",
+  component: mod.Font,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component: docs,
+      },
+    },
+  },
+}
 
 export const Basic = {
-	render: () => (
-		<div style={{ display: "grid", gap: "8px" }}>
-			<mod.Font />
-			<div style={{ "font-family": "var(--font-family-sans)" }}>
-				LiteAI Sans Sample
-			</div>
-			<div style={{ "font-family": "var(--font-family-mono)" }}>
-				LiteAI Mono Sample
-			</div>
-		</div>
-	),
-};
+  render: () => (
+    <div style={{ display: "grid", gap: "8px" }}>
+      <mod.Font />
+      <div style={{ "font-family": "var(--font-family-sans)" }}>LiteAI Sans Sample</div>
+      <div style={{ "font-family": "var(--font-family-mono)" }}>LiteAI Mono Sample</div>
+    </div>
+  ),
+}

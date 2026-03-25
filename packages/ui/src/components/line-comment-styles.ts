@@ -201,23 +201,23 @@ export const lineCommentStyles = `
   opacity: 0.5;
   pointer-events: none;
 }
-`;
+`
 
-let installed = false;
+let installed = false
 
 export function installLineCommentStyles() {
-	if (installed) return;
-	if (typeof document === "undefined") return;
+  if (installed) return
+  if (typeof document === "undefined") return
 
-	const id = "liteai-line-comment-styles";
-	if (document.getElementById(id)) {
-		installed = true;
-		return;
-	}
+  const id = "liteai-line-comment-styles"
+  if (document.getElementById(id)) {
+    installed = true
+    return
+  }
 
-	const style = document.createElement("style");
-	style.id = id;
-	style.textContent = lineCommentStyles;
-	document.head.appendChild(style);
-	installed = true;
+  const style = document.createElement("style")
+  style.id = id
+  style.textContent = lineCommentStyles
+  document.head.appendChild(style)
+  installed = true
 }

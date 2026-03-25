@@ -1,8 +1,8 @@
 // @ts-nocheck
 
-import { markdown } from "../storybook/fixtures";
-import { create } from "../storybook/scaffold";
-import * as mod from "./markdown";
+import { markdown } from "../storybook/fixtures"
+import { create } from "../storybook/scaffold"
+import * as mod from "./markdown"
 
 const docs = `### Overview
 Render sanitized Markdown with code blocks, inline code, and safe links.
@@ -27,28 +27,28 @@ Pair with \`Code\` for standalone code views.
 ### Theming/tokens
 - Uses \`data-component="markdown"\` and related slots for styling.
 
-`;
+`
 
 const story = create({
-	title: "UI/Markdown",
-	mod,
-	args: {
-		text: markdown,
-	},
-});
+  title: "UI/Markdown",
+  mod,
+  args: {
+    text: markdown,
+  },
+})
 
 export default {
-	title: "UI/Markdown",
-	id: "components-markdown",
-	component: story.meta.component,
-	tags: ["autodocs"],
-	parameters: {
-		docs: {
-			description: {
-				component: docs,
-			},
-		},
-	},
-};
+  title: "UI/Markdown",
+  id: "components-markdown",
+  component: story.meta.component,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component: docs,
+      },
+    },
+  },
+}
 
-export const Basic = story.Basic;
+export const Basic = story.Basic

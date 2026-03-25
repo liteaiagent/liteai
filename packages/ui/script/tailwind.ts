@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 
-const colors = await Bun.file(`${import.meta.dir}/colors.txt`).text();
+const colors = await Bun.file(`${import.meta.dir}/colors.txt`).text()
 
-const variables = [];
+const variables = []
 for (const line of colors.split("\n")) {
-	if (!line.trim()) continue;
-	const [variable] = line.trim().split(":");
-	const name = variable?.trim().substring(2);
-	variables.push(`--color-${name}: var(--${name});`);
+  if (!line.trim()) continue
+  const [variable] = line.trim().split(":")
+  const name = variable?.trim().substring(2)
+  variables.push(`--color-${name}: var(--${name});`)
 }
 
 const output = `
@@ -18,8 +18,6 @@ const output = `
   --color-*: initial;
   ${variables.join("\n  ")}
 }
-`;
+`
 
-await Bun.file(`${import.meta.dir}/../src/styles/tailwind/colors.css`).write(
-	output.trim(),
-);
+await Bun.file(`${import.meta.dir}/../src/styles/tailwind/colors.css`).write(output.trim())

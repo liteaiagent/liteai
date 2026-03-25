@@ -1,23 +1,18 @@
-import type {
-	DiffLineAnnotation,
-	FileContents,
-	FileDiffOptions,
-	SelectedLineRange,
-} from "@pierre/diffs";
-import type { ComponentProps } from "solid-js";
-import { lineCommentStyles } from "../components/line-comment-styles";
+import type { DiffLineAnnotation, FileContents, FileDiffOptions, SelectedLineRange } from "@pierre/diffs"
+import type { ComponentProps } from "solid-js"
+import { lineCommentStyles } from "../components/line-comment-styles"
 
-export type DiffProps<T = {}> = FileDiffOptions<T> & {
-	before: FileContents;
-	after: FileContents;
-	annotations?: DiffLineAnnotation<T>[];
-	selectedLines?: SelectedLineRange | null;
-	commentedLines?: SelectedLineRange[];
-	onLineNumberSelectionEnd?: (selection: SelectedLineRange | null) => void;
-	onRendered?: () => void;
-	class?: string;
-	classList?: ComponentProps<"div">["classList"];
-};
+export type DiffProps<T = Record<string, unknown>> = FileDiffOptions<T> & {
+  before: FileContents
+  after: FileContents
+  annotations?: DiffLineAnnotation<T>[]
+  selectedLines?: SelectedLineRange | null
+  commentedLines?: SelectedLineRange[]
+  onLineNumberSelectionEnd?: (selection: SelectedLineRange | null) => void
+  onRendered?: () => void
+  class?: string
+  classList?: ComponentProps<"div">["classList"]
+}
 
 const unsafeCSS = `
 [data-diff],
@@ -162,37 +157,35 @@ const unsafeCSS = `
 
 ${lineCommentStyles}
 
-`;
+`
 
-export function createDefaultOptions<T>(
-	style: FileDiffOptions<T>["diffStyle"],
-) {
-	return {
-		theme: "LiteAI",
-		themeType: "system",
-		disableLineNumbers: false,
-		overflow: "wrap",
-		diffStyle: style ?? "unified",
-		diffIndicators: "bars",
-		lineHoverHighlight: "both",
-		disableBackground: false,
-		expansionLineCount: 20,
-		hunkSeparators: "line-info-basic",
-		lineDiffType: style === "split" ? "word-alt" : "none",
-		maxLineDiffLength: 1000,
-		maxLineLengthForHighlighting: 1000,
-		disableFileHeader: true,
-		unsafeCSS,
-	} as const;
+export function createDefaultOptions<T>(style: FileDiffOptions<T>["diffStyle"]) {
+  return {
+    theme: "LiteAI",
+    themeType: "system",
+    disableLineNumbers: false,
+    overflow: "wrap",
+    diffStyle: style ?? "unified",
+    diffIndicators: "bars",
+    lineHoverHighlight: "both",
+    disableBackground: false,
+    expansionLineCount: 20,
+    hunkSeparators: "line-info-basic",
+    lineDiffType: style === "split" ? "word-alt" : "none",
+    maxLineDiffLength: 1000,
+    maxLineLengthForHighlighting: 1000,
+    disableFileHeader: true,
+    unsafeCSS,
+  } as const
 }
 
 export const styleVariables = {
-	"--diffs-font-family": "var(--font-family-mono)",
-	"--diffs-font-size": "var(--font-size-small)",
-	"--diffs-line-height": "24px",
-	"--diffs-tab-size": 2,
-	"--diffs-font-features": "var(--font-family-mono--font-feature-settings)",
-	"--diffs-header-font-family": "var(--font-family-sans)",
-	"--diffs-gap-block": 0,
-	"--diffs-min-number-column-width": "4ch",
-};
+  "--diffs-font-family": "var(--font-family-mono)",
+  "--diffs-font-size": "var(--font-size-small)",
+  "--diffs-line-height": "24px",
+  "--diffs-tab-size": 2,
+  "--diffs-font-features": "var(--font-family-mono--font-feature-settings)",
+  "--diffs-header-font-family": "var(--font-family-sans)",
+  "--diffs-gap-block": 0,
+  "--diffs-min-number-column-width": "4ch",
+}

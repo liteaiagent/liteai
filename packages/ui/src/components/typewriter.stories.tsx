@@ -1,7 +1,7 @@
 // @ts-nocheck
 
-import { create } from "../storybook/scaffold";
-import * as mod from "./typewriter";
+import { create } from "../storybook/scaffold"
+import * as mod from "./typewriter"
 
 const docs = `### Overview
 Animated typewriter text effect for short inline messages.
@@ -24,33 +24,33 @@ Use for short status lines; avoid long paragraphs.
 ### Theming/tokens
 - Uses \`blinking-cursor\` class for cursor styling.
 
-`;
+`
 
 const story = create({
-	title: "UI/Typewriter",
-	mod,
-	args: { text: "Typewriter text" },
-});
+  title: "UI/Typewriter",
+  mod,
+  args: { text: "Typewriter text" },
+})
 
 export default {
-	title: "UI/Typewriter",
-	id: "components-typewriter",
-	component: story.meta.component,
-	tags: ["autodocs"],
-	parameters: {
-		docs: {
-			description: {
-				component: docs,
-			},
-		},
-	},
-};
+  title: "UI/Typewriter",
+  id: "components-typewriter",
+  component: story.meta.component,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component: docs,
+      },
+    },
+  },
+}
 
-export const Basic = story.Basic;
+export const Basic = story.Basic
 
 export const Inline = {
-	args: {
-		text: "Inline typewriter",
-		as: "span",
-	},
-};
+  args: {
+    text: "Inline typewriter",
+    as: "span",
+  },
+}

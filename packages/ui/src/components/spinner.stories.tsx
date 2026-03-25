@@ -1,7 +1,7 @@
 // @ts-nocheck
 
-import { create } from "../storybook/scaffold";
-import * as mod from "./spinner";
+import { create } from "../storybook/scaffold"
+import * as mod from "./spinner"
 
 const docs = `### Overview
 Animated loading indicator for inline or page-level loading states.
@@ -23,32 +23,32 @@ Use with \`Button\` or in empty states.
 ### Theming/tokens
 - Uses \`data-component="spinner"\` for styling hooks.
 
-`;
+`
 
-const story = create({ title: "UI/Spinner", mod });
+const story = create({ title: "UI/Spinner", mod })
 
 export default {
-	title: "UI/Spinner",
-	id: "components-spinner",
-	component: story.meta.component,
-	tags: ["autodocs"],
-	parameters: {
-		docs: {
-			description: {
-				component: docs,
-			},
-		},
-	},
-};
+  title: "UI/Spinner",
+  id: "components-spinner",
+  component: story.meta.component,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component: docs,
+      },
+    },
+  },
+}
 
-export const Basic = story.Basic;
+export const Basic = story.Basic
 
 export const Sizes = {
-	render: () => (
-		<div style={{ display: "flex", gap: "16px", "align-items": "center" }}>
-			<mod.Spinner style={{ width: "12px", height: "12px" }} />
-			<mod.Spinner style={{ width: "20px", height: "20px" }} />
-			<mod.Spinner style={{ width: "28px", height: "28px" }} />
-		</div>
-	),
-};
+  render: () => (
+    <div style={{ display: "flex", gap: "16px", "align-items": "center" }}>
+      <mod.Spinner style={{ width: "12px", height: "12px" }} />
+      <mod.Spinner style={{ width: "20px", height: "20px" }} />
+      <mod.Spinner style={{ width: "28px", height: "28px" }} />
+    </div>
+  ),
+}

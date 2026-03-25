@@ -1,7 +1,7 @@
 // @ts-nocheck
 
-import { create } from "../storybook/scaffold";
-import * as mod from "./inline-input";
+import { create } from "../storybook/scaffold"
+import * as mod from "./inline-input"
 
 const docs = `### Overview
 Compact inline input for short values.
@@ -24,32 +24,32 @@ Use inside text or table rows for quick edits.
 ### Theming/tokens
 - Uses \`data-component="inline-input"\`.
 
-`;
+`
 
 const story = create({
-	title: "UI/InlineInput",
-	mod,
-	args: { placeholder: "Type...", value: "Inline" },
-});
+  title: "UI/InlineInput",
+  mod,
+  args: { placeholder: "Type...", value: "Inline" },
+})
 export default {
-	title: "UI/InlineInput",
-	id: "components-inline-input",
-	component: story.meta.component,
-	tags: ["autodocs"],
-	parameters: {
-		docs: {
-			description: {
-				component: docs,
-			},
-		},
-	},
-};
+  title: "UI/InlineInput",
+  id: "components-inline-input",
+  component: story.meta.component,
+  tags: ["autodocs"],
+  parameters: {
+    docs: {
+      description: {
+        component: docs,
+      },
+    },
+  },
+}
 
-export const Basic = story.Basic;
+export const Basic = story.Basic
 
 export const FixedWidth = {
-	args: {
-		value: "80px",
-		width: "80px",
-	},
-};
+  args: {
+    value: "80px",
+    width: "80px",
+  },
+}

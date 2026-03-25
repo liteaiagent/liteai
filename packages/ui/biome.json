@@ -21,6 +21,12 @@
       }
     }
   },
+  "css": {
+    "parser": {
+      "cssModules": true,
+      "tailwindDirectives": true
+    }
+  },
   "javascript": {
     "formatter": {
       "quoteStyle": "double",
@@ -35,6 +41,6 @@
     }
   },
   "files": {
-    "includes": ["**", "!dist", "!node_modules"]
+    "includes": ["**", "!dist", "!node_modules", "!src/styles/tailwind"]
   }
 }
