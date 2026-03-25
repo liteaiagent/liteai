@@ -157,8 +157,9 @@ export const SettingsGeneral: Component = () => {
     value: (o: (typeof soundOptions)[number]) => o.id,
     label: (o: (typeof soundOptions)[number]) => language.t(o.label),
     onHighlight: (option: (typeof soundOptions)[number] | undefined) => {
-      if (!option) return
+      if (!option) return undefined
       playDemoSound(option.src)
+      return undefined
     },
     onSelect: (option: (typeof soundOptions)[number] | undefined) => {
       if (!option) return

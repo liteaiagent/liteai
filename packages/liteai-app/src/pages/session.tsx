@@ -67,7 +67,7 @@ type SessionHistoryWindowInput = {
   historyLoading: () => boolean
   loadMore: (sessionID: string) => Promise<void>
   userScrolled: () => boolean
-  scroller: () => HTMLDivElement | undefined
+  scroller: () => HTMLElement | undefined
 }
 
 /**
@@ -674,8 +674,8 @@ export default function Page() {
   let inputRef!: HTMLDivElement
   let promptDock: HTMLDivElement | undefined
   let dockHeight = 0
-  let scroller: HTMLDivElement | undefined
-  let content: HTMLDivElement | undefined
+  let scroller: HTMLElement | undefined
+  let content: HTMLElement | undefined
   let scrollMark = 0
   let messageMark = 0
 
@@ -881,7 +881,7 @@ export default function Page() {
   const setFileTreeTab = (value: "changes" | "all") => layout.fileTree.setTab(value)
 
   const [tree, setTree] = createStore({
-    reviewScroll: undefined as HTMLDivElement | undefined,
+    reviewScroll: undefined as HTMLElement | undefined,
     pendingDiff: undefined as string | undefined,
     activeDiff: undefined as string | undefined,
   })
@@ -1201,10 +1201,10 @@ export default function Page() {
   })
 
   let scrollStateFrame: number | undefined
-  let scrollStateTarget: HTMLDivElement | undefined
+  let scrollStateTarget: HTMLElement | undefined
   let fillFrame: number | undefined
 
-  const updateScrollState = (el: HTMLDivElement) => {
+  const updateScrollState = (el: HTMLElement) => {
     const max = el.scrollHeight - el.clientHeight
     const overflow = max > 1
     const bottom = !overflow || el.scrollTop >= max - 2
@@ -1213,7 +1213,7 @@ export default function Page() {
     setUi("scroll", { overflow, bottom })
   }
 
-  const scheduleScrollState = (el: HTMLDivElement) => {
+  const scheduleScrollState = (el: HTMLElement) => {
     scrollStateTarget = el
     if (scrollStateFrame !== undefined) return
 
@@ -1252,7 +1252,7 @@ export default function Page() {
 
   let fill = () => {}
 
-  const setScrollRef = (el: HTMLDivElement | undefined) => {
+  const setScrollRef = (el: HTMLElement | undefined) => {
     scroller = el
     autoScroll.scrollRef(el)
     if (!el) return

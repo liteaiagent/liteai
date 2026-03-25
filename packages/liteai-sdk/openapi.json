@@ -573,6 +573,124 @@
         ]
       }
     },
+    "/project/{projectID}/archive": {
+      "patch": {
+        "operationId": "project.archive",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "projectID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Archive project",
+        "description": "Archive a project to hide it from the project list. Data and sessions are preserved.",
+        "responses": {
+          "200": {
+            "description": "Archived project information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.archive({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/unarchive": {
+      "patch": {
+        "operationId": "project.unarchive",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "projectID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Unarchive project",
+        "description": "Restore an archived project so it appears in the project list again.",
+        "responses": {
+          "200": {
+            "description": "Unarchived project information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.unarchive({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/pty": {
       "get": {
         "operationId": "pty.list",
@@ -1849,6 +1967,14 @@
               "type": "number"
             },
             "description": "Maximum number of sessions to return"
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include archived sessions (default false)"
           }
         ],
         "summary": "List sessions",
@@ -5208,6 +5334,16 @@
                   "method": {
                     "description": "Auth method index",
                     "type": "number"
+                  },
+                  "inputs": {
+                    "description": "Prompt responses",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
@@ -7620,6 +7756,9 @@
                 "type": "number"
               },
               "initialized": {
+                "type": "number"
+              },
+              "archived": {
                 "type": "number"
               }
             },
@@ -13347,6 +13486,75 @@
           "contextIDs"
         ]
       },
+      "ProviderAuthPrompt": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "text"
+              },
+              "key": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "placeholder": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "key",
+              "message"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "select"
+              },
+              "key": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "value"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "key",
+              "message",
+              "options"
+            ]
+          }
+        ]
+      },
       "ProviderAuthMethod": {
         "type": "object",
         "properties": {
@@ -13364,6 +13572,12 @@
           },
           "label": {
             "type": "string"
+          },
+          "prompts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderAuthPrompt"
+            }
           }
         },
         "required": [

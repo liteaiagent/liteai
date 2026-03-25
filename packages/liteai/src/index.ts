@@ -158,9 +158,9 @@ try {
   const data: Record<string, unknown> = {}
   if (e instanceof NamedError) {
     const obj = e.toObject()
-    Object.assign(data, {
-      ...obj.data,
-    })
+    if (obj.data && typeof obj.data === "object") {
+      Object.assign(data, obj.data)
+    }
   }
 
   if (e instanceof Error) {

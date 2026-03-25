@@ -5,6 +5,7 @@ import { Flag } from "../flag/flag"
 import { Instance } from "../project/instance"
 import { Server } from "../server/server"
 import { Log } from "../util/log"
+import { Ai4allAuthPlugin } from "./ai4all"
 import { CodeAssistAuthPlugin } from "./code-assist"
 import { CodexAuthPlugin } from "./codex"
 import { CopilotAuthPlugin } from "./copilot"
@@ -14,7 +15,12 @@ export namespace Plugin {
   const log = Log.create({ service: "plugin" })
 
   // Built-in plugins that are directly imported (not installed from npm)
-  const INTERNAL_PLUGINS: PluginInstance[] = [CodexAuthPlugin, CopilotAuthPlugin, CodeAssistAuthPlugin]
+  const INTERNAL_PLUGINS: PluginInstance[] = [
+    CodexAuthPlugin,
+    CopilotAuthPlugin,
+    CodeAssistAuthPlugin,
+    Ai4allAuthPlugin,
+  ]
 
   const state = Instance.state(async () => {
     const client = createLiteaiClient({

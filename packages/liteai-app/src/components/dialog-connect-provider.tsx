@@ -51,13 +51,14 @@ export function DialogConnectProvider(props: { provider: string }) {
   const [store, setStore] = createStore({
     methodIndex: undefined as undefined | number,
     authorization: undefined as undefined | ProviderAuthAuthorization,
-    state: "pending" as undefined | "pending" | "complete" | "error",
+    state: "pending" as undefined | "pending" | "complete" | "error" | "prompts",
     error: undefined as string | undefined,
   })
 
   type Action =
     | { type: "method.select"; index: number }
     | { type: "method.reset" }
+    | { type: "method.prompts" }
     | { type: "auth.pending" }
     | { type: "auth.complete"; authorization: ProviderAuthAuthorization }
     | { type: "auth.error"; error: string }
@@ -76,6 +77,11 @@ export function DialogConnectProvider(props: { provider: string }) {
           draft.methodIndex = undefined
           draft.authorization = undefined
           draft.state = undefined
+          draft.error = undefined
+          return
+        }
+        if (action.type === "method.prompts") {
+          draft.state = "prompts"
           draft.error = undefined
           return
         }
@@ -122,6 +128,40 @@ export function DialogConnectProvider(props: { provider: string }) {
     return fallback
   }
 
+  async function startAuthorize(index: number, inputs?: Record<string, string>) {
+    dispatch({ type: "auth.pending" })
+    const start = Date.now()
+    await globalSDK.client.provider.oauth
+      .authorize(
+        {
+          providerID: props.provider,
+          method: index,
+          inputs: inputs && Object.keys(inputs).length ? inputs : undefined,
+        },
+        { throwOnError: true },
+      )
+      .then((x) => {
+        if (!alive.value) return
+        const elapsed = Date.now() - start
+        const delay = 1000 - elapsed
+
+        if (delay > 0) {
+          if (timer.current !== undefined) clearTimeout(timer.current)
+          timer.current = setTimeout(() => {
+            timer.current = undefined
+            if (!alive.value) return
+            if (x.data) dispatch({ type: "auth.complete", authorization: x.data })
+          }, delay)
+          return
+        }
+        if (x.data) dispatch({ type: "auth.complete", authorization: x.data })
+      })
+      .catch((e) => {
+        if (!alive.value) return
+        dispatch({ type: "auth.error", error: formatError(e, language.t("common.requestFailed")) })
+      })
+  }
+
   async function selectMethod(index: number) {
     if (timer.current !== undefined) {
       clearTimeout(timer.current)
@@ -132,36 +172,11 @@ export function DialogConnectProvider(props: { provider: string }) {
     dispatch({ type: "method.select", index })
 
     if (method.type === "oauth") {
-      dispatch({ type: "auth.pending" })
-      const start = Date.now()
-      await globalSDK.client.provider.oauth
-        .authorize(
-          {
-            providerID: props.provider,
-            method: index,
-          },
-          { throwOnError: true },
-        )
-        .then((x) => {
-          if (!alive.value) return
-          const elapsed = Date.now() - start
-          const delay = 1000 - elapsed
-
-          if (delay > 0) {
-            if (timer.current !== undefined) clearTimeout(timer.current)
-            timer.current = setTimeout(() => {
-              timer.current = undefined
-              if (!alive.value) return
-              if (x.data) dispatch({ type: "auth.complete", authorization: x.data })
-            }, delay)
-            return
-          }
-          if (x.data) dispatch({ type: "auth.complete", authorization: x.data })
-        })
-        .catch((e) => {
-          if (!alive.value) return
-          dispatch({ type: "auth.error", error: formatError(e, language.t("common.requestFailed")) })
-        })
+      if (method.prompts?.length) {
+        dispatch({ type: "method.prompts" })
+        return
+      }
+      await startAuthorize(index)
     }
   }
 
@@ -236,6 +251,66 @@ export function DialogConnectProvider(props: { provider: string }) {
           </List>
         </div>
       </>
+    )
+  }
+
+  function PromptsView() {
+    const idx = store.methodIndex ?? 0
+    const m = methods()[idx]
+    const prompts = m.prompts ?? []
+    const [values, setValues] = createStore<Record<string, string>>({})
+
+    async function handleSubmit(e: SubmitEvent) {
+      e.preventDefault()
+      await startAuthorize(idx, { ...values })
+    }
+
+    return (
+      <div class="flex flex-col gap-6">
+        <div class="text-14-regular text-text-base">{m.label}</div>
+        <form onSubmit={handleSubmit} class="flex flex-col items-start gap-4">
+          {prompts.map((p) => (
+            <Show
+              when={p.type === "text"}
+              fallback={
+                <div class="w-full flex flex-col gap-1">
+                  <label for={p.key} class="text-13-medium text-text-base">
+                    {p.message}
+                  </label>
+                  <select
+                    id={p.key}
+                    class="w-full h-8 rounded-md bg-input-base text-text-base border border-border-base px-2"
+                    value={values[p.key] ?? ""}
+                    onChange={(e) => setValues(p.key, e.currentTarget.value)}
+                  >
+                    <option value="" disabled>
+                      Select...
+                    </option>
+                    {"options" in p &&
+                      p.options?.map((o) => (
+                        <option value={o.value}>
+                          {o.label}
+                          {o.hint ? ` (${o.hint})` : ""}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              }
+            >
+              <TextField
+                autofocus={prompts.indexOf(p) === 0}
+                label={p.message}
+                placeholder={"placeholder" in p ? p.placeholder : undefined}
+                value={values[p.key] ?? ""}
+                onChange={(v) => setValues(p.key, v)}
+              />
+            </Show>
+          ))}
+          <Button class="w-auto" type="submit" size="large" variant="primary">
+            {language.t("common.submit")}
+          </Button>
+        </form>
+      </div>
     )
   }
 
@@ -473,6 +548,9 @@ export function DialogConnectProvider(props: { provider: string }) {
             <Switch>
               <Match when={store.methodIndex === undefined}>
                 <MethodSelection />
+              </Match>
+              <Match when={store.state === "prompts"}>
+                <PromptsView />
               </Match>
               <Match when={store.state === "pending"}>
                 <div class="text-14-regular text-text-base">

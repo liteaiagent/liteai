@@ -75,7 +75,7 @@ const boundaryTarget = (root: HTMLElement, target: EventTarget | null) => {
 }
 
 const markBoundaryGesture = (input: {
-  root: HTMLDivElement
+  root: HTMLElement
   target: EventTarget | null
   delta: number
   onMarkScrollGesture: (target?: EventTarget | null) => void
@@ -200,8 +200,8 @@ export function MessageTimeline(props: {
   actions?: UserActions
   scroll: { overflow: boolean; bottom: boolean }
   onResumeScroll: () => void
-  setScrollRef: (el: HTMLDivElement | undefined) => void
-  onScheduleScrollState: (el: HTMLDivElement) => void
+  setScrollRef: (el: HTMLElement | undefined) => void
+  onScheduleScrollState: (el: HTMLElement) => void
   onAutoScrollHandleScroll: () => void
   onMarkScrollGesture: (target?: EventTarget | null) => void
   hasScrollGesture: () => boolean
@@ -209,7 +209,7 @@ export function MessageTimeline(props: {
   onTurnBackfillScroll: () => void
   onAutoScrollInteraction: (event: MouseEvent) => void
   centered: boolean
-  setContentRef: (el: HTMLDivElement) => void
+  setContentRef: (el: HTMLElement) => void
   turnStart: number
   historyMore: boolean
   historyLoading: boolean

@@ -69,7 +69,7 @@ export function FileTabContent(props: { tab: string }) {
     normalizeTab: (tab) => (tab.startsWith("file://") ? file.tab(tab) : tab),
   }).activeFileTab
 
-  let scroll: HTMLDivElement | undefined
+  let scroll: HTMLElement | undefined
   let scrollFrame: number | undefined
   let restoreFrame: number | undefined
   let pending: { x: number; y: number } | undefined
@@ -222,7 +222,7 @@ export function FileTabContent(props: { tab: string }) {
       />
     ),
     onDraftPopoverFocusOut: (e: FocusEvent) => {
-      const current = e.currentTarget as HTMLDivElement
+      const current = e.currentTarget as HTMLElement
       const target = e.relatedTarget
       if (target instanceof Node && current.contains(target)) return
 
@@ -363,7 +363,7 @@ export function FileTabContent(props: { tab: string }) {
   }
 
   const handleScroll = (event: Event) => {
-    const ev = event as Event & { currentTarget: HTMLDivElement }
+    const ev = event as Event & { currentTarget: HTMLElement }
     if (codeScroll.length === 0) syncCodeScroll()
 
     queueScrollUpdate({
@@ -454,7 +454,7 @@ export function FileTabContent(props: { tab: string }) {
     <Tabs.Content value={props.tab} class="mt-3 relative h-full">
       <ScrollView
         class="h-full"
-        viewportRef={(el: HTMLDivElement) => {
+        viewportRef={(el: HTMLElement) => {
           scroll = el
           restoreScroll()
         }}

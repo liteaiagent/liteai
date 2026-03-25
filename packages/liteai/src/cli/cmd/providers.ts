@@ -320,12 +320,13 @@ export const ProvidersLoginCommand = cmd({
 
         const priority: Record<string, number> = {
           "google-code-assist": 0,
-          openai: 1,
-          "github-copilot": 2,
-          google: 3,
-          anthropic: 4,
-          openrouter: 5,
-          vercel: 6,
+          ai4all: 1,
+          openai: 2,
+          "github-copilot": 3,
+          google: 4,
+          anthropic: 5,
+          openrouter: 6,
+          vercel: 7,
         }
         const pluginProviders = resolvePluginProviders({
           hooks: await Plugin.list(),

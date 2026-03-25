@@ -3,7 +3,7 @@ import { createMemo } from "solid-js"
 import { useGlobalSync } from "@/context/global-sync"
 import { decode64 } from "@/utils/base64"
 
-export const popularProviders = ["anthropic", "google", "openai", "google-code-assist"]
+export const popularProviders = ["anthropic", "google", "openai", "google-code-assist", "ai4all"]
 const popularProviderSet = new Set(popularProviders)
 
 export function useProviders() {

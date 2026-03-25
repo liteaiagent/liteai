@@ -8,10 +8,29 @@ import { Plugin } from "../plugin"
 import type { AuthHook, AuthOauthResult } from "../plugin/types"
 import { ProviderID } from "./schema"
 
+export const Prompt = z
+  .union([
+    z.object({
+      type: z.literal("text"),
+      key: z.string(),
+      message: z.string(),
+      placeholder: z.string().optional(),
+    }),
+    z.object({
+      type: z.literal("select"),
+      key: z.string(),
+      message: z.string(),
+      options: z.array(z.object({ label: z.string(), value: z.string(), hint: z.string().optional() })),
+    }),
+  ])
+  .meta({ ref: "ProviderAuthPrompt" })
+export type Prompt = z.infer<typeof Prompt>
+
 export const Method = z
   .object({
     type: z.union([z.literal("oauth"), z.literal("api")]),
     label: z.string(),
+    prompts: z.array(Prompt).optional(),
   })
   .meta({
     ref: "ProviderAuthMethod",
@@ -57,7 +76,11 @@ export namespace ProviderAuthService {
     readonly methods: () => Effect.Effect<Record<string, Method[]>>
 
     /** Start an OAuth authorization flow for a provider. Returns the URL to redirect to. */
-    readonly authorize: (input: { providerID: ProviderID; method: number }) => Effect.Effect<Authorization | undefined>
+    readonly authorize: (input: {
+      providerID: ProviderID
+      method: number
+      inputs?: Record<string, string>
+    }) => Effect.Effect<Authorization | undefined>
 
     /** Complete an OAuth flow after the user has authorized. Exchanges the code/callback for credentials. */
     readonly callback: (input: {
@@ -94,18 +117,28 @@ export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService,
       const methods = Effect.fn("ProviderAuthService.methods")(function* () {
         const x = yield* InstanceState.get(state)
         return Record.map(x.methods as Record<string, AuthHook>, (y: AuthHook) =>
-          y.methods.map((z): Method => Struct.pick(z, ["type", "label"])),
+          y.methods.map(
+            (z): Method => ({
+              ...Struct.pick(z, ["type", "label"]),
+              prompts: z.prompts?.map((p) => {
+                if (p.type === "select")
+                  return { type: "select" as const, key: p.key, message: p.message, options: p.options }
+                return { type: "text" as const, key: p.key, message: p.message, placeholder: p.placeholder }
+              }),
+            }),
+          ),
         )
       })
 
       const authorize = Effect.fn("ProviderAuthService.authorize")(function* (input: {
         providerID: ProviderID
         method: number
+        inputs?: Record<string, string>
       }) {
         const s = yield* InstanceState.get(state)
         const method = (s.methods as Record<string, AuthHook>)[input.providerID].methods[input.method]
         if (method.type !== "oauth") return
-        const result: AuthOauthResult = yield* Effect.promise(() => method.authorize())
+        const result: AuthOauthResult = yield* Effect.promise(() => method.authorize(input.inputs))
         s.pending.set(input.providerID, result)
         return {
           url: result.url,

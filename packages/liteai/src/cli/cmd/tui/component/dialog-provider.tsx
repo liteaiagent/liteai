@@ -16,10 +16,11 @@ import { DialogModel } from "./dialog-model"
 
 const PROVIDER_PRIORITY: Record<string, number> = {
   "google-code-assist": 0,
-  openai: 1,
-  "github-copilot": 2,
-  anthropic: 3,
-  google: 4,
+  ai4all: 1,
+  openai: 2,
+  "github-copilot": 3,
+  anthropic: 4,
+  google: 5,
 }
 
 export function createDialogProviderOptions() {
@@ -67,9 +68,41 @@ export function createDialogProviderOptions() {
           if (index == null) return
           const method = methods[index]
           if (method.type === "oauth") {
+            const inputs: Record<string, string> = {}
+            if (method.prompts?.length) {
+              for (const prompt of method.prompts) {
+                if (prompt.type === "select") {
+                  const val = await new Promise<string | null>((resolve) => {
+                    dialog.replace(
+                      () => (
+                        <DialogSelect
+                          title={prompt.message}
+                          options={prompt.options.map((o) => ({
+                            title: o.label,
+                            value: o.value,
+                            description: o.hint,
+                          }))}
+                          onSelect={(option) => resolve(option.value as string)}
+                        />
+                      ),
+                      () => resolve(null),
+                    )
+                  })
+                  if (val == null) return
+                  inputs[prompt.key] = val
+                } else {
+                  const val = await DialogPrompt.show(dialog, prompt.message, {
+                    placeholder: prompt.placeholder,
+                  })
+                  if (val == null) return
+                  inputs[prompt.key] = val
+                }
+              }
+            }
             const result = await sdk.client.provider.oauth.authorize({
               providerID: provider.id,
               method: index,
+              inputs: Object.keys(inputs).length ? inputs : undefined,
             })
             const auth = result.data
             if (auth?.method === "code") {
@@ -94,8 +127,90 @@ export function createDialogProviderOptions() {
 }
 
 export function DialogProvider() {
-  const options = createDialogProviderOptions()
-  return <DialogSelect title="Connect a provider" options={options()} />
+  const sync = useSync()
+  const sdk = useSDK()
+  const { theme } = useTheme()
+  const toast = useToast()
+  const [disconnecting, setDisconnecting] = createSignal<string | null>(null)
+
+  const connectedSet = createMemo(() => new Set(sync.data.provider_next.connected))
+
+  const connectedOptions = createMemo(() =>
+    sync.data.provider_next.all
+      .filter((p) => connectedSet().has(p.id))
+      .map((p) => ({
+        title: p.name,
+        value: p.id,
+        description: disconnecting() === p.id ? "(disconnecting...)" : "✓ connected",
+        category: "Connected",
+      })),
+  )
+
+  const availableOptions = createMemo(() => {
+    return pipe(
+      sync.data.provider_next.all.filter((p) => !connectedSet().has(p.id)),
+      sortBy((x) => PROVIDER_PRIORITY[x.id] ?? 99),
+      map((provider) => ({
+        title: provider.name,
+        value: provider.id,
+        description: {
+          "google-code-assist": "(Recommended)",
+          anthropic: "(API key)",
+          openai: "(ChatGPT Plus/Pro or API key)",
+        }[provider.id],
+        category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
+      })),
+    )
+  })
+
+  const allOptions = createMemo(() => [...connectedOptions(), ...availableOptions()])
+
+  const connectOptions = createDialogProviderOptions()
+
+  const disconnect = async (providerID: string, name: string) => {
+    if (disconnecting()) return
+    setDisconnecting(providerID)
+    const { error } = await sdk.client.auth.remove({ providerID })
+    if (error) {
+      setDisconnecting(null)
+      toast.show({ variant: "error", message: `Failed to disconnect ${name}` })
+      return
+    }
+    await sdk.client.instance.dispose()
+    await sync.bootstrap()
+    setDisconnecting(null)
+    toast.show({ variant: "info", message: `Disconnected ${name}` })
+  }
+
+  const keybinds = createMemo(() => [
+    {
+      keybind: { name: "d", ctrl: true, meta: false, shift: false, leader: false },
+      title: "disconnect",
+      disabled: false,
+      onTrigger: (option: { value: string; title: string }) => {
+        if (!connectedSet().has(option.value)) return
+        disconnect(option.value, option.title)
+      },
+    },
+  ])
+
+  return (
+    <DialogSelect
+      title="Providers"
+      options={allOptions()}
+      keybind={keybinds()}
+      footerContent={
+        connectedOptions().length > 0 ? (
+          <text fg={theme.textMuted}>↑↓ navigate · Enter connect · ctrl+d disconnect</text>
+        ) : undefined
+      }
+      onSelect={(option) => {
+        if (connectedSet().has(option.value)) return
+        const match = connectOptions().find((o) => o.value === option.value)
+        if (match?.onSelect) match.onSelect()
+      }}
+    />
+  )
 }
 
 interface AutoMethodProps {

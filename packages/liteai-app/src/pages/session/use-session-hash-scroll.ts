@@ -15,9 +15,9 @@ export const useSessionHashScroll = (input: {
   setActiveMessage: (message: UserMessage | undefined) => void
   setTurnStart: (value: number) => void
   autoScroll: { pause: () => void; forceScrollToBottom: () => void }
-  scroller: () => HTMLDivElement | undefined
+  scroller: () => HTMLElement | undefined
   anchor: (id: string) => string
-  scheduleScrollState: (el: HTMLDivElement) => void
+  scheduleScrollState: (el: HTMLElement) => void
   consumePendingMessage: (key: string) => string | undefined
 }) => {
   const visibleUserMessages = createMemo(() => input.visibleUserMessages())

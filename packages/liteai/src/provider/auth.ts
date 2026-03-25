@@ -29,6 +29,7 @@ export namespace ProviderAuth {
     z.object({
       providerID: ProviderID.zod,
       method: z.number(),
+      inputs: z.record(z.string(), z.string()).optional(),
     }),
     async (input): Promise<Authorization | undefined> => runPromise((service) => service.authorize(input)),
   )
