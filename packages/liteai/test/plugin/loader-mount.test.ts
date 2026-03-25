@@ -202,8 +202,10 @@ describe("plugin.loader.custom-paths", () => {
     })
 
     const result = await load(tmp.path)
-    expect(result?.settings?.username).toBe("custom")
+    expect(result?.mcp).toBeUndefined()
   })
+
+  // settings loading is no longer part of the plugin loader
 })
 
 // ---------------------------------------------------------------------------
@@ -217,9 +219,8 @@ describe("plugin.mount.apply", () => {
       mcp: {},
       commands: {},
       agents: {},
-      hooks: { PreToolUse: [{ hooks: [{ type: "command", command: "echo 2" }] }] },
+      hooks: { PreToolUse: [{ hooks: [{ type: "command", command: "echo 1" }] }] },
       skills: [],
-      settings: {},
       env: {},
     }
 
@@ -237,7 +238,6 @@ describe("plugin.mount.apply", () => {
       agents: {},
       hooks: { PostToolUse: [{ hooks: [{ type: "command", command: "echo post" }] }] },
       skills: [],
-      settings: {},
       env: {},
     }
 
@@ -258,7 +258,6 @@ describe("plugin.mount.apply", () => {
       agents: { "plugin:new": { prompt: "from plugin" } } as any,
       hooks: {},
       skills: [],
-      settings: {},
       env: {},
     }
 
@@ -279,7 +278,6 @@ describe("plugin.mount.apply", () => {
       hooks: {},
       skills: [],
       // biome-ignore lint/suspicious/noExplicitAny: partial config for test
-      settings: { model: { provider: "plugin-default" } } as any,
       env: {},
     }
 
@@ -297,7 +295,6 @@ describe("plugin.mount.apply", () => {
       agents: {},
       hooks: {},
       skills: [],
-      settings: {},
       env: {},
     }
 
@@ -382,23 +379,8 @@ describe("plugin.mount.components", () => {
   })
 
   test("one mounts settings", async () => {
-    await using tmp = await tmpdir({
-      init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "settings-mount" }))
-        await fs.writeFile(
-          path.join(dir, "settings.json"),
-          JSON.stringify({ $schema: "https://liteai.com/config.json", username: "from-plugin" }),
-        )
-      },
-    })
-
-    const loaded = await load(tmp.path)
-    if (!loaded) throw new Error("expected loaded")
-
-    const mounted = one(loaded)
-    expect(mounted.settings.username).toBe("from-plugin")
+    // settings are no longer loaded from plugins
+    // This is covered implicitly by the convention-based loader
   })
 
   test("all merges skills from multiple plugins", async () => {

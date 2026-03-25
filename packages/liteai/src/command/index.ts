@@ -81,14 +81,15 @@ export namespace Command {
           return installFromMarketplace(parsed.name, parsed.marketplace)
         }
 
-        // Try local path install first
-        const { parse: parseManifest } = await import("@/plugin/manifest")
-        const resolved = (await import("node:path")).resolve(target)
-        const result = await parseManifest(resolved)
-        if (result) {
-          await install({ name: result.manifest.name, root: resolved })
+        // Try local path install — name comes from the directory basename
+        const nodePath = await import("node:path")
+        const { Filesystem } = await import("@/util/filesystem")
+        const resolved = nodePath.resolve(target)
+        if (await Filesystem.isDir(resolved)) {
+          const name = nodePath.basename(resolved)
+          await install({ name, root: resolved })
           await Instance.dispose()
-          return `Installed and enabled plugin **${result.manifest.name}** from ${resolved}`
+          return `Installed and enabled plugin **${name}** from ${resolved}`
         }
 
         // Try to find in any known marketplace
@@ -361,7 +362,7 @@ export namespace Command {
           name: Default.PLUGIN,
           description:
             "manage plugins — use: list, install <path-or-name[@marketplace]>, uninstall, enable, disable, update, marketplace <add|remove|update|list>",
-          source: "command" as const,
+          source: "skill" as const,
           hints: ["$ARGUMENTS"],
         },
         {

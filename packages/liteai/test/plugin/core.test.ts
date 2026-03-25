@@ -156,40 +156,28 @@ describe("plugin.env", () => {
 // Loader
 // ---------------------------------------------------------------------------
 describe("plugin.loader", () => {
-  test("load returns undefined for non-plugin directory", async () => {
-    await using tmp = await tmpdir()
-    const result = await load(tmp.path)
+  test("load returns undefined for non-existent directory", async () => {
+    const result = await load("/tmp/liteai-no-such-dir-xyzzy")
     expect(result).toBeUndefined()
   })
 
-  test("load reads manifest and empty components", async () => {
+  test("load uses directory basename as plugin name", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "empty-plugin", version: "1.0.0" }))
+        const cmdDir = path.join(dir, "commands")
+        await fs.mkdir(cmdDir, { recursive: true })
+        await fs.writeFile(path.join(cmdDir, "greet.md"), "---\ndescription: Greet\n---\nHello!")
       },
     })
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.name).toBe("empty-plugin")
-    expect(result?.manifest.version).toBe("1.0.0")
-    expect(Object.keys(result?.commands ?? {})).toHaveLength(0)
-    expect(Object.keys(result?.agents ?? {})).toHaveLength(0)
-    expect(result?.skills).toHaveLength(0)
-    expect(result?.hooks).toBeUndefined()
-    expect(result?.mcp).toBeUndefined()
-    expect(result?.settings).toBeUndefined()
+    expect(result?.name).toBe(path.basename(tmp.path))
   })
 
   test("load discovers commands from default path", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "cmd-plugin" }))
-
         const cmdDir = path.join(dir, "commands")
         await fs.mkdir(cmdDir, { recursive: true })
         await fs.writeFile(path.join(cmdDir, "greet.md"), "---\ndescription: Say hello\n---\nHello $ARGUMENTS!")
@@ -197,18 +185,15 @@ describe("plugin.loader", () => {
     })
 
     const result = await load(tmp.path)
+    const plugin = path.basename(result?.root ?? "")
     expect(result).toBeTruthy()
-    expect(result?.commands["cmd-plugin:greet"]).toBeTruthy()
-    expect(result?.commands["cmd-plugin:greet"].template).toContain("Hello")
+    expect(result?.commands[`${plugin}:greet`]).toBeTruthy()
+    expect(result?.commands[`${plugin}:greet`].template).toContain("Hello")
   })
 
   test("load discovers agents from default path", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "agent-plugin" }))
-
         const agentDir = path.join(dir, "agents")
         await fs.mkdir(agentDir, { recursive: true })
         await fs.writeFile(
@@ -219,18 +204,15 @@ describe("plugin.loader", () => {
     })
 
     const result = await load(tmp.path)
+    const plugin = path.basename(result?.root ?? "")
     expect(result).toBeTruthy()
-    expect(result?.agents["agent-plugin:helper"]).toBeTruthy()
-    expect(result?.agents["agent-plugin:helper"].prompt).toContain("helpful assistant")
+    expect(result?.agents[`${plugin}:helper`]).toBeTruthy()
+    expect(result?.agents[`${plugin}:helper`].prompt).toContain("helpful assistant")
   })
 
   test("load discovers skills from default path", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "skill-plugin" }))
-
         const skillDir = path.join(dir, "skills", "greet")
         await fs.mkdir(skillDir, { recursive: true })
         await fs.writeFile(
@@ -241,9 +223,10 @@ describe("plugin.loader", () => {
     })
 
     const result = await load(tmp.path)
+    const plugin = path.basename(result?.root ?? "")
     expect(result).toBeTruthy()
     expect(result?.skills).toHaveLength(1)
-    expect(result?.skills[0].name).toBe("skill-plugin:greet")
+    expect(result?.skills[0].name).toBe(`${plugin}:greet`)
     expect(result?.skills[0].description).toBe("Greet the user")
     expect(result?.skills[0].content).toContain("Say hello")
   })
@@ -251,10 +234,6 @@ describe("plugin.loader", () => {
   test("load discovers hooks from hooks.json", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "hook-plugin" }))
-
         const hookDir = path.join(dir, "hooks")
         await fs.mkdir(hookDir, { recursive: true })
         await fs.writeFile(
@@ -272,48 +251,23 @@ describe("plugin.loader", () => {
     expect(result?.hooks?.PreToolUse).toHaveLength(1)
   })
 
-  test("load discovers settings from settings.json", async () => {
+  test("load discovers hooks wrapped in { hooks: {...} } format", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "settings-plugin" }))
-
+        const hookDir = path.join(dir, "hooks")
+        await fs.mkdir(hookDir, { recursive: true })
         await fs.writeFile(
-          path.join(dir, "settings.json"),
-          JSON.stringify({ $schema: "https://liteai.com/config.json", username: "plugin-user" }),
-        )
-      },
-    })
-
-    const result = await load(tmp.path)
-    expect(result).toBeTruthy()
-    expect(result?.settings?.username).toBe("plugin-user")
-  })
-
-  test("load uses custom paths from manifest", async () => {
-    await using tmp = await tmpdir({
-      init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(
-          path.join(marker, "plugin.json"),
+          path.join(hookDir, "hooks.json"),
           JSON.stringify({
-            name: "custom-paths",
-            commands: "custom-cmd/*.md",
+            description: "My plugin hooks",
+            hooks: { PreToolUse: [{ hooks: [{ type: "command", command: "lint" }] }] },
           }),
         )
-
-        const cmdDir = path.join(dir, "custom-cmd")
-        await fs.mkdir(cmdDir, { recursive: true })
-        await fs.writeFile(path.join(cmdDir, "test.md"), "---\n---\nCustom command")
       },
     })
 
     const result = await load(tmp.path)
-    expect(result).toBeTruthy()
-    expect(result?.commands["custom-paths:test"]).toBeTruthy()
-    expect(result?.commands["custom-paths:test"].template).toBe("Custom command")
+    expect(result?.hooks?.PreToolUse).toBeTruthy()
   })
 })
 
@@ -376,6 +330,7 @@ describe("plugin.mount", () => {
   })
 
   test("apply merges settings as lowest priority", () => {
+    // This concept no longer applies - plugins don't have settings
     // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     const config = { username: "user-override" } as any
     const mounted = {
@@ -384,20 +339,17 @@ describe("plugin.mount", () => {
       agents: {},
       hooks: {},
       skills: [],
-      // biome-ignore lint/suspicious/noExplicitAny: partial config for test
-      settings: { username: "plugin-default" } as any,
       env: {},
     }
 
     const result = apply(config, mounted)
-    // User config wins over plugin settings
     expect(result.username).toBe("user-override")
   })
 
   test("apply merges commands on top", () => {
     const config = {
       command: { existing: { template: "existing" } },
-      // biome-ignore lint/suspicious/noExplicitAny: partial config for test
+      // biome-ignore lint/suspicious/noExplicitAny: partial config  for test
     } as any
     const mounted = {
       mcp: {},
@@ -406,7 +358,6 @@ describe("plugin.mount", () => {
       agents: {},
       hooks: {},
       skills: [],
-      settings: {},
       env: {},
     }
 
@@ -427,7 +378,6 @@ describe("plugin.mount", () => {
       agents: {},
       hooks: {},
       skills: [],
-      settings: {},
       env: {},
     }
 
@@ -441,12 +391,9 @@ describe("plugin.mount", () => {
 // Namespace isolation
 // ---------------------------------------------------------------------------
 describe("plugin.namespace", () => {
-  test("commands are namespaced with plugin name", async () => {
+  test("commands are namespaced with plugin basename", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "my-plugin" }))
         const cmdDir = path.join(dir, "commands")
         await fs.mkdir(cmdDir, { recursive: true })
         await fs.writeFile(path.join(cmdDir, "test.md"), "---\n---\nTest")
@@ -454,15 +401,13 @@ describe("plugin.namespace", () => {
     })
 
     const result = await load(tmp.path)
-    expect(Object.keys(result?.commands ?? {})).toEqual(["my-plugin:test"])
+    const plugin = path.basename(tmp.path)
+    expect(Object.keys(result?.commands ?? {})).toEqual([`${plugin}:test`])
   })
 
-  test("skills are namespaced with plugin name", async () => {
+  test("skills are namespaced with plugin basename", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "my-plugin" }))
         const skillDir = path.join(dir, "skills", "foo")
         await fs.mkdir(skillDir, { recursive: true })
         await fs.writeFile(path.join(skillDir, "SKILL.md"), "---\nname: foo\ndescription: Foo skill\n---\nFoo content")
@@ -470,15 +415,13 @@ describe("plugin.namespace", () => {
     })
 
     const result = await load(tmp.path)
-    expect(result?.skills[0]?.name).toBe("my-plugin:foo")
+    const plugin = path.basename(tmp.path)
+    expect(result?.skills[0]?.name).toBe(`${plugin}:foo`)
   })
 
-  test("agents are namespaced with plugin name", async () => {
+  test("agents are namespaced with plugin basename", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "my-plugin" }))
         const agentDir = path.join(dir, "agents")
         await fs.mkdir(agentDir, { recursive: true })
         await fs.writeFile(path.join(agentDir, "bot.md"), "---\ndescription: A bot\n---\nBot prompt")
@@ -486,6 +429,7 @@ describe("plugin.namespace", () => {
     })
 
     const result = await load(tmp.path)
-    expect(Object.keys(result?.agents ?? {})).toEqual(["my-plugin:bot"])
+    const plugin = path.basename(tmp.path)
+    expect(Object.keys(result?.agents ?? {})).toEqual([`${plugin}:bot`])
   })
 })

@@ -135,6 +135,14 @@ export function registerCommands(deps: CommandDeps) {
         onSelect: () => deps.openSettings("mcp"),
       },
       {
+        id: "settings.open.plugins",
+        title: "Manage plugins",
+        description: "Browse markets, install and configure plugins",
+        category: deps.language.t("command.category.settings"),
+        slash: "plugin",
+        onSelect: () => deps.openSettings("plugins"),
+      },
+      {
         id: "session.previous",
         title: deps.language.t("command.session.previous"),
         category: deps.language.t("command.category.session"),

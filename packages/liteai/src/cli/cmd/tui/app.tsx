@@ -4,6 +4,7 @@ import { render, useKeyboard, useRenderer, useTerminalDimensions } from "@opentu
 import { DialogAgent } from "@tui/component/dialog-agent"
 import { CommandProvider, useCommandDialog } from "@tui/component/dialog-command"
 import { DialogMcp } from "@tui/component/dialog-mcp"
+import { DialogPlugin } from "@tui/component/dialog-plugin"
 import { DialogModel, useConnected } from "@tui/component/dialog-model"
 import { DialogProvider as DialogProviderList } from "@tui/component/dialog-provider"
 import { DialogSessionList } from "@tui/component/dialog-session-list"
@@ -487,6 +488,18 @@ function App() {
       },
       onSelect: () => {
         dialog.replace(() => <DialogMcp />)
+      },
+    },
+    {
+      title: "Manage plugins",
+      value: "plugin.manage",
+      category: "Agent",
+      slash: {
+        name: "plugin",
+        aliases: ["plugins"],
+      },
+      onSelect: () => {
+        dialog.replace(() => <DialogPlugin />)
       },
     },
     {

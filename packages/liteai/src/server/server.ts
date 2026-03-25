@@ -39,6 +39,7 @@ import { ExperimentalRoutes } from "./routes/experimental"
 import { FileRoutes } from "./routes/file"
 import { GlobalRoutes } from "./routes/global"
 import { McpRoutes } from "./routes/mcp"
+import { PluginRoutes } from "./routes/plugin"
 import { PermissionRoutes } from "./routes/permission"
 import { ProjectRoutes } from "./routes/project"
 import { ProviderRoutes } from "./routes/provider"
@@ -256,6 +257,7 @@ export namespace Server {
       .route("/provider", ProviderRoutes())
       .route("/", FileRoutes())
       .route("/mcp", McpRoutes())
+      .route("/plugin", PluginRoutes())
       .route("/tui", TuiRoutes())
       .post(
         "/instance/dispose",

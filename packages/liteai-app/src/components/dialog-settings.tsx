@@ -11,6 +11,7 @@ import { SettingsMcp } from "./settings-mcp"
 import { SettingsModels } from "./settings-models"
 import { SettingsProviders } from "./settings-providers"
 import { SettingsSkills } from "./settings-skills"
+import { SettingsPlugins } from "./settings-plugins"
 
 export const DialogSettings: Component<{ tab?: string }> = (props) => {
   const language = useLanguage()
@@ -65,6 +66,10 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
                       <Icon name="task" />
                       {language.t("settings.agents.title")}
                     </Tabs.Trigger>
+                    <Tabs.Trigger value="plugins">
+                      <Icon name="brain" />
+                      Plugins
+                    </Tabs.Trigger>
                   </div>
                 </div>
               </div>
@@ -95,6 +100,9 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
         </Tabs.Content>
         <Tabs.Content value="agents" class="no-scrollbar">
           <SettingsAgents />
+        </Tabs.Content>
+        <Tabs.Content value="plugins" class="no-scrollbar">
+          <SettingsPlugins />
         </Tabs.Content>
       </Tabs>
     </Dialog>

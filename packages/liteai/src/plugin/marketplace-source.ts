@@ -74,7 +74,7 @@ export async function resolve(input: string): Promise<{ name: string; manifest: 
       log.warn("no marketplace manifest found at local path", { path: resolved })
       return undefined
     }
-    await addKnown(manifest.name, { source, added: new Date().toISOString() })
+    await addKnown(key, { source, added: new Date().toISOString(), displayName: manifest.name })
     return { name: manifest.name, manifest }
   }
 
@@ -87,7 +87,7 @@ export async function resolve(input: string): Promise<{ name: string; manifest: 
       log.warn("cloned repo has no marketplace manifest", { repo: source.repo })
       return undefined
     }
-    await addKnown(manifest.name, { source, added: new Date().toISOString() })
+    await addKnown(key, { source, added: new Date().toISOString(), displayName: manifest.name })
     return { name: manifest.name, manifest }
   }
 
@@ -104,7 +104,7 @@ export async function resolve(input: string): Promise<{ name: string; manifest: 
       log.warn("cloned repo has no marketplace manifest", { url: source.url })
       return undefined
     }
-    await addKnown(manifest.name, { source, added: new Date().toISOString() })
+    await addKnown(key, { source, added: new Date().toISOString(), displayName: manifest.name })
     return { name: manifest.name, manifest }
   }
 

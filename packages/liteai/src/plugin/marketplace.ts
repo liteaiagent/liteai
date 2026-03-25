@@ -111,6 +111,7 @@ export type Manifest = z.infer<typeof Manifest>
 export const MarketplaceRef = z.object({
   source: z.union([GithubSource, UrlSource, z.string()]),
   added: z.string().optional(),
+  displayName: z.string().optional(),
 })
 export type MarketplaceRef = z.infer<typeof MarketplaceRef>
 
