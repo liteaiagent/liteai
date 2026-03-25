@@ -1,7 +1,7 @@
 import { type JSX, splitProps } from "solid-js";
 
 export interface ResizeHandleProps
-	extends Omit<JSX.HTMLAttributes<HTMLDivElement>, "onResize"> {
+	extends Omit<JSX.HTMLAttributes<HTMLHRElement>, "onResize"> {
 	direction: "horizontal" | "vertical";
 	edge?: "start" | "end";
 	size: number;
@@ -72,10 +72,9 @@ export function ResizeHandle(props: ResizeHandleProps) {
 	};
 
 	return (
-		<div
+		<hr
 			{...rest}
 			data-component="resize-handle"
-			role="separator"
 			tabIndex={0}
 			aria-valuenow={local.size}
 			aria-valuemin={local.min}

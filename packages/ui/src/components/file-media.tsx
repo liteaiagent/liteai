@@ -242,6 +242,7 @@ export function FileMedia(props: {
 									onLoadedMetadata={onLoad}
 								>
 									<source src={value()} type={audioMime()} />
+									<track kind="captions" />
 								</audio>
 							</div>
 						);

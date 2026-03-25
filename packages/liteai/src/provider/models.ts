@@ -116,7 +116,7 @@ export namespace ModelsDev {
     if (!providers.ai4all) {
       providers.ai4all = {
         id: "ai4all",
-        name: "AI4ALL (Valeo)",
+        name: "AI4ALL",
         env: ["AI4ALL_API_KEY"],
         models: {},
       }

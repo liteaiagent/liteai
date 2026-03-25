@@ -122,13 +122,11 @@ export function TextReveal(props: {
 	return (
 		<span
 			ref={rootRef}
-			role="group"
 			data-component="text-reveal"
 			data-ready={ready() ? "true" : "false"}
 			data-swapping={swapping() ? "true" : "false"}
 			data-truncate={props.truncate ? "true" : "false"}
 			class={props.class}
-			aria-label={props.text ?? ""}
 			style={{
 				"--text-reveal-duration": ms(props.duration, 450),
 				"--text-reveal-edge": pct(props.edge, 17),

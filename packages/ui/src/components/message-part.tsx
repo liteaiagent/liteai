@@ -1,148 +1,39 @@
-import { checksum } from "@liteai/util/encode";
-import { getDirectory as _getDirectory, getFilename } from "@liteai/util/path";
+import { getFilename } from "@liteai/util/path";
 import type {
 	AgentPart,
 	AssistantMessage,
 	FilePart,
 	Message as MessageType,
 	Part as PartType,
-	QuestionAnswer,
-	QuestionInfo,
-	ReasoningPart,
 	TextPart,
-	Todo,
 	ToolPart,
 	UserMessage,
 } from "@liteai-ai/sdk";
-import { useLocation, useNavigate } from "@solidjs/router";
-import { animate } from "motion";
 import {
 	type Component,
-	createEffect,
 	createMemo,
 	createSignal,
 	For,
 	Index,
-	type JSX,
 	Match,
-	onCleanup,
-	onMount,
 	Show,
 	Switch,
 } from "solid-js";
 import { createStore } from "solid-js/store";
 import { Dynamic } from "solid-js/web";
-import stripAnsi from "strip-ansi";
 import { useData } from "../context";
 import { useDialog } from "../context/dialog";
-import { useFileComponent } from "../context/file";
-import { type UiI18n, useI18n } from "../context/i18n";
-import { Accordion } from "./accordion";
-import { BasicTool, GenericTool } from "./basic-tool";
-import { Checkbox } from "./checkbox";
+import { useI18n } from "../context/i18n";
 import { Collapsible } from "./collapsible";
-import { DiffChanges } from "./diff-changes";
 import { FileIcon } from "./file-icon";
-import { Icon } from "./icon";
 import { IconButton } from "./icon-button";
 import { ImagePreview } from "./image-preview";
-import { Markdown } from "./markdown";
 import { attached, inline, kind } from "./message-file";
-import { StickyAccordionHeader } from "./sticky-accordion-header";
+import { agentTitle, getDirectory } from "./message-utils";
 import { TextShimmer } from "./text-shimmer";
 import { AnimatedCountList } from "./tool-count-summary";
-import { ToolErrorCard } from "./tool-error-card";
 import { ToolStatusTitle } from "./tool-status-title";
 import { Tooltip } from "./tooltip";
-
-function ShellSubmessage(props: { text: string; animate?: boolean }) {
-	let widthRef: HTMLSpanElement | undefined;
-	let valueRef: HTMLSpanElement | undefined;
-
-	onMount(() => {
-		if (!props.animate) return;
-		requestAnimationFrame(() => {
-			if (widthRef) {
-				animate(
-					widthRef,
-					{ width: "auto" },
-					{ type: "spring", visualDuration: 0.25, bounce: 0 },
-				);
-			}
-			if (valueRef) {
-				animate(
-					valueRef,
-					{ opacity: 1, filter: "blur(0px)" },
-					{ duration: 0.32, ease: [0.16, 1, 0.3, 1] },
-				);
-			}
-		});
-	});
-
-	return (
-		<span data-component="shell-submessage">
-			<span
-				ref={widthRef}
-				data-slot="shell-submessage-width"
-				style={{ width: props.animate ? "0px" : undefined }}
-			>
-				<span data-slot="basic-tool-tool-subtitle">
-					<span
-						ref={valueRef}
-						data-slot="shell-submessage-value"
-						style={
-							props.animate ? { opacity: 0, filter: "blur(2px)" } : undefined
-						}
-					>
-						{props.text}
-					</span>
-				</span>
-			</span>
-		</span>
-	);
-}
-
-interface Diagnostic {
-	range: {
-		start: { line: number; character: number };
-		end: { line: number; character: number };
-	};
-	message: string;
-	severity?: number;
-}
-
-function getDiagnostics(
-	diagnosticsByFile: Record<string, Diagnostic[]> | undefined,
-	filePath: string | undefined,
-): Diagnostic[] {
-	if (!diagnosticsByFile || !filePath) return [];
-	const diagnostics = diagnosticsByFile[filePath] ?? [];
-	return diagnostics.filter((d) => d.severity === 1).slice(0, 3);
-}
-
-function DiagnosticsDisplay(props: { diagnostics: Diagnostic[] }): JSX.Element {
-	const i18n = useI18n();
-	return (
-		<Show when={props.diagnostics.length > 0}>
-			<div data-component="diagnostics">
-				<For each={props.diagnostics}>
-					{(diagnostic) => (
-						<div data-slot="diagnostic">
-							<span data-slot="diagnostic-label">
-								{i18n.t("ui.messagePart.diagnostic.error")}
-							</span>
-							<span data-slot="diagnostic-location">
-								[{diagnostic.range.start.line + 1}:
-								{diagnostic.range.start.character + 1}]
-							</span>
-							<span data-slot="diagnostic-message">{diagnostic.message}</span>
-						</div>
-					)}
-				</For>
-			</div>
-		</Show>
-	);
-}
 
 export interface MessageProps {
 	message: MessageType;
@@ -173,63 +64,17 @@ export interface MessagePartProps {
 
 export type PartComponent = Component<MessagePartProps>;
 
+import { CompactionPartDisplay } from "./message-parts/compaction";
+import { ReasoningPartDisplay } from "./message-parts/reasoning";
+import { TextPartDisplay } from "./message-parts/text";
+import { ToolPartDisplay } from "./message-parts/tool";
+
+export { MessageDivider } from "./message-parts/compaction";
 export const PART_MAPPING: Record<string, PartComponent | undefined> = {};
-
-const TEXT_RENDER_THROTTLE_MS = 100;
-
-function createThrottledValue(getValue: () => string) {
-	const [value, setValue] = createSignal(getValue());
-	let timeout: ReturnType<typeof setTimeout> | undefined;
-	let last = 0;
-
-	createEffect(() => {
-		const next = getValue();
-		const now = Date.now();
-
-		const remaining = TEXT_RENDER_THROTTLE_MS - (now - last);
-		if (remaining <= 0) {
-			if (timeout) {
-				clearTimeout(timeout);
-				timeout = undefined;
-			}
-			last = now;
-			setValue(next);
-			return;
-		}
-		if (timeout) clearTimeout(timeout);
-		timeout = setTimeout(() => {
-			last = Date.now();
-			setValue(next);
-			timeout = undefined;
-		}, remaining);
-	});
-
-	onCleanup(() => {
-		if (timeout) clearTimeout(timeout);
-	});
-
-	return value;
-}
-
-function relativizeProjectPath(path: string, directory?: string) {
-	if (!path) return "";
-	if (!directory) return path;
-	if (directory === "/") return path;
-	if (directory === "\\") return path;
-	if (path === directory) return "";
-
-	const separator = directory.includes("\\") ? "\\" : "/";
-	const prefix = directory.endsWith(separator)
-		? directory
-		: directory + separator;
-	if (!path.startsWith(prefix)) return path;
-	return path.slice(directory.length);
-}
-
-function getDirectory(path: string | undefined) {
-	const data = useData();
-	return relativizeProjectPath(_getDirectory(path), data.directory);
-}
+PART_MAPPING.tool = ToolPartDisplay;
+PART_MAPPING.compaction = CompactionPartDisplay;
+PART_MAPPING.text = TextPartDisplay;
+PART_MAPPING.reasoning = ReasoningPartDisplay;
 
 import type { IconProps } from "./icon";
 
@@ -239,55 +84,57 @@ export type ToolInfo = {
 	subtitle?: string;
 };
 
-function agentTitle(i18n: UiI18n, type?: string) {
-	if (!type) return i18n.t("ui.tool.agent.default");
-	return i18n.t("ui.tool.agent", { type });
-}
-
-export function getToolInfo(tool: string, input: any = {}): ToolInfo {
+export function getToolInfo(
+	tool: string,
+	input: Record<string, unknown> = {},
+): ToolInfo {
 	const i18n = useI18n();
 	switch (tool) {
 		case "read":
 			return {
 				icon: "glasses",
 				title: i18n.t("ui.tool.read"),
-				subtitle: input.filePath ? getFilename(input.filePath) : undefined,
+				subtitle:
+					typeof input.filePath === "string"
+						? getFilename(input.filePath)
+						: undefined,
 			};
 		case "list":
 			return {
 				icon: "bullet-list",
 				title: i18n.t("ui.tool.list"),
-				subtitle: input.path ? getFilename(input.path) : undefined,
+				subtitle:
+					typeof input.path === "string" ? getFilename(input.path) : undefined,
 			};
 		case "glob":
 			return {
 				icon: "magnifying-glass-menu",
 				title: i18n.t("ui.tool.glob"),
-				subtitle: input.pattern,
+				subtitle: typeof input.pattern === "string" ? input.pattern : undefined,
 			};
 		case "grep":
 			return {
 				icon: "magnifying-glass-menu",
 				title: i18n.t("ui.tool.grep"),
-				subtitle: input.pattern,
+				subtitle: typeof input.pattern === "string" ? input.pattern : undefined,
 			};
 		case "webfetch":
 			return {
 				icon: "window-cursor",
 				title: i18n.t("ui.tool.webfetch"),
-				subtitle: input.url,
+				subtitle: typeof input.url === "string" ? input.url : undefined,
 			};
 		case "websearch":
 			return {
 				icon: "window-cursor",
 				title: i18n.t("ui.tool.websearch"),
-				subtitle: input.query,
+				subtitle: typeof input.query === "string" ? input.query : undefined,
 			};
 		case "codesearch":
 			return {
 				icon: "code",
 				title: i18n.t("ui.tool.codesearch"),
-				subtitle: input.query,
+				subtitle: typeof input.query === "string" ? input.query : undefined,
 			};
 		case "task": {
 			const type =
@@ -297,34 +144,43 @@ export function getToolInfo(tool: string, input: any = {}): ToolInfo {
 			return {
 				icon: "task",
 				title: agentTitle(i18n, type),
-				subtitle: input.description,
+				subtitle:
+					typeof input.description === "string" ? input.description : undefined,
 			};
 		}
 		case "bash":
 			return {
 				icon: "console",
 				title: i18n.t("ui.tool.shell"),
-				subtitle: input.description,
+				subtitle:
+					typeof input.description === "string" ? input.description : undefined,
 			};
 		case "edit":
 			return {
 				icon: "code-lines",
 				title: i18n.t("ui.messagePart.title.edit"),
-				subtitle: input.filePath ? getFilename(input.filePath) : undefined,
+				subtitle:
+					typeof input.filePath === "string"
+						? getFilename(input.filePath)
+						: undefined,
 			};
 		case "write":
 			return {
 				icon: "code-lines",
 				title: i18n.t("ui.messagePart.title.write"),
-				subtitle: input.filePath ? getFilename(input.filePath) : undefined,
+				subtitle:
+					typeof input.filePath === "string"
+						? getFilename(input.filePath)
+						: undefined,
 			};
 		case "apply_patch":
 			return {
 				icon: "code-lines",
 				title: i18n.t("ui.tool.patch"),
-				subtitle: input.files?.length
-					? `${input.files.length} ${i18n.t(input.files.length > 1 ? "ui.common.file.other" : "ui.common.file.one")}`
-					: undefined,
+				subtitle:
+					Array.isArray(input.files) && input.files.length > 0
+						? `${input.files.length} ${i18n.t(input.files.length > 1 ? "ui.common.file.other" : "ui.common.file.one")}`
+						: undefined,
 			};
 		case "todowrite":
 			return {
@@ -344,7 +200,9 @@ export function getToolInfo(tool: string, input: any = {}): ToolInfo {
 		case "skill":
 			return {
 				icon: "brain",
-				title: input.name || i18n.t("ui.tool.skill"),
+				title:
+					(typeof input.name === "string" ? input.name : "") ||
+					i18n.t("ui.tool.skill"),
 			};
 		default:
 			return {
@@ -352,33 +210,6 @@ export function getToolInfo(tool: string, input: any = {}): ToolInfo {
 				title: tool,
 			};
 	}
-}
-
-function urls(text: string | undefined) {
-	if (!text) return [];
-	const seen = new Set<string>();
-	return [...text.matchAll(/https?:\/\/[^\s<>"'`)\]]+/g)]
-		.map((item) => item[0].replace(/[),.;:!?]+$/g, ""))
-		.filter((item) => {
-			if (seen.has(item)) return false;
-			seen.add(item);
-			return true;
-		});
-}
-
-function sessionLink(
-	id: string | undefined,
-	path: string,
-	href?: (id: string) => string | undefined,
-) {
-	if (!id) return;
-
-	const direct = href?.(id);
-	if (direct) return direct;
-
-	const idx = path.indexOf("/session");
-	if (idx === -1) return;
-	return `${path.slice(0, idx)}/session/${id}`;
 }
 
 const CONTEXT_GROUP_TOOLS = new Set(["read", "glob", "grep", "list"]);
@@ -427,7 +258,10 @@ function sameGroup(a: PartGroup, b: PartGroup) {
 	}
 	if (b.type !== "context") return false;
 	if (a.refs.length !== b.refs.length) return false;
-	return a.refs.every((ref, i) => sameRef(ref, b.refs[i]!));
+	return a.refs.every((ref, i) => {
+		const other = b.refs[i];
+		return other ? sameRef(ref, other) : false;
+	});
 }
 
 function sameGroups(
@@ -437,7 +271,10 @@ function sameGroups(
 	if (a === b) return true;
 	if (!a || !b) return false;
 	if (a.length !== b.length) return false;
-	return a.every((item, i) => sameGroup(item, b[i]!));
+	return a.every((item, i) => {
+		const other = b[i];
+		return other ? sameGroup(item, other) : false;
+	});
 }
 
 function groupParts(parts: { messageID: string; part: PartType }[]) {
@@ -609,12 +446,12 @@ export function AssistantParts(props: {
 									<Show when={message()}>
 										<Show when={item()}>
 											<Part
-												part={item()!}
-												message={message()!}
+												part={item() as PartType}
+												message={message() as MessageType}
 												showAssistantCopyPartID={props.showAssistantCopyPartID}
 												turnDurationMs={props.turnDurationMs}
 												defaultOpen={partDefaultOpen(
-													item()!,
+													item() as PartType,
 													props.shellToolDefaultOpen,
 													props.editToolDefaultOpen,
 												)}
@@ -709,32 +546,6 @@ function contextToolSummary(parts: ToolPart[]) {
 	).length;
 	const list = parts.filter((part) => part.tool === "list").length;
 	return { read, search, list };
-}
-
-function ExaOutput(props: { output?: string }) {
-	const links = createMemo(() => urls(props.output));
-
-	return (
-		<Show when={links().length > 0}>
-			<div data-component="exa-tool-output">
-				<div data-slot="exa-tool-links">
-					<For each={links()}>
-						{(url) => (
-							<a
-								data-slot="exa-tool-link"
-								href={url}
-								target="_blank"
-								rel="noopener noreferrer"
-								onClick={(event) => event.stopPropagation()}
-							>
-								{url}
-							</a>
-						)}
-					</For>
-				</div>
-			</div>
-		</Show>
-	);
 }
 
 export function registerPartComponent(type: string, component: PartComponent) {
@@ -833,7 +644,7 @@ export function AssistantMessageDisplay(props: {
 								return (
 									<Show when={item()}>
 										<Part
-											part={item()!}
+											part={item() as PartType}
 											message={props.message}
 											showAssistantCopyPartID={props.showAssistantCopyPartID}
 										/>
@@ -1073,7 +884,8 @@ export function UserMessageDisplay(props: {
 							const name = file.filename ?? i18n.t("ui.message.attachment.alt");
 
 							return (
-								<div
+								<button
+									type="button"
 									data-slot="user-message-attachment"
 									data-type={type}
 									data-clickable={type === "image" ? "true" : undefined}
@@ -1099,7 +911,7 @@ export function UserMessageDisplay(props: {
 											alt={name}
 										/>
 									</Show>
-								</div>
+								</button>
 							);
 						}}
 					</For>
@@ -1239,8 +1051,8 @@ function HighlightedText(props: {
 						r.source?.text?.end !== undefined,
 				)
 				.map((r) => ({
-					start: r.source?.text?.start,
-					end: r.source?.text?.end,
+					start: r.source?.text?.start ?? 0,
+					end: r.source?.text?.end ?? 0,
 					type: "file" as const,
 				})),
 			...props.agents
@@ -1248,8 +1060,8 @@ function HighlightedText(props: {
 					(a) => a.source?.start !== undefined && a.source?.end !== undefined,
 				)
 				.map((a) => ({
-					start: a.source?.start,
-					end: a.source?.end,
+					start: a.source?.start ?? 0,
+					end: a.source?.end ?? 0,
 					type: "agent" as const,
 				})),
 		].sort((a, b) => a.start - b.start);
@@ -1299,1440 +1111,4 @@ export function Part(props: MessagePartProps) {
 	);
 }
 
-export interface ToolProps {
-	input: Record<string, any>;
-	metadata: Record<string, any>;
-	tool: string;
-	output?: string;
-	status?: string;
-	hideDetails?: boolean;
-	defaultOpen?: boolean;
-	forceOpen?: boolean;
-	locked?: boolean;
-}
-
-export type ToolComponent = Component<ToolProps>;
-
-const state: Record<
-	string,
-	{
-		name: string;
-		render?: ToolComponent;
-	}
-> = {};
-
-export function registerTool(input: { name: string; render?: ToolComponent }) {
-	state[input.name] = input;
-	return input;
-}
-
-export function getTool(name: string) {
-	return state[name]?.render;
-}
-
-export const ToolRegistry = {
-	register: registerTool,
-	render: getTool,
-};
-
-function ToolFileAccordion(props: {
-	path: string;
-	actions?: JSX.Element;
-	children: JSX.Element;
-}) {
-	const value = createMemo(() => props.path || "tool-file");
-
-	return (
-		<Accordion
-			multiple
-			data-scope="apply-patch"
-			style={{ "--sticky-accordion-offset": "40px" }}
-			defaultValue={[value()]}
-		>
-			<Accordion.Item value={value()}>
-				<StickyAccordionHeader>
-					<Accordion.Trigger>
-						<div data-slot="apply-patch-trigger-content">
-							<div data-slot="apply-patch-file-info">
-								<FileIcon node={{ path: props.path, type: "file" }} />
-								<div data-slot="apply-patch-file-name-container">
-									<Show when={props.path.includes("/")}>
-										<span data-slot="apply-patch-directory">{`\u202A${getDirectory(props.path)}\u202C`}</span>
-									</Show>
-									<span data-slot="apply-patch-filename">
-										{getFilename(props.path)}
-									</span>
-								</div>
-							</div>
-							<div data-slot="apply-patch-trigger-actions">
-								{props.actions}
-								<Icon name="chevron-grabber-vertical" size="small" />
-							</div>
-						</div>
-					</Accordion.Trigger>
-				</StickyAccordionHeader>
-				<Accordion.Content>{props.children}</Accordion.Content>
-			</Accordion.Item>
-		</Accordion>
-	);
-}
-
-PART_MAPPING.tool = function ToolPartDisplay(props) {
-	const data = useData();
-	const i18n = useI18n();
-	const part = () => props.part as ToolPart;
-	if (part().tool === "todowrite" || part().tool === "todoread") return null;
-
-	const hideQuestion = createMemo(
-		() =>
-			part().tool === "question" &&
-			(part().state.status === "pending" || part().state.status === "running"),
-	);
-
-	const emptyInput: Record<string, any> = {};
-	const emptyMetadata: Record<string, any> = {};
-
-	const input = () => part().state?.input ?? emptyInput;
-	// @ts-expect-error
-	const partMetadata = () => part().state?.metadata ?? emptyMetadata;
-	const taskId = createMemo(() => {
-		if (part().tool !== "task") return;
-		const value = partMetadata().sessionId;
-		if (typeof value === "string" && value) return value;
-	});
-	const taskHref = createMemo(() => {
-		if (part().tool !== "task") return;
-		return sessionLink(taskId(), useLocation().pathname, data.sessionHref);
-	});
-	const taskSubtitle = createMemo(() => {
-		if (part().tool !== "task") return undefined;
-		const value = input().description;
-		if (typeof value === "string" && value) return value;
-		return taskId();
-	});
-
-	const render = createMemo(
-		() => ToolRegistry.render(part().tool) ?? GenericTool,
-	);
-
-	return (
-		<Show when={!hideQuestion()}>
-			<div data-component="tool-part-wrapper">
-				<Switch>
-					<Match
-						when={
-							part().state.status === "error" && (part().state as any).error
-						}
-					>
-						{(error) => {
-							const cleaned = error().replace("Error: ", "");
-							if (
-								part().tool === "question" &&
-								cleaned.includes("dismissed this question")
-							) {
-								return (
-									<div style="width: 100%; display: flex; justify-content: flex-end;">
-										<span class="text-13-regular text-text-weak cursor-default">
-											{i18n.t("ui.messagePart.questions.dismissed")}
-										</span>
-									</div>
-								);
-							}
-							return (
-								<ToolErrorCard
-									tool={part().tool}
-									error={error()}
-									defaultOpen={props.defaultOpen}
-									subtitle={taskSubtitle()}
-									href={taskHref()}
-								/>
-							);
-						}}
-					</Match>
-					<Match when={true}>
-						<Dynamic
-							component={render()}
-							input={input()}
-							tool={part().tool}
-							metadata={partMetadata()}
-							// @ts-expect-error
-							output={part().state.output}
-							status={part().state.status}
-							hideDetails={props.hideDetails}
-							defaultOpen={props.defaultOpen}
-						/>
-					</Match>
-				</Switch>
-			</div>
-		</Show>
-	);
-};
-
-export function MessageDivider(props: { label: string }) {
-	return (
-		<div data-component="compaction-part">
-			<div data-slot="compaction-part-divider">
-				<span data-slot="compaction-part-line" />
-				<span
-					data-slot="compaction-part-label"
-					class="text-12-regular text-text-weak"
-				>
-					{props.label}
-				</span>
-				<span data-slot="compaction-part-line" />
-			</div>
-		</div>
-	);
-}
-
-PART_MAPPING.compaction = function CompactionPartDisplay() {
-	const i18n = useI18n();
-	return <MessageDivider label={i18n.t("ui.messagePart.compaction")} />;
-};
-
-PART_MAPPING.text = function TextPartDisplay(props) {
-	const data = useData();
-	const i18n = useI18n();
-	const numfmt = createMemo(() => new Intl.NumberFormat(i18n.locale()));
-	const part = () => props.part as TextPart;
-	const interrupted = createMemo(
-		() =>
-			props.message.role === "assistant" &&
-			(props.message as AssistantMessage).error?.name === "MessageAbortedError",
-	);
-
-	const model = createMemo(() => {
-		if (props.message.role !== "assistant") return "";
-		const message = props.message as AssistantMessage;
-		const match = data.store.provider?.all?.find(
-			(p) => p.id === message.providerID,
-		);
-		return match?.models?.[message.modelID]?.name ?? message.modelID;
-	});
-
-	const duration = createMemo(() => {
-		if (props.message.role !== "assistant") return "";
-		const message = props.message as AssistantMessage;
-		const completed = message.time.completed;
-		const ms =
-			typeof props.turnDurationMs === "number"
-				? props.turnDurationMs
-				: typeof completed === "number"
-					? completed - message.time.created
-					: -1;
-		if (!(ms >= 0)) return "";
-		const total = Math.round(ms / 1000);
-		if (total < 60)
-			return i18n.t("ui.message.duration.seconds", {
-				count: numfmt().format(total),
-			});
-		const minutes = Math.floor(total / 60);
-		const seconds = total % 60;
-		return i18n.t("ui.message.duration.minutesSeconds", {
-			minutes: numfmt().format(minutes),
-			seconds: numfmt().format(seconds),
-		});
-	});
-
-	const meta = createMemo(() => {
-		if (props.message.role !== "assistant") return "";
-		const agent = (props.message as AssistantMessage).agent;
-		const items = [
-			agent ? agent[0]?.toUpperCase() + agent.slice(1) : "",
-			model(),
-			duration(),
-			interrupted() ? i18n.t("ui.message.interrupted") : "",
-		];
-		return items.filter((x) => !!x).join(" \u00B7 ");
-	});
-
-	const displayText = () => (part().text ?? "").trim();
-	const throttledText = createThrottledValue(displayText);
-	const isLastTextPart = createMemo(() => {
-		const last = (data.store.part?.[props.message.id] ?? [])
-			.filter(
-				(item): item is TextPart =>
-					item?.type === "text" && !!item.text?.trim(),
-			)
-			.at(-1);
-		return last?.id === part().id;
-	});
-	const showCopy = createMemo(() => {
-		if (props.message.role !== "assistant") return isLastTextPart();
-		if (props.showAssistantCopyPartID === null) return false;
-		if (typeof props.showAssistantCopyPartID === "string")
-			return props.showAssistantCopyPartID === part().id;
-		return isLastTextPart();
-	});
-	const [copied, setCopied] = createSignal(false);
-
-	const handleCopy = async () => {
-		const content = displayText();
-		if (!content) return;
-		await navigator.clipboard.writeText(content);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
-	};
-
-	return (
-		<Show when={throttledText()}>
-			<div data-component="text-part">
-				<div data-slot="text-part-body">
-					<Markdown text={throttledText()} cacheKey={part().id} />
-				</div>
-				<Show when={showCopy()}>
-					<div
-						data-slot="text-part-copy-wrapper"
-						data-interrupted={interrupted() ? "" : undefined}
-					>
-						<Tooltip
-							value={
-								copied()
-									? i18n.t("ui.message.copied")
-									: i18n.t("ui.message.copyResponse")
-							}
-							placement="top"
-							gutter={4}
-						>
-							<IconButton
-								icon={copied() ? "check" : "copy"}
-								size="normal"
-								variant="ghost"
-								onMouseDown={(e) => e.preventDefault()}
-								onClick={handleCopy}
-								aria-label={
-									copied()
-										? i18n.t("ui.message.copied")
-										: i18n.t("ui.message.copyResponse")
-								}
-							/>
-						</Tooltip>
-						<Show when={meta()}>
-							<span
-								data-slot="text-part-meta"
-								class="text-12-regular text-text-weak cursor-default"
-							>
-								{meta()}
-							</span>
-						</Show>
-					</div>
-				</Show>
-			</div>
-		</Show>
-	);
-};
-
-function stripMarkdown(value: string) {
-	return value
-		.replace(/`([^`]+)`/g, "$1")
-		.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-		.replace(/[*_~]+/g, "")
-		.trim();
-}
-
-function lastMatch(text: string, re: RegExp) {
-	let last: RegExpExecArray | null = null;
-	for (const m of text.matchAll(re)) last = m;
-	return last;
-}
-
-function reasoningTitle(text: string) {
-	const md = text.replace(/\r\n?/g, "\n");
-
-	const html = lastMatch(md, /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi);
-	if (html?.[1]) {
-		const value = stripMarkdown(html[1].replace(/<[^>]+>/g, " "));
-		if (value) return value;
-	}
-
-	const atx = lastMatch(md, /^\s{0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/gm);
-	if (atx?.[1]) {
-		const value = stripMarkdown(atx[1]);
-		if (value) return value;
-	}
-
-	const setext = lastMatch(md, /^([^\n]+)\n(?:=+|-+)\s*$/gm);
-	if (setext?.[1]) {
-		const value = stripMarkdown(setext[1]);
-		if (value) return value;
-	}
-
-	const strong = lastMatch(md, /^\s*(?:\*\*|__)(.+?)(?:\*\*|__)\s*$/gm);
-	if (strong?.[1]) {
-		const value = stripMarkdown(strong[1]);
-		if (value) return value;
-	}
-}
-
-PART_MAPPING.reasoning = function ReasoningPartDisplay(props) {
-	const part = () => props.part as ReasoningPart;
-	const text = () => part().text.trim();
-	const throttledText = createThrottledValue(text);
-	const i18n = useI18n();
-	const [open, setOpen] = createSignal(false);
-	const done = () => typeof part().time?.end === "number";
-	const duration = () => {
-		const t = part().time;
-		if (!t?.end) return undefined;
-		return Math.round((t.end - t.start) / 1000);
-	};
-	const [elapsed, setElapsed] = createSignal(0);
-	const elapsedLabel = () => {
-		const s = elapsed();
-		if (s <= 0) return undefined;
-		if (s >= 60)
-			return i18n.t("ui.message.duration.minutesSeconds", {
-				minutes: Math.floor(s / 60),
-				seconds: s % 60,
-			});
-		return i18n.t("ui.message.duration.seconds", { count: s });
-	};
-
-	createEffect(() => {
-		if (done()) return;
-		const start = part().time?.start;
-		if (!start) return;
-		const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000));
-		tick();
-		const id = setInterval(tick, 1000);
-		onCleanup(() => clearInterval(id));
-	});
-
-	const label = () => {
-		const s = duration();
-		if (s === undefined) return i18n.t("ui.sessionTurn.status.thinking");
-		if (s >= 60)
-			return i18n.t("ui.reasoning.thoughtFor", {
-				duration: i18n.t("ui.message.duration.minutesSeconds", {
-					minutes: Math.floor(s / 60),
-					seconds: s % 60,
-				}),
-			});
-		return i18n.t("ui.reasoning.thoughtFor", {
-			duration: i18n.t("ui.message.duration.seconds", { count: s }),
-		});
-	};
-	const title = createMemo(() => reasoningTitle(throttledText()));
-
-	return (
-		<Show when={throttledText()}>
-			<div data-component="reasoning-part" data-done={done() || undefined}>
-				<Collapsible open={open()} onOpenChange={setOpen} variant="ghost">
-					<Collapsible.Trigger>
-						<div data-component="reasoning-trigger">
-							<Collapsible.Arrow />
-							<span data-slot="reasoning-trigger-label">
-								<Icon name="sparkles" size="small" />
-								<Show when={!done()}>
-									<TextShimmer text={title() || label()} />
-									<Show when={elapsedLabel()}>
-										<span data-slot="reasoning-trigger-elapsed">
-											{elapsedLabel()}
-										</span>
-									</Show>
-								</Show>
-								<Show when={done()}>{label()}</Show>
-							</span>
-						</div>
-					</Collapsible.Trigger>
-					<Collapsible.Content>
-						<Markdown text={throttledText()} cacheKey={part().id} />
-					</Collapsible.Content>
-				</Collapsible>
-			</div>
-		</Show>
-	);
-};
-
-ToolRegistry.register({
-	name: "read",
-	render(props) {
-		const data = useData();
-		const i18n = useI18n();
-		const args: string[] = [];
-		if (props.input.offset) args.push(`offset=${props.input.offset}`);
-		if (props.input.limit) args.push(`limit=${props.input.limit}`);
-		const loaded = createMemo(() => {
-			if (props.status !== "completed") return [];
-			const value = props.metadata.loaded;
-			if (!value || !Array.isArray(value)) return [];
-			return value.filter((p): p is string => typeof p === "string");
-		});
-		return (
-			<>
-				<BasicTool
-					{...props}
-					icon="glasses"
-					trigger={{
-						title: i18n.t("ui.tool.read"),
-						subtitle: props.input.filePath
-							? getFilename(props.input.filePath)
-							: "",
-						args,
-					}}
-				/>
-				<For each={loaded()}>
-					{(filepath) => (
-						<div data-component="tool-loaded-file">
-							<Icon name="enter" size="small" />
-							<span>
-								{i18n.t("ui.tool.loaded")}{" "}
-								{relativizeProjectPath(filepath, data.directory)}
-							</span>
-						</div>
-					)}
-				</For>
-			</>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "list",
-	render(props) {
-		const i18n = useI18n();
-		return (
-			<BasicTool
-				{...props}
-				icon="bullet-list"
-				trigger={{
-					title: i18n.t("ui.tool.list"),
-					subtitle: getDirectory(props.input.path || "/"),
-				}}
-			>
-				<Show when={props.output}>
-					<div data-component="tool-output" data-scrollable>
-						<Markdown text={props.output!} />
-					</div>
-				</Show>
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "glob",
-	render(props) {
-		const i18n = useI18n();
-		return (
-			<BasicTool
-				{...props}
-				icon="magnifying-glass-menu"
-				trigger={{
-					title: i18n.t("ui.tool.glob"),
-					subtitle: getDirectory(props.input.path || "/"),
-					args: props.input.pattern ? [`pattern=${props.input.pattern}`] : [],
-				}}
-			>
-				<Show when={props.output}>
-					<div data-component="tool-output" data-scrollable>
-						<Markdown text={props.output!} />
-					</div>
-				</Show>
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "grep",
-	render(props) {
-		const i18n = useI18n();
-		const args: string[] = [];
-		if (props.input.pattern) args.push(`pattern=${props.input.pattern}`);
-		if (props.input.include) args.push(`include=${props.input.include}`);
-		return (
-			<BasicTool
-				{...props}
-				icon="magnifying-glass-menu"
-				trigger={{
-					title: i18n.t("ui.tool.grep"),
-					subtitle: getDirectory(props.input.path || "/"),
-					args,
-				}}
-			>
-				<Show when={props.output}>
-					<div data-component="tool-output" data-scrollable>
-						<Markdown text={props.output!} />
-					</div>
-				</Show>
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "webfetch",
-	render(props) {
-		const i18n = useI18n();
-		const pending = createMemo(
-			() => props.status === "pending" || props.status === "running",
-		);
-		const url = createMemo(() => {
-			const value = props.input.url;
-			if (typeof value !== "string") return "";
-			return value;
-		});
-		return (
-			<BasicTool
-				{...props}
-				hideDetails
-				icon="window-cursor"
-				trigger={
-					<div data-slot="basic-tool-tool-info-structured">
-						<div data-slot="basic-tool-tool-info-main">
-							<span data-slot="basic-tool-tool-title">
-								<TextShimmer
-									text={i18n.t("ui.tool.webfetch")}
-									active={pending()}
-								/>
-							</span>
-							<Show when={url()}>
-								<a
-									data-slot="basic-tool-tool-subtitle"
-									class="clickable subagent-link"
-									href={url()}
-									target="_blank"
-									rel="noopener noreferrer"
-									onClick={(event) => event.stopPropagation()}
-								>
-									{url()}
-								</a>
-							</Show>
-						</div>
-						<Show when={url()}>
-							<div data-component="tool-action">
-								<Icon name="square-arrow-top-right" size="small" />
-							</div>
-						</Show>
-					</div>
-				}
-			/>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "websearch",
-	render(props) {
-		const i18n = useI18n();
-		const pending = createMemo(
-			() => props.status === "pending" || props.status === "running",
-		);
-		const query = createMemo(() => {
-			const value = props.input.query;
-			if (typeof value !== "string") return "";
-			return value;
-		});
-
-		return (
-			<BasicTool
-				{...props}
-				icon="window-cursor"
-				trigger={
-					<div data-slot="basic-tool-tool-info-structured">
-						<div data-slot="basic-tool-tool-info-main">
-							<span data-slot="basic-tool-tool-title">
-								<TextShimmer
-									text={i18n.t("ui.tool.websearch")}
-									active={pending()}
-								/>
-							</span>
-							<Show when={query()}>
-								<span
-									data-slot="basic-tool-tool-subtitle"
-									class="exa-tool-query"
-								>
-									{query()}
-								</span>
-							</Show>
-						</div>
-					</div>
-				}
-			>
-				<ExaOutput output={props.output} />
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "codesearch",
-	render(props) {
-		const i18n = useI18n();
-		const pending = createMemo(
-			() => props.status === "pending" || props.status === "running",
-		);
-		const query = createMemo(() => {
-			const value = props.input.query;
-			if (typeof value !== "string") return "";
-			return value;
-		});
-
-		return (
-			<BasicTool
-				{...props}
-				icon="code"
-				trigger={
-					<div data-slot="basic-tool-tool-info-structured">
-						<div data-slot="basic-tool-tool-info-main">
-							<span data-slot="basic-tool-tool-title">
-								<TextShimmer
-									text={i18n.t("ui.tool.codesearch")}
-									active={pending()}
-								/>
-							</span>
-							<Show when={query()}>
-								<span
-									data-slot="basic-tool-tool-subtitle"
-									class="exa-tool-query"
-								>
-									{query()}
-								</span>
-							</Show>
-						</div>
-					</div>
-				}
-			>
-				<ExaOutput output={props.output} />
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "task",
-	render(props) {
-		const data = useData();
-		const i18n = useI18n();
-		const location = useLocation();
-		const navigate = useNavigate();
-		const childSessionId = () => props.metadata.sessionId as string | undefined;
-		const type = createMemo(() => {
-			const raw = props.input.subagent_type;
-			if (typeof raw !== "string" || !raw) return undefined;
-			return raw[0]?.toUpperCase() + raw.slice(1);
-		});
-		const title = createMemo(() => agentTitle(i18n, type()));
-		const subtitle = createMemo(() => {
-			const value = props.input.description;
-			if (typeof value === "string" && value) return value;
-			return childSessionId();
-		});
-		const running = createMemo(
-			() => props.status === "pending" || props.status === "running",
-		);
-
-		const href = createMemo(() =>
-			sessionLink(childSessionId(), location.pathname, data.sessionHref),
-		);
-
-		const titleContent = () => (
-			<TextShimmer text={title()} active={running()} />
-		);
-
-		const trigger = () => (
-			<div data-slot="basic-tool-tool-info-structured">
-				<div data-slot="basic-tool-tool-info-main">
-					<span
-						data-slot="basic-tool-tool-title"
-						class="capitalize agent-title"
-					>
-						{titleContent()}
-					</span>
-					<Show when={subtitle()}>
-						<span
-							data-slot="basic-tool-tool-subtitle"
-							classList={{ clickable: !!href(), "subagent-link": !!href() }}
-							onClick={(e) => {
-								const url = href();
-								if (!url) return;
-								e.stopPropagation();
-								e.preventDefault();
-								navigate(url);
-							}}
-						>
-							{subtitle()}
-						</span>
-					</Show>
-				</div>
-			</div>
-		);
-
-		return (
-			<BasicTool
-				icon="task"
-				status={props.status}
-				trigger={trigger()}
-				hideDetails
-			/>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "bash",
-	render(props) {
-		const i18n = useI18n();
-		const pending = () =>
-			props.status === "pending" || props.status === "running";
-		const sawPending = pending();
-		const text = createMemo(() => {
-			const cmd = props.input.command ?? props.metadata.command ?? "";
-			const out = stripAnsi(props.output || props.metadata.output || "");
-			return `$ ${cmd}${out ? `\n\n${out}` : ""}`;
-		});
-		const [copied, setCopied] = createSignal(false);
-
-		const handleCopy = async () => {
-			const content = text();
-			if (!content) return;
-			await navigator.clipboard.writeText(content);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		};
-
-		return (
-			<BasicTool
-				{...props}
-				icon="console"
-				trigger={
-					<div data-slot="basic-tool-tool-info-structured">
-						<div data-slot="basic-tool-tool-info-main">
-							<span data-slot="basic-tool-tool-title">
-								<TextShimmer
-									text={i18n.t("ui.tool.shell")}
-									active={pending()}
-								/>
-							</span>
-							<Show when={!pending() && props.input.description}>
-								<ShellSubmessage
-									text={props.input.description}
-									animate={sawPending}
-								/>
-							</Show>
-						</div>
-					</div>
-				}
-			>
-				<div data-component="bash-output">
-					<div data-slot="bash-copy">
-						<Tooltip
-							value={
-								copied()
-									? i18n.t("ui.message.copied")
-									: i18n.t("ui.message.copy")
-							}
-							placement="top"
-							gutter={4}
-						>
-							<IconButton
-								icon={copied() ? "check" : "copy"}
-								size="small"
-								variant="secondary"
-								onMouseDown={(e) => e.preventDefault()}
-								onClick={handleCopy}
-								aria-label={
-									copied()
-										? i18n.t("ui.message.copied")
-										: i18n.t("ui.message.copy")
-								}
-							/>
-						</Tooltip>
-					</div>
-					<div data-slot="bash-scroll" data-scrollable>
-						<pre data-slot="bash-pre">
-							<code>{text()}</code>
-						</pre>
-					</div>
-				</div>
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "edit",
-	render(props) {
-		const i18n = useI18n();
-		const fileComponent = useFileComponent();
-		const diagnostics = createMemo(() =>
-			getDiagnostics(props.metadata.diagnostics, props.input.filePath),
-		);
-		const path = createMemo(
-			() => props.metadata?.filediff?.file || props.input.filePath || "",
-		);
-		const filename = () => getFilename(props.input.filePath ?? "");
-		const pending = () =>
-			props.status === "pending" || props.status === "running";
-		return (
-			<div data-component="edit-tool">
-				<BasicTool
-					{...props}
-					icon="code-lines"
-					defer
-					trigger={
-						<div data-component="edit-trigger">
-							<div data-slot="message-part-title-area">
-								<div data-slot="message-part-title">
-									<span data-slot="message-part-title-text">
-										<TextShimmer
-											text={i18n.t("ui.messagePart.title.edit")}
-											active={pending()}
-										/>
-									</span>
-									<Show when={!pending()}>
-										<span data-slot="message-part-title-filename">
-											{filename()}
-										</span>
-									</Show>
-								</div>
-								<Show when={!pending() && props.input.filePath?.includes("/")}>
-									<div data-slot="message-part-path">
-										<span data-slot="message-part-directory">
-											{getDirectory(props.input.filePath!)}
-										</span>
-									</div>
-								</Show>
-							</div>
-							<div data-slot="message-part-actions">
-								<Show when={!pending() && props.metadata.filediff}>
-									<DiffChanges changes={props.metadata.filediff} />
-								</Show>
-							</div>
-						</div>
-					}
-				>
-					<Show when={path()}>
-						<ToolFileAccordion
-							path={path()}
-							actions={
-								<Show when={!pending() && props.metadata.filediff}>
-									<DiffChanges changes={props.metadata.filediff!} />
-								</Show>
-							}
-						>
-							<div data-component="edit-content">
-								<Dynamic
-									component={fileComponent}
-									mode="diff"
-									before={{
-										name:
-											props.metadata?.filediff?.file || props.input.filePath,
-										contents:
-											props.metadata?.filediff?.before || props.input.oldString,
-									}}
-									after={{
-										name:
-											props.metadata?.filediff?.file || props.input.filePath,
-										contents:
-											props.metadata?.filediff?.after || props.input.newString,
-									}}
-								/>
-							</div>
-						</ToolFileAccordion>
-					</Show>
-					<DiagnosticsDisplay diagnostics={diagnostics()} />
-				</BasicTool>
-			</div>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "write",
-	render(props) {
-		const i18n = useI18n();
-		const fileComponent = useFileComponent();
-		const diagnostics = createMemo(() =>
-			getDiagnostics(props.metadata.diagnostics, props.input.filePath),
-		);
-		const path = createMemo(() => props.input.filePath || "");
-		const filename = () => getFilename(props.input.filePath ?? "");
-		const pending = () =>
-			props.status === "pending" || props.status === "running";
-		return (
-			<div data-component="write-tool">
-				<BasicTool
-					{...props}
-					icon="code-lines"
-					defer
-					trigger={
-						<div data-component="write-trigger">
-							<div data-slot="message-part-title-area">
-								<div data-slot="message-part-title">
-									<span data-slot="message-part-title-text">
-										<TextShimmer
-											text={i18n.t("ui.messagePart.title.write")}
-											active={pending()}
-										/>
-									</span>
-									<Show when={!pending()}>
-										<span data-slot="message-part-title-filename">
-											{filename()}
-										</span>
-									</Show>
-								</div>
-								<Show when={!pending() && props.input.filePath?.includes("/")}>
-									<div data-slot="message-part-path">
-										<span data-slot="message-part-directory">
-											{getDirectory(props.input.filePath!)}
-										</span>
-									</div>
-								</Show>
-							</div>
-							<div data-slot="message-part-actions">
-								{/* <DiffChanges diff={diff} /> */}
-							</div>
-						</div>
-					}
-				>
-					<Show when={props.input.content && path()}>
-						<ToolFileAccordion path={path()}>
-							<div data-component="write-content">
-								<Dynamic
-									component={fileComponent}
-									mode="text"
-									file={{
-										name: props.input.filePath,
-										contents: props.input.content,
-										cacheKey: checksum(props.input.content),
-									}}
-									overflow="scroll"
-								/>
-							</div>
-						</ToolFileAccordion>
-					</Show>
-					<DiagnosticsDisplay diagnostics={diagnostics()} />
-				</BasicTool>
-			</div>
-		);
-	},
-});
-
-interface ApplyPatchFile {
-	filePath: string;
-	relativePath: string;
-	type: "add" | "update" | "delete" | "move";
-	diff: string;
-	before: string;
-	after: string;
-	additions: number;
-	deletions: number;
-	movePath?: string;
-}
-
-ToolRegistry.register({
-	name: "apply_patch",
-	render(props) {
-		const i18n = useI18n();
-		const fileComponent = useFileComponent();
-		const files = createMemo(
-			() => (props.metadata.files ?? []) as ApplyPatchFile[],
-		);
-		const pending = createMemo(
-			() => props.status === "pending" || props.status === "running",
-		);
-		const single = createMemo(() => {
-			const list = files();
-			if (list.length !== 1) return;
-			return list[0];
-		});
-		const [expanded, setExpanded] = createSignal<string[]>([]);
-		let seeded = false;
-
-		createEffect(() => {
-			const list = files();
-			if (list.length === 0) return;
-			if (seeded) return;
-			seeded = true;
-			setExpanded(
-				list.filter((f) => f.type !== "delete").map((f) => f.filePath),
-			);
-		});
-
-		const subtitle = createMemo(() => {
-			const count = files().length;
-			if (count === 0) return "";
-			return `${count} ${i18n.t(count > 1 ? "ui.common.file.other" : "ui.common.file.one")}`;
-		});
-
-		return (
-			<Show
-				when={single()}
-				fallback={
-					<div data-component="apply-patch-tool">
-						<BasicTool
-							{...props}
-							icon="code-lines"
-							defer
-							trigger={{
-								title: i18n.t("ui.tool.patch"),
-								subtitle: subtitle(),
-							}}
-						>
-							<Show when={files().length > 0}>
-								<Accordion
-									multiple
-									data-scope="apply-patch"
-									style={{ "--sticky-accordion-offset": "40px" }}
-									value={expanded()}
-									onChange={(value) =>
-										setExpanded(
-											Array.isArray(value) ? value : value ? [value] : [],
-										)
-									}
-								>
-									<For each={files()}>
-										{(file) => {
-											const active = createMemo(() =>
-												expanded().includes(file.filePath),
-											);
-											const [visible, setVisible] = createSignal(false);
-
-											createEffect(() => {
-												if (!active()) {
-													setVisible(false);
-													return;
-												}
-
-												requestAnimationFrame(() => {
-													if (!active()) return;
-													setVisible(true);
-												});
-											});
-
-											return (
-												<Accordion.Item
-													value={file.filePath}
-													data-type={file.type}
-												>
-													<StickyAccordionHeader>
-														<Accordion.Trigger>
-															<div data-slot="apply-patch-trigger-content">
-																<div data-slot="apply-patch-file-info">
-																	<FileIcon
-																		node={{
-																			path: file.relativePath,
-																			type: "file",
-																		}}
-																	/>
-																	<div data-slot="apply-patch-file-name-container">
-																		<Show
-																			when={file.relativePath.includes("/")}
-																		>
-																			<span data-slot="apply-patch-directory">{`\u202A${getDirectory(file.relativePath)}\u202C`}</span>
-																		</Show>
-																		<span data-slot="apply-patch-filename">
-																			{getFilename(file.relativePath)}
-																		</span>
-																	</div>
-																</div>
-																<div data-slot="apply-patch-trigger-actions">
-																	<Switch>
-																		<Match when={file.type === "add"}>
-																			<span
-																				data-slot="apply-patch-change"
-																				data-type="added"
-																			>
-																				{i18n.t("ui.patch.action.created")}
-																			</span>
-																		</Match>
-																		<Match when={file.type === "delete"}>
-																			<span
-																				data-slot="apply-patch-change"
-																				data-type="removed"
-																			>
-																				{i18n.t("ui.patch.action.deleted")}
-																			</span>
-																		</Match>
-																		<Match when={file.type === "move"}>
-																			<span
-																				data-slot="apply-patch-change"
-																				data-type="modified"
-																			>
-																				{i18n.t("ui.patch.action.moved")}
-																			</span>
-																		</Match>
-																		<Match when={true}>
-																			<DiffChanges
-																				changes={{
-																					additions: file.additions,
-																					deletions: file.deletions,
-																				}}
-																			/>
-																		</Match>
-																	</Switch>
-																	<Icon
-																		name="chevron-grabber-vertical"
-																		size="small"
-																	/>
-																</div>
-															</div>
-														</Accordion.Trigger>
-													</StickyAccordionHeader>
-													<Accordion.Content>
-														<Show when={visible()}>
-															<div data-component="apply-patch-file-diff">
-																<Dynamic
-																	component={fileComponent}
-																	mode="diff"
-																	before={{
-																		name: file.filePath,
-																		contents: file.before,
-																	}}
-																	after={{
-																		name: file.movePath ?? file.filePath,
-																		contents: file.after,
-																	}}
-																/>
-															</div>
-														</Show>
-													</Accordion.Content>
-												</Accordion.Item>
-											);
-										}}
-									</For>
-								</Accordion>
-							</Show>
-						</BasicTool>
-					</div>
-				}
-			>
-				<div data-component="apply-patch-tool">
-					<BasicTool
-						{...props}
-						icon="code-lines"
-						defer
-						trigger={
-							<div data-component="edit-trigger">
-								<div data-slot="message-part-title-area">
-									<div data-slot="message-part-title">
-										<span data-slot="message-part-title-text">
-											<TextShimmer
-												text={i18n.t("ui.tool.patch")}
-												active={pending()}
-											/>
-										</span>
-										<Show when={!pending()}>
-											<span data-slot="message-part-title-filename">
-												{getFilename(single()?.relativePath)}
-											</span>
-										</Show>
-									</div>
-									<Show
-										when={!pending() && single()?.relativePath.includes("/")}
-									>
-										<div data-slot="message-part-path">
-											<span data-slot="message-part-directory">
-												{getDirectory(single()?.relativePath)}
-											</span>
-										</div>
-									</Show>
-								</div>
-								<div data-slot="message-part-actions">
-									<Show when={!pending()}>
-										<DiffChanges
-											changes={{
-												additions: single()?.additions,
-												deletions: single()?.deletions,
-											}}
-										/>
-									</Show>
-								</div>
-							</div>
-						}
-					>
-						<ToolFileAccordion
-							path={single()?.relativePath}
-							actions={
-								<Switch>
-									<Match when={single()?.type === "add"}>
-										<span data-slot="apply-patch-change" data-type="added">
-											{i18n.t("ui.patch.action.created")}
-										</span>
-									</Match>
-									<Match when={single()?.type === "delete"}>
-										<span data-slot="apply-patch-change" data-type="removed">
-											{i18n.t("ui.patch.action.deleted")}
-										</span>
-									</Match>
-									<Match when={single()?.type === "move"}>
-										<span data-slot="apply-patch-change" data-type="modified">
-											{i18n.t("ui.patch.action.moved")}
-										</span>
-									</Match>
-									<Match when={true}>
-										<DiffChanges
-											changes={{
-												additions: single()?.additions,
-												deletions: single()?.deletions,
-											}}
-										/>
-									</Match>
-								</Switch>
-							}
-						>
-							<div data-component="apply-patch-file-diff">
-								<Dynamic
-									component={fileComponent}
-									mode="diff"
-									before={{
-										name: single()?.filePath,
-										contents: single()?.before,
-									}}
-									after={{
-										name: single()?.movePath ?? single()?.filePath,
-										contents: single()?.after,
-									}}
-								/>
-							</div>
-						</ToolFileAccordion>
-					</BasicTool>
-				</div>
-			</Show>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "todowrite",
-	render(props) {
-		const i18n = useI18n();
-		const todos = createMemo(() => {
-			const meta = props.metadata?.todos;
-			if (Array.isArray(meta)) return meta;
-
-			const input = props.input.todos;
-			if (Array.isArray(input)) return input;
-
-			return [];
-		});
-
-		const subtitle = createMemo(() => {
-			const list = todos();
-			if (list.length === 0) return "";
-			return `${list.filter((t: Todo) => t.status === "completed").length}/${list.length}`;
-		});
-
-		return (
-			<BasicTool
-				{...props}
-				defaultOpen
-				icon="checklist"
-				trigger={{
-					title: i18n.t("ui.tool.todos"),
-					subtitle: subtitle(),
-				}}
-			>
-				<Show when={todos().length}>
-					<div data-component="todos">
-						<For each={todos()}>
-							{(todo: Todo) => (
-								<Checkbox readOnly checked={todo.status === "completed"}>
-									<span
-										data-slot="message-part-todo-content"
-										data-completed={
-											todo.status === "completed" ? "completed" : undefined
-										}
-									>
-										{todo.content}
-									</span>
-								</Checkbox>
-							)}
-						</For>
-					</div>
-				</Show>
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "question",
-	render(props) {
-		const i18n = useI18n();
-		const questions = createMemo(
-			() => (props.input.questions ?? []) as QuestionInfo[],
-		);
-		const answers = createMemo(
-			() => (props.metadata.answers ?? []) as QuestionAnswer[],
-		);
-		const completed = createMemo(() => answers().length > 0);
-
-		const subtitle = createMemo(() => {
-			const count = questions().length;
-			if (count === 0) return "";
-			if (completed())
-				return i18n.t("ui.question.subtitle.answered", { count });
-			return `${count} ${i18n.t(count > 1 ? "ui.common.question.other" : "ui.common.question.one")}`;
-		});
-
-		return (
-			<BasicTool
-				{...props}
-				defaultOpen={completed()}
-				icon="bubble-5"
-				trigger={{
-					title: i18n.t("ui.tool.questions"),
-					subtitle: subtitle(),
-				}}
-			>
-				<Show when={completed()}>
-					<div data-component="question-answers">
-						<For each={questions()}>
-							{(q, i) => {
-								const answer = () => answers()[i()] ?? [];
-								return (
-									<div data-slot="question-answer-item">
-										<div data-slot="question-text">{q.question}</div>
-										<div data-slot="answer-text">
-											{answer().join(", ") || i18n.t("ui.question.answer.none")}
-										</div>
-									</div>
-								);
-							}}
-						</For>
-					</div>
-				</Show>
-			</BasicTool>
-		);
-	},
-});
-
-ToolRegistry.register({
-	name: "skill",
-	render(props) {
-		const i18n = useI18n();
-		const title = createMemo(() => props.input.name || i18n.t("ui.tool.skill"));
-		const running = createMemo(
-			() => props.status === "pending" || props.status === "running",
-		);
-
-		const titleContent = () => (
-			<TextShimmer text={title()} active={running()} />
-		);
-
-		const trigger = () => (
-			<div data-slot="basic-tool-tool-info-structured">
-				<div data-slot="basic-tool-tool-info-main">
-					<span
-						data-slot="basic-tool-tool-title"
-						class="capitalize agent-title"
-					>
-						{titleContent()}
-					</span>
-				</div>
-			</div>
-		);
-
-		return (
-			<BasicTool
-				icon="brain"
-				status={props.status}
-				trigger={trigger()}
-				hideDetails
-			/>
-		);
-	},
-});
+import "./message-tools";

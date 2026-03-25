@@ -238,7 +238,7 @@ function registerAi4all(database: Record<string, Provider.Info>) {
   }
   database.ai4all = {
     id: pid,
-    name: "AI4ALL (Valeo)",
+    name: "AI4ALL",
     env: ["AI4ALL_API_KEY"],
     options: {},
     source: "env",

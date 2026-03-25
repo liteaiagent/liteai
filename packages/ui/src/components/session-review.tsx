@@ -110,10 +110,8 @@ function ReviewCommentMenu(props: {
 	onDelete: VoidFunction;
 }) {
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: Menu wrapper
-		// biome-ignore lint/a11y/useKeyWithClickEvents: Menu wrapper
+		// biome-ignore lint/a11y/noStaticElementInteractions: Catching events to stop propagation
 		<div
-			role="presentation"
 			onMouseDown={(event) => event.stopPropagation()}
 			onClick={(event) => event.stopPropagation()}
 			onKeyDown={(event) => event.stopPropagation()}

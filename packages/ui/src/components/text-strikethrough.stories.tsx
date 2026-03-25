@@ -231,7 +231,7 @@ export const Playground = {
 					"max-width": "700px",
 				}}
 			>
-				<button onClick={toggle} style={btn(active())}>
+				<button type="button" onClick={toggle} style={btn(active())}>
 					{active() ? "Undo strikethrough" : "Strike through all"}
 				</button>
 

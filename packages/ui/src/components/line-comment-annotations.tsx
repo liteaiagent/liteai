@@ -158,18 +158,20 @@ export function createLineCommentAnnotationRenderer<T>(props: {
 							/>
 						}
 					>
-						<LineCommentEditor
-							inline
-							id={view().id}
-							value={view().editor?.value}
-							selection={view().editor?.selection}
-							onInput={view().editor?.onInput}
-							onCancel={view().editor?.onCancel}
-							onSubmit={view().editor?.onSubmit}
-							onPopoverFocusOut={view().editor?.onPopoverFocusOut}
-							cancelLabel={view().editor?.cancelLabel}
-							submitLabel={view().editor?.submitLabel}
-						/>
+						{(editor) => (
+							<LineCommentEditor
+								inline
+								id={view().id}
+								value={editor().value}
+								selection={editor().selection}
+								onInput={editor().onInput}
+								onCancel={editor().onCancel}
+								onSubmit={editor().onSubmit}
+								onPopoverFocusOut={editor().onPopoverFocusOut}
+								cancelLabel={editor().cancelLabel}
+								submitLabel={editor().submitLabel}
+							/>
+						)}
 					</Show>
 				);
 			}

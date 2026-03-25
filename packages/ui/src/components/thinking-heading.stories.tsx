@@ -388,10 +388,10 @@ function AnimatedHeading(props) {
 	const width = () => state.width;
 	const ready = () => state.ready;
 	const swapping = () => state.swapping;
-	let enterRef;
-	let leaveRef;
-	let containerRef;
-	let frame;
+	let enterRef: HTMLSpanElement | undefined;
+	let leaveRef: HTMLSpanElement | undefined;
+	let containerRef: HTMLSpanElement | undefined;
+	let frame: number | undefined;
 
 	const measureEnter = () => enterRef?.scrollWidth ?? 0;
 	const measureLeave = () => leaveRef?.scrollWidth ?? 0;
@@ -594,7 +594,7 @@ export const Playground = {
 		const maskHeight = () => state.maskHeight;
 		const debug = () => state.debug;
 		const odoBlur = () => state.odoBlur;
-		let cycleTimer;
+		let cycleTimer: ReturnType<typeof setTimeout> | undefined;
 
 		const nextHeading = () => {
 			const next = (headingIndex() + 1) % HEADINGS.length;
@@ -843,31 +843,38 @@ export const Playground = {
 				{/* ── Controls ─────────────────────────────────────── */}
 				<div style={{ display: "grid", gap: "12px" }}>
 					<div style={{ display: "flex", gap: "8px", "flex-wrap": "wrap" }}>
-						<button onClick={toggleCycling} style={btn(cycling())}>
+						<button
+							type="button"
+							onClick={toggleCycling}
+							style={btn(cycling())}
+						>
 							{cycling() ? "Stop sim" : "Simulate jitter"}
 						</button>
-						<button onClick={prevHeading} style={btn()}>
+						<button type="button" onClick={prevHeading} style={btn()}>
 							Prev
 						</button>
-						<button onClick={nextHeading} style={btn()}>
+						<button type="button" onClick={nextHeading} style={btn()}>
 							Next
 						</button>
-						<button onClick={clearHeading} style={btn()}>
+						<button type="button" onClick={clearHeading} style={btn()}>
 							Clear
 						</button>
 						<button
+							type="button"
 							onClick={() => setState("active", (value) => !value)}
 							style={smallBtn(active())}
 						>
 							{active() ? "Shimmer: on" : "Shimmer: off"}
 						</button>
 						<button
+							type="button"
 							onClick={() => setState("debug", (value) => !value)}
 							style={smallBtn(debug())}
 						>
 							{debug() ? "Debug mask: on" : "Debug mask"}
 						</button>
 						<button
+							type="button"
 							onClick={() => setState("odoBlur", (value) => !value)}
 							style={smallBtn(odoBlur())}
 						>
@@ -878,6 +885,7 @@ export const Playground = {
 					<div style={{ display: "flex", gap: "6px", "flex-wrap": "wrap" }}>
 						{HEADINGS.map((h, i) => (
 							<button
+								type="button"
 								onClick={() => {
 									setState("headingIndex", i);
 									setState("heading", h);
