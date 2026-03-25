@@ -559,6 +559,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       batch(() => {
         for (const p of db) {
           if (!p.worktree) continue
+          if (p.time?.archived) continue
           if (local.has(workspaceKey(p.worktree))) continue
           server.projects.open(p.worktree)
         }

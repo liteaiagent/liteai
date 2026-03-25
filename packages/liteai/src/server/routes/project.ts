@@ -113,5 +113,53 @@ export const ProjectRoutes = lazy(() =>
         const project = await Project.update({ ...body, projectID })
         return c.json(project)
       },
+    )
+    .patch(
+      "/:projectID/archive",
+      describeRoute({
+        summary: "Archive project",
+        description: "Archive a project to hide it from the project list. Data and sessions are preserved.",
+        operationId: "project.archive",
+        responses: {
+          200: {
+            description: "Archived project information",
+            content: {
+              "application/json": {
+                schema: resolver(Project.Info),
+              },
+            },
+          },
+          ...errors(404),
+        },
+      }),
+      validator("param", z.object({ projectID: ProjectID.zod })),
+      async (c) => {
+        const project = await Project.setArchived({ projectID: c.req.valid("param").projectID, time: Date.now() })
+        return c.json(project)
+      },
+    )
+    .patch(
+      "/:projectID/unarchive",
+      describeRoute({
+        summary: "Unarchive project",
+        description: "Restore an archived project so it appears in the project list again.",
+        operationId: "project.unarchive",
+        responses: {
+          200: {
+            description: "Unarchived project information",
+            content: {
+              "application/json": {
+                schema: resolver(Project.Info),
+              },
+            },
+          },
+          ...errors(404),
+        },
+      }),
+      validator("param", z.object({ projectID: ProjectID.zod })),
+      async (c) => {
+        const project = await Project.setArchived({ projectID: c.req.valid("param").projectID, time: undefined })
+        return c.json(project)
+      },
     ),
 )

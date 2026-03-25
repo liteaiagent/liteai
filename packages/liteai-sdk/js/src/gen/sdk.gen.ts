@@ -539,6 +539,44 @@ export class Project extends HeyApiClient {
       },
     })
   }
+
+  /**
+   * Archive project
+   *
+   * Archive a project to hide it from the project list. Data and sessions are preserved.
+   */
+  public archive<ThrowOnError extends boolean = false>(
+    parameters: {
+      projectID: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "projectID" }] }])
+    return (options?.client ?? this.client).patch<ProjectUpdateResponses, ProjectUpdateErrors, ThrowOnError>({
+      url: "/project/{projectID}/archive",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Unarchive project
+   *
+   * Restore an archived project so it appears in the project list again.
+   */
+  public unarchive<ThrowOnError extends boolean = false>(
+    parameters: {
+      projectID: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "path", key: "projectID" }] }])
+    return (options?.client ?? this.client).patch<ProjectUpdateResponses, ProjectUpdateErrors, ThrowOnError>({
+      url: "/project/{projectID}/unarchive",
+      ...options,
+      ...params,
+    })
+  }
 }
 
 export class Pty extends HeyApiClient {
@@ -1428,6 +1466,7 @@ export class Session2 extends HeyApiClient {
       start?: number
       search?: string
       limit?: number
+      archived?: boolean
     },
     options?: Options<never, ThrowOnError>,
   ) {
@@ -1442,6 +1481,7 @@ export class Session2 extends HeyApiClient {
             { in: "query", key: "start" },
             { in: "query", key: "search" },
             { in: "query", key: "limit" },
+            { in: "query", key: "archived" },
           ],
         },
       ],

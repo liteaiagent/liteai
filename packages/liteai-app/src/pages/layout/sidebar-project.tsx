@@ -25,6 +25,7 @@ export type ProjectSidebarContext = {
   navigateToProject: (directory: string) => void
   openSidebar: () => void
   closeProject: (directory: string) => void
+  archiveProject: (directory: string) => void
   showEditProjectDialog: (project: LocalProject) => void
   toggleProjectWorkspaces: (project: LocalProject) => void
   workspacesEnabled: (project: LocalProject) => boolean
@@ -68,6 +69,7 @@ const ProjectTile = (props: {
   toggleProjectWorkspaces: (project: LocalProject) => void
   workspacesEnabled: (project: LocalProject) => boolean
   closeProject: (directory: string) => void
+  archiveProject: (directory: string) => void
   setMenu: (value: boolean) => void
   setOpen: (value: boolean) => void
   setSuppressHover: (value: boolean) => void
@@ -172,7 +174,7 @@ const ProjectTile = (props: {
           <ContextMenu.Item
             data-action="project-close-menu"
             data-project={base64Encode(props.project.worktree)}
-            onSelect={() => props.closeProject(props.project.worktree)}
+            onSelect={() => props.archiveProject(props.project.worktree)}
           >
             <ContextMenu.ItemLabel>{props.language.t("common.close")}</ContextMenu.ItemLabel>
           </ContextMenu.Item>
@@ -350,6 +352,7 @@ export const SortableProject = (props: {
       toggleProjectWorkspaces={props.ctx.toggleProjectWorkspaces}
       workspacesEnabled={props.ctx.workspacesEnabled}
       closeProject={props.ctx.closeProject}
+      archiveProject={props.ctx.archiveProject}
       setMenu={(value) => setState("menu", value)}
       setOpen={(value) => setState("open", value)}
       setSuppressHover={(value) => setState("suppressHover", value)}

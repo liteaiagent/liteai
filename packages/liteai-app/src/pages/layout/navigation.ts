@@ -260,6 +260,32 @@ export function archiveSession(deps: NavigationDeps, session: Session) {
     })
 }
 
+export function restoreSession(deps: NavigationDeps, session: Session) {
+  return deps.globalSDK.client.session
+    .update({
+      directory: session.directory,
+      sessionID: session.id,
+      time: { archived: undefined },
+    })
+    .then(() => {
+      // session.updated SSE will re-add it to the store
+    })
+}
+
+export async function archiveProject(deps: NavigationDeps, directory: string) {
+  const project = deps.layout.projects.list().find((p) => p.worktree === directory)
+  if (!project?.id || project.id === "global") return
+  closeProject(deps, directory)
+  await deps.globalSDK.client.project.archive({ projectID: project.id })
+}
+
+export async function restoreProject(deps: NavigationDeps, directory: string) {
+  const project = deps.globalSync.data.project.find((p) => p.worktree === directory)
+  if (!project?.id || project.id === "global") return
+  await deps.globalSDK.client.project.unarchive({ projectID: project.id })
+  openProject(deps, directory)
+}
+
 export function deleteSession(deps: NavigationDeps, session: Session) {
   const [store, setStore] = deps.globalSync.child(session.directory)
   const sessions = store.session ?? []

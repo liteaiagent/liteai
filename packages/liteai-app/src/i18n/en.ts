@@ -520,6 +520,7 @@ export const dict = {
   "home.empty.description": "Get started by opening a local project",
 
   "session.tab.session": "Session",
+  "session.untitled": "Untitled session",
   "session.tab.review": "Review",
   "session.tab.context": "Context",
   "session.panel.reviewAndFiles": "Review and files",
@@ -639,6 +640,8 @@ export const dict = {
   "common.rename": "Rename",
   "common.reset": "Reset",
   "common.archive": "Archive",
+  "common.archived": "Archived",
+  "common.restore": "Restore",
   "common.delete": "Delete",
   "common.close": "Close",
   "common.edit": "Edit",

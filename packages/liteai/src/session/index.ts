@@ -25,7 +25,7 @@ import { Instance } from "../project/instance"
 import { ProjectTable } from "../project/project.sql"
 import { ProjectID } from "../project/schema"
 import type { SQL } from "../storage/db"
-import { and, Database, desc, eq, gte, inArray, isNull, like, lt, NotFoundError } from "../storage/db"
+import { and, Database, desc, eq, gte, inArray, isNotNull, isNull, like, lt, NotFoundError } from "../storage/db"
 import { Log } from "../util/log"
 import { Message } from "./message"
 import { SessionPrompt } from "./prompt"
@@ -544,6 +544,7 @@ export namespace Session {
     start?: number
     search?: string
     limit?: number
+    archived?: boolean
   }) {
     const project = Instance.project
     const conditions = [eq(SessionTable.project_id, project.id)]
@@ -562,6 +563,11 @@ export namespace Session {
     }
     if (input?.search) {
       conditions.push(like(SessionTable.title, `%${input.search}%`))
+    }
+    if (!input?.archived) {
+      conditions.push(isNull(SessionTable.time_archived))
+    } else {
+      conditions.push(isNotNull(SessionTable.time_archived))
     }
 
     const limit = input?.limit ?? 100

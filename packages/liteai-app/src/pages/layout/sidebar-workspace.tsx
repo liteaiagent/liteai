@@ -11,8 +11,9 @@ import type { Session } from "@liteai-ai/sdk/client"
 import { createMediaQuery } from "@solid-primitives/media"
 import { useNavigate, useParams } from "@solidjs/router"
 import { createSortable } from "@thisbeyond/solid-dnd"
-import { type Accessor, createEffect, createMemo, For, type JSX, Show } from "solid-js"
+import { type Accessor, createEffect, createMemo, createResource, createSignal, For, type JSX, Show } from "solid-js"
 import { createStore } from "solid-js/store"
+import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import type { LocalProject } from "@/context/layout"
@@ -41,6 +42,7 @@ export type WorkspaceSidebarContext = {
   clearHoverProjectSoon: () => void
   prefetchSession: (session: Session, priority?: "high" | "low") => void
   archiveSession: (session: Session) => Promise<void>
+  restoreSession: (session: Session) => Promise<void>
   deleteSession: (session: Session) => Promise<void>
   renameSession: (session: Session, title: string) => Promise<void>
   workspaceName: (directory: string, projectId?: string, branch?: string) => string | undefined
@@ -452,6 +454,15 @@ export const SortableWorkspace = (props: {
             loadMore={loadMore}
             language={language}
           />
+          <div class="px-2 py-1">
+            <ArchivedSessionsSection
+              slug={slug}
+              directory={props.directory}
+              mobile={props.mobile}
+              ctx={props.ctx}
+              language={language}
+            />
+          </div>
         </Collapsible.Content>
       </Collapsible>
     </div>
@@ -500,6 +511,82 @@ export const LocalWorkspace = (props: {
         loadMore={loadMore}
         language={language}
       />
+      <div class="px-2 py-1">
+        <ArchivedSessionsSection
+          slug={slug}
+          directory={props.project.worktree}
+          mobile={props.mobile}
+          ctx={props.ctx}
+          language={language}
+        />
+      </div>
     </div>
+  )
+}
+
+const ArchivedSessionsSection = (props: {
+  slug: Accessor<string>
+  directory: string
+  mobile?: boolean
+  ctx: WorkspaceSidebarContext
+  language: ReturnType<typeof useLanguage>
+}): JSX.Element => {
+  const globalSDK = useGlobalSDK()
+  const [open, setOpen] = createSignal(false)
+  const [sessions, { refetch }] = createResource(open, (isOpen) => {
+    if (!isOpen) return [] as Session[]
+    return globalSDK.client.session
+      .list({ directory: props.directory, roots: true, archived: true })
+      .then((r) => (r.data ?? []).filter((s) => !!s.time?.archived))
+  })
+
+  return (
+    <Collapsible open={open()} onOpenChange={setOpen} variant="ghost">
+      <Collapsible.Trigger class="flex items-center gap-1 w-full pl-2 py-1.5 rounded-md text-text-weak hover:bg-surface-raised-base-hover transition-colors text-left">
+        <div class="shrink-0 size-4 flex items-center justify-center">
+          <Icon name={open() ? "chevron-down" : "chevron-right"} size="small" />
+        </div>
+        <span class="text-13-regular">{props.language.t("common.archived")}</span>
+        <Show when={sessions()?.length}>
+          <span class="text-12-regular text-text-placeholder ml-1">({sessions()?.length})</span>
+        </Show>
+      </Collapsible.Trigger>
+      <Collapsible.Content>
+        <Show when={sessions.loading}>
+          <SessionSkeleton count={2} />
+        </Show>
+        <For each={sessions() ?? []}>
+          {(session) => (
+            <div class="group/archived relative w-full rounded-md px-2 py-1 transition-colors hover:bg-surface-raised-base-hover">
+              <div class="flex items-center justify-between gap-2 min-w-0">
+                <span class="text-13-regular text-text-placeholder grow min-w-0 truncate">
+                  {session.title || props.language.t("session.untitled")}
+                </span>
+                <DropdownMenu modal={false}>
+                  <DropdownMenu.Trigger
+                    as={IconButton}
+                    icon="dot-grid"
+                    variant="ghost"
+                    class="size-5 rounded-md opacity-0 group-hover/archived:opacity-100 shrink-0"
+                    aria-label={props.language.t("common.moreOptions")}
+                    onClick={(e: MouseEvent) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                  />
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content>
+                      <DropdownMenu.Item onSelect={() => void props.ctx.restoreSession(session).then(() => refetch())}>
+                        <DropdownMenu.ItemLabel>{props.language.t("common.restore")}</DropdownMenu.ItemLabel>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu>
+              </div>
+            </div>
+          )}
+        </For>
+      </Collapsible.Content>
+    </Collapsible>
   )
 }

@@ -58,6 +58,7 @@ export namespace Project {
         created: z.number(),
         updated: z.number(),
         initialized: z.number().optional(),
+        archived: z.number().optional(),
       }),
       sandboxes: z.array(z.string()),
     })
@@ -87,6 +88,7 @@ export namespace Project {
         created: row.time_created,
         updated: row.time_updated,
         initialized: row.time_initialized ?? undefined,
+        archived: row.time_archived ?? undefined,
       },
       sandboxes: row.sandboxes,
       commands: row.commands ?? undefined,
@@ -404,6 +406,32 @@ export namespace Project {
       )
       if (!result) throw new Error(`Project not found: ${input.projectID}`)
       const data = fromRow(result)
+      GlobalBus.emit("event", {
+        payload: {
+          type: Event.Updated.type,
+          properties: data,
+        },
+      })
+      return data
+    },
+  )
+
+  export const setArchived = fn(
+    z.object({
+      projectID: ProjectID.zod,
+      time: z.number().optional(),
+    }),
+    async (input) => {
+      const row = Database.use((db) =>
+        db
+          .update(ProjectTable)
+          .set({ time_archived: input.time ?? null })
+          .where(eq(ProjectTable.id, input.projectID))
+          .returning()
+          .get(),
+      )
+      if (!row) throw new Error(`Project not found: ${input.projectID}`)
+      const data = fromRow(row)
       GlobalBus.emit("event", {
         payload: {
           type: Event.Updated.type,

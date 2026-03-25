@@ -38,6 +38,7 @@ export type Project = {
     created: number
     updated: number
     initialized?: number
+    archived?: number
   }
   sandboxes: Array<string>
 }
