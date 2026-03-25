@@ -288,39 +288,61 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           break
         }
         case "message.part.updated": {
-          const parts = store.part[event.properties.part.messageID]
+          const p = event.properties.part
+          Log.Default.info("[tui:sync] message.part.updated", {
+            id: p.id,
+            type: p.type,
+            messageID: p.messageID,
+            text: p.type === "text" ? (p as { text?: string }).text?.slice(0, 80) : undefined,
+            state: p.type === "tool" ? (p as { state?: { status?: string } }).state?.status : undefined,
+          })
+          const parts = store.part[p.messageID]
           if (!parts) {
-            setStore("part", event.properties.part.messageID, [event.properties.part])
+            setStore("part", p.messageID, [p])
             break
           }
-          const result = Binary.search(parts, event.properties.part.id, (p) => p.id)
+          const result = Binary.search(parts, p.id, (x) => x.id)
           if (result.found) {
-            setStore("part", event.properties.part.messageID, result.index, reconcile(event.properties.part))
+            setStore("part", p.messageID, result.index, reconcile(p))
             break
           }
           setStore(
             "part",
-            event.properties.part.messageID,
+            p.messageID,
             produce((draft) => {
-              draft.splice(result.index, 0, event.properties.part)
+              draft.splice(result.index, 0, p)
             }),
           )
           break
         }
 
         case "message.part.delta": {
-          const parts = store.part[event.properties.messageID]
-          if (!parts) break
-          const result = Binary.search(parts, event.properties.partID, (p) => p.id)
-          if (!result.found) break
+          const { messageID, partID, field, delta } = event.properties
+          Log.Default.info("[tui:sync] message.part.delta", {
+            messageID,
+            partID,
+            field,
+            deltaLen: delta?.length,
+            delta: delta?.slice(0, 40),
+          })
+          const parts = store.part[messageID]
+          if (!parts) {
+            Log.Default.warn("[tui:sync] message.part.delta: no parts array for messageID", { messageID })
+            break
+          }
+          const result = Binary.search(parts, partID, (p) => p.id)
+          if (!result.found) {
+            Log.Default.warn("[tui:sync] message.part.delta: partID not found", { partID, available: parts.map((x) => x.id) })
+            break
+          }
           setStore(
             "part",
-            event.properties.messageID,
+            messageID,
             produce((draft) => {
               const part = draft[result.index]
-              const field = event.properties.field as keyof typeof part
-              const existing = part[field] as string | undefined
-              ;(part[field] as string) = (existing ?? "") + event.properties.delta
+              const f = field as keyof typeof part
+              const existing = part[f] as string | undefined
+              ;(part[f] as string) = (existing ?? "") + delta
             }),
           )
           break
@@ -481,6 +503,20 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.session.todo({ sessionID }),
             sdk.client.session.diff({ sessionID }),
           ])
+          const msgs = messages.data ?? []
+          Log.Default.info("[tui:sync] session.sync loaded messages", {
+            sessionID,
+            count: msgs.length,
+            messages: msgs.map((x) => ({
+              id: x.info.id,
+              role: x.info.role,
+              parts: x.parts.map((p) => ({
+                id: p.id,
+                type: p.type,
+                text: p.type === "text" ? (p as { text?: string }).text?.slice(0, 60) : undefined,
+              })),
+            })),
+          })
           setStore(
             produce((draft) => {
               const match = Binary.search(draft.session, sessionID, (s) => s.id)
@@ -490,7 +526,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
                 if (!match.found) draft.session.splice(match.index, 0, data)
               }
               draft.todo[sessionID] = todo.data ?? []
-              const msgs = messages.data ?? []
               draft.message[sessionID] = msgs.map((x) => x.info)
               for (const message of msgs) {
                 draft.part[message.info.id] = message.parts
@@ -500,6 +535,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           )
           fullSyncedSessions.add(sessionID)
         },
+
       },
       workspace: {
         get(workspaceID: string) {

@@ -503,6 +503,24 @@ function App() {
       },
     },
     {
+      title: "Reload plugins",
+      value: "plugins.reload",
+      category: "Agent",
+      slash: { name: "reload-plugins" },
+      onSelect: (d) => {
+        d.replace(() => (
+          <box flexDirection="column" gap={1} padding={1}>
+            <text attributes={TextAttributes.BOLD} fg={theme.success}>
+              ✓ Plugins reloaded
+            </text>
+            <text fg={theme.textMuted}>All plugin directories have been re-scanned.</text>
+            <text fg={theme.textMuted}>Press Escape to close.</text>
+          </box>
+        ))
+        sdk.client.instance.dispose({})
+      },
+    },
+    {
       title: "Agent cycle",
       value: "agent.cycle",
       keybind: "agent_cycle",

@@ -1,14 +1,7 @@
 import { Button } from "@liteai/ui/button"
 import { Switch } from "@liteai/ui/switch"
 import { useParams } from "@solidjs/router"
-import {
-  type Component,
-  createMemo,
-  createResource,
-  createSignal,
-  For,
-  Show,
-} from "solid-js"
+import { type Component, createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
@@ -177,7 +170,11 @@ const SettingsPluginsInner: Component = () => {
         <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
           <div class="flex items-center gap-3">
             <Show when={activeView() !== "list"}>
-              <button type="button" class="text-text-weak hover:text-text-strong text-sm" onClick={() => setView("list")}>
+              <button
+                type="button"
+                class="text-text-weak hover:text-text-strong text-sm"
+                onClick={() => setView("list")}
+              >
                 ← Back
               </button>
             </Show>
@@ -364,7 +361,7 @@ const SettingsPluginsInner: Component = () => {
                             variant={isInstalled() ? "secondary" : "primary"}
                             size="small"
                             disabled={isLoading() || isInstalled()}
-                            onClick={() => installPlugin(currentMarketplace()!, plugin.name)}
+                            onClick={() => installPlugin(currentMarketplace() ?? "", plugin.name)}
                           >
                             {isLoading() ? "Installing…" : isInstalled() ? "Installed" : "Install"}
                           </Button>
@@ -495,7 +492,7 @@ const SettingsPluginsInner: Component = () => {
                         variant={isInstalled() ? "secondary" : "primary"}
                         size="small"
                         disabled={isLoading() || isInstalled()}
-                        onClick={() => installPlugin(currentMarketplace()!, plugin.name)}
+                        onClick={() => installPlugin(currentMarketplace() ?? "", plugin.name)}
                       >
                         {isLoading() ? "Installing…" : isInstalled() ? "Installed" : "Install"}
                       </Button>

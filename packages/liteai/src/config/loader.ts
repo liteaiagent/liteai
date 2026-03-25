@@ -67,6 +67,14 @@ function mergeConfigConcatArrays(target: Info, source: Info): Info {
 // All recognized config file basenames, ordered by priority (later wins).
 const CONFIG_FILES = [`${Brand.config}.json`, `${Brand.config}.jsonc`]
 
+export type PluginSkill = {
+  name: string
+  description: string
+  location: string
+  content: string
+  [key: string]: unknown
+}
+
 export const state = Instance.state(async () => {
   const auth = await Auth.all()
 
@@ -169,6 +177,7 @@ export const state = Instance.state(async () => {
   result.agent = mergeDeep(await loadExternalAgents(), result.agent)
 
   // Load plugins from --plugin-dir (LITEAI_PLUGIN_DIR env var)
+  const pluginSkills: PluginSkill[] = []
   const pluginDirs = Flag.LITEAI_PLUGIN_DIR
   if (pluginDirs?.length) {
     log.info("scanning for plugins from --plugin-dir", { dirs: pluginDirs })
@@ -178,6 +187,7 @@ export const state = Instance.state(async () => {
     if (plugins.length) {
       const mounted = mountAll(plugins)
       result = applyPlugins(result, mounted)
+      pluginSkills.push(...mounted.skills)
       log.info("mounted plugins from --plugin-dir", { count: plugins.length, names: plugins.map((p) => p.name) })
     }
   }
@@ -198,6 +208,7 @@ export const state = Instance.state(async () => {
       if (plugins.length) {
         const mounted = mountAll(plugins)
         result = applyPlugins(result, mounted)
+        pluginSkills.push(...mounted.skills)
         log.info("mounted registered plugins", { count: plugins.length, names: plugins.map((p) => p.name) })
       }
     }
@@ -278,6 +289,7 @@ export const state = Instance.state(async () => {
   return {
     config: result,
     directories,
+    pluginSkills,
   }
 })
 
@@ -642,4 +654,8 @@ export async function updateGlobal(config: Info) {
 
 export async function directories() {
   return state().then((x) => x.directories)
+}
+
+export async function pluginSkills() {
+  return state().then((x) => x.pluginSkills)
 }

@@ -63,4 +63,7 @@ export namespace Config {
   export function directories() {
     return Loader.directories()
   }
+  export function pluginSkills() {
+    return Loader.pluginSkills()
+  }
 }

@@ -66,6 +66,9 @@ function ReasoningPartView(props: { last: boolean; part: ReasoningPart; message:
 function TextPartView(props: { last: boolean; part: TextPart; message: AssistantMessage }) {
   const ctx = use()
   const { theme, syntax } = useTheme()
+  console.error(
+    `[tui:text] TextPartView id=${props.part.id} text=${JSON.stringify(props.part.text?.slice(0, 80))} trimLen=${props.part.text?.trim().length}`,
+  )
   return (
     <Show when={props.part.text.trim()}>
       <box id={`text-${props.part.id}`} paddingLeft={3} marginTop={1} flexShrink={0}>

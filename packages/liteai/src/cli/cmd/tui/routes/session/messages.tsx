@@ -4,7 +4,7 @@ import { useKeybind } from "@tui/context/keybind"
 import { useLocal } from "@tui/context/local"
 import { useSync } from "@tui/context/sync"
 import { selectedForeground, useTheme } from "@tui/context/theme"
-import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
+import { createEffect, createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { Locale } from "@/util/locale"
 import { use } from "./ctx"
@@ -114,6 +114,19 @@ export function AssistantMessage(props: { message: AssistantMessageInfo; parts: 
   const { theme } = useTheme()
   const sync = useSync()
   const messages = createMemo(() => sync.data.message[props.message.sessionID] ?? [])
+
+  createEffect(() => {
+    const parts = props.parts
+    console.error(
+      `[tui:msg] AssistantMessage ${props.message.id} parts=${parts.length}`,
+      parts.map((x) => ({
+        id: x.id,
+        type: x.type,
+        text: x.type === "text" ? (x as { text?: string }).text?.slice(0, 60) : undefined,
+        hasMapping: !!(PART_MAPPING as Record<string, unknown>)[x.type],
+      })),
+    )
+  })
 
   const final = createMemo(() => {
     return props.message.finish && !["tool-calls", "unknown"].includes(props.message.finish)

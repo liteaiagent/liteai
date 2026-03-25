@@ -9,9 +9,9 @@ import { SettingsGeneral } from "./settings-general"
 import { SettingsKeybinds } from "./settings-keybinds"
 import { SettingsMcp } from "./settings-mcp"
 import { SettingsModels } from "./settings-models"
+import { SettingsPlugins } from "./settings-plugins"
 import { SettingsProviders } from "./settings-providers"
 import { SettingsSkills } from "./settings-skills"
-import { SettingsPlugins } from "./settings-plugins"
 
 export const DialogSettings: Component<{ tab?: string }> = (props) => {
   const language = useLanguage()

@@ -150,7 +150,8 @@ export namespace Skill {
     }
 
     // Scan <Brand.dir>/skill/ directories (e.g. .liteai/skill/)
-    for (const dir of await Config.directories()) {
+    const cfgDirs = [...new Set(await Config.directories())]
+    for (const dir of cfgDirs) {
       log.info("scanning for skills", { dir })
       const matches = await Glob.scan(CONFIG_SKILL_PATTERN, {
         cwd: dir,
@@ -224,23 +225,13 @@ export namespace Skill {
       }
     }
 
-    // Load plugin skills (from --plugin-dir / LITEAI_PLUGIN_DIR)
-    // Plugin skills are namespaced (plugin-name:skill-name) so collisions are unlikely,
-    // but user/project skills still take precedence on name collision.
-    if (Flag.LITEAI_PLUGIN_DIR?.length) {
-      log.info("scanning for plugin skills", { dirs: Flag.LITEAI_PLUGIN_DIR })
-      const { load: loadPlugin } = await import("@/plugin/loader")
-      const plugins = (await Promise.all(Flag.LITEAI_PLUGIN_DIR.map(loadPlugin))).filter(
-        (p): p is NonNullable<typeof p> => !!p,
-      )
-      for (const plugin of plugins) {
-        for (const skill of plugin.skills) {
-          if (!skills[skill.name]) {
-            log.info("loaded plugin skill", { plugin: plugin.name, name: skill.name, path: skill.location })
-            dirs.add(path.dirname(skill.location))
-            skills[skill.name] = skill
-          }
-        }
+    // Load plugin skills — collected by loader.ts from both --plugin-dir and registry plugins
+    // (same loading path as agents, hooks, commands, and mcp)
+    for (const skill of await Config.pluginSkills()) {
+      if (!skills[skill.name]) {
+        log.info("loaded plugin skill", { name: skill.name, path: skill.location })
+        dirs.add(path.dirname(skill.location))
+        skills[skill.name] = skill as Skill.Info
       }
     }
 

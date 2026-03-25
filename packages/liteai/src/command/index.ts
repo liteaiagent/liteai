@@ -59,7 +59,6 @@ export namespace Command {
     INIT: "init",
     REVIEW: "review",
     HOOKS: "hooks",
-    RELOAD_PLUGINS: "reload-plugins",
     PLUGIN: "plugin",
     /** @internal Mutable: set by command processing before /plugin template access. */
     _pluginArgs: undefined as string | undefined,
@@ -339,41 +338,16 @@ export namespace Command {
         },
         hints: [],
       },
-      [Default.RELOAD_PLUGINS]: Object.defineProperties(
-        {
-          name: Default.RELOAD_PLUGINS,
-          description: "reload all plugin directories",
-          source: "command" as const,
-          hints: [] as string[],
+      [Default.PLUGIN]: {
+        name: Default.PLUGIN,
+        description:
+          "manage plugins — use: list, install <path-or-name[@marketplace]>, uninstall, enable, disable, update, marketplace <add|remove|update|list>",
+        source: "skill" as const,
+        hints: ["$ARGUMENTS"],
+        get template() {
+          return pluginCommand(Default._pluginArgs ?? "list")
         },
-        {
-          template: {
-            get() {
-              return Instance.dispose().then(
-                () => "Plugins reloaded. All plugin directories have been re-scanned and registrations refreshed.",
-              )
-            },
-            enumerable: false,
-          },
-        },
-      ) as Info,
-      [Default.PLUGIN]: Object.defineProperties(
-        {
-          name: Default.PLUGIN,
-          description:
-            "manage plugins — use: list, install <path-or-name[@marketplace]>, uninstall, enable, disable, update, marketplace <add|remove|update|list>",
-          source: "skill" as const,
-          hints: ["$ARGUMENTS"],
-        },
-        {
-          template: {
-            get() {
-              return pluginCommand(Default._pluginArgs ?? "list")
-            },
-            enumerable: false,
-          },
-        },
-      ) as Info,
+      } as Info,
     }
 
     for (const [name, command] of Object.entries(cfg.command ?? {})) {

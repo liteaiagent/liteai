@@ -92,16 +92,17 @@ export type Result = {
   hookOutput?: Record<string, unknown>
 }
 
-/** Load hooks from merged config. */
+/** Load hooks from merged config + registry-installed plugins. */
 async function load(): Promise<Schema> {
   const cfg = await Config.get()
   if (cfg.disableAllHooks) return {}
-  const hooks = (cfg.hooks as Schema) ?? {}
-  const events = Object.keys(hooks)
+  const merged: Schema = { ...((cfg.hooks as Schema) ?? {}) }
+  const events = Object.keys(merged)
   if (events.length) {
-    log.info("loaded hooks from config", { events, groups: events.map((e) => hooks[e].length) })
+    log.info("loaded hooks from config", { events, groups: events.map((e) => merged[e].length) })
   }
-  return hooks
+
+  return merged
 }
 
 /** Load hooks for a specific agent (from agent frontmatter). */

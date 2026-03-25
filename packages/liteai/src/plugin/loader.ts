@@ -32,10 +32,17 @@ export const Loaded = z.object({
 })
 export type Loaded = z.infer<typeof Loaded>
 
+/** Returns true if a directory basename looks like a version tag (e.g. "latest", "1.2.3"). */
+function isVersion(s: string) {
+  return s === "latest" || /^\d+\.\d+/.test(s)
+}
+
 /**
  * Load a plugin from a directory.
  * Returns `undefined` if the directory does not exist.
- * Plugin name = directory basename.
+ * Plugin name = directory basename, unless the basename is a version tag, in
+ * which case the parent directory name is used (registry cache layout:
+ * …/cache/<marketplace>/<name>/<version>/).
  */
 export async function load(root: string): Promise<Loaded | undefined> {
   const resolved = path.resolve(root)
@@ -45,7 +52,8 @@ export async function load(root: string): Promise<Loaded | undefined> {
     return undefined
   }
 
-  const name = path.basename(resolved)
+  const base = path.basename(resolved)
+  const name = isVersion(base) ? path.basename(path.dirname(resolved)) : base
   log.info("loading plugin", { name, root: resolved })
 
   const [commands, agents, skills, hooks, mcp] = await Promise.all([
