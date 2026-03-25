@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Button } from "./button"
+import { Button } from "./button";
 
 const docs = `### Overview
 Primary action button with size, variant, and optional icon support.
@@ -25,84 +25,84 @@ Use \`IconButton\` for icon-only actions.
 ### Theming/tokens
 - Uses \`data-component="button"\` with size/variant data attributes.
 
-`
+`;
 
 export default {
-  title: "UI/Button",
-  id: "components-button",
-  component: Button,
-  tags: ["autodocs"],
-  parameters: {
-    docs: {
-      description: {
-        component: docs,
-      },
-    },
-  },
-  args: {
-    children: "Button",
-    variant: "secondary",
-    size: "normal",
-  },
-  argTypes: {
-    variant: {
-      control: "select",
-      options: ["primary", "secondary", "ghost"],
-    },
-    size: {
-      control: "select",
-      options: ["small", "normal", "large"],
-    },
-    icon: {
-      control: "select",
-      options: ["none", "check", "plus", "arrow-right"],
-      mapping: {
-        none: undefined,
-      },
-    },
-  },
-}
+	title: "UI/Button",
+	id: "components-button",
+	component: Button,
+	tags: ["autodocs"],
+	parameters: {
+		docs: {
+			description: {
+				component: docs,
+			},
+		},
+	},
+	args: {
+		children: "Button",
+		variant: "secondary",
+		size: "normal",
+	},
+	argTypes: {
+		variant: {
+			control: "select",
+			options: ["primary", "secondary", "ghost"],
+		},
+		size: {
+			control: "select",
+			options: ["small", "normal", "large"],
+		},
+		icon: {
+			control: "select",
+			options: ["none", "check", "plus", "arrow-right"],
+			mapping: {
+				none: undefined,
+			},
+		},
+	},
+};
 
 export const Primary = {
-  args: {
-    variant: "primary",
-  },
-}
+	args: {
+		variant: "primary",
+	},
+};
 
-export const Secondary = {}
+export const Secondary = {};
 
 export const Ghost = {
-  args: {
-    variant: "ghost",
-  },
-}
+	args: {
+		variant: "ghost",
+	},
+};
 
 export const WithIcon = {
-  args: {
-    children: "Continue",
-    icon: "arrow-right",
-  },
-}
+	args: {
+		children: "Continue",
+		icon: "arrow-right",
+	},
+};
 
 export const Disabled = {
-  args: {
-    variant: "primary",
-    disabled: true,
-  },
-}
+	args: {
+		variant: "primary",
+		disabled: true,
+	},
+};
 
 export const Sizes = {
-  render: () => (
-    <div style={{ display: "flex", gap: "12px", "align-items": "center" }}>
-      <Button size="small" variant="secondary">
-        Small
-      </Button>
-      <Button size="normal" variant="secondary">
-        Normal
-      </Button>
-      <Button size="large" variant="secondary">
-        Large
-      </Button>
-    </div>
-  ),
-}
+	render: () => (
+		<div style={{ display: "flex", gap: "12px", "align-items": "center" }}>
+			<Button size="small" variant="secondary">
+				Small
+			</Button>
+			<Button size="normal" variant="secondary">
+				Normal
+			</Button>
+			<Button size="large" variant="secondary">
+				Large
+			</Button>
+		</div>
+	),
+};

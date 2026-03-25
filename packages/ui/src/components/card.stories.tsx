@@ -1,6 +1,7 @@
 // @ts-nocheck
-import { Card, CardActions, CardDescription, CardTitle } from "./card"
-import { Button } from "./button"
+
+import { Button } from "./button";
+import { Card, CardActions, CardDescription, CardTitle } from "./card";
 
 const docs = `### Overview
 Surface container for grouping related content and actions.
@@ -23,66 +24,69 @@ Pair with \`Button\` or \`Tag\` for quick actions.
 ### Theming/tokens
 - Uses \`data-component="card"\` with variant data attributes.
 
-`
+`;
 
 export default {
-  title: "UI/Card",
-  id: "components-card",
-  component: Card,
-  tags: ["autodocs"],
-  parameters: {
-    docs: {
-      description: {
-        component: docs,
-      },
-    },
-  },
-  args: {
-    variant: "normal",
-  },
-  argTypes: {
-    variant: {
-      control: "select",
-      options: ["normal", "error", "warning", "success", "info"],
-    },
-  },
-  render: (props: { variant?: "normal" | "error" | "warning" | "success" | "info" }) => {
-    return (
-      <Card variant={props.variant}>
-        <CardTitle variant={props.variant}>Card title</CardTitle>
-        <CardDescription>Small supporting text.</CardDescription>
-        <CardActions>
-          <Button size="small" variant="secondary">
-            Action
-          </Button>
-        </CardActions>
-      </Card>
-    )
-  },
-}
+	title: "UI/Card",
+	id: "components-card",
+	component: Card,
+	tags: ["autodocs"],
+	parameters: {
+		docs: {
+			description: {
+				component: docs,
+			},
+		},
+	},
+	args: {
+		variant: "normal",
+	},
+	argTypes: {
+		variant: {
+			control: "select",
+			options: ["normal", "error", "warning", "success", "info"],
+		},
+	},
+	render: (props: {
+		variant?: "normal" | "error" | "warning" | "success" | "info";
+	}) => {
+		return (
+			<Card variant={props.variant}>
+				<CardTitle variant={props.variant}>Card title</CardTitle>
+				<CardDescription>Small supporting text.</CardDescription>
+				<CardActions>
+					<Button size="small" variant="secondary">
+						Action
+					</Button>
+				</CardActions>
+			</Card>
+		);
+	},
+};
 
-export const Normal = {}
+export const Normal = {};
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: stories name
 export const Error = {
-  args: {
-    variant: "error",
-  },
-}
+	args: {
+		variant: "error",
+	},
+};
 
 export const Warning = {
-  args: {
-    variant: "warning",
-  },
-}
+	args: {
+		variant: "warning",
+	},
+};
 
 export const Success = {
-  args: {
-    variant: "success",
-  },
-}
+	args: {
+		variant: "success",
+	},
+};
 
 export const Info = {
-  args: {
-    variant: "info",
-  },
-}
+	args: {
+		variant: "info",
+	},
+};

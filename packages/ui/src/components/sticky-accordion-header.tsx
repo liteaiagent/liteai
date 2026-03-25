@@ -1,18 +1,21 @@
-import { Accordion } from "./accordion"
-import { ParentProps } from "solid-js"
+import type { ParentProps } from "solid-js";
+import { Accordion } from "./accordion";
 
 export function StickyAccordionHeader(
-  props: ParentProps<{ class?: string; classList?: Record<string, boolean | undefined> }>,
+	props: ParentProps<{
+		class?: string;
+		classList?: Record<string, boolean | undefined>;
+	}>,
 ) {
-  return (
-    <Accordion.Header
-      data-component="sticky-accordion-header"
-      classList={{
-        ...(props.classList ?? {}),
-        [props.class ?? ""]: !!props.class,
-      }}
-    >
-      {props.children}
-    </Accordion.Header>
-  )
+	return (
+		<Accordion.Header
+			data-component="sticky-accordion-header"
+			classList={{
+				...(props.classList ?? {}),
+				[props.class ?? ""]: !!props.class,
+			}}
+		>
+			{props.children}
+		</Accordion.Header>
+	);
 }

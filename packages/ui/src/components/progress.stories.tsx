@@ -1,6 +1,7 @@
 // @ts-nocheck
-import * as mod from "./progress"
-import { create } from "../storybook/scaffold"
+
+import { create } from "../storybook/scaffold";
+import * as mod from "./progress";
 
 const docs = `### Overview
 Linear progress indicator with optional label and value display.
@@ -24,44 +25,44 @@ Use in forms, uploads, or background tasks.
 ### Theming/tokens
 - Uses \`data-component="progress"\` with track/fill slots.
 
-`
+`;
 
 const story = create({
-  title: "UI/Progress",
-  mod,
-  args: {
-    value: 60,
-    maxValue: 100,
-    children: "Progress",
-    showValueLabel: true,
-  },
-})
+	title: "UI/Progress",
+	mod,
+	args: {
+		value: 60,
+		maxValue: 100,
+		children: "Progress",
+		showValueLabel: true,
+	},
+});
 
 export default {
-  title: "UI/Progress",
-  id: "components-progress",
-  component: story.meta.component,
-  tags: ["autodocs"],
-  parameters: {
-    docs: {
-      description: {
-        component: docs,
-      },
-    },
-  },
-}
+	title: "UI/Progress",
+	id: "components-progress",
+	component: story.meta.component,
+	tags: ["autodocs"],
+	parameters: {
+		docs: {
+			description: {
+				component: docs,
+			},
+		},
+	},
+};
 
-export const Basic = story.Basic
+export const Basic = story.Basic;
 
 export const NoLabel = {
-  args: {
-    children: "",
-    hideLabel: true,
-    showValueLabel: false,
-    value: 30,
-  },
-}
+	args: {
+		children: "",
+		hideLabel: true,
+		showValueLabel: false,
+		value: 30,
+	},
+};
 
 export const Indeterminate = {
-  render: () => <mod.Progress>Loading</mod.Progress>,
-}
+	render: () => <mod.Progress>Loading</mod.Progress>,
+};

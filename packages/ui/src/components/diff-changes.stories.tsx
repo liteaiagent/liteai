@@ -1,7 +1,8 @@
 // @ts-nocheck
-import * as mod from "./diff-changes"
-import { create } from "../storybook/scaffold"
-import { changes } from "../storybook/fixtures"
+
+import { changes } from "../storybook/fixtures";
+import { create } from "../storybook/scaffold";
+import * as mod from "./diff-changes";
 
 const docs = `### Overview
 Summarize additions/deletions as text or compact bars.
@@ -25,57 +26,57 @@ Pair with \`Diff\`/\`DiffSSR\` to contextualize a change set.
 ### Theming/tokens
 - Uses \`data-component="diff-changes"\` and diff color tokens.
 
-`
+`;
 
 const story = create({
-  title: "UI/DiffChanges",
-  mod,
-  args: {
-    changes,
-    variant: "default",
-  },
-})
+	title: "UI/DiffChanges",
+	mod,
+	args: {
+		changes,
+		variant: "default",
+	},
+});
 
 export default {
-  title: "UI/DiffChanges",
-  id: "components-diff-changes",
-  component: story.meta.component,
-  tags: ["autodocs"],
-  parameters: {
-    docs: {
-      description: {
-        component: docs,
-      },
-    },
-  },
-  argTypes: {
-    variant: {
-      control: "select",
-      options: ["default", "bars"],
-    },
-  },
-}
+	title: "UI/DiffChanges",
+	id: "components-diff-changes",
+	component: story.meta.component,
+	tags: ["autodocs"],
+	parameters: {
+		docs: {
+			description: {
+				component: docs,
+			},
+		},
+	},
+	argTypes: {
+		variant: {
+			control: "select",
+			options: ["default", "bars"],
+		},
+	},
+};
 
-export const Default = story.Basic
+export const Default = story.Basic;
 
 export const Bars = {
-  args: {
-    variant: "bars",
-  },
-}
+	args: {
+		variant: "bars",
+	},
+};
 
 export const MultipleFiles = {
-  args: {
-    changes: [
-      { additions: 4, deletions: 1 },
-      { additions: 8, deletions: 3 },
-      { additions: 2, deletions: 0 },
-    ],
-  },
-}
+	args: {
+		changes: [
+			{ additions: 4, deletions: 1 },
+			{ additions: 8, deletions: 3 },
+			{ additions: 2, deletions: 0 },
+		],
+	},
+};
 
 export const Zero = {
-  args: {
-    changes: { additions: 0, deletions: 0 },
-  },
-}
+	args: {
+		changes: { additions: 0, deletions: 0 },
+	},
+};

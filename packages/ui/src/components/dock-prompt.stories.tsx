@@ -1,6 +1,7 @@
 // @ts-nocheck
-import * as mod from "./dock-prompt"
-import { create } from "../storybook/scaffold"
+
+import { create } from "../storybook/scaffold";
+import * as mod from "./dock-prompt";
 
 const docs = `### Overview
 Docked prompt layout for questions and permission requests.
@@ -23,40 +24,40 @@ Use with form controls or confirmation buttons in the footer.
 ### Theming/tokens
 - Uses \`data-component="dock-prompt"\` with kind data attribute.
 
-`
+`;
 
 const story = create({
-  title: "UI/DockPrompt",
-  mod,
-  args: {
-    kind: "question",
-    header: "Header",
-    children: "Prompt content",
-    footer: "Footer",
-  },
-})
+	title: "UI/DockPrompt",
+	mod,
+	args: {
+		kind: "question",
+		header: "Header",
+		children: "Prompt content",
+		footer: "Footer",
+	},
+});
 
 export default {
-  title: "UI/DockPrompt",
-  id: "components-dock-prompt",
-  component: story.meta.component,
-  tags: ["autodocs"],
-  parameters: {
-    docs: {
-      description: {
-        component: docs,
-      },
-    },
-  },
-}
+	title: "UI/DockPrompt",
+	id: "components-dock-prompt",
+	component: story.meta.component,
+	tags: ["autodocs"],
+	parameters: {
+		docs: {
+			description: {
+				component: docs,
+			},
+		},
+	},
+};
 
-export const Basic = story.Basic
+export const Basic = story.Basic;
 
 export const Permission = {
-  args: {
-    kind: "permission",
-    header: "Allow access?",
-    children: "This action needs permission to proceed.",
-    footer: "Approve or deny",
-  },
-}
+	args: {
+		kind: "permission",
+		header: "Allow access?",
+		children: "This action needs permission to proceed.",
+		footer: "Approve or deny",
+	},
+};
