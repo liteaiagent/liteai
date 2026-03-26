@@ -18,6 +18,7 @@ const log = Log.create({ service: "hook.command" })
  */
 export async function command(opts: { command: string; input: Input; timeout: number; cwd: string }): Promise<Result> {
   const expanded = expand(opts.command, opts.cwd)
+  log.info("spawn", { original: opts.command, expanded, cwd: opts.cwd, timeout: opts.timeout })
 
   return new Promise<Result>((resolve) => {
     let stdout = ""
@@ -29,29 +30,38 @@ export async function command(opts: { command: string; input: Input; timeout: nu
       done = true
       clearTimeout(timer)
 
+      log.info("exit", {
+        code,
+        stdoutLen: stdout.length,
+        stderrLen: stderr.length,
+        stdout: stdout.slice(0, 200) || undefined,
+        stderr: stderr.slice(0, 200) || undefined,
+      })
+
       const structured = tryJson(stdout)
 
-      // Check for structured JSON output first
       if (structured) {
+        log.info("structured output", { proceed: structured.proceed, decision: structured.decision })
         return resolve(structured)
       }
 
       if (code === 0) {
+        log.info("result proceed", { hasContext: !!(stdout.trim()) })
         return resolve({
           proceed: true,
           context: stdout.trim() || undefined,
         })
       }
       if (code === 2) {
+        log.info("result blocked", { feedback: stderr.trim().slice(0, 100) })
         return resolve({
           proceed: false,
           feedback: stderr.trim() || "Hook blocked the action",
           decision: "deny",
         })
       }
-      // Any other exit code: proceed but log
       if (stderr.trim()) {
-        log.warn("hook non-zero exit", { code, stderr: stderr.slice(0, 200) })
+        log.warn("non-zero exit", { code, stderr: stderr.slice(0, 200) })
       }
       return resolve({ proceed: true })
     }
@@ -69,16 +79,22 @@ export async function command(opts: { command: string; input: Input; timeout: nu
       timeout: opts.timeout,
     })
 
+    log.info("spawned", { pid: proc.pid })
+
     proc.stdout?.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString()
+      const text = chunk.toString()
+      log.info("stdout chunk", { len: text.length, preview: text.slice(0, 100) })
+      stdout += text
     })
     proc.stderr?.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString()
+      const text = chunk.toString()
+      log.info("stderr chunk", { len: text.length, preview: text.slice(0, 100) })
+      stderr += text
     })
 
     proc.on("close", finish)
     proc.on("error", (err) => {
-      log.error("hook spawn error", { error: err.message, command: expanded })
+      log.error("spawn error", { error: err.message, command: expanded })
       if (!done) {
         done = true
         clearTimeout(timer)
@@ -86,8 +102,8 @@ export async function command(opts: { command: string; input: Input; timeout: nu
       }
     })
 
-    // Write input JSON to stdin
     const json = JSON.stringify(opts.input)
+    log.info("stdin write", { bytes: json.length })
     proc.stdin?.write(json, () => {
       proc.stdin?.end()
     })
@@ -95,7 +111,7 @@ export async function command(opts: { command: string; input: Input; timeout: nu
     const timer = setTimeout(() => {
       if (!done) {
         done = true
-        log.warn("hook timed out", { command: expanded, timeout: opts.timeout })
+        log.warn("timed out", { command: expanded, timeout: opts.timeout })
         proc.kill("SIGTERM")
         resolve({ proceed: true })
       }

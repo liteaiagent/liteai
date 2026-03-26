@@ -149,7 +149,18 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
   const hooks = await load()
   const groups = [...(hooks[event] ?? []), ...(opts?.extra?.[event] ?? [])]
 
-  if (groups.length === 0) return { proceed: true }
+  log.info("dispatch", {
+    event,
+    groups: groups.length,
+    tool: ctx.tool_name,
+    source: ctx.source,
+    session: ctx.session_id,
+  })
+
+  if (groups.length === 0) {
+    log.info("dispatch skip — no groups", { event })
+    return { proceed: true }
+  }
 
   const value = ctx.tool_name ?? ctx.source
   let proceed = true
@@ -159,14 +170,32 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
   let hookOutput: Record<string, unknown> | undefined
   const invocations: NonNullable<Result["invocations"]> = []
 
-  for (const group of groups) {
-    if (!matches(group.matcher, value)) continue
+  for (const [gi, group] of groups.entries()) {
+    if (!matches(group.matcher, value)) {
+      log.info("dispatch group skip — matcher miss", { event, gi, matcher: group.matcher, value })
+      continue
+    }
 
-    for (const handler of group.hooks) {
+    log.info("dispatch group match", { event, gi, matcher: group.matcher ?? "*", handlers: group.hooks.length })
+
+    for (const [hi, handler] of group.hooks.entries()) {
+      log.info("handler start", { event, gi, hi, type: handler.type, command: handler.command, url: handler.url })
       const input = { ...ctx, hook_event_name: event }
       try {
         const result = await run(handler, input)
-        if (!result) continue
+        if (!result) {
+          log.info("handler skip — no result", { event, gi, hi, type: handler.type })
+          continue
+        }
+
+        log.info("handler done", {
+          event, gi, hi, type: handler.type,
+          proceed: result.proceed,
+          decision: result.decision,
+          hasContext: !!result.context,
+          contextLen: result.context?.length,
+          hasOutput: !!result.hookOutput,
+        })
 
         invocations.push({
           event,
@@ -179,6 +208,7 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
           proceed = false
           feedback = result.feedback ?? feedback
           decision = result.decision ?? decision
+          log.info("handler blocked", { event, gi, hi, feedback, decision })
         }
         if (result.context) {
           context = context ? `${context}\n${result.context}` : result.context
@@ -190,10 +220,19 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
           decision = result.decision
         }
       } catch (err) {
-        log.error("hook execution failed", { event, type: handler.type, error: err })
+        log.error("handler error", { event, gi, hi, type: handler.type, error: err })
       }
     }
   }
+
+  log.info("dispatch result", {
+    event,
+    proceed,
+    decision,
+    invocations: invocations.length,
+    hasContext: !!context,
+    hasFeedback: !!feedback,
+  })
 
   if (ctx.session_id && invocations.length > 0) {
     Trace.addHooks(
@@ -216,7 +255,11 @@ async function run(handler: Handler, input: Input): Promise<Result | undefined> 
 
   switch (handler.type) {
     case "command": {
-      if (!handler.command) return undefined
+      if (!handler.command) {
+        log.warn("command handler missing command field")
+        return undefined
+      }
+      log.info("command hook run", { command: handler.command, timeout, cwd: input.cwd })
       return exec({
         command: handler.command,
         input,
@@ -225,7 +268,11 @@ async function run(handler: Handler, input: Input): Promise<Result | undefined> 
       })
     }
     case "http": {
-      if (!handler.url) return undefined
+      if (!handler.url) {
+        log.warn("http handler missing url field")
+        return undefined
+      }
+      log.info("http hook run", { url: handler.url, timeout })
       return http({
         url: handler.url,
         input,
@@ -235,15 +282,18 @@ async function run(handler: Handler, input: Input): Promise<Result | undefined> 
       })
     }
     case "prompt": {
-      // For prompt hooks, we return the prompt text as context
-      // Full prompt-based hook evaluation (model call) is Phase 5+ / deferred
-      if (!handler.prompt) return undefined
+      if (!handler.prompt) {
+        log.warn("prompt handler missing prompt field")
+        return undefined
+      }
       log.info("prompt hook (passthrough)", { prompt: handler.prompt.slice(0, 80) })
       return { proceed: true, context: handler.prompt }
     }
     case "agent": {
-      // Agent hooks delegate to sub-agent — deferred until agent hook infrastructure is wired
-      if (!handler.prompt) return undefined
+      if (!handler.prompt) {
+        log.warn("agent handler missing prompt field")
+        return undefined
+      }
       log.info("agent hook (passthrough)", { prompt: handler.prompt.slice(0, 80) })
       return { proceed: true, context: handler.prompt }
     }

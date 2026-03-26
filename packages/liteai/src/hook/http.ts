@@ -30,6 +30,8 @@ export async function http(opts: {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), opts.timeout)
 
+    log.info("request", { url: opts.url, timeout: opts.timeout })
+
     const response = await fetch(opts.url, {
       method: "POST",
       headers,
@@ -40,12 +42,16 @@ export async function http(opts: {
     clearTimeout(timer)
 
     if (!response.ok) {
-      log.warn("hook http non-2xx", { url: opts.url, status: response.status })
+      log.warn("non-2xx", { url: opts.url, status: response.status })
       return { proceed: true }
     }
 
     const text = await response.text()
-    if (!text.trim()) return { proceed: true }
+    log.info("response", { status: response.status, bodyLen: text.length })
+    if (!text.trim()) {
+      log.info("result proceed (empty body)")
+      return { proceed: true }
+    }
 
     // Try JSON
     try {
@@ -71,11 +77,13 @@ export async function http(opts: {
           result.decision = "deny"
         }
 
+        log.info("result structured", { proceed: result.proceed, decision: result.decision })
         return result
       }
 
       // Top-level decision
       if (parsed.decision === "block") {
+        log.info("result blocked")
         return {
           proceed: false,
           decision: "deny",
@@ -84,6 +92,7 @@ export async function http(opts: {
       }
 
       if (parsed.continue === false) {
+        log.info("result stopped", { reason: parsed.stopReason ?? parsed.reason })
         return {
           proceed: false,
           feedback: parsed.stopReason ?? parsed.reason,
@@ -91,16 +100,18 @@ export async function http(opts: {
       }
 
       if (parsed.additionalContext) {
+        log.info("result proceed with context", { contextLen: parsed.additionalContext.length })
         return { proceed: true, context: parsed.additionalContext }
       }
 
+      log.info("result proceed (json, no action)")
       return { proceed: true, context: text.trim() }
     } catch {
-      // Plain text response
+      log.info("result proceed (plain text)", { len: text.length })
       return { proceed: true, context: text.trim() }
     }
   } catch (err) {
-    log.warn("hook http error", { url: opts.url, error: err instanceof Error ? err.message : String(err) })
+    log.warn("request error", { url: opts.url, error: err instanceof Error ? err.message : String(err) })
     return { proceed: true }
   }
 }

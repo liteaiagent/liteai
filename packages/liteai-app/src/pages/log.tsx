@@ -49,6 +49,7 @@ function balanced(str: string, pos: number): string | undefined {
 /** Parse key=value pairs from a log line remainder, handling nested JSON bodies. */
 function parseKV(str: string): { extra: Record<string, string>; remaining: string } {
   const extra: Record<string, string> = {}
+  const parts: string[] = []
   let pos = 0
 
   while (pos < str.length) {
@@ -56,7 +57,14 @@ function parseKV(str: string): { extra: Record<string, string>; remaining: strin
     if (pos >= str.length) break
 
     const eqMatch = str.slice(pos).match(/^(\w+)=/)
-    if (!eqMatch) break
+    if (!eqMatch) {
+      // Not a key=value — accumulate text until next potential key= or end
+      const nextKey = str.slice(pos).match(/\s\w+=/)
+      const end = nextKey ? pos + nextKey.index! + 1 : str.length
+      parts.push(str.slice(pos, end).trim())
+      pos = end
+      continue
+    }
 
     const key = eqMatch[1]
     const valStart = pos + eqMatch[0].length
@@ -108,7 +116,7 @@ function parseKV(str: string): { extra: Record<string, string>; remaining: strin
     }
   }
 
-  return { extra, remaining: str.slice(pos).trim() }
+  return { extra, remaining: parts.join(" ").trim() }
 }
 
 function parse(lines: string[]): LogEntry[] {
