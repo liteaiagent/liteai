@@ -28,7 +28,9 @@ export const TraceTable = sqliteTable(
     tools_hash: text(),
     messages_json: text({ mode: "json" }).$type<unknown[]>(),
     context_ids: text({ mode: "json" }).notNull().$type<string[]>(),
-    hooks_json: text({ mode: "json" }).$type<{ event: string; type: string; config?: Record<string, unknown>; context?: string }[]>(),
+    hooks_json: text({ mode: "json" }).$type<
+      { event: string; type: string; config?: Record<string, unknown>; context?: string }[]
+    >(),
     time_start: integer().notNull(),
     time_end: integer(),
     error: text(),

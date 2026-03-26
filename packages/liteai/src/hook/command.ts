@@ -105,9 +105,18 @@ export async function command(opts: { command: string; input: Input; timeout: nu
 
 /** Expand environment variables in command strings. */
 function expand(cmd: string, cwd: string): string {
-  return cmd
+  let expanded = cmd
     .replace(/\$LITEAI_PROJECT_DIR|\$CLAUDE_PROJECT_DIR/g, cwd)
     .replace(/\$\{LITEAI_PROJECT_DIR\}|\$\{CLAUDE_PROJECT_DIR\}/g, cwd)
+
+  // Expand standard bash-style env vars
+  expanded = expanded.replace(/\$\{([^}]+)\}/g, (match, name) => {
+    return process.env[name] !== undefined ? process.env[name] : match
+  })
+  expanded = expanded.replace(/\$([a-zA-Z_][a-zA-Z0-9_]*)/g, (match, name) => {
+    return process.env[name] !== undefined ? process.env[name] : match
+  })
+  return expanded
 }
 
 /** Try to parse stdout as structured JSON hook output. */
@@ -120,7 +129,7 @@ function tryJson(stdout: string): Result | undefined {
     // Check for hookSpecificOutput
     if (parsed.hookSpecificOutput) {
       const specific = parsed.hookSpecificOutput
-      const result: Result = { proceed: true, hookOutput: specific }
+      const result: Result = { proceed: true, hookOutput: specific, context: specific.additionalContext ?? specific.additional_context }
 
       // PreToolUse permission decisions
       if (specific.permissionDecision === "deny") {
@@ -162,10 +171,11 @@ function tryJson(stdout: string): Result | undefined {
     }
 
     // If it has additionalContext
-    if (parsed.additionalContext) {
+    const context = parsed.additionalContext ?? parsed.additional_context
+    if (context) {
       return {
         proceed: true,
-        context: parsed.additionalContext,
+        context: context,
       }
     }
 

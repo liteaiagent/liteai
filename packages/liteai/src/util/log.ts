@@ -43,9 +43,31 @@ export namespace Log {
   export const Default = create({ service: "default" })
 
   // channels list:
-  // "agent", "bus", "config", "file", "format", "lsp", "mcp", "permission",
-  // "plugin", "project", "provider", "server", "session", "skill"
-  export const CHANNELS = ["agent", "bus", "http", "permission", "server", "session"] as const
+  // "agent", "bus", "config", "file", "format",
+  // "hook", "http", "lsp", "mcp", "permission",
+  // "plugin", "project", "provider", "server", "session",
+  // "skill", "acp-agent", "acp-command", "acp-session-manager", "bash-tool",
+  // "bun", "db", "event", "ide", "installation", "patch", "pty",
+  // "question", "ripgrep", "share-next", "snapshot", "state",
+  // "storage", "trace", "vcs", "worktree", "workspace-sync"
+  export const CHANNELS = [
+    "agent",
+    "bus",
+    "config",
+    "file",
+    "format",
+    "hook",
+    "http",
+    "lsp",
+    "mcp",
+    "permission",
+    "plugin",
+    "project",
+    "provider",
+    "server",
+    "session",
+    "skill",
+  ] as const
 
   export interface Options {
     print: boolean

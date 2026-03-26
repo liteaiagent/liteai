@@ -20,7 +20,9 @@ import { Config } from "../config/config"
 import { WorkspaceID } from "../control-plane/schema"
 import { WorkspaceContext } from "../control-plane/workspace-context"
 import { Flag } from "../flag/flag"
+import { Hook } from "../hook"
 import { Installation } from "../installation"
+import { Plugin } from "../plugin"
 import { Instance } from "../project/instance"
 import { ProjectTable } from "../project/project.sql"
 import { ProjectID } from "../project/schema"
@@ -333,6 +335,40 @@ export namespace Session {
     Bus.publish(Event.Updated, {
       info: result,
     })
+    const defAgentName = await import("../agent/agent").then((m) => m.Agent.defaultAgent())
+    const defAgent = await import("../agent/agent").then((m) => m.Agent.get(defAgentName))
+    const model = defAgent.model ? `${defAgent.model.providerID}/${defAgent.model.modelID}` : "unknown"
+
+    const sessionHook = await Hook.dispatch("SessionStart", {
+      session_id: result.id,
+      cwd: result.directory,
+      hook_event_name: "SessionStart",
+      source: input.parentID ? "resume" : "startup",
+      model: model,
+      agent_type: defAgentName,
+    })
+
+    if (sessionHook.context) {
+      const messageID = MessageID.ascending()
+      await updateMessage({
+        id: messageID,
+        sessionID: result.id,
+        role: "user",
+        time: { created: Date.now() },
+        agent: defAgentName,
+        model: defAgent.model ?? { providerID: "unknown" as ProviderID, modelID: "unknown" as ModelID },
+      } as import("./message").Message.User)
+      await updatePart({
+        id: PartID.ascending(),
+        sessionID: result.id,
+        messageID,
+        type: "text",
+        text: sessionHook.context,
+        synthetic: true,
+      })
+    }
+
+    await Plugin.trigger("session.start", { sessionID: result.id }, {})
     return result
   }
 

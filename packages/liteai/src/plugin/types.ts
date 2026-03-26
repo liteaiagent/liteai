@@ -212,6 +212,7 @@ export interface Hooks {
     input: { sessionID: string },
     output: { context: string[]; prompt?: string },
   ) => Promise<void>
+  "session.start"?: (input: { sessionID: string }, output: Record<string, never>) => Promise<void>
   "experimental.text.complete"?: (
     input: { sessionID: string; messageID: string; partID: string },
     output: { text: string },

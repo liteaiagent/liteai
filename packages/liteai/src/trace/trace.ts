@@ -36,7 +36,7 @@ export namespace Trace {
     event: z.string(),
     type: z.string(),
     config: z.record(z.string(), z.unknown()).optional(),
-    context: z.string().optional()
+    context: z.string().optional(),
   })
 
   export const Detail = Info.extend({

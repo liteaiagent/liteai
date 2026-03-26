@@ -60,7 +60,7 @@ export async function load(root: string): Promise<Loaded | undefined> {
     loadCommands(resolved, name),
     loadAgents(resolved, name),
     loadSkills(resolved, name),
-    loadHooks(resolved),
+    loadHooks(resolved, name),
     loadMcp(resolved, name),
   ])
 
@@ -202,7 +202,7 @@ async function loadSkills(root: string, plugin: string) {
 // Hooks
 // -------------------------------------------------------------------
 
-async function loadHooks(root: string): Promise<HookSchema | undefined> {
+async function loadHooks(root: string, plugin: string): Promise<HookSchema | undefined> {
   const matches = await Glob.scan("hooks/hooks.json", { cwd: root, absolute: true, dot: true, symlink: true })
   for (const match of matches) {
     try {
@@ -213,9 +213,11 @@ async function loadHooks(root: string): Promise<HookSchema | undefined> {
       // Fall back to treating the whole object as the schema.
       const schema =
         obj.hooks && typeof obj.hooks === "object" && !Array.isArray(obj.hooks)
-          ? (obj.hooks as HookSchema)
-          : (obj as HookSchema)
-      return schema
+          ? obj.hooks
+          : obj
+      
+      const expanded = expandDeep(schema, root, plugin)
+      return expanded as HookSchema
     } catch (err) {
       log.warn("failed to read plugin hooks", { path: match, err })
     }
