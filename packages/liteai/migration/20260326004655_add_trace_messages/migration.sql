@@ -1,0 +1,1 @@
+ALTER TABLE `trace` ADD `messages_json` text;

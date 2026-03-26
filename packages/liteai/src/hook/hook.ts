@@ -1,5 +1,6 @@
 import z from "zod"
 import { Config } from "@/config/config"
+import { Trace } from "@/trace/trace"
 import { Log } from "@/util/log"
 import { command as exec } from "./command"
 import { http } from "./http"
@@ -90,6 +91,8 @@ export type Result = {
   decision?: "allow" | "deny" | "ask" | "block"
   /** Structured hookSpecificOutput if present. */
   hookOutput?: Record<string, unknown>
+  /** Track invoked handlers for tracing */
+  invocations?: { event: string; type: string; handler: Handler; context?: string }[]
 }
 
 /** Load hooks from merged config + registry-installed plugins. */
@@ -154,6 +157,7 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
   let context: string | undefined
   let decision: Result["decision"]
   let hookOutput: Record<string, unknown> | undefined
+  const invocations: NonNullable<Result["invocations"]> = []
 
   for (const group of groups) {
     if (!matches(group.matcher, value)) continue
@@ -163,6 +167,13 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
       try {
         const result = await run(handler, input)
         if (!result) continue
+
+        invocations.push({
+          event,
+          type: handler.type,
+          handler,
+          context: result.context,
+        })
 
         if (!result.proceed) {
           proceed = false
@@ -184,7 +195,19 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
     }
   }
 
-  return { proceed, feedback, context, decision, hookOutput }
+  if (ctx.session_id && invocations.length > 0) {
+    Trace.addHooks(
+      ctx.session_id as import("@/session/schema").SessionID,
+      invocations.map((i) => ({
+        event: i.event,
+        type: i.type,
+        config: i.handler,
+        context: i.context,
+      })),
+    )
+  }
+
+  return { proceed, feedback, context, decision, hookOutput, invocations }
 }
 
 /** Execute a single hook handler. */

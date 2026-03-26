@@ -32,13 +32,37 @@ export namespace Trace {
 
   export type Info = z.output<typeof Info>
 
+  export const HookInvocation = z.object({
+    event: z.string(),
+    type: z.string(),
+    config: z.record(z.string(), z.unknown()).optional(),
+    context: z.string().optional()
+  })
+
   export const Detail = Info.extend({
     system: z.string().nullable(),
     tools: z.array(z.record(z.string(), z.unknown())).nullable(),
+    hooks: z.array(HookInvocation).nullable(),
+    messages_json: z.array(z.record(z.string(), z.unknown())).nullable().optional(),
     contextIDs: z.array(z.string()),
   }).meta({ ref: "TraceDetail" })
 
   export type Detail = z.output<typeof Detail>
+
+  const _pendingHooks = new Map<SessionID, z.infer<typeof HookInvocation>[]>()
+
+  export function addHooks(sessionID: SessionID, hooks: z.infer<typeof HookInvocation>[]) {
+    if (!hooks || hooks.length === 0) return
+    const current = _pendingHooks.get(sessionID) ?? []
+    current.push(...hooks)
+    _pendingHooks.set(sessionID, current)
+  }
+
+  export function flushHooks(sessionID: SessionID): z.infer<typeof HookInvocation>[] | null {
+    const current = _pendingHooks.get(sessionID)
+    _pendingHooks.delete(sessionID)
+    return current?.length ? current : null
+  }
 
   export async function enabled() {
     const cfg = await Config.get()
@@ -167,6 +191,8 @@ export namespace Trace {
       ...rowToInfo(row),
       system,
       tools: tools as Record<string, unknown>[] | null,
+      hooks: (row.hooks_json ?? null) as z.infer<typeof HookInvocation>[] | null,
+      messages_json: row.messages_json as Record<string, unknown>[] | null,
       contextIDs: row.context_ids,
     }
   }
@@ -189,6 +215,8 @@ export namespace Trace {
         ...rowToInfo(row),
         system,
         tools,
+        hooks: (row.hooks_json ?? null) as z.infer<typeof HookInvocation>[] | null,
+        messages_json: row.messages_json as Record<string, unknown>[] | null,
         contextIDs: row.context_ids,
       })
     }
@@ -227,6 +255,15 @@ export namespace Trace {
         lines.push("")
         lines.push("```json")
         lines.push(JSON.stringify(t.tools, null, 2))
+        lines.push("```")
+        lines.push("")
+      }
+
+      if (t.hooks && t.hooks.length > 0) {
+        lines.push(`### Hooks (${t.hooks.length})`)
+        lines.push("")
+        lines.push("```json")
+        lines.push(JSON.stringify(t.hooks, null, 2))
         lines.push("```")
         lines.push("")
       }

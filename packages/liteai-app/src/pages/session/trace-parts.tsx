@@ -1,7 +1,38 @@
 import { createMemo, createSignal, For, Show } from "solid-js"
+import { Markdown } from "@liteai/ui/markdown"
 import { useSync } from "@/context/sync"
 import { Section } from "./trace-section"
 import type { TraceMessageData, TracePartData } from "./trace-types"
+
+export function SyntheticContent(props: { text: string }) {
+  const [expanded, setExpanded] = createSignal(false)
+  
+  const cleanText = createMemo(() => {
+    let t = props.text.trim()
+    if (t.startsWith("<system-reminder>")) {
+      t = t.replace(/^<system-reminder>\s*/, "").replace(/\s*<\/system-reminder>$/, "")
+    }
+    return t
+  })
+
+  return (
+    <>
+      <div style={{ "margin-bottom": "8px", "margin-top": "8px" }}>
+        <button
+          type="button"
+          class="trace-msg-role trace-msg-role--system"
+          style={{ cursor: "pointer", border: "none", padding: "2px 6px", "font-size": "11px", "letter-spacing": "0.5px" }}
+          onClick={() => setExpanded(!expanded())}
+        >
+          {expanded() ? "▼" : "▶"} SYSTEM INJECTED
+        </button>
+      </div>
+      <Show when={expanded()}>
+        <Markdown text={cleanText()} />
+      </Show>
+    </>
+  )
+}
 
 export function ToolCard(props: { tool: Record<string, unknown> }) {
   const [open, setOpen] = createSignal(false)
@@ -22,6 +53,37 @@ export function ToolCard(props: { tool: Record<string, unknown> }) {
           </Show>
           <Show when={params()}>
             <pre class="trace-code">{JSON.stringify(params(), null, 2)}</pre>
+          </Show>
+        </div>
+      </Show>
+    </div>
+  )
+}
+
+export function HookCard(props: { hook: Record<string, unknown> }) {
+  const [open, setOpen] = createSignal(false)
+  const event = () => (props.hook.event as string) ?? "Unknown"
+  const type = () => (props.hook.type as string) ?? "unknown"
+  const config = () => props.hook.config as Record<string, unknown> | undefined
+  const context = () => props.hook.context as string | undefined
+
+  return (
+    <div class="trace-tool">
+      <button type="button" class="trace-tool-head" onClick={() => setOpen(!open())}>
+        <span>{open() ? "▼" : "▶"}</span>
+        <span class="trace-tool-name">
+          {event()} ({type()})
+        </span>
+      </button>
+      <Show when={open()}>
+        <div class="trace-tool-body">
+          <Show when={config()}>
+            <div class="trace-tool-section-label">Config</div>
+            <pre class="trace-code">{JSON.stringify(config(), null, 2)}</pre>
+          </Show>
+          <Show when={context()}>
+            <div class="trace-tool-section-label">Injected Context</div>
+            <pre class="trace-code">{context()}</pre>
           </Show>
         </div>
       </Show>
@@ -134,18 +196,31 @@ export function OutputParts(props: { messageID: string; messages: TraceMessageDa
   )
 }
 
-export function ContextMessages(props: { ids: string[]; messages: TraceMessageData[] }) {
+export function ContextMessages(props: { ids: string[]; messages: TraceMessageData[]; messages_json?: Record<string, unknown>[] | null }) {
   const sync = useSync()
   const resolved = createMemo(() => {
+    if (props.messages_json && props.messages_json.length > 0) {
+      return props.messages_json.map((m: any) => ({
+        msg: { id: m.info?.id || "", role: m.info?.role },
+        parts: (m.parts ?? []) as TracePartData[],
+      }))
+    }
+
     const map = new Map(props.messages.map((m) => [m.id, m]))
-    return props.ids.map((id) => map.get(id)).filter((m): m is TraceMessageData => !!m)
+    return props.ids.map((id) => {
+      const msg = map.get(id)
+      if (!msg) return null
+      return {
+        msg,
+        parts: (sync.data.part[id] ?? []) as TracePartData[]
+      }
+    }).filter((m): m is NonNullable<typeof m> => !!m)
   })
 
   return (
     <For each={resolved()}>
-      {(msg) => {
+      {({ msg, parts }) => {
         const role = msg.role ?? "unknown"
-        const parts = () => (sync.data.part[msg.id] ?? []) as TracePartData[]
         return (
           <div class="trace-msg">
             <span
@@ -158,11 +233,15 @@ export function ContextMessages(props: { ids: string[]; messages: TraceMessageDa
             >
               {role.toUpperCase()}
             </span>
-            <For each={parts()}>
+            <For each={parts}>
               {(part) => (
                 <>
                   <Show when={part.type === "text" && part.text}>
-                    <div class="trace-msg-text">{part.text}</div>
+                    <div class="trace-msg-text">
+                      <Show when={part.synthetic} fallback={part.text}>
+                        <SyntheticContent text={part.text ?? ""} />
+                      </Show>
+                    </div>
                   </Show>
                   <Show when={part.type === "reasoning" && part.text}>
                     <div class="trace-msg-reasoning">
@@ -208,6 +287,24 @@ export function ContextMessages(props: { ids: string[]; messages: TraceMessageDa
                             : JSON.stringify(part.state?.output, null, 2)}
                         </pre>
                       </Show>
+                    </div>
+                  </Show>
+                  <Show when={part.type === "agent" && !part.synthetic}>
+                    <div class="trace-msg-text">
+                      <div class="trace-tool-section-label" style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;">AGENT DELEGATION</div>
+                      Use {part.name}
+                    </div>
+                  </Show>
+                  <Show when={part.type === "subtask"}>
+                    <div class="trace-msg-text">
+                      <div class="trace-tool-section-label" style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;">SUBTASK RESULT</div>
+                      The following tool was executed by the user
+                    </div>
+                  </Show>
+                  <Show when={part.type === "compaction"}>
+                    <div class="trace-msg-text">
+                      <div class="trace-tool-section-label" style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;">COMPACTION</div>
+                      What did we do so far?
                     </div>
                   </Show>
                 </>

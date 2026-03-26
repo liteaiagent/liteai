@@ -1,0 +1,1 @@
+ALTER TABLE `trace` ADD `hooks_json` text;

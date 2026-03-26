@@ -19,6 +19,8 @@ export type TraceInfo = {
 export type TraceDetail = TraceInfo & {
   system: string | null
   tools: Record<string, unknown>[] | null
+  hooks: Record<string, unknown>[] | null
+  messages_json?: Record<string, unknown>[] | null
   contextIDs: string[]
 }
 
@@ -32,7 +34,11 @@ export type TracePartData = Record<string, unknown> & {
   state?: { title?: string; input?: unknown; output?: unknown }
   reason?: string
   tokens?: { input: number; output: number; reasoning: number }
+  name?: string
+  synthetic?: boolean
 }
+
+
 
 export type TraceMessageData = Record<string, unknown> & {
   id: string

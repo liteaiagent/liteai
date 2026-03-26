@@ -3,7 +3,7 @@ import { Markdown } from "@liteai/ui/markdown"
 import { createMemo, createSignal, For, Show } from "solid-js"
 import { useSync } from "@/context/sync"
 import { fmt, SPAN_COLORS, spanType } from "./trace-helpers"
-import { ContextMessages, OutputParts, ToolCard } from "./trace-parts"
+import { ContextMessages, HookCard, OutputParts, ToolCard } from "./trace-parts"
 import { Section } from "./trace-section"
 import type { TraceDetail, TraceMessageData, TracePartData } from "./trace-types"
 
@@ -232,6 +232,12 @@ export function TraceDetailView(props: {
             </Section>
           </Show>
 
+          <Show when={(props.detail.hooks?.length ?? 0) > 0}>
+            <Section title={`Hooks (${props.detail.hooks?.length})`}>
+              <For each={props.detail.hooks ?? []}>{(hook) => <HookCard hook={hook} />}</For>
+            </Section>
+          </Show>
+
           <Section
             title="Input"
             extra={
@@ -265,7 +271,7 @@ export function TraceDetailView(props: {
                 )
               }}
             </Show>
-            <ContextMessages ids={props.detail.contextIDs} messages={props.messages} />
+            <ContextMessages ids={props.detail.contextIDs} messages={props.messages} messages_json={props.detail.messages_json} />
           </Section>
 
           <OutputParts messageID={props.detail.messageID} messages={props.messages} />
