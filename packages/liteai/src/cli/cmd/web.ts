@@ -1,5 +1,4 @@
 import { networkInterfaces } from "node:os"
-import open from "open"
 import { Flag } from "../../flag/flag"
 import { Instance } from "../../project/instance"
 import { Server } from "../../server/server"
@@ -68,13 +67,9 @@ export const WebCommand = cmd({
           `${opts.mdnsDomain}:${server.port}`,
         )
       }
-
-      // Open localhost in browser
-      open(localhostUrl.toString()).catch(() => {})
     } else {
       const displayUrl = server.url.toString()
       UI.println(`${UI.Style.TEXT_INFO_BOLD}  Web interface:    `, UI.Style.TEXT_NORMAL, displayUrl)
-      open(displayUrl).catch(() => {})
     }
 
     await new Promise<void>((resolve) => {

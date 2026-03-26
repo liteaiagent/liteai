@@ -416,7 +416,11 @@ export namespace File {
       cache = result
       fetching = false
       if (capped) {
-        log.warn("indexing workspace files capped", { files: result.files.length, dirs: result.dirs.length, limit: MAX_FILES })
+        log.warn("indexing workspace files capped", {
+          files: result.files.length,
+          dirs: result.dirs.length,
+          limit: MAX_FILES,
+        })
       } else {
         log.info("indexing workspace files completed", { files: result.files.length, dirs: result.dirs.length })
       }

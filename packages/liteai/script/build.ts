@@ -245,7 +245,7 @@ for (const name of names()) {
         icon: path.resolve(dir, "assets/liteai.ico"),
         title: "LiteAI",
         publisher: "LiteAI",
-        version: Script.version,
+        version: Script.version.split("-")[0],
         description: "LiteAI is an AI-powered development tool",
         copyright: "Copyright (c)",
       },

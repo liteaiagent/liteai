@@ -11,28 +11,6 @@ import { errors } from "../error"
 export const ProjectRoutes = lazy(() =>
   new Hono()
     .get(
-      "/",
-      describeRoute({
-        summary: "List all projects",
-        description: "Get a list of projects that have been opened with LiteAI.",
-        operationId: "project.list",
-        responses: {
-          200: {
-            description: "List of projects",
-            content: {
-              "application/json": {
-                schema: resolver(Project.Info.array()),
-              },
-            },
-          },
-        },
-      }),
-      async (c) => {
-        const projects = await Project.list()
-        return c.json(projects)
-      },
-    )
-    .get(
       "/current",
       describeRoute({
         summary: "Get current project",

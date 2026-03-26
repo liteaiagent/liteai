@@ -26,6 +26,7 @@ import { Installation } from "../installation"
 import { LSP } from "../lsp"
 import { InstanceBootstrap } from "../project/bootstrap"
 import { Instance } from "../project/instance"
+import { Project } from "../project/project"
 import { Vcs } from "../project/vcs"
 import { Provider } from "../provider/provider"
 import { ProviderID } from "../provider/schema"
@@ -195,6 +196,28 @@ export namespace Server {
           return c.json(true)
         },
       )
+      .get(
+        "/project",
+        describeRoute({
+          summary: "List all projects",
+          description: "Get a list of projects that have been opened with LiteAI.",
+          operationId: "project.list",
+          responses: {
+            200: {
+              description: "List of projects",
+              content: {
+                "application/json": {
+                  schema: resolver(Project.Info.array()),
+                },
+              },
+            },
+          },
+        }),
+        async (c) => {
+          return c.json(Project.list())
+        },
+      )
+      .route("/provider", ProviderRoutes())
       .use(async (c, next) => {
         if (c.req.path === "/log") return next()
         const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
@@ -254,7 +277,7 @@ export namespace Server {
       .route("/session", TraceRoutes())
       .route("/permission", PermissionRoutes())
       .route("/question", QuestionRoutes())
-      .route("/provider", ProviderRoutes())
+
       .route("/", FileRoutes())
       .route("/mcp", McpRoutes())
       .route("/plugin", PluginRoutes())

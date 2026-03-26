@@ -484,7 +484,6 @@ export namespace MCP {
         cmd,
         args,
         cwd,
-        PATH: process.env.PATH ?? "(not set)",
         extraEnvKeys: Object.keys(mcp.environment ?? {}),
       })
       const transport = new StdioClientTransport({

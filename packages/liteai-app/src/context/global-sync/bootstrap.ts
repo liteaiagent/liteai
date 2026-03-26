@@ -56,11 +56,6 @@ export async function bootstrapGlobal(input: {
 
   const tasks = [
     retry(() =>
-      input.globalSDK.path.get().then((x) => {
-        if (x.data) input.setGlobalStore("path", x.data)
-      }),
-    ),
-    retry(() =>
       input.globalSDK.global.config.get().then((x) => {
         if (x.data) input.setGlobalStore("config", x.data)
       }),
