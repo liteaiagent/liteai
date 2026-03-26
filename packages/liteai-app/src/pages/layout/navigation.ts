@@ -195,8 +195,10 @@ export function openProject(deps: NavigationDeps, directory: string, nav = true)
 
 export function closeProject(deps: NavigationDeps, directory: string) {
   const list = deps.layout.projects.list()
-  const index = list.findIndex((x) => x.worktree === directory)
-  const active = deps.currentProject()?.worktree === directory
+  const key = workspaceKey(directory)
+  const index = list.findIndex((x) => workspaceKey(x.worktree) === key)
+  const active = workspaceKey(deps.currentProject()?.worktree ?? "") === key
+  console.debug("[project] close", { directory, key, index, active, count: list.length })
   if (index === -1) return
 
   if (!active) {
@@ -205,6 +207,7 @@ export function closeProject(deps: NavigationDeps, directory: string) {
   }
 
   const target = list[index + 1] ?? list[index - 1]
+  console.debug("[project] close active → navigate to", target?.worktree ?? "home")
 
   if (!target) {
     deps.layout.projects.close(directory)
@@ -274,12 +277,14 @@ export function restoreSession(deps: NavigationDeps, session: Session) {
 }
 
 export async function archiveProject(deps: NavigationDeps, directory: string) {
-  const project = deps.layout.projects.list().find((p) => p.worktree === directory)
+  const key = workspaceKey(directory)
+  const project = deps.layout.projects.list().find((p) => workspaceKey(p.worktree) === key)
+  console.debug("[project] archive", { directory, key, found: !!project, id: project?.id })
 
   deps.globalSync.set(
     "project",
     produce((draft) => {
-      const match = draft.find((p) => p.worktree === directory)
+      const match = draft.find((p) => workspaceKey(p.worktree) === key)
       if (match) {
         match.time = { ...(match.time ?? {}), archived: Date.now() }
       }
@@ -294,6 +299,7 @@ export async function archiveProject(deps: NavigationDeps, directory: string) {
 
 export async function restoreProject(deps: NavigationDeps, directory: string) {
   const project = deps.globalSync.data.project.find((p) => p.worktree === directory)
+  console.debug("[project] restore", { directory, id: project?.id })
   if (!project?.id || project.id === "global") return
   await deps.globalSDK.client.project.unarchive({ projectID: project.id })
   openProject(deps, directory)

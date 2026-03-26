@@ -72,6 +72,10 @@ export async function bootstrapGlobal(input: {
           .filter((p) => !!p.worktree && !p.worktree.includes("liteai-test"))
           .slice()
           .sort((a, b) => cmp(a.id, b.id))
+        console.debug("[bootstrap] projects from db", {
+          count: projects.length,
+          archived: projects.filter((p) => p.time?.archived).length,
+        })
         input.setGlobalStore("project", projects)
       }),
     ),

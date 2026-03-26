@@ -343,6 +343,7 @@ export namespace Project {
   }
 
   export function setInitialized(id: ProjectID) {
+    log.info("setInitialized", { id })
     Database.use((db) =>
       db
         .update(ProjectTable)
@@ -355,13 +356,15 @@ export namespace Project {
   }
 
   export function list() {
-    return Database.use((db) =>
+    const result = Database.use((db) =>
       db
         .select()
         .from(ProjectTable)
         .all()
         .map((row) => fromRow(row)),
     )
+    log.info("list", { count: result.length, ids: result.map((p) => p.id).join(",") })
+    return result
   }
 
   export function get(id: ProjectID): Info | undefined {
@@ -393,6 +396,7 @@ export namespace Project {
       commands: Info.shape.commands.optional(),
     }),
     async (input) => {
+      log.info("update", { id: input.projectID, name: input.name })
       const id = ProjectID.make(input.projectID)
       const result = Database.use((db) =>
         db
@@ -426,6 +430,7 @@ export namespace Project {
       time: z.number().optional(),
     }),
     async (input) => {
+      log.info("setArchived", { id: input.projectID, archived: input.time ?? null })
       const row = Database.use((db) =>
         db
           .update(ProjectTable)
@@ -459,6 +464,7 @@ export namespace Project {
   }
 
   export async function addSandbox(id: ProjectID, directory: string) {
+    log.info("addSandbox", { id, directory })
     const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, id)).get())
     if (!row) throw new Error(`Project not found: ${id}`)
     const sandboxes = [...row.sandboxes]
@@ -483,6 +489,7 @@ export namespace Project {
   }
 
   export async function removeSandbox(id: ProjectID, directory: string) {
+    log.info("removeSandbox", { id, directory })
     const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, id)).get())
     if (!row) throw new Error(`Project not found: ${id}`)
     const sandboxes = row.sandboxes.filter((s) => s !== directory)

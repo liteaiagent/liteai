@@ -86,10 +86,9 @@ function createGlobalSync() {
   })
 
   const cacheProjects = () => {
-    setProjectCache(
-      "value",
-      untrack(() => globalStore.project.map(sanitizeProject)),
-    )
+    const sanitized = untrack(() => globalStore.project.map(sanitizeProject))
+    console.debug("[globalSync] cacheProjects", { count: sanitized.length })
+    setProjectCache("value", sanitized)
   }
 
   const setProjects = (next: Project[] | ((draft: Project[]) => void)) => {
@@ -125,6 +124,7 @@ function createGlobalSync() {
       if (projectWritten) return
       const cached = projectCache.value
       if (cached.length === 0) return
+      console.debug("[globalSync] rehydrating from cache", { count: cached.length })
       setGlobalStore("project", cached)
     })
   }

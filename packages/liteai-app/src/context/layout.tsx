@@ -549,19 +549,30 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       }
     })
 
-    // Sync DB projects into the local server.projects list so that opening
-    // the app in a new browser (empty localStorage) still shows all projects.
+    // Sync DB projects into the local server.projects list.
+    // DB is the source of truth: add missing projects and remove stale ones.
     createEffect(() => {
-      const db = globalSync.data.project
-      if (db.length === 0) return
       if (!ready()) return
-      const local = new Set(server.projects.list().map((p) => workspaceKey(p.worktree)))
+      const db = globalSync.data.project
+      const keys = new Set(db.filter((p) => p.worktree && !p.time?.archived).map((p) => workspaceKey(p.worktree)))
+      const local = server.projects.list()
+      console.debug("[layout] db↔localStorage sync", {
+        db: db.length,
+        dbActive: keys.size,
+        local: local.length,
+      })
       batch(() => {
         for (const p of db) {
           if (!p.worktree) continue
           if (p.time?.archived) continue
-          if (local.has(workspaceKey(p.worktree))) continue
+          if (local.some((l) => workspaceKey(l.worktree) === workspaceKey(p.worktree))) continue
+          console.debug("[layout] sync: adding from db", p.worktree)
           server.projects.open(p.worktree)
+        }
+        for (const p of local) {
+          if (keys.has(workspaceKey(p.worktree))) continue
+          console.debug("[layout] sync: removing stale", p.worktree)
+          server.projects.close(p.worktree)
         }
       })
     })
