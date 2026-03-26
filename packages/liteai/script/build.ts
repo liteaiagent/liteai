@@ -242,7 +242,7 @@ for (const name of names()) {
       outfile: `dist/${name}/bin/liteai`,
       execArgv: [`--user-agent=liteai/${Script.version}`, "--use-system-ca", "--"],
       windows: {
-        icon: path.resolve(dir, "../../packages/identity/liteai.ico"),
+        icon: path.resolve(dir, "assets/liteai.ico"),
       },
     },
     entrypoints: ["./src/index.ts", parserWorker, workerPath],

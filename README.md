@@ -1,9 +1,9 @@
 <h1 align="center">
   <a href="https://liteai.ai">
     <picture>
-      <source srcset="packages/identity/mark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="packages/identity/mark-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/identity/mark-light.svg" alt="LiteAI logo" height="40" style="vertical-align: middle; margin-right: 12px; margin-bottom: 4px;">
+      <source srcset=".github/assets/mark.svg" media="(prefers-color-scheme: dark)">
+      <source srcset=".github/assets/mark-light.svg" media="(prefers-color-scheme: light)">
+      <img src=".github/assets/mark-light.svg" alt="LiteAI logo" height="40" style="vertical-align: middle; margin-right: 12px; margin-bottom: 4px;">
     </picture>
   </a>
   LiteAI Agent
@@ -12,7 +12,7 @@
   <a href="https://github.com/liteaiagent/liteai/actions/workflows/ci.yml"><img alt="Build status" src="https://github.com/liteaiagent/liteai/actions/workflows/ci.yml/badge.svg?branch=main" /></a>
 </p>
 
-[![LiteAI Agent](packages/identity/screenshot.png)](https://github.com/liteaiagent/liteai/releases)
+[![LiteAI Agent](.github/assets/screenshot.png)](https://github.com/liteaiagent/liteai/releases)
 
 ---
 
