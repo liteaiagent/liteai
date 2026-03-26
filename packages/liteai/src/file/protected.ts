@@ -56,4 +56,32 @@ export namespace Protected {
     if (process.platform === "win32") return WIN32_HOME.map((n) => path.join(home, n))
     return []
   }
+
+  /**
+   * Returns true if `dir` should never be fully indexed with ripgrep.
+   * Covers: filesystem root, user home, and common system parent dirs.
+   */
+  export function dangerous(dir: string): boolean {
+    const norm = path.resolve(dir)
+    const root = path.parse(norm).root
+    if (norm === root) return true
+    if (norm === path.resolve(home)) return true
+    // parent of home (e.g. C:\Users or /Users or /home)
+    if (norm === path.resolve(path.dirname(home))) return true
+    if (process.platform === "win32") {
+      const lower = norm.toLowerCase()
+      if (lower === path.join(root, "program files").toLowerCase()) return true
+      if (lower === path.join(root, "program files (x86)").toLowerCase()) return true
+      if (lower === path.join(root, "windows").toLowerCase()) return true
+    }
+    if (process.platform === "darwin") {
+      const sys = ["/System", "/Library", "/Applications", "/private"]
+      if (sys.some((s) => norm === path.resolve(s))) return true
+    }
+    if (process.platform === "linux") {
+      const sys = ["/usr", "/etc", "/var", "/opt", "/proc", "/sys", "/boot", "/dev", "/run", "/srv"]
+      if (sys.some((s) => norm === path.resolve(s))) return true
+    }
+    return false
+  }
 }

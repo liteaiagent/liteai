@@ -308,7 +308,7 @@ export namespace File {
 
   async function shouldEncode(mimeType: string): Promise<boolean> {
     const type = mimeType.toLowerCase()
-    log.info("shouldEncode", { type })
+    log.debug("shouldEncode", { type })
     if (!type) return false
 
     if (type.startsWith("text/")) return false
@@ -337,14 +337,28 @@ export namespace File {
     let cache: Entry = { files: [], dirs: [] }
     let fetching = false
 
-    const isGlobalHome = Instance.directory === Global.Path.home && Instance.project.id === "global"
+    const dir = Instance.directory
+    const isGlobalHome = dir === Global.Path.home && Instance.project.id === "global"
+    const isDangerous = !isGlobalHome && Protected.dangerous(dir)
+
+    log.info("file state init", {
+      directory: dir,
+      projectId: Instance.project.id,
+      isGlobalHome,
+      isDangerous,
+    })
 
     const fn = async (result: Entry) => {
-      // Disable scanning if in root of file system
-      if (Instance.directory === path.parse(Instance.directory).root) return
+      // Block full ripgrep scans on dangerous directories (root, home, C:\Users, etc.)
+      if (isDangerous) {
+        log.warn("indexing skipped: dangerous directory", { directory: dir })
+        fetching = false
+        return
+      }
       fetching = true
 
       if (isGlobalHome) {
+        log.info("indexing home directory started", { directory: dir })
         const dirs = new Set<string>()
         const ignore = Protected.names()
 
@@ -352,16 +366,14 @@ export namespace File {
         const shouldIgnore = (name: string) => name.startsWith(".") || ignore.has(name)
         const shouldIgnoreNested = (name: string) => name.startsWith(".") || ignoreNested.has(name)
 
-        const top = await fs.promises
-          .readdir(Instance.directory, { withFileTypes: true })
-          .catch(() => [] as fs.Dirent[])
+        const top = await fs.promises.readdir(dir, { withFileTypes: true }).catch(() => [] as fs.Dirent[])
 
         for (const entry of top) {
           if (!entry.isDirectory()) continue
           if (shouldIgnore(entry.name)) continue
           dirs.add(`${entry.name}/`)
 
-          const base = path.join(Instance.directory, entry.name)
+          const base = path.join(dir, entry.name)
           const children = await fs.promises.readdir(base, { withFileTypes: true }).catch(() => [] as fs.Dirent[])
           for (const child of children) {
             if (!child.isDirectory()) continue
@@ -373,27 +385,46 @@ export namespace File {
         result.dirs = Array.from(dirs).toSorted()
         cache = result
         fetching = false
+        log.info("indexing home directory completed", { dirs: result.dirs.length })
         return
       }
 
+      const MAX_FILES = 100_000
+      log.info("indexing workspace files started", { directory: dir, maxFiles: MAX_FILES })
       const set = new Set<string>()
-      for await (const file of Ripgrep.files({ cwd: Instance.directory })) {
+      let count = 0
+      let capped = false
+      for await (const file of Ripgrep.files({ cwd: dir })) {
         result.files.push(file)
+        count++
+        if (count % 1000 === 0) log.debug("indexing progress", { files: count })
+        if (count >= MAX_FILES) {
+          capped = true
+          break
+        }
         let current = file
         while (true) {
-          const dir = path.dirname(current)
-          if (dir === ".") break
-          if (dir === current) break
-          current = dir
-          if (set.has(dir)) continue
-          set.add(dir)
-          result.dirs.push(`${dir}/`)
+          const d = path.dirname(current)
+          if (d === ".") break
+          if (d === current) break
+          current = d
+          if (set.has(d)) continue
+          set.add(d)
+          result.dirs.push(`${d}/`)
         }
       }
       cache = result
       fetching = false
+      if (capped) {
+        log.warn("indexing workspace files capped", { files: result.files.length, dirs: result.dirs.length, limit: MAX_FILES })
+      } else {
+        log.info("indexing workspace files completed", { files: result.files.length, dirs: result.dirs.length })
+      }
     }
-    fn(cache).catch(() => undefined)
+    fn(cache).catch((err) => {
+      fetching = false
+      log.error("indexing failed", { directory: dir, error: err instanceof Error ? err.message : String(err) })
+    })
 
     return {
       async files() {
@@ -401,6 +432,12 @@ export namespace File {
           fn({
             files: [],
             dirs: [],
+          }).catch((err) => {
+            fetching = false
+            log.error("indexing (refetch) failed", {
+              directory: dir,
+              error: err instanceof Error ? err.message : String(err),
+            })
           })
         }
         return cache
@@ -409,6 +446,7 @@ export namespace File {
   })
 
   export function init() {
+    log.info("init", { directory: Instance.directory, projectId: Instance.project.id })
     state()
   }
 

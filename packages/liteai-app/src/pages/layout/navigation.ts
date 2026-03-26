@@ -198,8 +198,35 @@ export function closeProject(deps: NavigationDeps, directory: string) {
   const key = workspaceKey(directory)
   const index = list.findIndex((x) => workspaceKey(x.worktree) === key)
   const active = workspaceKey(deps.currentProject()?.worktree ?? "") === key
-  console.debug("[project] close", { directory, key, index, active, count: list.length })
-  if (index === -1) return
+  const project = list[index]
+  console.debug("[project] close", {
+    directory,
+    key,
+    index,
+    active,
+    count: list.length,
+    id: project?.id,
+  })
+  if (index === -1) {
+    console.warn("[project] close: project not found in list — nothing to close", { directory, key })
+    return
+  }
+
+  // Optimistically mark as archived in globalSync so the DB sync won't re-add
+  deps.globalSync.set(
+    "project",
+    produce((draft) => {
+      const match = draft.find((p) => workspaceKey(p.worktree) === key)
+      if (!match) return
+      if (!match.time) match.time = {} as typeof match.time
+      match.time.archived = Date.now()
+    }),
+  )
+
+  // Archive in DB (fire-and-forget — SSE event will confirm)
+  if (project?.id && project.id !== "global") {
+    void deps.globalSDK.client.project.archive({ projectID: project.id })
+  }
 
   if (!active) {
     deps.layout.projects.close(directory)
@@ -277,24 +304,7 @@ export function restoreSession(deps: NavigationDeps, session: Session) {
 }
 
 export async function archiveProject(deps: NavigationDeps, directory: string) {
-  const key = workspaceKey(directory)
-  const project = deps.layout.projects.list().find((p) => workspaceKey(p.worktree) === key)
-  console.debug("[project] archive", { directory, key, found: !!project, id: project?.id })
-
-  deps.globalSync.set(
-    "project",
-    produce((draft) => {
-      const match = draft.find((p) => workspaceKey(p.worktree) === key)
-      if (match) {
-        match.time = { ...(match.time ?? {}), archived: Date.now() }
-      }
-    }),
-  )
-
   closeProject(deps, directory)
-
-  if (!project?.id || project.id === "global") return
-  await deps.globalSDK.client.project.archive({ projectID: project.id })
 }
 
 export async function restoreProject(deps: NavigationDeps, directory: string) {

@@ -18,8 +18,8 @@ import { TuiEvent } from "@/cli/cmd/tui/event"
 import { withTimeout } from "@/util/timeout"
 import { BusEvent } from "../bus/bus-event"
 import { Config } from "../config/config"
+import { Global } from "../global"
 import { Installation } from "../installation"
-import { Instance } from "../project/instance"
 import { expandDeep } from "../util/env-expand"
 import { Log } from "../util/log"
 import { McpAuth } from "./auth"
@@ -183,103 +183,88 @@ export namespace MCP {
     return typeof entry === "object" && entry !== null && "type" in entry
   }
 
-  async function descendants(pid: number): Promise<number[]> {
-    if (process.platform === "win32") return []
-    const pids: number[] = []
-    const queue = [pid]
-    while (queue.length > 0) {
-      const current = queue.shift()
-      if (current === undefined) break
-      const proc = Bun.spawn(["pgrep", "-P", String(current)], { stdout: "pipe", stderr: "pipe" })
-      const [code, out] = await Promise.all([proc.exited, new Response(proc.stdout).text()]).catch(
-        () => [-1, ""] as const,
-      )
-      if (code !== 0) continue
-      for (const tok of out.trim().split(/\s+/)) {
-        const cpid = parseInt(tok, 10)
-        if (!Number.isNaN(cpid) && pids.indexOf(cpid) === -1) {
-          pids.push(cpid)
-          queue.push(cpid)
+  // MCP state is process-global — connections are shared across all workspaces.
+  // Previously keyed per Instance.directory, which spawned duplicate processes
+  // for every open project.
+  type McpState = { status: Record<string, Status>; clients: Record<string, MCPClient> }
+  let cached: Promise<McpState> | undefined
+
+  async function init(): Promise<McpState> {
+    const cfg = await Config.getGlobal()
+    const config = cfg.mcp ?? {}
+    const names = Object.keys(config)
+    log.info("scanning for mcp servers", { count: names.length, servers: names })
+    const clients: Record<string, MCPClient> = {}
+    const status: Record<string, Status> = {}
+
+    await Promise.all(
+      Object.entries(config).map(async ([key, mcp]) => {
+        if (!isMcpConfigured(mcp)) {
+          log.error("Ignoring MCP config entry without type", { key })
+          return
         }
-      }
-    }
-    return pids
+
+        // If disabled by config, mark as disabled without trying to connect
+        if (mcp.enabled === false) {
+          log.info("mcp server disabled by config", { name: key })
+          status[key] = { status: "disabled" }
+          return
+        }
+
+        log.info("connecting mcp server", { name: key, type: mcp.type })
+        const result = await create(key, mcp).catch((e) => {
+          log.error("mcp server create failed", { key, error: e })
+          return undefined
+        })
+        if (!result) return
+
+        status[key] = result.status
+
+        if (result.mcpClient) {
+          clients[key] = result.mcpClient
+        }
+      }),
+    )
+    return { status, clients }
   }
 
-  const state = Instance.state(
-    async () => {
-      const cfg = await Config.get()
-      const config = cfg.mcp ?? {}
-      const names = Object.keys(config)
-      log.info("scanning for mcp servers", { count: names.length, servers: names })
-      const clients: Record<string, MCPClient> = {}
-      const status: Record<string, Status> = {}
+  function state() {
+    if (!cached) cached = init()
+    return cached
+  }
 
-      await Promise.all(
-        Object.entries(config).map(async ([key, mcp]) => {
-          if (!isMcpConfigured(mcp)) {
-            log.error("Ignoring MCP config entry without type", { key })
-            return
-          }
+  /**
+   * Sync project-scoped MCP servers into the global pool.
+   * Called during project bootstrap — connects any servers from the project's
+   * config (e.g. .mcp.json) that aren't already tracked globally.
+   */
+  export async function sync() {
+    const s = await state()
+    const cfg = await Config.get()
+    const config = cfg.mcp ?? {}
 
-          // If disabled by config, mark as disabled without trying to connect
-          if (mcp.enabled === false) {
-            log.info("mcp server disabled by config", { name: key })
-            status[key] = { status: "disabled" }
-            return
-          }
+    await Promise.all(
+      Object.entries(config).map(async ([key, mcp]) => {
+        if (key in s.status) return
+        if (!isMcpConfigured(mcp)) return
 
-          log.info("connecting mcp server", { name: key, type: mcp.type })
-          const result = await create(key, mcp).catch((e) => {
-            log.error("mcp server create failed", { key, error: e })
-            return undefined
-          })
-          if (!result) return
-
-          status[key] = result.status
-
-          if (result.mcpClient) {
-            clients[key] = result.mcpClient
-          }
-        }),
-      )
-      return {
-        status,
-        clients,
-      }
-    },
-    async (state) => {
-      // The MCP SDK only signals the direct child process on close.
-      // Servers like chrome-devtools-mcp spawn grandchild processes
-      // (e.g. Chrome) that the SDK never reaches, leaving them orphaned.
-      // Kill the full descendant tree first so the server exits promptly
-      // and no processes are left behind.
-      for (const client of Object.values(state.clients)) {
-        const pid = (client.transport as StdioClientTransport)?.pid
-        if (typeof pid !== "number") continue
-        for (const dpid of await descendants(pid)) {
-          try {
-            process.kill(dpid, "SIGTERM")
-          } catch (e) {
-            log.debug("failed to kill descendant", { dpid, error: e })
-          }
+        if (mcp.enabled === false) {
+          s.status[key] = { status: "disabled" }
+          return
         }
-      }
 
-      await Promise.all(
-        Object.values(state.clients).map((client) => {
-          const pid = (client.transport as StdioClientTransport)?.pid
-          if (typeof pid === "number") pids.delete(pid)
-          return client.close().catch((error) => {
-            log.error("Failed to close MCP client", {
-              error,
-            })
-          })
-        }),
-      )
-      pendingOAuthTransports.clear()
-    },
-  )
+        log.info("connecting project mcp server", { name: key, type: mcp.type })
+        const result = await create(key, mcp).catch((e) => {
+          log.error("mcp server create failed", { key, error: e })
+          return undefined
+        })
+        if (!result) return
+
+        s.status[key] = result.status
+        if (result.mcpClient) s.clients[key] = result.mcpClient
+      }),
+    )
+  }
 
   // Helper function to fetch prompts for a specific client
   async function fetchPromptsForClient(clientName: string, client: Client) {
@@ -488,17 +473,26 @@ export namespace MCP {
 
     if (mcp.type === "local") {
       const [cmd, ...args] = mcp.command
-      const cwd = Instance.directory
+      const cwd = Global.Path.home
+      const env = {
+        ...process.env,
+        ...(cmd === "liteai" ? { BUN_BE_BUN: "1" } : {}),
+        ...mcp.environment,
+      }
+      log.info("spawning local mcp process", {
+        key,
+        cmd,
+        args,
+        cwd,
+        PATH: process.env.PATH ?? "(not set)",
+        extraEnvKeys: Object.keys(mcp.environment ?? {}),
+      })
       const transport = new StdioClientTransport({
         stderr: "pipe",
         command: cmd,
         args,
         cwd,
-        env: {
-          ...process.env,
-          ...(cmd === "liteai" ? { BUN_BE_BUN: "1" } : {}),
-          ...mcp.environment,
-        },
+        env,
       })
       transport.stderr?.on("data", (chunk: Buffer) => {
         log.info(`mcp stderr: ${chunk.toString()}`, { key })
@@ -510,22 +504,42 @@ export namespace MCP {
           name: "liteai",
           version: Installation.VERSION,
         })
+        log.info("connecting local mcp (waiting for ready)", { key, timeout: connectTimeout })
         await withTimeout(client.connect(transport), connectTimeout)
+        const pid = (transport as StdioClientTransport).pid
+        log.info("local mcp process connected", { key, pid })
         registerNotificationHandlers(client, key)
         mcpClient = client
         status = {
           status: "connected",
         }
       } catch (error) {
+        const pid = (transport as StdioClientTransport).pid
+        const msg = error instanceof Error ? error.message : String(error)
         log.error("local mcp startup failed", {
           key,
           command: mcp.command,
           cwd,
-          error: error instanceof Error ? error.message : String(error),
+          pid,
+          phase: "connect",
+          error: msg,
         })
+        // Kill the orphaned process so it does not block future scans
+        if (typeof pid === "number") {
+          try {
+            if (process.platform === "win32") {
+              spawnSync("taskkill", ["/pid", String(pid), "/f", "/t"], { stdio: "ignore", windowsHide: true })
+              log.info("killed orphaned mcp process", { key, pid })
+            } else {
+              process.kill(pid, "SIGKILL")
+            }
+          } catch (killErr) {
+            log.debug("failed to kill orphaned mcp process", { key, pid, error: killErr })
+          }
+        }
         status = {
           status: "failed" as const,
-          error: error instanceof Error ? error.message : String(error),
+          error: msg,
         }
       }
     }
@@ -544,8 +558,13 @@ export namespace MCP {
       }
     }
 
+    log.info("listing tools from connected mcp client", { key })
     const result = await withTimeout(mcpClient.listTools(), mcp.timeout ?? DEFAULT_TIMEOUT).catch((err) => {
-      log.error("failed to get tools from client", { key, error: err })
+      log.error("listTools timed out or failed", {
+        key,
+        phase: "listTools",
+        error: err instanceof Error ? err.message : String(err),
+      })
       return undefined
     })
     if (!result) {
@@ -655,7 +674,7 @@ export namespace MCP {
     const defaultTimeout = cfg.experimental?.mcp_timeout
 
     const connectedClients = Object.entries(clientsSnapshot).filter(
-      ([clientName]) => s.status[clientName]?.status === "connected",
+      ([name]) => s.status[name]?.status === "connected" && name in config,
     )
 
     const toolsResults = await Promise.all(
@@ -691,9 +710,13 @@ export namespace MCP {
   export async function toolNames() {
     const result: Record<string, string[]> = {}
     const s = await state()
+    const cfg = await Config.get()
+    const config = cfg.mcp ?? {}
     const clientsSnapshot = await clients()
 
-    const connected = Object.entries(clientsSnapshot).filter(([name]) => s.status[name]?.status === "connected")
+    const connected = Object.entries(clientsSnapshot).filter(
+      ([name]) => s.status[name]?.status === "connected" && name in config,
+    )
 
     await Promise.all(
       connected.map(async ([name, client]) => {
@@ -710,13 +733,15 @@ export namespace MCP {
 
   export async function prompts() {
     const s = await state()
+    const cfg = await Config.get()
+    const config = cfg.mcp ?? {}
     const clientsSnapshot = await clients()
 
     const prompts = Object.fromEntries<PromptInfo & { client: string }>(
       (
         await Promise.all(
           Object.entries(clientsSnapshot).map(async ([clientName, client]) => {
-            if (s.status[clientName]?.status !== "connected") {
+            if (s.status[clientName]?.status !== "connected" || !(clientName in config)) {
               return []
             }
 
@@ -731,13 +756,15 @@ export namespace MCP {
 
   export async function resources() {
     const s = await state()
+    const cfg = await Config.get()
+    const config = cfg.mcp ?? {}
     const clientsSnapshot = await clients()
 
     const result = Object.fromEntries<ResourceInfo & { client: string }>(
       (
         await Promise.all(
           Object.entries(clientsSnapshot).map(async ([clientName, client]) => {
-            if (s.status[clientName]?.status !== "connected") {
+            if (s.status[clientName]?.status !== "connected" || !(clientName in config)) {
               return []
             }
 

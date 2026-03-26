@@ -7,6 +7,7 @@ import { File } from "../file"
 import { FileWatcher } from "../file/watcher"
 import { Format } from "../format"
 import { LSP } from "../lsp"
+import { MCP } from "../mcp"
 import { Plugin } from "../plugin"
 import { Snapshot } from "../snapshot"
 import { Truncate } from "../tool/truncation"
@@ -26,6 +27,7 @@ export async function InstanceBootstrap() {
   Vcs.init()
   Snapshot.init()
   Truncate.init()
+  MCP.sync()
 
   Bus.subscribe(Command.Event.Executed, async (payload) => {
     if (payload.properties.name === Command.Default.INIT) {
