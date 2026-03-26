@@ -437,16 +437,20 @@ export function DialogConnectProvider(props: { provider: string }) {
     return (
       <div class="flex flex-col gap-6">
         <div class="text-14-regular text-text-base">
-          {language.t("provider.connect.oauth.code.visit.prefix")}
-          <Link href={store.authorization?.url ?? ""}>{language.t("provider.connect.oauth.code.visit.link")}</Link>
-          {language.t("provider.connect.oauth.code.visit.suffix", { provider: provider().name })}
+          {store.authorization?.instructions ?? (
+            <>
+              {language.t("provider.connect.oauth.code.visit.prefix")}
+              <Link href={store.authorization?.url ?? ""}>{language.t("provider.connect.oauth.code.visit.link")}</Link>
+              {language.t("provider.connect.oauth.code.visit.suffix", { provider: provider().name })}
+            </>
+          )}
         </div>
         <form onSubmit={handleSubmit} class="flex flex-col items-start gap-4">
           <TextField
             autofocus
             type="text"
-            label={language.t("provider.connect.oauth.code.label", { method: method()?.label ?? "" })}
-            placeholder={language.t("provider.connect.oauth.code.placeholder")}
+            label={store.authorization?.instructions ? language.t("provider.connect.oauth.code.label.json") : language.t("provider.connect.oauth.code.label", { method: method()?.label ?? "" })}
+            placeholder={store.authorization?.instructions ? language.t("provider.connect.oauth.code.placeholder.json") : language.t("provider.connect.oauth.code.placeholder")}
             name="code"
             value={formStore.value}
             onChange={(v) => setFormStore("value", v)}

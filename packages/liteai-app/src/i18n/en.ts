@@ -146,7 +146,9 @@ export const dict = {
   "provider.connect.oauth.code.visit.suffix":
     " to collect your authorization code to connect your account and use {{provider}} models in LiteAI.",
   "provider.connect.oauth.code.label": "{{method}} authorization code",
+  "provider.connect.oauth.code.label.json": "JSON response",
   "provider.connect.oauth.code.placeholder": "Authorization code",
+  "provider.connect.oauth.code.placeholder.json": "Paste JSON here",
   "provider.connect.oauth.code.required": "Authorization code is required",
   "provider.connect.oauth.code.invalid": "Invalid authorization code",
   "provider.connect.oauth.auto.visit.prefix": "Visit ",
