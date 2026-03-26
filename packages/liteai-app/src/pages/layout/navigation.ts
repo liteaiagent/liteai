@@ -198,23 +198,24 @@ export function closeProject(deps: NavigationDeps, directory: string) {
   const index = list.findIndex((x) => x.worktree === directory)
   const active = deps.currentProject()?.worktree === directory
   if (index === -1) return
-  const next = list[index + 1]
 
   if (!active) {
     deps.layout.projects.close(directory)
     return
   }
 
-  if (!next) {
+  const target = list[index + 1] ?? list[index - 1]
+
+  if (!target) {
     deps.layout.projects.close(directory)
     deps.navigate("/")
     return
   }
 
-  deps.navigateWithSidebarReset(`/${base64Encode(next.worktree)}/session`)
+  deps.navigateWithSidebarReset(`/${base64Encode(target.worktree)}/session`)
   deps.layout.projects.close(directory)
   queueMicrotask(() => {
-    void navigateToProject(deps, next.worktree)
+    void navigateToProject(deps, target.worktree)
   })
 }
 
@@ -274,8 +275,20 @@ export function restoreSession(deps: NavigationDeps, session: Session) {
 
 export async function archiveProject(deps: NavigationDeps, directory: string) {
   const project = deps.layout.projects.list().find((p) => p.worktree === directory)
-  if (!project?.id || project.id === "global") return
+
+  deps.globalSync.set(
+    "project",
+    produce((draft) => {
+      const match = draft.find((p) => p.worktree === directory)
+      if (match) {
+        match.time = { ...(match.time ?? {}), archived: Date.now() }
+      }
+    }),
+  )
+
   closeProject(deps, directory)
+
+  if (!project?.id || project.id === "global") return
   await deps.globalSDK.client.project.archive({ projectID: project.id })
 }
 

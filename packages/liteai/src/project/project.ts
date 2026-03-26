@@ -7,7 +7,7 @@ import { GlobalBus } from "@/bus/global"
 import { Flag } from "@/flag/flag"
 import { iife } from "@/util/iife"
 import { SessionTable } from "../session/session.sql"
-import { and, Database, eq } from "../storage/db"
+import { and, Database, eq, NotFoundError } from "../storage/db"
 import { Filesystem } from "../util/filesystem"
 import { git } from "../util/git"
 import { Glob } from "../util/glob"
@@ -104,6 +104,10 @@ export namespace Project {
 
   export async function fromDirectory(directory: string) {
     log.info("fromDirectory", { directory })
+
+    if (!existsSync(directory)) {
+      throw new NotFoundError({ message: `Directory does not exist: ${directory}` })
+    }
 
     const data = await iife(async () => {
       const matches = Filesystem.up({ targets: [".git"], start: directory })

@@ -70,8 +70,22 @@ export default function Layout(props: ParentProps) {
         const path = location.pathname.slice(current.length + 1)
         navigate(`/${base64Encode(next)}${path}${location.search}${location.hash}`, { replace: true })
       })
-      .catch(() => {
+      .catch((err: any) => {
         if (params.dir !== current) return
+
+        // If it's explicitly our backend rejecting the path, kick the user out
+        if (err?.status === 404 || err?.status === 400 || err?.name === 'NotFoundError') {
+          setState("invalid", params.dir)
+          showToast({
+            variant: "error",
+            title: language.t("common.requestFailed"),
+            description: "Directory does not exist or is invalid.",
+          })
+          navigate("/", { replace: true })
+          return
+        }
+
+        // Fallback for generic offline/network errors
         batch(() => {
           setState("invalid", "")
           setState("resolved", raw)
