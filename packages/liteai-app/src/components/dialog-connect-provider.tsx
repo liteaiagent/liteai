@@ -449,8 +449,16 @@ export function DialogConnectProvider(props: { provider: string }) {
           <TextField
             autofocus
             type="text"
-            label={store.authorization?.instructions ? language.t("provider.connect.oauth.code.label.json") : language.t("provider.connect.oauth.code.label", { method: method()?.label ?? "" })}
-            placeholder={store.authorization?.instructions ? language.t("provider.connect.oauth.code.placeholder.json") : language.t("provider.connect.oauth.code.placeholder")}
+            label={
+              store.authorization?.instructions
+                ? language.t("provider.connect.oauth.code.label.json")
+                : language.t("provider.connect.oauth.code.label", { method: method()?.label ?? "" })
+            }
+            placeholder={
+              store.authorization?.instructions
+                ? language.t("provider.connect.oauth.code.placeholder.json")
+                : language.t("provider.connect.oauth.code.placeholder")
+            }
             name="code"
             value={formStore.value}
             onChange={(v) => setFormStore("value", v)}

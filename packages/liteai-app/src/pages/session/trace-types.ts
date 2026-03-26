@@ -38,8 +38,6 @@ export type TracePartData = Record<string, unknown> & {
   synthetic?: boolean
 }
 
-
-
 export type TraceMessageData = Record<string, unknown> & {
   id: string
   role?: string

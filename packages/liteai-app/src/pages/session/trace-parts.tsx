@@ -1,12 +1,14 @@
-import { createMemo, createSignal, For, Show } from "solid-js"
+import { IconButton } from "@liteai/ui/icon-button"
 import { Markdown } from "@liteai/ui/markdown"
+import { createMemo, createSignal, For, Show } from "solid-js"
 import { useSync } from "@/context/sync"
 import { Section } from "./trace-section"
 import type { TraceMessageData, TracePartData } from "./trace-types"
 
 export function SyntheticContent(props: { text: string }) {
   const [expanded, setExpanded] = createSignal(false)
-  
+  const [copied, setCopied] = createSignal(false)
+
   const cleanText = createMemo(() => {
     let t = props.text.trim()
     if (t.startsWith("<system-reminder>")) {
@@ -15,22 +17,57 @@ export function SyntheticContent(props: { text: string }) {
     return t
   })
 
+  const copy = () => {
+    navigator.clipboard.writeText(cleanText())
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
   return (
     <>
-      <div style={{ "margin-bottom": "8px", "margin-top": "8px" }}>
+      <div class="trace-sys-header" style={{ "margin-bottom": "8px", "margin-top": "8px" }}>
         <button
           type="button"
           class="trace-msg-role trace-msg-role--system"
-          style={{ cursor: "pointer", border: "none", padding: "2px 6px", "font-size": "11px", "letter-spacing": "0.5px" }}
+          style={{ cursor: "pointer", border: "none", background: "none", padding: 0 }}
           onClick={() => setExpanded(!expanded())}
         >
           {expanded() ? "▼" : "▶"} SYSTEM INJECTED
         </button>
+        <Show when={expanded()}>
+          <IconButton icon={copied() ? "check" : "copy"} size="small" variant="ghost" title="Copy" onClick={copy} />
+        </Show>
       </div>
       <Show when={expanded()}>
-        <Markdown text={cleanText()} />
+        <div class="trace-sys-box">
+          <Markdown text={cleanText()} />
+        </div>
       </Show>
     </>
+  )
+}
+
+export function ReasoningContent(props: { text: string }) {
+  const [copied, setCopied] = createSignal(false)
+
+  const copy = () => {
+    navigator.clipboard.writeText(props.text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <div class="trace-msg-reasoning">
+      <div class="trace-sys-header" style={{ "margin-bottom": "8px" }}>
+        <span class="trace-msg-reasoning-label" style={{ "margin-bottom": "0" }}>
+          💭 Reasoning
+        </span>
+        <IconButton icon={copied() ? "check" : "copy"} size="small" variant="ghost" title="Copy" onClick={copy} />
+      </div>
+      <div class="trace-msg-text" style={{ "max-height": "300px", "overflow-y": "auto", "padding-right": "4px" }}>
+        <Markdown text={props.text} />
+      </div>
+    </div>
   )
 }
 
@@ -125,10 +162,7 @@ export function OutputParts(props: { messageID: string; messages: TraceMessageDa
                   <div class="trace-msg-text">{part.text}</div>
                 </Show>
                 <Show when={part.type === "reasoning" && part.text}>
-                  <div class="trace-msg-reasoning">
-                    <span class="trace-msg-reasoning-label">💭 Reasoning</span>
-                    <div class="trace-msg-text">{part.text}</div>
-                  </div>
+                  <ReasoningContent text={part.text as string} />
                 </Show>
                 <Show when={part.type === "tool-call"}>
                   <div class="trace-msg-toolcall">
@@ -196,7 +230,11 @@ export function OutputParts(props: { messageID: string; messages: TraceMessageDa
   )
 }
 
-export function ContextMessages(props: { ids: string[]; messages: TraceMessageData[]; messages_json?: Record<string, unknown>[] | null }) {
+export function ContextMessages(props: {
+  ids: string[]
+  messages: TraceMessageData[]
+  messages_json?: Record<string, unknown>[] | null
+}) {
   const sync = useSync()
   const resolved = createMemo(() => {
     if (props.messages_json && props.messages_json.length > 0) {
@@ -207,14 +245,16 @@ export function ContextMessages(props: { ids: string[]; messages: TraceMessageDa
     }
 
     const map = new Map(props.messages.map((m) => [m.id, m]))
-    return props.ids.map((id) => {
-      const msg = map.get(id)
-      if (!msg) return null
-      return {
-        msg,
-        parts: (sync.data.part[id] ?? []) as TracePartData[]
-      }
-    }).filter((m): m is NonNullable<typeof m> => !!m)
+    return props.ids
+      .map((id) => {
+        const msg = map.get(id)
+        if (!msg) return null
+        return {
+          msg,
+          parts: (sync.data.part[id] ?? []) as TracePartData[],
+        }
+      })
+      .filter((m): m is NonNullable<typeof m> => !!m)
   })
 
   return (
@@ -244,10 +284,7 @@ export function ContextMessages(props: { ids: string[]; messages: TraceMessageDa
                     </div>
                   </Show>
                   <Show when={part.type === "reasoning" && part.text}>
-                    <div class="trace-msg-reasoning">
-                      <span class="trace-msg-reasoning-label">💭 Reasoning</span>
-                      <div class="trace-msg-text">{part.text}</div>
-                    </div>
+                    <ReasoningContent text={part.text as string} />
                   </Show>
                   <Show when={part.type === "tool-call"}>
                     <div class="trace-msg-toolcall">
@@ -291,19 +328,34 @@ export function ContextMessages(props: { ids: string[]; messages: TraceMessageDa
                   </Show>
                   <Show when={part.type === "agent" && !part.synthetic}>
                     <div class="trace-msg-text">
-                      <div class="trace-tool-section-label" style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;">AGENT DELEGATION</div>
+                      <div
+                        class="trace-tool-section-label"
+                        style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;"
+                      >
+                        AGENT DELEGATION
+                      </div>
                       Use {part.name}
                     </div>
                   </Show>
                   <Show when={part.type === "subtask"}>
                     <div class="trace-msg-text">
-                      <div class="trace-tool-section-label" style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;">SUBTASK RESULT</div>
+                      <div
+                        class="trace-tool-section-label"
+                        style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;"
+                      >
+                        SUBTASK RESULT
+                      </div>
                       The following tool was executed by the user
                     </div>
                   </Show>
                   <Show when={part.type === "compaction"}>
                     <div class="trace-msg-text">
-                      <div class="trace-tool-section-label" style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;">COMPACTION</div>
+                      <div
+                        class="trace-tool-section-label"
+                        style="display:inline-block; margin-right:6px; color: var(--trace-color-agent); border: 1px solid var(--trace-color-agent); padding: 2px 6px; border-radius: 4px; font-size: 10px;"
+                      >
+                        COMPACTION
+                      </div>
                       What did we do so far?
                     </div>
                   </Show>

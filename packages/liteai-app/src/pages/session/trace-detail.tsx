@@ -252,18 +252,35 @@ export function TraceDetailView(props: {
             <Show when={props.detail.system}>
               {(sys) => {
                 const [expanded, setExpanded] = createSignal(false)
+                const [copied, setCopied] = createSignal(false)
+                const copy = () => {
+                  navigator.clipboard.writeText(sys())
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1500)
+                }
                 return (
                   <div class="trace-msg">
-                    <button
-                      type="button"
-                      class="trace-msg-role trace-msg-role--system"
-                      style={{ cursor: "pointer", border: "none", background: "none", padding: 0 }}
-                      onClick={() => setExpanded(!expanded())}
-                    >
-                      {expanded() ? "▼" : "▶"} SYSTEM
-                    </button>
+                    <div class="trace-sys-header">
+                      <button
+                        type="button"
+                        class="trace-msg-role trace-msg-role--system"
+                        style={{ cursor: "pointer", border: "none", background: "none", padding: 0 }}
+                        onClick={() => setExpanded(!expanded())}
+                      >
+                        {expanded() ? "▼" : "▶"} SYSTEM
+                      </button>
+                      <Show when={expanded()}>
+                        <IconButton
+                          icon={copied() ? "check" : "copy"}
+                          size="small"
+                          variant="ghost"
+                          title="Copy"
+                          onClick={copy}
+                        />
+                      </Show>
+                    </div>
                     <Show when={expanded()}>
-                      <div class="trace-msg-text">
+                      <div class="trace-sys-box">
                         <Markdown text={sys()} />
                       </div>
                     </Show>
@@ -271,7 +288,11 @@ export function TraceDetailView(props: {
                 )
               }}
             </Show>
-            <ContextMessages ids={props.detail.contextIDs} messages={props.messages} messages_json={props.detail.messages_json} />
+            <ContextMessages
+              ids={props.detail.contextIDs}
+              messages={props.messages}
+              messages_json={props.detail.messages_json}
+            />
           </Section>
 
           <OutputParts messageID={props.detail.messageID} messages={props.messages} />
@@ -313,8 +334,10 @@ export function TraceDetailView(props: {
         <Show when={props.tab === "prompts"}>
           <Show when={props.detail.system} fallback={<div class="trace-empty-text">No system prompt</div>}>
             {(sys) => (
-              <div class="trace-prompt-full">
-                <Markdown text={sys()} />
+              <div class="trace-msg">
+                <div class="trace-msg-text">
+                  <Markdown text={sys()} />
+                </div>
               </div>
             )}
           </Show>

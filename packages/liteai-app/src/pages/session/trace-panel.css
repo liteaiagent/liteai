@@ -687,6 +687,55 @@
   user-select: text;
 }
 
+.trace-sys-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trace-sys-box {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--surface-secondary);
+  font: var(--text-12-regular);
+  color: var(--text-base);
+  line-height: 1.6;
+  word-break: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.trace-sys-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border-base);
+  border-radius: 4px;
+  background: var(--surface-secondary);
+  color: var(--text-weak);
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    opacity 0.1s,
+    color 0.1s,
+    background 0.1s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.trace-sys-copy:hover {
+  opacity: 1;
+  background: var(--surface-hover);
+  color: var(--text-base);
+}
+
 /* Reasoning / thought block */
 
 .trace-msg-reasoning {
