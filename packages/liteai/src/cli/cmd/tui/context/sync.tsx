@@ -332,7 +332,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           }
           const result = Binary.search(parts, partID, (p) => p.id)
           if (!result.found) {
-            Log.Default.warn("[tui:sync] message.part.delta: partID not found", { partID, available: parts.map((x) => x.id) })
+            Log.Default.warn("[tui:sync] message.part.delta: partID not found", {
+              partID,
+              available: parts.map((x) => x.id),
+            })
             break
           }
           setStore(
@@ -535,7 +538,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           )
           fullSyncedSessions.add(sessionID)
         },
-
       },
       workspace: {
         get(workspaceID: string) {

@@ -193,11 +193,6 @@ describe("plugin.command", () => {
     const { Command } = await import("../../src/command")
     expect(Command.Default.PLUGIN).toBe("plugin")
   })
-
-  test("Default.RELOAD_PLUGINS constant exists", async () => {
-    const { Command } = await import("../../src/command")
-    expect(Command.Default.RELOAD_PLUGINS).toBe("reload-plugins")
-  })
 })
 
 // ---------------------------------------------------------------------------

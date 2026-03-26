@@ -277,7 +277,6 @@ describe("plugin.mount.apply", () => {
       agents: {},
       hooks: {},
       skills: [],
-      // biome-ignore lint/suspicious/noExplicitAny: partial config for test
       env: {},
     }
 

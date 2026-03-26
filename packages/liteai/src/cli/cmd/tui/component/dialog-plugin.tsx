@@ -3,7 +3,7 @@ import { useKeyboard } from "@opentui/solid"
 import { useSDK } from "@tui/context/sdk"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogPrompt } from "@tui/ui/dialog-prompt"
-import { DialogSelect, type DialogSelectOption } from "@tui/ui/dialog-select"
+import { DialogSelect } from "@tui/ui/dialog-select"
 import { createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { Keybind } from "@/util/keybind"
 import { useTheme } from "../context/theme"
@@ -204,7 +204,6 @@ function DiscoverTab(props: {
   theme: ReturnType<typeof useTheme>["theme"]
   onInstall: () => void
 }) {
-  const dialog = useDialog()
   const [marketplaces] = createResource(async () => {
     const res = await props.sdk.fetch(`${props.sdk.url}/plugin/marketplace`)
     if (!res.ok) return [] as MarketplaceEntry[]
@@ -225,7 +224,9 @@ function DiscoverTab(props: {
   })
 
   // Aggregate all plugins from all marketplaces
-  const allPlugins = createMemo<Array<MarketplacePlugin & { marketplace: string; marketplaceName: string; isInstalled: boolean }>>(() => {
+  const allPlugins = createMemo<
+    Array<MarketplacePlugin & { marketplace: string; marketplaceName: string; isInstalled: boolean }>
+  >(() => {
     const mps = marketplaces() ?? []
     const ps = plugins() ?? []
     const inst = installed() ?? []
@@ -249,7 +250,12 @@ function DiscoverTab(props: {
       return mps.map((m) => ({
         value: m.id,
         title: m.name,
-        description: typeof m.source === "string" ? m.source : "source" in m.source ? (m.source as { repo?: string; url?: string }).repo ?? (m.source as { url?: string }).url ?? "" : "",
+        description:
+          typeof m.source === "string"
+            ? m.source
+            : "source" in m.source
+              ? ((m.source as { repo?: string; url?: string }).repo ?? (m.source as { url?: string }).url ?? "")
+              : "",
         category: "Marketplaces",
       }))
     }
@@ -287,7 +293,11 @@ function DiscoverTab(props: {
         </box>
       </Show>
       <DialogSelect
-        title={selectedMarketplace() ? `Discover plugins · ${(marketplaces() ?? []).find((m) => m.id === selectedMarketplace())?.name ?? selectedMarketplace()}` : "Discover plugins"}
+        title={
+          selectedMarketplace()
+            ? `Discover plugins · ${(marketplaces() ?? []).find((m) => m.id === selectedMarketplace())?.name ?? selectedMarketplace()}`
+            : "Discover plugins"
+        }
         placeholder="Search..."
         options={options()}
         footerContent={<text fg={props.theme.textMuted}>Enter to install · Esc to back</text>}
@@ -414,7 +424,9 @@ function MarketplacesTab(props: {
       title="Manage marketplaces"
       placeholder="Search..."
       options={options()}
-      footerContent={<text fg={props.theme.textMuted}>Enter to select · u to update · Del to remove · Esc to go back</text>}
+      footerContent={
+        <text fg={props.theme.textMuted}>Enter to select · u to update · Del to remove · Esc to go back</text>
+      }
       keybind={[
         {
           title: "remove",
@@ -429,7 +441,10 @@ function MarketplacesTab(props: {
                 id={m.id}
                 sdk={props.sdk}
                 theme={props.theme}
-                onDone={() => { props.dialog.pop(); props.onRemoved() }}
+                onDone={() => {
+                  props.dialog.pop()
+                  props.onRemoved()
+                }}
                 onCancel={() => props.dialog.pop()}
               />
             ))
@@ -463,7 +478,10 @@ function MarketplacesTab(props: {
             <AddMarketplaceDialog
               sdk={props.sdk}
               theme={props.theme}
-              onDone={() => { props.dialog.pop(); props.onAdded() }}
+              onDone={() => {
+                props.dialog.pop()
+                props.onAdded()
+              }}
               onCancel={() => props.dialog.pop()}
             />
           ))
@@ -491,28 +509,39 @@ function RemoveMarketplaceDialog(props: {
   }
 
   useKeyboard((evt) => {
-    if (evt.name === "return") { confirm(); evt.preventDefault(); evt.stopPropagation() }
-    if (evt.name === "escape" && !busy()) { props.onCancel(); evt.preventDefault(); evt.stopPropagation() }
+    if (evt.name === "return") {
+      confirm()
+      evt.preventDefault()
+      evt.stopPropagation()
+    }
+    if (evt.name === "escape" && !busy()) {
+      props.onCancel()
+      evt.preventDefault()
+      evt.stopPropagation()
+    }
   })
 
   return (
     <box paddingLeft={2} paddingRight={2} gap={1}>
       <box flexDirection="row" justifyContent="space-between">
-        <text attributes={TextAttributes.BOLD} fg={props.theme.text}>Remove Marketplace</text>
+        <text attributes={TextAttributes.BOLD} fg={props.theme.text}>
+          Remove Marketplace
+        </text>
         {/* biome-ignore lint/a11y/noStaticElementInteractions: TUI element */}
-        <text fg={props.theme.textMuted} onMouseUp={props.onCancel}>esc</text>
+        <text fg={props.theme.textMuted} onMouseUp={props.onCancel}>
+          esc
+        </text>
       </box>
-      <Show
-        when={!busy()}
-        fallback={<text fg={props.theme.textMuted}>Removing {props.name}…</text>}
-      >
+      <Show when={!busy()} fallback={<text fg={props.theme.textMuted}>Removing {props.name}…</text>}>
         <text fg={props.theme.text}>
           Remove <span style={{ fg: props.theme.primary }}>{props.name}</span>?
         </text>
       </Show>
       <box paddingBottom={1} flexDirection="row" gap={2}>
         <Show when={!busy()}>
-          <text fg={props.theme.text}>enter <span style={{ fg: props.theme.textMuted }}>confirm</span></text>
+          <text fg={props.theme.text}>
+            enter <span style={{ fg: props.theme.textMuted }}>confirm</span>
+          </text>
           <text fg={props.theme.textMuted}>esc cancel</text>
         </Show>
       </box>
@@ -544,7 +573,9 @@ function AddMarketplaceDialog(props: {
       when={!busy()}
       fallback={
         <box paddingLeft={2} paddingRight={2} gap={1}>
-          <text attributes={TextAttributes.BOLD} fg={props.theme.text}>Add Marketplace</text>
+          <text attributes={TextAttributes.BOLD} fg={props.theme.text}>
+            Add Marketplace
+          </text>
           <text fg={props.theme.textMuted}>Downloading marketplace…</text>
         </box>
       }
@@ -556,9 +587,9 @@ function AddMarketplaceDialog(props: {
           <box gap={0} flexDirection="column">
             <text fg={props.theme.textMuted}>Enter marketplace source:</text>
             <text fg={props.theme.textMuted}>Examples:</text>
-            <text fg={props.theme.textMuted}>  • owner/repo (GitHub)</text>
-            <text fg={props.theme.textMuted}>  • git@github.com:owner/repo.git (SSH)</text>
-            <text fg={props.theme.textMuted}>  • https://example.com/marketplace.json</text>
+            <text fg={props.theme.textMuted}> • owner/repo (GitHub)</text>
+            <text fg={props.theme.textMuted}> • git@github.com:owner/repo.git (SSH)</text>
+            <text fg={props.theme.textMuted}> • https://example.com/marketplace.json</text>
           </box>
         )}
         onConfirm={submit}
@@ -572,10 +603,7 @@ function AddMarketplaceDialog(props: {
 // Errors tab
 // ---------------------------------------------------------------------------
 
-function ErrorsTab(props: {
-  errors: PluginError[]
-  theme: ReturnType<typeof useTheme>["theme"]
-}) {
+function ErrorsTab(props: { errors: PluginError[]; theme: ReturnType<typeof useTheme>["theme"] }) {
   return (
     <Show
       when={props.errors.length > 0}

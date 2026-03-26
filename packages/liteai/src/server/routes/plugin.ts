@@ -3,14 +3,8 @@ import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
 import { download } from "../../plugin/download"
 import { known, remove as removeMarketplace } from "../../plugin/marketplace"
-import { resolve as resolveMarketplace, load, name as marketName } from "../../plugin/marketplace-source"
-import {
-  list as listPlugins,
-  enable,
-  disable,
-  install,
-  uninstall,
-} from "../../plugin/registry"
+import { load, resolve as resolveMarketplace } from "../../plugin/marketplace-source"
+import { disable, enable, install, list as listPlugins, uninstall } from "../../plugin/registry"
 import { lazy } from "../../util/lazy"
 
 const MarketplaceInfo = z.object({

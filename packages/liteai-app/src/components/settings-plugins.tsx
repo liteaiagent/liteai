@@ -426,7 +426,7 @@ const SettingsPluginsInner: Component = () => {
                       <span class="text-12-regular text-text-weak truncate">{sourceLabel(m)}</span>
                       <Show when={m.added}>
                         <span class="text-11-regular text-text-weaker">
-                          Updated {new Date(m.added!).toLocaleDateString()}
+                          Updated {new Date(m.added as string).toLocaleDateString()}
                         </span>
                       </Show>
                     </div>

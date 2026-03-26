@@ -1,6 +1,5 @@
 import os from "node:os"
 import path from "node:path"
-import { pathToFileURL } from "node:url"
 import { NamedError } from "@liteai/util/error"
 import z from "zod"
 import type { Agent } from "@/agent/agent"
@@ -275,7 +274,6 @@ export namespace Skill {
           `    <name>${skill.name}</name>`,
           `    <description>${skill.description}</description>`,
           ...(skill.argument_hint ? [`    <argument_hint>${skill.argument_hint}</argument_hint>`] : []),
-          `    <location>${pathToFileURL(skill.location).href}</location>`,
           `  </skill>`,
         ]),
         "</available_skills>",
