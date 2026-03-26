@@ -13,14 +13,6 @@
 			"path": "packages/liteai-app"
 		},
 		{
-			"name": "desktop",
-			"path": "packages/desktop"
-		},
-		{
-			"name": "desktop-electron",
-			"path": "packages/desktop-electron"
-		},
-		{
 			"name": "script",
 			"path": "packages/script"
 		},
