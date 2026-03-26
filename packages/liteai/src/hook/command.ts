@@ -1,6 +1,9 @@
 import { spawn } from "node:child_process"
+import path from "node:path"
 import { Instance } from "@/project/instance"
+import { Filesystem } from "@/util/filesystem"
 import { Log } from "@/util/log"
+import { which } from "@/util/which"
 import type { Input, Result } from "./hook"
 
 const log = Log.create({ service: "hook.command" })
@@ -70,12 +73,7 @@ export async function command(opts: { command: string; input: Input; timeout: nu
       shell: true,
       cwd: opts.cwd,
       stdio: ["pipe", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        LITEAI_PROJECT_DIR: opts.cwd,
-        CLAUDE_PROJECT_DIR: opts.cwd,
-        LITEAI_WORKTREE: Instance.worktree,
-      },
+      env: hookEnv(opts.cwd),
       timeout: opts.timeout,
     })
 
@@ -117,6 +115,48 @@ export async function command(opts: { command: string; input: Input; timeout: nu
       }
     }, opts.timeout)
   })
+}
+
+/**
+ * Build the environment for a spawned hook process.
+ * On Windows, prepend the Git for Windows bin/ dir to PATH so that
+ * `where bash` inside run-hook.cmd resolves Git bash before WSL bash.
+ */
+function hookEnv(cwd: string): NodeJS.ProcessEnv {
+  const base: NodeJS.ProcessEnv = {
+    ...process.env,
+    LITEAI_PROJECT_DIR: cwd,
+    CLAUDE_PROJECT_DIR: cwd,
+    LITEAI_WORKTREE: Instance.worktree,
+  }
+  if (process.platform !== "win32") return base
+  const dir = gitBinDir()
+  if (!dir) return base
+  const key = Object.keys(base).find((k) => k.toLowerCase() === "path") ?? "PATH"
+  base[key] = `${dir}${path.delimiter}${base[key] ?? ""}`
+  log.info("prepend git bin to PATH", { dir })
+  return base
+}
+
+/**
+ * Locate the Git for Windows bin/ directory (contains bash.exe, sh.exe etc).
+ * Returns null if not found.
+ */
+function gitBinDir(): string | null {
+  const git = which("git")
+  if (git) {
+    // git.exe is at: <root>\cmd\git.exe — bash.exe is at <root>\bin\bash.exe
+    const bin = path.join(git, "..", "..", "bin")
+    if (Filesystem.stat(path.join(bin, "bash.exe"))?.size) return path.resolve(bin)
+  }
+  // Common hardcoded fallbacks
+  for (const p of [
+    "C:\\Program Files\\Git\\bin",
+    String(process.env.LOCALAPPDATA) + "\\Programs\\Git\\bin",
+  ]) {
+    if (Filesystem.stat(path.join(p, "bash.exe"))?.size) return p
+  }
+  return null
 }
 
 /** Expand environment variables in command strings. */
