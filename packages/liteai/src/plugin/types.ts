@@ -141,7 +141,6 @@ export interface Hooks {
   tool?: {
     [key: string]: ToolDefinition
   }
-  auth?: AuthHook
   "chat.message"?: (
     input: {
       sessionID: string

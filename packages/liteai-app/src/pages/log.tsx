@@ -60,7 +60,7 @@ function parseKV(str: string): { extra: Record<string, string>; remaining: strin
     if (!eqMatch) {
       // Not a key=value — accumulate text until next potential key= or end
       const nextKey = str.slice(pos).match(/\s\w+=/)
-      const end = nextKey ? pos + nextKey.index! + 1 : str.length
+      const end = nextKey ? pos + (nextKey.index ?? 0) + 1 : str.length
       parts.push(str.slice(pos, end).trim())
       pos = end
       continue

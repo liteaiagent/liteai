@@ -1,3 +1,4 @@
+import { initializeAuthProviders } from "@/auth/registry"
 import { ShareNext } from "@/share/share-next"
 import { Log } from "@/util/log"
 import { Bus } from "../bus"
@@ -15,6 +16,7 @@ import { Vcs } from "./vcs"
 
 export async function InstanceBootstrap() {
   Log.Default.info("bootstrapping", { directory: Instance.directory })
+  await initializeAuthProviders()
   await Plugin.init()
   ShareNext.init()
   Format.init()

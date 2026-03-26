@@ -1,24 +1,23 @@
 import { describe, expect, test } from "bun:test"
+import type { AuthProvider } from "../../src/auth/provider"
 import { resolvePluginProviders } from "../../src/cli/cmd/providers"
-import type { Hooks } from "../../src/plugin/types"
 
-function hookWithAuth(provider: string): Hooks {
-  return {
-    auth: {
-      provider,
-      methods: [],
+function provider(id: string): [string, AuthProvider] {
+  return [
+    id,
+    {
+      provider: id,
+      auth: {
+        methods: [],
+      },
     },
-  }
-}
-
-function hookWithoutAuth(): Hooks {
-  return {}
+  ]
 }
 
 describe("resolvePluginProviders", () => {
   test("returns plugin providers not in models.dev", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(),
       providerNames: {},
@@ -28,7 +27,7 @@ describe("resolvePluginProviders", () => {
 
   test("skips providers already in models.dev", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("anthropic")],
+      providers: new Map([provider("anthropic")]),
       existingProviders: { anthropic: {} },
       disabled: new Set(),
       providerNames: {},
@@ -36,9 +35,9 @@ describe("resolvePluginProviders", () => {
     expect(result).toEqual([])
   })
 
-  test("deduplicates across plugins", () => {
+  test("deduplicates across providers", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey"), hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(),
       providerNames: {},
@@ -48,7 +47,7 @@ describe("resolvePluginProviders", () => {
 
   test("respects disabled_providers", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(["portkey"]),
       providerNames: {},
@@ -58,7 +57,7 @@ describe("resolvePluginProviders", () => {
 
   test("respects enabled_providers when provider is absent", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(),
       enabled: new Set(["anthropic"]),
@@ -69,7 +68,7 @@ describe("resolvePluginProviders", () => {
 
   test("includes provider when in enabled set", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(),
       enabled: new Set(["portkey"]),
@@ -80,7 +79,7 @@ describe("resolvePluginProviders", () => {
 
   test("resolves name from providerNames", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(),
       providerNames: { portkey: "Portkey AI" },
@@ -90,7 +89,7 @@ describe("resolvePluginProviders", () => {
 
   test("falls back to id when no name configured", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithAuth("portkey")],
+      providers: new Map([provider("portkey")]),
       existingProviders: {},
       disabled: new Set(),
       providerNames: {},
@@ -98,19 +97,9 @@ describe("resolvePluginProviders", () => {
     expect(result).toEqual([{ id: "portkey", name: "portkey" }])
   })
 
-  test("skips hooks without auth", () => {
+  test("returns empty for no providers", () => {
     const result = resolvePluginProviders({
-      hooks: [hookWithoutAuth(), hookWithAuth("portkey"), hookWithoutAuth()],
-      existingProviders: {},
-      disabled: new Set(),
-      providerNames: {},
-    })
-    expect(result).toEqual([{ id: "portkey", name: "portkey" }])
-  })
-
-  test("returns empty for no hooks", () => {
-    const result = resolvePluginProviders({
-      hooks: [],
+      providers: new Map(),
       existingProviders: {},
       disabled: new Set(),
       providerNames: {},

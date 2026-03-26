@@ -49,7 +49,7 @@ export async function command(opts: { command: string; input: Input; timeout: nu
       }
 
       if (code === 0) {
-        log.info("result proceed", { hasContext: !!(stdout.trim()) })
+        log.info("result proceed", { hasContext: !!stdout.trim() })
         return resolve({
           proceed: true,
           context: stdout.trim() || undefined,
@@ -150,10 +150,7 @@ function gitBinDir(): string | null {
     if (Filesystem.stat(path.join(bin, "bash.exe"))?.size) return path.resolve(bin)
   }
   // Common hardcoded fallbacks
-  for (const p of [
-    "C:\\Program Files\\Git\\bin",
-    String(process.env.LOCALAPPDATA) + "\\Programs\\Git\\bin",
-  ]) {
+  for (const p of ["C:\\Program Files\\Git\\bin", `${String(process.env.LOCALAPPDATA)}\\Programs\\Git\\bin`]) {
     if (Filesystem.stat(path.join(p, "bash.exe"))?.size) return p
   }
   return null
@@ -185,7 +182,11 @@ function tryJson(stdout: string): Result | undefined {
     // Check for hookSpecificOutput
     if (parsed.hookSpecificOutput) {
       const specific = parsed.hookSpecificOutput
-      const result: Result = { proceed: true, hookOutput: specific, context: specific.additionalContext ?? specific.additional_context }
+      const result: Result = {
+        proceed: true,
+        hookOutput: specific,
+        context: specific.additionalContext ?? specific.additional_context,
+      }
 
       // PreToolUse permission decisions
       if (specific.permissionDecision === "deny") {

@@ -4,17 +4,18 @@ import { text } from "node:stream/consumers"
 import * as prompts from "@clack/prompts"
 import { map, pipe, sortBy, values } from "remeda"
 import { Auth } from "../../auth"
+import type { AuthProvider } from "../../auth/provider"
+import { AUTH_PROVIDERS } from "../../auth/registry"
 import { Config } from "../../config/config"
 import { Global } from "../../global"
-import { Plugin } from "../../plugin"
-import type { Hooks } from "../../plugin/types"
+import type { AuthHook } from "../../plugin/types"
 import { Instance } from "../../project/instance"
 import { ModelsDev } from "../../provider/models"
 import { Process } from "../../util/process"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
 
-type PluginAuth = NonNullable<Hooks["auth"]>
+type PluginAuth = AuthHook
 
 async function handlePluginAuth(plugin: { auth: PluginAuth }, provider: string, methodName?: string): Promise<boolean> {
   let index = 0
@@ -166,20 +167,15 @@ async function handlePluginAuth(plugin: { auth: PluginAuth }, provider: string, 
 }
 
 export function resolvePluginProviders(input: {
-  hooks: Hooks[]
+  providers: Map<string, AuthProvider>
   existingProviders: Record<string, unknown>
   disabled: Set<string>
   enabled?: Set<string>
   providerNames: Record<string, string | undefined>
 }): Array<{ id: string; name: string }> {
-  const seen = new Set<string>()
   const result: Array<{ id: string; name: string }> = []
 
-  for (const hook of input.hooks) {
-    if (!hook.auth) continue
-    const id = hook.auth.provider
-    if (seen.has(id)) continue
-    seen.add(id)
+  for (const [id] of input.providers) {
     if (Object.hasOwn(input.existingProviders, id)) continue
     if (input.disabled.has(id)) continue
     if (input.enabled && !input.enabled.has(id)) continue
@@ -329,7 +325,7 @@ export const ProvidersLoginCommand = cmd({
           vercel: 7,
         }
         const pluginProviders = resolvePluginProviders({
-          hooks: await Plugin.list(),
+          providers: AUTH_PROVIDERS,
           existingProviders: providers,
           disabled,
           enabled,
@@ -387,9 +383,9 @@ export const ProvidersLoginCommand = cmd({
           provider = selected as string
         }
 
-        const plugin = await Plugin.list().then((x) => x.findLast((x) => x.auth?.provider === provider))
-        if (plugin?.auth) {
-          const handled = await handlePluginAuth({ auth: plugin.auth }, provider, args.method)
+        const authProvider = AUTH_PROVIDERS.get(provider)
+        if (authProvider) {
+          const handled = await handlePluginAuth({ auth: { provider, ...authProvider.auth } }, provider, args.method)
           if (handled) return
         }
 
@@ -401,9 +397,9 @@ export const ProvidersLoginCommand = cmd({
           if (prompts.isCancel(custom)) throw new UI.CancelledError()
           provider = custom.replace(/^@ai-sdk\//, "")
 
-          const customPlugin = await Plugin.list().then((x) => x.findLast((x) => x.auth?.provider === provider))
-          if (customPlugin?.auth) {
-            const handled = await handlePluginAuth({ auth: customPlugin.auth }, provider, args.method)
+          const customAuth = AUTH_PROVIDERS.get(provider)
+          if (customAuth) {
+            const handled = await handlePluginAuth({ auth: { provider, ...customAuth.auth } }, provider, args.method)
             if (handled) return
           }
 

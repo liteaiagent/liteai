@@ -1,11 +1,12 @@
 import * as net from "node:net"
 import os from "node:os"
-import { OAUTH_DUMMY_KEY } from "@/auth"
 import { Installation } from "@/installation"
 import { Log } from "@/util/log"
-import type { Hooks, PluginInput } from "./types"
+import { Auth } from "../index"
+import type { AuthProvider } from "../provider"
+import { OAUTH_DUMMY_KEY } from "../service"
 
-const log = Log.create({ service: "plugin.code-assist" })
+const log = Log.create({ service: "auth.code-assist" })
 
 // OAuth Client ID for Google Code Assist (installed application — public per Google policy)
 // https://developers.google.com/identity/protocols/oauth2#installed
@@ -21,8 +22,6 @@ const SCOPES = [
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 const HEADLESS_REDIRECT = "https://codeassist.google.com/authcode"
-const _SIGN_IN_SUCCESS_URL = "https://developers.google.com/gemini-code-assist/auth_success_gemini"
-const _SIGN_IN_FAILURE_URL = "https://developers.google.com/gemini-code-assist/auth_failure_gemini"
 
 interface TokenResponse {
   access_token: string
@@ -337,156 +336,158 @@ function waitForCallback(pkce: PkceCodes, state: string): Promise<TokenResponse>
 // Module-scoped cache so the expensive setup() API call runs once across all instances
 let cached: { project?: string } | undefined
 
-export async function CodeAssistAuthPlugin(input: PluginInput): Promise<Hooks> {
-  return {
-    auth: {
-      provider: "google-code-assist",
-      async loader(getAuth) {
-        const auth = await getAuth()
-        if (auth.type !== "oauth") return {}
+export const CodeAssistAuth: AuthProvider = {
+  provider: "google-code-assist",
+  async setup() {
+    // Pre-cache is not possible without auth at boot time.
+    // setup() is called once at daemon boot before any auth exists.
+    // The actual setup resolves lazily inside the loader on first use.
+  },
+  auth: {
+    async loader(getAuth) {
+      const auth = await getAuth()
+      if (auth.type !== "oauth") return {}
 
-        // Build auth-aware fetch for both setup() and SDK requests
-        const authFetch = async (request: RequestInfo | URL, init?: RequestInit) => {
-          // Remove dummy API key authorization header
-          if (init?.headers) {
-            if (init.headers instanceof Headers) {
-              init.headers.delete("authorization")
-              init.headers.delete("Authorization")
-            } else if (Array.isArray(init.headers)) {
-              init.headers = init.headers.filter(([key]) => key.toLowerCase() !== "authorization")
-            } else {
-              delete init.headers.authorization
-              delete init.headers.Authorization
+      // Build auth-aware fetch for both setup() and SDK requests
+      const authFetch = async (request: RequestInfo | URL, init?: RequestInit) => {
+        // Remove dummy API key authorization header
+        if (init?.headers) {
+          if (init.headers instanceof Headers) {
+            init.headers.delete("authorization")
+            init.headers.delete("Authorization")
+          } else if (Array.isArray(init.headers)) {
+            init.headers = init.headers.filter(([key]) => key.toLowerCase() !== "authorization")
+          } else {
+            delete init.headers.authorization
+            delete init.headers.Authorization
+          }
+        }
+
+        const current = await getAuth()
+        if (current.type !== "oauth") return fetch(request, init)
+
+        // Refresh if expired or about to expire (30s buffer)
+        if (!current.access || current.expires < Date.now() + 30_000) {
+          log.info("refreshing code-assist access token")
+          let tokens: TokenResponse
+          try {
+            tokens = await refreshToken(current.refresh)
+          } catch (e) {
+            log.error("code-assist token refresh failed", { error: e })
+            throw e
+          }
+          await Auth.set("google-code-assist", {
+            type: "oauth",
+            refresh: tokens.refresh_token || current.refresh,
+            access: tokens.access_token,
+            expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+          })
+          current.access = tokens.access_token
+        }
+
+        // Build headers with Bearer token
+        const headers = new Headers()
+        if (init?.headers) {
+          if (init.headers instanceof Headers) {
+            init.headers.forEach((value, key) => {
+              headers.set(key, value)
+            })
+          } else if (Array.isArray(init.headers)) {
+            for (const [key, value] of init.headers) {
+              if (value !== undefined) headers.set(key, String(value))
+            }
+          } else {
+            for (const [key, value] of Object.entries(init.headers)) {
+              if (value !== undefined) headers.set(key, String(value))
             }
           }
+        }
 
-          const current = await getAuth()
-          if (current.type !== "oauth") return fetch(request, init)
+        headers.set("Authorization", `Bearer ${current.access}`)
 
-          // Refresh if expired or about to expire (30s buffer)
-          if (!current.access || current.expires < Date.now() + 30_000) {
-            log.info("refreshing code-assist access token")
-            let tokens: TokenResponse
-            try {
-              tokens = await refreshToken(current.refresh)
-            } catch (e) {
-              log.error("code-assist token refresh failed", { error: e })
-              throw e
-            }
-            await input.client.auth.set({
-              path: { id: "google-code-assist" },
-              body: {
-                type: "oauth",
-                refresh: tokens.refresh_token || current.refresh,
+        return fetch(request, { ...init, headers }) as Promise<Response>
+      }
+
+      // Run setup to discover project + tier (cached per provider lifecycle)
+      if (!cached) {
+        try {
+          const { setup } = await import("@/provider/sdk/code-assist/setup")
+          const env = process.env.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT_ID
+          // biome-ignore lint/suspicious/noExplicitAny: generic sdk param
+          const data = await setup({ fetch: authFetch as any }, env)
+          cached = { project: data.project }
+          log.info("code-assist setup complete", { project: data.project, tier: data.tier })
+        } catch (err) {
+          log.warn("code-assist setup failed, continuing without project", { error: err })
+          cached = {}
+        }
+      }
+
+      return {
+        apiKey: OAUTH_DUMMY_KEY,
+        project: cached.project,
+        fetch: authFetch,
+      }
+    },
+    methods: [
+      {
+        label: "Google Sign-In (browser)",
+        type: "oauth",
+        authorize: async () => {
+          const { redirect } = await startOAuthServer()
+          const pkce = await generatePKCE()
+          const state = generateState()
+          const url = buildAuthUrl(redirect, pkce, state)
+
+          const promise = waitForCallback(pkce, state)
+
+          return {
+            url,
+            instructions: "Complete authorization in your browser. This window will close automatically.",
+            method: "auto" as const,
+            callback: async () => {
+              const tokens = await promise
+              stopOAuthServer()
+              return {
+                type: "success" as const,
+                refresh: tokens.refresh_token || "",
                 access: tokens.access_token,
                 expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-              },
-            })
-            current.access = tokens.access_token
-          }
-
-          // Build headers with Bearer token
-          const headers = new Headers()
-          if (init?.headers) {
-            if (init.headers instanceof Headers) {
-              init.headers.forEach((value, key) => {
-                headers.set(key, value)
-              })
-            } else if (Array.isArray(init.headers)) {
-              for (const [key, value] of init.headers) {
-                if (value !== undefined) headers.set(key, String(value))
               }
-            } else {
-              for (const [key, value] of Object.entries(init.headers)) {
-                if (value !== undefined) headers.set(key, String(value))
-              }
-            }
+            },
           }
-
-          headers.set("Authorization", `Bearer ${current.access}`)
-
-          return fetch(request, { ...init, headers }) as Promise<Response>
-        }
-
-        // Run setup to discover project + tier (cached per provider lifecycle)
-        if (!cached) {
-          try {
-            const { setup } = await import("@/provider/sdk/code-assist/setup")
-            const env = process.env.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT_ID
-            // biome-ignore lint/suspicious/noExplicitAny: generic sdk param
-            const data = await setup({ fetch: authFetch as any }, env)
-            cached = { project: data.project }
-            log.info("code-assist setup complete", { project: data.project, tier: data.tier })
-          } catch (err) {
-            log.warn("code-assist setup failed, continuing without project", { error: err })
-            cached = {}
-          }
-        }
-
-        return {
-          apiKey: OAUTH_DUMMY_KEY,
-          project: cached.project,
-          fetch: authFetch,
-        }
+        },
       },
-      methods: [
-        {
-          label: "Google Sign-In (browser)",
-          type: "oauth",
-          authorize: async () => {
-            const { redirect } = await startOAuthServer()
-            const pkce = await generatePKCE()
-            const state = generateState()
-            const url = buildAuthUrl(redirect, pkce, state)
+      {
+        label: "Google Sign-In (headless)",
+        type: "oauth",
+        authorize: async () => {
+          const pkce = await generatePKCE()
+          const state = generateState()
+          const url = buildAuthUrl(HEADLESS_REDIRECT, pkce, state)
 
-            const promise = waitForCallback(pkce, state)
-
-            return {
-              url,
-              instructions: "Complete authorization in your browser. This window will close automatically.",
-              method: "auto" as const,
-              callback: async () => {
-                const tokens = await promise
-                stopOAuthServer()
-                return {
-                  type: "success" as const,
-                  refresh: tokens.refresh_token || "",
-                  access: tokens.access_token,
-                  expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-                }
-              },
-            }
-          },
+          return {
+            url,
+            instructions: "Visit the URL above, authorize, and paste the code below.",
+            method: "code" as const,
+            callback: async (code: string) => {
+              const tokens = await exchangeCode(code, HEADLESS_REDIRECT, pkce)
+              return {
+                type: "success" as const,
+                refresh: tokens.refresh_token || "",
+                access: tokens.access_token,
+                expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+              }
+            },
+          }
         },
-        {
-          label: "Google Sign-In (headless)",
-          type: "oauth",
-          authorize: async () => {
-            const pkce = await generatePKCE()
-            const state = generateState()
-            const url = buildAuthUrl(HEADLESS_REDIRECT, pkce, state)
-
-            return {
-              url,
-              instructions: "Visit the URL above, authorize, and paste the code below.",
-              method: "code" as const,
-              callback: async (code: string) => {
-                const tokens = await exchangeCode(code, HEADLESS_REDIRECT, pkce)
-                return {
-                  type: "success" as const,
-                  refresh: tokens.refresh_token || "",
-                  access: tokens.access_token,
-                  expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-                }
-              },
-            }
-          },
-        },
-      ],
-    },
+      },
+    ],
+  },
+  hooks: {
     "chat.headers": async (incoming, output) => {
       if (incoming.model.providerID !== "google-code-assist") return
       output.headers["User-Agent"] = `liteai/${Installation.VERSION} (${os.platform()} ${os.release()}; ${os.arch()})`
     },
-  }
+  },
 }

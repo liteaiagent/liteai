@@ -1,27 +1,13 @@
 import { createLiteaiClient } from "@liteai-ai/sdk"
+import { AUTH_PROVIDERS } from "../auth/registry"
 import { Bus } from "../bus"
 import { Config } from "../config/config"
 import { Flag } from "../flag/flag"
 import { Instance } from "../project/instance"
 import { Server } from "../server/server"
-import { Log } from "../util/log"
-import { Ai4allAuthPlugin } from "./ai4all"
-import { CodeAssistAuthPlugin } from "./code-assist"
-import { CodexAuthPlugin } from "./codex"
-import { CopilotAuthPlugin } from "./copilot"
-import type { Hooks, Plugin as PluginInstance } from "./types"
+import type { Hooks } from "./types"
 
 export namespace Plugin {
-  const log = Log.create({ service: "plugin" })
-
-  // Built-in plugins that are directly imported (not installed from npm)
-  const INTERNAL_PLUGINS: PluginInstance[] = [
-    CodexAuthPlugin,
-    CopilotAuthPlugin,
-    CodeAssistAuthPlugin,
-    Ai4allAuthPlugin,
-  ]
-
   const state = Instance.state(async () => {
     const client = createLiteaiClient({
       baseUrl: "http://localhost:9000",
@@ -49,12 +35,9 @@ export namespace Plugin {
       $: Bun.$,
     }
 
-    for (const plugin of INTERNAL_PLUGINS) {
-      log.info("loading internal plugin", { name: plugin.name })
-      const init = await plugin(input).catch((err) => {
-        log.error("failed to load internal plugin", { name: plugin.name, error: err })
-      })
-      if (init) hooks.push(init)
+    // Inject chat.headers hooks from global auth providers
+    for (const provider of AUTH_PROVIDERS.values()) {
+      if (provider.hooks) hooks.push(provider.hooks as Hooks)
     }
 
     return {
@@ -64,7 +47,7 @@ export namespace Plugin {
   })
 
   export async function trigger<
-    Name extends Exclude<keyof Required<Hooks>, "auth" | "event" | "tool">,
+    Name extends Exclude<keyof Required<Hooks>, "event" | "tool">,
     Input = Parameters<Required<Hooks>[Name]>[0],
     Output = Parameters<Required<Hooks>[Name]>[1],
   >(name: Name, input: Input, output: Output): Promise<Output> {

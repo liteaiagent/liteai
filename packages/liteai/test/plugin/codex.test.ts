@@ -4,7 +4,7 @@ import {
   extractAccountIdFromClaims,
   type IdTokenClaims,
   parseJwtClaims,
-} from "../../src/plugin/codex"
+} from "../../src/auth/providers/codex"
 
 function createTestJwt(payload: object): string {
   const header = Buffer.from(JSON.stringify({ alg: "none" })).toString("base64url")

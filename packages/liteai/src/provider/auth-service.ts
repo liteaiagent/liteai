@@ -1,10 +1,8 @@
 import { NamedError } from "@liteai/util/error"
 import { Effect, Layer, Record, ServiceMap, Struct } from "effect"
-import { filter, fromEntries, map, pipe } from "remeda"
 import z from "zod"
 import * as Auth from "@/auth/service"
-import { InstanceState } from "@/util/instance-state"
-import { Plugin } from "../plugin"
+import { AUTH_PROVIDERS } from "../auth/registry"
 import type { AuthHook, AuthOauthResult } from "../plugin/types"
 import { ProviderID } from "./schema"
 
@@ -101,22 +99,15 @@ export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService,
     ProviderAuthService,
     Effect.gen(function* () {
       const auth = yield* Auth.AuthService
-      const state = yield* InstanceState.make(() =>
-        Effect.promise(async () => {
-          const methods = pipe(
-            await Plugin.list(),
-            filter((x) => x.auth?.provider !== undefined),
-            map((x) => [x.auth?.provider, x.auth] as const),
-            filter((x): x is readonly [string, AuthHook] => x[0] !== undefined),
-            fromEntries(),
-          )
-          return { methods: methods as Record<string, AuthHook>, pending: new Map<ProviderID, AuthOauthResult>() }
-        }),
+
+      // Build AuthHook-shaped map from global AUTH_PROVIDERS
+      const registry = Object.fromEntries(
+        [...AUTH_PROVIDERS.entries()].map(([id, p]) => [id, { provider: id, ...p.auth } as AuthHook]),
       )
+      const pending = new Map<ProviderID, AuthOauthResult>()
 
       const methods = Effect.fn("ProviderAuthService.methods")(function* () {
-        const x = yield* InstanceState.get(state)
-        return Record.map(x.methods as Record<string, AuthHook>, (y: AuthHook) =>
+        return Record.map(registry as Record<string, AuthHook>, (y: AuthHook) =>
           y.methods.map(
             (z): Method => ({
               ...Struct.pick(z, ["type", "label"]),
@@ -135,11 +126,12 @@ export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService,
         method: number
         inputs?: Record<string, string>
       }) {
-        const s = yield* InstanceState.get(state)
-        const method = (s.methods as Record<string, AuthHook>)[input.providerID].methods[input.method]
+        const hook = (registry as Record<string, AuthHook>)[input.providerID]
+        if (!hook) return
+        const method = hook.methods[input.method]
         if (method.type !== "oauth") return
         const result: AuthOauthResult = yield* Effect.promise(() => method.authorize(input.inputs))
-        s.pending.set(input.providerID, result)
+        pending.set(input.providerID, result)
         return {
           url: result.url,
           method: result.method,
@@ -152,8 +144,7 @@ export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService,
         method: number
         code?: string
       }) {
-        const s = yield* InstanceState.get(state)
-        const match = s.pending.get(input.providerID)
+        const match = pending.get(input.providerID)
         if (!match) return yield* Effect.fail(new OauthMissing({ providerID: input.providerID }))
 
         if (match.method === "code" && !input.code)

@@ -3,10 +3,10 @@ import type { Provider as AiProvider } from "ai"
 import { mapValues, mergeDeep, omit, pickBy } from "remeda"
 import { iife } from "@/util/iife"
 import { Auth } from "../auth"
+import { AUTH_PROVIDERS } from "../auth/registry"
 import { Config } from "../config/config"
 import { Env } from "../env"
 import { Flag } from "../flag/flag"
-import { Plugin } from "../plugin"
 import { Instance } from "../project/instance"
 import { Log } from "../util/log"
 import { CUSTOM_LOADERS, type ModelLoader, type VarsLoader } from "./loaders"
@@ -369,12 +369,11 @@ async function loadPlugins(
   disabled: Set<string>,
   merge: (id: ProviderID, patch: Partial<Provider.Info>) => void,
 ) {
-  for (const plugin of await Plugin.list()) {
-    if (!plugin.auth) continue
-    const providerID = ProviderID.make(plugin.auth.provider)
+  for (const [id, provider] of AUTH_PROVIDERS) {
+    const providerID = ProviderID.make(id)
     if (disabled.has(providerID)) continue
 
-    // For github-copilot plugin, check if auth exists for either github-copilot or github-copilot-enterprise
+    // For github-copilot, check if auth exists for either github-copilot or github-copilot-enterprise
     let hasAuth = false
     const auth = await Auth.get(providerID)
     if (auth) hasAuth = true
@@ -386,24 +385,24 @@ async function loadPlugins(
     }
 
     if (!hasAuth) continue
-    if (!plugin.auth.loader) continue
+    if (!provider.auth.loader) continue
 
     // Load for the main provider if auth exists
     if (auth) {
       // biome-ignore lint/suspicious/noExplicitAny: auth getter returns different shapes per provider
-      const options = await plugin.auth.loader(() => Auth.get(providerID) as any, database[plugin.auth.provider])
+      const options = await provider.auth.loader(() => Auth.get(providerID) as any, database[id])
       const opts = options ?? {}
       const patch: Partial<Provider.Info> = providers[providerID] ? { options: opts } : { source: "api", options: opts }
       merge(providerID, patch)
     }
 
-    // If this is github-copilot plugin, also register for github-copilot-enterprise if auth exists
+    // If this is github-copilot, also register for github-copilot-enterprise if auth exists
     if (providerID === ProviderID.githubCopilot) {
       const enterpriseProviderID = ProviderID.githubCopilotEnterprise
       if (!disabled.has(enterpriseProviderID)) {
         const enterpriseAuth = await Auth.get(enterpriseProviderID)
         if (enterpriseAuth) {
-          const enterpriseOptions = await plugin.auth.loader(
+          const enterpriseOptions = await provider.auth.loader(
             // biome-ignore lint/suspicious/noExplicitAny: auth getter returns different shapes per provider
             () => Auth.get(enterpriseProviderID) as any,
             database[enterpriseProviderID],

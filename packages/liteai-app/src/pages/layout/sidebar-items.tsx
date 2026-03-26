@@ -14,7 +14,6 @@ import { getFilename } from "@liteai/util/path"
 import type { Message, Session, TextPart, UserMessage } from "@liteai-ai/sdk/client"
 import { A, useNavigate, useParams } from "@solidjs/router"
 import { type Accessor, createMemo, For, type JSX, Match, onCleanup, Show, Switch } from "solid-js"
-import { createStore } from "solid-js/store"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
@@ -235,7 +234,7 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
   const notification = useNotification()
   const permission = usePermission()
   const globalSync = useGlobalSync()
-  const globalSDK = useGlobalSDK()
+  useGlobalSDK()
   const dialog = useDialog()
 
   const unseenCount = createMemo(() => notification.session.unseenCount(props.session.id))

@@ -210,7 +210,7 @@ export function SidebarPanel(props: SidebarPanelProps) {
                         if (!item) return
                         props.workspaceSidebarCtx.setShowArchived(
                           item.worktree,
-                          !props.workspaceSidebarCtx.showArchived(item.worktree)
+                          !props.workspaceSidebarCtx.showArchived(item.worktree),
                         )
                       }}
                     >

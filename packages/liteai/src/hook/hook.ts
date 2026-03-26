@@ -189,7 +189,10 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
         }
 
         log.info("handler done", {
-          event, gi, hi, type: handler.type,
+          event,
+          gi,
+          hi,
+          type: handler.type,
           proceed: result.proceed,
           decision: result.decision,
           hasContext: !!result.context,

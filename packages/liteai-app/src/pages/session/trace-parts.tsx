@@ -238,9 +238,12 @@ export function ContextMessages(props: {
   const sync = useSync()
   const resolved = createMemo(() => {
     if (props.messages_json && props.messages_json.length > 0) {
-      return props.messages_json.map((m: any) => ({
-        msg: { id: m.info?.id || "", role: m.info?.role },
-        parts: (m.parts ?? []) as TracePartData[],
+      return props.messages_json.map((m: Record<string, unknown>) => ({
+        msg: {
+          id: ((m.info as Record<string, unknown>)?.id as string) || "",
+          role: ((m.info as Record<string, unknown>)?.role as string) ?? "unknown",
+        },
+        parts: ((m.parts as unknown[]) ?? []) as TracePartData[],
       }))
     }
 

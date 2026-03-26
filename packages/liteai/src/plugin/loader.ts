@@ -226,11 +226,8 @@ async function loadHooks(root: string, plugin: string): Promise<HookSchema | und
       const obj = raw as Record<string, unknown>
       // Claude Code plugins wrap hooks: { description?, hooks: { EventName: [...] } }
       // Fall back to treating the whole object as the schema.
-      const schema =
-        obj.hooks && typeof obj.hooks === "object" && !Array.isArray(obj.hooks)
-          ? obj.hooks
-          : obj
-      
+      const schema = obj.hooks && typeof obj.hooks === "object" && !Array.isArray(obj.hooks) ? obj.hooks : obj
+
       const expanded = expandDeep(schema, root, plugin)
       return expanded as HookSchema
     } catch (err) {
