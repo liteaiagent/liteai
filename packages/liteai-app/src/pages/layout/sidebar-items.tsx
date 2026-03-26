@@ -2,11 +2,9 @@ import { Avatar } from "@liteai/ui/avatar"
 import { Button } from "@liteai/ui/button"
 import { useDialog } from "@liteai/ui/context/dialog"
 import { Dialog } from "@liteai/ui/dialog"
-import { DropdownMenu } from "@liteai/ui/dropdown-menu"
 import { HoverCard } from "@liteai/ui/hover-card"
 import { Icon } from "@liteai/ui/icon"
 import { IconButton } from "@liteai/ui/icon-button"
-import { InlineInput } from "@liteai/ui/inline-input"
 import { MessageNav } from "@liteai/ui/message-nav"
 import { Spinner } from "@liteai/ui/spinner"
 import { showToast } from "@liteai/ui/toast"
@@ -194,65 +192,6 @@ const SessionHoverPreview = (props: {
   </HoverCard>
 )
 
-function DialogRenameSession(props: { session: Session; onRename: (title: string) => Promise<void> }) {
-  const language = useLanguage()
-  const dialog = useDialog()
-  const [state, setState] = createStore({ draft: props.session.title, saving: false })
-
-  const save = async () => {
-    const next = state.draft.trim()
-    if (!next || next === props.session.title) {
-      dialog.close()
-      return
-    }
-    setState("saving", true)
-    await props
-      .onRename(next)
-      .then(() => dialog.close())
-      .catch((err: unknown) => {
-        setState("saving", false)
-        showToast({
-          title: language.t("common.requestFailed"),
-          description: err instanceof Error ? err.message : language.t("common.requestFailed"),
-        })
-      })
-  }
-
-  return (
-    <Dialog title={language.t("common.rename")} fit>
-      <div class="flex flex-col gap-4 pl-6 pr-2.5 pb-3">
-        <InlineInput
-          value={state.draft}
-          disabled={state.saving}
-          class="text-14-medium text-text-strong w-full rounded-[6px]"
-          style={{ "--inline-input-shadow": "var(--shadow-xs-border-select)" }}
-          onInput={(event) => setState("draft", event.currentTarget.value)}
-          onKeyDown={(event) => {
-            event.stopPropagation()
-            if (event.key === "Enter") {
-              event.preventDefault()
-              void save()
-            }
-            if (event.key === "Escape") {
-              event.preventDefault()
-              dialog.close()
-            }
-          }}
-          autofocus
-        />
-        <div class="flex justify-end gap-2">
-          <Button variant="ghost" size="large" onClick={() => dialog.close()}>
-            {language.t("common.cancel")}
-          </Button>
-          <Button variant="primary" size="large" onClick={() => void save()} disabled={state.saving}>
-            {language.t("common.rename")}
-          </Button>
-        </div>
-      </div>
-    </Dialog>
-  )
-}
-
 function DialogDeleteSession(props: { session: Session; onDelete: (session: Session) => Promise<void> }) {
   const language = useLanguage()
   const dialog = useDialog()
@@ -334,24 +273,6 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
   const hoverAllowed = createMemo(() => !props.mobile && props.sidebarExpanded())
   const hoverEnabled = createMemo(() => (props.popover ?? true) && hoverAllowed())
   const isActive = createMemo(() => props.session.id === params.id)
-
-  const shareEnabled = createMemo(() => sessionStore.config?.share !== "disabled")
-
-  const [menu, setMenu] = createStore({ open: false })
-
-  const shareSession = () => {
-    globalSDK.client.session
-      .share({ sessionID: props.session.id, directory: props.session.directory })
-      .then(() => {
-        showToast({ title: language.t("session.share.action.publish") })
-      })
-      .catch((err: unknown) => {
-        showToast({
-          title: language.t("common.requestFailed"),
-          description: err instanceof Error ? err.message : language.t("common.requestFailed"),
-        })
-      })
-  }
 
   const warm = (span: number, priority: "high" | "low") => {
     const nav = props.navList?.()
@@ -458,69 +379,38 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
       <div
         class={`absolute ${props.dense ? "top-0.5 right-0.5" : "top-1 right-1"} flex items-center gap-0.5 transition-opacity`}
         classList={{
-          "opacity-100 pointer-events-auto": !!props.mobile || menu.open,
-          "opacity-0 pointer-events-none": !props.mobile && !menu.open,
+          "opacity-100 pointer-events-auto": !!props.mobile,
+          "opacity-0 pointer-events-none": !props.mobile,
           "group-hover/session:opacity-100 group-hover/session:pointer-events-auto": true,
           "group-focus-within/session:opacity-100 group-focus-within/session:pointer-events-auto": true,
         }}
       >
-        <DropdownMenu
-          gutter={4}
-          placement="bottom-end"
-          modal={!props.sidebarHovering()}
-          open={menu.open}
-          onOpenChange={(open) => setMenu("open", open)}
-        >
-          <Tooltip value={language.t("common.moreOptions")} placement="top">
-            <DropdownMenu.Trigger
-              as={IconButton}
-              icon="dot-grid"
-              variant="ghost"
-              class="size-6 rounded-md data-[expanded]:bg-surface-base-active"
-              aria-label={language.t("common.moreOptions")}
-              onClick={(event: MouseEvent) => {
-                event.preventDefault()
-                event.stopPropagation()
-              }}
-            />
-          </Tooltip>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content style={{ "min-width": "104px" }}>
-              <DropdownMenu.Item
-                onSelect={() =>
-                  dialog.show(() => (
-                    <DialogRenameSession
-                      session={props.session}
-                      onRename={(title) => props.renameSession(props.session, title)}
-                    />
-                  ))
-                }
-              >
-                <DropdownMenu.ItemLabel>{language.t("common.rename")}</DropdownMenu.ItemLabel>
-              </DropdownMenu.Item>
-              <Show when={shareEnabled()}>
-                <DropdownMenu.Item onSelect={shareSession}>
-                  <DropdownMenu.ItemLabel>{language.t("session.share.action.share")}</DropdownMenu.ItemLabel>
-                </DropdownMenu.Item>
-              </Show>
-              <DropdownMenu.Item
-                onSelect={() => {
-                  void props.archiveSession(props.session)
-                }}
-              >
-                <DropdownMenu.ItemLabel>{language.t("common.archive")}</DropdownMenu.ItemLabel>
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item
-                onSelect={() =>
-                  dialog.show(() => <DialogDeleteSession session={props.session} onDelete={props.deleteSession} />)
-                }
-              >
-                <DropdownMenu.ItemLabel>{language.t("common.delete")}</DropdownMenu.ItemLabel>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu>
+        <Tooltip value={language.t("common.archive")} placement="top">
+          <IconButton
+            icon="archive"
+            variant="ghost"
+            class="size-6 rounded-md"
+            aria-label={language.t("common.archive")}
+            onClick={(event: MouseEvent) => {
+              event.preventDefault()
+              event.stopPropagation()
+              void props.archiveSession(props.session)
+            }}
+          />
+        </Tooltip>
+        <Tooltip value={language.t("common.delete")} placement="top">
+          <IconButton
+            icon="trash"
+            variant="ghost"
+            class="size-6 rounded-md"
+            aria-label={language.t("common.delete")}
+            onClick={(event: MouseEvent) => {
+              event.preventDefault()
+              event.stopPropagation()
+              dialog.show(() => <DialogDeleteSession session={props.session} onDelete={props.deleteSession} />)
+            }}
+          />
+        </Tooltip>
       </div>
     </div>
   )

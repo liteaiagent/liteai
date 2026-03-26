@@ -203,6 +203,24 @@ export function SidebarPanel(props: SidebarPanelProps) {
                       {props.language.t("sidebar.project.clearNotifications")}
                     </DropdownMenu.ItemLabel>
                   </DropdownMenu.Item>
+                  <Show when={!workspacesOn()}>
+                    <DropdownMenu.Item
+                      onSelect={() => {
+                        const item = project()
+                        if (!item) return
+                        props.workspaceSidebarCtx.setShowArchived(
+                          item.worktree,
+                          !props.workspaceSidebarCtx.showArchived(item.worktree)
+                        )
+                      }}
+                    >
+                      <DropdownMenu.ItemLabel>
+                        {props.workspaceSidebarCtx.showArchived(worktree())
+                          ? props.language.t("sidebar.workspace.hideArchived")
+                          : props.language.t("sidebar.workspace.showArchived")}
+                      </DropdownMenu.ItemLabel>
+                    </DropdownMenu.Item>
+                  </Show>
                   <DropdownMenu.Separator />
                   <DropdownMenu.Item
                     data-action="project-close-menu"

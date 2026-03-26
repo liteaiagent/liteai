@@ -57,6 +57,8 @@ export type WorkspaceSidebarContext = {
   setWorkspaceExpanded: (directory: string, value: boolean) => void
   showResetWorkspaceDialog: (root: string, directory: string) => void
   showDeleteWorkspaceDialog: (root: string, directory: string) => void
+  showArchived: (directory: string) => boolean
+  setShowArchived: (directory: string, value: boolean) => void
   setScrollContainerRef: (el: HTMLDivElement | undefined, mobile?: boolean) => void
 }
 
@@ -155,6 +157,8 @@ const WorkspaceActions = (props: {
   openEditor: WorkspaceSidebarContext["openEditor"]
   showResetWorkspaceDialog: WorkspaceSidebarContext["showResetWorkspaceDialog"]
   showDeleteWorkspaceDialog: WorkspaceSidebarContext["showDeleteWorkspaceDialog"]
+  showArchived: WorkspaceSidebarContext["showArchived"]
+  setShowArchived: WorkspaceSidebarContext["setShowArchived"]
   root: string
   setHoverSession: WorkspaceSidebarContext["setHoverSession"]
   clearHoverProjectSoon: WorkspaceSidebarContext["clearHoverProjectSoon"]
@@ -214,6 +218,16 @@ const WorkspaceActions = (props: {
             onSelect={() => props.showDeleteWorkspaceDialog(props.root, props.directory)}
           >
             <DropdownMenu.ItemLabel>{props.language.t("common.delete")}</DropdownMenu.ItemLabel>
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            onSelect={() => props.setShowArchived(props.directory, !props.showArchived(props.directory))}
+          >
+            <DropdownMenu.ItemLabel>
+              {props.showArchived(props.directory)
+                ? props.language.t("sidebar.workspace.hideArchived")
+                : props.language.t("sidebar.workspace.showArchived")}
+            </DropdownMenu.ItemLabel>
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
@@ -431,6 +445,8 @@ export const SortableWorkspace = (props: {
                 openEditor={props.ctx.openEditor}
                 showResetWorkspaceDialog={props.ctx.showResetWorkspaceDialog}
                 showDeleteWorkspaceDialog={props.ctx.showDeleteWorkspaceDialog}
+                showArchived={props.ctx.showArchived}
+                setShowArchived={props.ctx.setShowArchived}
                 root={props.project.worktree}
                 setHoverSession={props.ctx.setHoverSession}
                 clearHoverProjectSoon={props.ctx.clearHoverProjectSoon}
@@ -454,15 +470,17 @@ export const SortableWorkspace = (props: {
             loadMore={loadMore}
             language={language}
           />
-          <div class="px-2 py-1">
-            <ArchivedSessionsSection
-              slug={slug}
-              directory={props.directory}
-              mobile={props.mobile}
-              ctx={props.ctx}
-              language={language}
-            />
-          </div>
+          <Show when={props.ctx.showArchived(props.directory)}>
+            <div class="px-2 py-1">
+              <ArchivedSessionsSection
+                slug={slug}
+                directory={props.directory}
+                mobile={props.mobile}
+                ctx={props.ctx}
+                language={language}
+              />
+            </div>
+          </Show>
         </Collapsible.Content>
       </Collapsible>
     </div>
@@ -511,15 +529,17 @@ export const LocalWorkspace = (props: {
         loadMore={loadMore}
         language={language}
       />
-      <div class="px-2 py-1">
-        <ArchivedSessionsSection
-          slug={slug}
-          directory={props.project.worktree}
-          mobile={props.mobile}
-          ctx={props.ctx}
-          language={language}
-        />
-      </div>
+      <Show when={props.ctx.showArchived(props.project.worktree)}>
+        <div class="px-2 py-1">
+          <ArchivedSessionsSection
+            slug={slug}
+            directory={props.project.worktree}
+            mobile={props.mobile}
+            ctx={props.ctx}
+            language={language}
+          />
+        </div>
+      </Show>
     </div>
   )
 }

@@ -20,6 +20,12 @@ import { expandDeep } from "./env"
 
 const log = Log.create({ service: "plugin:loader" })
 
+const CACHE = new Map<string, Promise<Loaded | undefined>>()
+
+export function clearCache() {
+  CACHE.clear()
+}
+
 /** The result of loading a plugin directory. */
 export const Loaded = z.object({
   name: z.string(),
@@ -47,33 +53,42 @@ function isVersion(s: string) {
 export async function load(root: string): Promise<Loaded | undefined> {
   const resolved = path.resolve(root)
 
-  if (!(await Filesystem.isDir(resolved))) {
-    log.warn("plugin directory not found", { root: resolved })
-    return undefined
+  if (CACHE.has(resolved)) {
+    return CACHE.get(resolved)
   }
 
-  const base = path.basename(resolved)
-  const name = isVersion(base) ? path.basename(path.dirname(resolved)) : base
-  log.info("loading plugin", { name, root: resolved })
+  const promise = (async () => {
+    if (!(await Filesystem.isDir(resolved))) {
+      log.warn("plugin directory not found", { root: resolved })
+      return undefined
+    }
 
-  const [commands, agents, skills, hooks, mcp] = await Promise.all([
-    loadCommands(resolved, name),
-    loadAgents(resolved, name),
-    loadSkills(resolved, name),
-    loadHooks(resolved, name),
-    loadMcp(resolved, name),
-  ])
+    const base = path.basename(resolved)
+    const name = isVersion(base) ? path.basename(path.dirname(resolved)) : base
+    log.info("loading plugin", { name, root: resolved })
 
-  log.info("loaded plugin components", {
-    name,
-    commands: Object.keys(commands).length,
-    agents: Object.keys(agents).length,
-    skills: skills.length,
-    hooks: hooks ? Object.keys(hooks).length : 0,
-    mcp: mcp ? Object.keys(mcp).length : 0,
-  })
+    const [commands, agents, skills, hooks, mcp] = await Promise.all([
+      loadCommands(resolved, name),
+      loadAgents(resolved, name),
+      loadSkills(resolved, name),
+      loadHooks(resolved, name),
+      loadMcp(resolved, name),
+    ])
 
-  return { name, root: resolved, commands, agents, skills, hooks, mcp }
+    log.info("loaded plugin components", {
+      name,
+      commands: Object.keys(commands).length,
+      agents: Object.keys(agents).length,
+      skills: skills.length,
+      hooks: hooks ? Object.keys(hooks).length : 0,
+      mcp: mcp ? Object.keys(mcp).length : 0,
+    })
+
+    return { name, root: resolved, commands, agents, skills, hooks, mcp }
+  })()
+
+  CACHE.set(resolved, promise)
+  return promise
 }
 
 /** Prefix a component name with the plugin namespace. */

@@ -676,6 +676,8 @@ export const dict = {
   "sidebar.help": "Help",
   "sidebar.workspaces.enable": "Enable workspaces",
   "sidebar.workspaces.disable": "Disable workspaces",
+  "sidebar.workspace.showArchived": "Show archived",
+  "sidebar.workspace.hideArchived": "Hide archived",
   "sidebar.gettingStarted.title": "Getting started",
   "sidebar.gettingStarted.line1": "Connect a provider to get started. LiteAI offers free models — no API key needed.",
   "sidebar.gettingStarted.line2": "Or connect Anthropic, OpenAI, Google, and more with your own API key.",

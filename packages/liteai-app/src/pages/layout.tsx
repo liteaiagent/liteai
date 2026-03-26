@@ -75,6 +75,7 @@ export default function Layout(props: ParentProps) {
       workspaceName: {} as Record<string, string>,
       workspaceBranchName: {} as Record<string, Record<string, string>>,
       workspaceExpanded: {} as Record<string, boolean>,
+      workspaceShowArchived: {} as Record<string, boolean>,
       gettingStartedDismissed: false,
     }),
   )
@@ -679,6 +680,8 @@ export default function Layout(props: ParentProps) {
     isBusy,
     workspaceExpanded: (directory, local) => store.workspaceExpanded[directory] ?? local,
     setWorkspaceExpanded: (directory, value) => setStore("workspaceExpanded", directory, value),
+    showArchived: (directory) => store.workspaceShowArchived[directory] ?? false,
+    setShowArchived: (directory, value) => setStore("workspaceShowArchived", directory, value),
     showResetWorkspaceDialog: (root, directory) =>
       dialog.show(() => <DialogResetWorkspace root={root} directory={directory} deps={wsDialogDeps} />),
     showDeleteWorkspaceDialog: (root, directory) =>
