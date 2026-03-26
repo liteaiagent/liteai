@@ -243,6 +243,11 @@ for (const name of names()) {
       execArgv: [`--user-agent=liteai/${Script.version}`, "--use-system-ca", "--"],
       windows: {
         icon: path.resolve(dir, "assets/liteai.ico"),
+        title: "LiteAI",
+        publisher: "LiteAI",
+        version: Script.version,
+        description: "LiteAI is an AI-powered development tool",
+        copyright: "Copyright (c)",
       },
     },
     entrypoints: ["./src/index.ts", parserWorker, workerPath],

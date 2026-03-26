@@ -1,7 +1,7 @@
 import { Binary } from "@liteai/util/binary"
 import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
-import type { Session } from "@liteai-ai/sdk/client"
+import type { Project, Session } from "@liteai-ai/sdk/client"
 import { type Accessor, untrack } from "solid-js"
 import { produce } from "solid-js/store"
 import type { useGlobalSDK } from "@/context/global-sdk"
@@ -213,15 +213,12 @@ export function closeProject(deps: NavigationDeps, directory: string) {
   }
 
   // Optimistically mark as archived in globalSync so the DB sync won't re-add
-  deps.globalSync.set(
-    "project",
-    produce((draft) => {
-      const match = draft.find((p) => workspaceKey(p.worktree) === key)
-      if (!match) return
-      if (!match.time) match.time = {} as typeof match.time
-      match.time.archived = Date.now()
-    }),
-  )
+  deps.globalSync.set("project", ((draft: Project[]) => {
+    const match = draft.find((p) => workspaceKey(p.worktree) === key)
+    if (!match) return
+    if (!match.time) match.time = {} as typeof match.time
+    match.time.archived = Date.now()
+  }) as never)
 
   // Archive in DB (fire-and-forget — SSE event will confirm)
   if (project?.id && project.id !== "global") {

@@ -1,8 +1,7 @@
 import { showToast, toaster } from "@liteai/ui/toast"
 import { base64Encode } from "@liteai/util/encode"
-import type { Session } from "@liteai-ai/sdk/client"
+import type { Project, Session } from "@liteai-ai/sdk/client"
 import type { Accessor } from "solid-js"
-import { produce } from "solid-js/store"
 import type { useGlobalSDK } from "@/context/global-sdk"
 import type { useGlobalSync } from "@/context/global-sync"
 import type { useLanguage } from "@/context/language"
@@ -66,14 +65,11 @@ export async function deleteWorkspace(deps: WorkspaceOpsDeps, root: string, dire
     deps.clearLastProjectSession(root)
   }
 
-  deps.globalSync.set(
-    "project",
-    produce((draft) => {
-      const project = draft.find((item) => item.worktree === root)
-      if (!project) return
-      project.sandboxes = (project.sandboxes ?? []).filter((sandbox) => sandbox !== directory)
-    }),
-  )
+  deps.globalSync.set("project", ((draft: Project[]) => {
+    const project = draft.find((item) => item.worktree === root)
+    if (!project) return
+    project.sandboxes = (project.sandboxes ?? []).filter((sandbox: string) => sandbox !== directory)
+  }) as never)
   ;(deps.setStore as (...a: unknown[]) => void)("workspaceOrder", root, (order: string[]) =>
     (order ?? []).filter((workspace: string) => workspace !== directory),
   )
