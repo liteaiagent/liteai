@@ -8,6 +8,7 @@ import { Config } from "../config/config"
 import { Env } from "../env"
 import { Flag } from "../flag/flag"
 import { Instance } from "../project/instance"
+import { lazy } from "../util/lazy"
 import { Log } from "../util/log"
 import { CUSTOM_LOADERS, type ModelLoader, type VarsLoader } from "./loaders"
 import { ModelsDev } from "./models"
@@ -493,14 +494,16 @@ function filterProviders(
   }
 }
 
-export const state = Instance.state(async () => {
+async function resolveProviders(config: Awaited<ReturnType<typeof Config.get>>) {
   using _ = log.time("state")
-  const config = await Config.get()
   const modelsDev = await ModelsDev.get()
   const database: Record<string, Provider.Info> = mapValues(modelsDev, fromModelsDevProvider)
 
-  const disabled = new Set(config.disabled_providers ?? [])
-  const enabled = config.enabled_providers ? new Set(config.enabled_providers) : null
+  // Provider filtering is always global — per-project disabled/enabled_providers is not supported.
+  // This ensures the runtime never rejects a provider that the UI (global list) shows as available.
+  const globalConfig = await Config.getGlobal()
+  const disabled = new Set(globalConfig.disabled_providers ?? [])
+  const enabled = globalConfig.enabled_providers ? new Set(globalConfig.enabled_providers) : null
 
   function allowed(providerID: ProviderID): boolean {
     if (enabled && !enabled.has(providerID)) return false
@@ -560,4 +563,17 @@ export const state = Instance.state(async () => {
     modelLoaders,
     varsLoaders,
   }
+}
+
+/** Global provider state — uses global config only, no Instance/directory context required. */
+export const globalState = lazy(async () => {
+  const config = await Config.getGlobal()
+  return resolveProviders(config)
 })
+
+/** Per-project provider state — merges global + project config. */
+export const state = Instance.state(async () => {
+  const config = await Config.get()
+  return resolveProviders(config)
+})
+

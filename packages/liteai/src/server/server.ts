@@ -196,6 +196,7 @@ export namespace Server {
           return c.json(true)
         },
       )
+      .route("/provider", ProviderRoutes())
       .get(
         "/project",
         describeRoute({
@@ -274,7 +275,6 @@ export namespace Server {
           }),
         ),
       )
-      .route("/provider", ProviderRoutes())
       .route("/project", ProjectRoutes())
       .route("/pty", PtyRoutes())
       .route("/config", ConfigRoutes())

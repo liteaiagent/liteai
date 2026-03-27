@@ -12,7 +12,7 @@ import {
   InitError as sdkInitError,
   ModelNotFoundError as sdkModelNotFoundError,
 } from "./sdk"
-import { fromModelsDevProvider as convertProvider, state } from "./state"
+import { fromModelsDevProvider as convertProvider, globalState, state } from "./state"
 
 export namespace Provider {
   export const Model = z
@@ -110,6 +110,11 @@ export namespace Provider {
 
   export async function list() {
     return state().then((s) => s.providers)
+  }
+
+  /** List providers using global config only — no Instance/directory context required. */
+  export async function globalList() {
+    return globalState().then((s) => s.providers)
   }
 
   export async function getProvider(providerID: ProviderID) {
