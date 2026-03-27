@@ -4,13 +4,13 @@ import type { Provider } from "@/provider/provider"
 import { Skill } from "@/skill"
 
 import { Instance } from "../../project/instance"
-import PROMPT_ANTHROPIC from "../templates/anthropic.txt"
-import PROMPT_BEAST from "../templates/beast.txt"
-import PROMPT_CODEX from "../templates/codex_header.txt"
-import PROMPT_DEFAULT from "../templates/default.txt"
-import PROMPT_GEMINI from "../templates/gemini.txt"
-import PROMPT_CODE_ASSIST from "../templates/google-code-assist.txt"
-import PROMPT_TRINITY from "../templates/trinity.txt"
+import PROMPT_ANTHROPIC from "../templates/anthropic.md"
+import PROMPT_BEAST from "../templates/beast.md"
+import PROMPT_CODEX from "../templates/codex_header.md"
+import PROMPT_DEFAULT from "../templates/default.md"
+import PROMPT_GEMINI from "../templates/gemini.md"
+import PROMPT_CODE_ASSIST from "../templates/google-code-assist.md"
+import PROMPT_TRINITY from "../templates/trinity.md"
 
 export namespace SystemPrompt {
   export function instructions() {

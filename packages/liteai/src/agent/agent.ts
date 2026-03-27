@@ -16,11 +16,11 @@ import { ProviderTransform } from "../provider/transform"
 import { SystemPrompt } from "../session/engine/system"
 import { Skill } from "../skill"
 import { Truncate } from "../tool/truncation"
-import PROMPT_GENERATE from "./generate.txt"
-import PROMPT_COMPACTION from "./prompt/compaction.txt"
-import PROMPT_EXPLORE from "./prompt/explore.txt"
-import PROMPT_SUMMARY from "./prompt/summary.txt"
-import PROMPT_TITLE from "./prompt/title.txt"
+import PROMPT_COMPACTION from "./prompt/compaction.md"
+import PROMPT_EXPLORE from "./prompt/explore.md"
+import PROMPT_GENERATE from "./prompt/generate.md"
+import PROMPT_SUMMARY from "./prompt/summary.md"
+import PROMPT_TITLE from "./prompt/title.md"
 
 export namespace Agent {
   const log = Log.create({ service: "agent" })

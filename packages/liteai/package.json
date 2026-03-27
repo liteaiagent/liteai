@@ -21,9 +21,6 @@
     "lint:fix": "biome check --write",
     "lint:format": "biome format --write"
   },
-  "bin": {
-    "liteai": "./bin/liteai"
-  },
   "randomField": "this-is-a-random-value-12345",
   "exports": {
     "./*": "./src/*.ts"

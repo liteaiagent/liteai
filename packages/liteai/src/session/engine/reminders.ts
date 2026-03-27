@@ -1,13 +1,13 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import type { Agent } from "../../agent/agent"
-import PROMPT_PLAN from "../../agent/prompt/plan.txt"
+import PROMPT_PLAN from "../../agent/prompt/plan.md"
 import { Flag } from "../../flag/flag"
 import { Filesystem } from "../../util/filesystem"
 import { Session } from ".."
 import type { Message } from "../message"
 import { PartID } from "../schema"
-import BUILD_SWITCH from "../templates/build-switch.txt"
+import BUILD_SWITCH from "../templates/build-switch.md"
 
 export async function insertReminders(input: {
   messages: Message.WithParts[]
