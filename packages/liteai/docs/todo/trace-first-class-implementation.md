@@ -1,6 +1,6 @@
 # Trace as First-Class Step Context — Implementation Plan
 
-> **Status**: Planned
+> **Status**: Done — 2026-03-27
 > **Depends on**: Nothing — self-contained refactor
 > **Risk**: Medium — touches DB schema, core loop, and trace API but frontend impact is minimal
 

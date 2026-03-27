@@ -20,7 +20,6 @@ export type TraceDetail = TraceInfo & {
   system: string | null
   tools: Record<string, unknown>[] | null
   hooks: Record<string, unknown>[] | null
-  messages_json?: Record<string, unknown>[] | null
   contextIDs: string[]
 }
 

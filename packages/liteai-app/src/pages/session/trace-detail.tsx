@@ -288,11 +288,7 @@ export function TraceDetailView(props: {
                 )
               }}
             </Show>
-            <ContextMessages
-              ids={props.detail.contextIDs}
-              messages={props.messages}
-              messages_json={props.detail.messages_json}
-            />
+            <ContextMessages ids={props.detail.contextIDs} messages={props.messages} />
           </Section>
 
           <OutputParts messageID={props.detail.messageID} messages={props.messages} />

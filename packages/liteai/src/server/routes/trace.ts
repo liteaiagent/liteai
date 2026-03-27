@@ -79,6 +79,39 @@ export const TraceRoutes = lazy(() =>
       },
     )
     .get(
+      "/:sessionID/trace/export",
+      describeRoute({
+        summary: "Export traces",
+        description: "Export all traces for a session in JSON or Markdown format.",
+        operationId: "session.trace.export",
+        responses: {
+          200: {
+            description: "Exported trace data",
+          },
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      validator(
+        "query",
+        z.object({
+          format: z.enum(["json", "md"]).default("json"),
+        }),
+      ),
+      (c) => {
+        const { sessionID } = c.req.valid("param")
+        const { format } = c.req.valid("query")
+        if (format === "md") {
+          return c.text(Trace.toMarkdown(sessionID))
+        }
+        return c.json(Trace.toJSON(sessionID))
+      },
+    )
+    .get(
       "/:sessionID/trace/:traceID",
       describeRoute({
         summary: "Get trace detail",
@@ -110,39 +143,6 @@ export const TraceRoutes = lazy(() =>
         const detail = Trace.get(sessionID, traceID)
         if (!detail) return c.json({ error: "Trace not found" }, 404)
         return c.json(detail)
-      },
-    )
-    .get(
-      "/:sessionID/trace/export",
-      describeRoute({
-        summary: "Export traces",
-        description: "Export all traces for a session in JSON or Markdown format.",
-        operationId: "session.trace.export",
-        responses: {
-          200: {
-            description: "Exported trace data",
-          },
-        },
-      }),
-      validator(
-        "param",
-        z.object({
-          sessionID: SessionID.zod,
-        }),
-      ),
-      validator(
-        "query",
-        z.object({
-          format: z.enum(["json", "md"]).default("json"),
-        }),
-      ),
-      (c) => {
-        const { sessionID } = c.req.valid("param")
-        const { format } = c.req.valid("query")
-        if (format === "md") {
-          return c.text(Trace.toMarkdown(sessionID))
-        }
-        return c.json(Trace.toJSON(sessionID))
       },
     ),
 )

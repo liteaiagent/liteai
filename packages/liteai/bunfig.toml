@@ -2,6 +2,8 @@ preload = ["@opentui/solid/preload"]
 
 [test]
 preload = ["./test/preload.ts"]
+#coverage = true
+#coverageReporter = ["lcov", "text"]
 coverageSkipTestFiles = true
 # timeout is not actually parsed from bunfig.toml (see src/bunfig.zig in oven-sh/bun)
 # using --timeout in package.json scripts instead

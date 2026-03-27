@@ -22,11 +22,8 @@ export const TraceTable = sqliteTable(
     model_id: text().notNull(),
     provider_id: text().notNull(),
     params: text({ mode: "json" }).$type<{ temperature?: number; maxTokens?: number; topP?: number }>(),
-    system: text(),
     system_hash: text(),
-    tools: text({ mode: "json" }).$type<{ name: string; description?: string; parameters?: unknown }[]>(),
     tools_hash: text(),
-    messages_json: text({ mode: "json" }).$type<unknown[]>(),
     context_ids: text({ mode: "json" }).notNull().$type<string[]>(),
     hooks_json: text({ mode: "json" }).$type<
       { event: string; type: string; config?: Record<string, unknown>; context?: string }[]

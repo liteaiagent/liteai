@@ -4,7 +4,6 @@ import z from "zod"
 import { PermissionNext } from "@/permission/next"
 import { TaskTool } from "@/tool/task"
 import type { Tool } from "@/tool/tool"
-import { TraceID } from "@/trace/schema"
 import { Trace } from "@/trace/trace"
 import { fn } from "@/util/fn"
 import { Agent } from "../../agent/agent"
@@ -479,43 +478,26 @@ export const loop = fn(LoopInput, async (input) => {
     const traceEnd = Date.now()
 
     // Trace capture (after LLM call) — always record traces
-    {
-      const { createHash } = await import("node:crypto")
-      // Use the resolved system prompt (includes provider/agent header) for accurate trace
-      const text = (processor.resolvedSystem ?? system).join("\n\n")
-      const hash = createHash("sha256").update(text).digest("hex")
-      const schemas = Object.entries(tools)
+    Trace.record({
+      sessionID,
+      messageID: processor.message.id,
+      agent: agent.name,
+      model: { id: model.id, providerID: model.providerID },
+      params: agent.temperature !== undefined ? { temperature: agent.temperature } : undefined,
+      system: (processor.resolvedSystem ?? system).join("\n\n"),
+      tools: Object.entries(tools)
         .filter(([name]) => name !== "invalid")
         .map(([name, t]) => ({
           name,
           description: (t as { description?: string }).description,
           parameters: (t as { parameters?: unknown }).parameters,
-        }))
-      const th = createHash("sha256").update(JSON.stringify(schemas)).digest("hex")
-      const prev = Trace.last(sessionID)
-      const traceStep = Trace.next(sessionID)
-      const ctx = msgs.map((m) => m.info.id)
-      Trace.write({
-        id: TraceID.ascending(),
-        session_id: sessionID,
-        message_id: processor.message.id,
-        step: traceStep,
-        agent: agent.name,
-        model_id: model.id,
-        provider_id: model.providerID,
-        params: agent.temperature !== undefined ? { temperature: agent.temperature } : null,
-        system: prev?.system_hash === hash ? null : text,
-        system_hash: hash,
-        tools: prev?.tools_hash === th ? null : schemas,
-        tools_hash: th,
-        hooks_json: Trace.flushHooks(sessionID) || null,
-        messages_json: msgs,
-        context_ids: ctx,
-        time_start: traceStart,
-        time_end: traceEnd,
-        error: processor.message.error ? JSON.stringify(processor.message.error) : null,
-      })
-    }
+        })),
+      contextIDs: msgs.map((m) => m.info.id),
+      hooks: Trace.flushHooks(sessionID) ?? undefined,
+      timeStart: traceStart,
+      timeEnd: traceEnd,
+      error: processor.message.error ? JSON.stringify(processor.message.error) : undefined,
+    })
 
     // If structured output was captured, save it and exit immediately
     // This takes priority because the StructuredOutput tool was called successfully
@@ -746,27 +728,16 @@ async function processSubtask(input: {
   }
 
   // Record trace span for sub-agent invocation
-  const traceEnd = Date.now()
-  const traceStep = Trace.next(sessionID)
-  const ids = msgs.map((m) => m.info.id)
-  Trace.write({
-    id: TraceID.ascending(),
-    session_id: sessionID,
-    message_id: assistantMessage.id,
-    step: traceStep,
+  Trace.record({
+    sessionID,
+    messageID: assistantMessage.id,
     agent: task.agent,
-    model_id: taskModel.id,
-    provider_id: taskModel.providerID,
-    params: null,
-    system: null,
-    system_hash: null,
-    tools: null,
-    tools_hash: null,
-    hooks_json: Trace.flushHooks(sessionID) || null,
-    context_ids: ids,
-    time_start: traceStart,
-    time_end: traceEnd,
-    error: executionError ? executionError.message : null,
+    model: { id: taskModel.id, providerID: taskModel.providerID },
+    contextIDs: msgs.map((m) => m.info.id),
+    hooks: Trace.flushHooks(sessionID) ?? undefined,
+    timeStart: traceStart,
+    timeEnd: Date.now(),
+    error: executionError?.message,
   })
 
   if (task.command) {

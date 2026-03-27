@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "f06d1415-251c-49d1-8a1a-368864d39c4e",
+  "id": "32014d5a-5f97-41cc-9230-f2c1bce68159",
   "prevIds": [
-    "893c9d4f-6a1b-40a8-9cd9-d50f709c335c"
+    "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
@@ -48,6 +48,10 @@
     },
     {
       "name": "session_share",
+      "entityType": "tables"
+    },
+    {
+      "name": "trace_content",
       "entityType": "tables"
     },
     {
@@ -910,6 +914,46 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
+      "name": "hash",
+      "entityType": "columns",
+      "table": "trace_content"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "type",
+      "entityType": "columns",
+      "table": "trace_content"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "content",
+      "entityType": "columns",
+      "table": "trace_content"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "time_created",
+      "entityType": "columns",
+      "table": "trace_content"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "trace"
@@ -1000,27 +1044,7 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "system",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
       "name": "system_hash",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "tools",
       "entityType": "columns",
       "table": "trace"
     },
@@ -1041,6 +1065,16 @@
       "default": null,
       "generated": null,
       "name": "context_ids",
+      "entityType": "columns",
+      "table": "trace"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "hooks_json",
       "entityType": "columns",
       "table": "trace"
     },
@@ -1343,6 +1377,15 @@
       "nameExplicit": false,
       "name": "session_share_pk",
       "table": "session_share",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "hash"
+      ],
+      "nameExplicit": false,
+      "name": "trace_content_pk",
+      "table": "trace_content",
       "entityType": "pks"
     },
     {

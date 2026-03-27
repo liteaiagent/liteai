@@ -1,13 +1,38 @@
+import { createHash } from "node:crypto"
 import z from "zod"
-import { Config } from "../config/config"
-import type { SessionID } from "../session/schema"
+import type { MessageID, SessionID } from "../session/schema"
 import { SessionTable } from "../session/session.sql"
-import { and, Database, desc, eq, inArray, isNotNull, like, lte, max, or, sql } from "../storage/db"
+import { and, Database, eq, inArray, max, or, sql } from "../storage/db"
 import { Log } from "../util/log"
 import type { TraceID } from "./schema"
+import { TraceID as TraceIDSchema } from "./schema"
 import { TraceTable } from "./trace.sql"
+import { TraceContentTable } from "./trace-content.sql"
 
 const log = Log.create({ service: "trace" })
+
+// ── Content-addressable helpers ──────────────────────────────────────────────
+
+function contentHash(content: string): string {
+  return createHash("sha256").update(content).digest("hex")
+}
+
+function upsertContent(hash: string, type: "system" | "tools", content: string) {
+  Database.use((db) => db.insert(TraceContentTable).values({ hash, type, content }).onConflictDoNothing().run())
+}
+
+function getContent(hash: string): string | null {
+  const row = Database.use((db) =>
+    db
+      .select({ content: TraceContentTable.content })
+      .from(TraceContentTable)
+      .where(eq(TraceContentTable.hash, hash))
+      .get(),
+  )
+  return row?.content ?? null
+}
+
+// ── Trace namespace ──────────────────────────────────────────────────────────
 
 export namespace Trace {
   export const Info = z
@@ -43,11 +68,12 @@ export namespace Trace {
     system: z.string().nullable(),
     tools: z.array(z.record(z.string(), z.unknown())).nullable(),
     hooks: z.array(HookInvocation).nullable(),
-    messages_json: z.array(z.record(z.string(), z.unknown())).nullable().optional(),
     contextIDs: z.array(z.string()),
   }).meta({ ref: "TraceDetail" })
 
   export type Detail = z.output<typeof Detail>
+
+  // ── Pending hooks accumulator ────────────────────────────────────────────
 
   const _pendingHooks = new Map<SessionID, z.infer<typeof HookInvocation>[]>()
 
@@ -64,10 +90,7 @@ export namespace Trace {
     return current?.length ? current : null
   }
 
-  export async function enabled() {
-    const cfg = await Config.get()
-    return cfg?.experimental?.trace === true
-  }
+  // ── Step counter ─────────────────────────────────────────────────────────
 
   export function next(sessionID: SessionID) {
     const row = Database.use((db) =>
@@ -80,25 +103,72 @@ export namespace Trace {
     return (row?.val ?? 0) + 1
   }
 
-  export function last(sessionID: SessionID) {
-    return Database.use((db) =>
-      db
-        .select({
-          system_hash: TraceTable.system_hash,
-          tools_hash: TraceTable.tools_hash,
-        })
-        .from(TraceTable)
-        .where(eq(TraceTable.session_id, sessionID))
-        .orderBy(desc(TraceTable.step))
-        .limit(1)
-        .get(),
-    )
+  // ── RecordInput ──────────────────────────────────────────────────────────
+
+  export interface RecordInput {
+    sessionID: SessionID
+    messageID: MessageID
+    parentID?: TraceID
+    agent: string
+    model: { id: string; providerID: string }
+    params?: { temperature?: number; maxTokens?: number; topP?: number } | null
+    system?: string // full resolved system prompt (omit for subtasks)
+    tools?: { name: string; description?: string; parameters?: unknown }[]
+    contextIDs: string[]
+    hooks?: z.infer<typeof HookInvocation>[] | null
+    timeStart: number
+    timeEnd: number
+    error?: string | null
   }
 
-  export function write(row: typeof TraceTable.$inferInsert) {
-    log.info("write", { step: row.step, session: row.session_id })
-    Database.use((db) => db.insert(TraceTable).values(row).run())
+  // ── Unified write API ────────────────────────────────────────────────────
+
+  export function record(input: RecordInput): { id: TraceID; step: number } {
+    const step = next(input.sessionID)
+    const id = TraceIDSchema.ascending()
+
+    let systemHash: string | null = null
+    if (input.system) {
+      systemHash = contentHash(input.system)
+      upsertContent(systemHash, "system", input.system)
+    }
+
+    let toolsHash: string | null = null
+    if (input.tools && input.tools.length > 0) {
+      const json = JSON.stringify(input.tools)
+      toolsHash = contentHash(json)
+      upsertContent(toolsHash, "tools", json)
+    }
+
+    log.info("record", { step, session: input.sessionID })
+    Database.use((db) =>
+      db
+        .insert(TraceTable)
+        .values({
+          id,
+          session_id: input.sessionID,
+          message_id: input.messageID,
+          parent_id: input.parentID ?? null,
+          step,
+          agent: input.agent,
+          model_id: input.model.id,
+          provider_id: input.model.providerID,
+          params: input.params ?? null,
+          system_hash: systemHash,
+          tools_hash: toolsHash,
+          hooks_json: input.hooks?.length ? input.hooks : null,
+          context_ids: input.contextIDs,
+          time_start: input.timeStart,
+          time_end: input.timeEnd,
+          error: input.error ?? null,
+        })
+        .run(),
+    )
+
+    return { id, step }
   }
+
+  // ── Row → Info mapper ────────────────────────────────────────────────────
 
   function rowToInfo(r: typeof TraceTable.$inferSelect): Info {
     return {
@@ -110,8 +180,8 @@ export namespace Trace {
       modelID: r.model_id,
       providerID: r.provider_id,
       params: r.params,
-      hasSystem: r.system !== null,
-      hasTools: r.tools !== null,
+      hasSystem: r.system_hash !== null,
+      hasTools: r.tools_hash !== null,
       contextSize: r.context_ids.length,
       timeStart: r.time_start,
       timeEnd: r.time_end ?? null,
@@ -119,6 +189,8 @@ export namespace Trace {
       error: r.error,
     }
   }
+
+  // ── List / ListDeep ──────────────────────────────────────────────────────
 
   export function list(sessionID: SessionID): Info[] {
     const rows = Database.use((db) =>
@@ -143,6 +215,8 @@ export namespace Trace {
     return rows.map(rowToInfo)
   }
 
+  // ── Search ───────────────────────────────────────────────────────────────
+
   export function search(sessionID: SessionID, query: string): string[] {
     const pattern = `%${query}%`
     const rows = Database.use((db) =>
@@ -152,7 +226,18 @@ export namespace Trace {
         .where(
           and(
             eq(TraceTable.session_id, sessionID),
-            or(like(TraceTable.system, pattern), sql`${TraceTable.tools} LIKE ${pattern}`),
+            or(
+              sql`EXISTS (
+                SELECT 1 FROM trace_content tc
+                WHERE tc.hash = ${TraceTable.system_hash}
+                AND tc.content LIKE ${pattern}
+              )`,
+              sql`EXISTS (
+                SELECT 1 FROM trace_content tc
+                WHERE tc.hash = ${TraceTable.tools_hash}
+                AND tc.content LIKE ${pattern}
+              )`,
+            ),
           ),
         )
         .all(),
@@ -160,19 +245,7 @@ export namespace Trace {
     return rows.map((r) => r.id)
   }
 
-  function resolve(sessionID: SessionID, step: number, field: "system" | "tools") {
-    const col = field === "system" ? TraceTable.system : TraceTable.tools
-    const row = Database.use((db) =>
-      db
-        .select({ val: col })
-        .from(TraceTable)
-        .where(and(eq(TraceTable.session_id, sessionID), isNotNull(col), lte(TraceTable.step, step)))
-        .orderBy(desc(TraceTable.step))
-        .limit(1)
-        .get(),
-    )
-    return row?.val ?? null
-  }
+  // ── Get (single trace detail) ────────────────────────────────────────────
 
   export function get(sessionID: SessionID, traceID: TraceID): Detail | undefined {
     const row = Database.use((db) =>
@@ -184,44 +257,48 @@ export namespace Trace {
     )
     if (!row) return undefined
 
-    const system = row.system ?? (resolve(sessionID, row.step, "system") as string | null)
-    const tools = row.tools ?? (resolve(sessionID, row.step, "tools") as typeof row.tools)
+    const system = row.system_hash ? getContent(row.system_hash) : null
+
+    const tools = row.tools_hash
+      ? (JSON.parse(getContent(row.tools_hash) ?? "null") as Record<string, unknown>[] | null)
+      : null
 
     return {
       ...rowToInfo(row),
       system,
-      tools: tools as Record<string, unknown>[] | null,
+      tools,
       hooks: (row.hooks_json ?? null) as z.infer<typeof HookInvocation>[] | null,
-      messages_json: row.messages_json as Record<string, unknown>[] | null,
       contextIDs: row.context_ids,
     }
   }
+
+  // ── All (all details for a session) ──────────────────────────────────────
 
   export function all(sessionID: SessionID): Detail[] {
     const rows = Database.use((db) =>
       db.select().from(TraceTable).where(eq(TraceTable.session_id, sessionID)).orderBy(TraceTable.step).all(),
     )
     const result: Detail[] = []
-    let prevSystem: string | null = null
-    let prevTools: Record<string, unknown>[] | null = null
 
     for (const row of rows) {
-      const system = row.system ?? prevSystem
-      const tools = (row.tools as Record<string, unknown>[] | null) ?? prevTools
-      if (row.system) prevSystem = row.system
-      if (row.tools) prevTools = row.tools as Record<string, unknown>[]
+      const system = row.system_hash ? getContent(row.system_hash) : null
+
+      const tools = row.tools_hash
+        ? (JSON.parse(getContent(row.tools_hash) ?? "null") as Record<string, unknown>[] | null)
+        : null
 
       result.push({
         ...rowToInfo(row),
         system,
         tools,
         hooks: (row.hooks_json ?? null) as z.infer<typeof HookInvocation>[] | null,
-        messages_json: row.messages_json as Record<string, unknown>[] | null,
         contextIDs: row.context_ids,
       })
     }
     return result
   }
+
+  // ── Export helpers ────────────────────────────────────────────────────────
 
   export function toJSON(sessionID: SessionID) {
     return all(sessionID)

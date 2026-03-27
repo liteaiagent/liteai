@@ -49,6 +49,7 @@ CREATE TABLE `project` (
 	`time_created` integer NOT NULL,
 	`time_updated` integer NOT NULL,
 	`time_initialized` integer,
+	`time_archived` integer,
 	`sandboxes` text NOT NULL,
 	`commands` text
 );
@@ -125,6 +126,13 @@ CREATE TABLE `session_share` (
 	CONSTRAINT `fk_session_share_session_id_session_id_fk` FOREIGN KEY (`session_id`) REFERENCES `session`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
+CREATE TABLE `trace_content` (
+	`hash` text PRIMARY KEY,
+	`type` text NOT NULL,
+	`content` text NOT NULL,
+	`time_created` integer NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `trace` (
 	`id` text PRIMARY KEY,
 	`session_id` text NOT NULL,
@@ -135,11 +143,10 @@ CREATE TABLE `trace` (
 	`model_id` text NOT NULL,
 	`provider_id` text NOT NULL,
 	`params` text,
-	`system` text,
 	`system_hash` text,
-	`tools` text,
 	`tools_hash` text,
 	`context_ids` text NOT NULL,
+	`hooks_json` text,
 	`time_start` integer NOT NULL,
 	`time_end` integer,
 	`error` text,

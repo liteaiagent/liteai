@@ -230,23 +230,9 @@ export function OutputParts(props: { messageID: string; messages: TraceMessageDa
   )
 }
 
-export function ContextMessages(props: {
-  ids: string[]
-  messages: TraceMessageData[]
-  messages_json?: Record<string, unknown>[] | null
-}) {
+export function ContextMessages(props: { ids: string[]; messages: TraceMessageData[] }) {
   const sync = useSync()
   const resolved = createMemo(() => {
-    if (props.messages_json && props.messages_json.length > 0) {
-      return props.messages_json.map((m: Record<string, unknown>) => ({
-        msg: {
-          id: ((m.info as Record<string, unknown>)?.id as string) || "",
-          role: ((m.info as Record<string, unknown>)?.role as string) ?? "unknown",
-        },
-        parts: ((m.parts as unknown[]) ?? []) as TracePartData[],
-      }))
-    }
-
     const map = new Map(props.messages.map((m) => [m.id, m]))
     return props.ids
       .map((id) => {
