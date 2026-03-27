@@ -84,6 +84,17 @@ export interface LongRunningOperationResponse {
   }
 }
 
+// ── Credits ──────────────────────────────────────────────────────────
+
+export type CreditType = "CREDIT_TYPE_UNSPECIFIED" | "GOOGLE_ONE_AI"
+
+export interface Credits {
+  creditType: CreditType
+  creditAmount: string // int64 as string in JSON
+}
+
+export const G1_CREDIT_TYPE = "GOOGLE_ONE_AI"
+
 // ── Generate Content envelope ────────────────────────────────────────
 
 export interface CAGenerateContentRequest {
@@ -91,6 +102,7 @@ export interface CAGenerateContentRequest {
   project?: string
   user_prompt_id?: string
   request: VertexGenerateContentRequest
+  enabled_credit_types?: string[]
 }
 
 export interface VertexGenerateContentRequest {
@@ -148,6 +160,8 @@ export interface CAPart {
 export interface CAGenerateContentResponse {
   response?: VertexGenerateContentResponse
   traceId?: string
+  consumedCredits?: Credits[]
+  remainingCredits?: Credits[]
 }
 
 export interface VertexGenerateContentResponse {

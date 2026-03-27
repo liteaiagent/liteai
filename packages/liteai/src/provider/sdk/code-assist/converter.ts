@@ -28,6 +28,7 @@ interface ConvertOptions {
   tools?: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>
   toolChoice?: { type: string; toolName?: string }
   providerOptions?: Record<string, Record<string, unknown>>
+  enabledCreditTypes?: string[]
 }
 
 export function toRequest(opts: ConvertOptions): CAGenerateContentRequest {
@@ -36,6 +37,7 @@ export function toRequest(opts: ConvertOptions): CAGenerateContentRequest {
     project: opts.project,
     user_prompt_id: generateId(),
     request: toVertexRequest(opts),
+    enabled_credit_types: opts.enabledCreditTypes,
   }
 }
 
@@ -234,12 +236,9 @@ function toGenerationConfig(opts: ConvertOptions): CAGenerationConfig {
 
   // Always enable thinking — matches gemini-cli behavior.
   // Without this, the API may route requests differently or apply different quota.
-  cfg.thinkingConfig = { includeThoughts: true }
-
+  // Cap at 8192 by default to prevent run-away thinking loops (matches DEFAULT_THINKING_MODE).
   const budget = opts.providerOptions?.["code-assist"]?.thinkingBudget as number | undefined
-  if (budget !== undefined) {
-    cfg.thinkingConfig.thinkingBudget = budget
-  }
+  cfg.thinkingConfig = { includeThoughts: true, thinkingBudget: budget ?? 8192 }
 
   return cfg
 }
