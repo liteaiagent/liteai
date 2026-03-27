@@ -3,7 +3,6 @@ import type { Agent } from "../agent/agent"
 import { Config } from "../config/config"
 import { type ModelID, ProviderID } from "../provider/schema"
 import { ApplyPatchTool } from "./apply_patch"
-import { BashTool } from "./bash"
 import { BatchTool } from "./batch"
 import { CodeSearchTool } from "./codesearch"
 import { EditTool } from "./edit"
@@ -14,6 +13,7 @@ import { LspTool } from "./lsp"
 import { PlanExitTool } from "./plan"
 import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
+import { RunCommandTool } from "./run_command"
 import { SkillTool } from "./skill"
 import { TaskTool } from "./task"
 import { TodoWriteTool } from "./todo"
@@ -30,7 +30,7 @@ export namespace ToolRegistry {
     return [
       InvalidTool,
       ...(question ? [QuestionTool] : []),
-      BashTool,
+      RunCommandTool,
       ReadTool,
       GlobTool,
       GrepTool,

@@ -128,7 +128,7 @@ export function getToolInfo(tool: string, input: Record<string, unknown> = {}): 
         subtitle: typeof input.description === "string" ? input.description : undefined,
       }
     }
-    case "bash":
+    case "run_command":
       return {
         icon: "console",
         title: i18n.t("ui.tool.shell"),
@@ -305,7 +305,7 @@ function renderable(part: PartType, showReasoningSummaries = true) {
 }
 
 function toolDefaultOpen(tool: string, shell = false, edit = false) {
-  if (tool === "bash") return shell
+  if (tool === "run_command") return shell
   if (tool === "edit" || tool === "write" || tool === "apply_patch") return edit
 }
 

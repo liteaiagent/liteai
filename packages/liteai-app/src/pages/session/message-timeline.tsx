@@ -382,21 +382,22 @@ export function MessageTimeline(props: {
     return language.t("common.requestFailed")
   }
 
-  createEffect(
-    on(
-      sessionKey,
-      () =>
-        setTitle({
-          draft: "",
-          editing: false,
-          saving: false,
-          menuOpen: false,
-          pendingRename: false,
-          pendingShare: false,
-        }),
-      { defer: true },
-    ),
-  )
+  // Title/share state is identity-local: reset when session key changes.
+  // onCleanup fires before the next effect run and on disposal.
+  createEffect(() => {
+    sessionKey()
+    onCleanup(() => {
+      setTitle({
+        draft: "",
+        editing: false,
+        saving: false,
+        menuOpen: false,
+        pendingRename: false,
+        pendingShare: false,
+      })
+      setShare({ open: false, dismiss: null })
+    })
+  })
 
   const openTitleEditor = () => {
     if (!sessionID()) return

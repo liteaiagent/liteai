@@ -9,20 +9,16 @@ import { tmpdir } from "../fixture/fixture"
 // Loader: MCP servers
 // ---------------------------------------------------------------------------
 describe("plugin.loader.mcp", () => {
-  test("loads inline mcpServers from manifest", async () => {
+  test("loads mcpServers from .mcp.json", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
         await fs.writeFile(
-          path.join(marker, "plugin.json"),
+          path.join(dir, ".mcp.json"),
           JSON.stringify({
-            name: "mcp-inline",
             mcpServers: {
               myserver: {
                 type: "local",
-                // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional config placeholder
-                command: ["node", "${LITEAI_PLUGIN_ROOT}/server.js"],
+                command: ["node", "server.js"],
               },
             },
           }),
@@ -33,15 +29,12 @@ describe("plugin.loader.mcp", () => {
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
     expect(result?.mcp).toBeTruthy()
-    expect(result?.mcp?.["mcp-inline:myserver"]).toBeTruthy()
+    expect(result?.mcp?.[`${result?.name}:myserver`]).toBeTruthy()
   })
 
   test("loads .mcp.json with command format", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "mcp-file" }))
         await fs.writeFile(
           path.join(dir, ".mcp.json"),
           JSON.stringify({
@@ -59,18 +52,15 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp?.["mcp-file:tool"]).toBeTruthy()
+    expect(result?.mcp?.[`${result?.name}:tool`]).toBeTruthy()
     // Adapted: command becomes array, env becomes environment
-    const server = result?.mcp?.["mcp-file:tool"]
+    const server = result?.mcp?.[`${result?.name}:tool`]
     expect(server).toBeTruthy()
   })
 
   test("loads .mcp.json with url/sse format", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "mcp-remote" }))
         await fs.writeFile(
           path.join(dir, ".mcp.json"),
           JSON.stringify({
@@ -87,7 +77,7 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp?.["mcp-remote:remote"]).toBeTruthy()
+    expect(result?.mcp?.[`${result?.name}:remote`]).toBeTruthy()
   })
 
   test("returns undefined mcp when no servers found", async () => {
@@ -104,20 +94,11 @@ describe("plugin.loader.mcp", () => {
     expect(result?.mcp).toBeUndefined()
   })
 
-  test("loads .mcp.json from custom path in manifest", async () => {
+  test("loads .mcp.json with flat server format", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
         await fs.writeFile(
-          path.join(marker, "plugin.json"),
-          JSON.stringify({ name: "custom-mcp", mcpServers: "config/servers.json" }),
-        )
-
-        const cfg = path.join(dir, "config")
-        await fs.mkdir(cfg, { recursive: true })
-        await fs.writeFile(
-          path.join(cfg, "servers.json"),
+          path.join(dir, ".mcp.json"),
           JSON.stringify({
             myserver: { command: "node", args: ["index.js"] },
           }),
@@ -127,52 +108,35 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp?.["custom-mcp:myserver"]).toBeTruthy()
+    expect(result?.mcp?.[`${result?.name}:myserver`]).toBeTruthy()
   })
 })
 
 // ---------------------------------------------------------------------------
-// Loader: custom paths via manifest
+// Loader: convention-based paths
 // ---------------------------------------------------------------------------
-describe("plugin.loader.custom-paths", () => {
-  test("loads agents from custom path array", async () => {
+describe("plugin.loader.convention-paths", () => {
+  test("loads agents from convention path", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(
-          path.join(marker, "plugin.json"),
-          JSON.stringify({ name: "multi-path", agents: ["agents/*.md", "extra/*.md"] }),
-        )
-
-        for (const sub of ["agents", "extra"]) {
-          const d = path.join(dir, sub)
-          await fs.mkdir(d, { recursive: true })
-          await fs.writeFile(path.join(d, `${sub}-bot.md`), `---\ndescription: ${sub} agent\n---\nPrompt for ${sub}`)
-        }
+        const agentDir = path.join(dir, "agents")
+        await fs.mkdir(agentDir, { recursive: true })
+        await fs.writeFile(path.join(agentDir, "helper.md"), "---\ndescription: A helper agent\n---\nPrompt for helper")
       },
     })
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.agents["multi-path:agents-bot"]).toBeTruthy()
-    expect(result?.agents["multi-path:extra-bot"]).toBeTruthy()
+    expect(result?.agents[`${result?.name}:helper`]).toBeTruthy()
   })
 
-  test("loads hooks from custom path", async () => {
+  test("loads hooks from convention path", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
+        const hooks = path.join(dir, "hooks")
+        await fs.mkdir(hooks, { recursive: true })
         await fs.writeFile(
-          path.join(marker, "plugin.json"),
-          JSON.stringify({ name: "custom-hooks", hooks: "custom/my-hooks.json" }),
-        )
-
-        const custom = path.join(dir, "custom")
-        await fs.mkdir(custom, { recursive: true })
-        await fs.writeFile(
-          path.join(custom, "my-hooks.json"),
+          path.join(hooks, "hooks.json"),
           JSON.stringify({ PostToolUse: [{ hooks: [{ type: "command", command: "echo done" }] }] }),
         )
       },
@@ -309,12 +273,9 @@ describe("plugin.mount.components", () => {
   test("one mounts MCP servers", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
         await fs.writeFile(
-          path.join(marker, "plugin.json"),
+          path.join(dir, ".mcp.json"),
           JSON.stringify({
-            name: "mcp-mount",
             mcpServers: {
               srv: { type: "local", command: ["node", "srv.js"] },
             },
@@ -327,16 +288,12 @@ describe("plugin.mount.components", () => {
     if (!loaded) throw new Error("expected loaded")
 
     const mounted = one(loaded)
-    expect(mounted.mcp["mcp-mount:srv"]).toBeTruthy()
+    expect(mounted.mcp[`${loaded.name}:srv`]).toBeTruthy()
   })
 
   test("one mounts skills", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "skill-mount" }))
-
         const skill = path.join(dir, "skills", "analyze")
         await fs.mkdir(skill, { recursive: true })
         await fs.writeFile(
@@ -351,7 +308,7 @@ describe("plugin.mount.components", () => {
 
     const mounted = one(loaded)
     expect(mounted.skills).toHaveLength(1)
-    expect(mounted.skills[0].name).toBe("skill-mount:analyze")
+    expect(mounted.skills[0].name).toBe(`${loaded.name}:analyze`)
   })
 
   test("one mounts hooks", async () => {
@@ -385,9 +342,6 @@ describe("plugin.mount.components", () => {
   test("all merges skills from multiple plugins", async () => {
     await using tmp1 = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "plug-a" }))
         const skill = path.join(dir, "skills", "sa")
         await fs.mkdir(skill, { recursive: true })
         await fs.writeFile(path.join(skill, "SKILL.md"), "---\nname: sa\ndescription: Skill A\n---\nA")
@@ -396,9 +350,6 @@ describe("plugin.mount.components", () => {
 
     await using tmp2 = await tmpdir({
       init: async (dir) => {
-        const marker = path.join(dir, ".liteai-plugin")
-        await fs.mkdir(marker, { recursive: true })
-        await fs.writeFile(path.join(marker, "plugin.json"), JSON.stringify({ name: "plug-b" }))
         const skill = path.join(dir, "skills", "sb")
         await fs.mkdir(skill, { recursive: true })
         await fs.writeFile(path.join(skill, "SKILL.md"), "---\nname: sb\ndescription: Skill B\n---\nB")
@@ -410,7 +361,7 @@ describe("plugin.mount.components", () => {
 
     const mounted = all([a, b])
     expect(mounted.skills).toHaveLength(2)
-    expect(mounted.skills.map((s) => s.name).sort()).toEqual(["plug-a:sa", "plug-b:sb"])
+    expect(mounted.skills.map((s) => s.name).sort()).toEqual([`${a.name}:sa`, `${b.name}:sb`].sort())
   })
 
   test("all merges hooks from multiple plugins", async () => {

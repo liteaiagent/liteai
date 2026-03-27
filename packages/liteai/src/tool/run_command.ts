@@ -12,7 +12,7 @@ import { Filesystem } from "@/util/filesystem"
 import { lazy } from "@/util/lazy"
 import { Instance } from "../project/instance"
 import { Log } from "../util/log"
-import DESCRIPTION from "./bash.txt"
+import DESCRIPTION from "./run_command.txt"
 import { Tool } from "./tool"
 import { Truncate } from "./truncation"
 
@@ -50,9 +50,9 @@ const parser = lazy(async () => {
 })
 
 // TODO: we may wanna rename this tool so it works better on other shells
-export const BashTool = Tool.define("bash", async () => {
+export const RunCommandTool = Tool.define("run_command", async () => {
   const shell = Shell.acceptable()
-  log.info("bash tool using shell", { shell })
+  log.info("run_command tool using shell", { shell })
 
   return {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional replaceAll patterns matching template placeholders
@@ -153,7 +153,7 @@ export const BashTool = Tool.define("bash", async () => {
 
       if (patterns.size > 0) {
         await ctx.ask({
-          permission: "bash",
+          permission: "run_command",
           patterns: Array.from(patterns),
           always: Array.from(always),
           metadata: {},
@@ -238,7 +238,7 @@ export const BashTool = Tool.define("bash", async () => {
       const resultMetadata: string[] = []
 
       if (timedOut) {
-        resultMetadata.push(`bash tool terminated command after exceeding timeout ${timeout} ms`)
+        resultMetadata.push(`run_command tool terminated command after exceeding timeout ${timeout} ms`)
       }
 
       if (aborted) {
@@ -246,7 +246,7 @@ export const BashTool = Tool.define("bash", async () => {
       }
 
       if (resultMetadata.length > 0) {
-        output += `\n\n<bash_metadata>\n${resultMetadata.join("\n")}\n</bash_metadata>`
+        output += `\n\n<run_command_metadata>\n${resultMetadata.join("\n")}\n</run_command_metadata>`
       }
 
       return {

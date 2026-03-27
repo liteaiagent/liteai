@@ -33,7 +33,7 @@ type State = {
 
 const remote = { type: "testing", name: "remote-a" } as unknown as typeof WorkspaceTable.$inferInsert
 
-async function setup(state: State) {
+async function setup(state: State, tmp: { path: string }) {
   const TestAdaptor: Adaptor = {
     configure(config) {
       return config
@@ -61,7 +61,6 @@ async function setup(state: State) {
 
   adaptors.installAdaptor("testing", TestAdaptor)
 
-  await using tmp = await tmpdir({ git: true })
   const { project } = await Project.fromDirectory(tmp.path)
 
   const id1 = WorkspaceID.ascending()
@@ -117,7 +116,8 @@ describe("control-plane/session-proxy-middleware", () => {
       calls: [],
     }
 
-    const ctx = await setup(state)
+    await using tmp = await tmpdir({ git: true })
+    const ctx = await setup(state, tmp)
 
     ctx.app.post("/session/foo", (c) => c.text("local", 200))
     const response = await ctx.request("http://workspace.test/session/foo?x=1", {

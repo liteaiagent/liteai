@@ -742,28 +742,29 @@ export default function Page() {
     ),
   )
 
-  createEffect(
-    on(
-      sessionKey,
-      () => {
-        setStore("messageId", undefined)
-        setStore("changes", "session")
-        setUi("pendingMessage", undefined)
-      },
-      { defer: true },
-    ),
-  )
+  // Session-local state: reset when session identity changes.
+  // Consolidated from two separate effects; onCleanup fires before the
+  // next sessionKey run and on disposal.
+  createEffect(() => {
+    sessionKey()
+    onCleanup(() => {
+      setStore("messageId", undefined)
+      setStore("changes", "session")
+      setUi("pendingMessage", undefined)
+      setTree({
+        reviewScroll: undefined,
+        pendingDiff: undefined,
+        activeDiff: undefined,
+      })
+    })
+  })
 
-  createEffect(
-    on(
-      () => params.dir,
-      (dir) => {
-        if (!dir) return
-        setStore("newSessionWorktree", "main")
-      },
-      { defer: true },
-    ),
-  )
+  // Dir-local state: reset when workspace directory changes.
+  createEffect(() => {
+    if (!params.dir) return
+    params.dir
+    onCleanup(() => setStore("newSessionWorktree", "main"))
+  })
 
   const selectionPreview = (path: string, selection: FileSelection) => {
     const content = file.get(path)?.content?.content
@@ -885,20 +886,6 @@ export default function Page() {
     pendingDiff: undefined as string | undefined,
     activeDiff: undefined as string | undefined,
   })
-
-  createEffect(
-    on(
-      sessionKey,
-      () => {
-        setTree({
-          reviewScroll: undefined,
-          pendingDiff: undefined,
-          activeDiff: undefined,
-        })
-      },
-      { defer: true },
-    ),
-  )
 
   const showAllFiles = () => {
     if (fileTreeTab() !== "changes") return

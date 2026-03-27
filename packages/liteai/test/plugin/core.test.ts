@@ -292,7 +292,7 @@ describe("plugin.mount", () => {
     if (!loaded) throw new Error("expected loaded")
 
     const mounted = one(loaded)
-    expect(mounted.commands["mount-test:hello"]).toBeTruthy()
+    expect(mounted.commands[`${loaded.name}:hello`]).toBeTruthy()
     expect(mounted.env.LITEAI_PLUGIN_ROOT).toBe(loaded.root)
     expect(mounted.env.CLAUDE_PLUGIN_ROOT).toBe(loaded.root)
   })
@@ -325,8 +325,8 @@ describe("plugin.mount", () => {
     if (!a || !b) throw new Error("expected both plugins")
 
     const mounted = all([a, b])
-    expect(mounted.commands["plugin-a:a"]).toBeTruthy()
-    expect(mounted.commands["plugin-b:b"]).toBeTruthy()
+    expect(mounted.commands[`${a.name}:a`]).toBeTruthy()
+    expect(mounted.commands[`${b.name}:b`]).toBeTruthy()
   })
 
   test("apply merges settings as lowest priority", () => {

@@ -10,7 +10,7 @@ import { Tooltip } from "../tooltip"
 import { ShellSubmessage } from "./shared"
 
 ToolRegistry.register({
-  name: "bash",
+  name: "run_command",
   render(
     props: ToolProps & {
       input: { command?: string; description?: string }
@@ -52,8 +52,8 @@ ToolRegistry.register({
           </div>
         }
       >
-        <div data-component="bash-output">
-          <div data-slot="bash-copy">
+        <div data-component="run_command-output">
+          <div data-slot="run_command-copy">
             <Tooltip
               value={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")}
               placement="top"
@@ -69,8 +69,8 @@ ToolRegistry.register({
               />
             </Tooltip>
           </div>
-          <div data-slot="bash-scroll" data-scrollable>
-            <pre data-slot="bash-pre">
+          <div data-slot="run_command-scroll" data-scrollable>
+            <pre data-slot="run_command-pre">
               <code>{text()}</code>
             </pre>
           </div>

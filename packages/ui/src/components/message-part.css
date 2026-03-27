@@ -406,7 +406,7 @@
   }
 }
 
-[data-component="bash-output"] {
+[data-component="run_command-output"] {
   width: 100%;
   border: 1px solid var(--border-weak-base);
   border-radius: 6px;
@@ -414,7 +414,7 @@
   position: relative;
   overflow: hidden;
 
-  [data-slot="bash-copy"] {
+  [data-slot="run_command-copy"] {
     position: absolute;
     top: 4px;
     right: 4px;
@@ -423,22 +423,22 @@
     transition: opacity 0.15s ease;
   }
 
-  &:hover [data-slot="bash-copy"],
-  &:focus-within [data-slot="bash-copy"] {
+  &:hover [data-slot="run_command-copy"],
+  &:focus-within [data-slot="run_command-copy"] {
     opacity: 1;
     pointer-events: auto;
   }
 
-  [data-slot="bash-copy"] [data-component="icon-button"][data-variant="secondary"] {
+  [data-slot="run_command-copy"] [data-component="icon-button"][data-variant="secondary"] {
     box-shadow: none;
     border: 1px solid var(--border-weak-base);
   }
 
-  [data-slot="bash-copy"] [data-component="icon-button"][data-variant="secondary"] [data-slot="icon-svg"] {
+  [data-slot="run_command-copy"] [data-component="icon-button"][data-variant="secondary"] [data-slot="icon-svg"] {
     color: var(--icon-base);
   }
 
-  [data-slot="bash-scroll"] {
+  [data-slot="run_command-scroll"] {
     width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
@@ -450,12 +450,12 @@
     }
   }
 
-  [data-slot="bash-pre"] {
+  [data-slot="run_command-pre"] {
     margin: 0;
     padding: 12px;
   }
 
-  [data-slot="bash-pre"] code {
+  [data-slot="run_command-pre"] code {
     font-family: var(--font-family-mono);
     font-feature-settings: var(--font-family-mono--font-feature-settings);
     font-size: 13px;
@@ -736,7 +736,7 @@
 [data-component="text-part"],
 [data-component="reasoning-part"],
 [data-component="tool-output"],
-[data-component="bash-output"],
+[data-component="run_command-output"],
 [data-component="edit-content"],
 [data-component="write-content"],
 [data-component="todos"],

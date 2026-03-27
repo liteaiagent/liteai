@@ -8,13 +8,13 @@ import { Flag } from "../../flag/flag"
 import type { PermissionNext } from "../../permission/next"
 import { Provider } from "../../provider/provider"
 import { Server } from "../../server/server"
-import type { BashTool } from "../../tool/bash"
 import type { CodeSearchTool } from "../../tool/codesearch"
 import type { EditTool } from "../../tool/edit"
 import type { GlobTool } from "../../tool/glob"
 import type { GrepTool } from "../../tool/grep"
 import type { ListTool } from "../../tool/ls"
 import type { ReadTool } from "../../tool/read"
+import type { RunCommandTool } from "../../tool/run_command"
 import type { SkillTool } from "../../tool/skill"
 import type { TaskTool } from "../../tool/task"
 import type { TodoWriteTool } from "../../tool/todo"
@@ -191,7 +191,7 @@ function skill(info: ToolProps<typeof SkillTool>) {
   })
 }
 
-function bash(info: ToolProps<typeof BashTool>) {
+function run_command(info: ToolProps<typeof RunCommandTool>) {
   const output = info.part.state.status === "completed" ? info.part.state.output?.trim() : undefined
   block(
     {
@@ -411,7 +411,7 @@ export const RunCommand = cmd({
     async function execute(sdk: LiteaiClient) {
       function tool(part: ToolPart) {
         try {
-          if (part.tool === "bash") return bash(props<typeof BashTool>(part))
+          if (part.tool === "run_command") return run_command(props<typeof RunCommandTool>(part))
           if (part.tool === "glob") return glob(props<typeof GlobTool>(part))
           if (part.tool === "grep") return grep(props<typeof GrepTool>(part))
           if (part.tool === "list") return list(props<typeof ListTool>(part))

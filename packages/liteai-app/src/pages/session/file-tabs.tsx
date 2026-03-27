@@ -8,11 +8,11 @@ import { ScrollView } from "@liteai/ui/scroll-view"
 import { Tabs } from "@liteai/ui/tabs"
 import { showToast } from "@liteai/ui/toast"
 import { sampledChecksum } from "@liteai/util/encode"
-import { createEffect, createMemo, Match, on, onCleanup, Switch } from "solid-js"
+import { createEffect, createMemo, Match, onCleanup, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { useComments } from "@/context/comments"
-import { type FileSelection, type SelectedLineRange, selectionFromLines, useFile } from "@/context/file"
+import { type FileSelection, type FileState, type SelectedLineRange, selectionFromLines, useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
 import { usePrompt } from "@/context/prompt"
 import { getSessionHandoff } from "@/pages/session/handoff"
@@ -56,53 +56,36 @@ function FileCommentMenu(props: {
   )
 }
 
-export function FileTabContent(props: { tab: string }) {
+/**
+ * Inner component keyed by file path. All comment-related state (note store,
+ * commentsUi controller, focus effect) lives here so that a path change
+ * tears down the old owner and creates fresh state automatically — no
+ * reset effect needed.
+ */
+function FileTabCommentScope(props: {
+  path: string
+  tab: string
+  contents: () => string
+  cacheKey: () => string | undefined
+  state: () => FileState | undefined
+  activeFileTab: () => string | undefined
+  queueRestore: () => void
+  search: { register: (handle: FileSearchHandle | null) => void }
+}) {
   const file = useFile()
   const comments = useComments()
   const language = useLanguage()
   const prompt = usePrompt()
   const fileComponent = useFileComponent()
-  const { sessionKey, tabs, view } = useSessionLayout()
-  const activeFileTab = createSessionTabs({
-    tabs,
-    pathFromTab: file.pathFromTab,
-    normalizeTab: (tab) => (tab.startsWith("file://") ? file.tab(tab) : tab),
-  }).activeFileTab
+  const { sessionKey } = useSessionLayout()
 
-  let scroll: HTMLElement | undefined
-  let scrollFrame: number | undefined
-  let restoreFrame: number | undefined
-  let pending: { x: number; y: number } | undefined
-  let codeScroll: HTMLElement[] = []
-  let find: FileSearchHandle | null = null
-
-  const search = {
-    register: (handle: FileSearchHandle | null) => {
-      find = handle
-    },
-  }
-
-  const path = createMemo(() => file.pathFromTab(props.tab))
-  const state = createMemo(() => {
-    const p = path()
-    if (!p) return
-    return file.get(p)
-  })
-  const contents = createMemo(() => state()?.content?.content ?? "")
-  const cacheKey = createMemo(() => sampledChecksum(contents()))
   const selectedLines = createMemo<SelectedLineRange | null>(() => {
-    const p = path()
-    if (!p) return null
-    if (file.ready()) return (file.selectedLines(p) as SelectedLineRange | undefined) ?? null
-    return (getSessionHandoff(sessionKey())?.files[p] as SelectedLineRange | undefined) ?? null
+    if (file.ready()) return (file.selectedLines(props.path) as SelectedLineRange | undefined) ?? null
+    return (getSessionHandoff(sessionKey())?.files[props.path] as SelectedLineRange | undefined) ?? null
   })
 
-  const selectionPreview = (source: string, selection: FileSelection) => {
-    return previewSelectedLines(source, {
-      start: selection.startLine,
-      end: selection.endLine,
-    })
-  }
+  const selectionPreview = (source: string, selection: FileSelection) =>
+    previewSelectedLines(source, { start: selection.startLine, end: selection.endLine })
 
   const addCommentToContext = (input: {
     file: string
@@ -115,7 +98,7 @@ export function FileTabContent(props: { tab: string }) {
     const preview =
       input.preview ??
       (() => {
-        if (input.file === path()) return selectionPreview(contents(), selection)
+        if (input.file === props.path) return selectionPreview(props.contents(), selection)
         const source = file.get(input.file)?.content?.content
         if (!source) return undefined
         return selectionPreview(source, selection)
@@ -145,7 +128,7 @@ export function FileTabContent(props: { tab: string }) {
   }) => {
     comments.update(input.file, input.id, input.comment)
     const preview =
-      input.file === path() ? selectionPreview(contents(), selectionFromLines(input.selection)) : undefined
+      input.file === props.path ? selectionPreview(props.contents(), selectionFromLines(input.selection)) : undefined
     prompt.context.updateComment(input.file, input.id, {
       comment: input.comment,
       ...(preview ? { preview } : {}),
@@ -157,12 +140,7 @@ export function FileTabContent(props: { tab: string }) {
     prompt.context.removeComment(input.file, input.id)
   }
 
-  const fileComments = createMemo(() => {
-    const p = path()
-    if (!p) return []
-    return comments.list(p)
-  })
-
+  const fileComments = createMemo(() => comments.list(props.path))
   const commentedLines = createMemo(() => fileComments().map((comment) => comment.selection))
 
   const [note, setNote] = createStore({
@@ -171,18 +149,15 @@ export function FileTabContent(props: { tab: string }) {
     selected: null as SelectedLineRange | null,
   })
 
-  const syncSelected = (range: SelectedLineRange | null) => {
-    const p = path()
-    if (!p) return
-    file.setSelectedLines(p, range ? cloneSelectedLineRange(range) : null)
-  }
+  const syncSelected = (range: SelectedLineRange | null) =>
+    file.setSelectedLines(props.path, range ? cloneSelectedLineRange(range) : null)
 
   const activeSelection = () => note.selected ?? selectedLines()
 
   const commentsUi = createLineCommentController({
     comments: fileComments,
     label: language.t("ui.lineComment.submit"),
-    draftKey: () => path() ?? props.tab,
+    draftKey: () => props.path,
     state: {
       opened: () => note.openedComment,
       setOpened: (id) => setNote("openedComment", id),
@@ -196,21 +171,9 @@ export function FileTabContent(props: { tab: string }) {
     getHoverSelectedRange: activeSelection,
     cancelDraftOnCommentToggle: true,
     clearSelectionOnSelectionEndNull: true,
-    onSubmit: ({ comment, selection }) => {
-      const p = path()
-      if (!p) return
-      addCommentToContext({ file: p, selection, comment, origin: "file" })
-    },
-    onUpdate: ({ id, comment, selection }) => {
-      const p = path()
-      if (!p) return
-      updateCommentInContext({ id, file: p, selection, comment })
-    },
-    onDelete: (comment) => {
-      const p = path()
-      if (!p) return
-      removeCommentFromContext({ id: comment.id, file: p })
-    },
+    onSubmit: ({ comment, selection }) => addCommentToContext({ file: props.path, selection, comment, origin: "file" }),
+    onUpdate: ({ id, comment, selection }) => updateCommentInContext({ id, file: props.path, selection, comment }),
+    onDelete: (comment) => removeCommentFromContext({ id: comment.id, file: props.path }),
     editSubmitLabel: language.t("common.save"),
     renderCommentActions: (_, controls) => (
       <FileCommentMenu
@@ -235,6 +198,97 @@ export function FileTabContent(props: { tab: string }) {
   })
 
   createEffect(() => {
+    const focus = comments.focus()
+    if (!focus) return
+    if (focus.file !== props.path) return
+    if (props.activeFileTab() !== props.tab) return
+
+    const target = fileComments().find((comment) => comment.id === focus.id)
+    if (!target) return
+
+    commentsUi.note.openComment(target.id, target.selection, { cancelDraft: true })
+    requestAnimationFrame(() => comments.clearFocus())
+  })
+
+  return (
+    <div class="relative overflow-hidden pb-40">
+      <Dynamic
+        component={fileComponent}
+        mode="text"
+        file={{
+          name: props.path,
+          contents: props.contents(),
+          cacheKey: props.cacheKey(),
+        }}
+        enableLineSelection
+        enableHoverUtility
+        selectedLines={activeSelection()}
+        commentedLines={commentedLines()}
+        onRendered={props.queueRestore}
+        annotations={commentsUi.annotations()}
+        renderAnnotation={commentsUi.renderAnnotation}
+        renderHoverUtility={commentsUi.renderHoverUtility}
+        onLineSelected={(range: SelectedLineRange | null) => {
+          commentsUi.onLineSelected(range)
+        }}
+        onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
+        onLineSelectionEnd={(range: SelectedLineRange | null) => {
+          commentsUi.onLineSelectionEnd(range)
+        }}
+        search={props.search}
+        overflow="scroll"
+        class="select-text"
+        media={{
+          mode: "auto",
+          path: props.path,
+          current: props.state()?.content,
+          onLoad: props.queueRestore,
+          onError: (args: { kind: "image" | "audio" | "svg" }) => {
+            if (args.kind !== "svg") return
+            showToast({
+              variant: "error",
+              title: language.t("toast.file.loadFailed.title"),
+            })
+          },
+        }}
+      />
+    </div>
+  )
+}
+
+export function FileTabContent(props: { tab: string }) {
+  const file = useFile()
+  const language = useLanguage()
+  const { tabs, view } = useSessionLayout()
+  const activeFileTab = createSessionTabs({
+    tabs,
+    pathFromTab: file.pathFromTab,
+    normalizeTab: (tab) => (tab.startsWith("file://") ? file.tab(tab) : tab),
+  }).activeFileTab
+
+  let scroll: HTMLElement | undefined
+  let scrollFrame: number | undefined
+  let restoreFrame: number | undefined
+  let pending: { x: number; y: number } | undefined
+  let codeScroll: HTMLElement[] = []
+  let find: FileSearchHandle | null = null
+
+  const search = {
+    register: (handle: FileSearchHandle | null) => {
+      find = handle
+    },
+  }
+
+  const path = createMemo(() => file.pathFromTab(props.tab))
+  const state = createMemo(() => {
+    const p = path()
+    if (!p) return
+    return file.get(p)
+  })
+  const contents = createMemo(() => state()?.content?.content ?? "")
+  const cacheKey = createMemo(() => sampledChecksum(contents()))
+
+  createEffect(() => {
     if (typeof window === "undefined") return
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -249,30 +303,6 @@ export function FileTabContent(props: { tab: string }) {
 
     window.addEventListener("keydown", onKeyDown, { capture: true })
     onCleanup(() => window.removeEventListener("keydown", onKeyDown, { capture: true }))
-  })
-
-  createEffect(
-    on(
-      path,
-      () => {
-        commentsUi.note.reset()
-      },
-      { defer: true },
-    ),
-  )
-
-  createEffect(() => {
-    const focus = comments.focus()
-    const p = path()
-    if (!focus || !p) return
-    if (focus.file !== p) return
-    if (activeFileTab() !== props.tab) return
-
-    const target = fileComments().find((comment) => comment.id === focus.id)
-    if (!target) return
-
-    commentsUi.note.openComment(target.id, target.selection, { cancelDraft: true })
-    requestAnimationFrame(() => comments.clearFocus())
   })
 
   const getCodeScroll = () => {
@@ -372,12 +402,6 @@ export function FileTabContent(props: { tab: string }) {
     })
   }
 
-  const _cancelCommenting = () => {
-    const p = path()
-    if (p) file.setSelectedLines(p, null)
-    setNote("commenting", null)
-  }
-
   let prev = {
     loaded: false,
     ready: false,
@@ -403,53 +427,6 @@ export function FileTabContent(props: { tab: string }) {
     if (restoreFrame !== undefined) cancelAnimationFrame(restoreFrame)
   })
 
-  const renderFile = (source: string) => (
-    <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
-        mode="text"
-        file={{
-          name: path() ?? "",
-          contents: source,
-          cacheKey: cacheKey(),
-        }}
-        enableLineSelection
-        enableHoverUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={() => {
-          queueRestore()
-        }}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderHoverUtility={commentsUi.renderHoverUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        search={search}
-        overflow="scroll"
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: path(),
-          current: state()?.content,
-          onLoad: queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
-    </div>
-  )
-
   return (
     <Tabs.Content value={props.tab} class="mt-3 relative h-full">
       <ScrollView
@@ -461,7 +438,22 @@ export function FileTabContent(props: { tab: string }) {
         onScroll={handleScroll}
       >
         <Switch>
-          <Match when={state()?.loaded}>{renderFile(contents())}</Match>
+          <Match when={state()?.loaded}>
+            <Show when={path()} keyed>
+              {(p) => (
+                <FileTabCommentScope
+                  path={p}
+                  tab={props.tab}
+                  contents={contents}
+                  cacheKey={cacheKey}
+                  state={state}
+                  activeFileTab={activeFileTab}
+                  queueRestore={queueRestore}
+                  search={search}
+                />
+              )}
+            </Show>
+          </Match>
           <Match when={state()?.loading}>
             <div class="px-6 py-4 text-text-weak">{language.t("common.loading")}...</div>
           </Match>

@@ -3,6 +3,7 @@ import path from "node:path"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import { Log } from "../../src/util/log"
+import { tmpdir } from "../fixture/fixture"
 
 const projectRoot = path.join(__dirname, "../..")
 Log.init({ print: false })
@@ -14,7 +15,8 @@ describe("Session.list", () => {
       fn: async () => {
         const first = await Session.create({})
 
-        const otherDir = path.join(projectRoot, "..", "__session_list_other")
+        await using tmp = await tmpdir()
+        const otherDir = tmp.path
         const second = await Instance.provide({
           directory: otherDir,
           fn: async () => Session.create({}),

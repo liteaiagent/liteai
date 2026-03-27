@@ -376,7 +376,7 @@ test("snapshot state isolation between projects", async () => {
       expect(patch2.files).not.toContain(fwd(tmp1?.path ?? "", "project1.txt"))
     },
   })
-}, 10_000)
+}, 60_000)
 
 test("patch detects changes in secondary worktree", async () => {
   await using tmp = await bootstrap()

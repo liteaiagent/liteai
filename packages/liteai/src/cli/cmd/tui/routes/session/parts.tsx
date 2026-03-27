@@ -7,7 +7,6 @@ import { Flag } from "@/flag/flag"
 import { use } from "./ctx"
 import {
   ApplyPatch,
-  Bash,
   CodeSearch,
   Edit,
   GenericTool,
@@ -16,6 +15,7 @@ import {
   List,
   Question,
   Read,
+  RunCommand,
   Skill,
   Task,
   TodoWrite,
@@ -135,8 +135,8 @@ function ToolPartView(props: { last: boolean; part: ToolPart; message: Assistant
   return (
     <Show when={!hidden()}>
       <Switch>
-        <Match when={props.part.tool === "bash"}>
-          <Bash {...toolprops} />
+        <Match when={props.part.tool === "run_command"}>
+          <RunCommand {...toolprops} />
         </Match>
         <Match when={props.part.tool === "glob"}>
           <Glob {...toolprops} />

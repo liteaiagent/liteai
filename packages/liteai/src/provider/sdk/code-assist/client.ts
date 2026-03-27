@@ -75,8 +75,8 @@ async function retryPost<T>(
     if (last.ok) return last.json() as T
     if (!RETRYABLE_STATUSES.has(last.status)) break
   }
-  const text = await last!.text().catch(() => "")
-  throw new Error(`Code Assist request failed: ${last!.status} ${text}`)
+  const text = await last?.text().catch(() => "")
+  throw new Error(`Code Assist request failed: ${last?.status} ${text}`)
 }
 
 export async function generate(

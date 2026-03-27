@@ -14,13 +14,13 @@ import stripAnsi from "strip-ansi"
 
 import { Global } from "@/global"
 import type { ApplyPatchTool } from "@/tool/apply_patch"
-import type { BashTool } from "@/tool/bash"
 import type { EditTool } from "@/tool/edit"
 import type { GlobTool } from "@/tool/glob"
 import type { GrepTool } from "@/tool/grep"
 import type { ListTool } from "@/tool/ls"
 import type { QuestionTool } from "@/tool/question"
 import type { ReadTool } from "@/tool/read"
+import type { RunCommandTool } from "@/tool/run_command"
 import type { SkillTool } from "@/tool/skill"
 import type { TaskTool } from "@/tool/task"
 import type { TodoWriteTool } from "@/tool/todo"
@@ -247,7 +247,7 @@ function Diagnostics(props: { diagnostics?: Record<string, Record<string, unknow
   )
 }
 
-export function Bash(props: ToolProps<typeof BashTool>) {
+export function RunCommand(props: ToolProps<typeof RunCommandTool>) {
   const { theme } = useTheme()
   const sync = useSync()
   const running = createMemo(() => props.part.state.status === "running")

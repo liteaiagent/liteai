@@ -1,9 +1,23 @@
-import { expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Flag } from "../../src/flag/flag"
 import { Instance } from "../../src/project/instance"
 import { Skill } from "../../src/skill"
 import { tmpdir } from "../fixture/fixture"
+
+let prevExternalSkills: boolean
+
+beforeAll(() => {
+  prevExternalSkills = Flag.LITEAI_DISABLE_EXTERNAL_SKILLS
+  // @ts-expect-error - Mutating namespace property for testing external skills
+  Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = false
+})
+
+afterAll(() => {
+  // @ts-expect-error - Restore original state
+  Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = prevExternalSkills
+})
 
 async function createGlobalSkill(homeDir: string) {
   const skillDir = path.join(homeDir, ".claude", "skills", "global-test-skill")

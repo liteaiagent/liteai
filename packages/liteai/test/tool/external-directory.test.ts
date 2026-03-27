@@ -1,4 +1,6 @@
-import { describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, describe, expect, test } from "bun:test"
+import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import type { PermissionNext } from "../../src/permission/next"
 import { Instance } from "../../src/project/instance"
@@ -16,6 +18,24 @@ const baseCtx: Omit<Tool.Context, "ask"> = {
   metadata: () => {},
 }
 
+let tmpBase = ""
+let tmpDir = ""
+let tmpProject = ""
+let tmpOutside = ""
+
+beforeAll(() => {
+  tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), "liteai-ext-"))
+  tmpDir = path.join(tmpBase, "tmp")
+  tmpProject = path.join(tmpDir, "project")
+  tmpOutside = path.join(tmpDir, "outside")
+  fs.mkdirSync(tmpProject, { recursive: true })
+  fs.mkdirSync(tmpOutside, { recursive: true })
+})
+
+afterAll(() => {
+  fs.rmSync(tmpBase, { recursive: true, force: true })
+})
+
 describe("tool.assertExternalDirectory", () => {
   test("no-ops for empty target", async () => {
     const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
@@ -27,7 +47,7 @@ describe("tool.assertExternalDirectory", () => {
     }
 
     await Instance.provide({
-      directory: "/tmp",
+      directory: tmpDir,
       fn: async () => {
         await assertExternalDirectory(ctx)
       },
@@ -46,9 +66,9 @@ describe("tool.assertExternalDirectory", () => {
     }
 
     await Instance.provide({
-      directory: "/tmp/project",
+      directory: tmpProject,
       fn: async () => {
-        await assertExternalDirectory(ctx, path.join("/tmp/project", "file.txt"))
+        await assertExternalDirectory(ctx, path.join(tmpProject, "file.txt"))
       },
     })
 
@@ -64,8 +84,8 @@ describe("tool.assertExternalDirectory", () => {
       },
     }
 
-    const directory = "/tmp/project"
-    const target = "/tmp/outside/file.txt"
+    const directory = tmpProject
+    const target = path.join(tmpOutside, "file.txt")
     const expected = path.join(path.dirname(target), "*").replaceAll("\\", "/")
 
     await Instance.provide({
@@ -90,8 +110,8 @@ describe("tool.assertExternalDirectory", () => {
       },
     }
 
-    const directory = "/tmp/project"
-    const target = "/tmp/outside"
+    const directory = tmpProject
+    const target = tmpOutside
     const expected = path.join(target, "*").replaceAll("\\", "/")
 
     await Instance.provide({
@@ -117,9 +137,9 @@ describe("tool.assertExternalDirectory", () => {
     }
 
     await Instance.provide({
-      directory: "/tmp/project",
+      directory: tmpProject,
       fn: async () => {
-        await assertExternalDirectory(ctx, "/tmp/outside/file.txt", { bypass: true })
+        await assertExternalDirectory(ctx, path.join(tmpOutside, "file.txt"), { bypass: true })
       },
     })
 

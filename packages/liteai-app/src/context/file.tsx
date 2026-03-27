@@ -97,13 +97,18 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       })
     }
 
+    // File state is scoped to the current directory. When scope changes,
+    // onCleanup fires before the next run, clearing stale state.
+    // Also fires on disposal when the file provider unmounts.
     createEffect(() => {
       scope()
-      inflight.clear()
-      resetFileContentLru()
-      batch(() => {
-        setStore("file", reconcile({}))
-        tree.reset()
+      onCleanup(() => {
+        inflight.clear()
+        resetFileContentLru()
+        batch(() => {
+          setStore("file", reconcile({}))
+          tree.reset()
+        })
       })
     })
 
