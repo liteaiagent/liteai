@@ -10,8 +10,8 @@ import { Provider } from "../../provider/provider"
 import { Session } from ".."
 import { Message } from "../message"
 import { MessageID, SessionID } from "../schema"
+import { resolvePromptParts } from "./input"
 import { lastModel, prompt } from "./loop"
-import { resolvePromptParts } from "./message"
 
 const bashRegex = /!`([^`]+)`/g
 // Match [Image N] as single token, quoted strings, or non-space sequences
@@ -158,15 +158,19 @@ export async function command(input: CommandInput) {
             modelID: taskModel.modelID,
           },
           // TODO: how can we make task tool accept a more complex input?
-          prompt: templateParts.find((y) => y.type === "text")?.text ?? "",
+          prompt:
+            (templateParts.find((y: { type: string; text?: string }) => y.type === "text") as { text?: string })
+              ?.text ?? "",
         },
       ]
     : (() => {
         if (cmd.source === "skill") {
-          const text = templateParts.find((y) => y.type === "text")
+          const text = templateParts.find((y: { type: string }) => y.type === "text") as
+            | { type: string; metadata?: Record<string, unknown> }
+            | undefined
           if (text && text.type === "text") {
             text.metadata = {
-              ...text.metadata,
+              ...(text.metadata ?? {}),
               command: input.command,
               arguments: input.arguments,
               description: cmd.description,

@@ -7,8 +7,8 @@ import { Agent } from "../agent/agent"
 import { Config } from "../config/config"
 import { Provider } from "../provider/provider"
 import { Session } from "../session"
+import { SessionPrompt } from "../session/engine"
 import { Message } from "../session/message"
-import { SessionPrompt } from "../session/prompt"
 import { MessageID, SessionID } from "../session/schema"
 import DESCRIPTION from "./task.txt"
 import { Tool } from "./tool"
@@ -150,7 +150,7 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         parts: promptParts,
       })
 
-      const text = result.parts.findLast((x) => x.type === "text")?.text ?? ""
+      const text = (result.parts.findLast((x) => x.type === "text") as { text?: string })?.text ?? ""
 
       const output = [
         `task_id: ${session.id} (for resuming to continue this task if needed)`,

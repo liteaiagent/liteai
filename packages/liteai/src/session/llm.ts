@@ -20,8 +20,8 @@ import { Plugin } from "@/plugin"
 import { Provider } from "@/provider/provider"
 import { ProviderTransform } from "@/provider/transform"
 import { Log } from "@/util/log"
+import { SystemPrompt } from "./engine/system"
 import type { Message } from "./message"
-import { SystemPrompt } from "./system"
 
 export namespace LLM {
   const log = Log.create({ service: "session.llm" })

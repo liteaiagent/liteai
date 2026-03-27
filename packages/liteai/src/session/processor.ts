@@ -8,14 +8,14 @@ import { Question } from "@/question"
 import { Snapshot } from "@/snapshot"
 import { Log } from "@/util/log"
 import { Session } from "."
-import { SessionCompaction } from "./compaction"
 import { LLM } from "./llm"
 import { Message } from "./message"
 import { SessionRetry } from "./retry"
 import type { SessionID } from "./schema"
 import { PartID } from "./schema"
 import { SessionStatus } from "./status"
-import { SessionSummary } from "./summary"
+import { SessionCompaction } from "./tasks/compaction"
+import { SessionSummary } from "./tasks/summary"
 
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3

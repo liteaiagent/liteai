@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url"
 import { Instance } from "../../src/project/instance"
 import { ModelID, ProviderID } from "../../src/provider/schema"
 import { Session } from "../../src/session"
+import { SessionPrompt } from "../../src/session/engine"
 import { Message } from "../../src/session/message"
-import { SessionPrompt } from "../../src/session/prompt"
 import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
@@ -135,7 +135,8 @@ describe("session.prompt special characters", () => {
           const template = "Read @file#name.txt"
           const parts = await SessionPrompt.resolvePromptParts(template)
           const fileParts = parts.filter(
-            (part): part is Extract<(typeof parts)[number], { type: "file" }> => part.type === "file",
+            (part: unknown): part is Extract<(typeof parts)[number], { type: "file" }> =>
+              (part as Pick<Message.WithParts["parts"][number], "type">).type === "file",
           )
 
           expect(fileParts.length).toBe(1)

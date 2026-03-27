@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
+import { SessionPrompt } from "../../src/session/engine"
 import { Message } from "../../src/session/message"
-import { SessionPrompt } from "../../src/session/prompt"
 import { MessageID, SessionID } from "../../src/session/schema"
 
 describe("structured-output.OutputFormat", () => {
@@ -222,7 +222,7 @@ describe("structured-output.createStructuredOutputTool", () => {
 
     const tool = SessionPrompt.createStructuredOutputTool({
       schema: { type: "object", properties: { name: { type: "string" } } },
-      onSuccess: (output) => {
+      onSuccess: (output: unknown) => {
         capturedOutput = output
       },
     })
@@ -304,7 +304,7 @@ describe("structured-output.createStructuredOutputTool", () => {
         },
         required: ["user"],
       },
-      onSuccess: (output) => {
+      onSuccess: (output: unknown) => {
         capturedOutput = output
       },
     })
@@ -344,7 +344,7 @@ describe("structured-output.createStructuredOutputTool", () => {
         },
         required: ["tags"],
       },
-      onSuccess: (output) => {
+      onSuccess: (output: unknown) => {
         capturedOutput = output
       },
     })

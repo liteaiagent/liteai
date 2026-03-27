@@ -17,7 +17,7 @@ import type {
 } from "@octokit/webhooks-types"
 import { map, pipe, sortBy, values } from "remeda"
 import { Instance } from "@/project/instance"
-import { SessionPrompt } from "@/session/prompt"
+import { SessionPrompt } from "@/session/engine"
 import { git } from "@/util/git"
 import { Process } from "@/util/process"
 import { Bus } from "../../bus"

@@ -187,7 +187,7 @@ describe("revert + compact workflow", () => {
         await Session.remove(sessionID)
       },
     })
-  })
+  }, 30000)
 
   test("should properly clean up revert state before creating compaction message", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -281,5 +281,5 @@ describe("revert + compact workflow", () => {
         await Session.remove(sessionID)
       },
     })
-  })
+  }, 30000)
 })

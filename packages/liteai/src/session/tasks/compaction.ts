@@ -8,14 +8,14 @@ import { Plugin } from "@/plugin"
 import { ModelID, ProviderID } from "@/provider/schema"
 import { ProviderTransform } from "@/provider/transform"
 import { fn } from "@/util/fn"
-import { Instance } from "../project/instance"
-import { Provider } from "../provider/provider"
-import { Log } from "../util/log"
-import { Token } from "../util/token"
-import { Session } from "."
-import { Message } from "./message"
-import { SessionProcessor } from "./processor"
-import { MessageID, PartID, SessionID } from "./schema"
+import { Instance } from "../../project/instance"
+import { Provider } from "../../provider/provider"
+import { Log } from "../../util/log"
+import { Token } from "../../util/token"
+import { Session } from ".."
+import { Message } from "../message"
+import { SessionProcessor } from "../processor"
+import { MessageID, PartID, SessionID } from "../schema"
 
 export namespace SessionCompaction {
   const log = Log.create({ service: "session.compaction" })
@@ -116,14 +116,15 @@ export namespace SessionCompaction {
       const idx = input.messages.findIndex((m) => m.info.id === input.parentID)
       for (let i = idx - 1; i >= 0; i--) {
         const msg = input.messages[i]
-        if (msg.info.role === "user" && !msg.parts.some((p) => p.type === "compaction")) {
+        if (msg.info.role === "user" && !msg.parts.some((p: { type: string }) => p.type === "compaction")) {
           replay = msg
           messages = input.messages.slice(0, i)
           break
         }
       }
       const hasContent =
-        replay && messages.some((m) => m.info.role === "user" && !m.parts.some((p) => p.type === "compaction"))
+        replay &&
+        messages.some((m) => m.info.role === "user" && !m.parts.some((p: { type: string }) => p.type === "compaction"))
       if (!hasContent) {
         replay = undefined
         messages = input.messages

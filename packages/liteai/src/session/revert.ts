@@ -5,11 +5,11 @@ import { Snapshot } from "../snapshot"
 import { Database, eq } from "../storage/db"
 import { Log } from "../util/log"
 import { Session } from "."
+import { SessionPrompt } from "./engine"
 import { Message } from "./message"
-import { SessionPrompt } from "./prompt"
 import { MessageID, PartID, SessionID } from "./schema"
 import { MessageTable, PartTable } from "./session.sql"
-import { SessionSummary } from "./summary"
+import { SessionSummary } from "./tasks/summary"
 
 export namespace SessionRevert {
   const log = Log.create({ service: "session.revert" })
@@ -70,8 +70,8 @@ export namespace SessionRevert {
         sessionID: input.sessionID,
         revert,
         summary: {
-          additions: diffs.reduce((sum, x) => sum + x.additions, 0),
-          deletions: diffs.reduce((sum, x) => sum + x.deletions, 0),
+          additions: diffs.reduce((sum: number, x: { additions: number }) => sum + x.additions, 0),
+          deletions: diffs.reduce((sum: number, x: { deletions: number }) => sum + x.deletions, 0),
           files: diffs.length,
         },
       })

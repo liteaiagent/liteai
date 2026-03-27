@@ -20,9 +20,9 @@ import { defer } from "../../util/defer"
 import { Filesystem } from "../../util/filesystem"
 import { Log } from "../../util/log"
 import { Session } from ".."
-import { InstructionPrompt } from "../instruction"
 import type { Message } from "../message"
 import { MessageID, PartID, type SessionID } from "../schema"
+import { InstructionPrompt } from "./instruction"
 import type { PromptInput } from "./loop"
 import { lastModel } from "./loop"
 
@@ -115,7 +115,7 @@ export async function createUserMessage(input: PromptInput) {
     format: input.format,
     variant,
   }
-  using _ = defer(() => InstructionPrompt.clear(info.id))
+  await using _ = defer(() => InstructionPrompt.clear(info.id))
 
   const assign = (part: Draft<Message.Part>): Message.Part => ({
     ...part,

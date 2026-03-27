@@ -1,6 +1,6 @@
 import * as CommandMod from "./command"
+import * as Message from "./input"
 import * as Loop from "./loop"
-import * as Message from "./message"
 import * as ShellMod from "./shell"
 import * as Tools from "./tools"
 

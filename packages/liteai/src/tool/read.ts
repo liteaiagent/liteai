@@ -6,7 +6,7 @@ import z from "zod"
 import { FileTime } from "../file/time"
 import { LSP } from "../lsp"
 import { Instance } from "../project/instance"
-import { InstructionPrompt } from "../session/instruction"
+import { InstructionPrompt } from "../session/engine/instruction"
 import { Filesystem } from "../util/filesystem"
 import { assertExternalDirectory } from "./external-directory"
 import DESCRIPTION from "./read.txt"
@@ -129,7 +129,7 @@ export const ReadTool = Tool.define("read", {
         metadata: {
           preview: msg,
           truncated: false,
-          loaded: instructions.map((i) => i.filepath),
+          loaded: instructions.map((i: { filepath: string }) => i.filepath),
         },
         attachments: [
           {
@@ -217,7 +217,7 @@ export const ReadTool = Tool.define("read", {
     FileTime.read(ctx.sessionID, filepath)
 
     if (instructions.length > 0) {
-      output += `\n\n<system-reminder>\n${instructions.map((i) => i.content).join("\n\n")}\n</system-reminder>`
+      output += `\n\n<system-reminder>\n${instructions.map((i: { content: string }) => i.content).join("\n\n")}\n</system-reminder>`
     }
 
     return {
@@ -226,7 +226,7 @@ export const ReadTool = Tool.define("read", {
       metadata: {
         preview,
         truncated,
-        loaded: instructions.map((i) => i.filepath),
+        loaded: instructions.map((i: { filepath: string }) => i.filepath),
       },
     }
   },

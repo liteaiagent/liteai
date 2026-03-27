@@ -16,19 +16,19 @@ import { ModelID, ProviderID } from "../../provider/schema"
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
-import { SessionCompaction } from "../compaction"
-import { InstructionPrompt } from "../instruction"
 import { Message } from "../message"
 import { SessionProcessor } from "../processor"
 import { SessionRevert } from "../revert"
 import { MessageID, PartID, SessionID } from "../schema"
 import { SessionStatus } from "../status"
-import { SessionSummary } from "../summary"
-import { SystemPrompt } from "../system"
-import MAX_STEPS from "./max-steps.txt"
-import { createUserMessage } from "./message"
+import { SessionCompaction } from "../tasks/compaction"
+import { SessionSummary } from "../tasks/summary"
+import { ensureTitle } from "../tasks/title"
+import MAX_STEPS from "../templates/max-steps.txt"
+import { createUserMessage } from "./input"
+import { InstructionPrompt } from "./instruction"
 import { insertReminders } from "./reminders"
-import { ensureTitle } from "./title"
+import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
 globalThis.AI_SDK_LOG_WARNINGS = false
@@ -255,7 +255,7 @@ export const loop = fn(LoopInput, async (input) => {
         modelID: lastUser.model.modelID,
         providerID: lastUser.model.providerID,
         history: msgs,
-      }).catch((e) => log.error("ensureTitle failed", { error: e }))
+      }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
 
     const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID).catch((e) => {
       log.error("model resolution failed", {
@@ -366,7 +366,7 @@ export const loop = fn(LoopInput, async (input) => {
       model,
       abort,
     })
-    using __ = defer(() => InstructionPrompt.clear(processor.message.id))
+    await using __ = defer(() => InstructionPrompt.clear(processor.message.id))
 
     // Check if user explicitly invoked an agent via @ in this turn
     const lastUserMsg = msgs.findLast((m) => m.info.role === "user")

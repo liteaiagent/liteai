@@ -1,13 +1,13 @@
 import os from "node:os"
 import path from "node:path"
 import { Flag } from "@/flag/flag"
-import { Config } from "../config/config"
-import { Global } from "../global"
-import { Instance } from "../project/instance"
-import { Filesystem } from "../util/filesystem"
-import { Glob } from "../util/glob"
-import { Log } from "../util/log"
-import type { Message } from "./message"
+import { Config } from "../../config/config"
+import { Global } from "../../global"
+import { Instance } from "../../project/instance"
+import { Filesystem } from "../../util/filesystem"
+import { Glob } from "../../util/glob"
+import { Log } from "../../util/log"
+import type { Message } from "../message"
 
 const log = Log.create({ service: "session.instruction" })
 
@@ -31,7 +31,7 @@ function globalFiles() {
 
 async function resolveRelative(instruction: string): Promise<string[]> {
   if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG) {
-    return Filesystem.globUp(instruction, Instance.directory, Instance.worktree).catch((e) => {
+    return Filesystem.globUp(instruction, Instance.directory, Instance.worktree).catch((e: unknown) => {
       log.debug("globUp failed for instruction", { instruction, error: e })
       return []
     })
@@ -42,7 +42,7 @@ async function resolveRelative(instruction: string): Promise<string[]> {
     )
     return []
   }
-  return Filesystem.globUp(instruction, Flag.LITEAI_CONFIG_DIR, Flag.LITEAI_CONFIG_DIR).catch((e) => {
+  return Filesystem.globUp(instruction, Flag.LITEAI_CONFIG_DIR, Flag.LITEAI_CONFIG_DIR).catch((e: unknown) => {
     log.debug("globUp failed for config instruction", { instruction, error: e })
     return []
   })
@@ -83,7 +83,7 @@ export namespace InstructionPrompt {
       for (const file of FILES) {
         const matches = await Filesystem.findUp(file, Instance.directory, Instance.worktree)
         if (matches.length > 0) {
-          matches.forEach((p) => {
+          matches.forEach((p: string) => {
             paths.add(path.resolve(p))
           })
           break
@@ -109,12 +109,12 @@ export namespace InstructionPrompt {
               cwd: path.dirname(instruction),
               absolute: true,
               include: "file",
-            }).catch((e) => {
+            }).catch((e: unknown) => {
               log.debug("glob scan failed for instruction", { instruction, error: e })
               return []
             })
           : await resolveRelative(instruction)
-        matches.forEach((p) => {
+        matches.forEach((p: string) => {
           paths.add(path.resolve(p))
         })
       }
@@ -128,7 +128,7 @@ export namespace InstructionPrompt {
     const paths = await systemPaths()
 
     const files = Array.from(paths).map(async (p) => {
-      const content = await Filesystem.readText(p).catch((e) => {
+      const content = await Filesystem.readText(p).catch((e: unknown) => {
         log.warn("failed to read instruction file", { path: p, error: e })
         return ""
       })

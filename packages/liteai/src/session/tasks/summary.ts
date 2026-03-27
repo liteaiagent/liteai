@@ -3,9 +3,9 @@ import { Bus } from "@/bus"
 import { Snapshot } from "@/snapshot"
 import { Storage } from "@/storage/storage"
 import { fn } from "@/util/fn"
-import { Session } from "."
-import type { Message } from "./message"
-import { MessageID, SessionID } from "./schema"
+import { Session } from ".."
+import type { Message } from "../message"
+import { MessageID, SessionID } from "../schema"
 
 export namespace SessionSummary {
   function unquoteGitPath(input: string) {
