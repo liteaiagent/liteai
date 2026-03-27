@@ -30,7 +30,7 @@ export namespace Plugin {
       worktree: Instance.worktree,
       directory: Instance.directory,
       get serverUrl(): URL {
-        return Server.url ?? new URL("http://localhost:9000")
+        return Server.url() ?? new URL("http://localhost:9000")
       },
       $: Bun.$,
     }

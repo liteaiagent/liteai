@@ -11,7 +11,7 @@ import { useGlobalSDK } from "./global-sdk"
 import { useGlobalSync } from "./global-sync"
 import { createScrollPersistence, type SessionScroll } from "./layout-scroll"
 import { usePlatform } from "./platform"
-import { useServer } from "./server"
+
 
 const AVATAR_COLOR_KEYS = ["pink", "mint", "orange", "purple", "cyan", "lime"] as const
 const DEFAULT_PANEL_WIDTH = 344
@@ -137,7 +137,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
   init: () => {
     const globalSdk = useGlobalSDK()
     const globalSync = useGlobalSync()
-    const server = useServer()
+
     const platform = usePlatform()
 
     const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -264,6 +264,9 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         handoff: {
           tabs: undefined as TabHandoff | undefined,
         },
+        projectExpanded: {} as Record<string, boolean>,
+        projectOrder: [] as string[],
+        lastProject: undefined as string | undefined,
       }),
     )
 
@@ -463,28 +466,36 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       return directory
     }
 
-    createEffect(() => {
-      const projects = server.projects.list()
-      const seen = new Set(projects.map((project) => project.worktree))
+    const enriched = createMemo(() => {
+      // Derive directly from DB, filtering out archived and sandbox-only entries
+      const dbProjects = globalSync.data.project.filter((p) => p.worktree && !p.time?.archived)
 
-      batch(() => {
-        for (const project of projects) {
-          const root = rootFor(project.worktree)
-          if (root === project.worktree) continue
+      // Merge sandbox directories into their root projects
+      const seen = new Set<string>()
+      const result: Array<{ worktree: string; expanded: boolean }> = []
+      for (const p of dbProjects) {
+        const root = rootFor(p.worktree)
+        if (seen.has(root)) continue
+        seen.add(root)
+        result.push({
+          worktree: root,
+          expanded: store.projectExpanded[root] ?? true,
+        })
+      }
 
-          server.projects.close(project.worktree)
+      // Sort by persisted order
+      const order = store.projectOrder
+      if (order.length > 0) {
+        const orderMap = new Map(order.map((w, i) => [w, i]))
+        result.sort((a, b) => {
+          const ai = orderMap.get(a.worktree) ?? Number.MAX_SAFE_INTEGER
+          const bi = orderMap.get(b.worktree) ?? Number.MAX_SAFE_INTEGER
+          return ai - bi
+        })
+      }
 
-          if (!seen.has(root)) {
-            server.projects.open(root)
-            seen.add(root)
-          }
-
-          if (project.expanded) server.projects.expand(root)
-        }
-      })
+      return result.map(enrich)
     })
-
-    const enriched = createMemo(() => server.projects.list().map(enrich))
     const list = createMemo(() => {
       const projects = enriched()
       return projects.map((project) => {
@@ -549,39 +560,11 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       }
     })
 
-    // Sync DB projects into the local server.projects list.
-    // DB is the source of truth: add missing projects and remove stale ones.
-    createEffect(() => {
-      if (!ready()) return
-      const db = globalSync.data.project
-      const keys = new Set(db.filter((p) => p.worktree && !p.time?.archived).map((p) => workspaceKey(p.worktree)))
-      const local = server.projects.list()
-      console.debug("[layout] db↔localStorage sync", {
-        db: db.length,
-        dbActive: keys.size,
-        local: local.length,
-      })
-      batch(() => {
-        for (const p of db) {
-          if (!p.worktree) continue
-          if (p.time?.archived) continue
-          if (local.some((l) => workspaceKey(l.worktree) === workspaceKey(p.worktree))) continue
-          console.debug("[layout] sync: adding from db", p.worktree)
-          server.projects.open(p.worktree)
-        }
-        for (const p of local) {
-          if (keys.has(workspaceKey(p.worktree))) continue
-          console.debug("[layout] sync: removing stale", p.worktree)
-          server.projects.close(p.worktree)
-        }
-      })
-    })
-
     onMount(() => {
       Promise.all(
-        server.projects.list().map((project) => {
-          return globalSync.project.loadSessions(project.worktree)
-        }),
+        globalSync.data.project
+          .filter((p) => p.worktree && !p.time?.archived)
+          .map((p) => globalSync.project.loadSessions(p.worktree)),
       )
     })
 
@@ -601,21 +584,33 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         list,
         open(directory: string) {
           const root = rootFor(directory)
-          if (server.projects.list().find((x) => workspaceKey(x.worktree) === workspaceKey(root))) return
+          if (list().find((x) => workspaceKey(x.worktree) === workspaceKey(root))) return
           globalSync.project.loadSessions(root)
-          server.projects.open(root)
         },
-        close(directory: string) {
-          server.projects.close(directory)
+        close(_directory: string) {
+          // Closing is now handled via project.archive in the DB.
+          // The project will disappear from list() when the DB update propagates.
         },
         expand(directory: string) {
-          server.projects.expand(directory)
+          setStore("projectExpanded", directory, true)
         },
         collapse(directory: string) {
-          server.projects.collapse(directory)
+          setStore("projectExpanded", directory, false)
         },
         move(directory: string, toIndex: number) {
-          server.projects.move(directory, toIndex)
+          const current = list().map((p) => p.worktree)
+          const fromIndex = current.findIndex((w) => workspaceKey(w) === workspaceKey(directory))
+          if (fromIndex === -1 || fromIndex === toIndex) return
+          const result = [...current]
+          const [item] = result.splice(fromIndex, 1)
+          result.splice(toIndex, 0, item)
+          setStore("projectOrder", result)
+        },
+        last() {
+          return store.lastProject
+        },
+        touch(directory: string) {
+          setStore("lastProject", directory)
         },
       },
       sidebar: {

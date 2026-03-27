@@ -385,7 +385,7 @@ export default function Layout(props: ParentProps) {
     if (!pageReady()) return true
     if (!layoutReady()) return true
     if (layout.projects.list().length > 0) return true
-    return !!server.projects.last()
+    return !!layout.projects.last()
   })
 
   createEffect(() => {
@@ -400,7 +400,7 @@ export default function Layout(props: ParentProps) {
       () => ({ ready: pageReady(), layoutReady: layoutReady(), dir: params.dir, list: layout.projects.list() }),
       (value) => {
         if (!value.ready || !value.layoutReady || !state.autoselect || value.dir) return
-        const last = server.projects.last()
+        const last = layout.projects.last()
         if (value.list.length === 0) {
           if (!last) return
           setState("autoselect", false)

@@ -217,11 +217,16 @@ export namespace Server {
           return c.json(Project.list())
         },
       )
-      .route("/provider", ProviderRoutes())
       .use(async (c, next) => {
         if (c.req.path === "/log") return next()
         const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
-        const raw = c.req.query("directory") || c.req.header("x-liteai-directory") || process.cwd()
+        const raw = c.req.query("directory") || c.req.header("x-liteai-directory")
+        if (!raw) {
+          throw new HTTPException(400, {
+            message:
+              "Missing required directory context: set the 'directory' query parameter or 'x-liteai-directory' header",
+          })
+        }
         const directory = Filesystem.resolve(
           (() => {
             try {
@@ -269,6 +274,7 @@ export namespace Server {
           }),
         ),
       )
+      .route("/provider", ProviderRoutes())
       .route("/project", ProjectRoutes())
       .route("/pty", PtyRoutes())
       .route("/config", ConfigRoutes())
@@ -631,8 +637,10 @@ export namespace Server {
     return result
   }
 
-  /** @deprecated do not use this dumb shit */
-  export let url: URL
+  /** Returns the URL of the currently active server, if any. */
+  export function url(): URL | undefined {
+    return active?.url
+  }
 
   // Track the active server for global shutdown
   let active: Bun.Server<BunWebSocketData> | undefined
@@ -644,7 +652,7 @@ export namespace Server {
     mdnsDomain?: string
     cors?: string[]
   }) {
-    url = new URL(`http://${opts.hostname}:${opts.port}`)
+
     const app = createApp(opts)
     const args = {
       hostname: opts.hostname,

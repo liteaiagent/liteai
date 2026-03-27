@@ -1,11 +1,10 @@
 import { createSimpleContext } from "@liteai/ui/context"
 import { type Accessor, batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
-import { workspaceKey } from "@/pages/layout/helpers"
+
 import { Persist, persisted } from "@/utils/persist"
 import { useCheckServerHealth } from "@/utils/server-health"
 
-type StoredProject = { worktree: string; expanded: boolean }
 type StoredServer = string | ServerConnection.HttpBase | ServerConnection.Http
 const HEALTH_POLL_INTERVAL_MS = 10_000
 
@@ -20,13 +19,6 @@ export function serverName(conn?: ServerConnection.Any, ignoreDisplayName = fals
   if (!conn) return ""
   if (conn.displayName && !ignoreDisplayName) return conn.displayName
   return conn.http.url.replace(/^https?:\/\//, "").replace(/\/+$/, "")
-}
-
-function projectsKey(key: ServerConnection.Key) {
-  if (!key) return ""
-  if (key === "sidecar") return "local"
-  if (isLocalHost(key)) return "local"
-  return key
 }
 
 function isLocalHost(url: string) {
@@ -102,8 +94,6 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       Persist.global("server", ["server.v3"]),
       createStore({
         list: [] as StoredServer[],
-        projects: {} as Record<string, StoredProject[]>,
-        lastProject: {} as Record<string, string>,
       }),
     )
 
@@ -207,8 +197,6 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       onCleanup(startHealthPolling(current_))
     })
 
-    const origin = createMemo(() => projectsKey(state.active))
-    const projectsList = createMemo(() => store.projects[origin()] ?? [])
     const current: Accessor<ServerConnection.Any | undefined> = createMemo(
       () => allServers().find((s) => ServerConnection.key(s) === state.active) ?? allServers()[0],
     )
@@ -236,65 +224,6 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       setActive,
       add,
       remove,
-      projects: {
-        list: projectsList,
-        open(directory: string) {
-          const key = origin()
-          if (!key) return
-          const current = store.projects[key] ?? []
-          if (current.find((x) => workspaceKey(x.worktree) === workspaceKey(directory))) return
-          console.debug("[server.projects] open", { directory, origin: key })
-          setStore("projects", key, [{ worktree: directory, expanded: true }, ...current])
-        },
-        close(directory: string) {
-          const key = origin()
-          if (!key) return
-          const current = store.projects[key] ?? []
-          const next = current.filter((x) => workspaceKey(x.worktree) !== workspaceKey(directory))
-          console.debug("[server.projects] close", {
-            directory,
-            origin: key,
-            before: current.length,
-            after: next.length,
-          })
-          setStore("projects", key, next)
-        },
-        expand(directory: string) {
-          const key = origin()
-          if (!key) return
-          const current = store.projects[key] ?? []
-          const index = current.findIndex((x) => workspaceKey(x.worktree) === workspaceKey(directory))
-          if (index !== -1) setStore("projects", key, index, "expanded", true)
-        },
-        collapse(directory: string) {
-          const key = origin()
-          if (!key) return
-          const current = store.projects[key] ?? []
-          const index = current.findIndex((x) => workspaceKey(x.worktree) === workspaceKey(directory))
-          if (index !== -1) setStore("projects", key, index, "expanded", false)
-        },
-        move(directory: string, toIndex: number) {
-          const key = origin()
-          if (!key) return
-          const current = store.projects[key] ?? []
-          const fromIndex = current.findIndex((x) => workspaceKey(x.worktree) === workspaceKey(directory))
-          if (fromIndex === -1 || fromIndex === toIndex) return
-          const result = [...current]
-          const [item] = result.splice(fromIndex, 1)
-          result.splice(toIndex, 0, item)
-          setStore("projects", key, result)
-        },
-        last() {
-          const key = origin()
-          if (!key) return
-          return store.lastProject[key]
-        },
-        touch(directory: string) {
-          const key = origin()
-          if (!key) return
-          setStore("lastProject", key, directory)
-        },
-      },
     }
   },
 })

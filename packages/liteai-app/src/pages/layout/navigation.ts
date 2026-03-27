@@ -61,7 +61,7 @@ export function activeProjectRoot(deps: NavigationDeps, directory: string) {
 export function touchProjectRoute(deps: NavigationDeps) {
   const root = deps.currentProject()?.worktree
   if (!root) return
-  if (deps.server.projects.last() !== root) deps.server.projects.touch(root)
+  if (deps.layout.projects.last() !== root) deps.layout.projects.touch(root)
   return root
 }
 
@@ -103,7 +103,7 @@ export function syncSessionRoute(
 export async function navigateToProject(deps: NavigationDeps, directory: string | undefined) {
   if (!directory) return
   const root = projectRoot(deps, directory)
-  deps.server.projects.touch(root)
+  deps.layout.projects.touch(root)
   const project = deps.layout.projects.list().find((item) => item.worktree === root)
   let dirs = project
     ? effectiveWorkspaceOrder(root, [root, ...(project.sandboxes ?? [])], deps.store.workspaceOrder[root])
