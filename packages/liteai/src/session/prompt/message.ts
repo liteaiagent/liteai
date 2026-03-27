@@ -109,7 +109,6 @@ export async function createUserMessage(input: PromptInput) {
     time: {
       created: Date.now(),
     },
-    tools: input.tools,
     agent: agent.name,
     model,
     system: input.system,

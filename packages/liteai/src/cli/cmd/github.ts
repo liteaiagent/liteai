@@ -986,6 +986,10 @@ export const GithubRunCommand = cmd({
 
         // No text part (tool-only or reasoning-only) - ask agent to summarize
         console.log("Requesting summary from agent...")
+        await Session.setPermission({
+          sessionID: session.id,
+          permission: [{ permission: "*", action: "deny", pattern: "*" }],
+        })
         const summary = await SessionPrompt.prompt({
           sessionID: session.id,
           messageID: MessageID.ascending(),
@@ -994,7 +998,6 @@ export const GithubRunCommand = cmd({
             providerID,
             modelID,
           },
-          tools: { "*": false }, // Disable all tools to force text response
           parts: [
             {
               id: PartID.ascending(),

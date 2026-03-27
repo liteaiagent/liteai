@@ -68,9 +68,10 @@ describe("trace_content store", () => {
           }),
         ).not.toThrow()
 
-        // Still only 1 row
+        // Query for the specific hash to avoid cross-test pollution
+        const expectedHash = createHash("sha256").update(systemPrompt).digest("hex")
         const rows = Database.use((db) =>
-          db.select().from(TraceContentTable).where(eq(TraceContentTable.type, "system")).all(),
+          db.select().from(TraceContentTable).where(eq(TraceContentTable.hash, expectedHash)).all(),
         )
         expect(rows.length).toBe(1)
 
@@ -111,20 +112,20 @@ describe("trace_content store", () => {
           timeEnd: Date.now(),
         })
 
-        const rows = Database.use((db) =>
-          db.select().from(TraceContentTable).where(eq(TraceContentTable.type, "system")).all(),
-        )
-        expect(rows.length).toBe(2)
-
-        // Verify the hashes are indeed different
-        const hashes = rows.map((r) => r.hash)
-        expect(hashes[0]).not.toBe(hashes[1])
-
-        // Verify they match expected SHA-256 outputs
         const expectedAlpha = createHash("sha256").update("System prompt alpha").digest("hex")
         const expectedBeta = createHash("sha256").update("System prompt beta").digest("hex")
-        expect(hashes).toContain(expectedAlpha)
-        expect(hashes).toContain(expectedBeta)
+
+        const alphaRows = Database.use((db) =>
+          db.select().from(TraceContentTable).where(eq(TraceContentTable.hash, expectedAlpha)).all(),
+        )
+        expect(alphaRows.length).toBe(1)
+
+        const betaRows = Database.use((db) =>
+          db.select().from(TraceContentTable).where(eq(TraceContentTable.hash, expectedBeta)).all(),
+        )
+        expect(betaRows.length).toBe(1)
+
+        expect(expectedAlpha).not.toBe(expectedBeta)
 
         await Session.remove(session.id)
       },

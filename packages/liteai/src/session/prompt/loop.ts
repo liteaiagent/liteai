@@ -79,10 +79,6 @@ export const PromptInput = z.object({
     .optional(),
   agent: z.string().optional(),
   noReply: z.boolean().optional(),
-  tools: z
-    .record(z.string(), z.boolean())
-    .optional()
-    .describe("@deprecated tools and permissions have been merged, you can set permissions on the session itself now"),
   format: Message.Format.optional(),
   system: z.string().optional(),
   variant: z.string().optional(),
@@ -139,21 +135,6 @@ export const prompt = fn(PromptInput, async (input) => {
 
   const message = await createUserMessage(input)
   await Session.touch(input.sessionID)
-
-  // this is backwards compatibility for allowing `tools` to be specified when
-  // prompting
-  const permissions: PermissionNext.Ruleset = []
-  for (const [tool, enabled] of Object.entries(input.tools ?? {})) {
-    permissions.push({
-      permission: tool,
-      action: enabled ? "allow" : "deny",
-      pattern: "*",
-    })
-  }
-  if (permissions.length > 0) {
-    session.permission = permissions
-    await Session.setPermission({ sessionID: session.id, permission: permissions })
-  }
 
   if (input.noReply === true) {
     return message
@@ -395,7 +376,6 @@ export const loop = fn(LoopInput, async (input) => {
       agent,
       session,
       model,
-      tools: lastUser.tools,
       processor,
       bypassAgentCheck,
       messages: msgs,

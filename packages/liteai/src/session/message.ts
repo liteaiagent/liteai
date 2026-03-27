@@ -365,7 +365,6 @@ export namespace Message {
       modelID: ModelID.zod,
     }),
     system: z.string().optional(),
-    tools: z.record(z.string(), z.boolean()).optional(),
     variant: z.string().optional(),
   }).meta({
     ref: "UserMessage",

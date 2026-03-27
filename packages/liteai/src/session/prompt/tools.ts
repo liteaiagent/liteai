@@ -32,7 +32,6 @@ export async function resolveTools(input: {
   agent: Agent.Info
   model: Provider.Model
   session: Session.Info
-  tools?: Record<string, boolean>
   processor: SessionProcessor.Info
   bypassAgentCheck: boolean
   messages: Message.WithParts[]

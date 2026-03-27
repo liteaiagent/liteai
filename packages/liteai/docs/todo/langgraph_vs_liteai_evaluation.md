@@ -11,7 +11,7 @@ LiteAI already implements the **substance** of most LangGraph concepts — just 
 
 | LangGraph Concept | LiteAI Equivalent | Add It? | Why |
 |---|---|---|---|
-| Graph + Nodes | `while(true)` in [loop.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts) | ❌ No | Identical in practice, simpler code |
+| Graph + Nodes | `while(true)` in [loop.ts](../../src/session/prompt/loop.ts) | ❌ No | Identical in practice, simpler code |
 | Conditional Edges | `if/else` routing (compaction/subtask/normal) | ❌ No | Already clean and readable |
 | State Object | Message DB + local vars + SessionStatus | ⚠️ Partial | Formalize "step context" only |
 | Step Execution & Pause | AbortController (coarse) | ✅ **Yes** | High value for debugging & UX |
@@ -27,7 +27,7 @@ LiteAI already implements the **substance** of most LangGraph concepts — just 
 
 ### 1. The "Graph" — Already a While Loop ❌
 
-LangGraph's core abstraction is a directed graph where nodes are functions and edges are transitions. LiteAI's [loop.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#L215-L579) **is** that graph:
+LangGraph's core abstraction is a directed graph where nodes are functions and edges are transitions. LiteAI's [loop.ts](../../src/session/prompt/loop.ts#L215-L579) **is** that graph:
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -47,7 +47,7 @@ LangGraph's core abstraction is a directed graph where nodes are functions and e
 └──────────────────────────────────────────────────────┘
 ```
 
-The routing logic at [loop.ts:297-333](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#L297-L333) is exactly LangGraph's "conditional edges":
+The routing logic at [loop.ts:297-333](../../src/session/prompt/loop.ts#L297-L333) is exactly LangGraph's "conditional edges":
 
 ```typescript
 // pending subtask → processSubtask()
@@ -69,7 +69,7 @@ if (lastFinished && isOverflow) { ... continue }
 ### 2. State Object ⚠️ Partial Value
 
 #### What LangGraph Does
-LangGraph defines a typed [State](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#39-49) that flows through every node. Nodes can read and mutate it. A "reducer" defines how state updates merge.
+LangGraph defines a typed [State](../../src/session/prompt/loop.ts#39-49) that flows through every node. Nodes can read and mutate it. A "reducer" defines how state updates merge.
 
 #### What LiteAI Does Instead
 LiteAI's state is **distributed across multiple systems**:
@@ -98,7 +98,7 @@ LiteAI's state is **distributed across multiple systems**:
 
 **Yes, for "Step Context" (which Trace already captures):**
 
-Your [Trace system](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#L482-L518) already records exactly the right data per step:
+Your [Trace system](../../src/session/prompt/loop.ts#L482-L518) already records exactly the right data per step:
 - Agent name
 - Model + provider
 - System prompt (with hash dedup)
@@ -116,9 +116,9 @@ This is the **highest-value addition** from LangGraph's playbook.
 
 #### Current Behavior
 The loop runs continuously from user prompt to final response. The only intervention points are:
-- **Cancel** (abort entirely) — [loop.ts:188-200](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#L188-L200)
+- **Cancel** (abort entirely) — [loop.ts:188-200](../../src/session/prompt/loop.ts#L188-L200)
 - **Permission gate** (blocks on tool approval) — via PermissionNext
-- **Doom loop detection** — [processor.ts:179-201](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#L179-L201)
+- **Doom loop detection** — [processor.ts:179-201](../../src/session/prompt/loop.ts#L179-L201)
 
 There's no way to say: "Execute one step, show me the results, let me decide whether to continue."
 
@@ -144,7 +144,7 @@ User: "Refactor the auth module"
 
 #### Why This Fits Your Design
 
-Your loop already has natural step boundaries — each iteration of `while(true)` is a step. The processor's [process()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/processor.ts#50-479) return value (`"continue"` / `"stop"` / `"compact"`) already signals step completion. You'd need:
+Your loop already has natural step boundaries — each iteration of `while(true)` is a step. The processor's [process()](../../src/session/processor.ts#50-479) return value (`"continue"` / `"stop"` / `"compact"`) already signals step completion. You'd need:
 
 1. **A "step" mode flag** on the session or prompt input
 2. **Yield control between loop iterations** instead of immediately continuing
@@ -166,11 +166,11 @@ export const Info = z.union([
 
 ### 4. Step-Back ✅ Add This
 
-Step-back is the ability to "undo the last LLM step and re-execute." This is different from [revert()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/revert.ts#24-81) which undoes file changes.
+Step-back is the ability to "undo the last LLM step and re-execute." This is different from [revert()](../../src/session/revert.ts#24-81) which undoes file changes.
 
 #### Current Behavior
-- [SessionRevert](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/revert.ts) reverts **file changes** to a previous point
-- [Session.fork()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/index.ts#L240-L281) copies a session up to a message boundary
+- [SessionRevert](../../src/session/revert.ts) reverts **file changes** to a previous point
+- [Session.fork()](../../src/session/index.ts#L240-L281) copies a session up to a message boundary
 
 Neither lets you "go back to step N and re-run with the same (or different) inputs."
 
@@ -189,7 +189,7 @@ step-back(sessionID, messageID) =
   3. Resume the loop → re-executes from that point
 ```
 
-The `step-start` and `step-finish` parts in your processor ([processor.ts:269-325](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/processor.ts#L269-L325)) already capture snapshots at step boundaries. This data is already persisted.
+The `step-start` and `step-finish` parts in your processor ([processor.ts:269-325](../../src/session/processor.ts#L269-L325)) already capture snapshots at step boundaries. This data is already persisted.
 
 ---
 
@@ -204,7 +204,7 @@ Your system is **inherently checkpoint-based** because:
 
 1. **Every message and part is persisted to SQLite immediately** via `Session.updateMessage()` and `Session.updatePart()` — not batched, not buffered.
 
-2. **The loop re-derives its state from the DB on every iteration.** Look at [loop.ts:242-259](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/loop.ts#L242-L259):
+2. **The loop re-derives its state from the DB on every iteration.** Look at [loop.ts:242-259](../../src/session/prompt/loop.ts#L242-L259):
    ```typescript
    while (true) {
      let msgs = await Message.filterCompacted(Message.stream(sessionID))
