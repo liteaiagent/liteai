@@ -43,17 +43,21 @@ const SettingsPluginsInner: Component = () => {
   const [search, setSearch] = createSignal("")
 
   const [plugins, { refetch: refetchPlugins }] = createResource(async () => {
-    const res = await fetch(`${sdk.url}/plugin`, { headers: { "x-liteai-directory": sdk.directory } })
-    if (!res.ok) return [] as PluginEntry[]
-    return res.json() as Promise<PluginEntry[]>
+    try {
+      const { data } = await sdk.client.plugin.list()
+      return (data ?? []) as PluginEntry[]
+    } catch {
+      return [] as PluginEntry[]
+    }
   })
 
   const [marketplaces, { refetch: refetchMarketplaces }] = createResource(async () => {
-    const res = await fetch(`${sdk.url}/plugin/marketplace`, {
-      headers: { "x-liteai-directory": sdk.directory },
-    })
-    if (!res.ok) return [] as MarketplaceEntry[]
-    return res.json() as Promise<MarketplaceEntry[]>
+    try {
+      const { data } = await sdk.client.plugin.marketplace.list()
+      return (data ?? []) as MarketplaceEntry[]
+    } catch {
+      return [] as MarketplaceEntry[]
+    }
   })
 
   const currentMarketplace = createMemo(() => {
@@ -64,11 +68,12 @@ const SettingsPluginsInner: Component = () => {
 
   const [marketplacePlugins] = createResource(currentMarketplace, async (name) => {
     if (!name) return [] as MarketplacePlugin[]
-    const res = await fetch(`${sdk.url}/plugin/marketplace/${encodeURIComponent(name)}/plugins`, {
-      headers: { "x-liteai-directory": sdk.directory },
-    })
-    if (!res.ok) return [] as MarketplacePlugin[]
-    return res.json() as Promise<MarketplacePlugin[]>
+    try {
+      const { data } = await sdk.client.plugin.marketplace.plugins({ name })
+      return (data ?? []) as MarketplacePlugin[]
+    } catch {
+      return [] as MarketplacePlugin[]
+    }
   })
 
   const installedIds = createMemo(() => {
@@ -95,10 +100,11 @@ const SettingsPluginsInner: Component = () => {
   const toggle = async (id: string, on: boolean) => {
     if (loading()) return
     setLoading(id)
-    await fetch(`${sdk.url}/plugin/${encodeURIComponent(id)}/${on ? "enable" : "disable"}`, {
-      method: "POST",
-      headers: { "x-liteai-directory": sdk.directory },
-    })
+    if (on) {
+      await sdk.client.plugin.enable({ id })
+    } else {
+      await sdk.client.plugin.disable({ id })
+    }
     refetchPlugins()
     setLoading(null)
   }
@@ -106,19 +112,13 @@ const SettingsPluginsInner: Component = () => {
   const removePlugin = async (id: string) => {
     if (loading()) return
     setLoading(id)
-    await fetch(`${sdk.url}/plugin/${encodeURIComponent(id)}`, {
-      method: "DELETE",
-      headers: { "x-liteai-directory": sdk.directory },
-    })
+    await sdk.client.plugin.uninstall({ id })
     refetchPlugins()
     setLoading(null)
   }
 
   const removeMarketplace = async (name: string) => {
-    await fetch(`${sdk.url}/plugin/marketplace/${encodeURIComponent(name)}`, {
-      method: "DELETE",
-      headers: { "x-liteai-directory": sdk.directory },
-    })
+    await sdk.client.plugin.marketplace.remove({ name })
     refetchMarketplaces()
   }
 
@@ -126,27 +126,17 @@ const SettingsPluginsInner: Component = () => {
     const source = newMarketplaceSource().trim()
     if (!source) return
     setAddingMarketplace(true)
-    await fetch(`${sdk.url}/plugin/marketplace`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-liteai-directory": sdk.directory },
-      body: JSON.stringify({ source }),
-    })
+    await sdk.client.plugin.marketplace.add({ source })
     setAddingMarketplace(false)
     setNewMarketplaceSource("")
     refetchMarketplaces()
     setView("marketplaces")
   }
 
-  const installPlugin = async (marketplace: string, name: string) => {
+  const installPlugin = async (marketplace: string, pluginName: string) => {
     if (loading()) return
-    setLoading(`${name}@${marketplace}`)
-    await fetch(
-      `${sdk.url}/plugin/marketplace/${encodeURIComponent(marketplace)}/install/${encodeURIComponent(name)}`,
-      {
-        method: "POST",
-        headers: { "x-liteai-directory": sdk.directory },
-      },
-    )
+    setLoading(`${pluginName}@${marketplace}`)
+    await sdk.client.plugin.marketplace.install({ name: marketplace, plugin: pluginName })
     refetchPlugins()
     setLoading(null)
   }

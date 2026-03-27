@@ -324,11 +324,12 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
   }
 
   async function native() {
-    const base = sdk.url.replace(/\/$/, "")
-    const res = await fetch(`${base}/global/browse`, { method: "POST" }).catch(() => null)
-    if (!res?.ok) return
-    const json = (await res.json().catch(() => null)) as { path: string | null } | null
-    if (json?.path) resolve(json.path)
+    try {
+      const { data } = await sdk.client.global.browse()
+      if (data?.path) resolve(data.path)
+    } catch {
+      // browse cancelled or failed
+    }
   }
 
   return (

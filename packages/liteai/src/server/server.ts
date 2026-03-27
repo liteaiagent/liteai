@@ -652,7 +652,6 @@ export namespace Server {
     mdnsDomain?: string
     cors?: string[]
   }) {
-
     const app = createApp(opts)
     const args = {
       hostname: opts.hostname,

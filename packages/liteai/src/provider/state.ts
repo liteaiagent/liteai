@@ -5,7 +5,6 @@ import { iife } from "@/util/iife"
 import { Auth } from "../auth"
 import { AUTH_PROVIDERS } from "../auth/registry"
 import { Config } from "../config/config"
-import { Env } from "../env"
 import { Flag } from "../flag/flag"
 import { Instance } from "../project/instance"
 import { lazy } from "../util/lazy"
@@ -337,8 +336,8 @@ async function loadEnvAuth(
   database: Record<string, Provider.Info>,
   disabled: Set<string>,
   merge: (id: ProviderID, patch: Partial<Provider.Info>) => void,
+  env: Record<string, string | undefined>,
 ) {
-  const env = Env.all()
   for (const [id, provider] of Object.entries(database)) {
     const providerID = ProviderID.make(id)
     if (disabled.has(providerID)) continue
@@ -433,7 +432,12 @@ async function loadCustom(
       log.error(`Provider does not exist in model list ${providerID}`)
       continue
     }
-    const result = await fn(data)
+    const result = await fn(data).catch((err) => {
+      // Custom loaders may call Env.get / Config.get which require Instance context.
+      // When resolving the global provider list (no project selected), skip them gracefully.
+      log.debug("custom loader skipped (no instance context)", { providerID, error: err })
+      return undefined
+    })
     if (result && (result.autoload || providers[providerID])) {
       if (result.getModel) modelLoaders[providerID] = result.getModel
       if (result.vars) varsLoaders[providerID] = result.vars
@@ -494,7 +498,10 @@ function filterProviders(
   }
 }
 
-async function resolveProviders(config: Awaited<ReturnType<typeof Config.get>>) {
+async function resolveProviders(
+  config: Awaited<ReturnType<typeof Config.get>>,
+  env: Record<string, string | undefined>,
+) {
   using _ = log.time("state")
   const modelsDev = await ModelsDev.get()
   const database: Record<string, Provider.Info> = mapValues(modelsDev, fromModelsDevProvider)
@@ -540,7 +547,7 @@ async function resolveProviders(config: Awaited<ReturnType<typeof Config.get>>) 
 
   mergeConfigModels(database, configProviders, modelsDev)
 
-  await loadEnvAuth(database, disabled, merge)
+  await loadEnvAuth(database, disabled, merge, env)
   await loadPlugins(database, providers, disabled, merge)
   await loadCustom(database, providers, disabled, merge, modelLoaders, varsLoaders)
 
@@ -568,12 +575,12 @@ async function resolveProviders(config: Awaited<ReturnType<typeof Config.get>>) 
 /** Global provider state — uses global config only, no Instance/directory context required. */
 export const globalState = lazy(async () => {
   const config = await Config.getGlobal()
-  return resolveProviders(config)
+  return resolveProviders(config, { ...process.env })
 })
 
 /** Per-project provider state — merges global + project config. */
 export const state = Instance.state(async () => {
+  const { Env } = await import("../env")
   const config = await Config.get()
-  return resolveProviders(config)
+  return resolveProviders(config, Env.all())
 })
-

@@ -228,9 +228,6 @@ export type UserMessage = {
 		modelID: string;
 	};
 	system?: string;
-	tools?: {
-		[key: string]: boolean;
-	};
 	variant?: string;
 };
 
@@ -1687,6 +1684,36 @@ export type WellKnownAuth = {
 
 export type Auth = OAuth | ApiAuth | WellKnownAuth;
 
+export type ProviderAuthPrompt =
+	| {
+			type: "text";
+			key: string;
+			message: string;
+			placeholder?: string;
+	  }
+	| {
+			type: "select";
+			key: string;
+			message: string;
+			options: Array<{
+				label: string;
+				value: string;
+				hint?: string;
+			}>;
+	  };
+
+export type ProviderAuthMethod = {
+	type: "oauth" | "api";
+	label: string;
+	prompts?: Array<ProviderAuthPrompt>;
+};
+
+export type ProviderAuthAuthorization = {
+	url: string;
+	method: "auto" | "code";
+	instructions: string;
+};
+
 export type NotFoundError = {
 	name: "NotFoundError";
 	data: {
@@ -1959,37 +1986,15 @@ export type TraceDetail = {
 	tools: Array<{
 		[key: string]: unknown;
 	}> | null;
+	hooks: Array<{
+		event: string;
+		type: string;
+		config?: {
+			[key: string]: unknown;
+		};
+		context?: string;
+	}> | null;
 	contextIDs: Array<string>;
-};
-
-export type ProviderAuthPrompt =
-	| {
-			type: "text";
-			key: string;
-			message: string;
-			placeholder?: string;
-	  }
-	| {
-			type: "select";
-			key: string;
-			message: string;
-			options: Array<{
-				label: string;
-				value: string;
-				hint?: string;
-			}>;
-	  };
-
-export type ProviderAuthMethod = {
-	type: "oauth" | "api";
-	label: string;
-	prompts?: Array<ProviderAuthPrompt>;
-};
-
-export type ProviderAuthAuthorization = {
-	url: string;
-	method: "auto" | "code";
-	instructions: string;
 };
 
 export type Symbol = {
@@ -2315,13 +2320,197 @@ export type AuthSetResponses = {
 
 export type AuthSetResponse = AuthSetResponses[keyof AuthSetResponses];
 
+export type ProviderListData = {
+	body?: never;
+	path?: never;
+	query?: never;
+	url: "/provider";
+};
+
+export type ProviderListResponses = {
+	/**
+	 * List of providers
+	 */
+	200: {
+		all: Array<{
+			api?: string;
+			name: string;
+			env: Array<string>;
+			id: string;
+			npm?: string;
+			models: {
+				[key: string]: {
+					id: string;
+					name: string;
+					family?: string;
+					release_date: string;
+					attachment: boolean;
+					reasoning: boolean;
+					temperature: boolean;
+					tool_call: boolean;
+					interleaved?:
+						| true
+						| {
+								field: "reasoning_content" | "reasoning_details";
+						  };
+					cost?: {
+						input: number;
+						output: number;
+						cache_read?: number;
+						cache_write?: number;
+						context_over_200k?: {
+							input: number;
+							output: number;
+							cache_read?: number;
+							cache_write?: number;
+						};
+					};
+					limit: {
+						context: number;
+						input?: number;
+						output: number;
+					};
+					modalities?: {
+						input: Array<"text" | "audio" | "image" | "video" | "pdf">;
+						output: Array<"text" | "audio" | "image" | "video" | "pdf">;
+					};
+					experimental?: boolean;
+					status?: "alpha" | "beta" | "deprecated";
+					options: {
+						[key: string]: unknown;
+					};
+					headers?: {
+						[key: string]: string;
+					};
+					provider?: {
+						npm?: string;
+						api?: string;
+					};
+					variants?: {
+						[key: string]: {
+							[key: string]: unknown;
+						};
+					};
+				};
+			};
+		}>;
+		default: {
+			[key: string]: string;
+		};
+		connected: Array<string>;
+	};
+};
+
+export type ProviderListResponse =
+	ProviderListResponses[keyof ProviderListResponses];
+
+export type ProviderAuthData = {
+	body?: never;
+	path?: never;
+	query?: never;
+	url: "/provider/auth";
+};
+
+export type ProviderAuthResponses = {
+	/**
+	 * Provider auth methods
+	 */
+	200: {
+		[key: string]: Array<ProviderAuthMethod>;
+	};
+};
+
+export type ProviderAuthResponse =
+	ProviderAuthResponses[keyof ProviderAuthResponses];
+
+export type ProviderOauthAuthorizeData = {
+	body?: {
+		/**
+		 * Auth method index
+		 */
+		method: number;
+		/**
+		 * Prompt responses
+		 */
+		inputs?: {
+			[key: string]: string;
+		};
+	};
+	path: {
+		/**
+		 * Provider ID
+		 */
+		providerID: string;
+	};
+	query?: never;
+	url: "/provider/{providerID}/oauth/authorize";
+};
+
+export type ProviderOauthAuthorizeErrors = {
+	/**
+	 * Bad request
+	 */
+	400: BadRequestError;
+};
+
+export type ProviderOauthAuthorizeError =
+	ProviderOauthAuthorizeErrors[keyof ProviderOauthAuthorizeErrors];
+
+export type ProviderOauthAuthorizeResponses = {
+	/**
+	 * Authorization URL and method
+	 */
+	200: ProviderAuthAuthorization;
+};
+
+export type ProviderOauthAuthorizeResponse =
+	ProviderOauthAuthorizeResponses[keyof ProviderOauthAuthorizeResponses];
+
+export type ProviderOauthCallbackData = {
+	body?: {
+		/**
+		 * Auth method index
+		 */
+		method: number;
+		/**
+		 * OAuth authorization code
+		 */
+		code?: string;
+	};
+	path: {
+		/**
+		 * Provider ID
+		 */
+		providerID: string;
+	};
+	query?: never;
+	url: "/provider/{providerID}/oauth/callback";
+};
+
+export type ProviderOauthCallbackErrors = {
+	/**
+	 * Bad request
+	 */
+	400: BadRequestError;
+};
+
+export type ProviderOauthCallbackError =
+	ProviderOauthCallbackErrors[keyof ProviderOauthCallbackErrors];
+
+export type ProviderOauthCallbackResponses = {
+	/**
+	 * OAuth callback processed successfully
+	 */
+	200: boolean;
+};
+
+export type ProviderOauthCallbackResponse =
+	ProviderOauthCallbackResponses[keyof ProviderOauthCallbackResponses];
+
 export type ProjectListData = {
 	body?: never;
 	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
+	query?: never;
 	url: "/project";
 };
 
@@ -3637,12 +3826,6 @@ export type SessionPromptData = {
 		};
 		agent?: string;
 		noReply?: boolean;
-		/**
-		 * @deprecated tools and permissions have been merged, you can set permissions on the session itself now
-		 */
-		tools?: {
-			[key: string]: boolean;
-		};
 		format?: OutputFormat;
 		system?: string;
 		variant?: string;
@@ -3844,12 +4027,6 @@ export type SessionPromptAsyncData = {
 		};
 		agent?: string;
 		noReply?: boolean;
-		/**
-		 * @deprecated tools and permissions have been merged, you can set permissions on the session itself now
-		 */
-		tools?: {
-			[key: string]: boolean;
-		};
 		format?: OutputFormat;
 		system?: string;
 		variant?: string;
@@ -4148,6 +4325,26 @@ export type SessionTraceSearchResponses = {
 export type SessionTraceSearchResponse =
 	SessionTraceSearchResponses[keyof SessionTraceSearchResponses];
 
+export type SessionTraceExportData = {
+	body?: never;
+	path: {
+		sessionID: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+		format?: "json" | "md";
+	};
+	url: "/session/{sessionID}/trace/export";
+};
+
+export type SessionTraceExportResponses = {
+	/**
+	 * Exported trace data
+	 */
+	200: unknown;
+};
+
 export type SessionTraceGetData = {
 	body?: never;
 	path: {
@@ -4177,26 +4374,6 @@ export type SessionTraceGetResponses = {
 
 export type SessionTraceGetResponse =
 	SessionTraceGetResponses[keyof SessionTraceGetResponses];
-
-export type SessionTraceExportData = {
-	body?: never;
-	path: {
-		sessionID: string;
-	};
-	query?: {
-		directory?: string;
-		workspace?: string;
-		format?: "json" | "md";
-	};
-	url: "/session/{sessionID}/trace/export";
-};
-
-export type SessionTraceExportResponses = {
-	/**
-	 * Exported trace data
-	 */
-	200: unknown;
-};
 
 export type PermissionReplyData = {
 	body?: {
@@ -4352,205 +4529,6 @@ export type QuestionRejectResponses = {
 
 export type QuestionRejectResponse =
 	QuestionRejectResponses[keyof QuestionRejectResponses];
-
-export type ProviderListData = {
-	body?: never;
-	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/provider";
-};
-
-export type ProviderListResponses = {
-	/**
-	 * List of providers
-	 */
-	200: {
-		all: Array<{
-			api?: string;
-			name: string;
-			env: Array<string>;
-			id: string;
-			npm?: string;
-			models: {
-				[key: string]: {
-					id: string;
-					name: string;
-					family?: string;
-					release_date: string;
-					attachment: boolean;
-					reasoning: boolean;
-					temperature: boolean;
-					tool_call: boolean;
-					interleaved?:
-						| true
-						| {
-								field: "reasoning_content" | "reasoning_details";
-						  };
-					cost?: {
-						input: number;
-						output: number;
-						cache_read?: number;
-						cache_write?: number;
-						context_over_200k?: {
-							input: number;
-							output: number;
-							cache_read?: number;
-							cache_write?: number;
-						};
-					};
-					limit: {
-						context: number;
-						input?: number;
-						output: number;
-					};
-					modalities?: {
-						input: Array<"text" | "audio" | "image" | "video" | "pdf">;
-						output: Array<"text" | "audio" | "image" | "video" | "pdf">;
-					};
-					experimental?: boolean;
-					status?: "alpha" | "beta" | "deprecated";
-					options: {
-						[key: string]: unknown;
-					};
-					headers?: {
-						[key: string]: string;
-					};
-					provider?: {
-						npm?: string;
-						api?: string;
-					};
-					variants?: {
-						[key: string]: {
-							[key: string]: unknown;
-						};
-					};
-				};
-			};
-		}>;
-		default: {
-			[key: string]: string;
-		};
-		connected: Array<string>;
-	};
-};
-
-export type ProviderListResponse =
-	ProviderListResponses[keyof ProviderListResponses];
-
-export type ProviderAuthData = {
-	body?: never;
-	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/provider/auth";
-};
-
-export type ProviderAuthResponses = {
-	/**
-	 * Provider auth methods
-	 */
-	200: {
-		[key: string]: Array<ProviderAuthMethod>;
-	};
-};
-
-export type ProviderAuthResponse =
-	ProviderAuthResponses[keyof ProviderAuthResponses];
-
-export type ProviderOauthAuthorizeData = {
-	body?: {
-		/**
-		 * Auth method index
-		 */
-		method: number;
-		/**
-		 * Prompt responses
-		 */
-		inputs?: {
-			[key: string]: string;
-		};
-	};
-	path: {
-		/**
-		 * Provider ID
-		 */
-		providerID: string;
-	};
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/provider/{providerID}/oauth/authorize";
-};
-
-export type ProviderOauthAuthorizeErrors = {
-	/**
-	 * Bad request
-	 */
-	400: BadRequestError;
-};
-
-export type ProviderOauthAuthorizeError =
-	ProviderOauthAuthorizeErrors[keyof ProviderOauthAuthorizeErrors];
-
-export type ProviderOauthAuthorizeResponses = {
-	/**
-	 * Authorization URL and method
-	 */
-	200: ProviderAuthAuthorization;
-};
-
-export type ProviderOauthAuthorizeResponse =
-	ProviderOauthAuthorizeResponses[keyof ProviderOauthAuthorizeResponses];
-
-export type ProviderOauthCallbackData = {
-	body?: {
-		/**
-		 * Auth method index
-		 */
-		method: number;
-		/**
-		 * OAuth authorization code
-		 */
-		code?: string;
-	};
-	path: {
-		/**
-		 * Provider ID
-		 */
-		providerID: string;
-	};
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/provider/{providerID}/oauth/callback";
-};
-
-export type ProviderOauthCallbackErrors = {
-	/**
-	 * Bad request
-	 */
-	400: BadRequestError;
-};
-
-export type ProviderOauthCallbackError =
-	ProviderOauthCallbackErrors[keyof ProviderOauthCallbackErrors];
-
-export type ProviderOauthCallbackResponses = {
-	/**
-	 * OAuth callback processed successfully
-	 */
-	200: boolean;
-};
-
-export type ProviderOauthCallbackResponse =
-	ProviderOauthCallbackResponses[keyof ProviderOauthCallbackResponses];
 
 export type FindTextData = {
 	body?: never;
@@ -4958,6 +4936,229 @@ export type McpDisconnectResponses = {
 
 export type McpDisconnectResponse =
 	McpDisconnectResponses[keyof McpDisconnectResponses];
+
+export type PluginListData = {
+	body?: never;
+	path?: never;
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin";
+};
+
+export type PluginListResponses = {
+	/**
+	 * List of installed plugins
+	 */
+	200: Array<{
+		id: string;
+		name: string;
+		marketplace: string;
+		version?: string;
+		enabled: boolean;
+		scope: "user" | "project" | "local";
+	}>;
+};
+
+export type PluginListResponse = PluginListResponses[keyof PluginListResponses];
+
+export type PluginEnableData = {
+	body?: never;
+	path: {
+		id: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/{id}/enable";
+};
+
+export type PluginEnableResponses = {
+	/**
+	 * Plugin enabled
+	 */
+	200: boolean;
+};
+
+export type PluginEnableResponse =
+	PluginEnableResponses[keyof PluginEnableResponses];
+
+export type PluginDisableData = {
+	body?: never;
+	path: {
+		id: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/{id}/disable";
+};
+
+export type PluginDisableResponses = {
+	/**
+	 * Plugin disabled
+	 */
+	200: boolean;
+};
+
+export type PluginDisableResponse =
+	PluginDisableResponses[keyof PluginDisableResponses];
+
+export type PluginUninstallData = {
+	body?: never;
+	path: {
+		id: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/{id}";
+};
+
+export type PluginUninstallResponses = {
+	/**
+	 * Plugin uninstalled
+	 */
+	200: boolean;
+};
+
+export type PluginUninstallResponse =
+	PluginUninstallResponses[keyof PluginUninstallResponses];
+
+export type PluginMarketplaceListData = {
+	body?: never;
+	path?: never;
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/marketplace";
+};
+
+export type PluginMarketplaceListResponses = {
+	/**
+	 * Known marketplaces
+	 */
+	200: Array<{
+		name: string;
+		source:
+			| {
+					source: "github";
+					repo: string;
+			  }
+			| {
+					source: "url";
+					url: string;
+			  }
+			| string;
+		added?: string;
+	}>;
+};
+
+export type PluginMarketplaceListResponse =
+	PluginMarketplaceListResponses[keyof PluginMarketplaceListResponses];
+
+export type PluginMarketplaceAddData = {
+	body?: {
+		source: string;
+	};
+	path?: never;
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/marketplace";
+};
+
+export type PluginMarketplaceAddResponses = {
+	/**
+	 * Marketplace added
+	 */
+	200: {
+		name: string;
+		available: number;
+	};
+};
+
+export type PluginMarketplaceAddResponse =
+	PluginMarketplaceAddResponses[keyof PluginMarketplaceAddResponses];
+
+export type PluginMarketplaceRemoveData = {
+	body?: never;
+	path: {
+		name: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/marketplace/{name}";
+};
+
+export type PluginMarketplaceRemoveResponses = {
+	/**
+	 * Marketplace removed
+	 */
+	200: boolean;
+};
+
+export type PluginMarketplaceRemoveResponse =
+	PluginMarketplaceRemoveResponses[keyof PluginMarketplaceRemoveResponses];
+
+export type PluginMarketplacePluginsData = {
+	body?: never;
+	path: {
+		name: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/marketplace/{name}/plugins";
+};
+
+export type PluginMarketplacePluginsResponses = {
+	/**
+	 * Plugins in marketplace
+	 */
+	200: Array<{
+		name: string;
+		description?: string;
+		version?: string;
+		author?: string;
+		tags?: Array<string>;
+	}>;
+};
+
+export type PluginMarketplacePluginsResponse =
+	PluginMarketplacePluginsResponses[keyof PluginMarketplacePluginsResponses];
+
+export type PluginMarketplaceInstallData = {
+	body?: never;
+	path: {
+		name: string;
+		plugin: string;
+	};
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/plugin/marketplace/{name}/install/{plugin}";
+};
+
+export type PluginMarketplaceInstallResponses = {
+	/**
+	 * Plugin installed
+	 */
+	200: boolean;
+};
+
+export type PluginMarketplaceInstallResponse =
+	PluginMarketplaceInstallResponses[keyof PluginMarketplaceInstallResponses];
 
 export type TuiAppendPromptData = {
 	body?: {

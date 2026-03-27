@@ -159,19 +159,8 @@ export default function LogViewer() {
 
   const [data, { refetch }] = createResource(async () => {
     try {
-      const res = await fetch(`${sdk.url}/global/log`)
-      const text = await res.text()
-      try {
-        return JSON.parse(text) as { lines: string[]; services: string[] }
-      } catch {
-        const lines = text.split("\n").filter(Boolean)
-        const svc = new Set<string>()
-        for (const l of lines) {
-          const m = l.match(/service=(\S+)/)
-          if (m) svc.add(m[1])
-        }
-        return { lines, services: [...svc].sort() }
-      }
+      const { data } = await sdk.client.global.log()
+      return data ?? { lines: [], services: [] }
     } catch {
       return { lines: [], services: [] }
     }

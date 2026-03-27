@@ -35,13 +35,12 @@ const SettingsAgentsInner: Component = () => {
   const sdk = useSDK()
 
   const [agents] = createResource(async () => {
-    const res = await fetch(`${sdk.url}/agent`, {
-      headers: {
-        "x-liteai-directory": sdk.directory,
-      },
-    })
-    if (!res.ok) return [] as Agent[]
-    return (await res.json()) as Agent[]
+    try {
+      const { data } = await sdk.client.app.agents()
+      return (data ?? []) as Agent[]
+    } catch {
+      return [] as Agent[]
+    }
   })
 
   const visible = createMemo(() => (agents() ?? []).filter((a) => !a.hidden))

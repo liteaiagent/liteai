@@ -17,13 +17,12 @@ const SettingsSkillsInner: Component = () => {
   const sdk = useSDK()
 
   const [skills] = createResource(async () => {
-    const res = await fetch(`${sdk.url}/skill`, {
-      headers: {
-        "x-liteai-directory": sdk.directory,
-      },
-    })
-    if (!res.ok) return [] as Skill[]
-    return (await res.json()) as Skill[]
+    try {
+      const { data } = await sdk.client.app.skills()
+      return (data ?? []) as Skill[]
+    } catch {
+      return [] as Skill[]
+    }
   })
 
   const count = createMemo(() => skills()?.length ?? 0)

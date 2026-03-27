@@ -389,7 +389,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
       // blocking - include session.list when continuing a session
       const providersPromise = sdk.client.config.providers({}, { throwOnError: true })
-      const providerListPromise = sdk.client.provider.list({}, { throwOnError: true })
+      const providerListPromise = sdk.client.provider.list({ throwOnError: true })
       const agentsPromise = sdk.client.app.agents({}, { throwOnError: true })
       const configPromise = sdk.client.config.get({}, { throwOnError: true })
       const blockingRequests: Promise<unknown>[] = [

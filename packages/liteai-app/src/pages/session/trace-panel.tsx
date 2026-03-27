@@ -87,16 +87,15 @@ export function TracePanel(props: { size: Sizing }) {
   })
 
   const load = async (id: string) => {
-    const res = await fetch(`${sdk.url}/session/${id}/trace?deep=true`)
-    if (!res.ok) return
-    const list: TraceInfo[] = await res.json()
+    const res = await sdk.client.session.trace.list({ sessionID: id, deep: true })
+    const list = (res.data ?? []) as TraceInfo[]
     setTraces(list)
     const last = list.findLast((t) => t.hasTools || t.hasSystem)
     if (last) {
       const sid = last.sessionID || id
-      const r = await fetch(`${sdk.url}/session/${sid}/trace/${last.id}`)
-      if (r.ok) {
-        const d: TraceDetail = await r.json()
+      const r = await sdk.client.session.trace.get({ sessionID: sid, traceID: last.id })
+      const d = r.data as TraceDetail | undefined
+      if (d) {
         setToolDefs(d.tools)
         setTraceSystem(d.system)
       }
@@ -105,8 +104,8 @@ export function TracePanel(props: { size: Sizing }) {
 
   const detail = async (sid: string, tid: string) => {
     setStore("loading", true)
-    const res = await fetch(`${sdk.url}/session/${sid}/trace/${tid}`)
-    if (res.ok) setStore("detail", await res.json())
+    const res = await sdk.client.session.trace.get({ sessionID: sid, traceID: tid })
+    if (res.data) setStore("detail", res.data as TraceDetail)
     setStore("loading", false)
   }
 
@@ -115,10 +114,9 @@ export function TracePanel(props: { size: Sizing }) {
       setStore("searchIDs", undefined)
       return
     }
-    const res = await fetch(`${sdk.url}/session/${sid}/trace/search?q=${encodeURIComponent(query)}`)
-    if (res.ok) {
-      const data = await res.json()
-      setStore("searchIDs", data.ids)
+    const res = await sdk.client.session.trace.search({ sessionID: sid, q: query })
+    if (res.data) {
+      setStore("searchIDs", res.data.ids)
     }
   }
 
@@ -193,14 +191,14 @@ export function TracePanel(props: { size: Sizing }) {
     if (store.compare.active) {
       if (!store.compare.a) {
         setStore("compare", "a", trace.id)
-        fetch(`${sdk.url}/session/${sid}/trace/${trace.id}`)
-          .then((r) => r.json())
-          .then((d) => setStore("compare", "detailA", d))
+        sdk.client.session.trace
+          .get({ sessionID: sid, traceID: trace.id })
+          .then((r) => setStore("compare", "detailA", r.data as TraceDetail))
       } else if (!store.compare.b && trace.id !== store.compare.a) {
         setStore("compare", "b", trace.id)
-        fetch(`${sdk.url}/session/${sid}/trace/${trace.id}`)
-          .then((r) => r.json())
-          .then((d) => setStore("compare", "detailB", d))
+        sdk.client.session.trace
+          .get({ sessionID: sid, traceID: trace.id })
+          .then((r) => setStore("compare", "detailB", r.data as TraceDetail))
       }
       return
     }

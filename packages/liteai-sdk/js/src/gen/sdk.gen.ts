@@ -84,6 +84,15 @@ import type {
 	PermissionRespondErrors,
 	PermissionRespondResponses,
 	PermissionRuleset,
+	PluginDisableResponses,
+	PluginEnableResponses,
+	PluginListResponses,
+	PluginMarketplaceAddResponses,
+	PluginMarketplaceInstallResponses,
+	PluginMarketplaceListResponses,
+	PluginMarketplacePluginsResponses,
+	PluginMarketplaceRemoveResponses,
+	PluginUninstallResponses,
 	ProjectArchiveErrors,
 	ProjectArchiveResponses,
 	ProjectCurrentResponses,
@@ -446,16 +455,19 @@ export class Auth extends HeyApiClient {
 	}
 }
 
-export class Project extends HeyApiClient {
+export class Oauth extends HeyApiClient {
 	/**
-	 * List all projects
+	 * OAuth authorize
 	 *
-	 * Get a list of projects that have been opened with LiteAI.
+	 * Initiate OAuth authorization for a specific AI provider to get an authorization URL.
 	 */
-	public list<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
+	public authorize<ThrowOnError extends boolean = false>(
+		parameters: {
+			providerID: string;
+			method?: number;
+			inputs?: {
+				[key: string]: string;
+			};
 		},
 		options?: Options<never, ThrowOnError>,
 	) {
@@ -464,21 +476,122 @@ export class Project extends HeyApiClient {
 			[
 				{
 					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
+						{ in: "path", key: "providerID" },
+						{ in: "body", key: "method" },
+						{ in: "body", key: "inputs" },
 					],
 				},
 			],
 		);
+		return (options?.client ?? this.client).post<
+			ProviderOauthAuthorizeResponses,
+			ProviderOauthAuthorizeErrors,
+			ThrowOnError
+		>({
+			url: "/provider/{providerID}/oauth/authorize",
+			...options,
+			...params,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...params.headers,
+			},
+		});
+	}
+
+	/**
+	 * OAuth callback
+	 *
+	 * Handle the OAuth callback from a provider after user authorization.
+	 */
+	public callback<ThrowOnError extends boolean = false>(
+		parameters: {
+			providerID: string;
+			method?: number;
+			code?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "providerID" },
+						{ in: "body", key: "method" },
+						{ in: "body", key: "code" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			ProviderOauthCallbackResponses,
+			ProviderOauthCallbackErrors,
+			ThrowOnError
+		>({
+			url: "/provider/{providerID}/oauth/callback",
+			...options,
+			...params,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...params.headers,
+			},
+		});
+	}
+}
+
+export class Provider extends HeyApiClient {
+	/**
+	 * List providers
+	 *
+	 * Get a list of all available AI providers, including both available and connected ones.
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		options?: Options<never, ThrowOnError>,
+	) {
+		return (options?.client ?? this.client).get<
+			ProviderListResponses,
+			unknown,
+			ThrowOnError
+		>({ url: "/provider", ...options });
+	}
+
+	/**
+	 * Get provider auth methods
+	 *
+	 * Retrieve available authentication methods for all AI providers.
+	 */
+	public auth<ThrowOnError extends boolean = false>(
+		options?: Options<never, ThrowOnError>,
+	) {
+		return (options?.client ?? this.client).get<
+			ProviderAuthResponses,
+			unknown,
+			ThrowOnError
+		>({ url: "/provider/auth", ...options });
+	}
+
+	private _oauth?: Oauth;
+	get oauth(): Oauth {
+		return (this._oauth ??= new Oauth({ client: this.client }));
+	}
+}
+
+export class Project extends HeyApiClient {
+	/**
+	 * List all projects
+	 *
+	 * Get a list of projects that have been opened with LiteAI.
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		options?: Options<never, ThrowOnError>,
+	) {
 		return (options?.client ?? this.client).get<
 			ProjectListResponses,
 			unknown,
 			ThrowOnError
-		>({
-			url: "/project",
-			...options,
-			...params,
-		});
+		>({ url: "/project", ...options });
 	}
 
 	/**
@@ -1563,44 +1676,6 @@ export class Trace extends HeyApiClient {
 	}
 
 	/**
-	 * Get trace detail
-	 *
-	 * Get full trace detail with resolved system prompt and tools.
-	 */
-	public get<ThrowOnError extends boolean = false>(
-		parameters: {
-			sessionID: string;
-			traceID: string;
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "sessionID" },
-						{ in: "path", key: "traceID" },
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			SessionTraceGetResponses,
-			SessionTraceGetErrors,
-			ThrowOnError
-		>({
-			url: "/session/{sessionID}/trace/{traceID}",
-			...options,
-			...params,
-		});
-	}
-
-	/**
 	 * Export traces
 	 *
 	 * Export all traces for a session in JSON or Markdown format.
@@ -1633,6 +1708,44 @@ export class Trace extends HeyApiClient {
 			ThrowOnError
 		>({
 			url: "/session/{sessionID}/trace/export",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Get trace detail
+	 *
+	 * Get full trace detail with resolved system prompt and tools.
+	 */
+	public get<ThrowOnError extends boolean = false>(
+		parameters: {
+			sessionID: string;
+			traceID: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "sessionID" },
+						{ in: "path", key: "traceID" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			SessionTraceGetResponses,
+			SessionTraceGetErrors,
+			ThrowOnError
+		>({
+			url: "/session/{sessionID}/trace/{traceID}",
 			...options,
 			...params,
 		});
@@ -2296,9 +2409,6 @@ export class Session2 extends HeyApiClient {
 			};
 			agent?: string;
 			noReply?: boolean;
-			tools?: {
-				[key: string]: boolean;
-			};
 			format?: OutputFormat;
 			system?: string;
 			variant?: string;
@@ -2320,7 +2430,6 @@ export class Session2 extends HeyApiClient {
 						{ in: "body", key: "model" },
 						{ in: "body", key: "agent" },
 						{ in: "body", key: "noReply" },
-						{ in: "body", key: "tools" },
 						{ in: "body", key: "format" },
 						{ in: "body", key: "system" },
 						{ in: "body", key: "variant" },
@@ -2438,9 +2547,6 @@ export class Session2 extends HeyApiClient {
 			};
 			agent?: string;
 			noReply?: boolean;
-			tools?: {
-				[key: string]: boolean;
-			};
 			format?: OutputFormat;
 			system?: string;
 			variant?: string;
@@ -2462,7 +2568,6 @@ export class Session2 extends HeyApiClient {
 						{ in: "body", key: "model" },
 						{ in: "body", key: "agent" },
 						{ in: "body", key: "noReply" },
-						{ in: "body", key: "tools" },
 						{ in: "body", key: "format" },
 						{ in: "body", key: "system" },
 						{ in: "body", key: "variant" },
@@ -3011,175 +3116,6 @@ export class Question extends HeyApiClient {
 			...options,
 			...params,
 		});
-	}
-}
-
-export class Oauth extends HeyApiClient {
-	/**
-	 * OAuth authorize
-	 *
-	 * Initiate OAuth authorization for a specific AI provider to get an authorization URL.
-	 */
-	public authorize<ThrowOnError extends boolean = false>(
-		parameters: {
-			providerID: string;
-			directory?: string;
-			workspace?: string;
-			method?: number;
-			inputs?: {
-				[key: string]: string;
-			};
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "providerID" },
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-						{ in: "body", key: "method" },
-						{ in: "body", key: "inputs" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).post<
-			ProviderOauthAuthorizeResponses,
-			ProviderOauthAuthorizeErrors,
-			ThrowOnError
-		>({
-			url: "/provider/{providerID}/oauth/authorize",
-			...options,
-			...params,
-			headers: {
-				"Content-Type": "application/json",
-				...options?.headers,
-				...params.headers,
-			},
-		});
-	}
-
-	/**
-	 * OAuth callback
-	 *
-	 * Handle the OAuth callback from a provider after user authorization.
-	 */
-	public callback<ThrowOnError extends boolean = false>(
-		parameters: {
-			providerID: string;
-			directory?: string;
-			workspace?: string;
-			method?: number;
-			code?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "providerID" },
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-						{ in: "body", key: "method" },
-						{ in: "body", key: "code" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).post<
-			ProviderOauthCallbackResponses,
-			ProviderOauthCallbackErrors,
-			ThrowOnError
-		>({
-			url: "/provider/{providerID}/oauth/callback",
-			...options,
-			...params,
-			headers: {
-				"Content-Type": "application/json",
-				...options?.headers,
-				...params.headers,
-			},
-		});
-	}
-}
-
-export class Provider extends HeyApiClient {
-	/**
-	 * List providers
-	 *
-	 * Get a list of all available AI providers, including both available and connected ones.
-	 */
-	public list<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			ProviderListResponses,
-			unknown,
-			ThrowOnError
-		>({
-			url: "/provider",
-			...options,
-			...params,
-		});
-	}
-
-	/**
-	 * Get provider auth methods
-	 *
-	 * Retrieve available authentication methods for all AI providers.
-	 */
-	public auth<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			ProviderAuthResponses,
-			unknown,
-			ThrowOnError
-		>({
-			url: "/provider/auth",
-			...options,
-			...params,
-		});
-	}
-
-	private _oauth?: Oauth;
-	get oauth(): Oauth {
-		return (this._oauth ??= new Oauth({ client: this.client }));
 	}
 }
 
@@ -3743,6 +3679,324 @@ export class Mcp extends HeyApiClient {
 	private _auth?: Auth2;
 	get auth(): Auth2 {
 		return (this._auth ??= new Auth2({ client: this.client }));
+	}
+}
+
+export class Marketplace extends HeyApiClient {
+	/**
+	 * List known marketplaces
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		parameters?: {
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			PluginMarketplaceListResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/marketplace",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Add a marketplace
+	 */
+	public add<ThrowOnError extends boolean = false>(
+		parameters?: {
+			directory?: string;
+			workspace?: string;
+			source?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+						{ in: "body", key: "source" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			PluginMarketplaceAddResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/marketplace",
+			...options,
+			...params,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...params.headers,
+			},
+		});
+	}
+
+	/**
+	 * Remove a marketplace
+	 */
+	public remove<ThrowOnError extends boolean = false>(
+		parameters: {
+			name: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "name" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).delete<
+			PluginMarketplaceRemoveResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/marketplace/{name}",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * List marketplace plugins
+	 */
+	public plugins<ThrowOnError extends boolean = false>(
+		parameters: {
+			name: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "name" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			PluginMarketplacePluginsResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/marketplace/{name}/plugins",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Install a plugin from a marketplace
+	 */
+	public install<ThrowOnError extends boolean = false>(
+		parameters: {
+			name: string;
+			plugin: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "name" },
+						{ in: "path", key: "plugin" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			PluginMarketplaceInstallResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/marketplace/{name}/install/{plugin}",
+			...options,
+			...params,
+		});
+	}
+}
+
+export class Plugin extends HeyApiClient {
+	/**
+	 * List installed plugins
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		parameters?: {
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			PluginListResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Enable a plugin
+	 */
+	public enable<ThrowOnError extends boolean = false>(
+		parameters: {
+			id: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "id" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			PluginEnableResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/{id}/enable",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Disable a plugin
+	 */
+	public disable<ThrowOnError extends boolean = false>(
+		parameters: {
+			id: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "id" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			PluginDisableResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/{id}/disable",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Uninstall a plugin
+	 */
+	public uninstall<ThrowOnError extends boolean = false>(
+		parameters: {
+			id: string;
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "id" },
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).delete<
+			PluginUninstallResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/plugin/{id}",
+			...options,
+			...params,
+		});
+	}
+
+	private _marketplace?: Marketplace;
+	get marketplace(): Marketplace {
+		return (this._marketplace ??= new Marketplace({ client: this.client }));
 	}
 }
 
@@ -4641,6 +4895,11 @@ export class LiteaiClient extends HeyApiClient {
 		return (this._auth ??= new Auth({ client: this.client }));
 	}
 
+	private _provider?: Provider;
+	get provider(): Provider {
+		return (this._provider ??= new Provider({ client: this.client }));
+	}
+
 	private _project?: Project;
 	get project(): Project {
 		return (this._project ??= new Project({ client: this.client }));
@@ -4691,11 +4950,6 @@ export class LiteaiClient extends HeyApiClient {
 		return (this._question ??= new Question({ client: this.client }));
 	}
 
-	private _provider?: Provider;
-	get provider(): Provider {
-		return (this._provider ??= new Provider({ client: this.client }));
-	}
-
 	private _find?: Find;
 	get find(): Find {
 		return (this._find ??= new Find({ client: this.client }));
@@ -4709,6 +4963,11 @@ export class LiteaiClient extends HeyApiClient {
 	private _mcp?: Mcp;
 	get mcp(): Mcp {
 		return (this._mcp ??= new Mcp({ client: this.client }));
+	}
+
+	private _plugin?: Plugin;
+	get plugin(): Plugin {
+		return (this._plugin ??= new Plugin({ client: this.client }));
 	}
 
 	private _tui?: Tui;

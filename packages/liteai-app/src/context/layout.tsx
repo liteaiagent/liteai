@@ -12,7 +12,6 @@ import { useGlobalSync } from "./global-sync"
 import { createScrollPersistence, type SessionScroll } from "./layout-scroll"
 import { usePlatform } from "./platform"
 
-
 const AVATAR_COLOR_KEYS = ["pink", "mint", "orange", "purple", "cyan", "lime"] as const
 const DEFAULT_PANEL_WIDTH = 344
 const DEFAULT_SESSION_WIDTH = 600
