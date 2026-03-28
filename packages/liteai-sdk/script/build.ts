@@ -9,8 +9,8 @@ import path from "path"
 
 import { createClient } from "@hey-api/openapi-ts"
 
-const spec = await $`bun run --conditions=browser script/generate-openapi.ts`.cwd(path.resolve(dir, "../../liteai")).text()
-const openapi = path.resolve(dir, "../openapi.json")
+const spec = await $`bun run --conditions=browser script/generate-openapi.ts`.cwd(path.resolve(dir, "../core")).text()
+const openapi = path.resolve(dir, "openapi.json")
 await Bun.write(openapi, spec)
 
 await createClient({
@@ -27,7 +27,7 @@ await createClient({
     },
     {
       name: "@hey-api/sdk",
-      instance: "LiteaiClient",
+      operations: { strategy: "single", containerName: "LiteaiClient", methods: "instance" },
       exportFromIndex: false,
       auth: false,
       paramsStructure: "flat",

@@ -66,23 +66,7 @@
         "typescript": "catalog:",
       },
     },
-    "packages/gca-proxy": {
-      "name": "@liteai/gca-proxy",
-      "version": "1.0.0",
-      "dependencies": {
-        "@google/genai": "^1.41.0",
-        "google-auth-library": "^10.5.0",
-        "hono": "^4.7.13",
-        "jose": "^6.0.11",
-        "zod": "^3.25.76",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "catalog:",
-        "@types/bun": "latest",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/liteai": {
+    "packages/core": {
       "name": "@liteai/core",
       "version": "1.0.0",
       "dependencies": {
@@ -185,6 +169,22 @@
         "vscode-languageserver-types": "3.17.5",
       },
     },
+    "packages/gca-proxy": {
+      "name": "@liteai/gca-proxy",
+      "version": "1.0.0",
+      "dependencies": {
+        "@google/genai": "^1.41.0",
+        "google-auth-library": "^10.5.0",
+        "hono": "^4.7.13",
+        "jose": "^6.0.11",
+        "zod": "^3.25.76",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "catalog:",
+        "@types/bun": "latest",
+        "typescript": "catalog:",
+      },
+    },
     "packages/liteai-app": {
       "name": "liteai-app",
       "version": "1.0.0",
@@ -236,7 +236,7 @@
         "vite-plugin-solid": "catalog:",
       },
     },
-    "packages/liteai-sdk/js": {
+    "packages/liteai-sdk": {
       "name": "@liteai-ai/sdk",
       "version": "1.2.26",
       "devDependencies": {
@@ -856,11 +856,11 @@
 
     "@leichtgewicht/ip-codec": ["@leichtgewicht/ip-codec@2.0.5", "", {}, "sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw=="],
 
-    "@liteai-ai/sdk": ["@liteai-ai/sdk@workspace:packages/liteai-sdk/js"],
+    "@liteai-ai/sdk": ["@liteai-ai/sdk@workspace:packages/liteai-sdk"],
 
     "@liteai/cli": ["@liteai/cli@workspace:packages/cli"],
 
-    "@liteai/core": ["@liteai/core@workspace:packages/liteai"],
+    "@liteai/core": ["@liteai/core@workspace:packages/core"],
 
     "@liteai/gca-proxy": ["@liteai/gca-proxy@workspace:packages/gca-proxy"],
 

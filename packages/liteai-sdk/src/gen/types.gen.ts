@@ -1099,7 +1099,7 @@ export type PermissionConfig =
 	| PermissionActionConfig;
 
 export type AgentConfig = {
-	model?: Model;
+	model?: string;
 	/**
 	 * Default model variant for this agent (applies only when using the agent's configured model).
 	 */
@@ -1192,7 +1192,6 @@ export type AgentConfig = {
 	};
 	[key: string]:
 		| unknown
-		| Model
 		| string
 		| number
 		| boolean
@@ -1468,7 +1467,7 @@ export type Config = {
 			template: string;
 			description?: string;
 			agent?: string;
-			model?: Model;
+			model?: string;
 			subtask?: boolean;
 		};
 	};
@@ -1505,8 +1504,14 @@ export type Config = {
 	 * When set, ONLY these providers will be enabled. All other providers will be ignored
 	 */
 	enabled_providers?: Array<string>;
-	model?: Model;
-	small_model?: Model;
+	/**
+	 * Model to use in the format of provider/model, eg anthropic/claude-2
+	 */
+	model?: string;
+	/**
+	 * Small model to use for tasks like title generation in the format of provider/model
+	 */
+	small_model?: string;
 	/**
 	 * Default agent to use when none is specified. Must be a primary agent. Falls back to 'build' if not set or if the specified agent is invalid.
 	 */
