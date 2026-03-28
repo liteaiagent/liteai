@@ -1,4 +1,3 @@
-import { setTimeout as sleep } from "node:timers/promises"
 import { GlobalBus } from "@liteai/core/bus/global"
 import { Config } from "@liteai/core/config/config"
 import { Flag } from "@liteai/core/flag/flag"
@@ -8,7 +7,7 @@ import { Instance } from "@liteai/core/project/instance"
 import { Server } from "@liteai/core/server/server"
 import { Log } from "@liteai/core/util/log"
 import { Rpc } from "@liteai/core/util/rpc"
-import { createLiteaiClient, type Event } from "@liteai/sdk"
+import type { Event } from "@liteai/sdk"
 import { NamedError } from "@liteai/util/error"
 import type { BunWebSocketData } from "hono/bun"
 import { upgrade } from "../../upgrade"
@@ -36,66 +35,17 @@ process.on("uncaughtException", (e) => {
   Log.Default.error("exception", serializeError(e))
 })
 
-// Subscribe to global events and forward them via RPC
+// Forward global bus events to the main thread via RPC.
+// Unwrap the { directory, payload } wrapper — the TUI expects { type, properties }.
 GlobalBus.on("event", (event) => {
-  Rpc.emit("global.event", event)
+  if (event?.payload) {
+    Rpc.emit("event", event.payload)
+  }
 })
 
 let server: Bun.Server<BunWebSocketData> | undefined
 
-const eventStream = {
-  abort: undefined as AbortController | undefined,
-}
 
-const startEventStream = (input: { directory: string; workspaceID?: string }) => {
-  if (eventStream.abort) eventStream.abort.abort()
-  const abort = new AbortController()
-  eventStream.abort = abort
-  const signal = abort.signal
-
-  const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const request = new Request(input, init)
-    const auth = getAuthorizationHeader()
-    if (auth) request.headers.set("Authorization", auth)
-    return Server.Default().fetch(request)
-  }) as typeof globalThis.fetch
-
-  const sdk = createLiteaiClient({
-    baseUrl: "http://liteai.internal",
-    experimental_workspaceID: input.workspaceID,
-    fetch: fetchFn,
-    signal,
-  })
-
-  ;(async () => {
-    while (!signal.aborted) {
-      const events = await Promise.resolve(
-        sdk.event.subscribe({
-          signal,
-        }),
-      ).catch(() => undefined)
-
-      if (!events) {
-        await sleep(250)
-        continue
-      }
-
-      for await (const event of events.stream) {
-        Rpc.emit("event", event as unknown as Event)
-      }
-
-      if (!signal.aborted) {
-        await sleep(250)
-      }
-    }
-  })().catch((error) => {
-    Log.Default.error("event stream error", {
-      error: error instanceof Error ? error.message : error,
-    })
-  })
-}
-
-startEventStream({ directory: process.cwd() })
 
 export const rpc = {
   async fetch(input: { url: string; method: string; headers: Record<string, string>; body?: string }) {
@@ -135,12 +85,11 @@ export const rpc = {
     Config.global.reset()
     await Instance.disposeAll()
   },
-  async setWorkspace(input: { workspaceID?: string }) {
-    startEventStream({ directory: process.cwd(), workspaceID: input.workspaceID })
+  async setWorkspace(_input: { workspaceID?: string }) {
+    // TODO: workspace filtering — re-implement if needed
   },
   async shutdown() {
     Log.Default.info("worker shutting down")
-    if (eventStream.abort) eventStream.abort.abort()
     await Instance.disposeAll()
     if (server) server.stop(true)
   },

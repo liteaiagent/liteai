@@ -181,7 +181,19 @@ export function cancel(sessionID: SessionID) {
 
 export async function lastModel(sessionID: SessionID) {
   for await (const item of Message.stream(sessionID)) {
-    if (item.info.role === "user" && item.info.model) return item.info.model
+    if (item.info.role === "user" && item.info.model) {
+      const m = item.info.model
+      if (m.providerID === "unknown" || m.modelID === "unknown") {
+        log.warn("lastModel: found stored message with unknown model identifier — skipping", {
+          sessionID,
+          messageID: item.info.id,
+          providerID: m.providerID,
+          modelID: m.modelID,
+        })
+        continue
+      }
+      return m
+    }
   }
   const result = await Provider.defaultModel()
   if (!result) throw new Error("no model available: connect a provider first")
@@ -256,6 +268,16 @@ export const loop = fn(LoopInput, async (input) => {
         providerID: lastUser.model.providerID,
         history: msgs,
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
+
+    if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
+      log.warn("loop: lastUser message has unknown model identifier — this will fail getModel", {
+        sessionID,
+        step,
+        messageID: lastUser.id,
+        providerID: lastUser.model.providerID,
+        modelID: lastUser.model.modelID,
+      })
+    }
 
     const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID).catch((e) => {
       log.error("model resolution failed", {

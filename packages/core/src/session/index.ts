@@ -317,35 +317,46 @@ export namespace Session {
     })
     const defAgentName = await import("../agent/agent").then((m) => m.Agent.defaultAgent())
     const defAgent = await import("../agent/agent").then((m) => m.Agent.get(defAgentName))
-    const model = defAgent.model ? `${defAgent.model.providerID}/${defAgent.model.modelID}` : "unknown"
+
+    // Resolve a model for the hook context message: prefer agent's explicit model, fall back to default
+    const hookModel =
+      defAgent.model ??
+      (await import("../provider/provider").then((m) => m.Provider.defaultModel()).catch(() => undefined))
 
     const sessionHook = await Hook.dispatch("SessionStart", {
       session_id: result.id,
       cwd: result.directory,
       hook_event_name: "SessionStart",
       source: input.parentID ? "resume" : "startup",
-      model: model,
+      model: hookModel ? `${hookModel.providerID}/${hookModel.modelID}` : "unknown",
       agent_type: defAgentName,
     })
 
     if (sessionHook.context) {
-      const messageID = MessageID.ascending()
-      await updateMessage({
-        id: messageID,
-        sessionID: result.id,
-        role: "user",
-        time: { created: Date.now() },
-        agent: defAgentName,
-        model: defAgent.model ?? { providerID: "unknown" as ProviderID, modelID: "unknown" as ModelID },
-      } as import("./message").Message.User)
-      await updatePart({
-        id: PartID.ascending(),
-        sessionID: result.id,
-        messageID,
-        type: "text",
-        text: sessionHook.context,
-        synthetic: true,
-      })
+      if (!hookModel) {
+        log.warn("SessionStart hook returned context but no model is available — skipping synthetic message", {
+          sessionID: result.id,
+          agent: defAgentName,
+        })
+      } else {
+        const messageID = MessageID.ascending()
+        await updateMessage({
+          id: messageID,
+          sessionID: result.id,
+          role: "user",
+          time: { created: Date.now() },
+          agent: defAgentName,
+          model: hookModel,
+        } as import("./message").Message.User)
+        await updatePart({
+          id: PartID.ascending(),
+          sessionID: result.id,
+          messageID,
+          type: "text",
+          text: sessionHook.context,
+          synthetic: true,
+        })
+      }
     }
 
     await Plugin.trigger("session.start", { sessionID: result.id }, {})
