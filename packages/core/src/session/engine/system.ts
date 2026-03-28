@@ -1,6 +1,8 @@
+import path from "node:path"
 import type { Agent } from "@/agent/agent"
 import { PermissionNext } from "@/permission/next"
 import type { Provider } from "@/provider/provider"
+import { Shell } from "@/shell/shell"
 import { Skill } from "@/skill"
 
 import { Instance } from "../../project/instance"
@@ -30,6 +32,10 @@ export namespace SystemPrompt {
 
   export async function environment(model: Provider.Model) {
     const project = Instance.project
+    const shell = Shell.acceptable()
+    const shellName = (
+      process.platform === "win32" ? path.win32.basename(shell, ".exe") : path.basename(shell)
+    ).toLowerCase()
     return [
       [
         `You are powered by the model named ${model.api.id}. The exact model ID is ${model.providerID}/${model.api.id}`,
@@ -39,6 +45,7 @@ export namespace SystemPrompt {
         `  Workspace root folder: ${Instance.worktree}`,
         `  Is directory a git repo: ${project.vcs === "git" ? "yes" : "no"}`,
         `  Platform: ${process.platform}`,
+        `  Shell: ${shellName}`,
         `  Today's date: ${new Date().toDateString()}`,
         `</env>`,
         `<directories>`,

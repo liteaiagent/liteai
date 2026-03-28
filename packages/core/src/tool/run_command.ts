@@ -49,7 +49,6 @@ const parser = lazy(async () => {
   return p
 })
 
-// TODO: we may wanna rename this tool so it works better on other shells
 export const RunCommandTool = Tool.define("run_command", async () => {
   const shell = Shell.acceptable()
   log.info("run_command tool using shell", { shell })
@@ -57,6 +56,8 @@ export const RunCommandTool = Tool.define("run_command", async () => {
   return {
     // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional replaceAll patterns matching template placeholders
     description: DESCRIPTION.replaceAll("${directory}", Instance.directory)
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional replaceAll patterns matching template placeholders
+      .replaceAll("${shell}", shell)
       // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional replaceAll patterns matching template placeholders
       .replaceAll("${maxLines}", String(Truncate.MAX_LINES))
       // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional replaceAll patterns matching template placeholders

@@ -44,7 +44,7 @@ export namespace ToolRegistry {
       CodeSearchTool,
       SkillTool,
       ApplyPatchTool,
-      ...(Flag.LITEAI_EXPERIMENTAL_LSP_TOOL ? [LspTool] : []),
+      LspTool,
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       ...(Flag.LITEAI_EXPERIMENTAL_PLAN_MODE && Flag.LITEAI_CLIENT === "cli" ? [PlanExitTool] : []),
     ]
