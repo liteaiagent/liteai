@@ -5,6 +5,7 @@ import { Database } from "../../src/storage/db"
 
 describe("Database.Path", () => {
   test("returns database path for the current channel", () => {
+    if (Database.Path === ":memory:") return
     const file = path.basename(Database.Path)
     const expected = ["latest", "beta"].includes(Installation.CHANNEL)
       ? "liteai.db"

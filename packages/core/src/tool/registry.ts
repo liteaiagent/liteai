@@ -1,7 +1,7 @@
 import { Flag } from "@/flag/flag"
 import type { Agent } from "../agent/agent"
 import { Config } from "../config/config"
-import { type ModelID, ProviderID } from "../provider/schema"
+import type { ModelID, ProviderID } from "../provider/schema"
 import { ApplyPatchTool } from "./apply_patch"
 import { BatchTool } from "./batch"
 import { CodeSearchTool } from "./codesearch"

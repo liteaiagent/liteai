@@ -7,7 +7,6 @@ import { Instance } from "@liteai/core/project/instance"
 import { Server } from "@liteai/core/server/server"
 import { Log } from "@liteai/core/util/log"
 import { Rpc } from "@liteai/core/util/rpc"
-import type { Event } from "@liteai/sdk"
 import { NamedError } from "@liteai/util/error"
 import type { BunWebSocketData } from "hono/bun"
 import { upgrade } from "../../upgrade"
@@ -44,8 +43,6 @@ GlobalBus.on("event", (event) => {
 })
 
 let server: Bun.Server<BunWebSocketData> | undefined
-
-
 
 export const rpc = {
   async fetch(input: { url: string; method: string; headers: Record<string, string>; body?: string }) {

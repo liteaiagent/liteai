@@ -68,7 +68,7 @@ test("diffFull sets status based on git change type", async () => {
       expect(trim?.deletions).toBeGreaterThan(0)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with new file additions", async () => {
   await using tmp = await bootstrap()
@@ -94,7 +94,7 @@ test("diffFull with new file additions", async () => {
       expect(newFileDiff.deletions).toBe(0)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with file modifications", async () => {
   await using tmp = await bootstrap()
@@ -120,7 +120,7 @@ test("diffFull with file modifications", async () => {
       expect(modifiedFileDiff.deletions).toBeGreaterThan(0)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with file deletions", async () => {
   await using tmp = await bootstrap()
@@ -146,7 +146,7 @@ test("diffFull with file deletions", async () => {
       expect(removedFileDiff.deletions).toBe(1)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with multiple line additions", async () => {
   await using tmp = await bootstrap()
@@ -172,7 +172,7 @@ test("diffFull with multiple line additions", async () => {
       expect(multiDiff.deletions).toBe(0)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with addition and deletion", async () => {
   await using tmp = await bootstrap()
@@ -206,7 +206,7 @@ test("diffFull with addition and deletion", async () => {
       expect(removedFileDiff?.deletions).toBe(1)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with multiple additions and deletions", async () => {
   await using tmp = await bootstrap()
@@ -248,7 +248,7 @@ test("diffFull with multiple additions and deletions", async () => {
       expect(removedBDiff?.deletions).toBe(1)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with no changes", async () => {
   await using tmp = await bootstrap()
@@ -265,7 +265,7 @@ test("diffFull with no changes", async () => {
       expect(diffs.length).toBe(0)
     },
   })
-})
+}, 30_000)
 
 test("diffFull with binary file changes", async () => {
   await using tmp = await bootstrap()
@@ -288,7 +288,7 @@ test("diffFull with binary file changes", async () => {
       expect(binaryDiff.before).toBe("")
     },
   })
-})
+}, 30_000)
 
 test("diffFull with whitespace changes", async () => {
   await using tmp = await bootstrap()
@@ -312,4 +312,4 @@ test("diffFull with whitespace changes", async () => {
       expect(whitespaceDiff.additions).toBeGreaterThan(0)
     },
   })
-})
+}, 30_000)

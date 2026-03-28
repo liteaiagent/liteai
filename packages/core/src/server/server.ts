@@ -33,9 +33,9 @@ import { PtyRoutes } from "./routes/pty"
 import { QuestionRoutes } from "./routes/question"
 import { SessionRoutes } from "./routes/session"
 import { SystemRoutes } from "./routes/system"
+import { ToolRoutes } from "./routes/tool"
 import { TraceRoutes } from "./routes/trace"
 import { TuiRoutes } from "./routes/tui"
-import { ToolRoutes } from "./routes/tool"
 
 // ---------------------------------------------------------------------------
 // Suppress verbose AI SDK warnings at import time.

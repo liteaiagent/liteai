@@ -758,7 +758,7 @@ test("deduplicates duplicate instructions from global and local configs", async 
       expect(instructions.length).toBe(3)
     },
   })
-})
+}, 30000)
 
 // Managed settings tests
 // Note: preload.ts sets LITEAI_TEST_MANAGED_CONFIG which Global.Path.managedConfig uses

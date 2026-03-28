@@ -35,7 +35,7 @@ describe("UI Simulation", () => {
     const listRes = await app.request(`/project/${uiProjectID}/find/file?query=&type=directory&limit=50`, {
       method: "GET",
     })
-
     expect(listRes.status).toBe(200)
+    await listRes.text()
   })
 })

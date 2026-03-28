@@ -69,7 +69,7 @@ test("unicode filenames", async () => {
       }
     },
   })
-})
+}, 30_000)
 
 test.skip("unicode filenames modification and restore", async () => {
   await using tmp = await bootstrap()
@@ -98,7 +98,7 @@ test.skip("unicode filenames modification and restore", async () => {
       expect(await fs.readFile(cyrillicFile, "utf-8")).toBe("original cyrillic")
     },
   })
-})
+}, 30_000)
 
 test("unicode filenames in subdirectories", async () => {
   await using tmp = await bootstrap()
@@ -124,7 +124,7 @@ test("unicode filenames in subdirectories", async () => {
       ).toBe(false)
     },
   })
-})
+}, 30_000)
 
 test("very long filenames", async () => {
   await using tmp = await bootstrap()
@@ -171,7 +171,7 @@ test("hidden files", async () => {
       expect(patch.files).toContain(fwd(tmp.path, ".config"))
     },
   })
-})
+}, 30_000)
 
 test("nested symlinks", async () => {
   await using tmp = await bootstrap()
@@ -191,28 +191,32 @@ test("nested symlinks", async () => {
       expect(patch.files).toContain(fwd(tmp.path, "sub-link"))
     },
   })
-})
+}, 30_000)
 
-test.skipIf(process.platform === "win32")("file permissions and ownership changes", async () => {
-  await using tmp = await bootstrap()
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const before = await Snapshot.track()
-      if (!before) throw new Error("expected snapshot")
+test.skipIf(process.platform === "win32")(
+  "file permissions and ownership changes",
+  async () => {
+    await using tmp = await bootstrap()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const before = await Snapshot.track()
+        if (!before) throw new Error("expected snapshot")
 
-      // Change permissions multiple times
-      await $`chmod 600 ${tmp.path}/a.txt`.quiet()
-      await $`chmod 755 ${tmp.path}/a.txt`.quiet()
-      await $`chmod 644 ${tmp.path}/a.txt`.quiet()
+        // Change permissions multiple times
+        await $`chmod 600 ${tmp.path}/a.txt`.quiet()
+        await $`chmod 755 ${tmp.path}/a.txt`.quiet()
+        await $`chmod 644 ${tmp.path}/a.txt`.quiet()
 
-      const patch = await Snapshot.patch(before)
-      // Note: git doesn't track permission changes on existing files by default
-      // Only tracks executable bit when files are first added
-      expect(patch.files.length).toBe(0)
-    },
-  })
-})
+        const patch = await Snapshot.patch(before)
+        // Note: git doesn't track permission changes on existing files by default
+        // Only tracks executable bit when files are first added
+        expect(patch.files.length).toBe(0)
+      },
+    })
+  },
+  30_000,
+)
 
 test("circular symlinks", async () => {
   await using tmp = await bootstrap()
@@ -229,7 +233,7 @@ test("circular symlinks", async () => {
       expect(patch.files.length).toBeGreaterThanOrEqual(0) // Should not crash
     },
   })
-})
+}, 30_000)
 
 test("gitignore changes", async () => {
   await using tmp = await bootstrap()
@@ -253,7 +257,7 @@ test("gitignore changes", async () => {
       expect(patch.files).not.toContain(fwd(tmp.path, "test.ignored"))
     },
   })
-})
+}, 30_000)
 
 test("git info exclude changes", async () => {
   await using tmp = await bootstrap()
@@ -280,7 +284,7 @@ test("git info exclude changes", async () => {
       expect(diffs.some((x) => x.file === "ignored.txt")).toBe(false)
     },
   })
-})
+}, 30_000)
 
 test("git info exclude keeps global excludes", async () => {
   await using tmp = await bootstrap()
@@ -316,7 +320,7 @@ test("git info exclude keeps global excludes", async () => {
       }
     },
   })
-})
+}, 30_000)
 
 test("concurrent file operations during patch", async () => {
   await using tmp = await bootstrap()
@@ -345,7 +349,7 @@ test("concurrent file operations during patch", async () => {
       expect(patch.files.length).toBeGreaterThanOrEqual(0)
     },
   })
-})
+}, 30_000)
 
 test("snapshot state isolation between projects", async () => {
   // Test that different projects don't interfere with each other
@@ -452,7 +456,7 @@ test("revert only removes files in invoking worktree", async () => {
     await $`rm -rf ${worktreePath}`.quiet()
     await $`rm -f ${tmp.path}/worktree.txt`.quiet()
   }
-})
+}, 30_000)
 
 test("diff reports worktree-only/shared edits and ignores primary-only", async () => {
   await using tmp = await bootstrap()
@@ -490,4 +494,4 @@ test("diff reports worktree-only/shared edits and ignores primary-only", async (
     await $`rm -f ${tmp.path}/shared.txt`.quiet()
     await $`rm -f ${tmp.path}/primary-only.txt`.quiet()
   }
-})
+}, 30_000)

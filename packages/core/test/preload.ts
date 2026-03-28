@@ -1,19 +1,13 @@
 // IMPORTANT: Set env vars BEFORE any imports from src/ directory
 // xdg-basedir reads env vars at import time, so we must set these first
 
-import { afterAll } from "bun:test"
+import { afterAll, beforeAll } from "bun:test"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 
 // Set XDG env vars FIRST, before any src/ imports
 const dir = path.join(os.tmpdir(), `liteai-test-data-${process.pid}`)
-await fs.mkdir(dir, { recursive: true })
-afterAll(async () => {
-  const { Database } = await import("../src/storage/db")
-  Database.close()
-  await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined)
-})
 
 process.env.XDG_DATA_HOME = path.join(dir, "share")
 process.env.XDG_CACHE_HOME = path.join(dir, "cache")
@@ -27,17 +21,11 @@ process.env.LITEAI_DB_MEMORY = "true"
 // Set test home directory to isolate tests from user's actual home directory
 // This prevents tests from picking up real user configs/skills from ~/.claude/skills
 const testHome = path.join(dir, "home")
-await fs.mkdir(testHome, { recursive: true })
 process.env.LITEAI_TEST_HOME = testHome
 
 // Set test managed config directory to isolate tests from system managed settings
 const testManagedConfigDir = path.join(dir, "managed")
 process.env.LITEAI_TEST_MANAGED_CONFIG_DIR = testManagedConfigDir
-
-// Write the cache version file to prevent global/index.ts from clearing the cache
-const cacheDir = path.join(dir, "cache", "liteai")
-await fs.mkdir(cacheDir, { recursive: true })
-await fs.writeFile(path.join(cacheDir, "version"), "14")
 
 // Clear provider and server auth env vars to ensure clean test state
 delete process.env.ANTHROPIC_API_KEY
@@ -62,14 +50,28 @@ delete process.env.SAMBANOVA_API_KEY
 delete process.env.LITEAI_SERVER_PASSWORD
 delete process.env.LITEAI_SERVER_USERNAME
 
-// Now safe to import from src/
-const { Log } = await import("../src/util/log")
+beforeAll(async () => {
+  await fs.mkdir(dir, { recursive: true })
+  await fs.mkdir(testHome, { recursive: true })
 
-Log.init({
-  print: false,
-  dev: true,
-  level: "DEBUG",
+  // Write the cache version file to prevent global/index.ts from clearing the cache
+  const cacheDir = path.join(dir, "cache", "liteai")
+  await fs.mkdir(cacheDir, { recursive: true })
+  await fs.writeFile(path.join(cacheDir, "version"), "14")
+
+  const { Log } = await import("../src/util/log")
+  Log.init({
+    print: false,
+    dev: true,
+    level: "DEBUG",
+  })
+
+  const { Project } = await import("../src/project/project")
+  await Project.fromDirectory(path.join(import.meta.dir, ".."))
 })
 
-const { Project } = await import("../src/project/project")
-await Project.fromDirectory(path.join(import.meta.dir, ".."))
+afterAll(async () => {
+  const { Database } = await import("../src/storage/db")
+  Database.close()
+  await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined)
+})

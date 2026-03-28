@@ -21,6 +21,7 @@ type EventController = {
   close: () => void
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: Mock object used for testing
 type MockSdk = Record<string, any>
 
 function inProgressText(update: SessionUpdateParams["update"]) {

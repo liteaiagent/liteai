@@ -1,15 +1,9 @@
 import { pathToFileURL } from "node:url"
-import {
-  type AgentSideConnection,
-  type PermissionOption,
-  type PlanEntry,
-  type ToolCallContent,
-} from "@agentclientprotocol/sdk"
+import type { AgentSideConnection, PermissionOption, PlanEntry, ToolCallContent } from "@agentclientprotocol/sdk"
 import type { Event, LiteaiClient, ProjectSessionMessageResponse, ToolPart } from "@liteai/sdk"
 import { z } from "zod"
-
-import { Filesystem } from "../util/filesystem"
 import { Todo } from "../session/todo"
+import { Filesystem } from "../util/filesystem"
 import { Hash } from "../util/hash"
 import { Log } from "../util/log"
 import { getNewContent, toLocations, toToolKind } from "./mapper"
@@ -561,7 +555,11 @@ export class ACPEventStreamer {
         }
       } else if (part.type === "text") {
         if (part.text) {
-          const audience: ("user" | "assistant")[] | undefined = part.synthetic ? ["assistant"] : part.ignored ? ["user"] : undefined
+          const audience: ("user" | "assistant")[] | undefined = part.synthetic
+            ? ["assistant"]
+            : part.ignored
+              ? ["user"]
+              : undefined
           await this.connection
             .sessionUpdate({
               sessionId,

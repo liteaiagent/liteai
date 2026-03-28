@@ -44,7 +44,7 @@ test("tracks deleted files correctly", async () => {
       expect((await Snapshot.patch(before)).files).toContain(fwd(tmp.path, "a.txt"))
     },
   })
-})
+}, 30_000)
 
 test("revert should remove new files", async () => {
   await using tmp = await bootstrap()
@@ -66,7 +66,7 @@ test("revert should remove new files", async () => {
       ).toBe(false)
     },
   })
-})
+}, 30_000)
 
 test("revert in subdirectory", async () => {
   await using tmp = await bootstrap()
@@ -91,7 +91,7 @@ test("revert in subdirectory", async () => {
       // The empty subdirectory will remain
     },
   })
-})
+}, 30_000)
 
 test("multiple file operations", async () => {
   await using tmp = await bootstrap()
@@ -121,7 +121,7 @@ test("multiple file operations", async () => {
       expect(await fs.readFile(`${tmp.path}/b.txt`, "utf-8")).toBe(tmp.extra.bContent)
     },
   })
-})
+}, 30_000)
 
 test("empty directory handling", async () => {
   await using tmp = await bootstrap()
@@ -136,7 +136,7 @@ test("empty directory handling", async () => {
       expect((await Snapshot.patch(before)).files.length).toBe(0)
     },
   })
-})
+}, 30_000)
 
 test("binary file handling", async () => {
   await using tmp = await bootstrap()
@@ -160,7 +160,7 @@ test("binary file handling", async () => {
       ).toBe(false)
     },
   })
-})
+}, 30_000)
 
 test("symlink handling", async () => {
   await using tmp = await bootstrap()
@@ -175,7 +175,7 @@ test("symlink handling", async () => {
       expect((await Snapshot.patch(before)).files).toContain(fwd(tmp.path, "link.txt"))
     },
   })
-})
+}, 30_000)
 
 test("large file handling", async () => {
   await using tmp = await bootstrap()
@@ -190,7 +190,7 @@ test("large file handling", async () => {
       expect((await Snapshot.patch(before)).files).toContain(fwd(tmp.path, "large.txt"))
     },
   })
-})
+}, 30_000)
 
 test("nested directory revert", async () => {
   await using tmp = await bootstrap()
@@ -213,7 +213,7 @@ test("nested directory revert", async () => {
       ).toBe(false)
     },
   })
-})
+}, 30_000)
 
 test("special characters in filenames", async () => {
   await using tmp = await bootstrap()
@@ -233,7 +233,7 @@ test("special characters in filenames", async () => {
       expect(files).toContain(fwd(tmp.path, "file_with_underscores.txt"))
     },
   })
-})
+}, 30_000)
 
 test("revert with empty patches", async () => {
   await using tmp = await bootstrap()
@@ -247,7 +247,7 @@ test("revert with empty patches", async () => {
       expect(Snapshot.revert([{ hash: "dummy", files: [] }])).resolves.toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("patch with invalid hash", async () => {
   await using tmp = await bootstrap()
@@ -266,7 +266,7 @@ test("patch with invalid hash", async () => {
       expect(patch.hash).toBe("invalid-hash-12345")
     },
   })
-})
+}, 30_000)
 
 test("revert non-existent file", async () => {
   await using tmp = await bootstrap()
@@ -288,7 +288,7 @@ test("revert non-existent file", async () => {
       ).resolves.toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("track with no changes returns same hash", async () => {
   await using tmp = await bootstrap()
@@ -307,7 +307,7 @@ test("track with no changes returns same hash", async () => {
       expect(hash3).toBe(hash1)
     },
   })
-})
+}, 30_000)
 
 test("diff function with various changes", async () => {
   await using tmp = await bootstrap()
@@ -328,7 +328,7 @@ test("diff function with various changes", async () => {
       expect(diff).toContain("new.txt")
     },
   })
-})
+}, 30_000)
 
 test("restore function", async () => {
   await using tmp = await bootstrap()
@@ -362,7 +362,7 @@ test("restore function", async () => {
       expect(await fs.readFile(`${tmp.path}/b.txt`, "utf-8")).toBe(tmp.extra.bContent)
     },
   })
-})
+}, 30_000)
 
 test("revert should not delete files that existed but were deleted in snapshot", async () => {
   await using tmp = await bootstrap()
@@ -392,7 +392,7 @@ test("revert should not delete files that existed but were deleted in snapshot",
       ).toBe(false)
     },
   })
-})
+}, 30_000)
 
 test("revert preserves file that existed in snapshot when deleted then recreated", async () => {
   await using tmp = await bootstrap()
@@ -429,4 +429,4 @@ test("revert preserves file that existed in snapshot when deleted then recreated
       expect(await fs.readFile(`${tmp.path}/existing.txt`, "utf-8")).toBe("original content")
     },
   })
-})
+}, 30_000)

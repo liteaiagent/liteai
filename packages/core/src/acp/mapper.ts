@@ -1,5 +1,5 @@
-import { type ToolKind } from "@agentclientprotocol/sdk"
 import { pathToFileURL } from "node:url"
+import type { ToolKind } from "@agentclientprotocol/sdk"
 import { applyPatch } from "diff"
 import { Log } from "../util/log"
 

@@ -398,6 +398,8 @@ describe("tool.read truncation", () => {
   })
 
   test("large image files are properly attached without error", async () => {
+    const { Project } = await import("../../src/project/project")
+    await Project.fromDirectory(FIXTURES_DIR)
     await Instance.provide({
       directory: FIXTURES_DIR,
       fn: async () => {

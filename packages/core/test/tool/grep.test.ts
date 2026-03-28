@@ -20,6 +20,8 @@ const projectRoot = path.join(__dirname, "../..")
 
 describe("tool.grep", () => {
   test("basic search", async () => {
+    const { Project } = await import("../../src/project/project")
+    await Project.fromDirectory(projectRoot)
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {

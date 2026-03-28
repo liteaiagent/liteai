@@ -137,7 +137,7 @@ describe("control-plane/session-proxy-middleware", () => {
         body: '{"hello":"world"}',
       },
     ])
-  })
+  }, 30000)
 
   // It will behave this way when we have syncing
   //

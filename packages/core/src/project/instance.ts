@@ -70,8 +70,9 @@ function boot(input: { directory: string; init?: () => Promise<void>; project?: 
             const resolved = await Project.resolve(input.directory)
             const project = Project.get(resolved.id)
             if (!project) {
+              const all = Project.list()
               throw new Error(
-                `Project not registered for directory: ${input.directory}. Register via POST /project first.`,
+                `Project not registered for directory: ${input.directory}. Resolved ID: ${resolved.id}. DB has: ${all.map((x) => x.id).join(", ")}. Register via POST /project first.`,
               )
             }
             return {

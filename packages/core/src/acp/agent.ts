@@ -1,5 +1,3 @@
-import { ACPEventStreamer } from "./events"
-import { pathToFileURL } from "node:url"
 import {
   type Agent as ACPAgent,
   type AgentSideConnection,
@@ -14,41 +12,31 @@ import {
   type ListSessionsResponse,
   type LoadSessionRequest,
   type NewSessionRequest,
-  type PermissionOption,
-  type PlanEntry,
   type PromptRequest,
   RequestError,
   type ResumeSessionRequest,
   type ResumeSessionResponse,
-  type Role,
   type SessionInfo,
   type SetSessionModelRequest,
   type SetSessionModeRequest,
   type SetSessionModeResponse,
-  type ToolCallContent,
-  type ToolKind,
   type Usage,
 } from "@agentclientprotocol/sdk"
-import type { AssistantMessage, Event, LiteaiClient, ProjectSessionMessageResponse, ToolPart } from "@liteai/sdk"
+import type { AssistantMessage, LiteaiClient, ProjectSessionMessageResponse } from "@liteai/sdk"
 import { LoadAPIKeyError } from "ai"
-import { applyPatch } from "diff"
-import { z } from "zod"
 import type { Config } from "@/config/config"
 import { Installation } from "@/installation"
 import { Message } from "@/session/message"
-import { Todo } from "@/session/todo"
 import { Agent as AgentModule } from "../agent/agent"
-import { Provider } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
-import { Filesystem } from "../util/filesystem"
-import { Hash } from "../util/hash"
 import { Log } from "../util/log"
+import { ACPEventStreamer } from "./events"
 import { ACPSessionManager } from "./session"
 import type { ACPConfig } from "./types"
 
 type ModeOption = { id: string; name: string; description?: string }
 
-import { getNewContent, parseUri, toLocations, toToolKind } from "./mapper"
+import { parseUri } from "./mapper"
 import {
   buildAvailableModels,
   buildVariantMeta,
@@ -57,7 +45,6 @@ import {
   modelVariantsFromProviders,
   parseModelSelection,
   sortProvidersByName,
-  type ModelOption,
 } from "./model"
 
 export namespace ACP {
@@ -820,5 +807,4 @@ export namespace ACP {
       )
     }
   }
-
 }

@@ -1,5 +1,5 @@
 import { useParams } from "@solidjs/router"
-import { type Component, createMemo, createResource, Show, For } from "solid-js"
+import { type Component, createMemo, createResource, For, Show } from "solid-js"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 

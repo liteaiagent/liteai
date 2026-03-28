@@ -1,4 +1,3 @@
-import type { LiteaiClient } from "@liteai/sdk"
 import { Provider } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
 import { Log } from "../util/log"
@@ -9,7 +8,10 @@ const DEFAULT_VARIANT_VALUE = "default"
 
 export type ModelOption = { modelId: string; name: string }
 
-export async function defaultModel(config: ACPConfig, cwd?: string): Promise<{ providerID: ProviderID; modelID: ModelID }> {
+export async function defaultModel(
+  config: ACPConfig,
+  cwd?: string,
+): Promise<{ providerID: ProviderID; modelID: ModelID }> {
   const sdk = config.sdk
   const configured = config.defaultModel
   if (configured) return configured
