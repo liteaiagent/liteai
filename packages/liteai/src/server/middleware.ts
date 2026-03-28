@@ -1,9 +1,9 @@
 import { NamedError } from "@liteai/util/error"
+import type { ErrorHandler, MiddlewareHandler } from "hono"
 import { basicAuth } from "hono/basic-auth"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
-import type { ErrorHandler, MiddlewareHandler } from "hono"
 import { Filesystem } from "@/util/filesystem"
 import { Flag } from "../flag/flag"
 import { Provider } from "../provider/provider"
@@ -93,11 +93,7 @@ export function corsMiddleware(opts?: { cors?: string[] }): MiddlewareHandler {
 
       if (input.startsWith("http://localhost:")) return input
       if (input.startsWith("http://127.0.0.1:")) return input
-      if (
-        input === "tauri://localhost" ||
-        input === "http://tauri.localhost" ||
-        input === "https://tauri.localhost"
-      )
+      if (input === "tauri://localhost" || input === "http://tauri.localhost" || input === "https://tauri.localhost")
         return input
 
       if (opts?.cors?.includes(input)) {

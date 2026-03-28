@@ -6,8 +6,7 @@ import { BusEvent } from "@/bus/bus-event"
 import { GlobalBus } from "@/bus/global"
 import { Flag } from "@/flag/flag"
 import { iife } from "@/util/iife"
-import { SessionTable } from "../session/session.sql"
-import { and, Database, eq, NotFoundError } from "../storage/db"
+import { Database, eq, NotFoundError } from "../storage/db"
 import { Filesystem } from "../util/filesystem"
 import { git } from "../util/git"
 import { Glob } from "../util/glob"
@@ -290,30 +289,6 @@ export namespace Project {
     Database.use((db) =>
       db.insert(ProjectTable).values(insert).onConflictDoUpdate({ target: ProjectTable.id, set: updateSet }).run(),
     )
-    // Runs after upsert so the target project row exists (FK constraint).
-    // Migrate sessions from "global" to the real project ID.
-    // This handles sessions created before per-directory project IDs existed.
-    if (data.id !== ProjectID.global) {
-      Database.use((db) =>
-        db
-          .update(SessionTable)
-          .set({ project_id: data.id })
-          .where(and(eq(SessionTable.project_id, ProjectID.global), eq(SessionTable.directory, data.worktree)))
-          .run(),
-      )
-    }
-    // When upgrading from a directory-based ID to a git SHA (first commit),
-    // migrate sessions from the old directoryId to the new git-based ID.
-    const dirId = directoryId(data.worktree)
-    if (data.id !== dirId) {
-      Database.use((db) =>
-        db
-          .update(SessionTable)
-          .set({ project_id: data.id })
-          .where(and(eq(SessionTable.project_id, dirId), eq(SessionTable.directory, data.worktree)))
-          .run(),
-      )
-    }
     GlobalBus.emit("event", {
       payload: {
         type: Event.Updated.type,

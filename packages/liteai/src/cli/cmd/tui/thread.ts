@@ -178,7 +178,7 @@ export const TuiThreadCommand = cmd({
       }
 
       const prompt = await input(args.prompt)
-      
+
       // Explicitly initialize the project for this directory so Instance.provide won't 404
       await Project.fromDirectory(cwd, { autoCreate: true }).catch((err) => {
         Log.Default.warn("project init failed", { error: String(err) })

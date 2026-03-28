@@ -46,8 +46,7 @@ export const InstanceRoutes = lazy(() =>
       "/vcs",
       describeRoute({
         summary: "Get VCS info",
-        description:
-          "Retrieve version control system (VCS) information for the current project, such as git branch.",
+        description: "Retrieve version control system (VCS) information for the current project, such as git branch.",
         operationId: "vcs.get",
         responses: {
           200: {

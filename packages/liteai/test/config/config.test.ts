@@ -6,7 +6,6 @@ import { Auth } from "../../src/auth"
 import { Config } from "../../src/config/config"
 import { Global } from "../../src/global"
 import { Instance } from "../../src/project/instance"
-import { ProjectID } from "../../src/project/schema"
 import { Filesystem } from "../../src/util/filesystem"
 import { tmpdir } from "../fixture/fixture"
 
@@ -44,7 +43,7 @@ async function check(map: (dir: string) => string) {
         const cfg = await Config.get()
         expect(cfg.snapshot).toBe(true)
         expect(Instance.directory).toBe(Filesystem.resolve(tmp.path))
-        expect(Instance.project.id).not.toBe(ProjectID.global)
+        expect(Instance.project.id).toBeTruthy()
       },
     })
   } finally {

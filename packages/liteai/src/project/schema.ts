@@ -9,7 +9,6 @@ export type ProjectID = typeof projectIdSchema.Type
 
 export const ProjectID = projectIdSchema.pipe(
   withStatics((schema: typeof projectIdSchema) => ({
-    global: schema.makeUnsafe("global"),
     make: (id: string) => schema.makeUnsafe(id),
     zod: z.string().pipe(z.custom<ProjectID>()),
   })),
