@@ -11,8 +11,9 @@
     "test:cov": "bun test --coverage --coverage-reporter=lcov --coverage-dir=./coverage --timeout 30000",
     "dev": "bun run --conditions=browser ./src/index.ts",
     "dev:serve": "bun --watch run --conditions=browser ./src/index.ts serve",
-    "build": "bun run script/build.ts --single",
-    "build:all": "bun run script/build.ts",
+    "build": "tsc -b",
+    "build:exe": "bun run script/build.ts --single",
+    "build:exe:all": "bun run script/build.ts",
     "preview": "bun run script/release.ts --preview",
     "release": "bun run script/release.ts",
     "cov:html": "bun run script/lcov-html.ts",
@@ -21,9 +22,12 @@
     "lint:fix": "biome check --write",
     "lint:format": "biome format --write"
   },
-  "randomField": "this-is-a-random-value-12345",
   "exports": {
-    "./*": "./src/*.ts",
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "bun": "./src/*.ts",
+      "default": "./src/*.ts"
+    },
     "./parsers-config": "./parsers-config.ts"
   },
   "devDependencies": {

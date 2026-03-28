@@ -122,13 +122,16 @@ Tests for CLI features live in @liteai/cli.
 - [x] Remove @tui/* + @liteai/cli/* from packages/liteai/tsconfig.json
 - [x] bun typecheck passes in both packages
 
-### Phase 2 (Next Sprint)
-- [ ] Add composite + declaration to liteai tsconfig
-- [ ] Update liteai package.json exports with types condition
-- [ ] Remove @/* from CLI tsconfig
-- [ ] Add references to CLI tsconfig pointing at liteai
-- [ ] Update Turbo pipeline ordering
-- [ ] Verify CLI typecheck is fully isolated
+### Phase 2 (Completed Infrastructure)
+- [x] Add composite + declaration to liteai tsconfig
+- [x] Update liteai package.json exports with types condition
+- [x] Remove @/* from CLI tsconfig
+- [x] Add references to CLI tsconfig pointing at liteai
+- [x] Update Turbo pipeline ordering
+
+### Phase 2.5 (Current Sprint - Fix Strict Typing)
+- [ ] Fix ~362 type errors in `packages/cli` exposed by the new strict `.d.ts` boundaries
+- [ ] Ensure `bun run typecheck` passes in CLI without `any`/`unknown` bleed from core
 
 ### Phase 3 (Future)
 - [ ] Rename "liteai" -> "@liteai/core"

@@ -16,8 +16,8 @@ export const withStatics =
   (schema: S): S & M =>
     Object.assign(schema, methods(schema))
 
-declare const NewtypeBrand: unique symbol
-type NewtypeBrand<Tag extends string> = { readonly [NewtypeBrand]: Tag }
+export declare const NewtypeBrand: unique symbol
+export type NewtypeBrand<Tag extends string> = { readonly [NewtypeBrand]: Tag }
 
 /**
  * Nominal wrapper for scalar types. The class itself is a valid schema —

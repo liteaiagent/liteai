@@ -12,7 +12,7 @@ import { Worktree } from "../../worktree"
 import { errors } from "../error"
 import { WorkspaceRoutes } from "./workspace"
 
-export const ExperimentalRoutes = lazy(() =>
+export const ExperimentalRoutes: () => Hono<any, any, any> = lazy(() =>
   new Hono()
     .get(
       "/tool/ids",

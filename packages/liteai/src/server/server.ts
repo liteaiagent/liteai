@@ -205,7 +205,7 @@ export namespace Server {
     )
   }
 
-  export async function openapi() {
+  export async function openapi(): Promise<any> {
     // Cast to break excessive type recursion from long route chains
     const result = await generateSpecs(Default(), {
       documentation: {

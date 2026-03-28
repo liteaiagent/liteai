@@ -2,7 +2,7 @@ import { resolver } from "hono-openapi"
 import z from "zod"
 import { NotFoundError } from "../storage/db"
 
-export const ERRORS = {
+const ERRORS = {
   400: {
     description: "Bad request",
     content: {
@@ -31,6 +31,6 @@ export const ERRORS = {
   },
 } as const
 
-export function errors(...codes: number[]) {
+export function errors(...codes: number[]): Record<number, any> {
   return Object.fromEntries(codes.map((code) => [code, ERRORS[code as keyof typeof ERRORS]]))
 }

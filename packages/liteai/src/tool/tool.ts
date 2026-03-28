@@ -6,7 +6,7 @@ import type { MessageID, SessionID } from "../session/schema"
 import { Truncate } from "./truncation"
 
 export namespace Tool {
-  interface Metadata {
+  export interface Metadata {
     [key: string]: unknown
   }
 

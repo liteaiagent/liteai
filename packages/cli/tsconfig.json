@@ -9,7 +9,6 @@
     "noUncheckedIndexedAccess": false,
     "customConditions": ["browser"],
     "paths": {
-      "@/*": ["../liteai/src/*"],
       "@tui/*": ["./src/cli/cmd/tui/*"]
     },
     "plugins": [
@@ -20,5 +19,8 @@
       }
     ]
   },
+  "references": [
+    { "path": "../liteai" }
+  ],
   "exclude": ["../liteai/src/**"]
 }
