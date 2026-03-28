@@ -56,6 +56,8 @@ export async function tmpdir<T>(options?: TmpDirOptions<T>) {
     )
   }
   const realpath = sanitizePath(await fs.realpath(dirpath))
+  const { Project } = await import("../../src/project/project")
+  await Project.fromDirectory(realpath)
   const extra = await options?.init?.(realpath)
   const result = {
     [Symbol.asyncDispose]: async () => {

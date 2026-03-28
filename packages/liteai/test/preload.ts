@@ -83,3 +83,6 @@ Log.init({
   dev: true,
   level: "DEBUG",
 })
+
+const { Project } = await import("../src/project/project")
+await Project.fromDirectory(path.join(import.meta.dir, ".."))

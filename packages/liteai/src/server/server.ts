@@ -11,7 +11,14 @@ import { Project } from "../project/project"
 import { Log } from "../util/log"
 import { API_INFO, DEFAULT_PORT, DEV_SERVER_URL } from "./constants"
 import { MDNS } from "./mdns"
-import { authMiddleware, corsMiddleware, errorHandler, projectContextMiddleware, requestLogger, safeDecodeDirectory } from "./middleware"
+import {
+  authMiddleware,
+  corsMiddleware,
+  errorHandler,
+  projectContextMiddleware,
+  requestLogger,
+  safeDecodeDirectory,
+} from "./middleware"
 import { AuthRoutes } from "./routes/auth"
 import { ConfigRoutes } from "./routes/config"
 import { ExperimentalRoutes } from "./routes/experimental"

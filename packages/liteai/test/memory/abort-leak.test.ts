@@ -47,10 +47,6 @@ describe("memory: abort controller leak", () => {
         const after = getHeapMB()
         const growth = after - baseline
 
-        console.log(`Baseline: ${baseline.toFixed(2)} MB`)
-        console.log(`After ${ITERATIONS} fetches: ${after.toFixed(2)} MB`)
-        console.log(`Growth: ${growth.toFixed(2)} MB`)
-
         // Memory growth should be minimal - less than 1MB per 10 requests
         // With the old closure pattern, this would grow ~0.5MB per request
         expect(growth).toBeLessThan(ITERATIONS / 10)
@@ -92,8 +88,6 @@ describe("memory: abort controller leak", () => {
     const after = getHeapMB()
     const oldGrowth = after - baseline
 
-    console.log(`OLD pattern (closure): ${oldGrowth.toFixed(2)} MB growth (${closureMap.size} closures)`)
-
     // Cleanup after measuring
     timers.forEach(clearTimeout)
     for (const c of controllers) c.abort()
@@ -128,9 +122,6 @@ describe("memory: abort controller leak", () => {
     timers2.forEach(clearTimeout)
     for (const c of controllers2) c.abort()
     handlers2.length = 0
-
-    console.log(`NEW pattern (bind): ${newGrowth.toFixed(2)} MB growth`)
-    console.log(`Improvement: ${(oldGrowth - newGrowth).toFixed(2)} MB saved`)
 
     expect(newGrowth).toBeLessThanOrEqual(oldGrowth)
   })
