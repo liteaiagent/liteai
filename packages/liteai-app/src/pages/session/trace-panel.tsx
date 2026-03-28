@@ -18,6 +18,7 @@ import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import type { Sizing } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
+import { toProjectID } from "@/utils/project-id"
 import "./trace-panel.css"
 
 import { CompareView } from "./trace-compare"
@@ -87,13 +88,21 @@ export function TracePanel(props: { size: Sizing }) {
   })
 
   const load = async (id: string) => {
-    const res = await sdk.client.session.trace.list({ sessionID: id, deep: true })
+    const res = await sdk.client.project.session.trace.list({
+      sessionID: id,
+      projectID: toProjectID(sdk.directory),
+      deep: true,
+    })
     const list = (res.data ?? []) as TraceInfo[]
     setTraces(list)
     const last = list.findLast((t) => t.hasTools || t.hasSystem)
     if (last) {
       const sid = last.sessionID || id
-      const r = await sdk.client.session.trace.get({ sessionID: sid, traceID: last.id })
+      const r = await sdk.client.project.session.trace.get({
+        sessionID: sid,
+        traceID: last.id,
+        projectID: toProjectID(sdk.directory),
+      })
       const d = r.data as TraceDetail | undefined
       if (d) {
         setToolDefs(d.tools)
@@ -104,7 +113,11 @@ export function TracePanel(props: { size: Sizing }) {
 
   const detail = async (sid: string, tid: string) => {
     setStore("loading", true)
-    const res = await sdk.client.session.trace.get({ sessionID: sid, traceID: tid })
+    const res = await sdk.client.project.session.trace.get({
+      sessionID: sid,
+      traceID: tid,
+      projectID: toProjectID(sdk.directory),
+    })
     if (res.data) setStore("detail", res.data as TraceDetail)
     setStore("loading", false)
   }
@@ -114,7 +127,11 @@ export function TracePanel(props: { size: Sizing }) {
       setStore("searchIDs", undefined)
       return
     }
-    const res = await sdk.client.session.trace.search({ sessionID: sid, q: query })
+    const res = await sdk.client.project.session.trace.search({
+      sessionID: sid,
+      q: query,
+      projectID: toProjectID(sdk.directory),
+    })
     if (res.data) {
       setStore("searchIDs", res.data.ids)
     }
@@ -191,13 +208,13 @@ export function TracePanel(props: { size: Sizing }) {
     if (store.compare.active) {
       if (!store.compare.a) {
         setStore("compare", "a", trace.id)
-        sdk.client.session.trace
-          .get({ sessionID: sid, traceID: trace.id })
+        sdk.client.project.session.trace
+          .get({ sessionID: sid, traceID: trace.id, projectID: toProjectID(sdk.directory) })
           .then((r) => setStore("compare", "detailA", r.data as TraceDetail))
       } else if (!store.compare.b && trace.id !== store.compare.a) {
         setStore("compare", "b", trace.id)
-        sdk.client.session.trace
-          .get({ sessionID: sid, traceID: trace.id })
+        sdk.client.project.session.trace
+          .get({ sessionID: sid, traceID: trace.id, projectID: toProjectID(sdk.directory) })
           .then((r) => setStore("compare", "detailB", r.data as TraceDetail))
       }
       return

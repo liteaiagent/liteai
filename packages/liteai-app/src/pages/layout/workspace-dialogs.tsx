@@ -9,6 +9,7 @@ import { createMemo, onMount } from "solid-js"
 import { createStore } from "solid-js/store"
 import type { useGlobalSDK } from "@/context/global-sdk"
 import type { useLanguage } from "@/context/language"
+import { toProjectID } from "@/utils/project-id"
 import { workspaceKey } from "./helpers"
 
 export type WorkspaceDialogDeps = {
@@ -30,8 +31,8 @@ export function DialogDeleteWorkspace(props: { root: string; directory: string; 
   })
 
   onMount(() => {
-    props.deps.globalSDK.client.file
-      .status({ directory: props.directory })
+    props.deps.globalSDK.client.project.file
+      .status({ projectID: toProjectID(props.directory) })
       .then((x) => {
         const files = x.data ?? []
         const dirty = files.length > 0
@@ -90,8 +91,8 @@ export function DialogResetWorkspace(props: { root: string; directory: string; d
   })
 
   const refresh = async () => {
-    const sessions = await props.deps.globalSDK.client.session
-      .list({ directory: props.directory })
+    const sessions = await props.deps.globalSDK.client.project.session
+      .list({ projectID: toProjectID(props.directory) })
       .then((x) => x.data ?? [])
       .catch(() => [])
     const active = sessions.filter((session) => session.time.archived === undefined)
@@ -99,8 +100,8 @@ export function DialogResetWorkspace(props: { root: string; directory: string; d
   }
 
   onMount(() => {
-    props.deps.globalSDK.client.file
-      .status({ directory: props.directory })
+    props.deps.globalSDK.client.project.file
+      .status({ projectID: toProjectID(props.directory) })
       .then((x) => {
         const files = x.data ?? []
         const dirty = files.length > 0

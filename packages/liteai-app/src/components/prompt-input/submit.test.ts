@@ -27,12 +27,11 @@ let variant: string | undefined
 
 const promptValue: Prompt = [{ type: "text", content: "ls", start: 0, end: 2 }]
 
-const clientFor = (directory: string) => {
-  createdClients.push(directory)
-  return {
+const mockClient = {
+  project: {
     session: {
-      create: async () => {
-        createdSessions.push(directory)
+      create: async (opts: { projectID: string }) => {
+        createdSessions.push(opts.projectID)
         return {
           data: {
             id: `session-${createdSessions.length}`,
@@ -40,8 +39,8 @@ const clientFor = (directory: string) => {
           },
         }
       },
-      shell: async () => {
-        sentShell.push(directory)
+      shell: async (opts: { projectID: string }) => {
+        sentShell.push(opts.projectID)
         return { data: undefined }
       },
       prompt: async () => ({ data: undefined }),
@@ -50,24 +49,19 @@ const clientFor = (directory: string) => {
       abort: async () => ({ data: undefined }),
     },
     worktree: {
-      create: async () => ({ data: { directory: `${directory}/new` } }),
+      create: async (opts: { projectID: string }) => ({ data: { directory: `${opts.projectID}/new` } }),
     },
-  }
+  },
 }
 
 beforeAll(async () => {
-  const rootClient = clientFor("/repo/main")
-
   mock.module("@solidjs/router", () => ({
     useNavigate: () => () => undefined,
     useParams: () => params,
   }))
 
   mock.module("@liteai-ai/sdk/client", () => ({
-    createLiteaiClient: (input: { directory: string }) => {
-      createdClients.push(input.directory)
-      return clientFor(input.directory)
-    },
+    createLiteaiClient: () => mockClient,
   }))
 
   mock.module("@liteai/ui/toast", () => ({
@@ -128,10 +122,10 @@ beforeAll(async () => {
     useSDK: () => {
       const sdk = {
         directory: "/repo/main",
-        client: rootClient,
+        client: mockClient,
         url: "http://localhost:9000",
-        createClient(opts: { directory: string }) {
-          return clientFor(opts.directory)
+        createClient() {
+          return mockClient
         },
       }
       return sdk
@@ -243,7 +237,6 @@ describe("prompt submit worktree selection", () => {
     selected = "/repo/worktree-b"
     await submit.handleSubmit(event)
 
-    expect(createdClients).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(createdSessions).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(sentShell).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(syncedDirectories).toEqual(["/repo/worktree-a", "/repo/worktree-a", "/repo/worktree-b", "/repo/worktree-b"])

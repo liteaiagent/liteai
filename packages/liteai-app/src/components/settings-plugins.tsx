@@ -5,6 +5,7 @@ import { type Component, createMemo, createResource, createSignal, For, Show } f
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
+import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
 type PluginEntry = {
@@ -44,7 +45,7 @@ const SettingsPluginsInner: Component = () => {
 
   const [plugins, { refetch: refetchPlugins }] = createResource(async () => {
     try {
-      const { data } = await sdk.client.plugin.list()
+      const { data } = await sdk.client.project.plugin.list({ projectID: toProjectID(sdk.directory) })
       return (data ?? []) as PluginEntry[]
     } catch {
       return [] as PluginEntry[]
@@ -53,7 +54,7 @@ const SettingsPluginsInner: Component = () => {
 
   const [marketplaces, { refetch: refetchMarketplaces }] = createResource(async () => {
     try {
-      const { data } = await sdk.client.plugin.marketplace.list()
+      const { data } = await sdk.client.project.plugin.marketplace.list({ projectID: toProjectID(sdk.directory) })
       return (data ?? []) as MarketplaceEntry[]
     } catch {
       return [] as MarketplaceEntry[]
@@ -69,7 +70,10 @@ const SettingsPluginsInner: Component = () => {
   const [marketplacePlugins] = createResource(currentMarketplace, async (name) => {
     if (!name) return [] as MarketplacePlugin[]
     try {
-      const { data } = await sdk.client.plugin.marketplace.plugins({ name })
+      const { data } = await sdk.client.project.plugin.marketplace.plugins({
+        name,
+        projectID: toProjectID(sdk.directory),
+      })
       return (data ?? []) as MarketplacePlugin[]
     } catch {
       return [] as MarketplacePlugin[]
@@ -101,9 +105,9 @@ const SettingsPluginsInner: Component = () => {
     if (loading()) return
     setLoading(id)
     if (on) {
-      await sdk.client.plugin.enable({ id })
+      await sdk.client.project.plugin.enable({ id, projectID: toProjectID(sdk.directory) })
     } else {
-      await sdk.client.plugin.disable({ id })
+      await sdk.client.project.plugin.disable({ id, projectID: toProjectID(sdk.directory) })
     }
     refetchPlugins()
     setLoading(null)
@@ -112,13 +116,13 @@ const SettingsPluginsInner: Component = () => {
   const removePlugin = async (id: string) => {
     if (loading()) return
     setLoading(id)
-    await sdk.client.plugin.uninstall({ id })
+    await sdk.client.project.plugin.uninstall({ id, projectID: toProjectID(sdk.directory) })
     refetchPlugins()
     setLoading(null)
   }
 
   const removeMarketplace = async (name: string) => {
-    await sdk.client.plugin.marketplace.remove({ name })
+    await sdk.client.project.plugin.marketplace.remove({ name, projectID: toProjectID(sdk.directory) })
     refetchMarketplaces()
   }
 
@@ -126,7 +130,7 @@ const SettingsPluginsInner: Component = () => {
     const source = newMarketplaceSource().trim()
     if (!source) return
     setAddingMarketplace(true)
-    await sdk.client.plugin.marketplace.add({ source })
+    await sdk.client.project.plugin.marketplace.add({ source, projectID: toProjectID(sdk.directory) })
     setAddingMarketplace(false)
     setNewMarketplaceSource("")
     refetchMarketplaces()
@@ -136,7 +140,11 @@ const SettingsPluginsInner: Component = () => {
   const installPlugin = async (marketplace: string, pluginName: string) => {
     if (loading()) return
     setLoading(`${pluginName}@${marketplace}`)
-    await sdk.client.plugin.marketplace.install({ name: marketplace, plugin: pluginName })
+    await sdk.client.project.plugin.marketplace.install({
+      name: marketplace,
+      plugin: pluginName,
+      projectID: toProjectID(sdk.directory),
+    })
     refetchPlugins()
     setLoading(null)
   }

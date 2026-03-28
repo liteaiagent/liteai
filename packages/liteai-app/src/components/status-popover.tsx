@@ -14,6 +14,7 @@ import { usePlatform } from "@/context/platform"
 import { useSDK } from "@/context/sdk"
 import { normalizeServerUrl, ServerConnection, useServer } from "@/context/server"
 import { useSync } from "@/context/sync"
+import { toProjectID } from "@/utils/project-id"
 import { type ServerHealth, useCheckServerHealth } from "@/utils/server-health"
 import { DialogSelectServer } from "./dialog-select-server"
 
@@ -132,9 +133,9 @@ const useMcpToggle = (input: {
     try {
       const status = input.sync.data.mcp[name]
       await (status?.status === "connected"
-        ? input.sdk.client.mcp.disconnect({ name })
-        : input.sdk.client.mcp.connect({ name }))
-      const result = await input.sdk.client.mcp.status()
+        ? input.sdk.client.project.mcp.disconnect({ name, projectID: toProjectID(input.sdk.directory) })
+        : input.sdk.client.project.mcp.connect({ name, projectID: toProjectID(input.sdk.directory) }))
+      const result = await input.sdk.client.project.mcp.status({ projectID: toProjectID(input.sdk.directory) })
       if (result.data) input.sync.set("mcp", result.data)
     } catch (err) {
       showToast({

@@ -3,6 +3,7 @@ import { useParams } from "@solidjs/router"
 import { batch, createEffect, createMemo, createRoot, on, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { Persist, persisted, removePersisted } from "@/utils/persist"
+import { toProjectID } from "@/utils/project-id"
 import type { Platform } from "./platform"
 import { useSDK } from "./sdk"
 import { defaultTitle, titleNumber } from "./terminal-title"
@@ -198,8 +199,8 @@ function createWorkspaceTerminalSession(sdk: ReturnType<typeof useSDK>, dir: str
     new() {
       const nextNumber = pickNextTerminalNumber()
 
-      sdk.client.pty
-        .create({ title: defaultTitle(nextNumber) })
+      sdk.client.project.pty
+        .create({ title: defaultTitle(nextNumber), projectID: toProjectID(dir) })
         .then((pty: { data?: { id?: string; title?: string } }) => {
           const id = pty.data?.id
           if (!id) return
@@ -221,9 +222,10 @@ function createWorkspaceTerminalSession(sdk: ReturnType<typeof useSDK>, dir: str
       if (index >= 0) {
         setStore("all", index, (item) => ({ ...item, ...pty }))
       }
-      sdk.client.pty
+      sdk.client.project.pty
         .update({
           ptyID: pty.id,
+          projectID: toProjectID(dir),
           title: pty.title,
           size: pty.cols && pty.rows ? { rows: pty.rows, cols: pty.cols } : undefined,
         })
@@ -251,9 +253,10 @@ function createWorkspaceTerminalSession(sdk: ReturnType<typeof useSDK>, dir: str
       const index = store.all.findIndex((x) => x.id === id)
       const pty = store.all[index]
       if (!pty) return
-      const clone = await sdk.client.pty
+      const clone = await sdk.client.project.pty
         .create({
           title: pty.title,
+          projectID: toProjectID(dir),
         })
         .catch((error: unknown) => {
           console.error("Failed to clone terminal", error)
@@ -312,7 +315,7 @@ function createWorkspaceTerminalSession(sdk: ReturnType<typeof useSDK>, dir: str
         })
       }
 
-      await sdk.client.pty.remove({ ptyID: id }).catch((error: unknown) => {
+      await sdk.client.project.pty.remove({ ptyID: id, projectID: toProjectID(dir) }).catch((error: unknown) => {
         console.error("Failed to close terminal", error)
       })
     },

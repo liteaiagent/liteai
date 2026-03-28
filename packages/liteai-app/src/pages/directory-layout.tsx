@@ -10,6 +10,7 @@ import { LocalProvider } from "@/context/local"
 import { SDKProvider } from "@/context/sdk"
 import { SyncProvider, useSync } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
+import { toProjectID } from "@/utils/project-id"
 
 function DirectoryDataProvider(props: ParentProps<{ directory: string }>) {
   const navigate = useNavigate()
@@ -55,10 +56,9 @@ export default function Layout(props: ParentProps) {
     const current = params.dir
     globalSDK
       .createClient({
-        directory: raw,
         throwOnError: true,
       })
-      .project.current()
+      .project.get({ projectID: toProjectID(raw) })
       .then((x) => {
         if (params.dir !== current) return
         const next = x.data?.worktree ?? raw

@@ -7,6 +7,7 @@ import { useLanguage } from "@/context/language"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider, useSync } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
+import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
 const statusLabels = {
@@ -41,7 +42,7 @@ export const SettingsMcpInner: Component = () => {
     () => items().filter((i) => i.status.status === "connected").length,
     async () => {
       try {
-        const res = await sdk.client.mcp.tools()
+        const res = await sdk.client.project.mcp.tools({ projectID: toProjectID(sdk.directory) })
         if (!res.data) return {} as Record<string, string[]>
         return res.data as Record<string, string[]>
       } catch (err) {
@@ -57,11 +58,11 @@ export const SettingsMcpInner: Component = () => {
     try {
       const status = sync.data.mcp[name]
       if (status?.status === "connected") {
-        await sdk.client.mcp.disconnect({ name })
+        await sdk.client.project.mcp.disconnect({ name, projectID: toProjectID(sdk.directory) })
       } else {
-        await sdk.client.mcp.connect({ name })
+        await sdk.client.project.mcp.connect({ name, projectID: toProjectID(sdk.directory) })
       }
-      const result = await sdk.client.mcp.status()
+      const result = await sdk.client.project.mcp.status({ projectID: toProjectID(sdk.directory) })
       if (result.data) sync.set("mcp", result.data)
       refetch()
     } finally {

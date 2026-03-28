@@ -10,6 +10,7 @@ import { usePlatform } from "@/context/platform"
 import { useSettings } from "@/context/settings"
 import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
+import { toProjectID } from "@/utils/project-id"
 import { playSound, soundSrc } from "@/utils/sound"
 import { useGlobalSDK } from "./global-sdk"
 import { useGlobalSync } from "./global-sync"
@@ -212,8 +213,8 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
       const [syncStore] = globalSync.child(directory, { bootstrap: false })
       const match = Binary.search(syncStore.session, sessionID, (s) => s.id)
       if (match.found) return syncStore.session[match.index]
-      return globalSDK.client.session
-        .get({ directory, sessionID })
+      return globalSDK.client.project.session
+        .get({ sessionID, projectID: toProjectID(directory) })
         .then((x) => x.data)
         .catch(() => undefined)
     }

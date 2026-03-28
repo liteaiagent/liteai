@@ -12,6 +12,7 @@
 | 197 | `sdk.client.find.files({ directory, query, type, limit })` | Add `projectID` |
 
 > **⚠️ Open Question**: These calls browse arbitrary filesystem directories, not registered projects. The `file.list()` and `find.files()` endpoints are now under `/project/:projectID/file` — but the user may be browsing a directory that isn't a registered project yet.
+
 >
 > **Options**:
 > 1. Use the global SDK client (no projectID) and keep the directory header for these specific calls
@@ -19,6 +20,8 @@
 > 3. Add a global file browsing endpoint that doesn't require projectID
 >
 > Recommend option 1 as a short-term fix, then move to option 3.
+
+** ANSWER **: User shall not browse a directory that isn't a registered project.
 
 ---
 

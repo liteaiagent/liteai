@@ -114,7 +114,7 @@ export const SettingsProviders: Component = () => {
           "connected",
           globalSync.data.provider.connected.filter((id) => id !== providerID),
         )
-        await globalSDK.client.global.dispose()
+        await globalSDK.client.dispose()
         showToast({
           variant: "success",
           icon: "circle-check",

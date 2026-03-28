@@ -196,7 +196,7 @@ export function DialogConnectProvider(props: { provider: string }) {
   })
 
   async function complete() {
-    await globalSDK.client.global.dispose()
+    await globalSDK.client.dispose()
     dialog.close()
     showToast({
       variant: "success",

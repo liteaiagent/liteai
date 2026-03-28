@@ -2,6 +2,7 @@ import { createSimpleContext } from "@liteai/ui/context"
 import type { Event } from "@liteai-ai/sdk/client"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { type Accessor, createEffect, createMemo, onCleanup } from "solid-js"
+import { toProjectID } from "@/utils/project-id"
 import { useGlobalSDK } from "./global-sdk"
 
 type SDKEventMap = {
@@ -16,7 +17,6 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     const directory = createMemo(props.directory)
     const client = createMemo(() =>
       globalSDK.createClient({
-        directory: directory(),
         throwOnError: true,
       }),
     )
@@ -33,6 +33,9 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     return {
       get directory() {
         return directory()
+      },
+      get projectID() {
+        return toProjectID(directory())
       },
       get client() {
         return client()

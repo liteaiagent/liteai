@@ -6,6 +6,7 @@ import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
+import { toProjectID } from "@/utils/project-id"
 import {
   approxBytes,
   evictContentLru,
@@ -73,7 +74,8 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     const tree = createFileTreeStore({
       scope,
       normalizeDir: path.normalizeDir,
-      list: (dir) => sdk.client.file.list({ path: dir }).then((x) => x.data ?? []),
+      list: (dir) =>
+        sdk.client.project.file.list({ projectID: toProjectID(sdk.directory), path: dir }).then((x) => x.data ?? []),
       onError: (message) => {
         showToast({
           variant: "error",
@@ -176,8 +178,8 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
 
       setLoading(file)
 
-      const promise = sdk.client.file
-        .read({ path: file })
+      const promise = sdk.client.project.file
+        .read({ path: file, projectID: toProjectID(sdk.directory) })
         .then((x) => {
           if (scope() !== directory) return
           const content = x.data
@@ -200,7 +202,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     }
 
     const search = (query: string, dirs: "true" | "false") =>
-      sdk.client.find.files({ query, dirs }).then(
+      sdk.client.project.find.files({ query, dirs, projectID: toProjectID(sdk.directory) }).then(
         (x) => (x.data ?? []).map(path.normalize),
         () => [],
       )

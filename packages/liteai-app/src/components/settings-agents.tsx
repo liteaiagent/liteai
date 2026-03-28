@@ -4,6 +4,7 @@ import { useLanguage } from "@/context/language"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
+import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
 interface Agent {
@@ -36,7 +37,7 @@ const SettingsAgentsInner: Component = () => {
 
   const [agents] = createResource(async () => {
     try {
-      const { data } = await sdk.client.app.agents()
+      const { data } = await sdk.client.project.agent.list({ projectID: toProjectID(sdk.directory) })
       return (data ?? []) as Agent[]
     } catch {
       return [] as Agent[]

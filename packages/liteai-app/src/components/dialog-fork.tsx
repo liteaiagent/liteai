@@ -10,6 +10,7 @@ import { useLanguage } from "@/context/language"
 import { usePrompt } from "@/context/prompt"
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
+import { toProjectID } from "@/utils/project-id"
 import { extractPromptFromParts } from "@/utils/prompt"
 
 interface ForkableMessage {
@@ -68,8 +69,8 @@ export const DialogFork: Component = () => {
     })
     const dir = base64Encode(sdk.directory)
 
-    sdk.client.session
-      .fork({ sessionID, messageID: item.id })
+    sdk.client.project.session
+      .fork({ sessionID, messageID: item.id, projectID: toProjectID(sdk.directory) })
       .then((forked) => {
         if (!forked.data) {
           showToast({ title: language.t("common.requestFailed") })

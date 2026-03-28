@@ -6,6 +6,7 @@ import { createStore, produce } from "solid-js/store"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
+import { toProjectID } from "@/utils/project-id"
 import { useGlobalSync } from "./global-sync"
 import {
   acceptKey,
@@ -118,9 +119,14 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
     }
 
     const respond: PermissionRespondFn = (input) => {
-      globalSDK.client.permission.respond(input).catch(() => {
-        responded.delete(input.permissionID)
-      })
+      globalSDK.client.project.permission
+        .respond({
+          ...input,
+          projectID: toProjectID(input.directory ?? decode64(params.dir) ?? ""),
+        })
+        .catch(() => {
+          responded.delete(input.permissionID)
+        })
     }
 
     function respondOnce(permission: PermissionRequest, directory?: string) {
@@ -178,8 +184,8 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
         }),
       )
 
-      globalSDK.client.permission
-        .list({ directory })
+      globalSDK.client.project.permission
+        .list({ projectID: toProjectID(directory) })
         .then((x) => {
           if (!isAutoAcceptingDirectory(directory)) return
           for (const perm of x.data ?? []) {
@@ -210,8 +216,8 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
         }),
       )
 
-      globalSDK.client.permission
-        .list({ directory })
+      globalSDK.client.project.permission
+        .list({ projectID: toProjectID(directory) })
         .then((x) => {
           if (enableVersion.get(key) !== version) return
           if (!isAutoAccepting(sessionID, directory)) return

@@ -39,7 +39,7 @@ export async function bootstrapGlobal(input: {
   formatMoreCount: (count: number) => string
   setGlobalStore: SetStoreFunction<GlobalStore>
 }) {
-  const health = await input.globalSDK.global
+  const health = await input.globalSDK
     .health()
     .then((x) => x.data)
     .catch(() => undefined)
@@ -55,7 +55,7 @@ export async function bootstrapGlobal(input: {
 
   const tasks = [
     retry(() =>
-      input.globalSDK.global.config.get().then((x) => {
+      input.globalSDK.config.get().then((x) => {
         if (x.data) input.setGlobalStore("config", x.data)
       }),
     ),
@@ -84,7 +84,7 @@ export async function bootstrapGlobal(input: {
       }),
     ),
     retry(() =>
-      input.globalSDK.global.path().then((x) => {
+      input.globalSDK.path().then((x) => {
         if (x.data)
           input.setGlobalStore("path", {
             home: x.data.home,
@@ -123,6 +123,7 @@ function groupBySession<T extends { id: string; sessionID: string }>(input: T[])
 
 export async function bootstrapDirectory(input: {
   directory: string
+  projectID: string
   sdk: LiteaiClient
   store: Store<State>
   setStore: SetStoreFunction<State>
@@ -134,7 +135,7 @@ export async function bootstrapDirectory(input: {
 
   try {
     const projRes = await retry(() =>
-      input.sdk.project.current().catch((e: unknown) => {
+      input.sdk.project.current({ projectID: input.projectID }).catch((e: unknown) => {
         const err = e as { name?: string; response?: { status?: number } } | null | undefined
         if (err?.name === "NotFoundError" || err?.response?.status === 404) return { data: null }
         throw e
@@ -151,9 +152,10 @@ export async function bootstrapDirectory(input: {
         input.sdk.provider.list().then((x) => {
           if (x.data) input.setStore("provider", normalizeProviderList(x.data))
         }),
-      agent: () => input.sdk.app.agents().then((x) => input.setStore("agent", x.data ?? [])),
+      agent: () =>
+        input.sdk.project.agent.list({ projectID: input.projectID }).then((x) => input.setStore("agent", x.data ?? [])),
       config: () =>
-        input.sdk.config.get().then((x) => {
+        input.sdk.project.config.get({ projectID: input.projectID }).then((x) => {
           if (x.data) input.setStore("config", x.data)
         }),
     }
@@ -174,7 +176,7 @@ export async function bootstrapDirectory(input: {
   if (input.store.status !== "complete") input.setStore("status", "partial")
 
   Promise.all([
-    input.sdk.instance.info().then((x) => {
+    input.sdk.project.instance.info({ projectID: input.projectID }).then((x) => {
       if (x.data)
         input.setStore("path", {
           home: "",
@@ -184,23 +186,23 @@ export async function bootstrapDirectory(input: {
           directory: x.data.directory,
         })
     }),
-    input.sdk.command.list().then((x) => input.setStore("command", x.data ?? [])),
-    input.sdk.session.status().then((x) => {
+    input.sdk.project.command.list({ projectID: input.projectID }).then((x) => input.setStore("command", x.data ?? [])),
+    input.sdk.project.session.status({ projectID: input.projectID }).then((x) => {
       if (x.data) input.setStore("session_status", x.data)
     }),
     input.loadSessions(input.directory),
-    input.sdk.mcp.status().then((x) => {
+    input.sdk.project.mcp.status({ projectID: input.projectID }).then((x) => {
       if (x.data) input.setStore("mcp", x.data)
     }),
-    input.sdk.lsp.status().then((x) => {
+    input.sdk.project.lsp.status({ projectID: input.projectID }).then((x) => {
       if (x.data) input.setStore("lsp", x.data)
     }),
-    input.sdk.vcs.get().then((x) => {
+    input.sdk.project.vcs({ projectID: input.projectID }).then((x) => {
       const next = x.data ?? input.store.vcs
       input.setStore("vcs", next)
       if (next?.branch) input.vcsCache.setStore("value", next)
     }),
-    input.sdk.permission.list().then((x) => {
+    input.sdk.project.permission.list({ projectID: input.projectID }).then((x) => {
       const grouped = groupBySession(
         (x.data ?? []).filter((perm): perm is PermissionRequest => !!perm?.id && !!perm.sessionID),
       )
@@ -221,7 +223,7 @@ export async function bootstrapDirectory(input: {
         }
       })
     }),
-    input.sdk.question.list().then((x) => {
+    input.sdk.project.question.list({ projectID: input.projectID }).then((x) => {
       const grouped = groupBySession((x.data ?? []).filter((q): q is QuestionRequest => !!q?.id && !!q.sessionID))
       batch(() => {
         for (const sessionID of Object.keys(input.store.question)) {

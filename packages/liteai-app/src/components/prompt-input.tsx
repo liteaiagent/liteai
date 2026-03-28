@@ -556,8 +556,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       const pinned: AtOption[] = open.map((path) => ({ type: "file", path, display: path, recent: true }))
       const paths = await files.searchFilesAndDirectories(query)
       const fileOptions: AtOption[] = paths
-        .filter((path) => !seen.has(path))
-        .map((path) => ({ type: "file", path, display: path }))
+        .filter((path: string) => !seen.has(path))
+        .map((path: string) => ({ type: "file", path, display: path }))
       return [...agents, ...pinned, ...fileOptions]
     },
     key: atKey,

@@ -9,6 +9,7 @@ import { usePermission } from "@/context/permission"
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { composerDriver, composerEnabled, composerEvent } from "@/testing/session-composer"
+import { toProjectID } from "@/utils/project-id"
 import { sessionPermissionRequest, sessionQuestionRequest } from "./session-request-tree"
 
 export const todoState = (input: {
@@ -132,8 +133,8 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
     if (store.responding === perm.id) return
 
     setStore("responding", perm.id)
-    sdk.client.permission
-      .respond({ sessionID: perm.sessionID, permissionID: perm.id, response })
+    sdk.client.project.permission
+      .respond({ sessionID: perm.sessionID, permissionID: perm.id, response, projectID: toProjectID(sdk.directory) })
       .catch((err: unknown) => {
         const description = err instanceof Error ? err.message : String(err)
         showToast({ title: language.t("common.requestFailed"), description })

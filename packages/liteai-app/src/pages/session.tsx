@@ -51,6 +51,7 @@ import { TracePanel } from "@/pages/session/trace-panel"
 import { useSessionCommands } from "@/pages/session/use-session-commands"
 import { useSessionHashScroll } from "@/pages/session/use-session-hash-scroll"
 import { Identifier } from "@/utils/id"
+import { toProjectID } from "@/utils/project-id"
 import { extractPromptFromParts } from "@/utils/prompt"
 import { same } from "@/utils/same"
 import { formatServerError } from "@/utils/server-errors"
@@ -654,7 +655,7 @@ export default function Page() {
     if (ui.git) return
     setUi("git", true)
     void sdk.client.project
-      .initGit()
+      .initGit({ directory: sdk.directory })
       .then((x) => {
         if (!x.data) return
         upsert(x.data)
@@ -1466,13 +1467,15 @@ export default function Page() {
   }
 
   const halt = (sessionID: string) =>
-    busy(sessionID) ? sdk.client.session.abort({ sessionID }).catch(() => {}) : Promise.resolve()
+    busy(sessionID)
+      ? sdk.client.project.session.abort({ sessionID, projectID: toProjectID(sdk.directory) }).catch(() => {})
+      : Promise.resolve()
 
   const fork = (input: { sessionID: string; messageID: string }) => {
     const value = draft(input.messageID)
     const dir = base64Encode(sdk.directory)
-    return sdk.client.session
-      .fork(input)
+    return sdk.client.project.session
+      .fork({ ...input, projectID: toProjectID(sdk.directory) })
       .then((result) => {
         const next = result.data
         if (!next) {
@@ -1499,7 +1502,7 @@ export default function Page() {
       prompt.set(value)
     })
     return halt(input.sessionID)
-      .then(() => sdk.client.session.revert(input))
+      .then(() => sdk.client.project.session.revert({ ...input, projectID: toProjectID(sdk.directory) }))
       .then((result) => {
         if (result.data) merge(result.data)
       })
@@ -1535,11 +1538,14 @@ export default function Page() {
     })
 
     const task = !next
-      ? halt(sessionID).then(() => sdk.client.session.unrevert({ sessionID }))
+      ? halt(sessionID).then(() =>
+          sdk.client.project.session.unrevert({ sessionID, projectID: toProjectID(sdk.directory) }),
+        )
       : halt(sessionID).then(() =>
-          sdk.client.session.revert({
+          sdk.client.project.session.revert({
             sessionID,
             messageID: next.id,
+            projectID: toProjectID(sdk.directory),
           }),
         )
 

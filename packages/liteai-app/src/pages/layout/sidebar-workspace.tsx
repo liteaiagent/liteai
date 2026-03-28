@@ -17,6 +17,7 @@ import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import type { LocalProject } from "@/context/layout"
+import { toProjectID } from "@/utils/project-id"
 import { childMapByParent, sortedRootSessions } from "./helpers"
 import { NewSessionItem, SessionItem, SessionSkeleton } from "./sidebar-items"
 
@@ -555,8 +556,8 @@ const ArchivedSessionsSection = (props: {
   const [open, setOpen] = createSignal(false)
   const [sessions, { refetch }] = createResource(open, (isOpen) => {
     if (!isOpen) return [] as Session[]
-    return globalSDK.client.session
-      .list({ directory: props.directory, roots: true, archived: true })
+    return globalSDK.client.project.session
+      .list({ projectID: toProjectID(props.directory), roots: true, archived: true })
       .then((r) => (r.data ?? []).filter((s) => !!s.time?.archived))
   })
 

@@ -4,6 +4,7 @@ import { retry } from "@liteai/util/retry"
 import type { Message, Part } from "@liteai-ai/sdk/client"
 import { batch, createMemo } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
+import { toProjectID } from "@/utils/project-id"
 import { useGlobalSync } from "./global-sync"
 import { dropSessionCaches, pickSessionCacheEvictions, SESSION_CACHE_LIMIT } from "./global-sync/session-cache"
 import {
@@ -289,12 +290,18 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
     const fetchMessages = async (input: {
       client: typeof sdk.client
+      directory: string
       sessionID: string
       limit: number
       before?: string
     }) => {
       const messages = await retry(() =>
-        input.client.session.messages({ sessionID: input.sessionID, limit: input.limit, before: input.before }),
+        input.client.project.session.messages({
+          sessionID: input.sessionID,
+          projectID: toProjectID(input.directory),
+          limit: input.limit,
+          before: input.before,
+        }),
       )
       const items = (messages.data ?? []).filter((x) => !!x?.info?.id)
       const session = items.map((x) => x.info).sort((a, b) => cmp(a.id, b.id))
@@ -464,22 +471,24 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             const sessionReq =
               hasSession && !opts?.force
                 ? Promise.resolve()
-                : retry(() => client.session.get({ sessionID })).then((session) => {
-                    if (!tracked(directory, sessionID)) return
-                    const data = session.data
-                    if (!data) return
-                    setStore(
-                      "session",
-                      produce((draft) => {
-                        const match = Binary.search(draft, sessionID, (s) => s.id)
-                        if (match.found) {
-                          draft[match.index] = data
-                          return
-                        }
-                        draft.splice(match.index, 0, data)
-                      }),
-                    )
-                  })
+                : retry(() => client.project.session.get({ sessionID, projectID: toProjectID(directory) })).then(
+                    (session) => {
+                      if (!tracked(directory, sessionID)) return
+                      const data = session.data
+                      if (!data) return
+                      setStore(
+                        "session",
+                        produce((draft) => {
+                          const match = Binary.search(draft, sessionID, (s) => s.id)
+                          if (match.found) {
+                            draft[match.index] = data
+                            return
+                          }
+                          draft.splice(match.index, 0, data)
+                        }),
+                      )
+                    },
+                  )
 
             const messagesReq =
               cached && !opts?.force
@@ -504,7 +513,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
           const key = keyFor(directory, sessionID)
           return runInflight(inflightDiff, key, () =>
-            retry(() => client.session.diff({ sessionID })).then((diff) => {
+            retry(() => client.project.session.diff({ sessionID, projectID: toProjectID(directory) })).then((diff) => {
               if (!tracked(directory, sessionID)) return
               setStore("session_diff", sessionID, reconcile(diff.data ?? [], { key: "file" }))
             }),
@@ -530,7 +539,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
           const key = keyFor(directory, sessionID)
           return runInflight(inflightTodo, key, () =>
-            retry(() => client.session.todo({ sessionID })).then((todo) => {
+            retry(() => client.project.session.todo({ sessionID, projectID: toProjectID(directory) })).then((todo) => {
               if (!tracked(directory, sessionID)) return
               const list = todo.data ?? []
               setStore("todo", sessionID, reconcile(list, { key: "id" }))
@@ -584,7 +593,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           const client = sdk.client
           const [store, setStore] = globalSync.child(directory)
           setStore("limit", (x) => x + count)
-          await client.session.list().then((x) => {
+          await client.project.session.list({ projectID: toProjectID(directory) }).then((x) => {
             const sessions = (x.data ?? [])
               .filter((s) => !!s?.id)
               .sort((a, b) => cmp(a.id, b.id))
@@ -597,7 +606,11 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           const directory = sdk.directory
           const client = sdk.client
           const [, setStore] = globalSync.child(directory)
-          await client.session.update({ sessionID, time: { archived: Date.now() } })
+          await client.project.session.update({
+            sessionID,
+            projectID: toProjectID(directory),
+            time: { archived: Date.now() },
+          })
           setStore(
             produce((draft) => {
               const match = Binary.search(draft.session, sessionID, (s) => s.id)

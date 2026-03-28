@@ -29,6 +29,7 @@ import { normalizeWheelDelta, shouldMarkBoundaryGesture } from "@/pages/session/
 import { useSessionKey } from "@/pages/session/session-layout"
 import { messageAgentColor } from "@/utils/agent"
 import { parseCommentNote, readCommentMetadata } from "@/utils/comment-note"
+import { toProjectID } from "@/utils/project-id"
 
 type MessageComment = {
   path: string
@@ -342,8 +343,8 @@ export function MessageTimeline(props: {
     if (!id || req.share) return
     if (!shareEnabled()) return
     setReq("share", true)
-    globalSDK.client.session
-      .share({ sessionID: id, directory: sdk.directory })
+    globalSDK.client.project.session
+      .share({ sessionID: id, projectID: toProjectID(sdk.directory) })
       .catch((err: unknown) => {
         console.error("Failed to share session", err)
       })
@@ -357,8 +358,8 @@ export function MessageTimeline(props: {
     if (!id || req.unshare) return
     if (!shareEnabled()) return
     setReq("unshare", true)
-    globalSDK.client.session
-      .unshare({ sessionID: id, directory: sdk.directory })
+    globalSDK.client.project.session
+      .unshare({ sessionID: id, projectID: toProjectID(sdk.directory) })
       .catch((err: unknown) => {
         console.error("Failed to unshare session", err)
       })
@@ -425,8 +426,8 @@ export function MessageTimeline(props: {
     }
 
     setTitle("saving", true)
-    await sdk.client.session
-      .update({ sessionID: id, title: next })
+    await sdk.client.project.session
+      .update({ sessionID: id, title: next, projectID: toProjectID(sdk.directory) })
       .then(() => {
         sync.set(
           produce((draft) => {
@@ -466,8 +467,8 @@ export function MessageTimeline(props: {
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
-    await sdk.client.session
-      .update({ sessionID, time: { archived: Date.now() } })
+    await sdk.client.project.session
+      .update({ sessionID, time: { archived: Date.now() }, projectID: toProjectID(sdk.directory) })
       .then(() => {
         sync.set(
           produce((draft) => {
@@ -493,8 +494,8 @@ export function MessageTimeline(props: {
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
-    const result = await sdk.client.session
-      .delete({ sessionID })
+    const result = await sdk.client.project.session
+      .delete({ sessionID, projectID: toProjectID(sdk.directory) })
       .then((x) => x.data)
       .catch((err) => {
         showToast({

@@ -22,6 +22,7 @@ import {
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { Persist, persisted } from "@/utils/persist"
+import { toProjectID } from "@/utils/project-id"
 import { formatServerError } from "@/utils/server-errors"
 import type { InitError } from "../pages/error"
 import { useGlobalSDK } from "./global-sdk"
@@ -170,7 +171,6 @@ function createGlobalSync() {
     const cached = sdkCache.get(directory)
     if (cached) return cached
     const sdk = globalSDK.createClient({
-      directory,
       throwOnError: true,
     })
     sdkCache.set(directory, sdk)
@@ -201,7 +201,7 @@ function createGlobalSync() {
     const promise = loadRootSessionsWithFallback({
       directory,
       limit,
-      list: (query) => globalSDK.client.session.list(query),
+      list: (query) => globalSDK.client.project.session.list({ ...query, projectID: toProjectID(directory) }),
     })
       .then((x) => {
         const nonArchived = (x.data ?? [])
@@ -255,8 +255,10 @@ function createGlobalSync() {
       const cache = children.vcsCache.get(directory)
       if (!cache) return
       const sdk = sdkFor(directory)
+      const projectID = toProjectID(directory)
       await bootstrapDirectory({
         directory,
+        projectID,
         sdk,
         store: child[0],
         setStore: child[1],
@@ -307,7 +309,7 @@ function createGlobalSync() {
       vcsCache: children.vcsCache.get(directory),
       loadLsp: () => {
         sdkFor(directory)
-          .lsp.status()
+          .project.lsp.status({ projectID: toProjectID(directory) })
           .then((x) => setStore("lsp", x.data ?? []))
       },
     })
@@ -353,7 +355,7 @@ function createGlobalSync() {
 
   const updateConfig = async (config: Config) => {
     setGlobalStore("reload", "pending")
-    return globalSDK.client.global.config
+    return globalSDK.client.config
       .update({ config })
       .then(bootstrap)
       .then(() => {

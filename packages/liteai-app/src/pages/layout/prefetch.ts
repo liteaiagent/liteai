@@ -14,6 +14,7 @@ import {
   setSessionPrefetch,
   shouldSkipSessionPrefetch,
 } from "@/context/global-sync/session-prefetch"
+import { toProjectID } from "@/utils/project-id"
 
 type PrefetchQueue = {
   inflight: Set<string>
@@ -121,7 +122,13 @@ export function createPrefetch(deps: PrefetchDeps) {
       directory,
       sessionID,
       task: (rev) =>
-        retry(() => deps.globalSDK.client.session.messages({ directory, sessionID, limit: chunk }))
+        retry(() =>
+          deps.globalSDK.client.project.session.messages({
+            projectID: toProjectID(directory),
+            sessionID,
+            limit: chunk,
+          }),
+        )
           .then((messages) => {
             if (token.value !== tok) return
             if (!isSessionPrefetchCurrent(directory, sessionID, rev)) return

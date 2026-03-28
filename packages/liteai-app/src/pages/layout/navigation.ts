@@ -10,6 +10,7 @@ import type { LocalProject, useLayout } from "@/context/layout"
 import type { useNotification } from "@/context/notification"
 import type { useServer } from "@/context/server"
 import { setSessionHandoff } from "@/pages/session/handoff"
+import { toProjectID } from "@/utils/project-id"
 import { collectNewSessionDeepLinks, collectOpenProjectDeepLinks } from "./deep-links"
 import { effectiveWorkspaceOrder, latestRootSession, workspaceKey } from "./helpers"
 
@@ -114,8 +115,8 @@ export async function navigateToProject(deps: NavigationDeps, directory: string 
   }
   const refreshDirs = async (target?: string) => {
     if (!target || target === root || canOpen(target)) return canOpen(target)
-    const listed = await deps.globalSDK.client.worktree
-      .list({ directory: root })
+    const listed = await deps.globalSDK.client.project.worktree
+      .list({ projectID: toProjectID(root) })
       .then((x) => x.data ?? [])
       .catch(() => [] as string[])
     dirs = effectiveWorkspaceOrder(root, [root, ...listed], deps.store.workspaceOrder[root])
@@ -133,8 +134,8 @@ export async function navigateToProject(deps: NavigationDeps, directory: string 
       deps.navigateWithSidebarReset(`/${base64Encode(target.directory)}/session/${target.id}`)
       return true
     }
-    const resolved = await deps.globalSDK.client.session
-      .get({ sessionID: target.id })
+    const resolved = await deps.globalSDK.client.project.session
+      .get({ projectID: toProjectID(target.directory), sessionID: target.id })
       .then((x) => x.data)
       .catch(() => undefined)
     if (!resolved?.directory) return false
@@ -168,8 +169,8 @@ export async function navigateToProject(deps: NavigationDeps, directory: string 
     await Promise.all(
       dirs.map(async (item) => ({
         path: { directory: item },
-        session: await deps.globalSDK.client.session
-          .list({ directory: item })
+        session: await deps.globalSDK.client.project.session
+          .list({ projectID: toProjectID(item) })
           .then((x) => x.data ?? [])
           .catch(() => []),
       })),
@@ -272,9 +273,9 @@ export function archiveSession(deps: NavigationDeps, session: Session) {
   const index = sessions.findIndex((s) => s.id === session.id)
   const next = sessions[index + 1] ?? sessions[index - 1]
 
-  return deps.globalSDK.client.session
+  return deps.globalSDK.client.project.session
     .update({
-      directory: session.directory,
+      projectID: toProjectID(session.directory),
       sessionID: session.id,
       time: { archived: Date.now() },
     })
@@ -296,9 +297,9 @@ export function archiveSession(deps: NavigationDeps, session: Session) {
 }
 
 export function restoreSession(deps: NavigationDeps, session: Session) {
-  return deps.globalSDK.client.session
+  return deps.globalSDK.client.project.session
     .update({
-      directory: session.directory,
+      projectID: toProjectID(session.directory),
       sessionID: session.id,
       time: { archived: undefined },
     })
@@ -325,9 +326,9 @@ export function deleteSession(deps: NavigationDeps, session: Session) {
   const index = sessions.findIndex((s) => s.id === session.id)
   const next = sessions[index + 1] ?? sessions[index - 1]
 
-  return deps.globalSDK.client.session
+  return deps.globalSDK.client.project.session
     .delete({
-      directory: session.directory,
+      projectID: toProjectID(session.directory),
       sessionID: session.id,
     })
     .then(() => {
@@ -371,9 +372,9 @@ export function deleteSession(deps: NavigationDeps, session: Session) {
 
 export function renameSession(deps: NavigationDeps, session: Session, title: string) {
   const [, setStore] = deps.globalSync.child(session.directory)
-  return deps.globalSDK.client.session
+  return deps.globalSDK.client.project.session
     .update({
-      directory: session.directory,
+      projectID: toProjectID(session.directory),
       sessionID: session.id,
       title,
     })

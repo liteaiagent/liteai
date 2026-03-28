@@ -8,6 +8,7 @@ import type { useLanguage } from "@/context/language"
 import type { LocalProject, useLayout } from "@/context/layout"
 import type { usePlatform } from "@/context/platform"
 import { clearWorkspaceTerminals } from "@/context/terminal"
+import { toProjectID } from "@/utils/project-id"
 import { Worktree as WorktreeState } from "@/utils/worktree"
 import { effectiveWorkspaceOrder, errorMessage, workspaceKey } from "./helpers"
 
@@ -46,8 +47,8 @@ export async function deleteWorkspace(deps: WorkspaceOpsDeps, root: string, dire
 
   deps.setBusy(directory, true)
 
-  const result = await deps.globalSDK.client.worktree
-    .remove({ directory: root, worktreeRemoveInput: { directory } })
+  const result = await deps.globalSDK.client.project.worktree
+    .remove({ projectID: toProjectID(root), worktreeRemoveInput: { directory } })
     .then((x) => x.data)
     .catch((err) => {
       showToast({
@@ -108,8 +109,8 @@ export async function resetWorkspace(deps: WorkspaceOpsDeps, root: string, direc
   })
   const dismiss = () => toaster.dismiss(progress)
 
-  const sessions: Session[] = await deps.globalSDK.client.session
-    .list({ directory })
+  const sessions: Session[] = await deps.globalSDK.client.project.session
+    .list({ projectID: toProjectID(directory) })
     .then((x) => x.data ?? [])
     .catch(() => [])
 
@@ -118,10 +119,10 @@ export async function resetWorkspace(deps: WorkspaceOpsDeps, root: string, direc
     sessions.map((s) => s.id),
     deps.platform,
   )
-  await deps.globalSDK.client.instance.dispose({ directory }).catch(() => undefined)
+  await deps.globalSDK.client.project.instance.dispose({ projectID: toProjectID(directory) }).catch(() => undefined)
 
-  const result = await deps.globalSDK.client.worktree
-    .reset({ directory: root, worktreeResetInput: { directory } })
+  const result = await deps.globalSDK.client.project.worktree
+    .reset({ projectID: toProjectID(root), worktreeResetInput: { directory } })
     .then((x) => x.data)
     .catch((err) => {
       showToast({
@@ -142,10 +143,10 @@ export async function resetWorkspace(deps: WorkspaceOpsDeps, root: string, direc
     sessions
       .filter((session) => session.time.archived === undefined)
       .map((session) =>
-        deps.globalSDK.client.session
+        deps.globalSDK.client.project.session
           .update({
             sessionID: session.id,
-            directory: session.directory,
+            projectID: toProjectID(session.directory),
             time: { archived: archivedAt },
           })
           .catch(() => undefined),
@@ -177,8 +178,8 @@ export async function resetWorkspace(deps: WorkspaceOpsDeps, root: string, direc
 
 export async function createWorkspace(deps: WorkspaceOpsDeps, project: LocalProject) {
   deps.clearSidebarHoverState()
-  const created = await deps.globalSDK.client.worktree
-    .create({ directory: project.worktree })
+  const created = await deps.globalSDK.client.project.worktree
+    .create({ projectID: toProjectID(project.worktree) })
     .then((x) => x.data)
     .catch((err) => {
       showToast({

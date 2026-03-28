@@ -5,7 +5,7 @@ import { type Config } from "./gen/client/types.gen.js"
 import { LiteaiClient } from "./gen/sdk.gen.js"
 export { type Config as LiteaiClientConfig, LiteaiClient }
 
-export function createLiteaiClient(config?: Config & { directory?: string; experimental_workspaceID?: string }) {
+export function createLiteaiClient(config?: Config & { experimental_workspaceID?: string }) {
   if (!config?.fetch) {
     const customFetch: any = (req: any) => {
       // @ts-ignore
@@ -18,14 +18,7 @@ export function createLiteaiClient(config?: Config & { directory?: string; exper
     }
   }
 
-  if (config?.directory) {
-    const isNonASCII = /[^\x00-\x7F]/.test(config.directory)
-    const encodedDirectory = isNonASCII ? encodeURIComponent(config.directory) : config.directory
-    config.headers = {
-      ...config.headers,
-      "x-liteai-directory": encodedDirectory,
-    }
-  }
+
 
   if (config?.experimental_workspaceID) {
     config.headers = {

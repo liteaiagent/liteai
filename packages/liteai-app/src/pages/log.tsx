@@ -159,7 +159,7 @@ export default function LogViewer() {
 
   const [data, { refetch }] = createResource(async () => {
     try {
-      const { data } = await sdk.client.global.log()
+      const { data } = await sdk.client.log()
       return data ?? { lines: [], services: [] }
     } catch {
       return { lines: [], services: [] }

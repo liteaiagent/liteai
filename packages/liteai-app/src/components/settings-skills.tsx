@@ -4,6 +4,7 @@ import { useLanguage } from "@/context/language"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
 import { decode64 } from "@/utils/base64"
+import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
 interface Skill {
@@ -18,7 +19,7 @@ const SettingsSkillsInner: Component = () => {
 
   const [skills] = createResource(async () => {
     try {
-      const { data } = await sdk.client.app.skills()
+      const { data } = await sdk.client.project.skill.list({ projectID: toProjectID(sdk.directory) })
       return (data ?? []) as Skill[]
     } catch {
       return [] as Skill[]

@@ -14,6 +14,7 @@ import { type ContextItem, type ImageAttachmentPart, type Prompt, usePrompt } fr
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { Identifier } from "@/utils/id"
+import { toProjectID } from "@/utils/project-id"
 import { formatServerError } from "@/utils/server-errors"
 import { Worktree as WorktreeState } from "@/utils/worktree"
 import { buildRequestParts } from "./build-request-parts"
@@ -81,8 +82,9 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
         return false
       }
 
-      await input.client.session.command({
+      await input.client.project.session.command({
         sessionID: input.draft.sessionID,
+        projectID: toProjectID(input.draft.sessionDirectory),
         command: cmd,
         arguments: tail.join(" "),
         agent: input.draft.agent,
@@ -149,8 +151,9 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
       return false
     }
 
-    await input.client.session.promptAsync({
+    await input.client.project.session.promptAsync({
       sessionID: input.draft.sessionID,
+      projectID: toProjectID(input.draft.sessionDirectory),
       agent: input.draft.agent,
       model: input.draft.model,
       messageID,
@@ -234,9 +237,10 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       pending.delete(sessionID)
       return Promise.resolve()
     }
-    return sdk.client.session
+    return sdk.client.project.session
       .abort({
         sessionID,
+        projectID: toProjectID(sdk.directory),
       })
       .catch(() => {})
   }
@@ -318,8 +322,8 @@ export function createPromptSubmit(input: PromptSubmitInput) {
 
     if (isNewSession) {
       if (worktreeSelection === "create") {
-        const createdWorktree = await client.worktree
-          .create({ directory: projectDirectory })
+        const createdWorktree = await client.project.worktree
+          .create({ projectID: toProjectID(projectDirectory) })
           .then((x) => x.data)
           .catch((err) => {
             showToast({
@@ -346,7 +350,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
 
       if (sessionDirectory !== projectDirectory) {
         client = sdk.createClient({
-          directory: sessionDirectory,
           throwOnError: true,
         })
         globalSync.child(sessionDirectory)
@@ -357,8 +360,8 @@ export function createPromptSubmit(input: PromptSubmitInput) {
 
     let session = input.info()
     if (!session && isNewSession) {
-      const created = await client.session
-        .create()
+      const created = await client.project.session
+        .create({ projectID: toProjectID(sessionDirectory) })
         .then((x) => x.data ?? undefined)
         .catch((err) => {
           showToast({
@@ -430,9 +433,10 @@ export function createPromptSubmit(input: PromptSubmitInput) {
 
     if (mode === "shell") {
       clearInput()
-      client.session
+      client.project.session
         .shell({
           sessionID: session.id,
+          projectID: toProjectID(sessionDirectory),
           agent,
           model,
           command: text,
@@ -453,9 +457,10 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       const customCommand = sync.data.command.find((c) => c.name === commandName)
       if (customCommand) {
         clearInput()
-        client.session
+        client.project.session
           .command({
             sessionID: session.id,
+            projectID: toProjectID(sessionDirectory),
             command: commandName,
             arguments: args.join(" "),
             agent,

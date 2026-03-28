@@ -19,6 +19,7 @@ import { useSync } from "@/context/sync"
 import { useTerminal } from "@/context/terminal"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
+import { toProjectID } from "@/utils/project-id"
 import { extractPromptFromParts } from "@/utils/prompt"
 
 export type SessionCommandContext = {
@@ -197,8 +198,8 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
                   return
                 }
 
-                const url = await sdk.client.session
-                  .share({ sessionID: params.id })
+                const url = await sdk.client.project.session
+                  .share({ sessionID: params.id, projectID: toProjectID(sdk.directory) })
                   .then((res) => res.data?.share?.url)
                   .catch(() => undefined)
                 if (!url) {
@@ -221,8 +222,8 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
               disabled: !params.id || !info()?.share?.url,
               onSelect: async () => {
                 if (!params.id) return
-                await sdk.client.session
-                  .unshare({ sessionID: params.id })
+                await sdk.client.project.session
+                  .unshare({ sessionID: params.id, projectID: toProjectID(sdk.directory) })
                   .then(() =>
                     showToast({
                       title: language.t("toast.session.unshare.success.title"),
@@ -414,12 +415,16 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           const sessionID = params.id
           if (!sessionID) return
           if (status().type !== "idle") {
-            await sdk.client.session.abort({ sessionID }).catch(() => {})
+            await sdk.client.project.session.abort({ sessionID, projectID: toProjectID(sdk.directory) }).catch(() => {})
           }
           const revert = info()?.revert?.messageID
           const message = findLast(userMessages(), (x) => !revert || x.id < revert)
           if (!message) return
-          await sdk.client.session.revert({ sessionID, messageID: message.id })
+          await sdk.client.project.session.revert({
+            sessionID,
+            messageID: message.id,
+            projectID: toProjectID(sdk.directory),
+          })
           const parts = sync.data.part[message.id]
           if (parts) {
             const restored = extractPromptFromParts(parts, { directory: sdk.directory })
@@ -442,13 +447,17 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           if (!revertMessageID) return
           const nextMessage = userMessages().find((x) => x.id > revertMessageID)
           if (!nextMessage) {
-            await sdk.client.session.unrevert({ sessionID })
+            await sdk.client.project.session.unrevert({ sessionID, projectID: toProjectID(sdk.directory) })
             prompt.reset()
             const lastMsg = findLast(userMessages(), (x) => x.id >= revertMessageID)
             setActiveMessage(lastMsg)
             return
           }
-          await sdk.client.session.revert({ sessionID, messageID: nextMessage.id })
+          await sdk.client.project.session.revert({
+            sessionID,
+            messageID: nextMessage.id,
+            projectID: toProjectID(sdk.directory),
+          })
           const priorMsg = findLast(userMessages(), (x) => x.id < nextMessage.id)
           setActiveMessage(priorMsg)
         },
@@ -470,10 +479,11 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
             })
             return
           }
-          await sdk.client.session.summarize({
+          await sdk.client.project.session.summarize({
             sessionID,
             modelID: model.id,
             providerID: model.provider.id,
+            projectID: toProjectID(sdk.directory),
           })
         },
       }),

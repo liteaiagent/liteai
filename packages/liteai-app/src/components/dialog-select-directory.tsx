@@ -11,6 +11,7 @@ import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
+import { toProjectID } from "@/utils/project-id"
 
 interface DialogSelectDirectoryProps {
   title?: string
@@ -158,8 +159,8 @@ function useDirectorySearch(args: {
     const existing = cache.get(key)
     if (existing) return existing
 
-    const request = args.sdk.client.file
-      .list({ directory: key, path: "" })
+    const request = args.sdk.client.project.file
+      .list({ projectID: toProjectID(key), path: "" })
       .then((x) => x.data ?? [])
       .catch(() => [])
       .then((nodes) =>
@@ -194,8 +195,8 @@ function useDirectorySearch(args: {
     const query = normalizeDriveRoot(scopedInput.path)
 
     const find = () =>
-      args.sdk.client.find
-        .files({ directory: scopedInput.directory, query, type: "directory", limit: 50 })
+      args.sdk.client.project.find
+        .files({ projectID: toProjectID(scopedInput.directory), query, type: "directory", limit: 50 })
         .then((x) => x.data ?? [])
         .catch(() => [])
 
@@ -261,7 +262,7 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
   const [fallbackPath] = createResource(
     () => (missingBase() ? true : undefined),
     async () => {
-      return sdk.client.global
+      return sdk.client
         .path()
         .then((x) => (x.data ? { home: x.data.home, directory: "" } : undefined))
         .catch(() => undefined)
@@ -325,7 +326,7 @@ export function DialogSelectDirectory(props: DialogSelectDirectoryProps) {
 
   async function native() {
     try {
-      const { data } = await sdk.client.global.browse()
+      const { data } = await sdk.client.browse()
       if (data?.path) resolve(data.path)
     } catch {
       // browse cancelled or failed

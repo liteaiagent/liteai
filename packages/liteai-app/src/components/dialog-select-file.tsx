@@ -17,6 +17,7 @@ import { useLayout } from "@/context/layout"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { decode64 } from "@/utils/base64"
+import { toProjectID } from "@/utils/project-id"
 import { getRelativeTime } from "@/utils/time"
 
 type EntryType = "command" | "file" | "session"
@@ -206,8 +207,8 @@ function createSessionEntries(props: {
     state.inflight = Promise.all(
       dirs.map((directory) => {
         const description = props.label(directory)
-        return props.globalSDK.client.session
-          .list({ directory, roots: true })
+        return props.globalSDK.client.project.session
+          .list({ projectID: toProjectID(directory), roots: true })
           .then((x) =>
             (x.data ?? [])
               .filter((s) => !!s?.id)
@@ -330,12 +331,12 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode; onOpenFil
     if (filesOnly()) {
       const files = await file.searchFiles(query)
       const category = language.t("palette.group.files")
-      return files.map((path) => createFileEntry(path, category))
+      return files.map((path: string) => createFileEntry(path, category))
     }
 
     const [files, nextSessions] = await Promise.all([file.searchFiles(query), Promise.resolve(sessions(query))])
     const category = language.t("palette.group.files")
-    const entries = files.map((path) => createFileEntry(path, category))
+    const entries = files.map((path: string) => createFileEntry(path, category))
     return [...commandEntries.list(), ...nextSessions, ...entries]
   }
 
