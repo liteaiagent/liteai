@@ -1,8 +1,8 @@
-# Code Review: `packages/liteai` (Part 2)
+# Code Review: `packages/core` (Part 2)
 
 ## Overview
 
-Continuing the evaluation of the `liteai` core package, this second phase of the review targets three additional architectural folders within `packages/liteai/src/`:
+Continuing the evaluation of the `liteai` core package, this second phase of the review targets three additional architectural folders within `packages/core/src/`:
 
 1. `src/cli`
 2. `src/storage`

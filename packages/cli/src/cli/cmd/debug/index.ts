@@ -1,4 +1,4 @@
-import { Global } from "liteai/global/index"
+import { Global } from "@liteai/core/global/index"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 import { AgentCommand } from "./agent"

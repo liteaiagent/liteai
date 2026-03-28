@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { AuthProvider } from "liteai/auth/provider"
+import type { AuthProvider } from "@liteai/core/auth/provider"
 import { resolvePluginProviders } from "../../src/cli/cmd/providers"
 
 function provider(id: string): [string, AuthProvider] {

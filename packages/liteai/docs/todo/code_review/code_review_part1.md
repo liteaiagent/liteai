@@ -1,8 +1,8 @@
-# Code Review: `packages/liteai`
+# Code Review: `packages/core`
 
 ## Overview
 
-This document presents a code review focusing on the **Single Responsibility Principle (SRP)**, **Clean Code**, **Design Best Practices**, and **Modern Code standards**. Due to the large size of the repository, this first phase of the review targets three core architectural folders within `packages/liteai/src/`:
+This document presents a code review focusing on the **Single Responsibility Principle (SRP)**, **Clean Code**, **Design Best Practices**, and **Modern Code standards**. Due to the large size of the repository, this first phase of the review targets three core architectural folders within `packages/core/src/`:
 
 1. `src/agent`
 2. `src/server`

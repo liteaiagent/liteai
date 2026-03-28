@@ -56,7 +56,7 @@ Provider is the **only module** where the scope mismatch causes a real problem t
 
 ## Provider State — The Mixed Concern
 
-[provider/state.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/state.ts#L496-L563) does all of this in ONE `Instance.state()`:
+[provider/state.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/state.ts#L496-L563) does all of this in ONE `Instance.state()`:
 
 ```diff
   Instance.state(async () => {
@@ -257,10 +257,10 @@ server.ts route registration order:
 
 | File | Change |
 |------|--------|
-| [server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/server.ts) | Split middleware into optional + guard; move `/provider` between them |
-| [provider/state.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/state.ts) | Extract `resolveProviders(config)`, add `globalState()` |
-| [provider/provider.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/provider.ts) | Add `globalList()` |
-| [routes/provider.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/provider.ts) | Adapt `GET /` to pick global vs scoped |
+| [server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/server.ts) | Split middleware into optional + guard; move `/provider` between them |
+| [provider/state.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/state.ts) | Extract `resolveProviders(config)`, add `globalState()` |
+| [provider/provider.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/provider.ts) | Add `globalList()` |
+| [routes/provider.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/provider.ts) | Adapt `GET /` to pick global vs scoped |
 
 > [!NOTE]
 > **No changes needed to**: Instance, Config, State, Context, Auth, any other route file, or any other domain module. The web app changes can happen separately.

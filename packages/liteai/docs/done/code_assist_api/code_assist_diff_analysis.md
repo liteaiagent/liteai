@@ -14,12 +14,12 @@ GeminiCLI/${version}/${model} (${platform}; ${arch}; ${surface})
 - `version` — dynamic from [package.json](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/package.json) (e.g. `1.5.0`)
 - `model` — the **resolved model name** (e.g. `gemini-3-pro-preview`)
 - `platform` — `process.platform` (e.g. `win32`)
-- [arch](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/client.ts#220-256) — `process.arch` (e.g. `x64`)
+- [arch](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/client.ts#220-256) — `process.arch` (e.g. `x64`)
 - `surface` — auto-detected IDE/environment (e.g. `terminal`, `vscode`, `cursor`)
 
 Also supports `clientName` prefix: `GeminiCLI-${clientName}/${version}/${model} (…)`
 
-### LiteAI ([client.ts:18](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/client.ts#L18))
+### LiteAI ([client.ts:18](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/client.ts#L18))
 ```
 GeminiCLI/1.0.0/liteai (${os.platform()}; ${os.arch()})
 ```
@@ -50,7 +50,7 @@ When billing auto-use is enabled and the model is overage-eligible:
 enabled_credit_types: ["GOOGLE_ONE_AI"]
 ```
 
-### LiteAI ([types.ts:89-94](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/types.ts#L89-L94))
+### LiteAI ([types.ts:89-94](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/types.ts#L89-L94))
 ```ts
 interface CAGenerateContentRequest {
   model: string
@@ -83,7 +83,7 @@ Used to:
 2. Update `paidTier.availableCredits` in memory
 3. Log billing telemetry
 
-### LiteAI ([types.ts:148-151](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/types.ts#L148-L151))
+### LiteAI ([types.ts:148-151](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/types.ts#L148-L151))
 ```ts
 interface CAGenerateContentResponse {
   response?: VertexGenerateContentResponse
@@ -147,7 +147,7 @@ async requestStreamingPost(method, req, signal?) {
 }
 ```
 
-### LiteAI ([client.ts:64-79](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/client.ts#L64-L79))
+### LiteAI ([client.ts:64-79](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/client.ts#L64-L79))
 Uses raw [fetch()](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/src/code_assist/server.ts#301-309) — no retry mechanism, which is effectively the same as `retry: false`.
 
 ✅ **Match** (both don't retry streaming requests)
@@ -177,7 +177,7 @@ Session ID is passed via `providerOptions['code-assist'].sessionId` and ends up 
 ### Gemini CLI ([server.ts:91-92](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/src/code_assist/server.ts#L91-L92))
 The `userPromptId` is passed as a parameter from the caller (scheduler/agent). It comes from `promptIdContext` which tracks per-user-message prompt IDs.
 
-### LiteAI ([converter.ts:37](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/converter.ts#L37))
+### LiteAI ([converter.ts:37](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/converter.ts#L37))
 ```ts
 user_prompt_id: generateId()
 ```
@@ -196,7 +196,7 @@ Only applied for models where [supportsModernFeatures(model)](file:///C:/Users/a
 const SYNTHETIC_THOUGHT_SIGNATURE = 'skip_thought_signature_validator';
 ```
 
-### LiteAI ([converter.ts:196-224](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/converter.ts#L196-L224))
+### LiteAI ([converter.ts:196-224](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/converter.ts#L196-L224))
 Always applied regardless of model. Uses same constant:
 ```ts
 const SYNTHETIC_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
@@ -244,7 +244,7 @@ interface ConversationOffered {
 
 ---
 
-## 10. [ClientMetadata](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/types.ts#4-14) in Requests
+## 10. [ClientMetadata](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/types.ts#4-14) in Requests
 
 ### Gemini CLI ([client_metadata.ts](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/src/code_assist/experiments/client_metadata.ts))
 For [loadCodeAssist](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/src/code_assist/server.ts#263-281) and metrics:
@@ -267,7 +267,7 @@ For [recordCodeAssistMetrics](file:///C:/Users/aghassan/Documents/workspace/gemi
 }
 ```
 
-### LiteAI ([setup.ts:50-54](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/setup.ts#L50-L54))
+### LiteAI ([setup.ts:50-54](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/setup.ts#L50-L54))
 ```ts
 const META = {
   ideType: "IDE_UNSPECIFIED",
@@ -305,7 +305,7 @@ const OAUTH_SCOPE = [
 Uses `google-auth-library`'s `AuthClient.request()` which **automatically** injects `Authorization: Bearer <token>` and handles refresh.
 
 ### LiteAI
-Uses a custom [fetch](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/src/code_assist/server.ts#301-309) function wrapper that injects the bearer token via [headers()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/provider.ts#40-44) callback:
+Uses a custom [fetch](file:///C:/Users/aghassan/Documents/workspace/gemini-cli/packages/core/src/code_assist/server.ts#301-309) function wrapper that injects the bearer token via [headers()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/provider.ts#40-44) callback:
 ```ts
 headers: () => ({
   ...settings.headers,
@@ -336,7 +336,7 @@ async loadCodeAssist(req) {
 
 VPC-SC detection checks for `SECURITY_POLICY_VIOLATED` in error details.
 
-### LiteAI ([client.ts:135-151](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/client.ts#L135-L151))
+### LiteAI ([client.ts:135-151](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/client.ts#L135-L151))
 ```ts
 async function loadCodeAssist(cfg, req) {
   // No VPC-SC handling, no retry
@@ -357,7 +357,7 @@ async function loadCodeAssist(cfg, req) {
 await new Promise((f) => setTimeout(f, 5000));  // 5 second delay
 ```
 
-### LiteAI ([setup.ts:115](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/setup.ts#L115))
+### LiteAI ([setup.ts:115](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/setup.ts#L115))
 ```ts
 await new Promise((r) => setTimeout(r, 5000))  // 5 second delay
 ```
@@ -371,7 +371,7 @@ await new Promise((r) => setTimeout(r, 5000))  // 5 second delay
 ### Gemini CLI
 Always enables thinking via generation config for Code Assist. The thinking budget cap is `DEFAULT_THINKING_MODE = 8192`.
 
-### LiteAI ([converter.ts:236-243](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/converter.ts#L236-L243))
+### LiteAI ([converter.ts:236-243](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/converter.ts#L236-L243))
 ```ts
 cfg.thinkingConfig = { includeThoughts: true }
 const budget = opts.providerOptions?.["code-assist"]?.thinkingBudget
@@ -395,7 +395,7 @@ const rl = readline.createInterface({
 // Parses "data: " lines, joins multi-line chunks
 ```
 
-### LiteAI ([client.ts:91-132](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/client.ts#L91-L132))
+### LiteAI ([client.ts:91-132](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/client.ts#L91-L132))
 Uses `ReadableStream.getReader()` with manual line parsing:
 ```ts
 const reader = res.body.getReader()
@@ -412,7 +412,7 @@ const decoder = new TextDecoder()
 
 | # | Area | Severity | Status |
 |---|---|---|---|
-| 1 | User-Agent | 🟡 Medium | ✅ Fixed — configurable [ua](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/client.ts#34-37) field with surface |
+| 1 | User-Agent | 🟡 Medium | ✅ Fixed — configurable [ua](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/client.ts#34-37) field with surface |
 | 2 | `enabled_credit_types` | 🔴 High | ✅ Fixed — added to types + converter |
 | 3 | `consumedCredits`/`remainingCredits` | 🟡 Medium | ✅ Fixed — types added to response |
 | 4 | POST retry logic | 🔴 High | ✅ Fixed — 3 retries for 429/499/5xx |
@@ -420,5 +420,5 @@ const decoder = new TextDecoder()
 | 6 | VPC-SC fallback | 🟡 Medium | ✅ Fixed — SECURITY_POLICY_VIOLATED catch |
 | 7 | Telemetry endpoints | 🟢 Low | Not implemented (not required for core) |
 | 8 | Default thinking budget | 🟡 Medium | ✅ Fixed — 8192 default cap |
-| 9 | Rich [ClientMetadata](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/provider/sdk/code-assist/types.ts#4-14) | 🟢 Low | Not implemented (only needed with telemetry) |
+| 9 | Rich [ClientMetadata](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/sdk/code-assist/types.ts#4-14) | 🟢 Low | Not implemented (only needed with telemetry) |
 

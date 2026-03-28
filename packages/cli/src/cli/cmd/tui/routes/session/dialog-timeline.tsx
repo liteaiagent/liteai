@@ -3,7 +3,7 @@ import type { PromptInfo } from "@tui/component/prompt/history"
 import { useSync } from "@tui/context/sync"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect, type DialogSelectOption } from "@tui/ui/dialog-select"
-import { Locale } from "liteai/util/locale"
+import { Locale } from "@liteai/core/util/locale"
 import { createMemo, onMount } from "solid-js"
 import { DialogMessage } from "./dialog-message"
 

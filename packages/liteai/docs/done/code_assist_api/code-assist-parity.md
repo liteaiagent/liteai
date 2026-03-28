@@ -235,10 +235,10 @@ These areas were audited and found to already match gemini-cli:
 ## Relevant Files
 
 ### LiteAI (changed)
-- `packages/liteai/src/provider/sdk/code-assist/client.ts` — HTTP client with retry, VPC-SC
-- `packages/liteai/src/provider/sdk/code-assist/types.ts` — API types with credits
-- `packages/liteai/src/provider/sdk/code-assist/converter.ts` — Request converter with credit types + budget cap
-- `packages/liteai/src/provider/sdk/code-assist/index.ts` — Exports
+- `packages/core/src/provider/sdk/code-assist/client.ts` — HTTP client with retry, VPC-SC
+- `packages/core/src/provider/sdk/code-assist/types.ts` — API types with credits
+- `packages/core/src/provider/sdk/code-assist/converter.ts` — Request converter with credit types + budget cap
+- `packages/core/src/provider/sdk/code-assist/index.ts` — Exports
 
 ### Gemini CLI (reference)
 - `packages/core/src/code_assist/server.ts` — CodeAssistServer class (HTTP methods, retry, VPC-SC, streaming)

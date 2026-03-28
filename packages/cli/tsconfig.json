@@ -20,7 +20,6 @@
     ]
   },
   "references": [
-    { "path": "../liteai" }
-  ],
-  "exclude": ["../liteai/src/**"]
+    { "path": "../core" }
+  ]
 }

@@ -1,4 +1,4 @@
-import { Global } from "liteai/global/index"
+import { Global } from "@liteai/core/global/index"
 import { createMemo } from "solid-js"
 import { useSync } from "./sync"
 

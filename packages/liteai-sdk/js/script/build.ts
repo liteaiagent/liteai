@@ -9,7 +9,7 @@ import path from "path"
 
 import { createClient } from "@hey-api/openapi-ts"
 
-const spec = await $`bun run --conditions=browser ./src/index.ts generate`.cwd(path.resolve(dir, "../../liteai")).text()
+const spec = await $`bun run --conditions=browser script/generate-openapi.ts`.cwd(path.resolve(dir, "../../liteai")).text()
 const openapi = path.resolve(dir, "../openapi.json")
 await Bun.write(openapi, spec)
 

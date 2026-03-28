@@ -18,7 +18,7 @@ input.globalSDK.project.list()
 ### 2. Backend Middleware CWD Fallback
 The `GET /project/` request reaches the backend. Because the user is on the `/` route with no previously selected project, the request lacks the `x-liteai-directory` header and the `directory` query parameter.
 
-The request passes through the **Workspace Instance Middleware** (`packages/liteai/src/server/server.ts`), which is bound to almost all API routes:
+The request passes through the **Workspace Instance Middleware** (`packages/core/src/server/server.ts`), which is bound to almost all API routes:
 ```typescript
 const raw = c.req.query("directory") || c.req.header("x-liteai-directory") || process.cwd()
 
@@ -35,9 +35,9 @@ return WorkspaceContext.provide({
 Since the request lacks directory context, `raw` falls back to `process.cwd()`.
 
 ### 3. Implicit Database Insertion
-Inside `Instance.provide` (`packages/liteai/src/project/instance.ts`), the backend resolves the directory and invokes `Project.fromDirectory(process.cwd())`.
+Inside `Instance.provide` (`packages/core/src/project/instance.ts`), the backend resolves the directory and invokes `Project.fromDirectory(process.cwd())`.
 
-`Project.fromDirectory` (`packages/liteai/src/project/project.ts`) calculates the project properties (e.g., discovering git configurations) and immediately **upserts the CWD into the SQLite `ProjectTable`**:
+`Project.fromDirectory` (`packages/core/src/project/project.ts`) calculates the project properties (e.g., discovering git configurations) and immediately **upserts the CWD into the SQLite `ProjectTable`**:
 ```typescript
 Database.use((db) =>
   db.insert(ProjectTable)

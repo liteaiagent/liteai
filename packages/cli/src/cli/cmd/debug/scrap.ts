@@ -1,6 +1,6 @@
 import { EOL } from "node:os"
-import { Project } from "liteai/project/project"
-import { Log } from "liteai/util/log"
+import { Project } from "@liteai/core/project/project"
+import { Log } from "@liteai/core/util/log"
 import { cmd } from "../cmd"
 
 export const ScrapCommand = cmd({

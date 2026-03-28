@@ -447,7 +447,7 @@ This saves disk space on existing databases but isn't required for correctness.
 
 ## File Impact Summary
 
-### Backend (`packages/liteai`)
+### Backend (`packages/core`)
 
 | File | Phase | Change |
 |---|---|---|

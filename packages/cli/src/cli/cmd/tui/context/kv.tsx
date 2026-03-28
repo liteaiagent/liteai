@@ -1,6 +1,6 @@
 import path from "node:path"
-import { Global } from "liteai/global/index"
-import { Filesystem } from "liteai/util/filesystem"
+import { Global } from "@liteai/core/global/index"
+import { Filesystem } from "@liteai/core/util/filesystem"
 import { createSignal, type Setter } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createSimpleContext } from "./helper"

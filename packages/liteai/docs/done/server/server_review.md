@@ -1,8 +1,8 @@
 # Code Review: `server.ts`
 
-**File:** [server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/server.ts)
+**File:** [server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/server.ts)
 **Lines:** 664 | **Size:** ~20 KB
-**Middleware:** [middleware.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/middleware.ts)
+**Middleware:** [middleware.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/middleware.ts)
 
 ---
 
@@ -16,7 +16,7 @@ The file has a **solid foundation** — good framework choice (Hono), proper use
 
 ### ~~Extract Middleware~~ → Done
 
-The following were extracted to [`middleware.ts`](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/middleware.ts):
+The following were extracted to [`middleware.ts`](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/middleware.ts):
 - `errorHandler(log)` — structured error handler with status code mapping
 - `authMiddleware()` — basic auth with OPTIONS bypass for CORS preflight
 - `requestLogger(log)` — request logging with SSE-aware timer

@@ -1,7 +1,7 @@
-import { Bus } from "liteai/bus/index"
-import { Config } from "liteai/config/config"
-import { Flag } from "liteai/flag/flag"
-import { Installation } from "liteai/installation/index"
+import { Bus } from "@liteai/core/bus/index"
+import { Config } from "@liteai/core/config/config"
+import { Flag } from "@liteai/core/flag/flag"
+import { Installation } from "@liteai/core/installation/index"
 
 export async function upgrade() {
   const config = await Config.global()

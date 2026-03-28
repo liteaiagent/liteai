@@ -1,6 +1,6 @@
 import { EOL } from "node:os"
-import { Ripgrep } from "liteai/file/ripgrep"
-import { Instance } from "liteai/project/instance"
+import { Ripgrep } from "@liteai/core/file/ripgrep"
+import { Instance } from "@liteai/core/project/instance"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 

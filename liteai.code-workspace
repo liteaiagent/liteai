@@ -6,7 +6,7 @@
 		},
 		{
 			"name": "liteai",
-			"path": "packages/liteai"
+			"path": "packages/core"
 		},
 		{
 			"name": "liteai-app",

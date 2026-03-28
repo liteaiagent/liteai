@@ -29,7 +29,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
-    "liteai": "workspace:*",
+    "@liteai/core": "workspace:*",
     "@liteai/util": "workspace:*",
     "@liteai-ai/sdk": "workspace:*",
     "@agentclientprotocol/sdk": "0.14.1",

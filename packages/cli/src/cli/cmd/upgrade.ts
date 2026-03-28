@@ -1,5 +1,5 @@
 import * as prompts from "@clack/prompts"
-import { Installation } from "liteai/installation/index"
+import { Installation } from "@liteai/core/installation/index"
 import type { Argv } from "yargs"
 import { UI } from "../ui"
 

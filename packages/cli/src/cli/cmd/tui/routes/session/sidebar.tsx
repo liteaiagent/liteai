@@ -4,7 +4,7 @@ import { useDirectory } from "@tui/context/directory"
 import { useKV } from "@tui/context/kv"
 import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
-import { Installation } from "liteai/installation/index"
+import { Installation } from "@liteai/core/installation/index"
 import { createMemo, For, Match, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 

@@ -2,7 +2,7 @@ import type { AssistantMessage, ReasoningPart, TextPart, ToolPart } from "@litea
 import { SplitBorder } from "@tui/component/border"
 import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
-import { Flag } from "liteai/flag/flag"
+import { Flag } from "@liteai/core/flag/flag"
 import { createMemo, Match, Show, Switch } from "solid-js"
 import { use } from "./ctx"
 import {

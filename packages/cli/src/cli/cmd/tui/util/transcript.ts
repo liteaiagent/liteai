@@ -1,5 +1,5 @@
 import type { AssistantMessage, Part, UserMessage } from "@liteai-ai/sdk"
-import { Locale } from "liteai/util/locale"
+import { Locale } from "@liteai/core/util/locale"
 
 export type TranscriptOptions = {
   thinking: boolean

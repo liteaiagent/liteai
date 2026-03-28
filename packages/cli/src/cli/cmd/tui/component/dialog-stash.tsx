@@ -1,6 +1,6 @@
 import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect } from "@tui/ui/dialog-select"
-import { Locale } from "liteai/util/locale"
+import { Locale } from "@liteai/core/util/locale"
 import { createMemo, createSignal } from "solid-js"
 import { useKeybind } from "../context/keybind"
 import { useTheme } from "../context/theme"

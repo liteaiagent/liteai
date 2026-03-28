@@ -9,7 +9,7 @@ import { useTheme } from "@tui/context/theme"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useToast } from "@tui/ui/toast"
-import { Locale } from "liteai/util/locale"
+import { Locale } from "@liteai/core/util/locale"
 import { createMemo, createResource, createSignal, onMount } from "solid-js"
 import { createDebouncedSignal } from "../../util/signal"
 

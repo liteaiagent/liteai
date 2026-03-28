@@ -19,22 +19,22 @@
 
 | File | Change |
 |------|--------|
-| [server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/server.ts) | Full restructure — 3-tier routing |
-| [middleware.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/middleware.ts) | Added `projectContextMiddleware()` |
-| [global.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/global.ts) | Removed `global.` from operationIds |
-| [instance.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/instance.ts) | Added `project.` to operationIds |
-| [config.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/config.ts) | Added `project.` to operationIds |
-| [session.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/session.ts) | Added `project.` to operationIds |
-| [trace.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/trace.ts) | Added `project.` to operationIds |
-| [mcp.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/mcp.ts) | Added `project.` to operationIds |
-| [file.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/file.ts) | Added `project.` to operationIds |
-| [pty.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/pty.ts) | Added `project.` to operationIds |
-| [plugin.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/plugin.ts) | Added `project.` to operationIds |
-| [permission.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/permission.ts) | Added `project.` to operationIds |
-| [question.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/question.ts) | Added `project.` to operationIds |
-| [tui.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/tui.ts) | Added `project.` to operationIds |
-| [experimental.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/experimental.ts) | Added `project.` to operationIds |
-| [workspace.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/server/routes/workspace.ts) | Added `project.` to operationIds |
+| [server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/server.ts) | Full restructure — 3-tier routing |
+| [middleware.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/middleware.ts) | Added `projectContextMiddleware()` |
+| [global.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/global.ts) | Removed `global.` from operationIds |
+| [instance.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/instance.ts) | Added `project.` to operationIds |
+| [config.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/config.ts) | Added `project.` to operationIds |
+| [session.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/session.ts) | Added `project.` to operationIds |
+| [trace.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/trace.ts) | Added `project.` to operationIds |
+| [mcp.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/mcp.ts) | Added `project.` to operationIds |
+| [file.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/file.ts) | Added `project.` to operationIds |
+| [pty.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/pty.ts) | Added `project.` to operationIds |
+| [plugin.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/plugin.ts) | Added `project.` to operationIds |
+| [permission.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/permission.ts) | Added `project.` to operationIds |
+| [question.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/question.ts) | Added `project.` to operationIds |
+| [tui.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/tui.ts) | Added `project.` to operationIds |
+| [experimental.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/experimental.ts) | Added `project.` to operationIds |
+| [workspace.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/workspace.ts) | Added `project.` to operationIds |
 
 ### SDK Regenerated
 - `packages/liteai-sdk/js` — full rebuild from new OpenAPI spec
@@ -88,7 +88,7 @@ client.skill.list({ projectID })     // was: client.app.skills()
 | `src/components/dialog-connect-provider.tsx` | `globalSDK.client.global.dispose()` → `globalSDK.client.dispose()` |
 | All files calling project-scoped methods | Must now pass `projectID` parameter |
 
-#### `packages/liteai/src/` (TUI sync)
+#### `packages/core/src/` (TUI sync)
 | File | What changed |
 |------|-------------|
 | `src/cli/cmd/tui/context/sync.tsx` | All SDK calls need `projectID` |

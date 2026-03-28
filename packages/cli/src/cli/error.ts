@@ -1,7 +1,7 @@
-import { Config } from "liteai/config/config"
-import { ConfigMarkdown } from "liteai/config/markdown"
-import { MCP } from "liteai/mcp/index"
-import { Provider } from "liteai/provider/provider"
+import { Config } from "@liteai/core/config/config"
+import { ConfigMarkdown } from "@liteai/core/config/markdown"
+import { MCP } from "@liteai/core/mcp/index"
+import { Provider } from "@liteai/core/provider/provider"
 import { UI } from "./ui"
 
 export function FormatError(input: unknown) {

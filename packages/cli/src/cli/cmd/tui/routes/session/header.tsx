@@ -6,7 +6,7 @@ import { useKeybind } from "@tui/context/keybind"
 import { useRouteData } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
-import { Flag } from "liteai/flag/flag"
+import { Flag } from "@liteai/core/flag/flag"
 import { pipe, sumBy } from "remeda"
 import { type Accessor, createMemo, createSignal, Match, Show, Switch } from "solid-js"
 

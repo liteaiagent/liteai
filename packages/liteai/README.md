@@ -148,4 +148,4 @@ bun run typecheck
 bun test
 ```
 
-> Tests must be run from this directory (`packages/liteai`), not the repo root.
+> Tests must be run from this directory (`packages/core`), not the repo root.

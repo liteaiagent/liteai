@@ -619,7 +619,7 @@ When in step mode, optionally add subtle step separators in the message timeline
 
 ## File Impact Summary
 
-### Backend (`packages/liteai`)
+### Backend (`packages/core`)
 
 | File | Phase | Change |
 |---|---|---|

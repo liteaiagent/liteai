@@ -9,7 +9,7 @@
     "lint": {},
     "lint:fix": {},
     "build": {
-      "dependsOn": [],
+      "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
     "liteai#test": {

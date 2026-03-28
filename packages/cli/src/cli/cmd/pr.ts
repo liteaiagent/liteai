@@ -1,6 +1,6 @@
-import { Instance } from "liteai/project/instance"
-import { git } from "liteai/util/git"
-import { Process } from "liteai/util/process"
+import { Instance } from "@liteai/core/project/instance"
+import { git } from "@liteai/core/util/git"
+import { Process } from "@liteai/core/util/process"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
 

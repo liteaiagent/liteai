@@ -1,6 +1,6 @@
 import { Database as BunDatabase } from "bun:sqlite"
 import { spawn } from "node:child_process"
-import { Database } from "liteai/storage/db"
+import { Database } from "@liteai/core/storage/db"
 import type { Argv } from "yargs"
 import { UI } from "../ui"
 import { cmd } from "./cmd"

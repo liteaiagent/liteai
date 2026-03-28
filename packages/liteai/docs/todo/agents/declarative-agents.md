@@ -2,7 +2,7 @@
 
 ## Overview
 
-Native agents are hardcoded in `packages/liteai/src/agent/agent.ts` within the `state()` function. Declarative agents are defined via config files (YAML/JSON `agent:` section) or `.md` files in agent directories. Both produce identical `Agent.Info` objects — the `native` flag is cosmetic (only affects sort order in `liteai agent list`).
+Native agents are hardcoded in `packages/core/src/agent/agent.ts` within the `state()` function. Declarative agents are defined via config files (YAML/JSON `agent:` section) or `.md` files in agent directories. Both produce identical `Agent.Info` objects — the `native` flag is cosmetic (only affects sort order in `liteai agent list`).
 
 This document outlines what's needed to make all agents declarative.
 
@@ -167,8 +167,8 @@ Declarative agents can use skills via two mechanisms:
 
 ## Relevant Files
 
-- `packages/liteai/src/agent/agent.ts` — native agent definitions and loading logic
-- `packages/liteai/src/config/schema.ts` — `Config.Agent` schema (declarative agent config shape)
-- `packages/liteai/src/tool/task.ts` — subagent invocation via the `task` tool
-- `packages/liteai/src/cli/cmd/agent.ts` — CLI agent create/list commands
-- `packages/liteai/src/permission/next.ts` — permission evaluation and merging
+- `packages/core/src/agent/agent.ts` — native agent definitions and loading logic
+- `packages/core/src/config/schema.ts` — `Config.Agent` schema (declarative agent config shape)
+- `packages/core/src/tool/task.ts` — subagent invocation via the `task` tool
+- `packages/core/src/cli/cmd/agent.ts` — CLI agent create/list commands
+- `packages/core/src/permission/next.ts` — permission evaluation and merging

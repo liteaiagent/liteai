@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import type { Message } from "liteai/session/message"
-import { MessageID, PartID, SessionID } from "liteai/session/schema"
+import type { Message } from "@liteai/core/session/message"
+import { MessageID, PartID, SessionID } from "@liteai/core/session/schema"
 import { extractResponseText, formatPromptTooLargeError } from "../../src/cli/cmd/github"
 
 // Helper to create minimal valid parts

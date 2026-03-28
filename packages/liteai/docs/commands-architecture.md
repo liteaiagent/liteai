@@ -6,7 +6,7 @@ There are **two completely separate command systems** that coexist and are both 
 
 | | **Server Commands** | **TUI Commands** |
 |---|---|---|
-| Defined in | [src/command/index.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts) | [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#113-120) registrations |
+| Defined in | [src/command/index.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts) | [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#113-120) registrations |
 | Lives in | Backend process | TUI / Web App renderer |
 | Executed by | AI model (LLM call) | UI directly (no LLM) |
 | Triggered via | Typing `/cmd args` → sent as a message | Typing `/cmd` → selected in autocomplete |
@@ -20,7 +20,7 @@ There are **two completely separate command systems** that coexist and are both 
 
 ### 1.1 Definition — `Command.Info`
 
-Every server command is an object conforming to `Command.Info` (defined in [src/command/index.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts)):
+Every server command is an object conforming to `Command.Info` (defined in [src/command/index.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts)):
 
 ```ts
 type Command.Info = {
@@ -35,7 +35,7 @@ type Command.Info = {
 }
 ```
 
-The [template](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#368-371) is the **actual text sent as a user message** to the AI model. It may contain:
+The [template](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#368-371) is the **actual text sent as a user message** to the AI model. It may contain:
 - `$1`, `$2`, … – positional argument substitutions
 - `$ARGUMENTS` – full argument string substitution
 - `` !`shell cmd` `` – shell expressions that are evaluated before sending
@@ -54,16 +54,16 @@ Reload happens automatically whenever `Instance.dispose()` is called (e.g., when
 
 | Name | Description |
 |---|---|
-| [init](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#31-112) | Creates/updates `AGENTS.md` using the `initialize.txt` template |
+| [init](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#31-112) | Creates/updates `AGENTS.md` using the `initialize.txt` template |
 | `review` | Reviews git changes; sets `subtask: true` |
 | `hooks` | Lists configured hooks by calling `Hook.list()` |
-| [plugin](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#68-128) | Full plugin manager: list/install/uninstall/enable/disable/update/marketplace |
+| [plugin](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#68-128) | Full plugin manager: list/install/uninstall/enable/disable/update/marketplace |
 
-The [plugin](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#68-128) command is the most complex — its [template](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#368-371) getter calls [pluginCommand(args)](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#68-128) lazily, which is passed `Command.Default._pluginArgs` set just before template access during invocation. See §2 on invocation for details.
+The [plugin](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#68-128) command is the most complex — its [template](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#368-371) getter calls [pluginCommand(args)](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#68-128) lazily, which is passed `Command.Default._pluginArgs` set just before template access during invocation. See §2 on invocation for details.
 
 #### b) User Config Commands (`source: "command"`)
 
-Any command defined in `settings.json` under the [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214) key:
+Any command defined in `settings.json` under the [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214) key:
 
 ```json
 {
@@ -82,7 +82,7 @@ These are iterated and added to the result map verbatim.
 
 #### c) MCP Prompt Commands (`source: "mcp"`)
 
-MCP servers can expose **prompts**. These are fetched via `MCP.prompts()` and each becomes a server command whose [template](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#368-371) getter calls `MCP.getPrompt(...)` lazily (async). Arguments from MCP prompt definitions become `$1`, `$2`, …
+MCP servers can expose **prompts**. These are fetched via `MCP.prompts()` and each becomes a server command whose [template](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#368-371) getter calls `MCP.getPrompt(...)` lazily (async). Arguments from MCP prompt definitions become `$1`, `$2`, …
 
 #### d) Skill Commands (`source: "skill"`)
 
@@ -94,7 +94,7 @@ Skills whose `user_invocable` is not `false` are promoted to server commands. Se
 
 #### Step 1 — Skill Discovery (`Skill.state`)
 
-`Skill.state` (in [src/skill/skill.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/skill/skill.ts)) is also an `Instance.state()` callback run at startup or on reload. It scans for `SKILL.md` files in this priority order (later entries override earlier):
+`Skill.state` (in [src/skill/skill.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/skill/skill.ts)) is also an `Instance.state()` callback run at startup or on reload. It scans for `SKILL.md` files in this priority order (later entries override earlier):
 
 1. **Global external dirs** – `~/.claude/skills/**/SKILL.md`, `~/.agents/skills/**/SKILL.md`
 2. **Project external dirs** – same patterns walking up from `Instance.directory` to `Instance.worktree`
@@ -111,7 +111,7 @@ Each `SKILL.md` is parsed as a Markdown file with YAML frontmatter. Key frontmat
 | `name` | Command name (e.g. `skill-creator`) |
 | `description` | Shown in autocomplete |
 | `user_invocable: false` | Excluded from command list (background knowledge only) |
-| `argument_hint` | Becomes the [hints](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/command/index.ts#48-57) array entry |
+| `argument_hint` | Becomes the [hints](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/command/index.ts#48-57) array entry |
 | `disable_model_invocation` | Prevents model from invoking this skill |
 | `agent` | Override agent used when skill is invoked |
 | `model` | Override model used when skill is invoked |
@@ -158,7 +158,7 @@ The flow:
 3. For the special `/plugin` command: `Command.Default._pluginArgs` is set to `input.arguments` before accessing `cmd.template` (because the getter is synchronous but reads this mutable variable)
 4. Shell expressions `` !`...` `` inside the substituted template are executed via Bun's `$` shell
 5. If `cmd.subtask === true` (or the agent is non-primary), the command is wrapped as a `subtask` message part
-6. If `cmd.source === "skill"`, metadata ([command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214), `arguments`, `description`) is attached to the text part
+6. If `cmd.source === "skill"`, metadata ([command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214), `arguments`, `description`) is attached to the text part
 7. The `command.execute.before` plugin hook fires
 8. The resulting message parts are submitted to the session AI loop via `prompt(...)`
 9. On completion, `Command.Event.Executed` is published to the bus
@@ -167,7 +167,7 @@ The flow:
 
 ## 2. TUI Commands
 
-### 2.1 Registration — [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#113-120)
+### 2.1 Registration — [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#113-120)
 
 TUI commands are created entirely in the renderer process. Any component (or hook) calls:
 
@@ -185,13 +185,13 @@ command.register(() => [
 ])
 ```
 
-The context ([CommandProvider](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#121-139) / [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#113-120)) lives entirely in the TUI process — it never touches the server.
+The context ([CommandProvider](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#121-139) / [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#113-120)) lives entirely in the TUI process — it never touches the server.
 
 ### 2.2 How TUI Slash Commands Appear in Autocomplete
 
-The [Autocomplete](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/prompt/autocomplete.tsx#66-673) component reads two sources when the user types `/`:
+The [Autocomplete](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/prompt/autocomplete.tsx#66-673) component reads two sources when the user types `/`:
 
-1. **TUI slashes** — `command.slashes()` returns all registered [CommandOption](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#23-30)s that have a [slash](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#83-95) field  
+1. **TUI slashes** — `command.slashes()` returns all registered [CommandOption](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#23-30)s that have a [slash](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#83-95) field  
 2. **Server commands** — `sync.data.command` (fetched from the server on bootstrap)
 
 They are merged with deduplication: if a server command has the same name as a TUI slash command, the TUI one wins:
@@ -220,7 +220,7 @@ Selecting a **server command** inserts `/name ` into the prompt textarea — you
 ### 2.3 How TUI Commands Are Triggered
 
 Three ways:
-- **Keybind** — `useKeyboard` in [CommandProvider](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#121-139) matches any registered [keybind](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx#406-420)
+- **Keybind** — `useKeyboard` in [CommandProvider](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#121-139) matches any registered [keybind](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx#406-420)
 - **Command palette** — opened with `command_list` keybind; uses `DialogSelect`
 - **Slash autocomplete** — typing `/name` and pressing Enter/Tab
 
@@ -234,18 +234,18 @@ These always exist. Plugins and config may add more.
 
 | Slash | Source | Description |
 |---|---|---|
-| `/init` | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214) | Create/update `AGENTS.md` |
-| `/review` | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214) | Review git changes (subtask) |
-| `/hooks` | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214) | List configured hooks |
+| `/init` | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214) | Create/update `AGENTS.md` |
+| `/review` | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214) | Review git changes (subtask) |
+| `/hooks` | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214) | List configured hooks |
 | `/plugin` | `skill` | Plugin manager (install/uninstall/enable/disable/update/marketplace) |
-| any user-config key | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214) | Whatever is in `settings.json → command` |
+| any user-config key | [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214) | Whatever is in `settings.json → command` |
 | any MCP prompt | `mcp` | Displayed with `:mcp` label in TUI |
 | any `user_invocable` skill | `skill` | Displayed with `:skill` label in TUI |
 
 > [!NOTE]
-> The `/plugin` command has `source: "skill"` even though it is built-in, so it shows the `:skill` badge. This is intentional — the badge helps distinguish it from plain [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/session/prompt/command.ts#51-214) sources.
+> The `/plugin` command has `source: "skill"` even though it is built-in, so it shows the `:skill` badge. This is intentional — the badge helps distinguish it from plain [command](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/prompt/command.ts#51-214) sources.
 
-### 3.2 TUI-Only Slash Commands — Global ([app.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/app.tsx))
+### 3.2 TUI-Only Slash Commands — Global ([app.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/app.tsx))
 
 Registered in `src/cli/cmd/tui/app.tsx`. Always available regardless of route.
 
@@ -271,7 +271,7 @@ Registered in `src/cli/cmd/tui/app.tsx`. Always available regardless of route.
 > [!NOTE]
 > `/plugin` is registered here as a TUI command (opens `DialogPlugin`) **and** exists as a server command. The TUI version wins due to deduplication, so it opens a UI dialog in the TUI rather than invoking the AI.
 
-### 3.3 TUI-Only Slash Commands — Session Route ([commands.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/routes/session/commands.tsx))
+### 3.3 TUI-Only Slash Commands — Session Route ([commands.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/routes/session/commands.tsx))
 
 Registered in `src/cli/cmd/tui/routes/session/commands.tsx`. Only active while viewing a session.
 
@@ -291,7 +291,7 @@ Registered in `src/cli/cmd/tui/routes/session/commands.tsx`. Only active while v
 | `/export` | `session.export` | Export session transcript |
 
 
-### 3.4 TUI-Only Slash Commands — Prompt ([prompt/index.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/prompt/index.tsx))
+### 3.4 TUI-Only Slash Commands — Prompt ([prompt/index.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/prompt/index.tsx))
 
 Registered in `src/cli/cmd/tui/component/prompt/index.tsx`. Active whenever the prompt component is mounted.
 
@@ -303,7 +303,7 @@ Registered in `src/cli/cmd/tui/component/prompt/index.tsx`. Active whenever the 
 ### 3.5 Web App Commands (command palette, `Ctrl/Cmd+Shift+P`)
 
 Registered in [packages/liteai-app/src/pages/layout/commands.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/pages/layout/commands.ts). These are entirely client-side.  
-The web app does **not** use [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai/src/cli/cmd/tui/component/dialog-command.tsx#113-120) from the TUI — it has its own [useCommand](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx) context with the same concept but different implementation. Server commands are only accessible in the web app by typing `/name` in the chat prompt and submitting.
+The web app does **not** use [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#113-120) from the TUI — it has its own [useCommand](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx) context with the same concept but different implementation. Server commands are only accessible in the web app by typing `/name` in the chat prompt and submitting.
 
 | Slash | ID | Description |
 |---|---|---|

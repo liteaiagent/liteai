@@ -2,10 +2,10 @@ import fs from "node:fs/promises"
 import { platform, release, tmpdir } from "node:os"
 import path from "node:path"
 import clipboardy from "clipboardy"
-import { Filesystem } from "liteai/util/filesystem"
-import { lazy } from "liteai/util/lazy"
-import { Process } from "liteai/util/process"
-import { which } from "liteai/util/which"
+import { Filesystem } from "@liteai/core/util/filesystem"
+import { lazy } from "@liteai/core/util/lazy"
+import { Process } from "@liteai/core/util/process"
+import { which } from "@liteai/core/util/which"
 
 /**
  * Writes text to clipboard via OSC 52 escape sequence.

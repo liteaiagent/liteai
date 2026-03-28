@@ -2,13 +2,13 @@
 
 ## Objective
 
-Extract the CLI and TUI infrastructure from `packages/liteai` into a standalone `packages/cli` workspace package,
+Extract the CLI and TUI infrastructure from `packages/core` into a standalone `packages/cli` workspace package,
 while preserving the ability to build a single `liteai.exe` binary via Bun's `compile` mode.
 
 ## Architecture Decision
 
 ```
-packages/liteai  (core library)
+packages/core  (core library)
 ├── src/
 │   ├── server/          ← stays here (HTTP server, routes, middleware)
 │   ├── session/         ← stays here
@@ -41,8 +41,8 @@ packages/cli  (NEW - CLI entry point)
 
 **Key design decisions:**
 
-- `server/routes/tui.ts` stays in `packages/liteai` (moving it would create a circular dep)
-- `TuiEvent` bus event definitions moved to `packages/liteai/src/bus/tui-event.ts` (shared between
+- `server/routes/tui.ts` stays in `packages/core` (moving it would create a circular dep)
+- `TuiEvent` bus event definitions moved to `packages/core/src/bus/tui-event.ts` (shared between
   server routes and CLI TUI code)
 - MCP refactored to use domain-level `MCP.AuthRequired` event instead of directly emitting `TuiEvent.ToastShow`
 - All CLI commands moved together (serve, web, tui, run, etc.) — they are entry points that invoke
@@ -53,11 +53,11 @@ packages/cli  (NEW - CLI entry point)
 
 ### Phase 1: Decouple MCP from TUI events ✅
 
-- Replaced `TuiEvent.ToastShow` calls in `packages/liteai/src/mcp/index.ts` with new domain events:
+- Replaced `TuiEvent.ToastShow` calls in `packages/core/src/mcp/index.ts` with new domain events:
   - `MCP.AuthRequired` — emitted when OAuth/auth fails
   - `MCP.BrowserOpenFailed` — emitted when browser can't be opened
 - Updated `app.tsx` to subscribe to `MCP.AuthRequired` and show toast notifications
-- `TuiEvent` definitions moved to `packages/liteai/src/bus/tui-event.ts`
+- `TuiEvent` definitions moved to `packages/core/src/bus/tui-event.ts`
 - `server/routes/tui.ts` updated to import from `@/bus/tui-event` instead of `@/cli/cmd/tui/event`
 
 ### Phase 2: Scaffold `packages/cli` ✅
@@ -101,9 +101,9 @@ packages/cli  (NEW - CLI entry point)
 ### Phase 5: Build infrastructure ✅
 
 - `build.ts` updated to reference `liteaiDir` for generated files:
-  - `models-snapshot.ts` → writes to `packages/liteai/src/provider/`
-  - `app-assets.ts` → writes to `packages/liteai/src/server/`
-  - Migrations read from `packages/liteai/migration/`
+  - `models-snapshot.ts` → writes to `packages/core/src/provider/`
+  - `app-assets.ts` → writes to `packages/core/src/server/`
+  - Migrations read from `packages/core/migration/`
 - `@parcel/watcher` version read from `liteaiPkg.dependencies`
 - Root `package.json` scripts updated: `dev`, `build`, `build:all`, `release` point to `packages/cli`
 
@@ -113,7 +113,7 @@ packages/cli  (NEW - CLI entry point)
 
 ### 1. Fix ~95 remaining import path errors in `packages/cli` (HIGH PRIORITY)
 
-There are **110 total typecheck errors**, but ~15 are in `packages/liteai` (`.md` module imports and
+There are **110 total typecheck errors**, but ~15 are in `packages/core` (`.md` module imports and
 test files). The remaining **~95 are in `packages/cli`** and fall into these categories:
 
 #### Category A: Wrong relative paths in TUI subdirectories (~70 errors)
@@ -168,7 +168,7 @@ converted. Check existing `@tui/` usage in `app.tsx` for examples.
 - `worker.ts:14` — `upgrade` export not found from `"../upgrade"` — check actual export name
 - `clipboard.ts:6` — `liteai/util/lazy.js` should be `liteai/util/lazy`  
 - `routes/session/index.tsx:15` — `liteai/liteai/parsers-config.ts` is wrong (double `liteai/`)
-  — should be a relative path to `packages/liteai/parsers-config.ts`
+  — should be a relative path to `packages/core/parsers-config.ts`
 
 #### Category C: Type errors (~15 errors)
 
@@ -177,21 +177,21 @@ converted. Check existing `@tui/` usage in `app.tsx` for examples.
 - `permission.tsx:136` — implicit `any` parameter
 - `dialog-stash.tsx` — implicit `any` and type mismatch on `setToDelete`
 
-### 2. Fix 3 test file imports in `packages/liteai` (LOW PRIORITY)
+### 2. Fix 3 test file imports in `packages/core` (LOW PRIORITY)
 
-Three test files in `packages/liteai/test/cli/` reference code that moved:
+Three test files in `packages/core/test/cli/` reference code that moved:
 - `test/cli/plugin-auth-picker.test.ts` → imports from `src/cli/cmd/providers`
 - `test/cli/tui/thread.test.ts` → imports from `src/cli/cmd/tui/thread`
 - `test/cli/tui/transcript.test.ts` → imports from `src/cli/cmd/tui/util/transcript`
 
 **Fix**: Move these test files to `packages/cli/test/` or update imports to use `@liteai/cli/*`.
 
-### 3. Remove old files from `packages/liteai` (LOW PRIORITY)
+### 3. Remove old files from `packages/core` (LOW PRIORITY)
 
-- `packages/liteai/src/cli/` — already deleted ✅
-- `packages/liteai/src/index.ts` — already moved ✅ (check if stale copy exists)
-- Old build scripts in `packages/liteai/script/` — keep for now (they may still be referenced)
-- `packages/liteai/server/routes/tui.ts` — stays (intentionally kept in core)
+- `packages/core/src/cli/` — already deleted ✅
+- `packages/core/src/index.ts` — already moved ✅ (check if stale copy exists)
+- Old build scripts in `packages/core/script/` — keep for now (they may still be referenced)
+- `packages/core/server/routes/tui.ts` — stays (intentionally kept in core)
 
 ### 4. Verify single-binary build (AFTER TYPECHECK PASSES)
 
@@ -202,7 +202,7 @@ Run `bun run build` from `packages/cli` and verify:
 
 ### 5. Run full test suite (AFTER BUILD WORKS)
 
-- `bun test` in `packages/liteai` (core tests)
+- `bun test` in `packages/core` (core tests)
 - `bun test` in `packages/cli` (moved CLI tests)
 - `bun lint:fix` in both packages
 
@@ -218,7 +218,7 @@ cd packages/cli
 bun lint:fix
 
 # Typecheck core package
-cd packages/liteai
+cd packages/core
 bunx --bun tsc --noEmit
 
 # Build single binary
@@ -234,13 +234,13 @@ bun run build
 - `script/build.ts`, `script/release.ts`, `script/script.ts`
 - `assets/`, `Dockerfile`
 
-### Stays in `packages/liteai`
+### Stays in `packages/core`
 - `src/server/` (all server code including `routes/tui.ts`)
 - `src/bus/tui-event.ts` (NEW — TuiEvent definitions, shared between packages)
 - `src/mcp/` (refactored to use domain events)
 - Everything else (session, agent, provider, config, storage, etc.)
 
 ### New files
-- `packages/liteai/src/bus/tui-event.ts` — TuiEvent bus event definitions
+- `packages/core/src/bus/tui-event.ts` — TuiEvent bus event definitions
 - `packages/cli/src/cli/cmd/tui/event.ts` — re-exports TuiEvent from core
 - `packages/cli/package.json`, `tsconfig.json`, `biome.json`, `bunfig.toml`

@@ -1,4 +1,4 @@
-import { Config } from "liteai/config/config"
+import { Config } from "@liteai/core/config/config"
 import type { Argv, InferredOptionTypes } from "yargs"
 
 const options = {

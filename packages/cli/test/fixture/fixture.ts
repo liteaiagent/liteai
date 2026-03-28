@@ -44,7 +44,7 @@ export async function tmpdir(options?: TmpDirOptions) {
     await $`git commit --allow-empty -m "root commit ${dirpath}"`.cwd(dirpath).quiet()
   }
   const realpath = sanitizePath(await fs.realpath(dirpath))
-  const { Project } = await import("liteai/project/project")
+  const { Project } = await import("@liteai/core/project/project")
   await Project.fromDirectory(realpath)
   return {
     [Symbol.asyncDispose]: async () => {

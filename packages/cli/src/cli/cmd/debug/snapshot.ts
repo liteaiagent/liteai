@@ -1,4 +1,4 @@
-import { Snapshot } from "liteai/snapshot/index"
+import { Snapshot } from "@liteai/core/snapshot/index"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 

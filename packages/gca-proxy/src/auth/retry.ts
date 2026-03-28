@@ -1,7 +1,7 @@
 /**
  * Retry logic with exponential backoff and jitter.
  *
- * Aligned with gemini-cli/packages/core:
+ * Aligned with gemini-cli/packages/liteai:
  * - googleQuotaErrors.ts (error classification)
  * - utils/retry.ts (retry strategy)
  * - core/geminiChat.ts (InvalidStreamError)

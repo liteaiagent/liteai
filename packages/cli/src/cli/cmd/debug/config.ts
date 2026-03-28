@@ -1,5 +1,5 @@
 import { EOL } from "node:os"
-import { Config } from "liteai/config/config"
+import { Config } from "@liteai/core/config/config"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 

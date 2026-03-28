@@ -20,8 +20,8 @@ import type {
   Workspace,
 } from "@liteai-ai/sdk"
 import { useSDK } from "@tui/context/sdk"
-import type { Snapshot } from "liteai/snapshot/index"
-import { Log } from "liteai/util/log"
+import type { Snapshot } from "@liteai/core/snapshot/index"
+import { Log } from "@liteai/core/util/log"
 import { batch, onMount } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useArgs } from "./args"

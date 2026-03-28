@@ -31,6 +31,7 @@
         "@agentclientprotocol/sdk": "0.14.1",
         "@clack/prompts": "1.0.0-alpha.1",
         "@liteai-ai/sdk": "workspace:*",
+        "@liteai/core": "workspace:*",
         "@liteai/util": "workspace:*",
         "@modelcontextprotocol/sdk": "1.25.2",
         "@octokit/graphql": "9.0.2",
@@ -47,7 +48,6 @@
         "gray-matter": "4.0.3",
         "hono": "catalog:",
         "jsonc-parser": "3.3.1",
-        "liteai": "workspace:*",
         "open": "10.1.2",
         "opentui-spinner": "0.0.6",
         "remeda": "catalog:",
@@ -66,8 +66,24 @@
         "typescript": "catalog:",
       },
     },
+    "packages/gca-proxy": {
+      "name": "@liteai/gca-proxy",
+      "version": "1.0.0",
+      "dependencies": {
+        "@google/genai": "^1.41.0",
+        "google-auth-library": "^10.5.0",
+        "hono": "^4.7.13",
+        "jose": "^6.0.11",
+        "zod": "^3.25.76",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "catalog:",
+        "@types/bun": "latest",
+        "typescript": "catalog:",
+      },
+    },
     "packages/liteai": {
-      "name": "liteai",
+      "name": "@liteai/core",
       "version": "1.0.0",
       "dependencies": {
         "@actions/core": "1.11.1",
@@ -167,22 +183,6 @@
         "drizzle-kit": "1.0.0-beta.16-ea816b6",
         "typescript": "catalog:",
         "vscode-languageserver-types": "3.17.5",
-      },
-    },
-    "packages/liteai-api": {
-      "name": "liteai-api",
-      "version": "1.0.0",
-      "dependencies": {
-        "@google/genai": "^1.41.0",
-        "google-auth-library": "^10.5.0",
-        "hono": "^4.7.13",
-        "jose": "^6.0.11",
-        "zod": "^3.25.76",
-      },
-      "devDependencies": {
-        "@biomejs/biome": "catalog:",
-        "@types/bun": "latest",
-        "typescript": "catalog:",
       },
     },
     "packages/liteai-app": {
@@ -859,6 +859,10 @@
     "@liteai-ai/sdk": ["@liteai-ai/sdk@workspace:packages/liteai-sdk/js"],
 
     "@liteai/cli": ["@liteai/cli@workspace:packages/cli"],
+
+    "@liteai/core": ["@liteai/core@workspace:packages/liteai"],
+
+    "@liteai/gca-proxy": ["@liteai/gca-proxy@workspace:packages/gca-proxy"],
 
     "@liteai/script": ["@liteai/script@workspace:packages/script"],
 
@@ -1976,10 +1980,6 @@
 
     "lightningcss-win32-x64-msvc": ["lightningcss-win32-x64-msvc@1.30.1", "", { "os": "win32", "cpu": "x64" }, "sha512-PVqXh48wh4T53F/1CCu8PIPCxLzWyCnn/9T5W1Jpmdy5h9Cwd+0YQS6/LwhHXSafuc61/xg9Lv5OrCby6a++jg=="],
 
-    "liteai": ["liteai@workspace:packages/liteai"],
-
-    "liteai-api": ["liteai-api@workspace:packages/liteai-api"],
-
     "liteai-app": ["liteai-app@workspace:packages/liteai-app"],
 
     "liteai-vscode": ["liteai-vscode@workspace:packages/liteai-vscode"],
@@ -2810,6 +2810,8 @@
 
     "@jimp/types/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
+    "@liteai/gca-proxy/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+
     "@modelcontextprotocol/sdk/zod-to-json-schema": ["zod-to-json-schema@3.25.1", "", { "peerDependencies": { "zod": "^3.25 || ^4" } }, "sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA=="],
 
     "@octokit/core/@octokit/graphql": ["@octokit/graphql@7.1.1", "", { "dependencies": { "@octokit/request": "^8.4.1", "@octokit/types": "^13.0.0", "universal-user-agent": "^6.0.0" } }, "sha512-3mkDltSfcDUoa176nlGoA32RGjeWjl3K7F/BwHwRMJUW/IteSa4bnSV8p2ThNkcIcZU2umkZWxwETSSCJf2Q7g=="],
@@ -2933,8 +2935,6 @@
     "lazystream/readable-stream": ["readable-stream@2.3.8", "", { "dependencies": { "core-util-is": "~1.0.0", "inherits": "~2.0.3", "isarray": "~1.0.0", "process-nextick-args": "~2.0.0", "safe-buffer": "~5.1.1", "string_decoder": "~1.1.1", "util-deprecate": "~1.0.1" } }, "sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA=="],
 
     "lightningcss/detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
-
-    "liteai-api/zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "liteai-vscode/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

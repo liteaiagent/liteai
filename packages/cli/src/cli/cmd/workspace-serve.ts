@@ -1,4 +1,4 @@
-import { WorkspaceServer } from "liteai/control-plane/workspace-server/server"
+import { WorkspaceServer } from "@liteai/core/control-plane/workspace-server/server"
 import { resolveNetworkOptions, withNetworkOptions } from "../network"
 import { cmd } from "./cmd"
 

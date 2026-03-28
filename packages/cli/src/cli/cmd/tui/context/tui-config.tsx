@@ -1,4 +1,4 @@
-import type { TuiConfig } from "liteai/config/tui"
+import type { TuiConfig } from "@liteai/core/config/tui"
 import { createSimpleContext } from "./helper"
 
 export const { use: useTuiConfig, provider: TuiConfigProvider } = createSimpleContext({

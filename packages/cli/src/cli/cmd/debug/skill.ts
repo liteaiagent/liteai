@@ -1,5 +1,5 @@
 import { EOL } from "node:os"
-import { Skill } from "liteai/skill/index"
+import { Skill } from "@liteai/core/skill/index"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 

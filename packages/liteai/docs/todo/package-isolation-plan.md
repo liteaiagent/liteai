@@ -11,10 +11,10 @@ liteai       --? @liteai/cli  (FORBIDDEN � core must not know its consumers)
 
 ### What Was Done (Phase 1 Complete)
 
-- All `packages/liteai/test/cli/` test files deleted
+- All `packages/core/test/cli/` test files deleted
 - All 6 test files migrated to `packages/cli/test/cli/`
-- `@liteai/cli` devDependency removed from `packages/liteai/package.json`
-- `@tui/*` and `@liteai/cli/*` aliases removed from `packages/liteai/tsconfig.json`
+- `@liteai/cli` devDependency removed from `packages/core/package.json`
+- `@tui/*` and `@liteai/cli/*` aliases removed from `packages/core/tsconfig.json`
 - Both packages typecheck clean
 
 ---
@@ -43,7 +43,7 @@ first-party code rather than opaque library declarations.
 Make liteai a composite project that emits .d.ts files. CLI then sees
 opaque type declarations, not raw source.
 
-### Step 1: packages/liteai/tsconfig.json
+### Step 1: packages/core/tsconfig.json
 
 ```diff
   "compilerOptions": {
@@ -54,7 +54,7 @@ opaque type declarations, not raw source.
   }
 ```
 
-### Step 2: packages/liteai/package.json exports
+### Step 2: packages/core/package.json exports
 
 ```json
 "exports": {
@@ -88,7 +88,7 @@ opaque type declarations, not raw source.
 
 ---
 
-## Phase 3 � Package Rename (Future)
+## Phase 3 - Package Rename (Completed)
 
 Rename liteai package name to @liteai/core and update all import specifiers
 workspace-wide from `liteai/` to `@liteai/core/`.
@@ -117,9 +117,9 @@ Tests for CLI features live in @liteai/cli.
 - [x] Move all liteai/test/cli/ test files to cli/test/cli/
 - [x] Fix mock module paths in thread.test.ts
 - [x] Create packages/cli/test/fixture/fixture.ts
-- [x] Delete packages/liteai/test/cli/ directory
-- [x] Remove @liteai/cli devDependency from packages/liteai/package.json
-- [x] Remove @tui/* + @liteai/cli/* from packages/liteai/tsconfig.json
+- [x] Delete packages/core/test/cli/ directory
+- [x] Remove @liteai/cli devDependency from packages/core/package.json
+- [x] Remove @tui/* + @liteai/cli/* from packages/core/tsconfig.json
 - [x] bun typecheck passes in both packages
 
 ### Phase 2 (Completed Infrastructure)
@@ -128,11 +128,15 @@ Tests for CLI features live in @liteai/cli.
 - [x] Remove @/* from CLI tsconfig
 - [x] Add references to CLI tsconfig pointing at liteai
 - [x] Update Turbo pipeline ordering
+- [x] Fix SDK build: create standalone generate-openapi.ts in core
+- [x] Clean stale scripts from core package.json (dev, build:exe, release)
+- [x] Delete duplicated build/release/script.ts from packages/core/script/
+- [x] Update turbo `build` task to depend on `^build`
 
-### Phase 2.5 (Current Sprint - Fix Strict Typing)
-- [ ] Fix ~362 type errors in `packages/cli` exposed by the new strict `.d.ts` boundaries
-- [ ] Ensure `bun run typecheck` passes in CLI without `any`/`unknown` bleed from core
+### Phase 2.5 (Completed)
+- [x] Fix ~362 type errors in `packages/cli` exposed by the new strict `.d.ts` boundaries
+- [x] Ensure `bun run typecheck` passes in CLI without `any`/`unknown` bleed from core
 
-### Phase 3 (Future)
-- [ ] Rename "liteai" -> "@liteai/core"
-- [ ] Update all liteai/ import specifiers workspace-wide
+### Phase 3 (Completed)
+- [x] Rename "liteai" -> "@liteai/core"
+- [x] Update all liteai/ import specifiers workspace-wide

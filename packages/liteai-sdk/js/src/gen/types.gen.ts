@@ -18,6 +18,20 @@ export type EventInstallationUpdateAvailable = {
 	};
 };
 
+export type EventWorkspaceReady = {
+	type: "workspace.ready";
+	properties: {
+		name: string;
+	};
+};
+
+export type EventWorkspaceFailed = {
+	type: "workspace.failed";
+	properties: {
+		message: string;
+	};
+};
+
 export type Project = {
 	id: string;
 	worktree: string;
@@ -173,6 +187,40 @@ export type EventGlobalDisposed = {
 	type: "global.disposed";
 	properties: {
 		[key: string]: unknown;
+	};
+};
+
+export type EventMcpToolsChanged = {
+	type: "mcp.tools.changed";
+	properties: {
+		server: string;
+	};
+};
+
+export type EventMcpBrowserOpenFailed = {
+	type: "mcp.browser.open.failed";
+	properties: {
+		mcpName: string;
+		url: string;
+	};
+};
+
+export type EventMcpAuthRequired = {
+	type: "mcp.auth.required";
+	properties: {
+		server: string;
+		message: string;
+		variant: "needs_auth" | "needs_client_registration";
+	};
+};
+
+export type EventCommandExecuted = {
+	type: "command.executed";
+	properties: {
+		name: string;
+		sessionID: string;
+		arguments: string;
+		messageID: string;
 	};
 };
 
@@ -651,122 +699,6 @@ export type EventMessagePartRemoved = {
 	};
 };
 
-export type Todo = {
-	/**
-	 * Brief description of the task
-	 */
-	content: string;
-	/**
-	 * Current status of the task: pending, in_progress, completed, cancelled
-	 */
-	status: string;
-	/**
-	 * Priority level of the task: high, medium, low
-	 */
-	priority: string;
-};
-
-export type EventTodoUpdated = {
-	type: "todo.updated";
-	properties: {
-		sessionID: string;
-		todos: Array<Todo>;
-	};
-};
-
-export type EventWorkspaceReady = {
-	type: "workspace.ready";
-	properties: {
-		name: string;
-	};
-};
-
-export type EventWorkspaceFailed = {
-	type: "workspace.failed";
-	properties: {
-		message: string;
-	};
-};
-
-export type EventTuiPromptAppend = {
-	type: "tui.prompt.append";
-	properties: {
-		text: string;
-	};
-};
-
-export type EventTuiCommandExecute = {
-	type: "tui.command.execute";
-	properties: {
-		command:
-			| "session.list"
-			| "session.new"
-			| "session.share"
-			| "session.interrupt"
-			| "session.compact"
-			| "session.page.up"
-			| "session.page.down"
-			| "session.line.up"
-			| "session.line.down"
-			| "session.half.page.up"
-			| "session.half.page.down"
-			| "session.first"
-			| "session.last"
-			| "prompt.clear"
-			| "prompt.submit"
-			| "agent.cycle"
-			| string;
-	};
-};
-
-export type EventTuiToastShow = {
-	type: "tui.toast.show";
-	properties: {
-		title?: string;
-		message: string;
-		variant: "info" | "success" | "warning" | "error";
-		/**
-		 * Duration in milliseconds
-		 */
-		duration?: number;
-	};
-};
-
-export type EventTuiSessionSelect = {
-	type: "tui.session.select";
-	properties: {
-		/**
-		 * Session ID to navigate to
-		 */
-		sessionID: string;
-	};
-};
-
-export type EventMcpToolsChanged = {
-	type: "mcp.tools.changed";
-	properties: {
-		server: string;
-	};
-};
-
-export type EventMcpBrowserOpenFailed = {
-	type: "mcp.browser.open.failed";
-	properties: {
-		mcpName: string;
-		url: string;
-	};
-};
-
-export type EventCommandExecuted = {
-	type: "command.executed";
-	properties: {
-		name: string;
-		sessionID: string;
-		arguments: string;
-		messageID: string;
-	};
-};
-
 export type SessionStatus =
 	| {
 			type: "idle";
@@ -815,6 +747,29 @@ export type EventFileWatcherUpdated = {
 	properties: {
 		file: string;
 		event: "add" | "change" | "unlink";
+	};
+};
+
+export type Todo = {
+	/**
+	 * Brief description of the task
+	 */
+	content: string;
+	/**
+	 * Current status of the task: pending, in_progress, completed, cancelled
+	 */
+	status: string;
+	/**
+	 * Priority level of the task: high, medium, low
+	 */
+	priority: string;
+};
+
+export type EventTodoUpdated = {
+	type: "todo.updated";
+	properties: {
+		sessionID: string;
+		todos: Array<Todo>;
 	};
 };
 
@@ -966,9 +921,65 @@ export type EventPtyDeleted = {
 	};
 };
 
+export type EventTuiPromptAppend = {
+	type: "tui.prompt.append";
+	properties: {
+		text: string;
+	};
+};
+
+export type EventTuiCommandExecute = {
+	type: "tui.command.execute";
+	properties: {
+		command:
+			| "session.list"
+			| "session.new"
+			| "session.share"
+			| "session.interrupt"
+			| "session.compact"
+			| "session.page.up"
+			| "session.page.down"
+			| "session.line.up"
+			| "session.line.down"
+			| "session.half.page.up"
+			| "session.half.page.down"
+			| "session.first"
+			| "session.last"
+			| "prompt.clear"
+			| "prompt.submit"
+			| "agent.cycle"
+			| string;
+	};
+};
+
+export type EventTuiToastShow = {
+	type: "tui.toast.show";
+	properties: {
+		title?: string;
+		message: string;
+		variant: "info" | "success" | "warning" | "error";
+		/**
+		 * Duration in milliseconds
+		 */
+		duration?: number;
+	};
+};
+
+export type EventTuiSessionSelect = {
+	type: "tui.session.select";
+	properties: {
+		/**
+		 * Session ID to navigate to
+		 */
+		sessionID: string;
+	};
+};
+
 export type Event =
 	| EventInstallationUpdated
 	| EventInstallationUpdateAvailable
+	| EventWorkspaceReady
+	| EventWorkspaceFailed
 	| EventProjectUpdated
 	| EventServerInstanceDisposed
 	| EventPermissionAsked
@@ -979,6 +990,10 @@ export type Event =
 	| EventServerConnected
 	| EventServerHeartbeat
 	| EventGlobalDisposed
+	| EventMcpToolsChanged
+	| EventMcpBrowserOpenFailed
+	| EventMcpAuthRequired
+	| EventCommandExecuted
 	| EventLspClientDiagnostics
 	| EventLspUpdated
 	| EventMessageUpdated
@@ -986,21 +1001,12 @@ export type Event =
 	| EventMessagePartUpdated
 	| EventMessagePartDelta
 	| EventMessagePartRemoved
-	| EventTodoUpdated
-	| EventWorkspaceReady
-	| EventWorkspaceFailed
-	| EventTuiPromptAppend
-	| EventTuiCommandExecute
-	| EventTuiToastShow
-	| EventTuiSessionSelect
-	| EventMcpToolsChanged
-	| EventMcpBrowserOpenFailed
-	| EventCommandExecuted
 	| EventSessionStatus
 	| EventSessionIdle
 	| EventSessionCompacted
 	| EventFileEdited
 	| EventFileWatcherUpdated
+	| EventTodoUpdated
 	| EventSessionCreated
 	| EventSessionUpdated
 	| EventSessionDeleted
@@ -1012,7 +1018,11 @@ export type Event =
 	| EventPtyCreated
 	| EventPtyUpdated
 	| EventPtyExited
-	| EventPtyDeleted;
+	| EventPtyDeleted
+	| EventTuiPromptAppend
+	| EventTuiCommandExecute
+	| EventTuiToastShow
+	| EventTuiSessionSelect;
 
 export type GlobalEvent = {
 	directory: string;

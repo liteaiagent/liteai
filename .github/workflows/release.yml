@@ -34,7 +34,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          cd packages/liteai
+          cd packages/core
           mkdir -p dist/liteai-linux-x64-musl/bin dist/liteai-linux-arm64-musl/bin
           gh release download "$TAG" --pattern "liteai-linux-x64-musl.tar.gz" --dir /tmp
           gh release download "$TAG" --pattern "liteai-linux-arm64-musl.tar.gz" --dir /tmp
@@ -55,7 +55,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: packages/liteai
+          context: packages/core
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
