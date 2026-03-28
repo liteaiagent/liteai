@@ -14,7 +14,6 @@ import { dynamicTool, type JSONSchema7, jsonSchema, type Tool } from "ai"
 import open from "open"
 import z from "zod/v4"
 import { Bus } from "@/bus"
-import { TuiEvent } from "@/cli/cmd/tui/event"
 import { withTimeout } from "@/util/timeout"
 import { BusEvent } from "../bus/bus-event"
 import { Config } from "../config/config"
@@ -74,6 +73,15 @@ export namespace MCP {
     z.object({
       mcpName: z.string(),
       url: z.string(),
+    }),
+  )
+
+  export const AuthRequired = BusEvent.define(
+    "mcp.auth.required",
+    z.object({
+      server: z.string(),
+      message: z.string(),
+      variant: z.enum(["needs_auth", "needs_client_registration"]),
     }),
   )
 
@@ -435,24 +443,20 @@ export namespace MCP {
                 status: "needs_client_registration" as const,
                 error: "Server does not support dynamic client registration. Please provide clientId in config.",
               }
-              // Show toast for needs_client_registration
-              Bus.publish(TuiEvent.ToastShow, {
-                title: "MCP Authentication Required",
+              Bus.publish(AuthRequired, {
+                server: key,
                 message: `Server "${key}" requires a pre-registered client ID. Add clientId to your config.`,
-                variant: "warning",
-                duration: 8000,
-              }).catch((e) => log.debug("failed to show toast", { error: e }))
+                variant: "needs_client_registration",
+              }).catch((e) => log.debug("failed to publish auth event", { error: e }))
             } else {
               // Store transport for later finishAuth call
               pendingOAuthTransports.set(key, transport)
               status = { status: "needs_auth" as const }
-              // Show toast for needs_auth
-              Bus.publish(TuiEvent.ToastShow, {
-                title: "MCP Authentication Required",
+              Bus.publish(AuthRequired, {
+                server: key,
                 message: `Server "${key}" requires authentication. Run: liteai mcp auth ${key}`,
-                variant: "warning",
-                duration: 8000,
-              }).catch((e) => log.debug("failed to show toast", { error: e }))
+                variant: "needs_auth",
+              }).catch((e) => log.debug("failed to publish auth event", { error: e }))
             }
             break
           }

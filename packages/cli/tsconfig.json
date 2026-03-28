@@ -9,7 +9,8 @@
     "noUncheckedIndexedAccess": false,
     "customConditions": ["browser"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["../liteai/src/*"],
+      "@tui/*": ["./src/cli/cmd/tui/*"]
     },
     "plugins": [
       {
@@ -18,5 +19,6 @@
         "namespaceImportPackages": ["effect", "@effect/*"]
       }
     ]
-  }
+  },
+  "exclude": ["../liteai/src/**"]
 }

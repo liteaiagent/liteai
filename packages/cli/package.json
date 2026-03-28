@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "version": "1.0.0",
+  "name": "@liteai/cli",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsgo --noEmit",
+    "dev": "bun run --conditions=browser ./src/index.ts",
+    "dev:serve": "bun --watch run --conditions=browser ./src/index.ts serve",
+    "build": "bun run script/build.ts --single",
+    "build:all": "bun run script/build.ts",
+    "preview": "bun run script/release.ts --preview",
+    "release": "bun run script/release.ts",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "lint:format": "biome format --write"
+  },
+  "exports": {
+    "./*": "./src/*"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/semver": "^7.5.0",
+    "@types/yargs": "17.0.33",
+    "@typescript/native-preview": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "liteai": "workspace:*",
+    "@liteai/util": "workspace:*",
+    "@liteai-ai/sdk": "workspace:*",
+    "@agentclientprotocol/sdk": "0.14.1",
+    "@actions/core": "1.11.1",
+    "@actions/github": "6.0.1",
+    "@clack/prompts": "1.0.0-alpha.1",
+    "@modelcontextprotocol/sdk": "1.25.2",
+    "@octokit/graphql": "9.0.2",
+    "@octokit/rest": "catalog:",
+    "@octokit/webhooks-types": "7.6.1",
+    "@opentui/core": "0.1.87",
+    "@opentui/solid": "0.1.87",
+    "@solid-primitives/event-bus": "1.1.2",
+    "@solid-primitives/scheduled": "1.5.2",
+    "clipboardy": "4.0.0",
+    "diff": "catalog:",
+    "effect": "catalog:",
+    "fuzzysort": "3.1.0",
+    "gray-matter": "4.0.3",
+    "hono": "catalog:",
+    "jsonc-parser": "3.3.1",
+    "open": "10.1.2",
+    "opentui-spinner": "0.0.6",
+    "remeda": "catalog:",
+    "semver": "^7.6.3",
+    "solid-js": "catalog:",
+    "strip-ansi": "7.1.2",
+    "yargs": "18.0.0",
+    "zod": "catalog:"
+  }
+}

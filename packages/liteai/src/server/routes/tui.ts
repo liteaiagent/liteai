@@ -1,7 +1,7 @@
 import { type Context, Hono } from "hono"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
-import { TuiEvent } from "@/cli/cmd/tui/event"
+import { TuiEvent } from "@/bus/tui-event"
 import { Bus } from "../../bus"
 import { Session } from "../../session"
 import { lazy } from "../../util/lazy"

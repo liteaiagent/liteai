@@ -6,7 +6,7 @@
   "type": "module",
   "packageManager": "bun@1.3.10",
   "scripts": {
-    "dev": "bun run --cwd packages/liteai --conditions=browser src/index.ts",
+    "dev": "bun run --cwd packages/cli --conditions=browser src/index.ts",
     "dev:desktop": "bun --cwd packages/desktop tauri dev",
     "dev:web": "bun --cwd packages/app dev",
     "dev:storybook": "bun --cwd packages/storybook storybook",
@@ -14,9 +14,9 @@
     "lint": "bun turbo lint",
     "lint:fix": "bun turbo lint:fix",
     "prepare": "husky",
-    "build": "bun run --cwd packages/liteai script/build.ts --single",
-    "build:all": "bun run --cwd packages/liteai script/build.ts",
-    "release": "bun run --cwd packages/liteai script/release.ts",
+    "build": "bun run --cwd packages/cli script/build.ts --single",
+    "build:all": "bun run --cwd packages/cli script/build.ts",
+    "release": "bun run --cwd packages/cli script/release.ts",
     "generate": "bun ./script/generate.ts",
     "test": "echo 'do not run tests from root' && exit 1"
   },
