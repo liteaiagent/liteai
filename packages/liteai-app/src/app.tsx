@@ -303,7 +303,7 @@ export function AppInterface(props: {
                 </Suspense>
               )}
             />
-            <Route path="/:dir" component={DirectoryLayout}>
+            <Route path="/:projectID" component={DirectoryLayout}>
               <Route path="/" component={SessionIndexRoute} />
               <Route path="/session/:id?" component={SessionRoute} />
             </Route>

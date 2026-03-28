@@ -240,7 +240,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     return sdk.client.project.session
       .abort({
         sessionID,
-        projectID: toProjectID(sdk.directory),
+        projectID: sdk.projectID,
       })
       .catch(() => {})
   }

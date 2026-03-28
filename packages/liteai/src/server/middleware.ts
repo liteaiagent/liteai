@@ -130,8 +130,9 @@ export function projectContextMiddleware(): MiddlewareHandler {
 
     const projectID = ProjectID.make(rawProjectID)
     const project = Project.get(projectID)
+
     if (!project) {
-      throw new HTTPException(404, { message: `Project not found: ${rawProjectID}` })
+      throw new NotFoundError({ message: `Project not found: ${rawProjectID}` })
     }
 
     const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")

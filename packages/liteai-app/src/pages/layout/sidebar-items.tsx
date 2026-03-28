@@ -9,7 +9,6 @@ import { MessageNav } from "@liteai/ui/message-nav"
 import { Spinner } from "@liteai/ui/spinner"
 import { showToast } from "@liteai/ui/toast"
 import { Tooltip } from "@liteai/ui/tooltip"
-import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
 import type { Message, Session, TextPart, UserMessage } from "@liteai-ai/sdk/client"
 import { A, useNavigate, useParams } from "@solidjs/router"
@@ -21,6 +20,7 @@ import { getAvatarColors, type LocalProject, useLayout } from "@/context/layout"
 import { useNotification } from "@/context/notification"
 import { usePermission } from "@/context/permission"
 import { messageAgentColor } from "@/utils/agent"
+import { toProjectID } from "@/utils/project-id"
 import { sessionPermissionRequest } from "../session/composer/session-request-tree"
 import { hasProjectPermissions } from "./helpers"
 
@@ -367,7 +367,7 @@ export const SessionItem = (props: SessionItemProps): JSX.Element => {
           messageLabel={messageLabel}
           onMessageSelect={(message) => {
             if (!isActive())
-              layout.pendingMessage.set(`${base64Encode(props.session.directory)}/${props.session.id}`, message.id)
+              layout.pendingMessage.set(`${toProjectID(props.session.directory)}/${props.session.id}`, message.id)
 
             navigate(`${props.slug}/session/${props.session.id}#message-${message.id}`)
           }}

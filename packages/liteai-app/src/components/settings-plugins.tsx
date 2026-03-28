@@ -2,9 +2,9 @@ import { Button } from "@liteai/ui/button"
 import { Switch } from "@liteai/ui/switch"
 import { useParams } from "@solidjs/router"
 import { type Component, createMemo, createResource, createSignal, For, Show } from "solid-js"
+import { useGlobalSync } from "@/context/global-sync"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
-import { decode64 } from "@/utils/base64"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
@@ -45,7 +45,7 @@ const SettingsPluginsInner: Component = () => {
 
   const [plugins, { refetch: refetchPlugins }] = createResource(async () => {
     try {
-      const { data } = await sdk.client.project.plugin.list({ projectID: toProjectID(sdk.directory) })
+      const { data } = await sdk.client.project.plugin.list({ projectID: sdk.projectID })
       return (data ?? []) as PluginEntry[]
     } catch {
       return [] as PluginEntry[]
@@ -54,7 +54,7 @@ const SettingsPluginsInner: Component = () => {
 
   const [marketplaces, { refetch: refetchMarketplaces }] = createResource(async () => {
     try {
-      const { data } = await sdk.client.project.plugin.marketplace.list({ projectID: toProjectID(sdk.directory) })
+      const { data } = await sdk.client.project.plugin.marketplace.list({ projectID: sdk.projectID })
       return (data ?? []) as MarketplaceEntry[]
     } catch {
       return [] as MarketplaceEntry[]
@@ -72,7 +72,7 @@ const SettingsPluginsInner: Component = () => {
     try {
       const { data } = await sdk.client.project.plugin.marketplace.plugins({
         name,
-        projectID: toProjectID(sdk.directory),
+        projectID: sdk.projectID,
       })
       return (data ?? []) as MarketplacePlugin[]
     } catch {
@@ -105,9 +105,9 @@ const SettingsPluginsInner: Component = () => {
     if (loading()) return
     setLoading(id)
     if (on) {
-      await sdk.client.project.plugin.enable({ id, projectID: toProjectID(sdk.directory) })
+      await sdk.client.project.plugin.enable({ id, projectID: sdk.projectID })
     } else {
-      await sdk.client.project.plugin.disable({ id, projectID: toProjectID(sdk.directory) })
+      await sdk.client.project.plugin.disable({ id, projectID: sdk.projectID })
     }
     refetchPlugins()
     setLoading(null)
@@ -116,13 +116,13 @@ const SettingsPluginsInner: Component = () => {
   const removePlugin = async (id: string) => {
     if (loading()) return
     setLoading(id)
-    await sdk.client.project.plugin.uninstall({ id, projectID: toProjectID(sdk.directory) })
+    await sdk.client.project.plugin.uninstall({ id, projectID: sdk.projectID })
     refetchPlugins()
     setLoading(null)
   }
 
   const removeMarketplace = async (name: string) => {
-    await sdk.client.project.plugin.marketplace.remove({ name, projectID: toProjectID(sdk.directory) })
+    await sdk.client.project.plugin.marketplace.remove({ name, projectID: sdk.projectID })
     refetchMarketplaces()
   }
 
@@ -130,7 +130,7 @@ const SettingsPluginsInner: Component = () => {
     const source = newMarketplaceSource().trim()
     if (!source) return
     setAddingMarketplace(true)
-    await sdk.client.project.plugin.marketplace.add({ source, projectID: toProjectID(sdk.directory) })
+    await sdk.client.project.plugin.marketplace.add({ source, projectID: sdk.projectID })
     setAddingMarketplace(false)
     setNewMarketplaceSource("")
     refetchMarketplaces()
@@ -143,7 +143,7 @@ const SettingsPluginsInner: Component = () => {
     await sdk.client.project.plugin.marketplace.install({
       name: marketplace,
       plugin: pluginName,
-      projectID: toProjectID(sdk.directory),
+      projectID: sdk.projectID,
     })
     refetchPlugins()
     setLoading(null)
@@ -508,7 +508,9 @@ const SettingsPluginsInner: Component = () => {
 
 export const SettingsPlugins: Component = () => {
   const params = useParams()
-  const directory = createMemo(() => decode64(params.dir) ?? "")
+  const directory = createMemo(
+    () => useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "",
+  )
 
   return (
     <Show
@@ -528,7 +530,7 @@ export const SettingsPlugins: Component = () => {
       }
     >
       {(resolved) => (
-        <SDKProvider directory={() => resolved}>
+        <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
             <SettingsPluginsInner />
           </SyncProvider>

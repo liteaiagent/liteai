@@ -6,7 +6,7 @@ import { ResizeHandle } from "@liteai/ui/resize-handle"
 import { Select } from "@liteai/ui/select"
 import { Tabs } from "@liteai/ui/tabs"
 import { showToast } from "@liteai/ui/toast"
-import { base64Encode, checksum } from "@liteai/util/encode"
+import { checksum } from "@liteai/util/encode"
 import type { Project, UserMessage } from "@liteai-ai/sdk"
 import { createMediaQuery } from "@solid-primitives/media"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
@@ -343,7 +343,7 @@ export default function Page() {
 
   const composer = createSessionComposerState()
 
-  const workspaceKey = createMemo(() => params.dir ?? "")
+  const workspaceKey = createMemo(() => params.projectID ?? "")
   const workspaceTabs = createMemo(() => layout.tabs(workspaceKey))
 
   createEffect(
@@ -362,7 +362,7 @@ export default function Page() {
 
         if (pending.id !== id) return
         layout.handoff.clearTabs()
-        if (pending.dir !== (params.dir ?? "")) return
+        if (pending.dir !== (params.projectID ?? "")) return
 
         const from = workspaceTabs().tabs()
         if (from.all.length === 0 && !from.active) return
@@ -491,7 +491,7 @@ export default function Page() {
 
   createEffect(
     on(
-      () => ({ dir: params.dir, id: params.id }),
+      () => ({ dir: params.projectID, id: params.id }),
       (next, prev) => {
         if (!prev) return
         if (next.dir === prev.dir && next.id === prev.id) return
@@ -762,8 +762,8 @@ export default function Page() {
 
   // Dir-local state: reset when workspace directory changes.
   createEffect(() => {
-    if (!params.dir) return
-    params.dir
+    if (!params.projectID) return
+    params.projectID
     onCleanup(() => setStore("newSessionWorktree", "main"))
   })
 
@@ -1468,14 +1468,14 @@ export default function Page() {
 
   const halt = (sessionID: string) =>
     busy(sessionID)
-      ? sdk.client.project.session.abort({ sessionID, projectID: toProjectID(sdk.directory) }).catch(() => {})
+      ? sdk.client.project.session.abort({ sessionID, projectID: sdk.projectID }).catch(() => {})
       : Promise.resolve()
 
   const fork = (input: { sessionID: string; messageID: string }) => {
     const value = draft(input.messageID)
-    const dir = base64Encode(sdk.directory)
+    const dir = toProjectID(sdk.directory)
     return sdk.client.project.session
-      .fork({ ...input, projectID: toProjectID(sdk.directory) })
+      .fork({ ...input, projectID: sdk.projectID })
       .then((result) => {
         const next = result.data
         if (!next) {
@@ -1485,7 +1485,7 @@ export default function Page() {
           })
           return
         }
-        prompt.set(value, undefined, { dir, id: next.id })
+        prompt.set(value, undefined, { projectID: sdk.projectID, id: next.id })
         navigate(`/${dir}/session/${next.id}`)
       })
       .catch(fail)
@@ -1502,7 +1502,7 @@ export default function Page() {
       prompt.set(value)
     })
     return halt(input.sessionID)
-      .then(() => sdk.client.project.session.revert({ ...input, projectID: toProjectID(sdk.directory) }))
+      .then(() => sdk.client.project.session.revert({ ...input, projectID: sdk.projectID }))
       .then((result) => {
         if (result.data) merge(result.data)
       })
@@ -1538,14 +1538,12 @@ export default function Page() {
     })
 
     const task = !next
-      ? halt(sessionID).then(() =>
-          sdk.client.project.session.unrevert({ sessionID, projectID: toProjectID(sdk.directory) }),
-        )
+      ? halt(sessionID).then(() => sdk.client.project.session.unrevert({ sessionID, projectID: sdk.projectID }))
       : halt(sessionID).then(() =>
           sdk.client.project.session.revert({
             sessionID,
             messageID: next.id,
-            projectID: toProjectID(sdk.directory),
+            projectID: sdk.projectID,
           }),
         )
 

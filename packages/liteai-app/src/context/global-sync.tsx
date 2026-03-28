@@ -22,7 +22,7 @@ import {
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { Persist, persisted } from "@/utils/persist"
-import { toProjectID } from "@/utils/project-id"
+import { __updateProjectRegistry, toProjectID } from "@/utils/project-id"
 import { formatServerError } from "@/utils/server-errors"
 import type { InitError } from "../pages/error"
 import { useGlobalSDK } from "./global-sdk"
@@ -78,6 +78,8 @@ function createGlobalSync() {
     reload: undefined,
   })
 
+  __updateProjectRegistry(projectCache.value)
+
   let active = true
   let projectWritten = false
 
@@ -96,10 +98,12 @@ function createGlobalSync() {
     if (typeof next === "function") {
       setGlobalStore("project", produce(next))
       cacheProjects()
+      __updateProjectRegistry(untrack(() => globalStore.project))
       return
     }
     setGlobalStore("project", next)
     cacheProjects()
+    __updateProjectRegistry(next)
   }
 
   const setBootStore = ((...input: unknown[]) => {
@@ -126,6 +130,7 @@ function createGlobalSync() {
       if (cached.length === 0) return
       console.debug("[globalSync] rehydrating from cache", { count: cached.length })
       setGlobalStore("project", cached)
+      __updateProjectRegistry(cached)
     })
   }
 

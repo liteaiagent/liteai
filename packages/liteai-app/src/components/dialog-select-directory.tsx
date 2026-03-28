@@ -11,7 +11,6 @@ import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
-import { toProjectID } from "@/utils/project-id"
 
 interface DialogSelectDirectoryProps {
   title?: string
@@ -159,8 +158,8 @@ function useDirectorySearch(args: {
     const existing = cache.get(key)
     if (existing) return existing
 
-    const request = args.sdk.client.project.file
-      .list({ projectID: toProjectID(key), path: "" })
+    const request = args.sdk.client.system.file
+      .list({ path: key })
       .then((x) => x.data ?? [])
       .catch(() => [])
       .then((nodes) =>
@@ -195,8 +194,8 @@ function useDirectorySearch(args: {
     const query = normalizeDriveRoot(scopedInput.path)
 
     const find = () =>
-      args.sdk.client.project.find
-        .files({ projectID: toProjectID(scopedInput.directory), query, type: "directory", limit: 50 })
+      args.sdk.client.system.find
+        .files({ dir: scopedInput.directory, query, type: "directory", limit: 50 })
         .then((x) => x.data ?? [])
         .catch(() => [])
 

@@ -2,7 +2,6 @@ import { Button } from "@liteai/ui/button"
 import { ContextMenu } from "@liteai/ui/context-menu"
 import { HoverCard } from "@liteai/ui/hover-card"
 import { Icon } from "@liteai/ui/icon"
-import { base64Encode } from "@liteai/util/encode"
 import { createSortable } from "@thisbeyond/solid-dnd"
 import { type Accessor, createEffect, createMemo, For, type JSX, Show } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -10,6 +9,7 @@ import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { type LocalProject, useLayout } from "@/context/layout"
 import { useNotification } from "@/context/notification"
+import { toProjectID } from "@/utils/project-id"
 import { childMapByParent, displayName, sortedRootSessions } from "./helpers"
 import { ProjectIcon, SessionItem, type SessionItemProps } from "./sidebar-items"
 
@@ -103,7 +103,7 @@ const ProjectTile = (props: {
         type="button"
         aria-label={displayName(props.project)}
         data-action="project-switch"
-        data-project={base64Encode(props.project.worktree)}
+        data-project={toProjectID(props.project.worktree)}
         classList={{
           "flex items-center justify-center size-10 p-1 rounded-lg overflow-hidden transition-colors cursor-default": true,
           "bg-transparent border-2 border-icon-strong-base hover:bg-surface-base-hover": props.selected(),
@@ -152,7 +152,7 @@ const ProjectTile = (props: {
           </ContextMenu.Item>
           <ContextMenu.Item
             data-action="project-workspaces-toggle"
-            data-project={base64Encode(props.project.worktree)}
+            data-project={toProjectID(props.project.worktree)}
             disabled={props.project.vcs !== "git" && !props.workspacesEnabled(props.project)}
             onSelect={() => props.toggleProjectWorkspaces(props.project)}
           >
@@ -164,7 +164,7 @@ const ProjectTile = (props: {
           </ContextMenu.Item>
           <ContextMenu.Item
             data-action="project-clear-notifications"
-            data-project={base64Encode(props.project.worktree)}
+            data-project={toProjectID(props.project.worktree)}
             disabled={unseenCount() === 0}
             onSelect={clear}
           >
@@ -173,7 +173,7 @@ const ProjectTile = (props: {
           <ContextMenu.Separator />
           <ContextMenu.Item
             data-action="project-close-menu"
-            data-project={base64Encode(props.project.worktree)}
+            data-project={toProjectID(props.project.worktree)}
             onSelect={() => props.archiveProject(props.project.worktree)}
           >
             <ContextMenu.ItemLabel>{props.language.t("common.close")}</ContextMenu.ItemLabel>
@@ -214,7 +214,7 @@ const ProjectPreviewPanel = (props: {
                 {...props.ctx.sessionProps}
                 session={session}
                 list={props.projectSessions()}
-                slug={base64Encode(props.project.worktree)}
+                slug={toProjectID(props.project.worktree)}
                 dense
                 mobile={props.mobile}
                 popover={false}
@@ -242,7 +242,7 @@ const ProjectPreviewPanel = (props: {
                       {...props.ctx.sessionProps}
                       session={session}
                       list={sessions()}
-                      slug={base64Encode(directory)}
+                      slug={toProjectID(directory)}
                       dense
                       mobile={props.mobile}
                       popover={false}

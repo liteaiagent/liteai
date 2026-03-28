@@ -11,7 +11,6 @@ import { useServer } from "@/context/server"
 import { monoFontFamily, useSettings } from "@/context/settings"
 import type { LocalPTY } from "@/context/terminal"
 import { terminalAttr, terminalProbe } from "@/testing/terminal"
-import { toProjectID } from "@/utils/project-id"
 import { disposeIfDisposable, getHoveredLinkText, setOptionIfSupported } from "@/utils/runtime-adapters"
 import { terminalWriter } from "@/utils/terminal-writer"
 
@@ -222,7 +221,7 @@ export const Terminal = (props: TerminalProps) => {
     return sdk.client.project.pty
       .update({
         ptyID: id,
-        projectID: toProjectID(sdk.directory),
+        projectID: sdk.projectID,
         size: { cols, rows },
       })
       .catch((err) => {
@@ -480,7 +479,7 @@ export const Terminal = (props: TerminalProps) => {
 
       const gone = () =>
         sdk.client.project.pty
-          .get({ ptyID: id, projectID: toProjectID(sdk.directory) })
+          .get({ ptyID: id, projectID: sdk.projectID })
           .then(() => false)
           .catch((err) => {
             if (errorStatus(err) === 404) return true

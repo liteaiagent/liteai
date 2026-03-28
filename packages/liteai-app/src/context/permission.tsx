@@ -4,7 +4,6 @@ import { useParams } from "@solidjs/router"
 import { createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { useGlobalSDK } from "@/context/global-sdk"
-import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
 import { toProjectID } from "@/utils/project-id"
 import { useGlobalSync } from "./global-sync"
@@ -53,7 +52,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
     const globalSync = useGlobalSync()
 
     const permissionsEnabled = createMemo(() => {
-      const directory = decode64(params.dir)
+      const directory = useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree
       if (!directory) return false
       const [store] = globalSync.child(directory)
       return hasPermissionPromptRules(store.config.permission)
@@ -85,7 +84,7 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
     // When config has permission: "allow", auto-enable directory-level auto-accept
     createEffect(() => {
       if (!ready()) return
-      const directory = decode64(params.dir)
+      const directory = useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree
       if (!directory) return
       const [childStore] = globalSync.child(directory)
       const perm = childStore.config.permission
@@ -122,7 +121,9 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
       globalSDK.client.project.permission
         .respond({
           ...input,
-          projectID: toProjectID(input.directory ?? decode64(params.dir) ?? ""),
+          projectID: toProjectID(
+            input.directory ?? useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "",
+          ),
         })
         .catch(() => {
           responded.delete(input.permissionID)

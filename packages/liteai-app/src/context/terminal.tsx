@@ -382,11 +382,11 @@ export const { use: useTerminal, provider: TerminalProvider } = createSimpleCont
       return entry.value
     }
 
-    const workspace = createMemo(() => loadWorkspace(params.dir as string, params.id))
+    const workspace = createMemo(() => loadWorkspace(sdk.directory, params.id))
 
     createEffect(
       on(
-        () => ({ dir: params.dir, id: params.id }),
+        () => ({ dir: sdk.directory, id: params.id }),
         (next, prev) => {
           if (!prev?.dir) return
           if (next.dir === prev.dir && next.id === prev.id) return

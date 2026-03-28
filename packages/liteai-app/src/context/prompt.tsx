@@ -152,7 +152,7 @@ const MAX_PROMPT_SESSIONS = 20
 type PromptSession = ReturnType<typeof createPromptSession>
 
 type Scope = {
-  dir: string
+  projectID: string
   id?: string
 }
 
@@ -161,11 +161,11 @@ type PromptCacheEntry = {
   dispose: VoidFunction
 }
 
-function createPromptSession(dir: string, id: string | undefined) {
-  const legacy = `${dir}/prompt${id ? `/${id}` : ""}.v2`
+function createPromptSession(projectID: string, id: string | undefined) {
+  const legacy = `${projectID}/prompt${id ? `/${id}` : ""}.v2`
 
   const [store, setStore, _, ready] = persisted(
-    Persist.scoped(dir, id, "prompt", [legacy]),
+    Persist.scoped(projectID, id, "prompt", [legacy]),
     createStore<{
       prompt: Prompt
       cursor?: number
@@ -250,8 +250,8 @@ export const { use: usePrompt, provider: PromptProvider } = createSimpleContext(
       }
     }
 
-    const load = (dir: string, id: string | undefined) => {
-      const key = `${dir}:${id ?? WORKSPACE_KEY}`
+    const load = (projectID: string, id: string | undefined) => {
+      const key = `${projectID}:${id ?? WORKSPACE_KEY}`
       const existing = cache.get(key)
       if (existing) {
         cache.delete(key)
@@ -260,7 +260,7 @@ export const { use: usePrompt, provider: PromptProvider } = createSimpleContext(
       }
 
       const entry = createRoot((dispose) => ({
-        value: createPromptSession(dir, id),
+        value: createPromptSession(projectID, id),
         dispose,
       }))
 
@@ -269,8 +269,8 @@ export const { use: usePrompt, provider: PromptProvider } = createSimpleContext(
       return entry.value
     }
 
-    const session = createMemo(() => load(params.dir as string, params.id))
-    const pick = (scope?: Scope) => (scope ? load(scope.dir, scope.id) : session())
+    const session = createMemo(() => load(params.projectID as string, params.id))
+    const pick = (scope?: Scope) => (scope ? load(scope.projectID, scope.id) : session())
 
     return {
       ready: () => session().ready(),

@@ -221,7 +221,7 @@ export const { use: useComments, provider: CommentsProvider } = createSimpleCont
       return cache.get(key).value
     }
 
-    const session = createMemo(() => load(params.dir as string, params.id))
+    const session = createMemo(() => load(params.projectID as string, params.id))
 
     return {
       ready: () => session().ready(),

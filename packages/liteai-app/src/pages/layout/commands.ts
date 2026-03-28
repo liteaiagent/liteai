@@ -13,7 +13,7 @@ export type CommandDeps = {
   currentProject: Accessor<LocalProject | undefined>
   workspaceSetting: Accessor<boolean>
   currentSessions: Accessor<Session[]>
-  params: { dir?: string; id?: string }
+  params: { projectID?: string; id?: string }
   sidebarToggle: () => void
   chooseProject: () => void
   connectProvider: () => void
@@ -175,7 +175,7 @@ export function registerCommands(deps: CommandDeps) {
         title: deps.language.t("command.session.archive"),
         category: deps.language.t("command.category.session"),
         keybind: "mod+shift+backspace",
-        disabled: !deps.params.dir || !deps.params.id,
+        disabled: !deps.params.projectID || !deps.params.id,
         onSelect: () => {
           const session = deps.currentSessions().find((s) => s.id === deps.params.id)
           if (session) deps.archiveSession(session)

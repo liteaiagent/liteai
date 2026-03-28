@@ -7,7 +7,6 @@ import { type Component, createMemo, For, onCleanup, onMount, Show } from "solid
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
-import { toProjectID } from "@/utils/project-id"
 
 const cache = new Map<string, { tab: number; answers: QuestionAnswer[]; custom: string[]; customOn: boolean[] }>()
 
@@ -136,7 +135,7 @@ export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit
       await sdk.client.project.question.reply({
         requestID: props.request.id,
         answers,
-        projectID: toProjectID(sdk.directory),
+        projectID: sdk.projectID,
       })
       replied = true
       cache.delete(props.request.id)
@@ -153,7 +152,7 @@ export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit
     props.onSubmit()
     setStore("sending", true)
     try {
-      await sdk.client.project.question.reject({ requestID: props.request.id, projectID: toProjectID(sdk.directory) })
+      await sdk.client.project.question.reject({ requestID: props.request.id, projectID: sdk.projectID })
       replied = true
       cache.delete(props.request.id)
     } catch (err) {

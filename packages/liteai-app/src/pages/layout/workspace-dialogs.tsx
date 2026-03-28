@@ -1,7 +1,6 @@
 import { Button } from "@liteai/ui/button"
 import { useDialog } from "@liteai/ui/context/dialog"
 import { Dialog } from "@liteai/ui/dialog"
-import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
 import type { Session } from "@liteai-ai/sdk/client"
 import { useParams } from "@solidjs/router"
@@ -44,9 +43,9 @@ export function DialogDeleteWorkspace(props: { root: string; directory: string; 
   })
 
   const handleDelete = () => {
-    const leave = !!params.dir && workspaceKey(props.deps.currentDir()) === workspaceKey(props.directory)
+    const leave = !!params.projectID && workspaceKey(props.deps.currentDir()) === workspaceKey(props.directory)
     if (leave) {
-      props.deps.navigateWithSidebarReset(`/${base64Encode(props.root)}/session`)
+      props.deps.navigateWithSidebarReset(`/${toProjectID(props.root)}/session`)
     }
     dialog.close()
     void props.deps.deleteWorkspace(props.root, props.directory, leave)

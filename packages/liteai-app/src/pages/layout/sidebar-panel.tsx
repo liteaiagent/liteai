@@ -2,7 +2,6 @@ import { Button } from "@liteai/ui/button"
 import { DropdownMenu } from "@liteai/ui/dropdown-menu"
 import { IconButton } from "@liteai/ui/icon-button"
 import { Tooltip } from "@liteai/ui/tooltip"
-import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
 import type { DragEvent } from "@thisbeyond/solid-dnd"
 import { closestCenter, DragDropProvider, DragDropSensors, DragOverlay, SortableProvider } from "@thisbeyond/solid-dnd"
@@ -11,6 +10,7 @@ import type { useLanguage } from "@/context/language"
 import type { LocalProject } from "@/context/layout"
 import { useNotification } from "@/context/notification"
 import { useProviders } from "@/hooks/use-providers"
+import { toProjectID } from "@/utils/project-id"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
 import type { createInlineEditorController } from "./inline-editor"
 import {
@@ -78,7 +78,7 @@ export function SidebarPanel(props: SidebarPanelProps) {
   const slug = createMemo(() => {
     const dir = worktree()
     if (!dir) return ""
-    return base64Encode(dir)
+    return toProjectID(dir)
   })
   const workspaces = createMemo(() => {
     const item = project()
@@ -252,7 +252,7 @@ export function SidebarPanel(props: SidebarPanelProps) {
                     onClick={() => {
                       const dir = worktree()
                       if (!dir) return
-                      props.navigateWithSidebarReset(`/${base64Encode(dir)}/session`)
+                      props.navigateWithSidebarReset(`/${toProjectID(dir)}/session`)
                     }}
                   >
                     {props.language.t("command.session.new")}

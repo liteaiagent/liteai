@@ -1,5 +1,4 @@
 import { showToast, toaster } from "@liteai/ui/toast"
-import { base64Encode } from "@liteai/util/encode"
 import type { Project, Session } from "@liteai-ai/sdk/client"
 import type { Accessor } from "solid-js"
 import type { useGlobalSDK } from "@/context/global-sdk"
@@ -18,7 +17,7 @@ export type WorkspaceOpsDeps = {
   language: ReturnType<typeof useLanguage>
   layout: ReturnType<typeof useLayout>
   platform: ReturnType<typeof usePlatform>
-  params: { dir?: string; id?: string }
+  params: { projectID?: string; id?: string }
   navigate: (href: string) => void
   currentDir: Accessor<string>
   navigateWithSidebarReset: (href: string) => void
@@ -40,9 +39,9 @@ export async function deleteWorkspace(deps: WorkspaceOpsDeps, root: string, dire
   const current = deps.currentDir()
   const currentKey = workspaceKey(current)
   const deletedKey = workspaceKey(directory)
-  const shouldLeave = leave || (!!deps.params.dir && currentKey === deletedKey)
+  const shouldLeave = leave || (!!deps.params.projectID && currentKey === deletedKey)
   if (!leave && shouldLeave) {
-    deps.navigateWithSidebarReset(`/${base64Encode(root)}/session`)
+    deps.navigateWithSidebarReset(`/${toProjectID(root)}/session`)
   }
 
   deps.setBusy(directory, true)
@@ -93,8 +92,8 @@ export async function deleteWorkspace(deps: WorkspaceOpsDeps, root: string, dire
     return p?.worktree ?? d
   }
 
-  if (deps.params.dir && projectRoot(nextCurrent) === root && !valid) {
-    deps.navigateWithSidebarReset(`/${base64Encode(root)}/session`)
+  if (deps.params.projectID && projectRoot(nextCurrent) === root && !valid) {
+    deps.navigateWithSidebarReset(`/${toProjectID(root)}/session`)
   }
 }
 
@@ -163,7 +162,7 @@ export async function resetWorkspace(deps: WorkspaceOpsDeps, root: string, direc
       {
         label: deps.language.t("command.session.new"),
         onClick: () => {
-          const href = `/${base64Encode(directory)}/session`
+          const href = `/${toProjectID(directory)}/session`
           deps.navigate(href)
           deps.layout.mobileSidebar.hide()
         },
@@ -213,5 +212,5 @@ export async function createWorkspace(deps: WorkspaceOpsDeps, project: LocalProj
   })
 
   deps.globalSync.child(created.directory)
-  deps.navigateWithSidebarReset(`/${base64Encode(created.directory)}/session`)
+  deps.navigateWithSidebarReset(`/${toProjectID(created.directory)}/session`)
 }

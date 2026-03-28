@@ -18,7 +18,6 @@ import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import type { Sizing } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
-import { toProjectID } from "@/utils/project-id"
 import "./trace-panel.css"
 
 import { CompareView } from "./trace-compare"
@@ -90,7 +89,7 @@ export function TracePanel(props: { size: Sizing }) {
   const load = async (id: string) => {
     const res = await sdk.client.project.session.trace.list({
       sessionID: id,
-      projectID: toProjectID(sdk.directory),
+      projectID: sdk.projectID,
       deep: true,
     })
     const list = (res.data ?? []) as TraceInfo[]
@@ -101,7 +100,7 @@ export function TracePanel(props: { size: Sizing }) {
       const r = await sdk.client.project.session.trace.get({
         sessionID: sid,
         traceID: last.id,
-        projectID: toProjectID(sdk.directory),
+        projectID: sdk.projectID,
       })
       const d = r.data as TraceDetail | undefined
       if (d) {
@@ -116,7 +115,7 @@ export function TracePanel(props: { size: Sizing }) {
     const res = await sdk.client.project.session.trace.get({
       sessionID: sid,
       traceID: tid,
-      projectID: toProjectID(sdk.directory),
+      projectID: sdk.projectID,
     })
     if (res.data) setStore("detail", res.data as TraceDetail)
     setStore("loading", false)
@@ -130,7 +129,7 @@ export function TracePanel(props: { size: Sizing }) {
     const res = await sdk.client.project.session.trace.search({
       sessionID: sid,
       q: query,
-      projectID: toProjectID(sdk.directory),
+      projectID: sdk.projectID,
     })
     if (res.data) {
       setStore("searchIDs", res.data.ids)
@@ -209,12 +208,12 @@ export function TracePanel(props: { size: Sizing }) {
       if (!store.compare.a) {
         setStore("compare", "a", trace.id)
         sdk.client.project.session.trace
-          .get({ sessionID: sid, traceID: trace.id, projectID: toProjectID(sdk.directory) })
+          .get({ sessionID: sid, traceID: trace.id, projectID: sdk.projectID })
           .then((r) => setStore("compare", "detailA", r.data as TraceDetail))
       } else if (!store.compare.b && trace.id !== store.compare.a) {
         setStore("compare", "b", trace.id)
         sdk.client.project.session.trace
-          .get({ sessionID: sid, traceID: trace.id, projectID: toProjectID(sdk.directory) })
+          .get({ sessionID: sid, traceID: trace.id, projectID: sdk.projectID })
           .then((r) => setStore("compare", "detailB", r.data as TraceDetail))
       }
       return

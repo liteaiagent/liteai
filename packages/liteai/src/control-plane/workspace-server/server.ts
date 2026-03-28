@@ -22,7 +22,7 @@ export namespace WorkspaceServer {
     return new Hono()
       .use(async (c, next) => {
         const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
-        const raw = c.req.query("directory") || c.req.header("x-liteai-directory")
+        const raw = c.req.query("directory")
         if (rawWorkspaceID == null) {
           throw new Error("workspaceID parameter is required")
         }

@@ -6,7 +6,6 @@ import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
-import { toProjectID } from "@/utils/project-id"
 import {
   approxBytes,
   evictContentLru,
@@ -62,7 +61,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
 
     const scope = createMemo(() => sdk.directory)
     const path = createPathHelpers(scope)
-    const tabs = layout.tabs(() => `${params.dir}${params.id ? `/${params.id}` : ""}`)
+    const tabs = layout.tabs(() => `${params.projectID}${params.id ? `/${params.id}` : ""}`)
 
     const inflight = new Map<string, Promise<void>>()
     const [store, setStore] = createStore<{
@@ -74,8 +73,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     const tree = createFileTreeStore({
       scope,
       normalizeDir: path.normalizeDir,
-      list: (dir) =>
-        sdk.client.project.file.list({ projectID: toProjectID(sdk.directory), path: dir }).then((x) => x.data ?? []),
+      list: (dir) => sdk.client.project.file.list({ projectID: sdk.projectID, path: dir }).then((x) => x.data ?? []),
       onError: (message) => {
         showToast({
           variant: "error",
@@ -179,7 +177,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       setLoading(file)
 
       const promise = sdk.client.project.file
-        .read({ path: file, projectID: toProjectID(sdk.directory) })
+        .read({ path: file, projectID: sdk.projectID })
         .then((x) => {
           if (scope() !== directory) return
           const content = x.data
@@ -202,7 +200,7 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
     }
 
     const search = (query: string, dirs: "true" | "false") =>
-      sdk.client.project.find.files({ query, dirs, projectID: toProjectID(sdk.directory) }).then(
+      sdk.client.project.find.files({ query, dirs, projectID: sdk.projectID }).then(
         (x) => (x.data ?? []).map(path.normalize),
         () => [],
       )

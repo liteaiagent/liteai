@@ -10,7 +10,6 @@ import type { LineComment } from "@/context/comments"
 import type { SelectedLineRange } from "@/context/file"
 import { useLayout } from "@/context/layout"
 import { useSDK } from "@/context/sdk"
-import { toProjectID } from "@/utils/project-id"
 
 export type DiffStyle = "unified" | "split"
 
@@ -49,7 +48,7 @@ export function SessionReviewTab(props: SessionReviewTabProps) {
 
   const readFile = async (path: string) => {
     return sdk.client.project.file
-      .read({ path, projectID: toProjectID(sdk.directory) })
+      .read({ path, projectID: sdk.projectID })
       .then((x) => x.data)
       .catch((error) => {
         console.debug("[session-review] failed to read file", { path, error })

@@ -93,7 +93,8 @@ export function LayoutShell(props: LayoutShellProps) {
               aria-label={props.language.t("sidebar.nav.projectsAndSessions")}
               data-component="sidebar-nav-desktop"
               classList={{
-                "hidden xl:block": true,
+                "hidden xl:block": props.projects().length > 0,
+                hidden: props.projects().length === 0,
                 "absolute inset-y-0 left-0": true,
                 "z-10": true,
               }}
@@ -128,11 +129,15 @@ export function LayoutShell(props: LayoutShellProps) {
             </nav>
 
             <div
-              class="hidden xl:block pointer-events-none absolute top-0 right-0 z-0 border-t border-border-weaker-base"
+              classList={{
+                "hidden xl:block pointer-events-none absolute top-0 right-0 z-0 border-t border-border-weaker-base":
+                  props.projects().length > 0,
+                hidden: props.projects().length === 0,
+              }}
               style={{ left: "calc(4rem + 12px)" }}
             />
 
-            <div class="xl:hidden">
+            <div classList={{ "xl:hidden": true, hidden: props.projects().length === 0 }}>
               {/* biome-ignore lint/a11y/useKeyWithClickEvents: mobile sidebar overlay backdrop */}
               {/* biome-ignore lint/a11y/noStaticElementInteractions: mobile sidebar overlay backdrop */}
               <div
@@ -169,14 +174,20 @@ export function LayoutShell(props: LayoutShellProps) {
                   !props.sizing,
               }}
               style={{
-                "--main-left": props.layout.sidebar.opened()
-                  ? `${Math.max(props.layout.sidebar.width(), 244)}px`
-                  : "4rem",
+                "--main-left":
+                  props.projects().length === 0
+                    ? "0px"
+                    : props.layout.sidebar.opened()
+                      ? `${Math.max(props.layout.sidebar.width(), 244)}px`
+                      : "4rem",
               }}
             >
               <main
                 classList={{
-                  "size-full overflow-x-hidden flex flex-col items-start contain-strict border-t border-border-weak-base bg-background-base xl:border-l xl:rounded-tl-[12px]": true,
+                  "size-full overflow-x-hidden flex flex-col items-start contain-strict border-t border-border-weak-base bg-background-base xl:border-l xl:rounded-tl-[12px]":
+                    props.projects().length > 0,
+                  "size-full overflow-x-hidden flex flex-col items-start contain-strict bg-background-base":
+                    props.projects().length === 0,
                 }}
               >
                 <Show when={!props.autoselecting()} fallback={<div class="size-full" />}>

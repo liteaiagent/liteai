@@ -2,7 +2,6 @@ import { useDialog } from "@liteai/ui/context/dialog"
 import { Dialog } from "@liteai/ui/dialog"
 import { List } from "@liteai/ui/list"
 import { showToast } from "@liteai/ui/toast"
-import { base64Encode } from "@liteai/util/encode"
 import type { TextPart as SDKTextPart } from "@liteai-ai/sdk/client"
 import { useNavigate, useParams } from "@solidjs/router"
 import { type Component, createMemo } from "solid-js"
@@ -67,17 +66,17 @@ export const DialogFork: Component = () => {
       directory: sdk.directory,
       attachmentName: language.t("common.attachment"),
     })
-    const dir = base64Encode(sdk.directory)
+    const dir = toProjectID(sdk.directory)
 
     sdk.client.project.session
-      .fork({ sessionID, messageID: item.id, projectID: toProjectID(sdk.directory) })
+      .fork({ sessionID, messageID: item.id, projectID: sdk.projectID })
       .then((forked) => {
         if (!forked.data) {
           showToast({ title: language.t("common.requestFailed") })
           return
         }
         dialog.close()
-        prompt.set(restored, undefined, { dir, id: forked.data.id })
+        prompt.set(restored, undefined, { projectID: sdk.projectID, id: forked.data.id })
         navigate(`/${dir}/session/${forked.data.id}`)
       })
       .catch((err: unknown) => {

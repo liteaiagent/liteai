@@ -1,6 +1,5 @@
 import { Hono } from "hono"
 import { type BunWebSocketData, websocket } from "hono/bun"
-import { HTTPException } from "hono/http-exception"
 import { proxy } from "hono/proxy"
 import { describeRoute, generateSpecs, openAPIRouteHandler, resolver, validator } from "hono-openapi"
 import z from "zod"
@@ -33,6 +32,7 @@ import { ProviderRoutes } from "./routes/provider"
 import { PtyRoutes } from "./routes/pty"
 import { QuestionRoutes } from "./routes/question"
 import { SessionRoutes } from "./routes/session"
+import { SystemRoutes } from "./routes/system"
 import { TraceRoutes } from "./routes/trace"
 import { TuiRoutes } from "./routes/tui"
 
@@ -91,6 +91,7 @@ export namespace Server {
 
         // ─── Tier 1: Server-level routes (no project context) ────────────
         .route("/", GlobalRoutes())
+        .route("/system", SystemRoutes())
         .route("/auth", AuthRoutes())
         .route("/provider", ProviderRoutes())
 
@@ -137,17 +138,11 @@ export namespace Server {
           validator(
             "query",
             z.object({
-              directory: z.string().optional(),
+              directory: z.string(),
             }),
           ),
           async (c) => {
-            const raw = c.req.valid("query").directory || c.req.header("x-liteai-directory")
-            if (!raw) {
-              throw new HTTPException(400, {
-                message:
-                  "Missing required directory context: set the 'directory' query parameter or 'x-liteai-directory' header",
-              })
-            }
+            const raw = c.req.valid("query").directory
             const directory = safeDecodeDirectory(raw, log)
 
             // Check if the project already exists before registering

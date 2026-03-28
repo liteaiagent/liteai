@@ -334,6 +334,109 @@
         ]
       }
     },
+    "/system/file": {
+      "get": {
+        "operationId": "system.file.list",
+        "summary": "List system files",
+        "description": "List files and directories in a specified path on the host system.",
+        "responses": {
+          "200": {
+            "description": "Files and directories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FileNode"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.system.file.list({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/system/find/file": {
+      "get": {
+        "operationId": "system.find.files",
+        "summary": "Find system files",
+        "description": "Search for files or directories by name pattern on the host system.",
+        "responses": {
+          "200": {
+            "description": "File paths",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "file",
+                "directory"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "in": "query",
+            "name": "dir",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.system.find.files({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/auth/{providerID}": {
       "put": {
         "operationId": "auth.set",
@@ -961,7 +1064,8 @@
             "name": "directory",
             "schema": {
               "type": "string"
-            }
+            },
+            "required": true
           }
         ],
         "x-codeSamples": [
@@ -1240,7 +1344,8 @@
             "name": "directory",
             "schema": {
               "type": "string"
-            }
+            },
+            "required": true
           }
         ],
         "x-codeSamples": [
@@ -12912,6 +13017,37 @@
           "config"
         ]
       },
+      "FileNode": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "absolute": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "file",
+              "directory"
+            ]
+          },
+          "ignored": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "absolute",
+          "type",
+          "ignored"
+        ]
+      },
       "OAuth": {
         "type": "object",
         "properties": {
@@ -14087,37 +14223,6 @@
           "name",
           "kind",
           "location"
-        ]
-      },
-      "FileNode": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "path": {
-            "type": "string"
-          },
-          "absolute": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "file",
-              "directory"
-            ]
-          },
-          "ignored": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "name",
-          "path",
-          "absolute",
-          "type",
-          "ignored"
         ]
       },
       "FileContent": {

@@ -1676,6 +1676,14 @@ export type GlobalPath = {
 	config: string;
 };
 
+export type FileNode = {
+	name: string;
+	path: string;
+	absolute: string;
+	type: "file" | "directory";
+	ignored: boolean;
+};
+
 export type OAuth = {
 	type: "oauth";
 	refresh: string;
@@ -1980,14 +1988,6 @@ export type Symbol = {
 	};
 };
 
-export type FileNode = {
-	name: string;
-	path: string;
-	absolute: string;
-	type: "file" | "directory";
-	ignored: boolean;
-};
-
 export type FileContent = {
 	type: "text" | "binary";
 	content: string;
@@ -2284,6 +2284,47 @@ export type PathResponses = {
 
 export type PathResponse = PathResponses[keyof PathResponses];
 
+export type SystemFileListData = {
+	body?: never;
+	path?: never;
+	query: {
+		path: string;
+	};
+	url: "/system/file";
+};
+
+export type SystemFileListResponses = {
+	/**
+	 * Files and directories
+	 */
+	200: Array<FileNode>;
+};
+
+export type SystemFileListResponse =
+	SystemFileListResponses[keyof SystemFileListResponses];
+
+export type SystemFindFilesData = {
+	body?: never;
+	path?: never;
+	query: {
+		query: string;
+		type?: "file" | "directory";
+		limit?: number;
+		dir?: string;
+	};
+	url: "/system/find/file";
+};
+
+export type SystemFindFilesResponses = {
+	/**
+	 * File paths
+	 */
+	200: Array<string>;
+};
+
+export type SystemFindFilesResponse =
+	SystemFindFilesResponses[keyof SystemFindFilesResponses];
+
 export type AuthRemoveData = {
 	body?: never;
 	path: {
@@ -2545,8 +2586,8 @@ export type ProjectListResponse =
 export type ProjectCreateData = {
 	body?: never;
 	path?: never;
-	query?: {
-		directory?: string;
+	query: {
+		directory: string;
 	};
 	url: "/project";
 };
@@ -2698,8 +2739,8 @@ export type ProjectUnarchiveResponse =
 export type ProjectInitGitData = {
 	body?: never;
 	path?: never;
-	query?: {
-		directory?: string;
+	query: {
+		directory: string;
 	};
 	url: "/project/git/init";
 };

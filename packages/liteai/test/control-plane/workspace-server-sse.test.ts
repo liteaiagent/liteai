@@ -20,11 +20,10 @@ describe("control-plane/workspace-server SSE", () => {
     const stop = new AbortController()
     const seen: unknown[] = []
     try {
-      const response = await app.request("/event", {
+      const response = await app.request(`/event?directory=${encodeURIComponent(tmp.path)}`, {
         signal: stop.signal,
         headers: {
           "x-liteai-workspace": "wrk_test_workspace",
-          "x-liteai-directory": tmp.path,
         },
       })
 

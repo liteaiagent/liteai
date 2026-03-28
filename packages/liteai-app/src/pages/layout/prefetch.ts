@@ -47,7 +47,7 @@ export const mergeByID = <T extends { id: string }>(current: T[], incoming: T[])
 export type PrefetchDeps = {
   globalSDK: ReturnType<typeof useGlobalSDK>
   globalSync: ReturnType<typeof useGlobalSync>
-  params: { dir?: string; id?: string }
+  params: { projectID?: string; id?: string }
   visibleSessionDirs: Accessor<string[]>
 }
 
@@ -70,7 +70,7 @@ export function createPrefetch(deps: PrefetchDeps) {
       seen: lru,
       keep: sessionID,
       limit: MAX_PER_DIR,
-      preserve: directory === deps.params.dir && deps.params.id ? [deps.params.id] : undefined,
+      preserve: directory === deps.params.projectID && deps.params.id ? [deps.params.id] : undefined,
     })
   }
 
@@ -83,7 +83,7 @@ export function createPrefetch(deps: PrefetchDeps) {
   })
 
   createEffect(() => {
-    deps.params.dir
+    deps.params.projectID
     deps.globalSDK.url
 
     token.value += 1

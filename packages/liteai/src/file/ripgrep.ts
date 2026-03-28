@@ -128,13 +128,30 @@ export namespace Ripgrep {
   )
 
   const state = lazy(async () => {
+    const internalPath = path.join(Global.Path.bin, `rg${process.platform === "win32" ? ".exe" : ""}`)
+
+    if (await Filesystem.exists(internalPath)) {
+      return { filepath: internalPath }
+    }
+
+    const filepath = internalPath
     const system = which("rg")
     if (system) {
       const stat = await fs.stat(system).catch(() => undefined)
-      if (stat?.isFile()) return { filepath: system }
-      log.warn("bun.which returned invalid rg path", { filepath: system })
+      if (stat?.isFile()) {
+        try {
+          const proc = Process.spawn([system, "--version"], { stdout: "ignore", stderr: "ignore" })
+          const exitCode = await proc.exited
+          if (exitCode === 0) return { filepath: system }
+        } catch (e) {
+          log.warn("system rg exists but failed to execute, falling back to internal download", {
+            filepath: system,
+            error: e,
+          })
+        }
+      }
+      log.warn("which returned invalid rg path", { filepath: system })
     }
-    const filepath = path.join(Global.Path.bin, `rg${process.platform === "win32" ? ".exe" : ""}`)
 
     if (!(await Filesystem.exists(filepath))) {
       const platformKey = `${process.arch}-${process.platform}` as keyof typeof PLATFORM

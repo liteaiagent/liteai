@@ -1,11 +1,11 @@
 import { Hono } from "hono"
-import { HTTPException } from "hono/http-exception"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
 import { InstanceBootstrap } from "../../project/bootstrap"
 import { Instance } from "../../project/instance"
 import { Project } from "../../project/project"
 import { ProjectID } from "../../project/schema"
+import { NotFoundError } from "../../storage/db"
 import { lazy } from "../../util/lazy"
 import { errors } from "../error"
 import { safeDecodeDirectory } from "../middleware"
@@ -38,7 +38,7 @@ export const ProjectRoutes = lazy(() =>
       async (c) => {
         const project = Project.get(c.req.valid("param").projectID)
         if (!project) {
-          throw new HTTPException(404, { message: "Project not found" })
+          throw new NotFoundError({ message: "Project not found" })
         }
         return c.json(project)
       },
@@ -140,24 +140,18 @@ export const ProjectRoutes = lazy(() =>
       validator(
         "query",
         z.object({
-          directory: z.string().optional(),
+          directory: z.string(),
         }),
       ),
       async (c) => {
-        const raw = c.req.valid("query").directory || c.req.header("x-liteai-directory")
-        if (!raw) {
-          throw new HTTPException(400, {
-            message:
-              "Missing required directory context: set the 'directory' query parameter or 'x-liteai-directory' header",
-          })
-        }
+        const raw = c.req.valid("query").directory
         const directory = safeDecodeDirectory(raw)
 
         // Resolve project from directory
         const resolved = await Project.resolve(directory)
         const existing = Project.get(resolved.id)
         if (!existing) {
-          throw new HTTPException(404, {
+          throw new NotFoundError({
             message: `Project not registered for directory: ${directory}. Register via POST /project first.`,
           })
         }

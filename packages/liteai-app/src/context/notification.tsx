@@ -8,7 +8,6 @@ import { createStore, reconcile } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { useSettings } from "@/context/settings"
-import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
 import { toProjectID } from "@/utils/project-id"
 import { playSound, soundSrc } from "@/utils/sound"
@@ -119,7 +118,7 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
     const empty: Notification[] = []
 
     const currentDirectory = createMemo(() => {
-      return decode64(params.dir)
+      return useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree
     })
 
     const currentSession = createMemo(() => params.id)

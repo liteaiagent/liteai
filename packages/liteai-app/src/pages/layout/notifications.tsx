@@ -1,5 +1,4 @@
 import { showToast, toaster } from "@liteai/ui/toast"
-import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
 import { useParams } from "@solidjs/router"
 import { type Accessor, createEffect, onCleanup, onMount } from "solid-js"
@@ -10,6 +9,7 @@ import type { useNotification } from "@/context/notification"
 import type { usePermission } from "@/context/permission"
 import type { usePlatform } from "@/context/platform"
 import type { useSettings } from "@/context/settings"
+import { toProjectID } from "@/utils/project-id"
 import { playSound, soundSrc } from "@/utils/sound"
 import { Worktree as WorktreeState } from "@/utils/worktree"
 
@@ -143,7 +143,7 @@ export function useSDKNotificationToasts(deps: NotificationDeps) {
         e.details.type === "permission.asked"
           ? deps.language.t("notification.permission.description", { sessionTitle, projectName })
           : deps.language.t("notification.question.description", { sessionTitle, projectName })
-      const href = `/${base64Encode(directory)}/session/${properties.sessionID}`
+      const href = `/${toProjectID(directory)}/session/${properties.sessionID}`
 
       const now = Date.now()
       const last = alertedAt.get(key) ?? 0

@@ -2,11 +2,11 @@ import { Button } from "@liteai/ui/button"
 import { Switch } from "@liteai/ui/switch"
 import { useParams } from "@solidjs/router"
 import { type Component, createMemo, createResource, createSignal, For, Show } from "solid-js"
+import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider, useSync } from "@/context/sync"
-import { decode64 } from "@/utils/base64"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
@@ -42,7 +42,7 @@ export const SettingsMcpInner: Component = () => {
     () => items().filter((i) => i.status.status === "connected").length,
     async () => {
       try {
-        const res = await sdk.client.project.mcp.tools({ projectID: toProjectID(sdk.directory) })
+        const res = await sdk.client.project.mcp.tools({ projectID: sdk.projectID })
         if (!res.data) return {} as Record<string, string[]>
         return res.data as Record<string, string[]>
       } catch (err) {
@@ -58,11 +58,11 @@ export const SettingsMcpInner: Component = () => {
     try {
       const status = sync.data.mcp[name]
       if (status?.status === "connected") {
-        await sdk.client.project.mcp.disconnect({ name, projectID: toProjectID(sdk.directory) })
+        await sdk.client.project.mcp.disconnect({ name, projectID: sdk.projectID })
       } else {
-        await sdk.client.project.mcp.connect({ name, projectID: toProjectID(sdk.directory) })
+        await sdk.client.project.mcp.connect({ name, projectID: sdk.projectID })
       }
-      const result = await sdk.client.project.mcp.status({ projectID: toProjectID(sdk.directory) })
+      const result = await sdk.client.project.mcp.status({ projectID: sdk.projectID })
       if (result.data) sync.set("mcp", result.data)
       refetch()
     } finally {
@@ -250,7 +250,9 @@ export const SettingsMcpInner: Component = () => {
 export const SettingsMcp: Component = () => {
   const language = useLanguage()
   const params = useParams()
-  const directory = createMemo(() => decode64(params.dir) ?? "")
+  const directory = createMemo(
+    () => useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "",
+  )
 
   return (
     <Show
@@ -270,7 +272,7 @@ export const SettingsMcp: Component = () => {
       }
     >
       {(resolved) => (
-        <SDKProvider directory={() => resolved}>
+        <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
             <SettingsMcpInner />
           </SyncProvider>

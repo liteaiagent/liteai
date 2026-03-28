@@ -4,7 +4,7 @@ import { useLayout } from "@/context/layout"
 
 export const useSessionKey = () => {
   const params = useParams()
-  const sessionKey = createMemo(() => `${params.dir}${params.id ? `/${params.id}` : ""}`)
+  const sessionKey = createMemo(() => `${params.projectID}${params.id ? `/${params.id}` : ""}`)
   return { params, sessionKey }
 }
 

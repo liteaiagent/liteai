@@ -19,7 +19,6 @@ import { useSync } from "@/context/sync"
 import { useTerminal } from "@/context/terminal"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
-import { toProjectID } from "@/utils/project-id"
 import { extractPromptFromParts } from "@/utils/prompt"
 
 export type SessionCommandContext = {
@@ -199,7 +198,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
                 }
 
                 const url = await sdk.client.project.session
-                  .share({ sessionID: params.id, projectID: toProjectID(sdk.directory) })
+                  .share({ sessionID: params.id, projectID: sdk.projectID })
                   .then((res) => res.data?.share?.url)
                   .catch(() => undefined)
                 if (!url) {
@@ -223,7 +222,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
               onSelect: async () => {
                 if (!params.id) return
                 await sdk.client.project.session
-                  .unshare({ sessionID: params.id, projectID: toProjectID(sdk.directory) })
+                  .unshare({ sessionID: params.id, projectID: sdk.projectID })
                   .then(() =>
                     showToast({
                       title: language.t("toast.session.unshare.success.title"),
@@ -248,7 +247,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
         title: language.t("command.session.new"),
         keybind: "mod+shift+s",
         slash: "new",
-        onSelect: () => navigate(`/${params.dir}/session`),
+        onSelect: () => navigate(`/${params.projectID}/session`),
       }),
       fileCommand({
         id: "file.open",
@@ -415,7 +414,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           const sessionID = params.id
           if (!sessionID) return
           if (status().type !== "idle") {
-            await sdk.client.project.session.abort({ sessionID, projectID: toProjectID(sdk.directory) }).catch(() => {})
+            await sdk.client.project.session.abort({ sessionID, projectID: sdk.projectID }).catch(() => {})
           }
           const revert = info()?.revert?.messageID
           const message = findLast(userMessages(), (x) => !revert || x.id < revert)
@@ -423,7 +422,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           await sdk.client.project.session.revert({
             sessionID,
             messageID: message.id,
-            projectID: toProjectID(sdk.directory),
+            projectID: sdk.projectID,
           })
           const parts = sync.data.part[message.id]
           if (parts) {
@@ -447,7 +446,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           if (!revertMessageID) return
           const nextMessage = userMessages().find((x) => x.id > revertMessageID)
           if (!nextMessage) {
-            await sdk.client.project.session.unrevert({ sessionID, projectID: toProjectID(sdk.directory) })
+            await sdk.client.project.session.unrevert({ sessionID, projectID: sdk.projectID })
             prompt.reset()
             const lastMsg = findLast(userMessages(), (x) => x.id >= revertMessageID)
             setActiveMessage(lastMsg)
@@ -456,7 +455,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
           await sdk.client.project.session.revert({
             sessionID,
             messageID: nextMessage.id,
-            projectID: toProjectID(sdk.directory),
+            projectID: sdk.projectID,
           })
           const priorMsg = findLast(userMessages(), (x) => x.id < nextMessage.id)
           setActiveMessage(priorMsg)
@@ -483,7 +482,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
             sessionID,
             modelID: model.id,
             providerID: model.provider.id,
-            projectID: toProjectID(sdk.directory),
+            projectID: sdk.projectID,
           })
         },
       }),

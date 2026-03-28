@@ -12,6 +12,7 @@ import { createEffect, createMemo, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { useCommand } from "@/context/command"
+import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { usePlatform } from "@/context/platform"
@@ -21,7 +22,6 @@ import { useTerminal } from "@/context/terminal"
 import { focusTerminalById } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { messageAgentColor } from "@/utils/agent"
-import { decode64 } from "@/utils/base64"
 import { Persist, persisted } from "@/utils/persist"
 import { StatusPopover } from "../status-popover"
 
@@ -138,7 +138,9 @@ export function SessionHeader() {
   const terminal = useTerminal()
   const { params, view } = useSessionLayout()
 
-  const projectDirectory = createMemo(() => decode64(params.dir) ?? "")
+  const projectDirectory = createMemo(
+    () => useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "",
+  )
   const project = createMemo(() => {
     const directory = projectDirectory()
     if (!directory) return

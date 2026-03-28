@@ -1,7 +1,6 @@
 import { useParams } from "@solidjs/router"
 import { createMemo } from "solid-js"
 import { useGlobalSync } from "@/context/global-sync"
-import { decode64 } from "@/utils/base64"
 
 export const popularProviders = ["anthropic", "google", "openai", "google-code-assist", "ai4all"]
 const popularProviderSet = new Set(popularProviders)
@@ -9,7 +8,7 @@ const popularProviderSet = new Set(popularProviders)
 export function useProviders() {
   const globalSync = useGlobalSync()
   const params = useParams()
-  const dir = createMemo(() => decode64(params.dir) ?? "")
+  const dir = createMemo(() => useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "")
   const providers = () => {
     if (dir()) {
       const [projectStore] = globalSync.child(dir())

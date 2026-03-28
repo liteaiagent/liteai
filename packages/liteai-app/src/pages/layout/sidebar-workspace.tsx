@@ -5,7 +5,6 @@ import { Icon } from "@liteai/ui/icon"
 import { IconButton } from "@liteai/ui/icon-button"
 import { Spinner } from "@liteai/ui/spinner"
 import { Tooltip } from "@liteai/ui/tooltip"
-import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
 import type { Session } from "@liteai-ai/sdk/client"
 import { createMediaQuery } from "@solid-primitives/media"
@@ -186,7 +185,7 @@ const WorkspaceActions = (props: {
           variant="ghost"
           class="size-6 rounded-md"
           data-action="workspace-menu"
-          data-workspace={base64Encode(props.directory)}
+          data-workspace={toProjectID(props.directory)}
           aria-label={props.language.t("common.moreOptions")}
         />
       </Tooltip>
@@ -240,7 +239,7 @@ const WorkspaceActions = (props: {
           variant="ghost"
           class="size-6 rounded-md opacity-0 pointer-events-none group-hover/workspace:opacity-100 group-hover/workspace:pointer-events-auto group-focus-within/workspace:opacity-100 group-focus-within/workspace:pointer-events-auto"
           data-action="workspace-new-session"
-          data-workspace={base64Encode(props.directory)}
+          data-workspace={toProjectID(props.directory)}
           aria-label={props.language.t("command.session.new")}
           onClick={(event) => {
             event.preventDefault()
@@ -340,7 +339,7 @@ export const SortableWorkspace = (props: {
     open: false,
     pendingRename: false,
   })
-  const slug = createMemo(() => base64Encode(props.directory))
+  const slug = createMemo(() => toProjectID(props.directory))
   const sessions = createMemo(() => sortedRootSessions(workspaceStore, props.sortNow()))
   const children = createMemo(() => childMapByParent(workspaceStore.session))
   const local = createMemo(() => props.directory === props.project.worktree)
@@ -406,7 +405,7 @@ export const SortableWorkspace = (props: {
           <div
             class="group/workspace relative"
             data-component="workspace-item"
-            data-workspace={base64Encode(props.directory)}
+            data-workspace={toProjectID(props.directory)}
           >
             <div class="flex items-center gap-1">
               <Show
@@ -417,7 +416,7 @@ export const SortableWorkspace = (props: {
                       menu.open ? "pr-16" : "pr-2"
                     } group-hover/workspace:pr-16 group-focus-within/workspace:pr-16`}
                     data-action="workspace-toggle"
-                    data-workspace={base64Encode(props.directory)}
+                    data-workspace={toProjectID(props.directory)}
                   >
                     {header()}
                   </Collapsible.Trigger>
@@ -501,7 +500,7 @@ export const LocalWorkspace = (props: {
     const [store, setStore] = globalSync.child(props.project.worktree)
     return { store, setStore }
   })
-  const slug = createMemo(() => base64Encode(props.project.worktree))
+  const slug = createMemo(() => toProjectID(props.project.worktree))
   const sessions = createMemo(() => sortedRootSessions(workspace().store, props.sortNow()))
   const children = createMemo(() => childMapByParent(workspace().store.session))
   const booted = createMemo((prev) => prev || workspace().store.status === "complete", false)

@@ -34,10 +34,13 @@ export const WorktreeAdaptor: Adaptor = {
     const config = Config.parse(info)
     const { WorkspaceServer } = await import("../workspace-server/server")
     const url = input instanceof Request || input instanceof URL ? input : new URL(input, "http://liteai.internal")
-    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
-    headers.set("x-liteai-directory", config.directory)
 
-    const request = new Request(url, { ...init, headers })
+    // Since WorkspaceServer expects directory as query parameter, we append it
+    const targetRequest = input instanceof Request ? input : new Request(url, init)
+    const targetUrl = new URL(targetRequest.url)
+    targetUrl.searchParams.set("directory", config.directory)
+    const request = new Request(targetUrl, targetRequest)
+
     return WorkspaceServer.App().fetch(request)
   },
 }

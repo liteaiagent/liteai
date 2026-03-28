@@ -208,6 +208,8 @@ import type {
 	ProviderOauthCallbackResponses,
 	QuestionAnswer,
 	SubtaskPartInput,
+	SystemFileListResponses,
+	SystemFindFilesResponses,
 	TextPartInput,
 	WorktreeCreateInput,
 	WorktreeRemoveInput,
@@ -370,6 +372,86 @@ export class Log extends HeyApiClient {
 				...params.headers,
 			},
 		});
+	}
+}
+
+export class File extends HeyApiClient {
+	/**
+	 * List system files
+	 *
+	 * List files and directories in a specified path on the host system.
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		parameters: {
+			path: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[{ args: [{ in: "query", key: "path" }] }],
+		);
+		return (options?.client ?? this.client).get<
+			SystemFileListResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/system/file",
+			...options,
+			...params,
+		});
+	}
+}
+
+export class Find extends HeyApiClient {
+	/**
+	 * Find system files
+	 *
+	 * Search for files or directories by name pattern on the host system.
+	 */
+	public files<ThrowOnError extends boolean = false>(
+		parameters: {
+			query: string;
+			type?: "file" | "directory";
+			limit?: number;
+			dir?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "query", key: "query" },
+						{ in: "query", key: "type" },
+						{ in: "query", key: "limit" },
+						{ in: "query", key: "dir" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			SystemFindFilesResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/system/find/file",
+			...options,
+			...params,
+		});
+	}
+}
+
+export class System extends HeyApiClient {
+	private _file?: File;
+	get file(): File {
+		return (this._file ??= new File({ client: this.client }));
+	}
+
+	private _find?: Find;
+	get find(): Find {
+		return (this._find ??= new Find({ client: this.client }));
 	}
 }
 
@@ -2840,7 +2922,7 @@ export class Question extends HeyApiClient {
 	}
 }
 
-export class Find extends HeyApiClient {
+export class Find2 extends HeyApiClient {
 	/**
 	 * Find text
 	 *
@@ -2956,7 +3038,7 @@ export class Find extends HeyApiClient {
 	}
 }
 
-export class File extends HeyApiClient {
+export class File2 extends HeyApiClient {
 	/**
 	 * List files
 	 *
@@ -4532,8 +4614,8 @@ export class Project extends HeyApiClient {
 	 * Register a project for a given directory. Idempotent — returns the existing project if already registered.
 	 */
 	public create<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
+		parameters: {
+			directory: string;
 		},
 		options?: Options<never, ThrowOnError>,
 	) {
@@ -4688,8 +4770,8 @@ export class Project extends HeyApiClient {
 	 * Create a git repository for a project directory and return the refreshed project info. Requires a directory parameter.
 	 */
 	public initGit<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
+		parameters: {
+			directory: string;
 		},
 		options?: Options<never, ThrowOnError>,
 	) {
@@ -4821,14 +4903,14 @@ export class Project extends HeyApiClient {
 		return (this._question ??= new Question({ client: this.client }));
 	}
 
-	private _find?: Find;
-	get find(): Find {
-		return (this._find ??= new Find({ client: this.client }));
+	private _find?: Find2;
+	get find(): Find2 {
+		return (this._find ??= new Find2({ client: this.client }));
 	}
 
-	private _file?: File;
-	get file(): File {
-		return (this._file ??= new File({ client: this.client }));
+	private _file?: File2;
+	get file(): File2 {
+		return (this._file ??= new File2({ client: this.client }));
 	}
 
 	private _mcp?: Mcp;
@@ -4981,6 +5063,11 @@ export class LiteaiClient extends HeyApiClient {
 	private _log?: Log;
 	get log2(): Log {
 		return (this._log ??= new Log({ client: this.client }));
+	}
+
+	private _system?: System;
+	get system(): System {
+		return (this._system ??= new System({ client: this.client }));
 	}
 
 	private _auth?: Auth;

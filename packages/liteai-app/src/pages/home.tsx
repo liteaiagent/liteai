@@ -3,7 +3,6 @@ import { useDialog } from "@liteai/ui/context/dialog"
 import { Icon } from "@liteai/ui/icon"
 import { Logo } from "@liteai/ui/logo"
 import { Tooltip } from "@liteai/ui/tooltip"
-import { base64Encode } from "@liteai/util/encode"
 import { useNavigate } from "@solidjs/router"
 import { DateTime } from "luxon"
 import { createMemo, For, Match, Show, Switch } from "solid-js"
@@ -42,14 +41,27 @@ export default function Home() {
   })
 
   async function openProject(directory: string) {
+    let projectID = ""
     try {
-      await globalSDK.client.project.create({ directory })
+      const res = await globalSDK.client.project.create({ directory })
+      if (res.data) projectID = res.data.id
     } catch {
       // ignore
     }
+    if (!projectID) {
+      const existing = sync.data.project.find(
+        (p) =>
+          p.worktree === directory ||
+          (p as { sandbox?: string; directory?: string }).sandbox === directory ||
+          (p as { sandbox?: string; directory?: string }).directory === directory,
+      )
+      if (existing) projectID = existing.id
+    }
+    if (!projectID) return
+
     layout.projects.open(directory)
     layout.projects.touch(directory)
-    navigate(`/${base64Encode(directory)}`)
+    navigate(`/${projectID}`)
   }
 
   async function chooseProject() {
@@ -105,20 +117,22 @@ export default function Home() {
       </Show>
       <div class="mx-auto mt-55 w-full md:w-auto px-4">
         <Logo class="md:w-xl opacity-12" />
-        <Button
-          size="large"
-          variant="ghost"
-          class="mt-4 mx-auto text-14-regular text-text-weak"
-          onClick={() => dialog.show(() => <DialogSelectServer />)}
-        >
-          <div
-            classList={{
-              "size-2 rounded-full": true,
-              [serverDotClass()]: true,
-            }}
-          />
-          {server.name}
-        </Button>
+        <div class="flex justify-center mt-4">
+          <Button
+            size="large"
+            variant="ghost"
+            class="text-14-regular text-text-weak"
+            onClick={() => dialog.show(() => <DialogSelectServer />)}
+          >
+            <div
+              classList={{
+                "size-2 rounded-full": true,
+                [serverDotClass()]: true,
+              }}
+            />
+            {server.name}
+          </Button>
+        </div>
         <Switch>
           <Match when={sync.data.project.length > 0}>
             <div class="mt-20 w-full flex flex-col gap-4">

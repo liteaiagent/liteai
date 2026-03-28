@@ -120,7 +120,7 @@ export function TerminalPanel() {
   })
 
   createEffect(() => {
-    const dir = params.dir
+    const dir = params.projectID
     if (!dir) return
     if (!terminal.ready()) return
     language.locale()
@@ -138,7 +138,7 @@ export function TerminalPanel() {
   })
 
   const handoff = createMemo(() => {
-    const dir = params.dir
+    const dir = params.projectID
     if (!dir) return []
     return getTerminalHandoff(dir) ?? []
   })

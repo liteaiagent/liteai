@@ -1,5 +1,4 @@
 import { Binary } from "@liteai/util/binary"
-import { base64Encode } from "@liteai/util/encode"
 import { getFilename } from "@liteai/util/path"
 import type { Project, Session } from "@liteai-ai/sdk/client"
 import { type Accessor, untrack } from "solid-js"
@@ -20,7 +19,7 @@ export type NavigationDeps = {
   layout: ReturnType<typeof useLayout>
   notification: ReturnType<typeof useNotification>
   server: ReturnType<typeof useServer>
-  params: { dir?: string; id?: string }
+  params: { projectID?: string; id?: string }
   navigate: (href: string) => void
   currentDir: Accessor<string>
   navigateWithSidebarReset: (href: string) => void
@@ -131,7 +130,7 @@ export async function navigateToProject(deps: NavigationDeps, directory: string 
         id: target.id,
         at: Date.now(),
       })
-      deps.navigateWithSidebarReset(`/${base64Encode(target.directory)}/session/${target.id}`)
+      deps.navigateWithSidebarReset(`/${toProjectID(target.directory)}/session/${target.id}`)
       return true
     }
     const resolved = await deps.globalSDK.client.project.session
@@ -145,7 +144,7 @@ export async function navigateToProject(deps: NavigationDeps, directory: string 
       id: resolved.id,
       at: Date.now(),
     })
-    deps.navigateWithSidebarReset(`/${base64Encode(resolved.directory)}/session/${resolved.id}`)
+    deps.navigateWithSidebarReset(`/${toProjectID(resolved.directory)}/session/${resolved.id}`)
     return true
   }
 
@@ -181,12 +180,12 @@ export async function navigateToProject(deps: NavigationDeps, directory: string 
     return
   }
 
-  deps.navigateWithSidebarReset(`/${base64Encode(root)}/session`)
+  deps.navigateWithSidebarReset(`/${toProjectID(root)}/session`)
 }
 
 export function navigateToSession(deps: NavigationDeps, session: Session | undefined) {
   if (!session) return
-  deps.navigateWithSidebarReset(`/${base64Encode(session.directory)}/session/${session.id}`)
+  deps.navigateWithSidebarReset(`/${toProjectID(session.directory)}/session/${session.id}`)
 }
 
 export async function openProject(deps: NavigationDeps, directory: string, nav = true) {
@@ -247,7 +246,7 @@ export function closeProject(deps: NavigationDeps, directory: string) {
     return
   }
 
-  deps.navigateWithSidebarReset(`/${base64Encode(target.worktree)}/session`)
+  deps.navigateWithSidebarReset(`/${toProjectID(target.worktree)}/session`)
   deps.layout.projects.close(directory)
   queueMicrotask(() => {
     void navigateToProject(deps, target.worktree)
@@ -288,9 +287,9 @@ export function archiveSession(deps: NavigationDeps, session: Session) {
       )
       if (session.id === deps.params.id) {
         if (next) {
-          deps.navigate(`/${deps.params.dir}/session/${next.id}`)
+          deps.navigate(`/${deps.params.projectID}/session/${next.id}`)
         } else {
-          deps.navigate(`/${deps.params.dir}/session`)
+          deps.navigate(`/${deps.params.projectID}/session`)
         }
       }
     })
@@ -362,9 +361,9 @@ export function deleteSession(deps: NavigationDeps, session: Session) {
       )
       if (session.id === deps.params.id) {
         if (next) {
-          deps.navigate(`/${deps.params.dir}/session/${next.id}`)
+          deps.navigate(`/${deps.params.projectID}/session/${next.id}`)
         } else {
-          deps.navigate(`/${deps.params.dir}/session`)
+          deps.navigate(`/${deps.params.projectID}/session`)
         }
       }
     })
@@ -443,7 +442,7 @@ export async function handleDeepLinks(deps: NavigationDeps, urls: string[]) {
 
   for (const link of collectNewSessionDeepLinks(urls)) {
     await openProject(deps, link.directory, false)
-    const slug = base64Encode(link.directory)
+    const slug = toProjectID(link.directory)
     if (link.prompt) {
       setSessionHandoff(slug, { prompt: link.prompt })
     }

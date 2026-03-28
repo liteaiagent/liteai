@@ -1,9 +1,9 @@
 import { useParams } from "@solidjs/router"
 import { type Component, createMemo, createResource, For, Show } from "solid-js"
+import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
-import { decode64 } from "@/utils/base64"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
 
@@ -19,7 +19,7 @@ const SettingsSkillsInner: Component = () => {
 
   const [skills] = createResource(async () => {
     try {
-      const { data } = await sdk.client.project.skill.list({ projectID: toProjectID(sdk.directory) })
+      const { data } = await sdk.client.project.skill.list({ projectID: sdk.projectID })
       return (data ?? []) as Skill[]
     } catch {
       return [] as Skill[]
@@ -74,7 +74,9 @@ const SettingsSkillsInner: Component = () => {
 export const SettingsSkills: Component = () => {
   const language = useLanguage()
   const params = useParams()
-  const directory = createMemo(() => decode64(params.dir) ?? "")
+  const directory = createMemo(
+    () => useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "",
+  )
 
   return (
     <Show
@@ -92,7 +94,7 @@ export const SettingsSkills: Component = () => {
       }
     >
       {(resolved) => (
-        <SDKProvider directory={() => resolved}>
+        <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
             <SettingsSkillsInner />
           </SyncProvider>

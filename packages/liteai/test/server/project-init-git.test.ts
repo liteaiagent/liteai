@@ -31,11 +31,8 @@ describe("project.initGit endpoint", () => {
       GlobalBus.on("event", fn)
 
       try {
-        const init = await app.request("/project/git/init", {
+        const init = await app.request(`/project/git/init?directory=${encodeURIComponent(tmp.path)}`, {
           method: "POST",
-          headers: {
-            "x-liteai-directory": tmp.path,
-          },
         })
         const body = await init.json()
         expect(init.status).toBe(200)
@@ -87,11 +84,8 @@ describe("project.initGit endpoint", () => {
     GlobalBus.on("event", fn)
 
     try {
-      const init = await app.request("/project/git/init", {
+      const init = await app.request(`/project/git/init?directory=${encodeURIComponent(tmp.path)}`, {
         method: "POST",
-        headers: {
-          "x-liteai-directory": tmp.path,
-        },
       })
       expect(init.status).toBe(200)
       const body = await init.json()

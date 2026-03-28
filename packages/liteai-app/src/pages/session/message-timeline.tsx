@@ -29,7 +29,6 @@ import { normalizeWheelDelta, shouldMarkBoundaryGesture } from "@/pages/session/
 import { useSessionKey } from "@/pages/session/session-layout"
 import { messageAgentColor } from "@/utils/agent"
 import { parseCommentNote, readCommentMetadata } from "@/utils/comment-note"
-import { toProjectID } from "@/utils/project-id"
 
 type MessageComment = {
   path: string
@@ -344,7 +343,7 @@ export function MessageTimeline(props: {
     if (!shareEnabled()) return
     setReq("share", true)
     globalSDK.client.project.session
-      .share({ sessionID: id, projectID: toProjectID(sdk.directory) })
+      .share({ sessionID: id, projectID: sdk.projectID })
       .catch((err: unknown) => {
         console.error("Failed to share session", err)
       })
@@ -359,7 +358,7 @@ export function MessageTimeline(props: {
     if (!shareEnabled()) return
     setReq("unshare", true)
     globalSDK.client.project.session
-      .unshare({ sessionID: id, projectID: toProjectID(sdk.directory) })
+      .unshare({ sessionID: id, projectID: sdk.projectID })
       .catch((err: unknown) => {
         console.error("Failed to unshare session", err)
       })
@@ -427,7 +426,7 @@ export function MessageTimeline(props: {
 
     setTitle("saving", true)
     await sdk.client.project.session
-      .update({ sessionID: id, title: next, projectID: toProjectID(sdk.directory) })
+      .update({ sessionID: id, title: next, projectID: sdk.projectID })
       .then(() => {
         sync.set(
           produce((draft) => {
@@ -449,14 +448,14 @@ export function MessageTimeline(props: {
   const navigateAfterSessionRemoval = (sessionID: string, parentID?: string, nextSessionID?: string) => {
     if (params.id !== sessionID) return
     if (parentID) {
-      navigate(`/${params.dir}/session/${parentID}`)
+      navigate(`/${params.projectID}/session/${parentID}`)
       return
     }
     if (nextSessionID) {
-      navigate(`/${params.dir}/session/${nextSessionID}`)
+      navigate(`/${params.projectID}/session/${nextSessionID}`)
       return
     }
-    navigate(`/${params.dir}/session`)
+    navigate(`/${params.projectID}/session`)
   }
 
   const archiveSession = async (sessionID: string) => {
@@ -468,7 +467,7 @@ export function MessageTimeline(props: {
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
     await sdk.client.project.session
-      .update({ sessionID, time: { archived: Date.now() }, projectID: toProjectID(sdk.directory) })
+      .update({ sessionID, time: { archived: Date.now() }, projectID: sdk.projectID })
       .then(() => {
         sync.set(
           produce((draft) => {
@@ -495,7 +494,7 @@ export function MessageTimeline(props: {
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
     const result = await sdk.client.project.session
-      .delete({ sessionID, projectID: toProjectID(sdk.directory) })
+      .delete({ sessionID, projectID: sdk.projectID })
       .then((x) => x.data)
       .catch((err) => {
         showToast({
@@ -549,7 +548,7 @@ export function MessageTimeline(props: {
   const navigateParent = () => {
     const id = parentID()
     if (!id) return
-    navigate(`/${params.dir}/session/${id}`)
+    navigate(`/${params.projectID}/session/${id}`)
   }
 
   function DialogDeleteSession(props: { sessionID: string }) {

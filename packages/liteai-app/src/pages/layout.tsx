@@ -101,11 +101,11 @@ export default function Layout(props: ParentProps) {
   const command = useCommand()
   const theme = useTheme()
   const language = useLanguage()
-  const initialDirectory = decode64(params.dir)
-  const currentDir = createMemo(() => decode64(params.dir) ?? "")
+
+  const currentDir = createMemo(() => globalSync.data.project.find((p) => p.id === params.projectID)?.worktree ?? "")
 
   const [state, setState] = createStore({
-    autoselect: !initialDirectory && location.pathname === "/",
+    autoselect: !params.projectID && location.pathname === "/",
     busyWorkspaces: {} as Record<string, boolean>,
     hoverSession: undefined as string | undefined,
     hoverProject: undefined as string | undefined,
@@ -380,7 +380,7 @@ export default function Layout(props: ParentProps) {
 
   // --- autoselect ---
   const autoselecting = createMemo(() => {
-    if (params.dir) return false
+    if (params.projectID) return false
     if (!state.autoselect) return false
     if (!pageReady()) return true
     if (!layoutReady()) return true
@@ -390,14 +390,14 @@ export default function Layout(props: ParentProps) {
 
   createEffect(() => {
     if (!state.autoselect) return
-    if (!params.dir) return
-    if (!decode64(params.dir)) return
+    if (!params.projectID) return
+    if (!globalSync.data.project.find((p) => p.id === params.projectID)?.worktree) return
     setState("autoselect", false)
   })
 
   createEffect(
     on(
-      () => ({ ready: pageReady(), layoutReady: layoutReady(), dir: params.dir, list: layout.projects.list() }),
+      () => ({ ready: pageReady(), layoutReady: layoutReady(), dir: params.projectID, list: layout.projects.list() }),
       (value) => {
         if (!value.ready || !value.layoutReady || !state.autoselect || value.dir) return
         const last = layout.projects.last()
@@ -553,7 +553,7 @@ export default function Layout(props: ParentProps) {
   const activeRoute = { session: "", sessionProject: "" }
   createEffect(
     on(
-      () => [pageReady(), params.dir, params.id, currentProject()?.worktree] as const,
+      () => [pageReady(), params.projectID, params.id, currentProject()?.worktree] as const,
       ([ready, dir, id]) => {
         if (!ready || !dir) {
           activeRoute.session = ""

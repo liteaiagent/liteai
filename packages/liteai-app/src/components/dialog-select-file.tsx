@@ -4,7 +4,6 @@ import { FileIcon } from "@liteai/ui/file-icon"
 import { Icon } from "@liteai/ui/icon"
 import { Keybind } from "@liteai/ui/keybind"
 import { List } from "@liteai/ui/list"
-import { base64Encode } from "@liteai/util/encode"
 import { getDirectory, getFilename } from "@liteai/util/path"
 import { useNavigate } from "@solidjs/router"
 import { createMemo, createSignal, Match, onCleanup, Show, Switch } from "solid-js"
@@ -16,7 +15,6 @@ import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
-import { decode64 } from "@/utils/base64"
 import { toProjectID } from "@/utils/project-id"
 import { getRelativeTime } from "@/utils/time"
 
@@ -277,7 +275,9 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode; onOpenFil
   const commandEntries = createCommandEntries({ filesOnly, command, language })
   const fileEntries = createFileEntries({ file, tabs, language })
 
-  const projectDirectory = createMemo(() => decode64(params.dir) ?? "")
+  const projectDirectory = createMemo(
+    () => useGlobalSync().data.project.find((p) => p.id === params.projectID)?.worktree ?? "",
+  )
   const project = createMemo(() => {
     const directory = projectDirectory()
     if (!directory) return
@@ -370,7 +370,7 @@ export function DialogSelectFile(props: { mode?: DialogSelectFileMode; onOpenFil
 
     if (item.type === "session") {
       if (!item.directory || !item.sessionID) return
-      navigate(`/${base64Encode(item.directory)}/session/${item.sessionID}`)
+      navigate(`/${toProjectID(item.directory)}/session/${item.sessionID}`)
       return
     }
 
