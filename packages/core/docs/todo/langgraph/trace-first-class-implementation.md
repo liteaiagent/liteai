@@ -362,7 +362,7 @@ In `Trace.Info`:
 
 ### 5.2 Frontend cleanup (3 files)
 
-#### `packages/liteai-app/src/pages/session/trace-types.ts`
+#### `packages/web/src/pages/session/trace-types.ts`
 
 ```diff
  export type TraceDetail = TraceInfo & {
@@ -374,7 +374,7 @@ In `Trace.Info`:
  }
 ```
 
-#### `packages/liteai-app/src/pages/session/trace-parts.tsx`
+#### `packages/web/src/pages/session/trace-parts.tsx`
 
 In `ContextMessages` component, delete the `messages_json` prop and the Path 1 fallback (lines ~236-248):
 
@@ -399,7 +399,7 @@ In `ContextMessages` component, delete the `messages_json` prop and the Path 1 f
      const map = new Map(props.messages.map((m) => [m.id, m]))
 ```
 
-#### `packages/liteai-app/src/pages/session/trace-detail.tsx`
+#### `packages/web/src/pages/session/trace-detail.tsx`
 
 Remove the `messages_json` prop from the `ContextMessages` usage (line ~294):
 
@@ -460,7 +460,7 @@ This saves disk space on existing databases but isn't required for correctness.
 | `src/server/routes/trace.ts` | 4 | Minor — update if `Detail` Zod shape changes |
 | `src/cli/cmd/trace.ts` | 5 | Minor — verify export still works |
 
-### Frontend (`packages/liteai-app`)
+### Frontend (`packages/web`)
 
 | File | Phase | Change |
 |---|---|---|

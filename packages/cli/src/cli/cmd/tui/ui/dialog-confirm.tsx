@@ -1,6 +1,6 @@
+import { Locale } from "@liteai/core/util/locale"
 import { TextAttributes } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
-import { Locale } from "@liteai/core/util/locale"
 import { For } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useTheme } from "../context/theme"

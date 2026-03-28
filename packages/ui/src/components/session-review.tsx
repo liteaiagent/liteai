@@ -1,6 +1,6 @@
+import type { FileContent, FileDiff } from "@liteai/sdk"
 import { checksum } from "@liteai/util/encode"
 import { getDirectory, getFilename } from "@liteai/util/path"
-import type { FileContent, FileDiff } from "@liteai/sdk"
 import type { SelectedLineRange } from "@pierre/diffs"
 import type { PreloadMultiFileDiffResult } from "@pierre/diffs/ssr"
 import { createEffect, createMemo, For, type JSX, Match, onCleanup, Show, Switch, untrack } from "solid-js"

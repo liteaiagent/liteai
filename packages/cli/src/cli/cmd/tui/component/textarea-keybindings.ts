@@ -1,5 +1,5 @@
-import type { KeyBinding } from "@opentui/core"
 import type { Keybind } from "@liteai/core/util/keybind"
+import type { KeyBinding } from "@opentui/core"
 import { createMemo } from "solid-js"
 import { useKeybind } from "../context/keybind"
 

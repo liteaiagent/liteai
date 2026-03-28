@@ -1,7 +1,7 @@
-import { Duration, Effect, Match, Option } from "effect"
 import type { AccountError } from "@liteai/core/account/schema"
 import { type AccountID, AccountService, type OrgID, PollExpired, type PollResult } from "@liteai/core/account/service"
 import { runtime } from "@liteai/core/effect/runtime"
+import { Duration, Effect, Match, Option } from "effect"
 import open from "open"
 import * as Prompt from "../effect/prompt"
 import { UI } from "../ui"

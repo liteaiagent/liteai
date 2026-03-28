@@ -76,7 +76,7 @@ client.skill.list({ projectID })     // was: client.app.skills()
 
 ### Files Needing Updates
 
-#### `packages/liteai-app/`
+#### `packages/web/`
 | File | What changed |
 |------|-------------|
 | `src/context/global-sdk.tsx` | `eventSdk.global.event()` → `eventSdk.event.subscribe()` |

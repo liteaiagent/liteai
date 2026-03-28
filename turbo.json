@@ -16,7 +16,7 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
-    "liteai-app#test": {
+    "@liteai/web#test": {
       "dependsOn": ["^build"],
       "outputs": []
     }

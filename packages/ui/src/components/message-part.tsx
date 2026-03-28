@@ -1,4 +1,3 @@
-import { getFilename } from "@liteai/util/path"
 import type {
   AgentPart,
   AssistantMessage,
@@ -9,6 +8,7 @@ import type {
   ToolPart,
   UserMessage,
 } from "@liteai/sdk"
+import { getFilename } from "@liteai/util/path"
 import { type Component, createMemo, createSignal, For, Index, Match, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"

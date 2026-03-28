@@ -1,3 +1,4 @@
+import { Flag } from "@liteai/core/flag/flag"
 import type { AssistantMessage, Session } from "@liteai/sdk"
 import { useTerminalDimensions } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"
@@ -6,7 +7,6 @@ import { useKeybind } from "@tui/context/keybind"
 import { useRouteData } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
-import { Flag } from "@liteai/core/flag/flag"
 import { pipe, sumBy } from "remeda"
 import { type Accessor, createMemo, createSignal, Match, Show, Switch } from "solid-js"
 

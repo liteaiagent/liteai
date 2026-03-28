@@ -198,7 +198,7 @@ No collision because project config is at `/project/:id/config`.
 ### Phase 2: Update SDK and clients
 
 - Regenerate SDK from new OpenAPI spec
-- Update `liteai-app` to use `sdk.client.project.config()` with projectID
+- Update `web` to use `sdk.client.project.config()` with projectID
 - Update `liteai-vscode` to use projectID-based routes
 - Update TUI sync context
 
@@ -237,7 +237,7 @@ No collision because project config is at `/project/:id/config`.
 | All other instance routes | Mount under `/project/:projectID/` |
 | `middleware.ts` | Remove directory-based middleware, add projectID-based middleware |
 | `liteai-sdk` | Full regeneration — new URL paths, updated types |
-| `liteai-app` | Update all SDK calls to pass projectID instead of directory |
+| `web` | Update all SDK calls to pass projectID instead of directory |
 | `liteai-vscode` | Update SDK calls |
 | TUI sync context | Update to use projectID-based URLs |
 

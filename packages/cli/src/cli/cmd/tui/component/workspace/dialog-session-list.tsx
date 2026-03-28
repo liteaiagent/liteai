@@ -1,3 +1,4 @@
+import { Locale } from "@liteai/core/util/locale"
 import { DialogSessionRename } from "@tui/component/dialog-session-rename"
 import { Spinner } from "@tui/component/spinner"
 import { useKeybind } from "@tui/context/keybind"
@@ -9,7 +10,6 @@ import { useTheme } from "@tui/context/theme"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useToast } from "@tui/ui/toast"
-import { Locale } from "@liteai/core/util/locale"
 import { createMemo, createResource, createSignal, onMount } from "solid-js"
 import { createDebouncedSignal } from "../../util/signal"
 

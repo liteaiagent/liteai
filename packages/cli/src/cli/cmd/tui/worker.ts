@@ -1,7 +1,4 @@
 import { setTimeout as sleep } from "node:timers/promises"
-import { NamedError } from "@liteai/util/error"
-import { createLiteaiClient, type Event } from "@liteai/sdk"
-import type { BunWebSocketData } from "hono/bun"
 import { GlobalBus } from "@liteai/core/bus/global"
 import { Config } from "@liteai/core/config/config"
 import { Flag } from "@liteai/core/flag/flag"
@@ -11,6 +8,9 @@ import { Instance } from "@liteai/core/project/instance"
 import { Server } from "@liteai/core/server/server"
 import { Log } from "@liteai/core/util/log"
 import { Rpc } from "@liteai/core/util/rpc"
+import { createLiteaiClient, type Event } from "@liteai/sdk"
+import { NamedError } from "@liteai/util/error"
+import type { BunWebSocketData } from "hono/bun"
 import { upgrade } from "../../upgrade"
 
 await Log.init({

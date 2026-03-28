@@ -10,10 +10,12 @@
  */
 import { Server } from "../src/server/server"
 
-const specs: any = await Server.openapi()
+const specs = (await Server.openapi()) as {
+  paths: Record<string, Record<string, { operationId?: string; "x-codeSamples"?: unknown[] }>>
+}
 
 // Enrich with code samples for each operation
-for (const item of Object.values(specs.paths) as any[]) {
+for (const item of Object.values(specs.paths)) {
   for (const method of ["get", "post", "put", "delete", "patch"] as const) {
     const operation = item[method]
     if (!operation?.operationId) continue

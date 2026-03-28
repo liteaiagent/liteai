@@ -1,10 +1,10 @@
+import { Keybind } from "@liteai/core/util/keybind"
 import { TextAttributes } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
 import { useSDK } from "@tui/context/sdk"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogPrompt } from "@tui/ui/dialog-prompt"
 import { DialogSelect } from "@tui/ui/dialog-select"
-import { Keybind } from "@liteai/core/util/keybind"
 import { createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { useTheme } from "../context/theme"
 

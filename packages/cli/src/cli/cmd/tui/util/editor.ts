@@ -1,10 +1,10 @@
 import { rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import type { CliRenderer } from "@opentui/core"
 import { defer } from "@liteai/core/util/defer"
 import { Filesystem } from "@liteai/core/util/filesystem"
 import { Process } from "@liteai/core/util/process"
+import type { CliRenderer } from "@opentui/core"
 
 export namespace Editor {
   export async function open(opts: { value: string; renderer: CliRenderer }): Promise<string | undefined> {

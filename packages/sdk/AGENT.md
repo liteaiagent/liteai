@@ -246,7 +246,7 @@ import type {
 
 ## In the LiteAI App (SolidJS)
 
-Inside `packages/liteai-app`, the SDK is accessed via context:
+Inside `packages/web`, the SDK is accessed via context:
 
 ```tsx
 import { useSDK } from "@/context/sdk"

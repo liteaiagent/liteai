@@ -9,8 +9,8 @@
 			"path": "packages/core"
 		},
 		{
-			"name": "liteai-app",
-			"path": "packages/liteai-app"
+			"name": "web",
+			"path": "packages/web"
 		},
 		{
 			"name": "script",

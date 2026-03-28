@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "bun run --cwd packages/cli --conditions=browser src/index.ts",
     "dev:desktop": "bun --cwd packages/desktop tauri dev",
-    "dev:web": "bun --cwd packages/app dev",
+    "dev:web": "bun --cwd packages/web dev",
     "dev:storybook": "bun --cwd packages/storybook storybook",
     "typecheck": "bun turbo typecheck",
     "lint": "bun turbo lint",

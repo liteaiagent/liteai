@@ -1,3 +1,4 @@
+import { Locale } from "@liteai/core/util/locale"
 import type { TextPart } from "@liteai/sdk"
 import type { PromptInfo } from "@tui/component/prompt/history"
 import { useRoute } from "@tui/context/route"
@@ -5,7 +6,6 @@ import { useSDK } from "@tui/context/sdk"
 import { useSync } from "@tui/context/sync"
 import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect, type DialogSelectOption } from "@tui/ui/dialog-select"
-import { Locale } from "@liteai/core/util/locale"
 import { createMemo, onMount } from "solid-js"
 
 export function DialogForkFromTimeline(props: { sessionID: string; onMove: (messageID: string) => void }) {

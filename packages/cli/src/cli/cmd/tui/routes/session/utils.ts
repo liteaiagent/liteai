@@ -1,6 +1,6 @@
 import path from "node:path"
-import type { ScrollAcceleration } from "@opentui/core"
 import { LANGUAGE_EXTENSIONS } from "@liteai/core/lsp/language"
+import type { ScrollAcceleration } from "@opentui/core"
 
 export const MIME_BADGE: Record<string, string> = {
   "text/plain": "txt",

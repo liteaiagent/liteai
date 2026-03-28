@@ -161,5 +161,5 @@ Line ~310: `sdkFor(directory).lsp.status()` needs projectID:
 ## Verification
 
 After Phase 3, the core state layer should compile and work. Run:
-1. `tsc --noEmit` in `liteai-app`
+1. `tsc --noEmit` in `web`
 2. Manual test: open app, verify project bootstrap loads (sessions, config, MCP status, etc.)

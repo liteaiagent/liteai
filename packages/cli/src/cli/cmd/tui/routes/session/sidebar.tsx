@@ -1,10 +1,10 @@
+import { Installation } from "@liteai/core/installation/index"
 import type { AssistantMessage } from "@liteai/sdk"
 import { TodoItem } from "@tui/component/todo-item"
 import { useDirectory } from "@tui/context/directory"
 import { useKV } from "@tui/context/kv"
 import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
-import { Installation } from "@liteai/core/installation/index"
 import { createMemo, For, Match, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 

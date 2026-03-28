@@ -5,16 +5,6 @@ import * as core from "@actions/core"
 import * as github from "@actions/github"
 import type { Context } from "@actions/github/lib/context"
 import * as prompts from "@clack/prompts"
-import { graphql } from "@octokit/graphql"
-import { Octokit } from "@octokit/rest"
-import type {
-  IssueCommentEvent,
-  IssuesEvent,
-  PullRequestEvent,
-  PullRequestReviewCommentEvent,
-  WorkflowDispatchEvent,
-  WorkflowRunEvent,
-} from "@octokit/webhooks-types"
 import { Bus } from "@liteai/core/bus/index"
 import { Instance } from "@liteai/core/project/instance"
 import { ModelsDev } from "@liteai/core/provider/models"
@@ -27,6 +17,16 @@ import { MessageID, PartID } from "@liteai/core/session/schema"
 import { Filesystem } from "@liteai/core/util/filesystem"
 import { git } from "@liteai/core/util/git"
 import { Process } from "@liteai/core/util/process"
+import { graphql } from "@octokit/graphql"
+import { Octokit } from "@octokit/rest"
+import type {
+  IssueCommentEvent,
+  IssuesEvent,
+  PullRequestEvent,
+  PullRequestReviewCommentEvent,
+  WorkflowDispatchEvent,
+  WorkflowRunEvent,
+} from "@octokit/webhooks-types"
 import { map, pipe, sortBy, values } from "remeda"
 import { bootstrap } from "../bootstrap"
 import { UI } from "../ui"

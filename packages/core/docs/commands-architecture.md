@@ -214,13 +214,13 @@ const commands = createMemo((): AutocompleteOption[] => {
 })
 ```
 
-Selecting a **TUI slash** calls [onSelect()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/pages/layout/commands.ts#254-255) immediately (e.g., opens a dialog).  
+Selecting a **TUI slash** calls [onSelect()](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/pages/layout/commands.ts#254-255) immediately (e.g., opens a dialog).  
 Selecting a **server command** inserts `/name ` into the prompt textarea — you then submit to trigger the AI.
 
 ### 2.3 How TUI Commands Are Triggered
 
 Three ways:
-- **Keybind** — `useKeyboard` in [CommandProvider](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#121-139) matches any registered [keybind](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx#406-420)
+- **Keybind** — `useKeyboard` in [CommandProvider](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#121-139) matches any registered [keybind](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/command.tsx#406-420)
 - **Command palette** — opened with `command_list` keybind; uses `DialogSelect`
 - **Slash autocomplete** — typing `/name` and pressing Enter/Tab
 
@@ -302,8 +302,8 @@ Registered in `src/cli/cmd/tui/component/prompt/index.tsx`. Active whenever the 
 
 ### 3.5 Web App Commands (command palette, `Ctrl/Cmd+Shift+P`)
 
-Registered in [packages/liteai-app/src/pages/layout/commands.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/pages/layout/commands.ts). These are entirely client-side.  
-The web app does **not** use [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#113-120) from the TUI — it has its own [useCommand](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx) context with the same concept but different implementation. Server commands are only accessible in the web app by typing `/name` in the chat prompt and submitting.
+Registered in [packages/web/src/pages/layout/commands.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/pages/layout/commands.ts). These are entirely client-side.  
+The web app does **not** use [useCommandDialog](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/cli/cmd/tui/component/dialog-command.tsx#113-120) from the TUI — it has its own [useCommand](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/command.tsx) context with the same concept but different implementation. Server commands are only accessible in the web app by typing `/name` in the chat prompt and submitting.
 
 | Slash | ID | Description |
 |---|---|---|

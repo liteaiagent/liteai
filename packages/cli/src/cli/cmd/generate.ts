@@ -4,8 +4,11 @@ import type { CommandModule } from "yargs"
 export const GenerateCommand = {
   command: "generate",
   handler: async () => {
-    const specs = await Server.openapi()
-    for (const item of Object.values(specs.paths) as Record<string, { operationId?: string; [key: string]: unknown } | undefined>[]) {
+    const specs = (await Server.openapi()) as { paths: Record<string, Record<string, unknown>> }
+    for (const item of Object.values(specs.paths) as Record<
+      string,
+      { operationId?: string; [key: string]: unknown } | undefined
+    >[]) {
       for (const method of ["get", "post", "put", "delete", "patch"] as const) {
         const operation = item[method]
         if (!operation?.operationId) continue

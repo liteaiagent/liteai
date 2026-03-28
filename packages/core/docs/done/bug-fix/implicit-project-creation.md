@@ -7,9 +7,9 @@ It details why users are automatically redirected to the backend's Current Worki
 ## Execution Trace
 
 ### 1. Frontend Initialization and `bootstrapGlobal`
-When the UI loads `/`, the frontend mounts `<GlobalSyncProvider>` (`packages/liteai-app/src/context/global-sync.tsx`). As soon as it detects a successful server connection, it triggers the `bootstrapGlobal()` sequence.
+When the UI loads `/`, the frontend mounts `<GlobalSyncProvider>` (`packages/web/src/context/global-sync.tsx`). As soon as it detects a successful server connection, it triggers the `bootstrapGlobal()` sequence.
 
-`bootstrapGlobal()` (located in `packages/liteai-app/src/context/global-sync/bootstrap.ts`) fires off a batch of required API calls to fetch global state, including:
+`bootstrapGlobal()` (located in `packages/web/src/context/global-sync/bootstrap.ts`) fires off a batch of required API calls to fetch global state, including:
 ```typescript
 // Requests the list of available projects
 input.globalSDK.project.list()
@@ -61,7 +61,7 @@ async (c) => {
 ### 5. Frontend Auto-Selection and Redirect
 Back on the frontend, `bootstrapGlobal` receives the response containing the new CWD project and updates the global store (`globalStore.project`). A sync effect pushes this project into `server.projects` (localStorage).
 
-Finally, the `autoselecting` memo and effect in `packages/liteai-app/src/pages/layout.tsx` spring into action:
+Finally, the `autoselecting` memo and effect in `packages/web/src/pages/layout.tsx` spring into action:
 ```typescript
 const next = (lastKey ? value.list.find((p) => workspaceKey(p.worktree) === lastKey) : undefined) ?? value.list[0]
 

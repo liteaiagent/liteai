@@ -2,7 +2,7 @@
 
 ## Context
 
-Phase 2 of the API Path Refactor: migrate `packages/liteai-app` to:
+Phase 2 of the API Path Refactor: migrate `packages/web` to:
 1. **New flat global API** — remove `global.` prefix (e.g., `client.global.health()` → `client.health()`)
 2. **New project-scoped API** — pass `projectID` as method parameter instead of relying on `x-liteai-directory` header
 
@@ -37,7 +37,7 @@ Phases 4 and 5 can run in parallel.
 
 ## Impact
 
-- **~28 files** in `liteai-app`
+- **~28 files** in `web`
 - **1 new file** (`utils/project-id.ts`)
 - **6 heavily impacted** files (bootstrap.ts, global-sync.tsx, sync.tsx, navigation.ts, session.tsx, workspace-ops.ts)
 
@@ -51,5 +51,5 @@ Phases 4 and 5 can run in parallel.
 ## Open Questions
 
 1. **File browsing in `dialog-select-directory.tsx`**: `file.list()` and `find.files()` browse arbitrary directories, not registered projects. May need a separate global file browsing API or keep directory-header for these.
-2. **TUI sync** (`liteai/src/cli/cmd/tui/context/sync.tsx`): Outside `liteai-app`, separate task.
+2. **TUI sync** (`liteai/src/cli/cmd/tui/context/sync.tsx`): Outside `web`, separate task.
 3. **Route param naming**: Should `/:dir` rename to `/:projectID`? Cosmetic — recommend yes for clarity.

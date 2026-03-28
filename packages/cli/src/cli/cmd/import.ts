@@ -1,5 +1,4 @@
 import { EOL } from "node:os"
-import type { Part, Message as SDKMessage, Session as SDKSession } from "@liteai/sdk"
 import { Instance } from "@liteai/core/project/instance"
 import { Session } from "@liteai/core/session/index"
 import { Message } from "@liteai/core/session/message"
@@ -7,6 +6,7 @@ import { MessageTable, PartTable, SessionTable } from "@liteai/core/session/sess
 import { ShareNext } from "@liteai/core/share/share-next"
 import { Database } from "@liteai/core/storage/db"
 import { Filesystem } from "@liteai/core/util/filesystem"
+import type { Part, Message as SDKMessage, Session as SDKSession } from "@liteai/sdk"
 import type { Argv } from "yargs"
 import { bootstrap } from "../bootstrap"
 import { cmd } from "./cmd"

@@ -31,6 +31,6 @@ const ERRORS = {
   },
 } as const
 
-export function errors(...codes: number[]): Record<number, any> {
+export function errors(...codes: number[]): Record<number, unknown> {
   return Object.fromEntries(codes.map((code) => [code, ERRORS[code as keyof typeof ERRORS]]))
 }

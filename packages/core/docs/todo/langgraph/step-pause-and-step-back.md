@@ -333,11 +333,11 @@ After regenerating the OpenAPI spec and SDK, the SDK should expose:
 ## Phase 4: Frontend — Pause Dock Component
 
 **Risk**: Low — follows existing dock patterns exactly
-**Files**: `packages/liteai-app/src/pages/session/composer/`
+**Files**: `packages/web/src/pages/session/composer/`
 
 ### 4.1 Create `session-pause-dock.tsx`
 
-New component following the [SessionPermissionDock](../../../liteai-app/src/pages/session/composer/session-permission-dock.tsx) pattern:
+New component following the [SessionPermissionDock](../../../web/src/pages/session/composer/session-permission-dock.tsx) pattern:
 
 ```tsx
 import { Button } from "@liteai/ui/button"
@@ -405,7 +405,7 @@ export function SessionPauseDock(props: {
 
 ### 4.2 Add pause state to `SessionComposerState`
 
-In [session-composer-state.ts](../../../liteai-app/src/pages/session/composer/session-composer-state.ts), derive the pause request from session status:
+In [session-composer-state.ts](../../../web/src/pages/session/composer/session-composer-state.ts), derive the pause request from session status:
 
 ```typescript
 const pauseRequest = createMemo((): { step: number } | undefined => {
@@ -427,7 +427,7 @@ const blocked = createMemo(() => {
 
 ### 4.3 Wire pause dock into `SessionComposerRegion`
 
-In [session-composer-region.tsx](../../../liteai-app/src/pages/session/composer/session-composer-region.tsx), add the pause dock alongside the permission and question docks:
+In [session-composer-region.tsx](../../../web/src/pages/session/composer/session-composer-region.tsx), add the pause dock alongside the permission and question docks:
 
 ```tsx
 <Show when={props.state.pauseRequest()} keyed>
@@ -505,7 +505,7 @@ This requires:
 ## Phase 5: Frontend — Step Back Icon on User Messages
 
 **Risk**: Low — extends existing `UserActions` pattern
-**Files**: [message-part.tsx](../../../ui/src/components/message-part.tsx), [message-timeline.tsx](../../../liteai-app/src/pages/session/message-timeline.tsx)
+**Files**: [message-part.tsx](../../../ui/src/components/message-part.tsx), [message-timeline.tsx](../../../web/src/pages/session/message-timeline.tsx)
 
 ### 5.1 Extend `UserActions` type
 
@@ -559,7 +559,7 @@ Update the `run` function to handle the new action:
 
 ### 5.3 Wire step-back action in `MessageTimeline`
 
-In [message-timeline.tsx](../../../liteai-app/src/pages/session/message-timeline.tsx), the `actions` prop is passed through to `SessionTurn`. Add `stepBack` to the `UserActions` type and wire it:
+In [message-timeline.tsx](../../../web/src/pages/session/message-timeline.tsx), the `actions` prop is passed through to `SessionTurn`. Add `stepBack` to the `UserActions` type and wire it:
 
 ```typescript
 const stepBack = async (input: { sessionID: string; messageID: string }) => {
@@ -627,7 +627,7 @@ When in step mode, optionally add subtle step separators in the message timeline
 | `src/session/engine/loop.ts` | 2, 3 | Add `stepMode` to PromptInput/LoopInput, pause logic, `resumeStep()`, `stepBack()` |
 | `src/server/routes/session.ts` | 3 | Add `POST /:id/resume` and `POST /:id/step-back` routes |
 
-### Frontend (`packages/liteai-app`)
+### Frontend (`packages/web`)
 
 | File | Phase | Change |
 |---|---|---|
