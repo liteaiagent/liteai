@@ -10,7 +10,9 @@ import { Global } from "../../global"
 import { Instance } from "../../project/instance"
 import { lazy } from "../../util/lazy"
 import { Log } from "../../util/log"
+import { HEARTBEAT_INTERVAL_MS } from "../constants"
 import { errors } from "../error"
+import { Event } from "../event"
 
 const log = Log.create({ service: "server" })
 
@@ -190,7 +192,7 @@ export const GlobalRoutes = lazy(() =>
           stream.writeSSE({
             data: JSON.stringify({
               payload: {
-                type: "server.connected",
+                type: Event.Connected.type,
                 properties: {},
               },
             }),
@@ -207,12 +209,12 @@ export const GlobalRoutes = lazy(() =>
             stream.writeSSE({
               data: JSON.stringify({
                 payload: {
-                  type: "server.heartbeat",
+                  type: Event.Heartbeat.type,
                   properties: {},
                 },
               }),
             })
-          }, 10_000)
+          }, HEARTBEAT_INTERVAL_MS)
 
           await new Promise<void>((resolve) => {
             stream.onAbort(() => {
