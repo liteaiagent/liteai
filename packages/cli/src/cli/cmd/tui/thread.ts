@@ -184,9 +184,11 @@ export const TuiThreadCommand = cmd({
       const prompt = await input(args.prompt as string | undefined)
 
       // Register the project for this directory so Instance.provide can boot
-      await Project.fromDirectory(cwd).catch((err) => {
+      const projectResult = await Project.fromDirectory(cwd).catch((err) => {
         Log.Default.warn("project init failed", { error: String(err) })
+        return undefined
       })
+      const projectID = projectResult?.project.id
 
       const config = await Instance.provide({
         directory: cwd,
@@ -223,6 +225,7 @@ export const TuiThreadCommand = cmd({
           url: transport.url,
           config,
           directory: cwd,
+          projectID,
           fetch: transport.fetch,
           events: transport.events,
           args: {

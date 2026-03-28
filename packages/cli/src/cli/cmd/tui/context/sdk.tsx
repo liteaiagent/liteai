@@ -13,6 +13,7 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
   init: (props: {
     url: string
     directory?: string
+    projectID?: string
     fetch?: typeof fetch
     headers?: RequestInit["headers"]
     events?: EventSource
@@ -109,7 +110,7 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
         return sdk
       },
       get projectID() {
-        return workspaceID || props.directory || ""
+        return workspaceID || props.projectID || props.directory || ""
       },
       directory: props.directory,
       event: emitter,

@@ -112,6 +112,7 @@ export async function tui(input: {
   args: Args
   config: TuiConfig.Info
   directory?: string
+  projectID?: string
   fetch?: typeof fetch
   headers?: RequestInit["headers"]
   events?: EventSource
@@ -147,6 +148,7 @@ export async function tui(input: {
                         <SDKProvider
                           url={input.url}
                           directory={input.directory}
+                          projectID={input.projectID}
                           fetch={input.fetch}
                           headers={input.headers}
                           events={input.events}
