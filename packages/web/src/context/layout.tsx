@@ -3,7 +3,7 @@ import { createSimpleContext } from "@liteai/ui/context"
 import { type Accessor, batch, createEffect, createMemo, onCleanup, onMount } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { workspaceKey } from "@/pages/layout/helpers"
-import { decode64 } from "@/utils/base64"
+import { toDirectory } from "@/utils/project-id"
 import { Persist, persisted, removePersisted } from "@/utils/persist"
 import { same } from "@/utils/same"
 import { createPathHelpers } from "./file/path"
@@ -102,7 +102,7 @@ function nextSessionTabsForOpen(current: SessionTabs | undefined, tab: string): 
 const sessionPath = (key: string) => {
   const dir = key.split("/")[0]
   if (!dir) return
-  const root = decode64(dir)
+  const root = toDirectory(dir)
   if (!root) return
   return createPathHelpers(() => root)
 }

@@ -1,5 +1,5 @@
 {
-  "name": "liteai-vscode",
+  "name": "@liteai/vscode",
   "displayName": "liteai",
   "description": "liteai for VS Code",
   "version": "1.2.26",

@@ -22,7 +22,7 @@ import { usePlatform } from "@/context/platform"
 import { useServer } from "@/context/server"
 import { useSettings } from "@/context/settings"
 import { createAim } from "@/utils/aim"
-import { decode64 } from "@/utils/base64"
+
 import { setNavigate } from "@/utils/notification-click"
 import { Persist, persisted } from "@/utils/persist"
 import { getDraggableId } from "@/utils/solid-dnd"
@@ -560,7 +560,7 @@ export default function Layout(props: ParentProps) {
           activeRoute.sessionProject = ""
           return
         }
-        const directory = decode64(dir)
+        const directory = currentDir()
         if (!directory) return
         const root = touchProjectRoute(navDeps) ?? activeProjectRoot(navDeps, directory)
         if (!id) {

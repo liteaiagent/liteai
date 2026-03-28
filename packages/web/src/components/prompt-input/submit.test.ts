@@ -68,8 +68,9 @@ beforeAll(async () => {
     showToast: () => 0,
   }))
 
-  mock.module("@liteai/util/encode", () => ({
-    base64Encode: (value: string) => value,
+  mock.module("@/utils/project-id", () => ({
+    toProjectID: (value: string) => value,
+    __updateProjectRegistry: () => undefined,
   }))
 
   mock.module("@/context/local", () => ({

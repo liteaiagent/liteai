@@ -1,5 +1,5 @@
 import { createSimpleContext } from "@liteai/ui/context"
-import { base64Encode } from "@liteai/util/encode"
+import { toProjectID } from "@/utils/project-id"
 import { useParams } from "@solidjs/router"
 import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -352,7 +352,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     }
 
     const result = {
-      slug: createMemo(() => base64Encode(sdk.directory)),
+      slug: createMemo(() => toProjectID(sdk.directory)),
       model,
       agent,
       session: {

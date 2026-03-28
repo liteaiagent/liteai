@@ -1,7 +1,7 @@
 import type { Message, Session } from "@liteai/sdk/client"
 import { showToast } from "@liteai/ui/toast"
 import { Binary } from "@liteai/util/binary"
-import { base64Encode } from "@liteai/util/encode"
+
 import { useNavigate, useParams } from "@solidjs/router"
 import type { Accessor } from "solid-js"
 import type { FileSelection } from "@/context/file"
@@ -375,8 +375,8 @@ export function createPromptSubmit(input: PromptSubmitInput) {
         session = created
         if (shouldAutoAccept) permission.enableAutoAccept(session.id, sessionDirectory)
         local.session.promote(sessionDirectory, session.id)
-        layout.handoff.setTabs(base64Encode(sessionDirectory), session.id)
-        navigate(`/${base64Encode(sessionDirectory)}/session/${session.id}`)
+        layout.handoff.setTabs(toProjectID(sessionDirectory), session.id)
+        navigate(`/${toProjectID(sessionDirectory)}/session/${session.id}`)
       }
     }
     if (!session) {

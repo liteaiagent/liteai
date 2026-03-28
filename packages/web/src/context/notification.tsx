@@ -1,7 +1,7 @@
 import type { EventSessionError } from "@liteai/sdk"
 import { createSimpleContext } from "@liteai/ui/context"
 import { Binary } from "@liteai/util/binary"
-import { base64Encode } from "@liteai/util/encode"
+
 import { useParams } from "@solidjs/router"
 import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
@@ -247,7 +247,7 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
           session: sessionID,
         })
 
-        const href = `/${base64Encode(directory)}/session/${sessionID}`
+        const href = `/${toProjectID(directory)}/session/${sessionID}`
         if (settings.notifications.agent()) {
           void platform.notify(language.t("notification.session.responseReady.title"), session.title ?? sessionID, href)
         }
@@ -280,7 +280,7 @@ export const { use: useNotification, provider: NotificationProvider } = createSi
         const description =
           session?.title ??
           (typeof error === "string" ? error : language.t("notification.session.error.fallbackDescription"))
-        const href = sessionID ? `/${base64Encode(directory)}/session/${sessionID}` : `/${base64Encode(directory)}`
+        const href = sessionID ? `/${toProjectID(directory)}/session/${sessionID}` : `/${toProjectID(directory)}`
         if (settings.notifications.errors()) {
           void platform.notify(language.t("notification.session.error.title"), description, href)
         }

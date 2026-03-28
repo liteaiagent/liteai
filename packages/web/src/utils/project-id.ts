@@ -1,5 +1,4 @@
 import type { Project } from "@liteai/sdk/client"
-import { base64Encode } from "@liteai/util/encode"
 
 let projectRegistry: Project[] = []
 
@@ -17,6 +16,12 @@ export function toProjectID(directory: string): string {
   )
   if (match?.id) return match.id
 
-  // Fallback
-  return base64Encode(directory)
+  throw new Error(`Project not found in registry for directory: ${directory}`)
 }
+
+/** Map projectID -> directory path (reverse lookup) */
+export function toDirectory(projectID: string): string | undefined {
+  const match = projectRegistry.find((p) => p.id === projectID)
+  return match?.worktree
+}
+
