@@ -25,10 +25,8 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       return createLiteaiClient({
         baseUrl: props.url,
         signal: abort.signal,
-        directory: props.directory,
         fetch: props.fetch,
         headers: props.headers,
-        experimental_workspaceID: workspaceID,
       })
     }
 
@@ -78,11 +76,11 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       ;(async () => {
         while (true) {
           if (abort.signal.aborted || ctrl.signal.aborted) break
-          const events = await sdk.event.subscribe({}, { signal: ctrl.signal })
+          const events = await sdk.event.subscribe({ signal: ctrl.signal })
 
           for await (const event of events.stream) {
             if (ctrl.signal.aborted) break
-            handleEvent(event)
+            handleEvent(event as unknown as Event)
           }
 
           if (timer) clearTimeout(timer)
@@ -109,6 +107,9 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     return {
       get client() {
         return sdk
+      },
+      get projectID() {
+        return workspaceID || props.directory || ""
       },
       directory: props.directory,
       event: emitter,

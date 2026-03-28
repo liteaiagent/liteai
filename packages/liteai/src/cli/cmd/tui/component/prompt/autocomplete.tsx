@@ -226,7 +226,8 @@ export function Autocomplete(props: {
       const { lineRange, baseQuery } = extractLineRange(query ?? "")
 
       // Get files from SDK
-      const result = await sdk.client.find.files({
+      const result = await sdk.client.project.find.files({
+        projectID: sdk.projectID,
         query: baseQuery,
       })
 

@@ -62,7 +62,6 @@ const startEventStream = (input: { directory: string; workspaceID?: string }) =>
 
   const sdk = createLiteaiClient({
     baseUrl: "http://liteai.internal",
-    directory: input.directory,
     experimental_workspaceID: input.workspaceID,
     fetch: fetchFn,
     signal,
@@ -71,12 +70,9 @@ const startEventStream = (input: { directory: string; workspaceID?: string }) =>
   ;(async () => {
     while (!signal.aborted) {
       const events = await Promise.resolve(
-        sdk.event.subscribe(
-          {},
-          {
-            signal,
-          },
-        ),
+        sdk.event.subscribe({
+          signal,
+        }),
       ).catch(() => undefined)
 
       if (!events) {
@@ -85,7 +81,7 @@ const startEventStream = (input: { directory: string; workspaceID?: string }) =>
       }
 
       for await (const event of events.stream) {
-        Rpc.emit("event", event as Event)
+        Rpc.emit("event", event as unknown as Event)
       }
 
       if (!signal.aborted) {

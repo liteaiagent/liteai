@@ -181,7 +181,8 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
           onSelect={(option) => {
             setStore("stage", "permission")
             if (option === "cancel") return
-            sdk.client.permission.reply({
+            sdk.client.project.permission.reply({
+              projectID: sdk.projectID,
               reply: "always",
               requestID: props.request.id,
             })
@@ -191,7 +192,8 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
       <Match when={store.stage === "reject"}>
         <RejectPrompt
           onConfirm={(message) => {
-            sdk.client.permission.reply({
+            sdk.client.project.permission.reply({
+              projectID: sdk.projectID,
               reply: "reject",
               requestID: props.request.id,
               message: message || undefined,
@@ -444,13 +446,15 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
                     setStore("stage", "reject")
                     return
                   }
-                  sdk.client.permission.reply({
+                  sdk.client.project.permission.reply({
+                    projectID: sdk.projectID,
                     reply: "reject",
                     requestID: props.request.id,
                   })
                   return
                 }
-                sdk.client.permission.reply({
+                sdk.client.project.permission.reply({
+                  projectID: sdk.projectID,
                   reply: "once",
                   requestID: props.request.id,
                 })

@@ -26,7 +26,7 @@ export function DialogSessionList() {
 
   const [searchResults] = createResource(search, async (query) => {
     if (!query) return undefined
-    const result = await sdk.client.session.list({ search: query, limit: 30 })
+    const result = await sdk.client.project.session.list({ projectID: sdk.projectID, search: query, limit: 30 })
     return result.data ?? []
   })
 
@@ -86,7 +86,8 @@ export function DialogSessionList() {
           title: "delete",
           onTrigger: async (option) => {
             if (toDelete() === option.value) {
-              sdk.client.session.delete({
+              sdk.client.project.session.delete({
+                projectID: sdk.projectID,
                 sessionID: option.value,
               })
               setToDelete(undefined)

@@ -227,7 +227,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           return {
             provider: provider?.name ?? value.providerID,
             model: info?.name ?? value.modelID,
-            reasoning: info?.capabilities?.reasoning ?? false,
+            reasoning: !!info?.reasoning,
           }
         }),
         cycle(direction: 1 | -1) {
@@ -371,10 +371,10 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         const status = sync.data.mcp[name]
         if (status?.status === "connected") {
           // Disable: disconnect the MCP
-          await sdk.client.mcp.disconnect({ name })
+          await sdk.client.project.mcp.disconnect({ projectID: sdk.projectID, name })
         } else {
           // Enable/Retry: connect the MCP (handles disabled, failed, and other states)
-          await sdk.client.mcp.connect({ name })
+          await sdk.client.project.mcp.connect({ projectID: sdk.projectID, name })
         }
       },
     }

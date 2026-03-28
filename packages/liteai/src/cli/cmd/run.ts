@@ -683,7 +683,7 @@ export const RunCommand = cmd({
         const auth = `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`
         return { Authorization: auth }
       })()
-      const sdk = createLiteaiClient({ baseUrl: args.attach, directory, headers })
+      const sdk = createLiteaiClient({ baseUrl: args.attach, headers })
       return await execute(sdk)
     }
 

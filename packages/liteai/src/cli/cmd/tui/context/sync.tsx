@@ -34,7 +34,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
   init: () => {
     const [store, setStore] = createStore<{
       status: "loading" | "partial" | "complete"
-      provider: Provider[]
+      provider: ProviderListResponse["all"]
       provider_default: Record<string, string>
       provider_next: ProviderListResponse
       provider_auth: Record<string, ProviderAuthMethod[]>
@@ -107,7 +107,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     const sdk = useSDK()
 
     async function syncWorkspaces() {
-      const result = await sdk.client.experimental.workspace.list().catch(() => undefined)
+      const result = await sdk.client.project.experimental.workspace.list({ projectID: sdk.projectID }).catch(() => undefined)
       if (!result?.data) return
       setStore("workspaceList", reconcile(result.data))
     }
@@ -365,7 +365,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         }
 
         case "lsp.updated": {
-          sdk.client.lsp.status().then((x) => setStore("lsp", x.data ?? []))
+          sdk.client.project.lsp.status({ projectID: sdk.projectID }).then((x) => setStore("lsp", x.data ?? []))
           break
         }
 
@@ -382,17 +382,15 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     async function bootstrap() {
       console.log("bootstrapping")
       const start = Date.now() - 30 * 24 * 60 * 60 * 1000
-      const sessionListPromise = sdk.client.session
-        .list({ start: start })
+      const sessionListPromise = sdk.client.project.session
+        .list({ projectID: sdk.projectID, start: start })
         .then((x) => (x.data ?? []).toSorted((a, b) => a.id.localeCompare(b.id)))
 
       // blocking - include session.list when continuing a session
-      const providersPromise = sdk.client.config.providers({}, { throwOnError: true })
       const providerListPromise = sdk.client.provider.list({ throwOnError: true })
-      const agentsPromise = sdk.client.app.agents({}, { throwOnError: true })
-      const configPromise = sdk.client.config.get({}, { throwOnError: true })
+      const agentsPromise = sdk.client.project.agent.list({ projectID: sdk.projectID }, { throwOnError: true })
+      const configPromise = sdk.client.project.config.get({ projectID: sdk.projectID }, { throwOnError: true })
       const blockingRequests: Promise<unknown>[] = [
-        providersPromise,
         providerListPromise,
         agentsPromise,
         configPromise,
@@ -401,7 +399,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
       await Promise.all(blockingRequests)
         .then(() => {
-          const providersResponse = providersPromise.then((x) => x.data ?? { providers: [], default: {} })
           const providerListResponse = providerListPromise.then(
             (x) => x.data ?? { all: [], default: {}, connected: [] },
           )
@@ -410,21 +407,19 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           const sessionListResponse = args.continue ? sessionListPromise : undefined
 
           return Promise.all([
-            providersResponse,
             providerListResponse,
             agentsResponse,
             configResponse,
             ...(sessionListResponse ? [sessionListResponse] : []),
           ]).then((responses) => {
-            const providers = responses[0]
-            const providerList = responses[1]
-            const agents = responses[2]
-            const config = responses[3]
-            const sessions = responses[4]
+            const providerList = responses[0]
+            const agents = responses[1]
+            const config = responses[2]
+            const sessions = responses[3]
 
             batch(() => {
-              setStore("provider", reconcile(providers.providers))
-              setStore("provider_default", reconcile(providers.default))
+              setStore("provider", reconcile(providerList.all))
+              setStore("provider_default", reconcile(providerList.default))
               setStore("provider_next", reconcile(providerList))
               setStore("agent", reconcile(agents))
               setStore("config", reconcile(config))
@@ -437,18 +432,18 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           // non-blocking
           Promise.all([
             ...(args.continue ? [] : [sessionListPromise.then((sessions) => setStore("session", reconcile(sessions)))]),
-            sdk.client.command.list().then((x) => setStore("command", reconcile(x.data ?? []))),
-            sdk.client.lsp.status().then((x) => setStore("lsp", reconcile(x.data ?? []))),
-            sdk.client.mcp.status().then((x) => setStore("mcp", reconcile(x.data ?? {}))),
-            sdk.client.experimental.resource.list().then((x) => setStore("mcp_resource", reconcile(x.data ?? {}))),
-            sdk.client.formatter.status().then((x) => setStore("formatter", reconcile(x.data ?? []))),
-            sdk.client.session.status().then((x) => {
+            sdk.client.project.command.list({ projectID: sdk.projectID }).then((x) => setStore("command", reconcile(x.data ?? []))),
+            sdk.client.project.lsp.status({ projectID: sdk.projectID }).then((x) => setStore("lsp", reconcile(x.data ?? []))),
+            sdk.client.project.mcp.status({ projectID: sdk.projectID }).then((x) => setStore("mcp", reconcile(x.data ?? {}))),
+            sdk.client.project.experimental.resource.list({ projectID: sdk.projectID }).then((x) => setStore("mcp_resource", reconcile(x.data ?? {}))),
+            sdk.client.project.formatter.status({ projectID: sdk.projectID }).then((x) => setStore("formatter", reconcile(x.data ?? []))),
+            sdk.client.project.session.status({ projectID: sdk.projectID }).then((x) => {
               setStore("session_status", reconcile(x.data ?? {}))
             }),
             sdk.client.provider.auth().then((x) => setStore("provider_auth", reconcile(x.data ?? {}))),
-            sdk.client.vcs.get().then((x) => setStore("vcs", reconcile(x.data))),
-            sdk.client.instance
-              .info()
+            sdk.client.project.vcs({ projectID: sdk.projectID }).then((x) => setStore("vcs", reconcile(x.data))),
+            sdk.client.project.instance
+              .info({ projectID: sdk.projectID })
               .then((x) =>
                 setStore(
                   "path",
@@ -507,10 +502,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         async sync(sessionID: string) {
           if (fullSyncedSessions.has(sessionID)) return
           const [session, messages, todo, diff] = await Promise.all([
-            sdk.client.session.get({ sessionID }, { throwOnError: true }),
-            sdk.client.session.messages({ sessionID, limit: 100 }),
-            sdk.client.session.todo({ sessionID }),
-            sdk.client.session.diff({ sessionID }),
+            sdk.client.project.session.get({ projectID: sdk.projectID, sessionID }, { throwOnError: true }),
+            sdk.client.project.session.messages({ projectID: sdk.projectID, sessionID, limit: 100 }),
+            sdk.client.project.session.todo({ projectID: sdk.projectID, sessionID }),
+            sdk.client.project.session.diff({ projectID: sdk.projectID, sessionID }),
           ])
           const msgs = messages.data ?? []
           Log.Default.info("[tui:sync] session.sync loaded messages", {

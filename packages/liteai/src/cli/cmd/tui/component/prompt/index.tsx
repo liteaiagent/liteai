@@ -235,7 +235,8 @@ export function Prompt(props: PromptProps) {
           }, 5000)
 
           if (store.interrupt >= 2) {
-            sdk.client.session.abort({
+            sdk.client.project.session.abort({
+              projectID: sdk.projectID,
               sessionID: props.sessionID,
             })
             setStore("interrupt", 0)
@@ -543,7 +544,8 @@ export function Prompt(props: PromptProps) {
 
     let sessionID = props.sessionID
     if (sessionID == null) {
-      const res = await sdk.client.session.create({
+      const res = await sdk.client.project.session.create({
+        projectID: sdk.projectID,
         workspaceID: props.workspaceID,
       })
 
@@ -588,8 +590,9 @@ export function Prompt(props: PromptProps) {
     const variant = local.model.variant.current()
 
     if (store.mode === "shell") {
-      sdk.client.session.shell({
-        sessionID,
+      sdk.client.project.session.shell({
+        projectID: sdk.projectID,
+        sessionID: sessionID!,
         agent: local.agent.current().name,
         model: {
           providerID: selectedModel.providerID,
@@ -613,8 +616,9 @@ export function Prompt(props: PromptProps) {
       const restOfInput = firstLineEnd === -1 ? "" : inputText.slice(firstLineEnd + 1)
       const args = firstLineArgs.join(" ") + (restOfInput ? `\n${restOfInput}` : "")
 
-      sdk.client.session.command({
-        sessionID,
+      sdk.client.project.session.command({
+        projectID: sdk.projectID,
+        sessionID: sessionID!,
         command: command.slice(1),
         arguments: args,
         agent: local.agent.current().name,
@@ -629,9 +633,10 @@ export function Prompt(props: PromptProps) {
           })),
       })
     } else {
-      sdk.client.session
+      sdk.client.project.session
         .prompt({
-          sessionID,
+          projectID: sdk.projectID,
+          sessionID: sessionID!,
           ...selectedModel,
           messageID,
           agent: local.agent.current().name,
@@ -668,7 +673,7 @@ export function Prompt(props: PromptProps) {
       setTimeout(() => {
         route.navigate({
           type: "session",
-          sessionID,
+          sessionID: sessionID!,
         })
       }, 50)
     input.clear()

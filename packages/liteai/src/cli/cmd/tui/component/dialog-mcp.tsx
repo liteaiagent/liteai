@@ -74,7 +74,7 @@ export function DialogMcp() {
         setLoading(option.value)
         try {
           await local.mcp.toggle(option.value)
-          const status = await sdk.client.mcp.status()
+          const status = await sdk.client.project.mcp.status({ projectID: sdk.projectID })
           if (status.data) {
             sync.set("mcp", status.data)
           }
@@ -207,7 +207,7 @@ function McpDetail(props: { name: string }) {
           setLoading("toggle")
           try {
             await local.mcp.toggle(props.name)
-            const status = await sdk.client.mcp.status()
+            const status = await sdk.client.project.mcp.status({ projectID: sdk.projectID })
             if (status.data) sync.set("mcp", status.data)
           } catch (error) {
             Log.Default.error("Failed to toggle MCP", { error })
@@ -218,9 +218,9 @@ function McpDetail(props: { name: string }) {
           if (loading() !== null) return
           setLoading("reconnect")
           try {
-            await sdk.client.mcp.disconnect({ name: props.name })
-            await sdk.client.mcp.connect({ name: props.name })
-            const status = await sdk.client.mcp.status()
+            await sdk.client.project.mcp.disconnect({ projectID: sdk.projectID, name: props.name })
+            await sdk.client.project.mcp.connect({ projectID: sdk.projectID, name: props.name })
+            const status = await sdk.client.project.mcp.status({ projectID: sdk.projectID })
             if (status.data) sync.set("mcp", status.data)
 
             // refresh tools length

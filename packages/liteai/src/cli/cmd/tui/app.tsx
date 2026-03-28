@@ -318,7 +318,7 @@ function App() {
     if (match) {
       continued = true
       if (args.fork) {
-        sdk.client.session.fork({ sessionID: match }).then((result) => {
+        sdk.client.project.session.fork({ projectID: sdk.projectID, sessionID: match }).then((result) => {
           if (result.data?.id) {
             route.navigate({ type: "session", sessionID: result.data.id })
           } else {
@@ -338,7 +338,7 @@ function App() {
   createEffect(() => {
     if (forked || sync.status !== "complete" || !args.sessionID || !args.fork) return
     forked = true
-    sdk.client.session.fork({ sessionID: args.sessionID }).then((result) => {
+    sdk.client.project.session.fork({ projectID: sdk.projectID, sessionID: args.sessionID }).then((result) => {
       if (result.data?.id) {
         route.navigate({ type: "session", sessionID: result.data.id })
       } else {
@@ -517,7 +517,7 @@ function App() {
             <text fg={theme.textMuted}>Press Escape to close.</text>
           </box>
         ))
-        sdk.client.instance.dispose({})
+        sdk.client.project.instance.dispose({ projectID: sdk.projectID })
       },
     },
     {

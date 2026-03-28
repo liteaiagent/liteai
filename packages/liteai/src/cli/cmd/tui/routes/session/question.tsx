@@ -45,14 +45,16 @@ export function QuestionPrompt(props: { request: QuestionRequest }) {
 
   function submit() {
     const answers = questions().map((_, i) => store.answers[i] ?? [])
-    sdk.client.question.reply({
+    sdk.client.project.question.reply({
+      projectID: sdk.projectID,
       requestID: props.request.id,
       answers,
     })
   }
 
   function reject() {
-    sdk.client.question.reject({
+    sdk.client.project.question.reject({
+      projectID: sdk.projectID,
       requestID: props.request.id,
     })
   }
@@ -67,7 +69,8 @@ export function QuestionPrompt(props: { request: QuestionRequest }) {
       setStore("custom", inputs)
     }
     if (single()) {
-      sdk.client.question.reply({
+      sdk.client.project.question.reply({
+        projectID: sdk.projectID,
         requestID: props.request.id,
         answers: [[answer]],
       })

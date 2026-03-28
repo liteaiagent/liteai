@@ -31,10 +31,9 @@ async function openWorkspace(input: {
   const client = createLiteaiClient({
     baseUrl: input.sdk.url,
     fetch: input.sdk.fetch,
-    directory: input.sync.data.path.directory || input.sdk.directory,
     experimental_workspaceID: input.workspaceID,
   })
-  const listed = input.forceCreate ? undefined : await client.session.list({ roots: true, limit: 1 })
+  const listed = input.forceCreate ? undefined : await client.project.session.list({ roots: true, limit: 1, projectID: input.workspaceID })
   const session = listed?.data?.[0]
   if (session?.id) {
     cacheSession(session)
@@ -47,7 +46,7 @@ async function openWorkspace(input: {
   }
   let created: Session | undefined
   while (!created) {
-    const result = await client.session.create({ workspaceID: input.workspaceID }).catch(() => undefined)
+    const result = await client.project.session.create({ workspaceID: input.workspaceID, projectID: input.workspaceID }).catch(() => undefined)
     if (!result) {
       input.toast.show({
         message: "Failed to open workspace",
@@ -111,7 +110,7 @@ function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) => Promi
     if (creating()) return
     setCreating(type)
 
-    const result = await sdk.client.experimental.workspace.create({ type, branch: null }).catch((err) => {
+    const result = await sdk.client.project.experimental.workspace.create({ type, branch: null, projectID: "$UNKNOWN" }).catch((err) => {
       console.log(err)
       return undefined
     })
@@ -189,10 +188,9 @@ export function DialogWorkspaceList() {
     const client = createLiteaiClient({
       baseUrl: sdk.url,
       fetch: sdk.fetch,
-      directory: sync.data.path.directory || sdk.directory,
       experimental_workspaceID: workspaceID,
     })
-    const listed = await client.session.list({ roots: true, limit: 1 }).catch(() => undefined)
+    const listed = await client.project.session.list({ roots: true, limit: 1, projectID: workspaceID }).catch(() => undefined)
     if (listed?.data?.length) {
       dialog.replace(() => <DialogSessionList workspaceID={workspaceID} />)
       return
@@ -225,10 +223,9 @@ export function DialogWorkspaceList() {
         const client = createLiteaiClient({
           baseUrl: sdk.url,
           fetch: sdk.fetch,
-          directory: sync.data.path.directory || sdk.directory,
           experimental_workspaceID: workspace.id,
         })
-        const result = await client.session.list({ roots: true }).catch(() => undefined)
+        const result = await client.project.session.list({ roots: true, projectID: workspace.id }).catch(() => undefined)
         return [workspace.id, result ? (result.data?.length ?? 0) : null] as const
       }),
     ).then((entries) => {
@@ -303,7 +300,7 @@ export function DialogWorkspaceList() {
               setToDelete(option.value)
               return
             }
-            const result = await sdk.client.experimental.workspace.remove({ id: option.value }).catch(() => undefined)
+            const result = await sdk.client.project.experimental.workspace.remove({ id: option.value, projectID: "$UNKNOWN" }).catch(() => undefined)
             setToDelete(undefined)
             if (result?.error) {
               toast.show({

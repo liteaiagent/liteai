@@ -25,7 +25,6 @@ function getUrls(domain: string) {
 function sdk() {
   return createLiteaiClient({
     baseUrl: "http://localhost:9000",
-    directory: Instance.directory,
     headers: Flag.LITEAI_SERVER_PASSWORD
       ? {
           Authorization: `Basic ${Buffer.from(`${Flag.LITEAI_SERVER_USERNAME ?? "liteai"}:${Flag.LITEAI_SERVER_PASSWORD}`).toString("base64")}`,

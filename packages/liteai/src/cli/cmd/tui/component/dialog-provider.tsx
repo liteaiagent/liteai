@@ -176,7 +176,7 @@ export function DialogProvider() {
       toast.show({ variant: "error", message: `Failed to disconnect ${name}` })
       return
     }
-    await sdk.client.instance.dispose()
+    await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
     await sync.bootstrap()
     setDisconnecting(null)
     toast.show({ variant: "info", message: `Disconnected ${name}` })
@@ -244,7 +244,7 @@ function AutoMethod(props: AutoMethodProps) {
       dialog.clear()
       return
     }
-    await sdk.client.instance.dispose()
+    await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
     await sync.bootstrap()
     dialog.replace(() => <DialogModel providerID={props.providerID} />)
   })
@@ -296,7 +296,7 @@ function CodeMethod(props: CodeMethodProps) {
           code: value,
         })
         if (!error) {
-          await sdk.client.instance.dispose()
+          await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
           await sync.bootstrap()
           dialog.replace(() => <DialogModel providerID={props.providerID} />)
           return
@@ -353,7 +353,7 @@ function ApiMethod(props: ApiMethodProps) {
             key: value,
           },
         })
-        await sdk.client.instance.dispose()
+        await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
         await sync.bootstrap()
         dialog.replace(() => <DialogModel providerID={props.providerID} />)
       }}

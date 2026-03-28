@@ -32,7 +32,8 @@ export function DialogForkFromTimeline(props: { sessionID: string; onMove: (mess
         value: message.id,
         footer: Locale.time(message.time.created),
         onSelect: async (dialog) => {
-          const forked = await sdk.client.session.fork({
+          const forked = await sdk.client.project.session.fork({
+            projectID: sdk.projectID,
             sessionID: props.sessionID,
             messageID: message.id,
           })

@@ -143,8 +143,8 @@ export function useCommands(deps: CommandDeps) {
           dialog.clear()
           return
         }
-        await sdk.client.session
-          .share({ sessionID: route.sessionID })
+        await sdk.client.project.session
+          .share({ projectID: sdk.projectID, sessionID: route.sessionID })
           .then((res) => {
             if (res.data?.share?.url) return copy(res.data.share.url)
           })
@@ -218,7 +218,8 @@ export function useCommands(deps: CommandDeps) {
           toast.show({ variant: "warning", message: "Connect a provider to summarize this session", duration: 3000 })
           return
         }
-        sdk.client.session.summarize({
+        sdk.client.project.session.summarize({
+          projectID: sdk.projectID,
           sessionID: route.sessionID,
           modelID: selected.modelID,
           providerID: selected.providerID,
@@ -234,8 +235,8 @@ export function useCommands(deps: CommandDeps) {
       enabled: !!deps.session()?.share?.url,
       slash: { name: "unshare" },
       onSelect: async (dialog: DialogContext) => {
-        await sdk.client.session
-          .unshare({ sessionID: route.sessionID })
+        await sdk.client.project.session
+          .unshare({ projectID: sdk.projectID, sessionID: route.sessionID })
           .then(() => toast.show({ message: "Session unshared successfully", variant: "success" }))
           .catch((error) => {
             toast.show({
@@ -254,11 +255,11 @@ export function useCommands(deps: CommandDeps) {
       slash: { name: "undo" },
       onSelect: async (dialog: DialogContext) => {
         const status = sync.data.session_status?.[route.sessionID]
-        if (status?.type !== "idle") await sdk.client.session.abort({ sessionID: route.sessionID }).catch(() => {})
+        if (status?.type !== "idle") await sdk.client.project.session.abort({ projectID: sdk.projectID, sessionID: route.sessionID }).catch(() => {})
         const revert = deps.session()?.revert?.messageID
         const message = deps.messages().findLast((x) => (!revert || x.id < revert) && x.role === "user")
         if (!message) return
-        sdk.client.session.revert({ sessionID: route.sessionID, messageID: message.id }).then(() => deps.toBottom())
+        sdk.client.project.session.revert({ projectID: sdk.projectID, sessionID: route.sessionID, messageID: message.id }).then(() => deps.toBottom())
         const parts = sync.data.part[message.id]
         deps.prompt().set(
           parts.reduce(
@@ -288,11 +289,11 @@ export function useCommands(deps: CommandDeps) {
         if (!messageID) return
         const message = deps.messages().find((x) => x.role === "user" && x.id > messageID)
         if (!message) {
-          sdk.client.session.unrevert({ sessionID: route.sessionID })
+          sdk.client.project.session.unrevert({ projectID: sdk.projectID, sessionID: route.sessionID })
           deps.prompt().set({ input: "", parts: [] })
           return
         }
-        sdk.client.session.revert({ sessionID: route.sessionID, messageID: message.id })
+        sdk.client.project.session.revert({ projectID: sdk.projectID, sessionID: route.sessionID, messageID: message.id })
       },
     },
     {
