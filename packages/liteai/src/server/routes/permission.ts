@@ -13,7 +13,7 @@ export const PermissionRoutes = lazy(() =>
       describeRoute({
         summary: "Respond to permission request",
         description: "Approve or deny a permission request from the AI assistant.",
-        operationId: "permission.reply",
+        operationId: "project.permission.reply",
         responses: {
           200: {
             description: "Permission processed successfully",
@@ -49,7 +49,7 @@ export const PermissionRoutes = lazy(() =>
       describeRoute({
         summary: "List pending permissions",
         description: "Get all pending permission requests across all sessions.",
-        operationId: "permission.list",
+        operationId: "project.permission.list",
         responses: {
           200: {
             description: "List of pending permissions",

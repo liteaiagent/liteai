@@ -33,7 +33,7 @@ export const PluginRoutes = lazy(() =>
       "/",
       describeRoute({
         summary: "List installed plugins",
-        operationId: "plugin.list",
+        operationId: "project.plugin.list",
         responses: {
           200: {
             description: "List of installed plugins",
@@ -51,7 +51,7 @@ export const PluginRoutes = lazy(() =>
       "/:id/enable",
       describeRoute({
         summary: "Enable a plugin",
-        operationId: "plugin.enable",
+        operationId: "project.plugin.enable",
         responses: {
           200: { description: "Plugin enabled", content: { "application/json": { schema: resolver(z.boolean()) } } },
         },
@@ -67,7 +67,7 @@ export const PluginRoutes = lazy(() =>
       "/:id/disable",
       describeRoute({
         summary: "Disable a plugin",
-        operationId: "plugin.disable",
+        operationId: "project.plugin.disable",
         responses: {
           200: { description: "Plugin disabled", content: { "application/json": { schema: resolver(z.boolean()) } } },
         },
@@ -83,7 +83,7 @@ export const PluginRoutes = lazy(() =>
       "/:id",
       describeRoute({
         summary: "Uninstall a plugin",
-        operationId: "plugin.uninstall",
+        operationId: "project.plugin.uninstall",
         responses: {
           200: {
             description: "Plugin uninstalled",
@@ -102,7 +102,7 @@ export const PluginRoutes = lazy(() =>
       "/marketplace",
       describeRoute({
         summary: "List known marketplaces",
-        operationId: "plugin.marketplace.list",
+        operationId: "project.plugin.marketplace.list",
         responses: {
           200: {
             description: "Known marketplaces",
@@ -126,7 +126,7 @@ export const PluginRoutes = lazy(() =>
       "/marketplace",
       describeRoute({
         summary: "Add a marketplace",
-        operationId: "plugin.marketplace.add",
+        operationId: "project.plugin.marketplace.add",
         responses: {
           200: {
             description: "Marketplace added",
@@ -156,7 +156,7 @@ export const PluginRoutes = lazy(() =>
       "/marketplace/:name",
       describeRoute({
         summary: "Remove a marketplace",
-        operationId: "plugin.marketplace.remove",
+        operationId: "project.plugin.marketplace.remove",
         responses: {
           200: {
             description: "Marketplace removed",
@@ -175,7 +175,7 @@ export const PluginRoutes = lazy(() =>
       "/marketplace/:name/plugins",
       describeRoute({
         summary: "List marketplace plugins",
-        operationId: "plugin.marketplace.plugins",
+        operationId: "project.plugin.marketplace.plugins",
         responses: {
           200: {
             description: "Plugins in marketplace",
@@ -220,7 +220,7 @@ export const PluginRoutes = lazy(() =>
       "/marketplace/:name/install/:plugin",
       describeRoute({
         summary: "Install a plugin from a marketplace",
-        operationId: "plugin.marketplace.install",
+        operationId: "project.plugin.marketplace.install",
         responses: {
           200: {
             description: "Plugin installed",

@@ -29,7 +29,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "List sessions",
         description: "Get a list of all LiteAI sessions, sorted by most recently updated.",
-        operationId: "session.list",
+        operationId: "project.session.list",
         responses: {
           200: {
             description: "List of sessions",
@@ -76,7 +76,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Get session status",
         description: "Retrieve the current status of all sessions, including active, idle, and completed states.",
-        operationId: "session.status",
+        operationId: "project.session.status",
         responses: {
           200: {
             description: "Get session status",
@@ -100,7 +100,7 @@ export const SessionRoutes = lazy(() =>
         summary: "Get session",
         description: "Retrieve detailed information about a specific LiteAI session.",
         tags: ["Session"],
-        operationId: "session.get",
+        operationId: "project.session.get",
         responses: {
           200: {
             description: "Get session",
@@ -132,7 +132,7 @@ export const SessionRoutes = lazy(() =>
         summary: "Get session children",
         tags: ["Session"],
         description: "Retrieve all child sessions that were forked from the specified parent session.",
-        operationId: "session.children",
+        operationId: "project.session.children",
         responses: {
           200: {
             description: "List of children",
@@ -162,7 +162,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Get session todos",
         description: "Retrieve the todo list associated with a specific session, showing tasks and action items.",
-        operationId: "session.todo",
+        operationId: "project.session.todo",
         responses: {
           200: {
             description: "Todo list",
@@ -192,7 +192,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Create session",
         description: "Create a new LiteAI session for interacting with AI assistants and managing conversations.",
-        operationId: "session.create",
+        operationId: "project.session.create",
         responses: {
           ...errors(400),
           200: {
@@ -217,7 +217,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Delete session",
         description: "Delete a session and permanently remove all associated data, including messages and history.",
-        operationId: "session.delete",
+        operationId: "project.session.delete",
         responses: {
           200: {
             description: "Successfully deleted session",
@@ -247,7 +247,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Update session",
         description: "Update properties of an existing session, such as title or other metadata.",
-        operationId: "session.update",
+        operationId: "project.session.update",
         responses: {
           200: {
             description: "Successfully updated session",
@@ -298,7 +298,7 @@ export const SessionRoutes = lazy(() =>
         summary: "Initialize session",
         description:
           "Analyze the current application and create an AGENTS.md file with project-specific agent configurations.",
-        operationId: "session.init",
+        operationId: "project.session.init",
         responses: {
           200: {
             description: "200",
@@ -330,7 +330,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Fork session",
         description: "Create a new session by forking an existing session at a specific message point.",
-        operationId: "session.fork",
+        operationId: "project.session.fork",
         responses: {
           200: {
             description: "200",
@@ -361,7 +361,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Abort session",
         description: "Abort an active session and stop any ongoing AI processing or command execution.",
-        operationId: "session.abort",
+        operationId: "project.session.abort",
         responses: {
           200: {
             description: "Aborted session",
@@ -390,7 +390,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Share session",
         description: "Create a shareable link for a session, allowing others to view the conversation.",
-        operationId: "session.share",
+        operationId: "project.session.share",
         responses: {
           200: {
             description: "Successfully shared session",
@@ -421,7 +421,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Get message diff",
         description: "Get the file changes (diff) that resulted from a specific user message in the session.",
-        operationId: "session.diff",
+        operationId: "project.session.diff",
         responses: {
           200: {
             description: "Successfully retrieved diff",
@@ -460,7 +460,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Unshare session",
         description: "Remove the shareable link for a session, making it private again.",
-        operationId: "session.unshare",
+        operationId: "project.session.unshare",
         responses: {
           200: {
             description: "Successfully unshared session",
@@ -491,7 +491,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Summarize session",
         description: "Generate a concise summary of the session using AI compaction to preserve key information.",
-        operationId: "session.summarize",
+        operationId: "project.session.summarize",
         responses: {
           200: {
             description: "Summarized session",
@@ -550,7 +550,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Get session messages",
         description: "Retrieve all messages in a session, including user prompts and AI responses.",
-        operationId: "session.messages",
+        operationId: "project.session.messages",
         responses: {
           200: {
             description: "List of messages",
@@ -637,7 +637,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Get message",
         description: "Retrieve a specific message from a session by its message ID.",
-        operationId: "session.message",
+        operationId: "project.session.message",
         responses: {
           200: {
             description: "Message",
@@ -677,7 +677,7 @@ export const SessionRoutes = lazy(() =>
         summary: "Delete message",
         description:
           "Permanently delete a specific message (and all of its parts) from a session. This does not revert any file changes that may have been made while processing the message.",
-        operationId: "session.deleteMessage",
+        operationId: "project.session.deleteMessage",
         responses: {
           200: {
             description: "Successfully deleted message",
@@ -711,7 +711,7 @@ export const SessionRoutes = lazy(() =>
       "/:sessionID/message/:messageID/part/:partID",
       describeRoute({
         description: "Delete a part from a message",
-        operationId: "part.delete",
+        operationId: "project.part.delete",
         responses: {
           200: {
             description: "Successfully deleted part",
@@ -746,7 +746,7 @@ export const SessionRoutes = lazy(() =>
       "/:sessionID/message/:messageID/part/:partID",
       describeRoute({
         description: "Update a part in a message",
-        operationId: "part.update",
+        operationId: "project.part.update",
         responses: {
           200: {
             description: "Successfully updated part",
@@ -785,7 +785,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Send message",
         description: "Create and send a new message to a session, streaming the AI response.",
-        operationId: "session.prompt",
+        operationId: "project.session.prompt",
         responses: {
           200: {
             description: "Created message",
@@ -827,7 +827,7 @@ export const SessionRoutes = lazy(() =>
         summary: "Send async message",
         description:
           "Create and send a new message to a session asynchronously, starting the session if needed and returning immediately.",
-        operationId: "session.prompt_async",
+        operationId: "project.session.prompt_async",
         responses: {
           204: {
             description: "Prompt accepted",
@@ -857,7 +857,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Send command",
         description: "Send a new command to a session for execution by the AI assistant.",
-        operationId: "session.command",
+        operationId: "project.session.command",
         responses: {
           200: {
             description: "Created message",
@@ -894,7 +894,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Run shell command",
         description: "Execute a shell command within the session context and return the AI's response.",
-        operationId: "session.shell",
+        operationId: "project.session.shell",
         responses: {
           200: {
             description: "Created message",
@@ -926,7 +926,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Revert message",
         description: "Revert a specific message in a session, undoing its effects and restoring the previous state.",
-        operationId: "session.revert",
+        operationId: "project.session.revert",
         responses: {
           200: {
             description: "Updated session",
@@ -961,7 +961,7 @@ export const SessionRoutes = lazy(() =>
       describeRoute({
         summary: "Restore reverted messages",
         description: "Restore all previously reverted messages in a session.",
-        operationId: "session.unrevert",
+        operationId: "project.session.unrevert",
         responses: {
           200: {
             description: "Updated session",
@@ -992,7 +992,7 @@ export const SessionRoutes = lazy(() =>
         summary: "Respond to permission",
         deprecated: true,
         description: "Approve or deny a permission request from the AI assistant.",
-        operationId: "permission.respond",
+        operationId: "project.permission.respond",
         responses: {
           200: {
             description: "Permission processed successfully",

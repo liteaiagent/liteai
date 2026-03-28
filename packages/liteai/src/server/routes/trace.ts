@@ -13,7 +13,7 @@ export const TraceRoutes = lazy(() =>
       describeRoute({
         summary: "List traces",
         description: "Get a list of all traces for a session.",
-        operationId: "session.trace.list",
+        operationId: "project.session.trace.list",
         responses: {
           200: {
             description: "List of traces",
@@ -48,7 +48,7 @@ export const TraceRoutes = lazy(() =>
       describeRoute({
         summary: "Search traces",
         description: "Search traces by system prompt and tool content.",
-        operationId: "session.trace.search",
+        operationId: "project.session.trace.search",
         responses: {
           200: {
             description: "Matching trace IDs",
@@ -83,7 +83,7 @@ export const TraceRoutes = lazy(() =>
       describeRoute({
         summary: "Export traces",
         description: "Export all traces for a session in JSON or Markdown format.",
-        operationId: "session.trace.export",
+        operationId: "project.session.trace.export",
         responses: {
           200: {
             description: "Exported trace data",
@@ -116,7 +116,7 @@ export const TraceRoutes = lazy(() =>
       describeRoute({
         summary: "Get trace detail",
         description: "Get full trace detail with resolved system prompt and tools.",
-        operationId: "session.trace.get",
+        operationId: "project.session.trace.get",
         responses: {
           200: {
             description: "Trace detail",

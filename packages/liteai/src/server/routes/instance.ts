@@ -26,7 +26,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "Get instance info",
         description: "Retrieve instance-scoped information including directory, worktree, and project details.",
-        operationId: "instance.info",
+        operationId: "project.instance.info",
         responses: {
           200: {
             description: "Instance information",
@@ -80,7 +80,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "Dispose instance",
         description: "Clean up and dispose the current LiteAI instance, releasing all resources.",
-        operationId: "instance.dispose",
+        operationId: "project.instance.dispose",
         responses: {
           200: {
             description: "Instance disposed",
@@ -102,7 +102,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "Get VCS info",
         description: "Retrieve version control system (VCS) information for the current project, such as git branch.",
-        operationId: "vcs.get",
+        operationId: "project.vcs",
         responses: {
           200: {
             description: "VCS info",
@@ -126,7 +126,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "List commands",
         description: "Get a list of all available commands in the LiteAI system.",
-        operationId: "command.list",
+        operationId: "project.command.list",
         responses: {
           200: {
             description: "List of commands",
@@ -148,7 +148,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "List agents",
         description: "Get a list of all available AI agents in the LiteAI system.",
-        operationId: "app.agents",
+        operationId: "project.agent.list",
         responses: {
           200: {
             description: "List of agents",
@@ -170,7 +170,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "List skills",
         description: "Get a list of all available skills in the LiteAI system.",
-        operationId: "app.skills",
+        operationId: "project.skill.list",
         responses: {
           200: {
             description: "List of skills",
@@ -192,7 +192,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "Get LSP status",
         description: "Get LSP server status",
-        operationId: "lsp.status",
+        operationId: "project.lsp.status",
         responses: {
           200: {
             description: "LSP server status",
@@ -213,7 +213,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "Get formatter status",
         description: "Get formatter status",
-        operationId: "formatter.status",
+        operationId: "project.formatter.status",
         responses: {
           200: {
             description: "Formatter status",
@@ -234,7 +234,7 @@ export const InstanceRoutes = lazy(() =>
       describeRoute({
         summary: "Subscribe to events",
         description: "Get events",
-        operationId: "event.subscribe",
+        operationId: "project.event.subscribe",
         responses: {
           200: {
             description: "Event stream",

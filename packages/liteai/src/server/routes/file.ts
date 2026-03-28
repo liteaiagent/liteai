@@ -14,7 +14,7 @@ export const FileRoutes = lazy(() =>
       describeRoute({
         summary: "Find text",
         description: "Search for text patterns across files in the project using ripgrep.",
-        operationId: "find.text",
+        operationId: "project.find.text",
         responses: {
           200: {
             description: "Matches",
@@ -47,7 +47,7 @@ export const FileRoutes = lazy(() =>
       describeRoute({
         summary: "Find files",
         description: "Search for files or directories by name or pattern in the project directory.",
-        operationId: "find.files",
+        operationId: "project.find.files",
         responses: {
           200: {
             description: "File paths",
@@ -87,7 +87,7 @@ export const FileRoutes = lazy(() =>
       describeRoute({
         summary: "Find symbols",
         description: "Search for workspace symbols like functions, classes, and variables using LSP.",
-        operationId: "find.symbols",
+        operationId: "project.find.symbols",
         responses: {
           200: {
             description: "Symbols",
@@ -119,7 +119,7 @@ export const FileRoutes = lazy(() =>
       describeRoute({
         summary: "List files",
         description: "List files and directories in a specified path.",
-        operationId: "file.list",
+        operationId: "project.file.list",
         responses: {
           200: {
             description: "Files and directories",
@@ -148,7 +148,7 @@ export const FileRoutes = lazy(() =>
       describeRoute({
         summary: "Read file",
         description: "Read the content of a specified file.",
-        operationId: "file.read",
+        operationId: "project.file.read",
         responses: {
           200: {
             description: "File content",
@@ -177,7 +177,7 @@ export const FileRoutes = lazy(() =>
       describeRoute({
         summary: "Get file status",
         description: "Get the git status of all files in the project.",
-        operationId: "file.status",
+        operationId: "project.file.status",
         responses: {
           200: {
             description: "File status",

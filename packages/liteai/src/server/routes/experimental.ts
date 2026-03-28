@@ -20,7 +20,7 @@ export const ExperimentalRoutes = lazy(() =>
         summary: "List tool IDs",
         description:
           "Get a list of all available tool IDs, including both built-in tools and dynamically registered tools.",
-        operationId: "tool.ids",
+        operationId: "project.tool.ids",
         responses: {
           200: {
             description: "Tool IDs",
@@ -43,7 +43,7 @@ export const ExperimentalRoutes = lazy(() =>
         summary: "List tools",
         description:
           "Get a list of available tools with their JSON schema parameters for a specific provider and model combination.",
-        operationId: "tool.list",
+        operationId: "project.tool.list",
         responses: {
           200: {
             description: "Tools",
@@ -94,7 +94,7 @@ export const ExperimentalRoutes = lazy(() =>
       describeRoute({
         summary: "Create worktree",
         description: "Create a new git worktree for the current project and run any configured startup scripts.",
-        operationId: "worktree.create",
+        operationId: "project.worktree.create",
         responses: {
           200: {
             description: "Worktree created",
@@ -119,7 +119,7 @@ export const ExperimentalRoutes = lazy(() =>
       describeRoute({
         summary: "List worktrees",
         description: "List all sandbox worktrees for the current project.",
-        operationId: "worktree.list",
+        operationId: "project.worktree.list",
         responses: {
           200: {
             description: "List of worktree directories",
@@ -141,7 +141,7 @@ export const ExperimentalRoutes = lazy(() =>
       describeRoute({
         summary: "Remove worktree",
         description: "Remove a git worktree and delete its branch.",
-        operationId: "worktree.remove",
+        operationId: "project.worktree.remove",
         responses: {
           200: {
             description: "Worktree removed",
@@ -167,7 +167,7 @@ export const ExperimentalRoutes = lazy(() =>
       describeRoute({
         summary: "Reset worktree",
         description: "Reset a worktree branch to the primary default branch.",
-        operationId: "worktree.reset",
+        operationId: "project.worktree.reset",
         responses: {
           200: {
             description: "Worktree reset",
@@ -192,7 +192,7 @@ export const ExperimentalRoutes = lazy(() =>
       describeRoute({
         summary: "Get MCP resources",
         description: "Get all available MCP resources from connected servers. Optionally filter by name.",
-        operationId: "experimental.resource.list",
+        operationId: "project.experimental.resource.list",
         responses: {
           200: {
             description: "MCP resources",

@@ -142,7 +142,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Get health",
         description: "Get health information about the LiteAI server.",
-        operationId: "global.health",
+        operationId: "health",
         responses: {
           200: {
             description: "Health information",
@@ -163,7 +163,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Get global events",
         description: "Subscribe to global events from the LiteAI system using server-sent events.",
-        operationId: "global.event",
+        operationId: "event.subscribe",
         responses: {
           200: {
             description: "Event stream",
@@ -232,7 +232,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Get global configuration",
         description: "Retrieve the current global LiteAI configuration settings and preferences.",
-        operationId: "global.config.get",
+        operationId: "config.get",
         responses: {
           200: {
             description: "Get global config info",
@@ -253,7 +253,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Update global configuration",
         description: "Update global LiteAI configuration settings and preferences.",
-        operationId: "global.config.update",
+        operationId: "config.update",
         responses: {
           200: {
             description: "Successfully updated global config",
@@ -278,7 +278,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Dispose instance",
         description: "Clean up and dispose all LiteAI instances, releasing all resources.",
-        operationId: "global.dispose",
+        operationId: "dispose",
         responses: {
           200: {
             description: "Global disposed",
@@ -307,7 +307,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Browse for folder",
         description: "Open a native OS folder picker dialog and return the selected path.",
-        operationId: "global.browse",
+        operationId: "browse",
         responses: {
           200: {
             description: "Selected folder path or null if cancelled",
@@ -329,7 +329,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Get combined log contents",
         description: "Read and merge all channel and main log files into a single sorted stream.",
-        operationId: "global.log",
+        operationId: "log",
         responses: {
           200: {
             description: "Combined log lines sorted by timestamp, plus discovered services",
@@ -387,7 +387,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Write log",
         description: "Write a log entry to the server logs with specified level and metadata.",
-        operationId: "global.log.write",
+        operationId: "log.write",
         responses: {
           200: {
             description: "Log entry written successfully",
@@ -438,7 +438,7 @@ export const GlobalRoutes = lazy(() =>
       describeRoute({
         summary: "Get global paths",
         description: "Retrieve global path information for the LiteAI installation (home, state, config).",
-        operationId: "global.path",
+        operationId: "path",
         responses: {
           200: {
             description: "Global paths",

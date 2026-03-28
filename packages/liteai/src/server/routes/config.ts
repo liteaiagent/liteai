@@ -17,7 +17,7 @@ export const ConfigRoutes = lazy(() =>
       describeRoute({
         summary: "Get configuration",
         description: "Retrieve the current LiteAI configuration settings and preferences.",
-        operationId: "config.get",
+        operationId: "project.config.get",
         responses: {
           200: {
             description: "Get config info",
@@ -38,7 +38,7 @@ export const ConfigRoutes = lazy(() =>
       describeRoute({
         summary: "Update configuration",
         description: "Update LiteAI configuration settings and preferences.",
-        operationId: "config.update",
+        operationId: "project.config.update",
         responses: {
           200: {
             description: "Successfully updated config",
@@ -63,7 +63,7 @@ export const ConfigRoutes = lazy(() =>
       describeRoute({
         summary: "List config providers",
         description: "Get a list of all configured AI providers and their default models.",
-        operationId: "config.providers",
+        operationId: "project.config.providers",
         responses: {
           200: {
             description: "List of providers",

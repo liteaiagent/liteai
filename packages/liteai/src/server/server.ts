@@ -5,17 +5,13 @@ import { proxy } from "hono/proxy"
 import { describeRoute, generateSpecs, openAPIRouteHandler, resolver, validator } from "hono-openapi"
 import z from "zod"
 import { lazy } from "@/util/lazy"
-import { WorkspaceID } from "../control-plane/schema"
-import { WorkspaceContext } from "../control-plane/workspace-context"
 import { WorkspaceRouterMiddleware } from "../control-plane/workspace-router-middleware"
 import { Installation } from "../installation"
-import { InstanceBootstrap } from "../project/bootstrap"
-import { Instance } from "../project/instance"
 import { Project } from "../project/project"
 import { Log } from "../util/log"
 import { API_INFO, DEFAULT_PORT, DEV_SERVER_URL } from "./constants"
 import { MDNS } from "./mdns"
-import { authMiddleware, corsMiddleware, errorHandler, requestLogger, safeDecodeDirectory } from "./middleware"
+import { authMiddleware, corsMiddleware, errorHandler, projectContextMiddleware, requestLogger, safeDecodeDirectory } from "./middleware"
 import { AuthRoutes } from "./routes/auth"
 import { ConfigRoutes } from "./routes/config"
 import { ExperimentalRoutes } from "./routes/experimental"
@@ -45,6 +41,37 @@ export namespace Server {
 
   export const Default = lazy(() => createApp({}))
 
+  /**
+   * Build the project-scoped sub-app.
+   * All routes here are mounted under `/project/:projectID/...` and require
+   * Instance context (LSP, plugins, MCP, file watchers, etc.).
+   */
+  function createProjectScopedApp(): Hono {
+    return new Hono()
+      .use(projectContextMiddleware())
+      .use(WorkspaceRouterMiddleware)
+      .use(
+        validator(
+          "query",
+          z.object({
+            workspace: z.string().optional(),
+          }),
+        ),
+      )
+      .route("/pty", PtyRoutes())
+      .route("/config", ConfigRoutes())
+      .route("/experimental", ExperimentalRoutes())
+      .route("/session", SessionRoutes())
+      .route("/session", TraceRoutes())
+      .route("/permission", PermissionRoutes())
+      .route("/question", QuestionRoutes())
+      .route("/", FileRoutes())
+      .route("/mcp", McpRoutes())
+      .route("/plugin", PluginRoutes())
+      .route("/tui", TuiRoutes())
+      .route("/", InstanceRoutes())
+  }
+
   export const createApp = (opts: { cors?: string[] }): Hono => {
     const app = new Hono()
     return (
@@ -55,10 +82,12 @@ export namespace Server {
         .use(requestLogger(log))
         .use(corsMiddleware(opts))
 
-        // ─── Pre-instance routes (no directory context required) ────────
-        .route("/global", GlobalRoutes())
+        // ─── Tier 1: Server-level routes (no project context) ────────────
+        .route("/", GlobalRoutes())
         .route("/auth", AuthRoutes())
         .route("/provider", ProviderRoutes())
+
+        // ─── Tier 2: Project CRUD (no instance boot required) ────────────
         .get(
           "/project",
           describeRoute({
@@ -102,7 +131,6 @@ export namespace Server {
             "query",
             z.object({
               directory: z.string().optional(),
-              workspace: z.string().optional(),
             }),
           ),
           async (c) => {
@@ -126,36 +154,7 @@ export namespace Server {
             return c.json(result.project, 201)
           },
         )
-
-        // ─── Tier 2: Project routes (no instance boot required) ─────────
         .route("/project", ProjectRoutes())
-
-        // ─── Instance context middleware ────────────────────────────────
-        .use(async (c, next) => {
-          const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
-          const raw = c.req.query("directory") || c.req.header("x-liteai-directory")
-          if (!raw) {
-            throw new HTTPException(400, {
-              message:
-                "Missing required directory context: set the 'directory' query parameter or 'x-liteai-directory' header",
-            })
-          }
-          const directory = safeDecodeDirectory(raw, log)
-
-          return WorkspaceContext.provide({
-            workspaceID: rawWorkspaceID ? WorkspaceID.make(rawWorkspaceID) : undefined,
-            async fn() {
-              return Instance.provide({
-                directory,
-                init: InstanceBootstrap,
-                async fn() {
-                  return next()
-                },
-              })
-            },
-          })
-        })
-        .use(WorkspaceRouterMiddleware)
 
         // ─── OpenAPI documentation ──────────────────────────────────────
         .get(
@@ -168,28 +167,8 @@ export namespace Server {
           }),
         )
 
-        // ─── Instance-scoped routes (Tier 3) ────────────────────────────
-        .use(
-          validator(
-            "query",
-            z.object({
-              directory: z.string().optional(),
-              workspace: z.string().optional(),
-            }),
-          ),
-        )
-        .route("/pty", PtyRoutes())
-        .route("/config", ConfigRoutes())
-        .route("/experimental", ExperimentalRoutes())
-        .route("/session", SessionRoutes())
-        .route("/session", TraceRoutes())
-        .route("/permission", PermissionRoutes())
-        .route("/question", QuestionRoutes())
-        .route("/", FileRoutes())
-        .route("/mcp", McpRoutes())
-        .route("/plugin", PluginRoutes())
-        .route("/tui", TuiRoutes())
-        .route("/", InstanceRoutes())
+        // ─── Tier 3: Project-scoped routes (requires projectID in path) ──
+        .route("/project/:projectID", createProjectScopedApp())
 
         // ─── Static assets / dev proxy (must be last) ───────────────────
         .all("/*", async (c) => {

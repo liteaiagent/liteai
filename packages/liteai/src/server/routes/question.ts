@@ -13,7 +13,7 @@ export const QuestionRoutes = lazy(() =>
       describeRoute({
         summary: "List pending questions",
         description: "Get all pending question requests across all sessions.",
-        operationId: "question.list",
+        operationId: "project.question.list",
         responses: {
           200: {
             description: "List of pending questions",
@@ -35,7 +35,7 @@ export const QuestionRoutes = lazy(() =>
       describeRoute({
         summary: "Reply to question request",
         description: "Provide answers to a question request from the AI assistant.",
-        operationId: "question.reply",
+        operationId: "project.question.reply",
         responses: {
           200: {
             description: "Question answered successfully",
@@ -70,7 +70,7 @@ export const QuestionRoutes = lazy(() =>
       describeRoute({
         summary: "Reject question request",
         description: "Reject a question request from the AI assistant.",
-        operationId: "question.reject",
+        operationId: "project.question.reject",
         responses: {
           200: {
             description: "Question rejected successfully",

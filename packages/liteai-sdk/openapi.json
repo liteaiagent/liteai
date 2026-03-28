@@ -6,9 +6,9 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/global/health": {
+    "/health": {
       "get": {
-        "operationId": "global.health",
+        "operationId": "health",
         "summary": "Get health",
         "description": "Get health information about the LiteAI server.",
         "responses": {
@@ -39,14 +39,14 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.health({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.health({\n  ...\n})"
           }
         ]
       }
     },
-    "/global/event": {
+    "/event": {
       "get": {
-        "operationId": "global.event",
+        "operationId": "event.subscribe",
         "summary": "Get global events",
         "description": "Subscribe to global events from the LiteAI system using server-sent events.",
         "responses": {
@@ -64,14 +64,14 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.event({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.event.subscribe({\n  ...\n})"
           }
         ]
       }
     },
-    "/global/config": {
+    "/config": {
       "get": {
-        "operationId": "global.config.get",
+        "operationId": "config.get",
         "summary": "Get global configuration",
         "description": "Retrieve the current global LiteAI configuration settings and preferences.",
         "responses": {
@@ -89,12 +89,12 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.config.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.get({\n  ...\n})"
           }
         ]
       },
       "patch": {
-        "operationId": "global.config.update",
+        "operationId": "config.update",
         "summary": "Update global configuration",
         "description": "Update global LiteAI configuration settings and preferences.",
         "responses": {
@@ -131,14 +131,14 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.config.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.update({\n  ...\n})"
           }
         ]
       }
     },
-    "/global/dispose": {
+    "/dispose": {
       "post": {
-        "operationId": "global.dispose",
+        "operationId": "dispose",
         "summary": "Dispose instance",
         "description": "Clean up and dispose all LiteAI instances, releasing all resources.",
         "responses": {
@@ -156,14 +156,14 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.dispose({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.dispose({\n  ...\n})"
           }
         ]
       }
     },
-    "/global/browse": {
+    "/browse": {
       "post": {
-        "operationId": "global.browse",
+        "operationId": "browse",
         "summary": "Browse for folder",
         "description": "Open a native OS folder picker dialog and return the selected path.",
         "responses": {
@@ -196,14 +196,14 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.browse({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.browse({\n  ...\n})"
           }
         ]
       }
     },
-    "/global/log": {
+    "/log": {
       "get": {
-        "operationId": "global.log",
+        "operationId": "log",
         "summary": "Get combined log contents",
         "description": "Read and merge all channel and main log files into a single sorted stream.",
         "responses": {
@@ -239,12 +239,12 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.log({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.log({\n  ...\n})"
           }
         ]
       },
       "post": {
-        "operationId": "global.log.write",
+        "operationId": "log.write",
         "summary": "Write log",
         "description": "Write a log entry to the server logs with specified level and metadata.",
         "responses": {
@@ -304,14 +304,14 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.log.write({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.log.write({\n  ...\n})"
           }
         ]
       }
     },
-    "/global/path": {
+    "/path": {
       "get": {
-        "operationId": "global.path",
+        "operationId": "path",
         "summary": "Get global paths",
         "description": "Retrieve global path information for the LiteAI installation (home, state, config).",
         "responses": {
@@ -329,7 +329,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.path({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.path({\n  ...\n})"
           }
         ]
       }
@@ -962,13 +962,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "x-codeSamples": [
@@ -1258,23 +1251,24 @@
         ]
       }
     },
-    "/pty": {
+    "/project/{projectID}/pty": {
       "get": {
-        "operationId": "pty.list",
+        "operationId": "project.pty.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List PTY sessions",
@@ -1297,26 +1291,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.pty.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.list({\n  ...\n})"
           }
         ]
       },
       "post": {
-        "operationId": "pty.create",
+        "operationId": "project.pty.create",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Create PTY session",
@@ -1381,22 +1376,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.pty.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.create({\n  ...\n})"
           }
         ]
       }
     },
-    "/pty/{ptyID}": {
+    "/project/{projectID}/pty/{ptyID}": {
       "get": {
-        "operationId": "pty.get",
+        "operationId": "project.pty.get",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -1411,6 +1399,14 @@
               "type": "string",
               "pattern": "^pty.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -1441,20 +1437,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.pty.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.get({\n  ...\n})"
           }
         ]
       },
       "put": {
-        "operationId": "pty.update",
+        "operationId": "project.pty.update",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -1469,6 +1458,14 @@
               "type": "string",
               "pattern": "^pty.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -1528,20 +1525,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.pty.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.update({\n  ...\n})"
           }
         ]
       },
       "delete": {
-        "operationId": "pty.remove",
+        "operationId": "project.pty.remove",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -1556,6 +1546,14 @@
               "type": "string",
               "pattern": "^pty.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -1586,22 +1584,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.pty.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.remove({\n  ...\n})"
           }
         ]
       }
     },
-    "/pty/{ptyID}/connect": {
+    "/project/{projectID}/pty/{ptyID}/connect": {
       "get": {
-        "operationId": "pty.connect",
+        "operationId": "project.pty.connect",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -1616,6 +1607,14 @@
               "type": "string",
               "pattern": "^pty.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -1646,28 +1645,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.pty.connect({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.connect({\n  ...\n})"
           }
         ]
       }
     },
-    "/config": {
+    "/project/{projectID}/config": {
       "get": {
-        "operationId": "config.get",
+        "operationId": "project.config.get",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get configuration",
@@ -1687,26 +1687,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.get({\n  ...\n})"
           }
         ]
       },
       "patch": {
-        "operationId": "config.update",
+        "operationId": "project.config.update",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Update configuration",
@@ -1745,28 +1746,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.update({\n  ...\n})"
           }
         ]
       }
     },
-    "/config/providers": {
+    "/project/{projectID}/config/providers": {
       "get": {
-        "operationId": "config.providers",
+        "operationId": "project.config.providers",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List config providers",
@@ -1807,28 +1809,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.providers({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.providers({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/tool/ids": {
+    "/project/{projectID}/experimental/tool/ids": {
       "get": {
-        "operationId": "tool.ids",
+        "operationId": "project.tool.ids",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List tool IDs",
@@ -1858,22 +1861,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tool.ids({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.ids({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/tool": {
+    "/project/{projectID}/experimental/tool": {
       "get": {
-        "operationId": "tool.list",
+        "operationId": "project.tool.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -1895,6 +1891,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -1925,28 +1929,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tool.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/workspace": {
+    "/project/{projectID}/experimental/workspace": {
       "post": {
-        "operationId": "experimental.workspace.create",
+        "operationId": "project.experimental.workspace.create",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Create workspace",
@@ -2017,26 +2022,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.experimental.workspace.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.create({\n  ...\n})"
           }
         ]
       },
       "get": {
-        "operationId": "experimental.workspace.list",
+        "operationId": "project.experimental.workspace.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List workspaces",
@@ -2059,22 +2065,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.experimental.workspace.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/workspace/{id}": {
+    "/project/{projectID}/experimental/workspace/{id}": {
       "delete": {
-        "operationId": "experimental.workspace.remove",
+        "operationId": "project.experimental.workspace.remove",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -2089,6 +2088,14 @@
               "type": "string",
               "pattern": "^wrk.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -2119,28 +2126,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.experimental.workspace.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.remove({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/worktree": {
+    "/project/{projectID}/experimental/worktree": {
       "post": {
-        "operationId": "worktree.create",
+        "operationId": "project.worktree.create",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Create worktree",
@@ -2179,26 +2187,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.worktree.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.create({\n  ...\n})"
           }
         ]
       },
       "get": {
-        "operationId": "worktree.list",
+        "operationId": "project.worktree.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List worktrees",
@@ -2221,26 +2230,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.worktree.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.list({\n  ...\n})"
           }
         ]
       },
       "delete": {
-        "operationId": "worktree.remove",
+        "operationId": "project.worktree.remove",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Remove worktree",
@@ -2279,28 +2289,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.worktree.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.remove({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/worktree/reset": {
+    "/project/{projectID}/experimental/worktree/reset": {
       "post": {
-        "operationId": "worktree.reset",
+        "operationId": "project.worktree.reset",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Reset worktree",
@@ -2339,28 +2350,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.worktree.reset({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.reset({\n  ...\n})"
           }
         ]
       }
     },
-    "/experimental/resource": {
+    "/project/{projectID}/experimental/resource": {
       "get": {
-        "operationId": "experimental.resource.list",
+        "operationId": "project.experimental.resource.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get MCP resources",
@@ -2386,15 +2398,22 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.experimental.resource.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.resource.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/session": {
+    "/project/{projectID}/session": {
       "get": {
-        "operationId": "session.list",
+        "operationId": "project.session.list",
         "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "in": "query",
             "name": "directory",
@@ -2402,13 +2421,6 @@
               "type": "string"
             },
             "description": "Filter sessions by project directory"
-          },
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
           },
           {
             "in": "query",
@@ -2449,6 +2461,14 @@
               "type": "boolean"
             },
             "description": "Include archived sessions (default false)"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List sessions",
@@ -2471,26 +2491,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.list({\n  ...\n})"
           }
         ]
       },
       "post": {
-        "operationId": "session.create",
+        "operationId": "project.session.create",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Create session",
@@ -2545,28 +2566,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.create({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/status": {
+    "/project/{projectID}/session/status": {
       "get": {
-        "operationId": "session.status",
+        "operationId": "project.session.status",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get session status",
@@ -2602,22 +2624,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.status({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}": {
+    "/project/{projectID}/session/{sessionID}": {
       "get": {
-        "operationId": "session.get",
+        "operationId": "project.session.get",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -2632,6 +2647,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -2675,20 +2698,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.get({\n  ...\n})"
           }
         ]
       },
       "delete": {
-        "operationId": "session.delete",
+        "operationId": "project.session.delete",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -2703,6 +2719,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -2743,20 +2767,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.delete({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.delete({\n  ...\n})"
           }
         ]
       },
       "patch": {
-        "operationId": "session.update",
+        "operationId": "project.session.update",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -2771,6 +2788,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -2833,22 +2858,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.update({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/children": {
+    "/project/{projectID}/session/{sessionID}/children": {
       "get": {
-        "operationId": "session.children",
+        "operationId": "project.session.children",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -2863,6 +2881,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -2909,22 +2935,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.children({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.children({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/todo": {
+    "/project/{projectID}/session/{sessionID}/todo": {
       "get": {
-        "operationId": "session.todo",
+        "operationId": "project.session.todo",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -2939,6 +2958,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -2982,22 +3009,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.todo({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.todo({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/init": {
+    "/project/{projectID}/session/{sessionID}/init": {
       "post": {
-        "operationId": "session.init",
+        "operationId": "project.session.init",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3012,6 +3032,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3078,22 +3106,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.init({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.init({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/fork": {
+    "/project/{projectID}/session/{sessionID}/fork": {
       "post": {
-        "operationId": "session.fork",
+        "operationId": "project.session.fork",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3108,6 +3129,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3143,22 +3172,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.fork({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.fork({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/abort": {
+    "/project/{projectID}/session/{sessionID}/abort": {
       "post": {
-        "operationId": "session.abort",
+        "operationId": "project.session.abort",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3173,6 +3195,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3213,22 +3243,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.abort({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.abort({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/share": {
+    "/project/{projectID}/session/{sessionID}/share": {
       "post": {
-        "operationId": "session.share",
+        "operationId": "project.session.share",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3243,6 +3266,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3283,20 +3314,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.share({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.share({\n  ...\n})"
           }
         ]
       },
       "delete": {
-        "operationId": "session.unshare",
+        "operationId": "project.session.unshare",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3311,6 +3335,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3351,22 +3383,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.unshare({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unshare({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/diff": {
+    "/project/{projectID}/session/{sessionID}/diff": {
       "get": {
-        "operationId": "session.diff",
+        "operationId": "project.session.diff",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3390,6 +3415,14 @@
               "type": "string",
               "pattern": "^msg.*"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get message diff",
@@ -3412,22 +3445,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.diff({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.diff({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/summarize": {
+    "/project/{projectID}/session/{sessionID}/summarize": {
       "post": {
-        "operationId": "session.summarize",
+        "operationId": "project.session.summarize",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3442,6 +3468,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3507,22 +3541,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.summarize({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.summarize({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/message": {
+    "/project/{projectID}/session/{sessionID}/message": {
       "get": {
-        "operationId": "session.messages",
+        "operationId": "project.session.messages",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3555,6 +3582,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get session messages",
@@ -3612,20 +3647,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.messages({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.messages({\n  ...\n})"
           }
         ]
       },
       "post": {
-        "operationId": "session.prompt",
+        "operationId": "project.session.prompt",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3640,6 +3668,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3762,22 +3798,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.prompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.prompt({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/message/{messageID}": {
+    "/project/{projectID}/session/{sessionID}/message/{messageID}": {
       "get": {
-        "operationId": "session.message",
+        "operationId": "project.session.message",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3801,6 +3830,14 @@
               "type": "string",
               "pattern": "^msg.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3856,20 +3893,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.message({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.message({\n  ...\n})"
           }
         ]
       },
       "delete": {
-        "operationId": "session.deleteMessage",
+        "operationId": "project.session.deleteMessage",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3893,6 +3923,14 @@
               "type": "string",
               "pattern": "^msg.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -3933,22 +3971,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.deleteMessage({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.deleteMessage({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/message/{messageID}/part/{partID}": {
+    "/project/{projectID}/session/{sessionID}/message/{messageID}/part/{partID}": {
       "delete": {
-        "operationId": "part.delete",
+        "operationId": "project.part.delete",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -3981,6 +4012,14 @@
               "type": "string",
               "pattern": "^prt.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4020,20 +4059,13 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.part.delete({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.part.delete({\n  ...\n})"
           }
         ]
       },
       "patch": {
-        "operationId": "part.update",
+        "operationId": "project.part.update",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4066,6 +4098,14 @@
               "type": "string",
               "pattern": "^prt.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4114,22 +4154,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.part.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.part.update({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/prompt_async": {
+    "/project/{projectID}/session/{sessionID}/prompt_async": {
       "post": {
-        "operationId": "session.prompt_async",
+        "operationId": "project.session.prompt_async",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4144,6 +4177,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4244,22 +4285,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.prompt_async({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.prompt_async({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/command": {
+    "/project/{projectID}/session/{sessionID}/command": {
       "post": {
-        "operationId": "session.command",
+        "operationId": "project.session.command",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4274,6 +4308,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4400,22 +4442,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.command({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.command({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/shell": {
+    "/project/{projectID}/session/{sessionID}/shell": {
       "post": {
-        "operationId": "session.shell",
+        "operationId": "project.session.shell",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4430,6 +4465,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4506,22 +4549,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.shell({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.shell({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/revert": {
+    "/project/{projectID}/session/{sessionID}/revert": {
       "post": {
-        "operationId": "session.revert",
+        "operationId": "project.session.revert",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4536,6 +4572,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4598,22 +4642,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.revert({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.revert({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/unrevert": {
+    "/project/{projectID}/session/{sessionID}/unrevert": {
       "post": {
-        "operationId": "session.unrevert",
+        "operationId": "project.session.unrevert",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4628,6 +4665,14 @@
               "type": "string",
               "pattern": "^ses.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4668,22 +4713,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.unrevert({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unrevert({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/permissions/{permissionID}": {
+    "/project/{projectID}/session/{sessionID}/permissions/{permissionID}": {
       "post": {
-        "operationId": "permission.respond",
+        "operationId": "project.permission.respond",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4707,6 +4745,14 @@
               "type": "string",
               "pattern": "^per.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4770,22 +4816,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.permission.respond({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.respond({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/trace": {
+    "/project/{projectID}/session/{sessionID}/trace": {
       "get": {
-        "operationId": "session.trace.list",
+        "operationId": "project.session.trace.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4808,6 +4847,14 @@
             "schema": {
               "type": "boolean"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List traces",
@@ -4830,22 +4877,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.trace.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/trace/search": {
+    "/project/{projectID}/session/{sessionID}/trace/search": {
       "get": {
-        "operationId": "session.trace.search",
+        "operationId": "project.session.trace.search",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4869,6 +4909,14 @@
               "type": "string",
               "minLength": 1
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -4900,22 +4948,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.trace.search({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.search({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/trace/export": {
+    "/project/{projectID}/session/{sessionID}/trace/export": {
       "get": {
-        "operationId": "session.trace.export",
+        "operationId": "project.session.trace.export",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4943,6 +4984,14 @@
                 "md"
               ]
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Export traces",
@@ -4955,22 +5004,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.trace.export({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.export({\n  ...\n})"
           }
         ]
       }
     },
-    "/session/{sessionID}/trace/{traceID}": {
+    "/project/{projectID}/session/{sessionID}/trace/{traceID}": {
       "get": {
-        "operationId": "session.trace.get",
+        "operationId": "project.session.trace.get",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -4995,6 +5037,14 @@
               "pattern": "^trc.*"
             },
             "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get trace detail",
@@ -5017,22 +5067,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.session.trace.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.get({\n  ...\n})"
           }
         ]
       }
     },
-    "/permission/{requestID}/reply": {
+    "/project/{projectID}/permission/{requestID}/reply": {
       "post": {
-        "operationId": "permission.reply",
+        "operationId": "project.permission.reply",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5047,6 +5090,14 @@
               "type": "string",
               "pattern": "^per.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5112,28 +5163,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.permission.reply({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.reply({\n  ...\n})"
           }
         ]
       }
     },
-    "/permission": {
+    "/project/{projectID}/permission": {
       "get": {
-        "operationId": "permission.list",
+        "operationId": "project.permission.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List pending permissions",
@@ -5156,28 +5208,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.permission.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/question": {
+    "/project/{projectID}/question": {
       "get": {
-        "operationId": "question.list",
+        "operationId": "project.question.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List pending questions",
@@ -5200,22 +5253,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.question.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/question/{requestID}/reply": {
+    "/project/{projectID}/question/{requestID}/reply": {
       "post": {
-        "operationId": "question.reply",
+        "operationId": "project.question.reply",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5230,6 +5276,14 @@
               "type": "string",
               "pattern": "^que.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5291,22 +5345,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.question.reply({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.reply({\n  ...\n})"
           }
         ]
       }
     },
-    "/question/{requestID}/reject": {
+    "/project/{projectID}/question/{requestID}/reject": {
       "post": {
-        "operationId": "question.reject",
+        "operationId": "project.question.reject",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5321,6 +5368,14 @@
               "type": "string",
               "pattern": "^que.*"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5361,22 +5416,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.question.reject({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.reject({\n  ...\n})"
           }
         ]
       }
     },
-    "/find": {
+    "/project/{projectID}/find": {
       "get": {
-        "operationId": "find.text",
+        "operationId": "project.find.text",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5390,6 +5438,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5480,22 +5536,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.find.text({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.text({\n  ...\n})"
           }
         ]
       }
     },
-    "/find/file": {
+    "/project/{projectID}/find/file": {
       "get": {
-        "operationId": "find.files",
+        "operationId": "project.find.files",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5541,6 +5590,14 @@
               "minimum": 1,
               "maximum": 200
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Find files",
@@ -5563,22 +5620,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.find.files({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.files({\n  ...\n})"
           }
         ]
       }
     },
-    "/find/symbol": {
+    "/project/{projectID}/find/symbol": {
       "get": {
-        "operationId": "find.symbols",
+        "operationId": "project.find.symbols",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5592,6 +5642,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5615,22 +5673,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.find.symbols({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.symbols({\n  ...\n})"
           }
         ]
       }
     },
-    "/file": {
+    "/project/{projectID}/file": {
       "get": {
-        "operationId": "file.list",
+        "operationId": "project.file.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5644,6 +5695,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5667,22 +5726,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.file.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/file/content": {
+    "/project/{projectID}/file/content": {
       "get": {
-        "operationId": "file.read",
+        "operationId": "project.file.read",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -5696,6 +5748,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -5716,28 +5776,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.file.read({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.read({\n  ...\n})"
           }
         ]
       }
     },
-    "/file/status": {
+    "/project/{projectID}/file/status": {
       "get": {
-        "operationId": "file.status",
+        "operationId": "project.file.status",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get file status",
@@ -5760,28 +5821,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.file.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.status({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp": {
+    "/project/{projectID}/mcp": {
       "get": {
-        "operationId": "mcp.status",
+        "operationId": "project.mcp.status",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get MCP status",
@@ -5807,26 +5869,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.status({\n  ...\n})"
           }
         ]
       },
       "post": {
-        "operationId": "mcp.add",
+        "operationId": "project.mcp.add",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Add MCP server",
@@ -5890,28 +5953,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.add({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.add({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp/tools": {
+    "/project/{projectID}/mcp/tools": {
       "get": {
-        "operationId": "mcp.tools",
+        "operationId": "project.mcp.tools",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get MCP tool names",
@@ -5940,28 +6004,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.tools({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.tools({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp/{name}/auth": {
+    "/project/{projectID}/mcp/{name}/auth": {
       "post": {
-        "operationId": "mcp.auth.start",
+        "operationId": "project.mcp.auth.start",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6018,26 +6083,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.auth.start({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.start({\n  ...\n})"
           }
         ]
       },
       "delete": {
-        "operationId": "mcp.auth.remove",
+        "operationId": "project.mcp.auth.remove",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6084,28 +6150,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.auth.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.remove({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp/{name}/auth/callback": {
+    "/project/{projectID}/mcp/{name}/auth/callback": {
       "post": {
-        "operationId": "mcp.auth.callback",
+        "operationId": "project.mcp.auth.callback",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6171,28 +6238,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.auth.callback({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.callback({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp/{name}/auth/authenticate": {
+    "/project/{projectID}/mcp/{name}/auth/authenticate": {
       "post": {
-        "operationId": "mcp.auth.authenticate",
+        "operationId": "project.mcp.auth.authenticate",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6240,22 +6308,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.auth.authenticate({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.authenticate({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp/{name}/connect": {
+    "/project/{projectID}/mcp/{name}/connect": {
       "post": {
-        "operationId": "mcp.connect",
+        "operationId": "project.mcp.connect",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -6269,6 +6330,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -6288,22 +6357,15 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.connect({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.connect({\n  ...\n})"
           }
         ]
       }
     },
-    "/mcp/{name}/disconnect": {
+    "/project/{projectID}/mcp/{name}/disconnect": {
       "post": {
-        "operationId": "mcp.disconnect",
+        "operationId": "project.mcp.disconnect",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
@@ -6317,6 +6379,14 @@
             "schema": {
               "type": "string"
             },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
             "required": true
           }
         ],
@@ -6336,28 +6406,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.mcp.disconnect({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.disconnect({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin": {
+    "/project/{projectID}/plugin": {
       "get": {
-        "operationId": "plugin.list",
+        "operationId": "project.plugin.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List installed plugins",
@@ -6411,28 +6482,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/{id}/enable": {
+    "/project/{projectID}/plugin/{id}/enable": {
       "post": {
-        "operationId": "plugin.enable",
+        "operationId": "project.plugin.enable",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6459,28 +6531,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.enable({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.enable({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/{id}/disable": {
+    "/project/{projectID}/plugin/{id}/disable": {
       "post": {
-        "operationId": "plugin.disable",
+        "operationId": "project.plugin.disable",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6507,28 +6580,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.disable({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.disable({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/{id}": {
+    "/project/{projectID}/plugin/{id}": {
       "delete": {
-        "operationId": "plugin.uninstall",
+        "operationId": "project.plugin.uninstall",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6555,28 +6629,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.uninstall({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.uninstall({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/marketplace": {
+    "/project/{projectID}/plugin/marketplace": {
       "get": {
-        "operationId": "plugin.marketplace.list",
+        "operationId": "project.plugin.marketplace.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List known marketplaces",
@@ -6649,26 +6724,27 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.marketplace.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.list({\n  ...\n})"
           }
         ]
       },
       "post": {
-        "operationId": "plugin.marketplace.add",
+        "operationId": "project.plugin.marketplace.add",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Add a marketplace",
@@ -6716,28 +6792,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.marketplace.add({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.add({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/marketplace/{name}": {
+    "/project/{projectID}/plugin/marketplace/{name}": {
       "delete": {
-        "operationId": "plugin.marketplace.remove",
+        "operationId": "project.plugin.marketplace.remove",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6764,28 +6841,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.marketplace.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.remove({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/marketplace/{name}/plugins": {
+    "/project/{projectID}/plugin/marketplace/{name}/plugins": {
       "get": {
-        "operationId": "plugin.marketplace.plugins",
+        "operationId": "project.plugin.marketplace.plugins",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6838,28 +6916,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.marketplace.plugins({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.plugins({\n  ...\n})"
           }
         ]
       }
     },
-    "/plugin/marketplace/{name}/install/{plugin}": {
+    "/project/{projectID}/plugin/marketplace/{name}/install/{plugin}": {
       "post": {
-        "operationId": "plugin.marketplace.install",
+        "operationId": "project.plugin.marketplace.install",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           },
           {
             "schema": {
@@ -6894,28 +6973,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.plugin.marketplace.install({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.install({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/append-prompt": {
+    "/project/{projectID}/tui/append-prompt": {
       "post": {
-        "operationId": "tui.appendPrompt",
+        "operationId": "project.tui.appendPrompt",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Append TUI prompt",
@@ -6962,28 +7042,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.appendPrompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.appendPrompt({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/open-help": {
+    "/project/{projectID}/tui/open-help": {
       "post": {
-        "operationId": "tui.openHelp",
+        "operationId": "project.tui.openHelp",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Open help dialog",
@@ -7003,28 +7084,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.openHelp({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openHelp({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/open-sessions": {
+    "/project/{projectID}/tui/open-sessions": {
       "post": {
-        "operationId": "tui.openSessions",
+        "operationId": "project.tui.openSessions",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Open sessions dialog",
@@ -7044,28 +7126,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.openSessions({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openSessions({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/open-themes": {
+    "/project/{projectID}/tui/open-themes": {
       "post": {
-        "operationId": "tui.openThemes",
+        "operationId": "project.tui.openThemes",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Open themes dialog",
@@ -7085,28 +7168,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.openThemes({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openThemes({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/open-models": {
+    "/project/{projectID}/tui/open-models": {
       "post": {
-        "operationId": "tui.openModels",
+        "operationId": "project.tui.openModels",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Open models dialog",
@@ -7126,28 +7210,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.openModels({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openModels({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/submit-prompt": {
+    "/project/{projectID}/tui/submit-prompt": {
       "post": {
-        "operationId": "tui.submitPrompt",
+        "operationId": "project.tui.submitPrompt",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Submit TUI prompt",
@@ -7167,28 +7252,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.submitPrompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.submitPrompt({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/clear-prompt": {
+    "/project/{projectID}/tui/clear-prompt": {
       "post": {
-        "operationId": "tui.clearPrompt",
+        "operationId": "project.tui.clearPrompt",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Clear TUI prompt",
@@ -7208,28 +7294,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.clearPrompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.clearPrompt({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/execute-command": {
+    "/project/{projectID}/tui/execute-command": {
       "post": {
-        "operationId": "tui.executeCommand",
+        "operationId": "project.tui.executeCommand",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Execute TUI command",
@@ -7276,28 +7363,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.executeCommand({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.executeCommand({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/show-toast": {
+    "/project/{projectID}/tui/show-toast": {
       "post": {
-        "operationId": "tui.showToast",
+        "operationId": "project.tui.showToast",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Show TUI toast",
@@ -7352,28 +7440,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.showToast({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.showToast({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/publish": {
+    "/project/{projectID}/tui/publish": {
       "post": {
-        "operationId": "tui.publish",
+        "operationId": "project.tui.publish",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Publish TUI event",
@@ -7425,28 +7514,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.publish({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.publish({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/select-session": {
+    "/project/{projectID}/tui/select-session": {
       "post": {
-        "operationId": "tui.selectSession",
+        "operationId": "project.tui.selectSession",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Select session",
@@ -7505,28 +7595,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.selectSession({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.selectSession({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/control/next": {
+    "/project/{projectID}/tui/control/next": {
       "get": {
-        "operationId": "tui.control.next",
+        "operationId": "project.tui.control.next",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get next TUI request",
@@ -7556,28 +7647,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.control.next({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.next({\n  ...\n})"
           }
         ]
       }
     },
-    "/tui/control/response": {
+    "/project/{projectID}/tui/control/response": {
       "post": {
-        "operationId": "tui.control.response",
+        "operationId": "project.tui.control.response",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Submit TUI response",
@@ -7604,28 +7696,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.tui.control.response({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.response({\n  ...\n})"
           }
         ]
       }
     },
-    "/instance/info": {
+    "/project/{projectID}/instance/info": {
       "get": {
-        "operationId": "instance.info",
+        "operationId": "project.instance.info",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get instance info",
@@ -7645,28 +7738,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.instance.info({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.instance.info({\n  ...\n})"
           }
         ]
       }
     },
-    "/project/current": {
+    "/project/{projectID}/project/current": {
       "get": {
         "operationId": "project.current",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get current project",
@@ -7691,23 +7785,24 @@
         ]
       }
     },
-    "/instance/dispose": {
+    "/project/{projectID}/instance/dispose": {
       "post": {
-        "operationId": "instance.dispose",
+        "operationId": "project.instance.dispose",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Dispose instance",
@@ -7727,28 +7822,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.instance.dispose({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.instance.dispose({\n  ...\n})"
           }
         ]
       }
     },
-    "/vcs": {
+    "/project/{projectID}/vcs": {
       "get": {
-        "operationId": "vcs.get",
+        "operationId": "project.vcs",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get VCS info",
@@ -7768,28 +7864,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.vcs.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.vcs({\n  ...\n})"
           }
         ]
       }
     },
-    "/command": {
+    "/project/{projectID}/command": {
       "get": {
-        "operationId": "command.list",
+        "operationId": "project.command.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List commands",
@@ -7812,28 +7909,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.command.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.command.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/agent": {
+    "/project/{projectID}/agent": {
       "get": {
-        "operationId": "app.agents",
+        "operationId": "project.agent.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List agents",
@@ -7856,28 +7954,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.app.agents({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.agent.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/skill": {
+    "/project/{projectID}/skill": {
       "get": {
-        "operationId": "app.skills",
+        "operationId": "project.skill.list",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "List skills",
@@ -7951,28 +8050,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.app.skills({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.skill.list({\n  ...\n})"
           }
         ]
       }
     },
-    "/lsp": {
+    "/project/{projectID}/lsp": {
       "get": {
-        "operationId": "lsp.status",
+        "operationId": "project.lsp.status",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get LSP status",
@@ -7995,28 +8095,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.lsp.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.lsp.status({\n  ...\n})"
           }
         ]
       }
     },
-    "/formatter": {
+    "/project/{projectID}/formatter": {
       "get": {
-        "operationId": "formatter.status",
+        "operationId": "project.formatter.status",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Get formatter status",
@@ -8039,28 +8140,29 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.formatter.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.formatter.status({\n  ...\n})"
           }
         ]
       }
     },
-    "/event": {
+    "/project/{projectID}/event": {
       "get": {
-        "operationId": "event.subscribe",
+        "operationId": "project.event.subscribe",
         "parameters": [
-          {
-            "in": "query",
-            "name": "directory",
-            "schema": {
-              "type": "string"
-            }
-          },
           {
             "in": "query",
             "name": "workspace",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
           }
         ],
         "summary": "Subscribe to events",
@@ -8080,7 +8182,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.event.subscribe({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.event.subscribe({\n  ...\n})"
           }
         ]
       }

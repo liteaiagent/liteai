@@ -15,7 +15,7 @@ export const PtyRoutes = lazy(() =>
       describeRoute({
         summary: "List PTY sessions",
         description: "Get a list of all active pseudo-terminal (PTY) sessions managed by LiteAI.",
-        operationId: "pty.list",
+        operationId: "project.pty.list",
         responses: {
           200: {
             description: "List of sessions",
@@ -36,7 +36,7 @@ export const PtyRoutes = lazy(() =>
       describeRoute({
         summary: "Create PTY session",
         description: "Create a new pseudo-terminal (PTY) session for running shell commands and processes.",
-        operationId: "pty.create",
+        operationId: "project.pty.create",
         responses: {
           200: {
             description: "Created session",
@@ -60,7 +60,7 @@ export const PtyRoutes = lazy(() =>
       describeRoute({
         summary: "Get PTY session",
         description: "Retrieve detailed information about a specific pseudo-terminal (PTY) session.",
-        operationId: "pty.get",
+        operationId: "project.pty.get",
         responses: {
           200: {
             description: "Session info",
@@ -87,7 +87,7 @@ export const PtyRoutes = lazy(() =>
       describeRoute({
         summary: "Update PTY session",
         description: "Update properties of an existing pseudo-terminal (PTY) session.",
-        operationId: "pty.update",
+        operationId: "project.pty.update",
         responses: {
           200: {
             description: "Updated session",
@@ -112,7 +112,7 @@ export const PtyRoutes = lazy(() =>
       describeRoute({
         summary: "Remove PTY session",
         description: "Remove and terminate a specific pseudo-terminal (PTY) session.",
-        operationId: "pty.remove",
+        operationId: "project.pty.remove",
         responses: {
           200: {
             description: "Session removed",
@@ -136,7 +136,7 @@ export const PtyRoutes = lazy(() =>
       describeRoute({
         summary: "Connect to PTY session",
         description: "Establish a WebSocket connection to interact with a pseudo-terminal (PTY) session in real-time.",
-        operationId: "pty.connect",
+        operationId: "project.pty.connect",
         responses: {
           200: {
             description: "Connected session",

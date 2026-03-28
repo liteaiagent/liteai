@@ -188,7 +188,7 @@ No collision because project config is at `/project/:id/config`.
 
 ## Migration Plan
 
-### Phase 1: Add new path-based routes alongside old ones
+### Phase 1: Add new path-based routes alongside old ones ✅ [DONE]
 
 - Add `/project/:projectID/config`, `/project/:projectID/event`, etc.
 - Keep old `?directory=` routes working
@@ -202,20 +202,20 @@ No collision because project config is at `/project/:id/config`.
 - Update `liteai-vscode` to use projectID-based routes
 - Update TUI sync context
 
-### Phase 3: Migrate global routes to root
+### Phase 3: Migrate global routes to root ✅ [DONE]
 
 - Move `/global/health` → `/health`, `/global/config` → `/config`, etc.
 - Remove old `/global/*` routes
 - Regenerate SDK
 
-### Phase 4: Remove legacy routes
+### Phase 4: Remove legacy routes ✅ [DONE]
 
 - Remove `x-liteai-directory` header support from project-scoped routes
 - Remove `?directory=` query param from project-scoped routes
 - Remove old directory-middleware
 - Clean up OpenAPI spec
 
-### Phase 5: Update operationIds
+### Phase 5: Update operationIds ✅ [DONE]
 
 - `global.health` → `health`
 - `global.config.get` → `config.get`

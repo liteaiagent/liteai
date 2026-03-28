@@ -13,7 +13,7 @@ export const WorkspaceRoutes = lazy(() =>
       describeRoute({
         summary: "Create workspace",
         description: "Create a workspace for the current project.",
-        operationId: "experimental.workspace.create",
+        operationId: "project.experimental.workspace.create",
         responses: {
           200: {
             description: "Workspace created",
@@ -46,7 +46,7 @@ export const WorkspaceRoutes = lazy(() =>
       describeRoute({
         summary: "List workspaces",
         description: "List all workspaces.",
-        operationId: "experimental.workspace.list",
+        operationId: "project.experimental.workspace.list",
         responses: {
           200: {
             description: "Workspaces",
@@ -67,7 +67,7 @@ export const WorkspaceRoutes = lazy(() =>
       describeRoute({
         summary: "Remove workspace",
         description: "Remove an existing workspace.",
-        operationId: "experimental.workspace.remove",
+        operationId: "project.experimental.workspace.remove",
         responses: {
           200: {
             description: "Workspace removed",

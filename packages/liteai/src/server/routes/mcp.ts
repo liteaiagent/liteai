@@ -13,7 +13,7 @@ export const McpRoutes = lazy(() =>
       describeRoute({
         summary: "Get MCP status",
         description: "Get the status of all Model Context Protocol (MCP) servers.",
-        operationId: "mcp.status",
+        operationId: "project.mcp.status",
         responses: {
           200: {
             description: "MCP server status",
@@ -34,7 +34,7 @@ export const McpRoutes = lazy(() =>
       describeRoute({
         summary: "Get MCP tool names",
         description: "Get tool names grouped by connected MCP server.",
-        operationId: "mcp.tools",
+        operationId: "project.mcp.tools",
         responses: {
           200: {
             description: "Tool names per server",
@@ -55,7 +55,7 @@ export const McpRoutes = lazy(() =>
       describeRoute({
         summary: "Add MCP server",
         description: "Dynamically add a new Model Context Protocol (MCP) server to the system.",
-        operationId: "mcp.add",
+        operationId: "project.mcp.add",
         responses: {
           200: {
             description: "MCP server added successfully",
@@ -86,7 +86,7 @@ export const McpRoutes = lazy(() =>
       describeRoute({
         summary: "Start MCP OAuth",
         description: "Start OAuth authentication flow for a Model Context Protocol (MCP) server.",
-        operationId: "mcp.auth.start",
+        operationId: "project.mcp.auth.start",
         responses: {
           200: {
             description: "OAuth flow started",
@@ -119,7 +119,7 @@ export const McpRoutes = lazy(() =>
         summary: "Complete MCP OAuth",
         description:
           "Complete OAuth authentication for a Model Context Protocol (MCP) server using the authorization code.",
-        operationId: "mcp.auth.callback",
+        operationId: "project.mcp.auth.callback",
         responses: {
           200: {
             description: "OAuth authentication completed",
@@ -150,7 +150,7 @@ export const McpRoutes = lazy(() =>
       describeRoute({
         summary: "Authenticate MCP OAuth",
         description: "Start OAuth flow and wait for callback (opens browser)",
-        operationId: "mcp.auth.authenticate",
+        operationId: "project.mcp.auth.authenticate",
         responses: {
           200: {
             description: "OAuth authentication completed",
@@ -178,7 +178,7 @@ export const McpRoutes = lazy(() =>
       describeRoute({
         summary: "Remove MCP OAuth",
         description: "Remove OAuth credentials for an MCP server",
-        operationId: "mcp.auth.remove",
+        operationId: "project.mcp.auth.remove",
         responses: {
           200: {
             description: "OAuth credentials removed",
@@ -201,7 +201,7 @@ export const McpRoutes = lazy(() =>
       "/:name/connect",
       describeRoute({
         description: "Connect an MCP server",
-        operationId: "mcp.connect",
+        operationId: "project.mcp.connect",
         responses: {
           200: {
             description: "MCP server connected successfully",
@@ -224,7 +224,7 @@ export const McpRoutes = lazy(() =>
       "/:name/disconnect",
       describeRoute({
         description: "Disconnect an MCP server",
-        operationId: "mcp.disconnect",
+        operationId: "project.mcp.disconnect",
         responses: {
           200: {
             description: "MCP server disconnected successfully",

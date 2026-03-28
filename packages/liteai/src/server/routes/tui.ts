@@ -33,7 +33,7 @@ const TuiControlRoutes = new Hono()
     describeRoute({
       summary: "Get next TUI request",
       description: "Retrieve the next TUI (Terminal User Interface) request from the queue for processing.",
-      operationId: "tui.control.next",
+      operationId: "project.tui.control.next",
       responses: {
         200: {
           description: "Next TUI request",
@@ -55,7 +55,7 @@ const TuiControlRoutes = new Hono()
     describeRoute({
       summary: "Submit TUI response",
       description: "Submit a response to the TUI request queue to complete a pending request.",
-      operationId: "tui.control.response",
+      operationId: "project.tui.control.response",
       responses: {
         200: {
           description: "Response submitted successfully",
@@ -82,7 +82,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Append TUI prompt",
         description: "Append prompt to the TUI",
-        operationId: "tui.appendPrompt",
+        operationId: "project.tui.appendPrompt",
         responses: {
           200: {
             description: "Prompt processed successfully",
@@ -106,7 +106,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Open help dialog",
         description: "Open the help dialog in the TUI to display user assistance information.",
-        operationId: "tui.openHelp",
+        operationId: "project.tui.openHelp",
         responses: {
           200: {
             description: "Help dialog opened successfully",
@@ -130,7 +130,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Open sessions dialog",
         description: "Open the session dialog",
-        operationId: "tui.openSessions",
+        operationId: "project.tui.openSessions",
         responses: {
           200: {
             description: "Session dialog opened successfully",
@@ -154,7 +154,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Open themes dialog",
         description: "Open the theme dialog",
-        operationId: "tui.openThemes",
+        operationId: "project.tui.openThemes",
         responses: {
           200: {
             description: "Theme dialog opened successfully",
@@ -178,7 +178,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Open models dialog",
         description: "Open the model dialog",
-        operationId: "tui.openModels",
+        operationId: "project.tui.openModels",
         responses: {
           200: {
             description: "Model dialog opened successfully",
@@ -202,7 +202,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Submit TUI prompt",
         description: "Submit the prompt",
-        operationId: "tui.submitPrompt",
+        operationId: "project.tui.submitPrompt",
         responses: {
           200: {
             description: "Prompt submitted successfully",
@@ -226,7 +226,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Clear TUI prompt",
         description: "Clear the prompt",
-        operationId: "tui.clearPrompt",
+        operationId: "project.tui.clearPrompt",
         responses: {
           200: {
             description: "Prompt cleared successfully",
@@ -250,7 +250,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Execute TUI command",
         description: "Execute a TUI command (e.g. agent_cycle)",
-        operationId: "tui.executeCommand",
+        operationId: "project.tui.executeCommand",
         responses: {
           200: {
             description: "Command executed successfully",
@@ -292,7 +292,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Show TUI toast",
         description: "Show a toast notification in the TUI",
-        operationId: "tui.showToast",
+        operationId: "project.tui.showToast",
         responses: {
           200: {
             description: "Toast notification shown successfully",
@@ -315,7 +315,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Publish TUI event",
         description: "Publish a TUI event",
-        operationId: "tui.publish",
+        operationId: "project.tui.publish",
         responses: {
           200: {
             description: "Event published successfully",
@@ -356,7 +356,7 @@ export const TuiRoutes = lazy(() =>
       describeRoute({
         summary: "Select session",
         description: "Navigate the TUI to display the specified session.",
-        operationId: "tui.selectSession",
+        operationId: "project.tui.selectSession",
         responses: {
           200: {
             description: "Session selected successfully",

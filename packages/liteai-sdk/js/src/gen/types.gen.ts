@@ -2102,14 +2102,14 @@ export type FormatterStatus = {
 	enabled: boolean;
 };
 
-export type GlobalHealthData = {
+export type HealthData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/health";
+	url: "/health";
 };
 
-export type GlobalHealthResponses = {
+export type HealthResponses = {
 	/**
 	 * Health information
 	 */
@@ -2119,95 +2119,91 @@ export type GlobalHealthResponses = {
 	};
 };
 
-export type GlobalHealthResponse =
-	GlobalHealthResponses[keyof GlobalHealthResponses];
+export type HealthResponse = HealthResponses[keyof HealthResponses];
 
-export type GlobalEventData = {
+export type EventSubscribeData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/event";
+	url: "/event";
 };
 
-export type GlobalEventResponses = {
+export type EventSubscribeResponses = {
 	/**
 	 * Event stream
 	 */
 	200: GlobalEvent;
 };
 
-export type GlobalEventResponse =
-	GlobalEventResponses[keyof GlobalEventResponses];
+export type EventSubscribeResponse =
+	EventSubscribeResponses[keyof EventSubscribeResponses];
 
-export type GlobalConfigGetData = {
+export type ConfigGetData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/config";
+	url: "/config";
 };
 
-export type GlobalConfigGetResponses = {
+export type ConfigGetResponses = {
 	/**
 	 * Get global config info
 	 */
 	200: Config;
 };
 
-export type GlobalConfigGetResponse =
-	GlobalConfigGetResponses[keyof GlobalConfigGetResponses];
+export type ConfigGetResponse = ConfigGetResponses[keyof ConfigGetResponses];
 
-export type GlobalConfigUpdateData = {
+export type ConfigUpdateData = {
 	body?: Config;
 	path?: never;
 	query?: never;
-	url: "/global/config";
+	url: "/config";
 };
 
-export type GlobalConfigUpdateErrors = {
+export type ConfigUpdateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type GlobalConfigUpdateError =
-	GlobalConfigUpdateErrors[keyof GlobalConfigUpdateErrors];
+export type ConfigUpdateError = ConfigUpdateErrors[keyof ConfigUpdateErrors];
 
-export type GlobalConfigUpdateResponses = {
+export type ConfigUpdateResponses = {
 	/**
 	 * Successfully updated global config
 	 */
 	200: Config;
 };
 
-export type GlobalConfigUpdateResponse =
-	GlobalConfigUpdateResponses[keyof GlobalConfigUpdateResponses];
+export type ConfigUpdateResponse =
+	ConfigUpdateResponses[keyof ConfigUpdateResponses];
 
-export type GlobalDisposeData = {
+export type DisposeData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/dispose";
+	url: "/dispose";
 };
 
-export type GlobalDisposeResponses = {
+export type DisposeResponses = {
 	/**
 	 * Global disposed
 	 */
 	200: boolean;
 };
 
-export type GlobalDisposeResponse =
-	GlobalDisposeResponses[keyof GlobalDisposeResponses];
+export type DisposeResponse = DisposeResponses[keyof DisposeResponses];
 
-export type GlobalBrowseData = {
+export type BrowseData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/browse";
+	url: "/browse";
 };
 
-export type GlobalBrowseResponses = {
+export type BrowseResponses = {
 	/**
 	 * Selected folder path or null if cancelled
 	 */
@@ -2216,17 +2212,16 @@ export type GlobalBrowseResponses = {
 	};
 };
 
-export type GlobalBrowseResponse =
-	GlobalBrowseResponses[keyof GlobalBrowseResponses];
+export type BrowseResponse = BrowseResponses[keyof BrowseResponses];
 
-export type GlobalLogData = {
+export type LogData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/log";
+	url: "/log";
 };
 
-export type GlobalLogResponses = {
+export type LogResponses = {
 	/**
 	 * Combined log lines sorted by timestamp, plus discovered services
 	 */
@@ -2236,9 +2231,9 @@ export type GlobalLogResponses = {
 	};
 };
 
-export type GlobalLogResponse = GlobalLogResponses[keyof GlobalLogResponses];
+export type LogResponse = LogResponses[keyof LogResponses];
 
-export type GlobalLogWriteData = {
+export type LogWriteData = {
 	body?: {
 		/**
 		 * Service name for the log entry
@@ -2261,34 +2256,33 @@ export type GlobalLogWriteData = {
 	};
 	path?: never;
 	query?: never;
-	url: "/global/log";
+	url: "/log";
 };
 
-export type GlobalLogWriteResponses = {
+export type LogWriteResponses = {
 	/**
 	 * Log entry written successfully
 	 */
 	200: boolean;
 };
 
-export type GlobalLogWriteResponse =
-	GlobalLogWriteResponses[keyof GlobalLogWriteResponses];
+export type LogWriteResponse = LogWriteResponses[keyof LogWriteResponses];
 
-export type GlobalPathData = {
+export type PathData = {
 	body?: never;
 	path?: never;
 	query?: never;
-	url: "/global/path";
+	url: "/path";
 };
 
-export type GlobalPathResponses = {
+export type PathResponses = {
 	/**
 	 * Global paths
 	 */
 	200: GlobalPath;
 };
 
-export type GlobalPathResponse = GlobalPathResponses[keyof GlobalPathResponses];
+export type PathResponse = PathResponses[keyof PathResponses];
 
 export type AuthRemoveData = {
 	body?: never;
@@ -2553,7 +2547,6 @@ export type ProjectCreateData = {
 	path?: never;
 	query?: {
 		directory?: string;
-		workspace?: string;
 	};
 	url: "/project";
 };
@@ -2735,26 +2728,28 @@ export type ProjectInitGitResponses = {
 export type ProjectInitGitResponse =
 	ProjectInitGitResponses[keyof ProjectInitGitResponses];
 
-export type PtyListData = {
+export type ProjectPtyListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/pty";
+	url: "/project/{projectID}/pty";
 };
 
-export type PtyListResponses = {
+export type ProjectPtyListResponses = {
 	/**
 	 * List of sessions
 	 */
 	200: Array<Pty>;
 };
 
-export type PtyListResponse = PtyListResponses[keyof PtyListResponses];
+export type ProjectPtyListResponse =
+	ProjectPtyListResponses[keyof ProjectPtyListResponses];
 
-export type PtyCreateData = {
+export type ProjectPtyCreateData = {
 	body?: {
 		command?: string;
 		args?: Array<string>;
@@ -2764,93 +2759,99 @@ export type PtyCreateData = {
 			[key: string]: string;
 		};
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/pty";
+	url: "/project/{projectID}/pty";
 };
 
-export type PtyCreateErrors = {
+export type ProjectPtyCreateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type PtyCreateError = PtyCreateErrors[keyof PtyCreateErrors];
+export type ProjectPtyCreateError =
+	ProjectPtyCreateErrors[keyof ProjectPtyCreateErrors];
 
-export type PtyCreateResponses = {
+export type ProjectPtyCreateResponses = {
 	/**
 	 * Created session
 	 */
 	200: Pty;
 };
 
-export type PtyCreateResponse = PtyCreateResponses[keyof PtyCreateResponses];
+export type ProjectPtyCreateResponse =
+	ProjectPtyCreateResponses[keyof ProjectPtyCreateResponses];
 
-export type PtyRemoveData = {
+export type ProjectPtyRemoveData = {
 	body?: never;
 	path: {
 		ptyID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/pty/{ptyID}";
+	url: "/project/{projectID}/pty/{ptyID}";
 };
 
-export type PtyRemoveErrors = {
+export type ProjectPtyRemoveErrors = {
 	/**
 	 * Not found
 	 */
 	404: NotFoundError;
 };
 
-export type PtyRemoveError = PtyRemoveErrors[keyof PtyRemoveErrors];
+export type ProjectPtyRemoveError =
+	ProjectPtyRemoveErrors[keyof ProjectPtyRemoveErrors];
 
-export type PtyRemoveResponses = {
+export type ProjectPtyRemoveResponses = {
 	/**
 	 * Session removed
 	 */
 	200: boolean;
 };
 
-export type PtyRemoveResponse = PtyRemoveResponses[keyof PtyRemoveResponses];
+export type ProjectPtyRemoveResponse =
+	ProjectPtyRemoveResponses[keyof ProjectPtyRemoveResponses];
 
-export type PtyGetData = {
+export type ProjectPtyGetData = {
 	body?: never;
 	path: {
 		ptyID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/pty/{ptyID}";
+	url: "/project/{projectID}/pty/{ptyID}";
 };
 
-export type PtyGetErrors = {
+export type ProjectPtyGetErrors = {
 	/**
 	 * Not found
 	 */
 	404: NotFoundError;
 };
 
-export type PtyGetError = PtyGetErrors[keyof PtyGetErrors];
+export type ProjectPtyGetError = ProjectPtyGetErrors[keyof ProjectPtyGetErrors];
 
-export type PtyGetResponses = {
+export type ProjectPtyGetResponses = {
 	/**
 	 * Session info
 	 */
 	200: Pty;
 };
 
-export type PtyGetResponse = PtyGetResponses[keyof PtyGetResponses];
+export type ProjectPtyGetResponse =
+	ProjectPtyGetResponses[keyof ProjectPtyGetResponses];
 
-export type PtyUpdateData = {
+export type ProjectPtyUpdateData = {
 	body?: {
 		title?: string;
 		size?: {
@@ -2860,121 +2861,130 @@ export type PtyUpdateData = {
 	};
 	path: {
 		ptyID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/pty/{ptyID}";
+	url: "/project/{projectID}/pty/{ptyID}";
 };
 
-export type PtyUpdateErrors = {
+export type ProjectPtyUpdateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type PtyUpdateError = PtyUpdateErrors[keyof PtyUpdateErrors];
+export type ProjectPtyUpdateError =
+	ProjectPtyUpdateErrors[keyof ProjectPtyUpdateErrors];
 
-export type PtyUpdateResponses = {
+export type ProjectPtyUpdateResponses = {
 	/**
 	 * Updated session
 	 */
 	200: Pty;
 };
 
-export type PtyUpdateResponse = PtyUpdateResponses[keyof PtyUpdateResponses];
+export type ProjectPtyUpdateResponse =
+	ProjectPtyUpdateResponses[keyof ProjectPtyUpdateResponses];
 
-export type PtyConnectData = {
+export type ProjectPtyConnectData = {
 	body?: never;
 	path: {
 		ptyID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/pty/{ptyID}/connect";
+	url: "/project/{projectID}/pty/{ptyID}/connect";
 };
 
-export type PtyConnectErrors = {
+export type ProjectPtyConnectErrors = {
 	/**
 	 * Not found
 	 */
 	404: NotFoundError;
 };
 
-export type PtyConnectError = PtyConnectErrors[keyof PtyConnectErrors];
+export type ProjectPtyConnectError =
+	ProjectPtyConnectErrors[keyof ProjectPtyConnectErrors];
 
-export type PtyConnectResponses = {
+export type ProjectPtyConnectResponses = {
 	/**
 	 * Connected session
 	 */
 	200: boolean;
 };
 
-export type PtyConnectResponse = PtyConnectResponses[keyof PtyConnectResponses];
+export type ProjectPtyConnectResponse =
+	ProjectPtyConnectResponses[keyof ProjectPtyConnectResponses];
 
-export type ConfigGetData = {
+export type ProjectConfigGetData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/config";
+	url: "/project/{projectID}/config";
 };
 
-export type ConfigGetResponses = {
+export type ProjectConfigGetResponses = {
 	/**
 	 * Get config info
 	 */
 	200: Config;
 };
 
-export type ConfigGetResponse = ConfigGetResponses[keyof ConfigGetResponses];
+export type ProjectConfigGetResponse =
+	ProjectConfigGetResponses[keyof ProjectConfigGetResponses];
 
-export type ConfigUpdateData = {
+export type ProjectConfigUpdateData = {
 	body?: Config;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/config";
+	url: "/project/{projectID}/config";
 };
 
-export type ConfigUpdateErrors = {
+export type ProjectConfigUpdateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type ConfigUpdateError = ConfigUpdateErrors[keyof ConfigUpdateErrors];
+export type ProjectConfigUpdateError =
+	ProjectConfigUpdateErrors[keyof ProjectConfigUpdateErrors];
 
-export type ConfigUpdateResponses = {
+export type ProjectConfigUpdateResponses = {
 	/**
 	 * Successfully updated config
 	 */
 	200: Config;
 };
 
-export type ConfigUpdateResponse =
-	ConfigUpdateResponses[keyof ConfigUpdateResponses];
+export type ProjectConfigUpdateResponse =
+	ProjectConfigUpdateResponses[keyof ProjectConfigUpdateResponses];
 
-export type ConfigProvidersData = {
+export type ProjectConfigProvidersData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/config/providers";
+	url: "/project/{projectID}/config/providers";
 };
 
-export type ConfigProvidersResponses = {
+export type ProjectConfigProvidersResponses = {
 	/**
 	 * List of providers
 	 */
@@ -2986,274 +2996,288 @@ export type ConfigProvidersResponses = {
 	};
 };
 
-export type ConfigProvidersResponse =
-	ConfigProvidersResponses[keyof ConfigProvidersResponses];
+export type ProjectConfigProvidersResponse =
+	ProjectConfigProvidersResponses[keyof ProjectConfigProvidersResponses];
 
-export type ToolIdsData = {
+export type ProjectToolIdsData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/tool/ids";
+	url: "/project/{projectID}/experimental/tool/ids";
 };
 
-export type ToolIdsErrors = {
+export type ProjectToolIdsErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type ToolIdsError = ToolIdsErrors[keyof ToolIdsErrors];
+export type ProjectToolIdsError =
+	ProjectToolIdsErrors[keyof ProjectToolIdsErrors];
 
-export type ToolIdsResponses = {
+export type ProjectToolIdsResponses = {
 	/**
 	 * Tool IDs
 	 */
 	200: ToolIds;
 };
 
-export type ToolIdsResponse = ToolIdsResponses[keyof ToolIdsResponses];
+export type ProjectToolIdsResponse =
+	ProjectToolIdsResponses[keyof ProjectToolIdsResponses];
 
-export type ToolListData = {
+export type ProjectToolListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		provider: string;
 		model: string;
 	};
-	url: "/experimental/tool";
+	url: "/project/{projectID}/experimental/tool";
 };
 
-export type ToolListErrors = {
+export type ProjectToolListErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type ToolListError = ToolListErrors[keyof ToolListErrors];
+export type ProjectToolListError =
+	ProjectToolListErrors[keyof ProjectToolListErrors];
 
-export type ToolListResponses = {
+export type ProjectToolListResponses = {
 	/**
 	 * Tools
 	 */
 	200: ToolList;
 };
 
-export type ToolListResponse = ToolListResponses[keyof ToolListResponses];
+export type ProjectToolListResponse =
+	ProjectToolListResponses[keyof ProjectToolListResponses];
 
-export type ExperimentalWorkspaceListData = {
+export type ProjectExperimentalWorkspaceListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/workspace";
+	url: "/project/{projectID}/experimental/workspace";
 };
 
-export type ExperimentalWorkspaceListResponses = {
+export type ProjectExperimentalWorkspaceListResponses = {
 	/**
 	 * Workspaces
 	 */
 	200: Array<Workspace>;
 };
 
-export type ExperimentalWorkspaceListResponse =
-	ExperimentalWorkspaceListResponses[keyof ExperimentalWorkspaceListResponses];
+export type ProjectExperimentalWorkspaceListResponse =
+	ProjectExperimentalWorkspaceListResponses[keyof ProjectExperimentalWorkspaceListResponses];
 
-export type ExperimentalWorkspaceCreateData = {
+export type ProjectExperimentalWorkspaceCreateData = {
 	body?: {
 		id?: string;
 		type: string;
 		branch: string | null;
 		extra: unknown | null;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/workspace";
+	url: "/project/{projectID}/experimental/workspace";
 };
 
-export type ExperimentalWorkspaceCreateErrors = {
+export type ProjectExperimentalWorkspaceCreateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type ExperimentalWorkspaceCreateError =
-	ExperimentalWorkspaceCreateErrors[keyof ExperimentalWorkspaceCreateErrors];
+export type ProjectExperimentalWorkspaceCreateError =
+	ProjectExperimentalWorkspaceCreateErrors[keyof ProjectExperimentalWorkspaceCreateErrors];
 
-export type ExperimentalWorkspaceCreateResponses = {
+export type ProjectExperimentalWorkspaceCreateResponses = {
 	/**
 	 * Workspace created
 	 */
 	200: Workspace;
 };
 
-export type ExperimentalWorkspaceCreateResponse =
-	ExperimentalWorkspaceCreateResponses[keyof ExperimentalWorkspaceCreateResponses];
+export type ProjectExperimentalWorkspaceCreateResponse =
+	ProjectExperimentalWorkspaceCreateResponses[keyof ProjectExperimentalWorkspaceCreateResponses];
 
-export type ExperimentalWorkspaceRemoveData = {
+export type ProjectExperimentalWorkspaceRemoveData = {
 	body?: never;
 	path: {
 		id: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/workspace/{id}";
+	url: "/project/{projectID}/experimental/workspace/{id}";
 };
 
-export type ExperimentalWorkspaceRemoveErrors = {
+export type ProjectExperimentalWorkspaceRemoveErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type ExperimentalWorkspaceRemoveError =
-	ExperimentalWorkspaceRemoveErrors[keyof ExperimentalWorkspaceRemoveErrors];
+export type ProjectExperimentalWorkspaceRemoveError =
+	ProjectExperimentalWorkspaceRemoveErrors[keyof ProjectExperimentalWorkspaceRemoveErrors];
 
-export type ExperimentalWorkspaceRemoveResponses = {
+export type ProjectExperimentalWorkspaceRemoveResponses = {
 	/**
 	 * Workspace removed
 	 */
 	200: Workspace;
 };
 
-export type ExperimentalWorkspaceRemoveResponse =
-	ExperimentalWorkspaceRemoveResponses[keyof ExperimentalWorkspaceRemoveResponses];
+export type ProjectExperimentalWorkspaceRemoveResponse =
+	ProjectExperimentalWorkspaceRemoveResponses[keyof ProjectExperimentalWorkspaceRemoveResponses];
 
-export type WorktreeRemoveData = {
+export type ProjectWorktreeRemoveData = {
 	body?: WorktreeRemoveInput;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/worktree";
+	url: "/project/{projectID}/experimental/worktree";
 };
 
-export type WorktreeRemoveErrors = {
+export type ProjectWorktreeRemoveErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type WorktreeRemoveError =
-	WorktreeRemoveErrors[keyof WorktreeRemoveErrors];
+export type ProjectWorktreeRemoveError =
+	ProjectWorktreeRemoveErrors[keyof ProjectWorktreeRemoveErrors];
 
-export type WorktreeRemoveResponses = {
+export type ProjectWorktreeRemoveResponses = {
 	/**
 	 * Worktree removed
 	 */
 	200: boolean;
 };
 
-export type WorktreeRemoveResponse =
-	WorktreeRemoveResponses[keyof WorktreeRemoveResponses];
+export type ProjectWorktreeRemoveResponse =
+	ProjectWorktreeRemoveResponses[keyof ProjectWorktreeRemoveResponses];
 
-export type WorktreeListData = {
+export type ProjectWorktreeListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/worktree";
+	url: "/project/{projectID}/experimental/worktree";
 };
 
-export type WorktreeListResponses = {
+export type ProjectWorktreeListResponses = {
 	/**
 	 * List of worktree directories
 	 */
 	200: Array<string>;
 };
 
-export type WorktreeListResponse =
-	WorktreeListResponses[keyof WorktreeListResponses];
+export type ProjectWorktreeListResponse =
+	ProjectWorktreeListResponses[keyof ProjectWorktreeListResponses];
 
-export type WorktreeCreateData = {
+export type ProjectWorktreeCreateData = {
 	body?: WorktreeCreateInput;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/worktree";
+	url: "/project/{projectID}/experimental/worktree";
 };
 
-export type WorktreeCreateErrors = {
+export type ProjectWorktreeCreateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type WorktreeCreateError =
-	WorktreeCreateErrors[keyof WorktreeCreateErrors];
+export type ProjectWorktreeCreateError =
+	ProjectWorktreeCreateErrors[keyof ProjectWorktreeCreateErrors];
 
-export type WorktreeCreateResponses = {
+export type ProjectWorktreeCreateResponses = {
 	/**
 	 * Worktree created
 	 */
 	200: Worktree;
 };
 
-export type WorktreeCreateResponse =
-	WorktreeCreateResponses[keyof WorktreeCreateResponses];
+export type ProjectWorktreeCreateResponse =
+	ProjectWorktreeCreateResponses[keyof ProjectWorktreeCreateResponses];
 
-export type WorktreeResetData = {
+export type ProjectWorktreeResetData = {
 	body?: WorktreeResetInput;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/worktree/reset";
+	url: "/project/{projectID}/experimental/worktree/reset";
 };
 
-export type WorktreeResetErrors = {
+export type ProjectWorktreeResetErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type WorktreeResetError = WorktreeResetErrors[keyof WorktreeResetErrors];
+export type ProjectWorktreeResetError =
+	ProjectWorktreeResetErrors[keyof ProjectWorktreeResetErrors];
 
-export type WorktreeResetResponses = {
+export type ProjectWorktreeResetResponses = {
 	/**
 	 * Worktree reset
 	 */
 	200: boolean;
 };
 
-export type WorktreeResetResponse =
-	WorktreeResetResponses[keyof WorktreeResetResponses];
+export type ProjectWorktreeResetResponse =
+	ProjectWorktreeResetResponses[keyof ProjectWorktreeResetResponses];
 
-export type ExperimentalResourceListData = {
+export type ProjectExperimentalResourceListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/experimental/resource";
+	url: "/project/{projectID}/experimental/resource";
 };
 
-export type ExperimentalResourceListResponses = {
+export type ProjectExperimentalResourceListResponses = {
 	/**
 	 * MCP resources
 	 */
@@ -3262,18 +3286,20 @@ export type ExperimentalResourceListResponses = {
 	};
 };
 
-export type ExperimentalResourceListResponse =
-	ExperimentalResourceListResponses[keyof ExperimentalResourceListResponses];
+export type ProjectExperimentalResourceListResponse =
+	ProjectExperimentalResourceListResponses[keyof ProjectExperimentalResourceListResponses];
 
-export type SessionListData = {
+export type ProjectSessionListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
+		workspace?: string;
 		/**
 		 * Filter sessions by project directory
 		 */
 		directory?: string;
-		workspace?: string;
 		/**
 		 * Only return root sessions (no parentID)
 		 */
@@ -3295,73 +3321,77 @@ export type SessionListData = {
 		 */
 		archived?: boolean;
 	};
-	url: "/session";
+	url: "/project/{projectID}/session";
 };
 
-export type SessionListResponses = {
+export type ProjectSessionListResponses = {
 	/**
 	 * List of sessions
 	 */
 	200: Array<Session>;
 };
 
-export type SessionListResponse =
-	SessionListResponses[keyof SessionListResponses];
+export type ProjectSessionListResponse =
+	ProjectSessionListResponses[keyof ProjectSessionListResponses];
 
-export type SessionCreateData = {
+export type ProjectSessionCreateData = {
 	body?: {
 		parentID?: string;
 		title?: string;
 		permission?: PermissionRuleset;
 		workspaceID?: string;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session";
+	url: "/project/{projectID}/session";
 };
 
-export type SessionCreateErrors = {
+export type ProjectSessionCreateErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type SessionCreateError = SessionCreateErrors[keyof SessionCreateErrors];
+export type ProjectSessionCreateError =
+	ProjectSessionCreateErrors[keyof ProjectSessionCreateErrors];
 
-export type SessionCreateResponses = {
+export type ProjectSessionCreateResponses = {
 	/**
 	 * Successfully created session
 	 */
 	200: Session;
 };
 
-export type SessionCreateResponse =
-	SessionCreateResponses[keyof SessionCreateResponses];
+export type ProjectSessionCreateResponse =
+	ProjectSessionCreateResponses[keyof ProjectSessionCreateResponses];
 
-export type SessionStatusData = {
+export type ProjectSessionStatusData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/status";
+	url: "/project/{projectID}/session/status";
 };
 
-export type SessionStatusErrors = {
+export type ProjectSessionStatusErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type SessionStatusError = SessionStatusErrors[keyof SessionStatusErrors];
+export type ProjectSessionStatusError =
+	ProjectSessionStatusErrors[keyof ProjectSessionStatusErrors];
 
-export type SessionStatusResponses = {
+export type ProjectSessionStatusResponses = {
 	/**
 	 * Get session status
 	 */
@@ -3370,22 +3400,22 @@ export type SessionStatusResponses = {
 	};
 };
 
-export type SessionStatusResponse =
-	SessionStatusResponses[keyof SessionStatusResponses];
+export type ProjectSessionStatusResponse =
+	ProjectSessionStatusResponses[keyof ProjectSessionStatusResponses];
 
-export type SessionDeleteData = {
+export type ProjectSessionDeleteData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}";
+	url: "/project/{projectID}/session/{sessionID}";
 };
 
-export type SessionDeleteErrors = {
+export type ProjectSessionDeleteErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3396,31 +3426,32 @@ export type SessionDeleteErrors = {
 	404: NotFoundError;
 };
 
-export type SessionDeleteError = SessionDeleteErrors[keyof SessionDeleteErrors];
+export type ProjectSessionDeleteError =
+	ProjectSessionDeleteErrors[keyof ProjectSessionDeleteErrors];
 
-export type SessionDeleteResponses = {
+export type ProjectSessionDeleteResponses = {
 	/**
 	 * Successfully deleted session
 	 */
 	200: boolean;
 };
 
-export type SessionDeleteResponse =
-	SessionDeleteResponses[keyof SessionDeleteResponses];
+export type ProjectSessionDeleteResponse =
+	ProjectSessionDeleteResponses[keyof ProjectSessionDeleteResponses];
 
-export type SessionGetData = {
+export type ProjectSessionGetData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}";
+	url: "/project/{projectID}/session/{sessionID}";
 };
 
-export type SessionGetErrors = {
+export type ProjectSessionGetErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3431,18 +3462,20 @@ export type SessionGetErrors = {
 	404: NotFoundError;
 };
 
-export type SessionGetError = SessionGetErrors[keyof SessionGetErrors];
+export type ProjectSessionGetError =
+	ProjectSessionGetErrors[keyof ProjectSessionGetErrors];
 
-export type SessionGetResponses = {
+export type ProjectSessionGetResponses = {
 	/**
 	 * Get session
 	 */
 	200: Session;
 };
 
-export type SessionGetResponse = SessionGetResponses[keyof SessionGetResponses];
+export type ProjectSessionGetResponse =
+	ProjectSessionGetResponses[keyof ProjectSessionGetResponses];
 
-export type SessionUpdateData = {
+export type ProjectSessionUpdateData = {
 	body?: {
 		title?: string;
 		time?: {
@@ -3451,15 +3484,15 @@ export type SessionUpdateData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}";
+	url: "/project/{projectID}/session/{sessionID}";
 };
 
-export type SessionUpdateErrors = {
+export type ProjectSessionUpdateErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3470,31 +3503,32 @@ export type SessionUpdateErrors = {
 	404: NotFoundError;
 };
 
-export type SessionUpdateError = SessionUpdateErrors[keyof SessionUpdateErrors];
+export type ProjectSessionUpdateError =
+	ProjectSessionUpdateErrors[keyof ProjectSessionUpdateErrors];
 
-export type SessionUpdateResponses = {
+export type ProjectSessionUpdateResponses = {
 	/**
 	 * Successfully updated session
 	 */
 	200: Session;
 };
 
-export type SessionUpdateResponse =
-	SessionUpdateResponses[keyof SessionUpdateResponses];
+export type ProjectSessionUpdateResponse =
+	ProjectSessionUpdateResponses[keyof ProjectSessionUpdateResponses];
 
-export type SessionChildrenData = {
+export type ProjectSessionChildrenData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/children";
+	url: "/project/{projectID}/session/{sessionID}/children";
 };
 
-export type SessionChildrenErrors = {
+export type ProjectSessionChildrenErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3505,32 +3539,32 @@ export type SessionChildrenErrors = {
 	404: NotFoundError;
 };
 
-export type SessionChildrenError =
-	SessionChildrenErrors[keyof SessionChildrenErrors];
+export type ProjectSessionChildrenError =
+	ProjectSessionChildrenErrors[keyof ProjectSessionChildrenErrors];
 
-export type SessionChildrenResponses = {
+export type ProjectSessionChildrenResponses = {
 	/**
 	 * List of children
 	 */
 	200: Array<Session>;
 };
 
-export type SessionChildrenResponse =
-	SessionChildrenResponses[keyof SessionChildrenResponses];
+export type ProjectSessionChildrenResponse =
+	ProjectSessionChildrenResponses[keyof ProjectSessionChildrenResponses];
 
-export type SessionTodoData = {
+export type ProjectSessionTodoData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/todo";
+	url: "/project/{projectID}/session/{sessionID}/todo";
 };
 
-export type SessionTodoErrors = {
+export type ProjectSessionTodoErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3541,19 +3575,20 @@ export type SessionTodoErrors = {
 	404: NotFoundError;
 };
 
-export type SessionTodoError = SessionTodoErrors[keyof SessionTodoErrors];
+export type ProjectSessionTodoError =
+	ProjectSessionTodoErrors[keyof ProjectSessionTodoErrors];
 
-export type SessionTodoResponses = {
+export type ProjectSessionTodoResponses = {
 	/**
 	 * Todo list
 	 */
 	200: Array<Todo>;
 };
 
-export type SessionTodoResponse =
-	SessionTodoResponses[keyof SessionTodoResponses];
+export type ProjectSessionTodoResponse =
+	ProjectSessionTodoResponses[keyof ProjectSessionTodoResponses];
 
-export type SessionInitData = {
+export type ProjectSessionInitData = {
 	body?: {
 		modelID: string;
 		providerID: string;
@@ -3561,15 +3596,15 @@ export type SessionInitData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/init";
+	url: "/project/{projectID}/session/{sessionID}/init";
 };
 
-export type SessionInitErrors = {
+export type ProjectSessionInitErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3580,55 +3615,56 @@ export type SessionInitErrors = {
 	404: NotFoundError;
 };
 
-export type SessionInitError = SessionInitErrors[keyof SessionInitErrors];
+export type ProjectSessionInitError =
+	ProjectSessionInitErrors[keyof ProjectSessionInitErrors];
 
-export type SessionInitResponses = {
+export type ProjectSessionInitResponses = {
 	/**
 	 * 200
 	 */
 	200: boolean;
 };
 
-export type SessionInitResponse =
-	SessionInitResponses[keyof SessionInitResponses];
+export type ProjectSessionInitResponse =
+	ProjectSessionInitResponses[keyof ProjectSessionInitResponses];
 
-export type SessionForkData = {
+export type ProjectSessionForkData = {
 	body?: {
 		messageID?: string;
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/fork";
+	url: "/project/{projectID}/session/{sessionID}/fork";
 };
 
-export type SessionForkResponses = {
+export type ProjectSessionForkResponses = {
 	/**
 	 * 200
 	 */
 	200: Session;
 };
 
-export type SessionForkResponse =
-	SessionForkResponses[keyof SessionForkResponses];
+export type ProjectSessionForkResponse =
+	ProjectSessionForkResponses[keyof ProjectSessionForkResponses];
 
-export type SessionAbortData = {
+export type ProjectSessionAbortData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/abort";
+	url: "/project/{projectID}/session/{sessionID}/abort";
 };
 
-export type SessionAbortErrors = {
+export type ProjectSessionAbortErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3639,31 +3675,32 @@ export type SessionAbortErrors = {
 	404: NotFoundError;
 };
 
-export type SessionAbortError = SessionAbortErrors[keyof SessionAbortErrors];
+export type ProjectSessionAbortError =
+	ProjectSessionAbortErrors[keyof ProjectSessionAbortErrors];
 
-export type SessionAbortResponses = {
+export type ProjectSessionAbortResponses = {
 	/**
 	 * Aborted session
 	 */
 	200: boolean;
 };
 
-export type SessionAbortResponse =
-	SessionAbortResponses[keyof SessionAbortResponses];
+export type ProjectSessionAbortResponse =
+	ProjectSessionAbortResponses[keyof ProjectSessionAbortResponses];
 
-export type SessionUnshareData = {
+export type ProjectSessionUnshareData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/share";
+	url: "/project/{projectID}/session/{sessionID}/share";
 };
 
-export type SessionUnshareErrors = {
+export type ProjectSessionUnshareErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3674,32 +3711,32 @@ export type SessionUnshareErrors = {
 	404: NotFoundError;
 };
 
-export type SessionUnshareError =
-	SessionUnshareErrors[keyof SessionUnshareErrors];
+export type ProjectSessionUnshareError =
+	ProjectSessionUnshareErrors[keyof ProjectSessionUnshareErrors];
 
-export type SessionUnshareResponses = {
+export type ProjectSessionUnshareResponses = {
 	/**
 	 * Successfully unshared session
 	 */
 	200: Session;
 };
 
-export type SessionUnshareResponse =
-	SessionUnshareResponses[keyof SessionUnshareResponses];
+export type ProjectSessionUnshareResponse =
+	ProjectSessionUnshareResponses[keyof ProjectSessionUnshareResponses];
 
-export type SessionShareData = {
+export type ProjectSessionShareData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/share";
+	url: "/project/{projectID}/session/{sessionID}/share";
 };
 
-export type SessionShareErrors = {
+export type ProjectSessionShareErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3710,42 +3747,43 @@ export type SessionShareErrors = {
 	404: NotFoundError;
 };
 
-export type SessionShareError = SessionShareErrors[keyof SessionShareErrors];
+export type ProjectSessionShareError =
+	ProjectSessionShareErrors[keyof ProjectSessionShareErrors];
 
-export type SessionShareResponses = {
+export type ProjectSessionShareResponses = {
 	/**
 	 * Successfully shared session
 	 */
 	200: Session;
 };
 
-export type SessionShareResponse =
-	SessionShareResponses[keyof SessionShareResponses];
+export type ProjectSessionShareResponse =
+	ProjectSessionShareResponses[keyof ProjectSessionShareResponses];
 
-export type SessionDiffData = {
+export type ProjectSessionDiffData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 		messageID?: string;
 	};
-	url: "/session/{sessionID}/diff";
+	url: "/project/{projectID}/session/{sessionID}/diff";
 };
 
-export type SessionDiffResponses = {
+export type ProjectSessionDiffResponses = {
 	/**
 	 * Successfully retrieved diff
 	 */
 	200: Array<FileDiff>;
 };
 
-export type SessionDiffResponse =
-	SessionDiffResponses[keyof SessionDiffResponses];
+export type ProjectSessionDiffResponse =
+	ProjectSessionDiffResponses[keyof ProjectSessionDiffResponses];
 
-export type SessionSummarizeData = {
+export type ProjectSessionSummarizeData = {
 	body?: {
 		providerID: string;
 		modelID: string;
@@ -3753,15 +3791,15 @@ export type SessionSummarizeData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/summarize";
+	url: "/project/{projectID}/session/{sessionID}/summarize";
 };
 
-export type SessionSummarizeErrors = {
+export type ProjectSessionSummarizeErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3772,26 +3810,26 @@ export type SessionSummarizeErrors = {
 	404: NotFoundError;
 };
 
-export type SessionSummarizeError =
-	SessionSummarizeErrors[keyof SessionSummarizeErrors];
+export type ProjectSessionSummarizeError =
+	ProjectSessionSummarizeErrors[keyof ProjectSessionSummarizeErrors];
 
-export type SessionSummarizeResponses = {
+export type ProjectSessionSummarizeResponses = {
 	/**
 	 * Summarized session
 	 */
 	200: boolean;
 };
 
-export type SessionSummarizeResponse =
-	SessionSummarizeResponses[keyof SessionSummarizeResponses];
+export type ProjectSessionSummarizeResponse =
+	ProjectSessionSummarizeResponses[keyof ProjectSessionSummarizeResponses];
 
-export type SessionMessagesData = {
+export type ProjectSessionMessagesData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 		/**
 		 * Maximum number of messages to return
@@ -3799,10 +3837,10 @@ export type SessionMessagesData = {
 		limit?: number;
 		before?: string;
 	};
-	url: "/session/{sessionID}/message";
+	url: "/project/{projectID}/session/{sessionID}/message";
 };
 
-export type SessionMessagesErrors = {
+export type ProjectSessionMessagesErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3813,10 +3851,10 @@ export type SessionMessagesErrors = {
 	404: NotFoundError;
 };
 
-export type SessionMessagesError =
-	SessionMessagesErrors[keyof SessionMessagesErrors];
+export type ProjectSessionMessagesError =
+	ProjectSessionMessagesErrors[keyof ProjectSessionMessagesErrors];
 
-export type SessionMessagesResponses = {
+export type ProjectSessionMessagesResponses = {
 	/**
 	 * List of messages
 	 */
@@ -3826,10 +3864,10 @@ export type SessionMessagesResponses = {
 	}>;
 };
 
-export type SessionMessagesResponse =
-	SessionMessagesResponses[keyof SessionMessagesResponses];
+export type ProjectSessionMessagesResponse =
+	ProjectSessionMessagesResponses[keyof ProjectSessionMessagesResponses];
 
-export type SessionPromptData = {
+export type ProjectSessionPromptData = {
 	body?: {
 		messageID?: string;
 		model?: {
@@ -3847,15 +3885,15 @@ export type SessionPromptData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/message";
+	url: "/project/{projectID}/session/{sessionID}/message";
 };
 
-export type SessionPromptErrors = {
+export type ProjectSessionPromptErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3866,9 +3904,10 @@ export type SessionPromptErrors = {
 	404: NotFoundError;
 };
 
-export type SessionPromptError = SessionPromptErrors[keyof SessionPromptErrors];
+export type ProjectSessionPromptError =
+	ProjectSessionPromptErrors[keyof ProjectSessionPromptErrors];
 
-export type SessionPromptResponses = {
+export type ProjectSessionPromptResponses = {
 	/**
 	 * Created message
 	 */
@@ -3878,23 +3917,23 @@ export type SessionPromptResponses = {
 	};
 };
 
-export type SessionPromptResponse =
-	SessionPromptResponses[keyof SessionPromptResponses];
+export type ProjectSessionPromptResponse =
+	ProjectSessionPromptResponses[keyof ProjectSessionPromptResponses];
 
-export type SessionDeleteMessageData = {
+export type ProjectSessionDeleteMessageData = {
 	body?: never;
 	path: {
 		sessionID: string;
 		messageID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/message/{messageID}";
+	url: "/project/{projectID}/session/{sessionID}/message/{messageID}";
 };
 
-export type SessionDeleteMessageErrors = {
+export type ProjectSessionDeleteMessageErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3905,33 +3944,33 @@ export type SessionDeleteMessageErrors = {
 	404: NotFoundError;
 };
 
-export type SessionDeleteMessageError =
-	SessionDeleteMessageErrors[keyof SessionDeleteMessageErrors];
+export type ProjectSessionDeleteMessageError =
+	ProjectSessionDeleteMessageErrors[keyof ProjectSessionDeleteMessageErrors];
 
-export type SessionDeleteMessageResponses = {
+export type ProjectSessionDeleteMessageResponses = {
 	/**
 	 * Successfully deleted message
 	 */
 	200: boolean;
 };
 
-export type SessionDeleteMessageResponse =
-	SessionDeleteMessageResponses[keyof SessionDeleteMessageResponses];
+export type ProjectSessionDeleteMessageResponse =
+	ProjectSessionDeleteMessageResponses[keyof ProjectSessionDeleteMessageResponses];
 
-export type SessionMessageData = {
+export type ProjectSessionMessageData = {
 	body?: never;
 	path: {
 		sessionID: string;
 		messageID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/message/{messageID}";
+	url: "/project/{projectID}/session/{sessionID}/message/{messageID}";
 };
 
-export type SessionMessageErrors = {
+export type ProjectSessionMessageErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3942,10 +3981,10 @@ export type SessionMessageErrors = {
 	404: NotFoundError;
 };
 
-export type SessionMessageError =
-	SessionMessageErrors[keyof SessionMessageErrors];
+export type ProjectSessionMessageError =
+	ProjectSessionMessageErrors[keyof ProjectSessionMessageErrors];
 
-export type SessionMessageResponses = {
+export type ProjectSessionMessageResponses = {
 	/**
 	 * Message
 	 */
@@ -3955,24 +3994,24 @@ export type SessionMessageResponses = {
 	};
 };
 
-export type SessionMessageResponse =
-	SessionMessageResponses[keyof SessionMessageResponses];
+export type ProjectSessionMessageResponse =
+	ProjectSessionMessageResponses[keyof ProjectSessionMessageResponses];
 
-export type PartDeleteData = {
+export type ProjectPartDeleteData = {
 	body?: never;
 	path: {
 		sessionID: string;
 		messageID: string;
 		partID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/message/{messageID}/part/{partID}";
+	url: "/project/{projectID}/session/{sessionID}/message/{messageID}/part/{partID}";
 };
 
-export type PartDeleteErrors = {
+export type ProjectPartDeleteErrors = {
 	/**
 	 * Bad request
 	 */
@@ -3983,32 +4022,34 @@ export type PartDeleteErrors = {
 	404: NotFoundError;
 };
 
-export type PartDeleteError = PartDeleteErrors[keyof PartDeleteErrors];
+export type ProjectPartDeleteError =
+	ProjectPartDeleteErrors[keyof ProjectPartDeleteErrors];
 
-export type PartDeleteResponses = {
+export type ProjectPartDeleteResponses = {
 	/**
 	 * Successfully deleted part
 	 */
 	200: boolean;
 };
 
-export type PartDeleteResponse = PartDeleteResponses[keyof PartDeleteResponses];
+export type ProjectPartDeleteResponse =
+	ProjectPartDeleteResponses[keyof ProjectPartDeleteResponses];
 
-export type PartUpdateData = {
+export type ProjectPartUpdateData = {
 	body?: Part;
 	path: {
 		sessionID: string;
 		messageID: string;
 		partID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/message/{messageID}/part/{partID}";
+	url: "/project/{projectID}/session/{sessionID}/message/{messageID}/part/{partID}";
 };
 
-export type PartUpdateErrors = {
+export type ProjectPartUpdateErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4019,18 +4060,20 @@ export type PartUpdateErrors = {
 	404: NotFoundError;
 };
 
-export type PartUpdateError = PartUpdateErrors[keyof PartUpdateErrors];
+export type ProjectPartUpdateError =
+	ProjectPartUpdateErrors[keyof ProjectPartUpdateErrors];
 
-export type PartUpdateResponses = {
+export type ProjectPartUpdateResponses = {
 	/**
 	 * Successfully updated part
 	 */
 	200: Part;
 };
 
-export type PartUpdateResponse = PartUpdateResponses[keyof PartUpdateResponses];
+export type ProjectPartUpdateResponse =
+	ProjectPartUpdateResponses[keyof ProjectPartUpdateResponses];
 
-export type SessionPromptAsyncData = {
+export type ProjectSessionPromptAsyncData = {
 	body?: {
 		messageID?: string;
 		model?: {
@@ -4048,15 +4091,15 @@ export type SessionPromptAsyncData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/prompt_async";
+	url: "/project/{projectID}/session/{sessionID}/prompt_async";
 };
 
-export type SessionPromptAsyncErrors = {
+export type ProjectSessionPromptAsyncErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4067,20 +4110,20 @@ export type SessionPromptAsyncErrors = {
 	404: NotFoundError;
 };
 
-export type SessionPromptAsyncError =
-	SessionPromptAsyncErrors[keyof SessionPromptAsyncErrors];
+export type ProjectSessionPromptAsyncError =
+	ProjectSessionPromptAsyncErrors[keyof ProjectSessionPromptAsyncErrors];
 
-export type SessionPromptAsyncResponses = {
+export type ProjectSessionPromptAsyncResponses = {
 	/**
 	 * Prompt accepted
 	 */
 	204: void;
 };
 
-export type SessionPromptAsyncResponse =
-	SessionPromptAsyncResponses[keyof SessionPromptAsyncResponses];
+export type ProjectSessionPromptAsyncResponse =
+	ProjectSessionPromptAsyncResponses[keyof ProjectSessionPromptAsyncResponses];
 
-export type SessionCommandData = {
+export type ProjectSessionCommandData = {
 	body?: {
 		messageID?: string;
 		agent?: string;
@@ -4099,15 +4142,15 @@ export type SessionCommandData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/command";
+	url: "/project/{projectID}/session/{sessionID}/command";
 };
 
-export type SessionCommandErrors = {
+export type ProjectSessionCommandErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4118,10 +4161,10 @@ export type SessionCommandErrors = {
 	404: NotFoundError;
 };
 
-export type SessionCommandError =
-	SessionCommandErrors[keyof SessionCommandErrors];
+export type ProjectSessionCommandError =
+	ProjectSessionCommandErrors[keyof ProjectSessionCommandErrors];
 
-export type SessionCommandResponses = {
+export type ProjectSessionCommandResponses = {
 	/**
 	 * Created message
 	 */
@@ -4131,10 +4174,10 @@ export type SessionCommandResponses = {
 	};
 };
 
-export type SessionCommandResponse =
-	SessionCommandResponses[keyof SessionCommandResponses];
+export type ProjectSessionCommandResponse =
+	ProjectSessionCommandResponses[keyof ProjectSessionCommandResponses];
 
-export type SessionShellData = {
+export type ProjectSessionShellData = {
 	body?: {
 		agent: string;
 		model?: {
@@ -4145,15 +4188,15 @@ export type SessionShellData = {
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/shell";
+	url: "/project/{projectID}/session/{sessionID}/shell";
 };
 
-export type SessionShellErrors = {
+export type ProjectSessionShellErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4164,34 +4207,35 @@ export type SessionShellErrors = {
 	404: NotFoundError;
 };
 
-export type SessionShellError = SessionShellErrors[keyof SessionShellErrors];
+export type ProjectSessionShellError =
+	ProjectSessionShellErrors[keyof ProjectSessionShellErrors];
 
-export type SessionShellResponses = {
+export type ProjectSessionShellResponses = {
 	/**
 	 * Created message
 	 */
 	200: AssistantMessage;
 };
 
-export type SessionShellResponse =
-	SessionShellResponses[keyof SessionShellResponses];
+export type ProjectSessionShellResponse =
+	ProjectSessionShellResponses[keyof ProjectSessionShellResponses];
 
-export type SessionRevertData = {
+export type ProjectSessionRevertData = {
 	body?: {
 		messageID: string;
 		partID?: string;
 	};
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/revert";
+	url: "/project/{projectID}/session/{sessionID}/revert";
 };
 
-export type SessionRevertErrors = {
+export type ProjectSessionRevertErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4202,31 +4246,32 @@ export type SessionRevertErrors = {
 	404: NotFoundError;
 };
 
-export type SessionRevertError = SessionRevertErrors[keyof SessionRevertErrors];
+export type ProjectSessionRevertError =
+	ProjectSessionRevertErrors[keyof ProjectSessionRevertErrors];
 
-export type SessionRevertResponses = {
+export type ProjectSessionRevertResponses = {
 	/**
 	 * Updated session
 	 */
 	200: Session;
 };
 
-export type SessionRevertResponse =
-	SessionRevertResponses[keyof SessionRevertResponses];
+export type ProjectSessionRevertResponse =
+	ProjectSessionRevertResponses[keyof ProjectSessionRevertResponses];
 
-export type SessionUnrevertData = {
+export type ProjectSessionUnrevertData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/unrevert";
+	url: "/project/{projectID}/session/{sessionID}/unrevert";
 };
 
-export type SessionUnrevertErrors = {
+export type ProjectSessionUnrevertErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4237,35 +4282,35 @@ export type SessionUnrevertErrors = {
 	404: NotFoundError;
 };
 
-export type SessionUnrevertError =
-	SessionUnrevertErrors[keyof SessionUnrevertErrors];
+export type ProjectSessionUnrevertError =
+	ProjectSessionUnrevertErrors[keyof ProjectSessionUnrevertErrors];
 
-export type SessionUnrevertResponses = {
+export type ProjectSessionUnrevertResponses = {
 	/**
 	 * Updated session
 	 */
 	200: Session;
 };
 
-export type SessionUnrevertResponse =
-	SessionUnrevertResponses[keyof SessionUnrevertResponses];
+export type ProjectSessionUnrevertResponse =
+	ProjectSessionUnrevertResponses[keyof ProjectSessionUnrevertResponses];
 
-export type PermissionRespondData = {
+export type ProjectPermissionRespondData = {
 	body?: {
 		response: "once" | "always" | "reject";
 	};
 	path: {
 		sessionID: string;
 		permissionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/permissions/{permissionID}";
+	url: "/project/{projectID}/session/{sessionID}/permissions/{permissionID}";
 };
 
-export type PermissionRespondErrors = {
+export type ProjectPermissionRespondErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4276,56 +4321,56 @@ export type PermissionRespondErrors = {
 	404: NotFoundError;
 };
 
-export type PermissionRespondError =
-	PermissionRespondErrors[keyof PermissionRespondErrors];
+export type ProjectPermissionRespondError =
+	ProjectPermissionRespondErrors[keyof ProjectPermissionRespondErrors];
 
-export type PermissionRespondResponses = {
+export type ProjectPermissionRespondResponses = {
 	/**
 	 * Permission processed successfully
 	 */
 	200: boolean;
 };
 
-export type PermissionRespondResponse =
-	PermissionRespondResponses[keyof PermissionRespondResponses];
+export type ProjectPermissionRespondResponse =
+	ProjectPermissionRespondResponses[keyof ProjectPermissionRespondResponses];
 
-export type SessionTraceListData = {
+export type ProjectSessionTraceListData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 		deep?: boolean;
 	};
-	url: "/session/{sessionID}/trace";
+	url: "/project/{projectID}/session/{sessionID}/trace";
 };
 
-export type SessionTraceListResponses = {
+export type ProjectSessionTraceListResponses = {
 	/**
 	 * List of traces
 	 */
 	200: Array<Trace>;
 };
 
-export type SessionTraceListResponse =
-	SessionTraceListResponses[keyof SessionTraceListResponses];
+export type ProjectSessionTraceListResponse =
+	ProjectSessionTraceListResponses[keyof ProjectSessionTraceListResponses];
 
-export type SessionTraceSearchData = {
+export type ProjectSessionTraceSearchData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		q: string;
 	};
-	url: "/session/{sessionID}/trace/search";
+	url: "/project/{projectID}/session/{sessionID}/trace/search";
 };
 
-export type SessionTraceSearchResponses = {
+export type ProjectSessionTraceSearchResponses = {
 	/**
 	 * Matching trace IDs
 	 */
@@ -4334,75 +4379,75 @@ export type SessionTraceSearchResponses = {
 	};
 };
 
-export type SessionTraceSearchResponse =
-	SessionTraceSearchResponses[keyof SessionTraceSearchResponses];
+export type ProjectSessionTraceSearchResponse =
+	ProjectSessionTraceSearchResponses[keyof ProjectSessionTraceSearchResponses];
 
-export type SessionTraceExportData = {
+export type ProjectSessionTraceExportData = {
 	body?: never;
 	path: {
 		sessionID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 		format?: "json" | "md";
 	};
-	url: "/session/{sessionID}/trace/export";
+	url: "/project/{projectID}/session/{sessionID}/trace/export";
 };
 
-export type SessionTraceExportResponses = {
+export type ProjectSessionTraceExportResponses = {
 	/**
 	 * Exported trace data
 	 */
 	200: unknown;
 };
 
-export type SessionTraceGetData = {
+export type ProjectSessionTraceGetData = {
 	body?: never;
 	path: {
 		sessionID: string;
 		traceID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/session/{sessionID}/trace/{traceID}";
+	url: "/project/{projectID}/session/{sessionID}/trace/{traceID}";
 };
 
-export type SessionTraceGetErrors = {
+export type ProjectSessionTraceGetErrors = {
 	/**
 	 * Trace not found
 	 */
 	404: unknown;
 };
 
-export type SessionTraceGetResponses = {
+export type ProjectSessionTraceGetResponses = {
 	/**
 	 * Trace detail
 	 */
 	200: TraceDetail;
 };
 
-export type SessionTraceGetResponse =
-	SessionTraceGetResponses[keyof SessionTraceGetResponses];
+export type ProjectSessionTraceGetResponse =
+	ProjectSessionTraceGetResponses[keyof ProjectSessionTraceGetResponses];
 
-export type PermissionReplyData = {
+export type ProjectPermissionReplyData = {
 	body?: {
 		reply: "once" | "always" | "reject";
 		message?: string;
 	};
 	path: {
 		requestID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/permission/{requestID}/reply";
+	url: "/project/{projectID}/permission/{requestID}/reply";
 };
 
-export type PermissionReplyErrors = {
+export type ProjectPermissionReplyErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4413,60 +4458,62 @@ export type PermissionReplyErrors = {
 	404: NotFoundError;
 };
 
-export type PermissionReplyError =
-	PermissionReplyErrors[keyof PermissionReplyErrors];
+export type ProjectPermissionReplyError =
+	ProjectPermissionReplyErrors[keyof ProjectPermissionReplyErrors];
 
-export type PermissionReplyResponses = {
+export type ProjectPermissionReplyResponses = {
 	/**
 	 * Permission processed successfully
 	 */
 	200: boolean;
 };
 
-export type PermissionReplyResponse =
-	PermissionReplyResponses[keyof PermissionReplyResponses];
+export type ProjectPermissionReplyResponse =
+	ProjectPermissionReplyResponses[keyof ProjectPermissionReplyResponses];
 
-export type PermissionListData = {
+export type ProjectPermissionListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/permission";
+	url: "/project/{projectID}/permission";
 };
 
-export type PermissionListResponses = {
+export type ProjectPermissionListResponses = {
 	/**
 	 * List of pending permissions
 	 */
 	200: Array<PermissionRequest>;
 };
 
-export type PermissionListResponse =
-	PermissionListResponses[keyof PermissionListResponses];
+export type ProjectPermissionListResponse =
+	ProjectPermissionListResponses[keyof ProjectPermissionListResponses];
 
-export type QuestionListData = {
+export type ProjectQuestionListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/question";
+	url: "/project/{projectID}/question";
 };
 
-export type QuestionListResponses = {
+export type ProjectQuestionListResponses = {
 	/**
 	 * List of pending questions
 	 */
 	200: Array<QuestionRequest>;
 };
 
-export type QuestionListResponse =
-	QuestionListResponses[keyof QuestionListResponses];
+export type ProjectQuestionListResponse =
+	ProjectQuestionListResponses[keyof ProjectQuestionListResponses];
 
-export type QuestionReplyData = {
+export type ProjectQuestionReplyData = {
 	body?: {
 		/**
 		 * User answers in order of questions (each answer is an array of selected labels)
@@ -4475,15 +4522,15 @@ export type QuestionReplyData = {
 	};
 	path: {
 		requestID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/question/{requestID}/reply";
+	url: "/project/{projectID}/question/{requestID}/reply";
 };
 
-export type QuestionReplyErrors = {
+export type ProjectQuestionReplyErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4494,31 +4541,32 @@ export type QuestionReplyErrors = {
 	404: NotFoundError;
 };
 
-export type QuestionReplyError = QuestionReplyErrors[keyof QuestionReplyErrors];
+export type ProjectQuestionReplyError =
+	ProjectQuestionReplyErrors[keyof ProjectQuestionReplyErrors];
 
-export type QuestionReplyResponses = {
+export type ProjectQuestionReplyResponses = {
 	/**
 	 * Question answered successfully
 	 */
 	200: boolean;
 };
 
-export type QuestionReplyResponse =
-	QuestionReplyResponses[keyof QuestionReplyResponses];
+export type ProjectQuestionReplyResponse =
+	ProjectQuestionReplyResponses[keyof ProjectQuestionReplyResponses];
 
-export type QuestionRejectData = {
+export type ProjectQuestionRejectData = {
 	body?: never;
 	path: {
 		requestID: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/question/{requestID}/reject";
+	url: "/project/{projectID}/question/{requestID}/reject";
 };
 
-export type QuestionRejectErrors = {
+export type ProjectQuestionRejectErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4529,31 +4577,32 @@ export type QuestionRejectErrors = {
 	404: NotFoundError;
 };
 
-export type QuestionRejectError =
-	QuestionRejectErrors[keyof QuestionRejectErrors];
+export type ProjectQuestionRejectError =
+	ProjectQuestionRejectErrors[keyof ProjectQuestionRejectErrors];
 
-export type QuestionRejectResponses = {
+export type ProjectQuestionRejectResponses = {
 	/**
 	 * Question rejected successfully
 	 */
 	200: boolean;
 };
 
-export type QuestionRejectResponse =
-	QuestionRejectResponses[keyof QuestionRejectResponses];
+export type ProjectQuestionRejectResponse =
+	ProjectQuestionRejectResponses[keyof ProjectQuestionRejectResponses];
 
-export type FindTextData = {
+export type ProjectFindTextData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		pattern: string;
 	};
-	url: "/find";
+	url: "/project/{projectID}/find";
 };
 
-export type FindTextResponses = {
+export type ProjectFindTextResponses = {
 	/**
 	 * Matches
 	 */
@@ -4576,122 +4625,133 @@ export type FindTextResponses = {
 	}>;
 };
 
-export type FindTextResponse = FindTextResponses[keyof FindTextResponses];
+export type ProjectFindTextResponse =
+	ProjectFindTextResponses[keyof ProjectFindTextResponses];
 
-export type FindFilesData = {
+export type ProjectFindFilesData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		query: string;
 		dirs?: "true" | "false";
 		type?: "file" | "directory";
 		limit?: number;
 	};
-	url: "/find/file";
+	url: "/project/{projectID}/find/file";
 };
 
-export type FindFilesResponses = {
+export type ProjectFindFilesResponses = {
 	/**
 	 * File paths
 	 */
 	200: Array<string>;
 };
 
-export type FindFilesResponse = FindFilesResponses[keyof FindFilesResponses];
+export type ProjectFindFilesResponse =
+	ProjectFindFilesResponses[keyof ProjectFindFilesResponses];
 
-export type FindSymbolsData = {
+export type ProjectFindSymbolsData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		query: string;
 	};
-	url: "/find/symbol";
+	url: "/project/{projectID}/find/symbol";
 };
 
-export type FindSymbolsResponses = {
+export type ProjectFindSymbolsResponses = {
 	/**
 	 * Symbols
 	 */
 	200: Array<Symbol>;
 };
 
-export type FindSymbolsResponse =
-	FindSymbolsResponses[keyof FindSymbolsResponses];
+export type ProjectFindSymbolsResponse =
+	ProjectFindSymbolsResponses[keyof ProjectFindSymbolsResponses];
 
-export type FileListData = {
+export type ProjectFileListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		path: string;
 	};
-	url: "/file";
+	url: "/project/{projectID}/file";
 };
 
-export type FileListResponses = {
+export type ProjectFileListResponses = {
 	/**
 	 * Files and directories
 	 */
 	200: Array<FileNode>;
 };
 
-export type FileListResponse = FileListResponses[keyof FileListResponses];
+export type ProjectFileListResponse =
+	ProjectFileListResponses[keyof ProjectFileListResponses];
 
-export type FileReadData = {
+export type ProjectFileReadData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query: {
-		directory?: string;
 		workspace?: string;
 		path: string;
 	};
-	url: "/file/content";
+	url: "/project/{projectID}/file/content";
 };
 
-export type FileReadResponses = {
+export type ProjectFileReadResponses = {
 	/**
 	 * File content
 	 */
 	200: FileContent;
 };
 
-export type FileReadResponse = FileReadResponses[keyof FileReadResponses];
+export type ProjectFileReadResponse =
+	ProjectFileReadResponses[keyof ProjectFileReadResponses];
 
-export type FileStatusData = {
+export type ProjectFileStatusData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/file/status";
+	url: "/project/{projectID}/file/status";
 };
 
-export type FileStatusResponses = {
+export type ProjectFileStatusResponses = {
 	/**
 	 * File status
 	 */
 	200: Array<File>;
 };
 
-export type FileStatusResponse = FileStatusResponses[keyof FileStatusResponses];
+export type ProjectFileStatusResponse =
+	ProjectFileStatusResponses[keyof ProjectFileStatusResponses];
 
-export type McpStatusData = {
+export type ProjectMcpStatusData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp";
+	url: "/project/{projectID}/mcp";
 };
 
-export type McpStatusResponses = {
+export type ProjectMcpStatusResponses = {
 	/**
 	 * MCP server status
 	 */
@@ -4700,31 +4760,33 @@ export type McpStatusResponses = {
 	};
 };
 
-export type McpStatusResponse = McpStatusResponses[keyof McpStatusResponses];
+export type ProjectMcpStatusResponse =
+	ProjectMcpStatusResponses[keyof ProjectMcpStatusResponses];
 
-export type McpAddData = {
+export type ProjectMcpAddData = {
 	body?: {
 		name: string;
 		config: McpLocalConfig | McpRemoteConfig;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp";
+	url: "/project/{projectID}/mcp";
 };
 
-export type McpAddErrors = {
+export type ProjectMcpAddErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type McpAddError = McpAddErrors[keyof McpAddErrors];
+export type ProjectMcpAddError = ProjectMcpAddErrors[keyof ProjectMcpAddErrors];
 
-export type McpAddResponses = {
+export type ProjectMcpAddResponses = {
 	/**
 	 * MCP server added successfully
 	 */
@@ -4733,19 +4795,21 @@ export type McpAddResponses = {
 	};
 };
 
-export type McpAddResponse = McpAddResponses[keyof McpAddResponses];
+export type ProjectMcpAddResponse =
+	ProjectMcpAddResponses[keyof ProjectMcpAddResponses];
 
-export type McpToolsData = {
+export type ProjectMcpToolsData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/tools";
+	url: "/project/{projectID}/mcp/tools";
 };
 
-export type McpToolsResponses = {
+export type ProjectMcpToolsResponses = {
 	/**
 	 * Tool names per server
 	 */
@@ -4754,30 +4818,32 @@ export type McpToolsResponses = {
 	};
 };
 
-export type McpToolsResponse = McpToolsResponses[keyof McpToolsResponses];
+export type ProjectMcpToolsResponse =
+	ProjectMcpToolsResponses[keyof ProjectMcpToolsResponses];
 
-export type McpAuthRemoveData = {
+export type ProjectMcpAuthRemoveData = {
 	body?: never;
 	path: {
+		projectID: string;
 		name: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/{name}/auth";
+	url: "/project/{projectID}/mcp/{name}/auth";
 };
 
-export type McpAuthRemoveErrors = {
+export type ProjectMcpAuthRemoveErrors = {
 	/**
 	 * Not found
 	 */
 	404: NotFoundError;
 };
 
-export type McpAuthRemoveError = McpAuthRemoveErrors[keyof McpAuthRemoveErrors];
+export type ProjectMcpAuthRemoveError =
+	ProjectMcpAuthRemoveErrors[keyof ProjectMcpAuthRemoveErrors];
 
-export type McpAuthRemoveResponses = {
+export type ProjectMcpAuthRemoveResponses = {
 	/**
 	 * OAuth credentials removed
 	 */
@@ -4786,22 +4852,22 @@ export type McpAuthRemoveResponses = {
 	};
 };
 
-export type McpAuthRemoveResponse =
-	McpAuthRemoveResponses[keyof McpAuthRemoveResponses];
+export type ProjectMcpAuthRemoveResponse =
+	ProjectMcpAuthRemoveResponses[keyof ProjectMcpAuthRemoveResponses];
 
-export type McpAuthStartData = {
+export type ProjectMcpAuthStartData = {
 	body?: never;
 	path: {
+		projectID: string;
 		name: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/{name}/auth";
+	url: "/project/{projectID}/mcp/{name}/auth";
 };
 
-export type McpAuthStartErrors = {
+export type ProjectMcpAuthStartErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4812,9 +4878,10 @@ export type McpAuthStartErrors = {
 	404: NotFoundError;
 };
 
-export type McpAuthStartError = McpAuthStartErrors[keyof McpAuthStartErrors];
+export type ProjectMcpAuthStartError =
+	ProjectMcpAuthStartErrors[keyof ProjectMcpAuthStartErrors];
 
-export type McpAuthStartResponses = {
+export type ProjectMcpAuthStartResponses = {
 	/**
 	 * OAuth flow started
 	 */
@@ -4826,10 +4893,10 @@ export type McpAuthStartResponses = {
 	};
 };
 
-export type McpAuthStartResponse =
-	McpAuthStartResponses[keyof McpAuthStartResponses];
+export type ProjectMcpAuthStartResponse =
+	ProjectMcpAuthStartResponses[keyof ProjectMcpAuthStartResponses];
 
-export type McpAuthCallbackData = {
+export type ProjectMcpAuthCallbackData = {
 	body?: {
 		/**
 		 * Authorization code from OAuth callback
@@ -4837,16 +4904,16 @@ export type McpAuthCallbackData = {
 		code: string;
 	};
 	path: {
+		projectID: string;
 		name: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/{name}/auth/callback";
+	url: "/project/{projectID}/mcp/{name}/auth/callback";
 };
 
-export type McpAuthCallbackErrors = {
+export type ProjectMcpAuthCallbackErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4857,32 +4924,32 @@ export type McpAuthCallbackErrors = {
 	404: NotFoundError;
 };
 
-export type McpAuthCallbackError =
-	McpAuthCallbackErrors[keyof McpAuthCallbackErrors];
+export type ProjectMcpAuthCallbackError =
+	ProjectMcpAuthCallbackErrors[keyof ProjectMcpAuthCallbackErrors];
 
-export type McpAuthCallbackResponses = {
+export type ProjectMcpAuthCallbackResponses = {
 	/**
 	 * OAuth authentication completed
 	 */
 	200: McpStatus;
 };
 
-export type McpAuthCallbackResponse =
-	McpAuthCallbackResponses[keyof McpAuthCallbackResponses];
+export type ProjectMcpAuthCallbackResponse =
+	ProjectMcpAuthCallbackResponses[keyof ProjectMcpAuthCallbackResponses];
 
-export type McpAuthAuthenticateData = {
+export type ProjectMcpAuthAuthenticateData = {
 	body?: never;
 	path: {
+		projectID: string;
 		name: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/{name}/auth/authenticate";
+	url: "/project/{projectID}/mcp/{name}/auth/authenticate";
 };
 
-export type McpAuthAuthenticateErrors = {
+export type ProjectMcpAuthAuthenticateErrors = {
 	/**
 	 * Bad request
 	 */
@@ -4893,73 +4960,75 @@ export type McpAuthAuthenticateErrors = {
 	404: NotFoundError;
 };
 
-export type McpAuthAuthenticateError =
-	McpAuthAuthenticateErrors[keyof McpAuthAuthenticateErrors];
+export type ProjectMcpAuthAuthenticateError =
+	ProjectMcpAuthAuthenticateErrors[keyof ProjectMcpAuthAuthenticateErrors];
 
-export type McpAuthAuthenticateResponses = {
+export type ProjectMcpAuthAuthenticateResponses = {
 	/**
 	 * OAuth authentication completed
 	 */
 	200: McpStatus;
 };
 
-export type McpAuthAuthenticateResponse =
-	McpAuthAuthenticateResponses[keyof McpAuthAuthenticateResponses];
+export type ProjectMcpAuthAuthenticateResponse =
+	ProjectMcpAuthAuthenticateResponses[keyof ProjectMcpAuthAuthenticateResponses];
 
-export type McpConnectData = {
+export type ProjectMcpConnectData = {
 	body?: never;
 	path: {
 		name: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/{name}/connect";
+	url: "/project/{projectID}/mcp/{name}/connect";
 };
 
-export type McpConnectResponses = {
+export type ProjectMcpConnectResponses = {
 	/**
 	 * MCP server connected successfully
 	 */
 	200: boolean;
 };
 
-export type McpConnectResponse = McpConnectResponses[keyof McpConnectResponses];
+export type ProjectMcpConnectResponse =
+	ProjectMcpConnectResponses[keyof ProjectMcpConnectResponses];
 
-export type McpDisconnectData = {
+export type ProjectMcpDisconnectData = {
 	body?: never;
 	path: {
 		name: string;
+		projectID: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/mcp/{name}/disconnect";
+	url: "/project/{projectID}/mcp/{name}/disconnect";
 };
 
-export type McpDisconnectResponses = {
+export type ProjectMcpDisconnectResponses = {
 	/**
 	 * MCP server disconnected successfully
 	 */
 	200: boolean;
 };
 
-export type McpDisconnectResponse =
-	McpDisconnectResponses[keyof McpDisconnectResponses];
+export type ProjectMcpDisconnectResponse =
+	ProjectMcpDisconnectResponses[keyof ProjectMcpDisconnectResponses];
 
-export type PluginListData = {
+export type ProjectPluginListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin";
+	url: "/project/{projectID}/plugin";
 };
 
-export type PluginListResponses = {
+export type ProjectPluginListResponses = {
 	/**
 	 * List of installed plugins
 	 */
@@ -4973,85 +5042,87 @@ export type PluginListResponses = {
 	}>;
 };
 
-export type PluginListResponse = PluginListResponses[keyof PluginListResponses];
+export type ProjectPluginListResponse =
+	ProjectPluginListResponses[keyof ProjectPluginListResponses];
 
-export type PluginEnableData = {
+export type ProjectPluginEnableData = {
 	body?: never;
 	path: {
+		projectID: string;
 		id: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/{id}/enable";
+	url: "/project/{projectID}/plugin/{id}/enable";
 };
 
-export type PluginEnableResponses = {
+export type ProjectPluginEnableResponses = {
 	/**
 	 * Plugin enabled
 	 */
 	200: boolean;
 };
 
-export type PluginEnableResponse =
-	PluginEnableResponses[keyof PluginEnableResponses];
+export type ProjectPluginEnableResponse =
+	ProjectPluginEnableResponses[keyof ProjectPluginEnableResponses];
 
-export type PluginDisableData = {
+export type ProjectPluginDisableData = {
 	body?: never;
 	path: {
+		projectID: string;
 		id: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/{id}/disable";
+	url: "/project/{projectID}/plugin/{id}/disable";
 };
 
-export type PluginDisableResponses = {
+export type ProjectPluginDisableResponses = {
 	/**
 	 * Plugin disabled
 	 */
 	200: boolean;
 };
 
-export type PluginDisableResponse =
-	PluginDisableResponses[keyof PluginDisableResponses];
+export type ProjectPluginDisableResponse =
+	ProjectPluginDisableResponses[keyof ProjectPluginDisableResponses];
 
-export type PluginUninstallData = {
+export type ProjectPluginUninstallData = {
 	body?: never;
 	path: {
+		projectID: string;
 		id: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/{id}";
+	url: "/project/{projectID}/plugin/{id}";
 };
 
-export type PluginUninstallResponses = {
+export type ProjectPluginUninstallResponses = {
 	/**
 	 * Plugin uninstalled
 	 */
 	200: boolean;
 };
 
-export type PluginUninstallResponse =
-	PluginUninstallResponses[keyof PluginUninstallResponses];
+export type ProjectPluginUninstallResponse =
+	ProjectPluginUninstallResponses[keyof ProjectPluginUninstallResponses];
 
-export type PluginMarketplaceListData = {
+export type ProjectPluginMarketplaceListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/marketplace";
+	url: "/project/{projectID}/plugin/marketplace";
 };
 
-export type PluginMarketplaceListResponses = {
+export type ProjectPluginMarketplaceListResponses = {
 	/**
 	 * Known marketplaces
 	 */
@@ -5071,22 +5142,23 @@ export type PluginMarketplaceListResponses = {
 	}>;
 };
 
-export type PluginMarketplaceListResponse =
-	PluginMarketplaceListResponses[keyof PluginMarketplaceListResponses];
+export type ProjectPluginMarketplaceListResponse =
+	ProjectPluginMarketplaceListResponses[keyof ProjectPluginMarketplaceListResponses];
 
-export type PluginMarketplaceAddData = {
+export type ProjectPluginMarketplaceAddData = {
 	body?: {
 		source: string;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/marketplace";
+	url: "/project/{projectID}/plugin/marketplace";
 };
 
-export type PluginMarketplaceAddResponses = {
+export type ProjectPluginMarketplaceAddResponses = {
 	/**
 	 * Marketplace added
 	 */
@@ -5096,44 +5168,44 @@ export type PluginMarketplaceAddResponses = {
 	};
 };
 
-export type PluginMarketplaceAddResponse =
-	PluginMarketplaceAddResponses[keyof PluginMarketplaceAddResponses];
+export type ProjectPluginMarketplaceAddResponse =
+	ProjectPluginMarketplaceAddResponses[keyof ProjectPluginMarketplaceAddResponses];
 
-export type PluginMarketplaceRemoveData = {
+export type ProjectPluginMarketplaceRemoveData = {
 	body?: never;
 	path: {
+		projectID: string;
 		name: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/marketplace/{name}";
+	url: "/project/{projectID}/plugin/marketplace/{name}";
 };
 
-export type PluginMarketplaceRemoveResponses = {
+export type ProjectPluginMarketplaceRemoveResponses = {
 	/**
 	 * Marketplace removed
 	 */
 	200: boolean;
 };
 
-export type PluginMarketplaceRemoveResponse =
-	PluginMarketplaceRemoveResponses[keyof PluginMarketplaceRemoveResponses];
+export type ProjectPluginMarketplaceRemoveResponse =
+	ProjectPluginMarketplaceRemoveResponses[keyof ProjectPluginMarketplaceRemoveResponses];
 
-export type PluginMarketplacePluginsData = {
+export type ProjectPluginMarketplacePluginsData = {
 	body?: never;
 	path: {
+		projectID: string;
 		name: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/marketplace/{name}/plugins";
+	url: "/project/{projectID}/plugin/marketplace/{name}/plugins";
 };
 
-export type PluginMarketplacePluginsResponses = {
+export type ProjectPluginMarketplacePluginsResponses = {
 	/**
 	 * Plugins in marketplace
 	 */
@@ -5146,217 +5218,225 @@ export type PluginMarketplacePluginsResponses = {
 	}>;
 };
 
-export type PluginMarketplacePluginsResponse =
-	PluginMarketplacePluginsResponses[keyof PluginMarketplacePluginsResponses];
+export type ProjectPluginMarketplacePluginsResponse =
+	ProjectPluginMarketplacePluginsResponses[keyof ProjectPluginMarketplacePluginsResponses];
 
-export type PluginMarketplaceInstallData = {
+export type ProjectPluginMarketplaceInstallData = {
 	body?: never;
 	path: {
+		projectID: string;
 		name: string;
 		plugin: string;
 	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/plugin/marketplace/{name}/install/{plugin}";
+	url: "/project/{projectID}/plugin/marketplace/{name}/install/{plugin}";
 };
 
-export type PluginMarketplaceInstallResponses = {
+export type ProjectPluginMarketplaceInstallResponses = {
 	/**
 	 * Plugin installed
 	 */
 	200: boolean;
 };
 
-export type PluginMarketplaceInstallResponse =
-	PluginMarketplaceInstallResponses[keyof PluginMarketplaceInstallResponses];
+export type ProjectPluginMarketplaceInstallResponse =
+	ProjectPluginMarketplaceInstallResponses[keyof ProjectPluginMarketplaceInstallResponses];
 
-export type TuiAppendPromptData = {
+export type ProjectTuiAppendPromptData = {
 	body?: {
 		text: string;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/append-prompt";
+	url: "/project/{projectID}/tui/append-prompt";
 };
 
-export type TuiAppendPromptErrors = {
+export type ProjectTuiAppendPromptErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type TuiAppendPromptError =
-	TuiAppendPromptErrors[keyof TuiAppendPromptErrors];
+export type ProjectTuiAppendPromptError =
+	ProjectTuiAppendPromptErrors[keyof ProjectTuiAppendPromptErrors];
 
-export type TuiAppendPromptResponses = {
+export type ProjectTuiAppendPromptResponses = {
 	/**
 	 * Prompt processed successfully
 	 */
 	200: boolean;
 };
 
-export type TuiAppendPromptResponse =
-	TuiAppendPromptResponses[keyof TuiAppendPromptResponses];
+export type ProjectTuiAppendPromptResponse =
+	ProjectTuiAppendPromptResponses[keyof ProjectTuiAppendPromptResponses];
 
-export type TuiOpenHelpData = {
+export type ProjectTuiOpenHelpData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/open-help";
+	url: "/project/{projectID}/tui/open-help";
 };
 
-export type TuiOpenHelpResponses = {
+export type ProjectTuiOpenHelpResponses = {
 	/**
 	 * Help dialog opened successfully
 	 */
 	200: boolean;
 };
 
-export type TuiOpenHelpResponse =
-	TuiOpenHelpResponses[keyof TuiOpenHelpResponses];
+export type ProjectTuiOpenHelpResponse =
+	ProjectTuiOpenHelpResponses[keyof ProjectTuiOpenHelpResponses];
 
-export type TuiOpenSessionsData = {
+export type ProjectTuiOpenSessionsData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/open-sessions";
+	url: "/project/{projectID}/tui/open-sessions";
 };
 
-export type TuiOpenSessionsResponses = {
+export type ProjectTuiOpenSessionsResponses = {
 	/**
 	 * Session dialog opened successfully
 	 */
 	200: boolean;
 };
 
-export type TuiOpenSessionsResponse =
-	TuiOpenSessionsResponses[keyof TuiOpenSessionsResponses];
+export type ProjectTuiOpenSessionsResponse =
+	ProjectTuiOpenSessionsResponses[keyof ProjectTuiOpenSessionsResponses];
 
-export type TuiOpenThemesData = {
+export type ProjectTuiOpenThemesData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/open-themes";
+	url: "/project/{projectID}/tui/open-themes";
 };
 
-export type TuiOpenThemesResponses = {
+export type ProjectTuiOpenThemesResponses = {
 	/**
 	 * Theme dialog opened successfully
 	 */
 	200: boolean;
 };
 
-export type TuiOpenThemesResponse =
-	TuiOpenThemesResponses[keyof TuiOpenThemesResponses];
+export type ProjectTuiOpenThemesResponse =
+	ProjectTuiOpenThemesResponses[keyof ProjectTuiOpenThemesResponses];
 
-export type TuiOpenModelsData = {
+export type ProjectTuiOpenModelsData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/open-models";
+	url: "/project/{projectID}/tui/open-models";
 };
 
-export type TuiOpenModelsResponses = {
+export type ProjectTuiOpenModelsResponses = {
 	/**
 	 * Model dialog opened successfully
 	 */
 	200: boolean;
 };
 
-export type TuiOpenModelsResponse =
-	TuiOpenModelsResponses[keyof TuiOpenModelsResponses];
+export type ProjectTuiOpenModelsResponse =
+	ProjectTuiOpenModelsResponses[keyof ProjectTuiOpenModelsResponses];
 
-export type TuiSubmitPromptData = {
+export type ProjectTuiSubmitPromptData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/submit-prompt";
+	url: "/project/{projectID}/tui/submit-prompt";
 };
 
-export type TuiSubmitPromptResponses = {
+export type ProjectTuiSubmitPromptResponses = {
 	/**
 	 * Prompt submitted successfully
 	 */
 	200: boolean;
 };
 
-export type TuiSubmitPromptResponse =
-	TuiSubmitPromptResponses[keyof TuiSubmitPromptResponses];
+export type ProjectTuiSubmitPromptResponse =
+	ProjectTuiSubmitPromptResponses[keyof ProjectTuiSubmitPromptResponses];
 
-export type TuiClearPromptData = {
+export type ProjectTuiClearPromptData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/clear-prompt";
+	url: "/project/{projectID}/tui/clear-prompt";
 };
 
-export type TuiClearPromptResponses = {
+export type ProjectTuiClearPromptResponses = {
 	/**
 	 * Prompt cleared successfully
 	 */
 	200: boolean;
 };
 
-export type TuiClearPromptResponse =
-	TuiClearPromptResponses[keyof TuiClearPromptResponses];
+export type ProjectTuiClearPromptResponse =
+	ProjectTuiClearPromptResponses[keyof ProjectTuiClearPromptResponses];
 
-export type TuiExecuteCommandData = {
+export type ProjectTuiExecuteCommandData = {
 	body?: {
 		command: string;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/execute-command";
+	url: "/project/{projectID}/tui/execute-command";
 };
 
-export type TuiExecuteCommandErrors = {
+export type ProjectTuiExecuteCommandErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type TuiExecuteCommandError =
-	TuiExecuteCommandErrors[keyof TuiExecuteCommandErrors];
+export type ProjectTuiExecuteCommandError =
+	ProjectTuiExecuteCommandErrors[keyof ProjectTuiExecuteCommandErrors];
 
-export type TuiExecuteCommandResponses = {
+export type ProjectTuiExecuteCommandResponses = {
 	/**
 	 * Command executed successfully
 	 */
 	200: boolean;
 };
 
-export type TuiExecuteCommandResponse =
-	TuiExecuteCommandResponses[keyof TuiExecuteCommandResponses];
+export type ProjectTuiExecuteCommandResponse =
+	ProjectTuiExecuteCommandResponses[keyof ProjectTuiExecuteCommandResponses];
 
-export type TuiShowToastData = {
+export type ProjectTuiShowToastData = {
 	body?: {
 		title?: string;
 		message: string;
@@ -5366,72 +5446,77 @@ export type TuiShowToastData = {
 		 */
 		duration?: number;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/show-toast";
+	url: "/project/{projectID}/tui/show-toast";
 };
 
-export type TuiShowToastResponses = {
+export type ProjectTuiShowToastResponses = {
 	/**
 	 * Toast notification shown successfully
 	 */
 	200: boolean;
 };
 
-export type TuiShowToastResponse =
-	TuiShowToastResponses[keyof TuiShowToastResponses];
+export type ProjectTuiShowToastResponse =
+	ProjectTuiShowToastResponses[keyof ProjectTuiShowToastResponses];
 
-export type TuiPublishData = {
+export type ProjectTuiPublishData = {
 	body?:
 		| EventTuiPromptAppend
 		| EventTuiCommandExecute
 		| EventTuiToastShow
 		| EventTuiSessionSelect;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/publish";
+	url: "/project/{projectID}/tui/publish";
 };
 
-export type TuiPublishErrors = {
+export type ProjectTuiPublishErrors = {
 	/**
 	 * Bad request
 	 */
 	400: BadRequestError;
 };
 
-export type TuiPublishError = TuiPublishErrors[keyof TuiPublishErrors];
+export type ProjectTuiPublishError =
+	ProjectTuiPublishErrors[keyof ProjectTuiPublishErrors];
 
-export type TuiPublishResponses = {
+export type ProjectTuiPublishResponses = {
 	/**
 	 * Event published successfully
 	 */
 	200: boolean;
 };
 
-export type TuiPublishResponse = TuiPublishResponses[keyof TuiPublishResponses];
+export type ProjectTuiPublishResponse =
+	ProjectTuiPublishResponses[keyof ProjectTuiPublishResponses];
 
-export type TuiSelectSessionData = {
+export type ProjectTuiSelectSessionData = {
 	body?: {
 		/**
 		 * Session ID to navigate to
 		 */
 		sessionID: string;
 	};
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/select-session";
+	url: "/project/{projectID}/tui/select-session";
 };
 
-export type TuiSelectSessionErrors = {
+export type ProjectTuiSelectSessionErrors = {
 	/**
 	 * Bad request
 	 */
@@ -5442,30 +5527,31 @@ export type TuiSelectSessionErrors = {
 	404: NotFoundError;
 };
 
-export type TuiSelectSessionError =
-	TuiSelectSessionErrors[keyof TuiSelectSessionErrors];
+export type ProjectTuiSelectSessionError =
+	ProjectTuiSelectSessionErrors[keyof ProjectTuiSelectSessionErrors];
 
-export type TuiSelectSessionResponses = {
+export type ProjectTuiSelectSessionResponses = {
 	/**
 	 * Session selected successfully
 	 */
 	200: boolean;
 };
 
-export type TuiSelectSessionResponse =
-	TuiSelectSessionResponses[keyof TuiSelectSessionResponses];
+export type ProjectTuiSelectSessionResponse =
+	ProjectTuiSelectSessionResponses[keyof ProjectTuiSelectSessionResponses];
 
-export type TuiControlNextData = {
+export type ProjectTuiControlNextData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/control/next";
+	url: "/project/{projectID}/tui/control/next";
 };
 
-export type TuiControlNextResponses = {
+export type ProjectTuiControlNextResponses = {
 	/**
 	 * Next TUI request
 	 */
@@ -5475,57 +5561,60 @@ export type TuiControlNextResponses = {
 	};
 };
 
-export type TuiControlNextResponse =
-	TuiControlNextResponses[keyof TuiControlNextResponses];
+export type ProjectTuiControlNextResponse =
+	ProjectTuiControlNextResponses[keyof ProjectTuiControlNextResponses];
 
-export type TuiControlResponseData = {
+export type ProjectTuiControlResponseData = {
 	body?: unknown;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/tui/control/response";
+	url: "/project/{projectID}/tui/control/response";
 };
 
-export type TuiControlResponseResponses = {
+export type ProjectTuiControlResponseResponses = {
 	/**
 	 * Response submitted successfully
 	 */
 	200: boolean;
 };
 
-export type TuiControlResponseResponse =
-	TuiControlResponseResponses[keyof TuiControlResponseResponses];
+export type ProjectTuiControlResponseResponse =
+	ProjectTuiControlResponseResponses[keyof ProjectTuiControlResponseResponses];
 
-export type InstanceInfoData = {
+export type ProjectInstanceInfoData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/instance/info";
+	url: "/project/{projectID}/instance/info";
 };
 
-export type InstanceInfoResponses = {
+export type ProjectInstanceInfoResponses = {
 	/**
 	 * Instance information
 	 */
 	200: InstanceInfo;
 };
 
-export type InstanceInfoResponse =
-	InstanceInfoResponses[keyof InstanceInfoResponses];
+export type ProjectInstanceInfoResponse =
+	ProjectInstanceInfoResponses[keyof ProjectInstanceInfoResponses];
 
 export type ProjectCurrentData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/project/current";
+	url: "/project/{projectID}/project/current";
 };
 
 export type ProjectCurrentResponses = {
@@ -5538,95 +5627,101 @@ export type ProjectCurrentResponses = {
 export type ProjectCurrentResponse =
 	ProjectCurrentResponses[keyof ProjectCurrentResponses];
 
-export type InstanceDisposeData = {
+export type ProjectInstanceDisposeData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/instance/dispose";
+	url: "/project/{projectID}/instance/dispose";
 };
 
-export type InstanceDisposeResponses = {
+export type ProjectInstanceDisposeResponses = {
 	/**
 	 * Instance disposed
 	 */
 	200: boolean;
 };
 
-export type InstanceDisposeResponse =
-	InstanceDisposeResponses[keyof InstanceDisposeResponses];
+export type ProjectInstanceDisposeResponse =
+	ProjectInstanceDisposeResponses[keyof ProjectInstanceDisposeResponses];
 
-export type VcsGetData = {
+export type ProjectVcsData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/vcs";
+	url: "/project/{projectID}/vcs";
 };
 
-export type VcsGetResponses = {
+export type ProjectVcsResponses = {
 	/**
 	 * VCS info
 	 */
 	200: VcsInfo;
 };
 
-export type VcsGetResponse = VcsGetResponses[keyof VcsGetResponses];
+export type ProjectVcsResponse = ProjectVcsResponses[keyof ProjectVcsResponses];
 
-export type CommandListData = {
+export type ProjectCommandListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/command";
+	url: "/project/{projectID}/command";
 };
 
-export type CommandListResponses = {
+export type ProjectCommandListResponses = {
 	/**
 	 * List of commands
 	 */
 	200: Array<Command>;
 };
 
-export type CommandListResponse =
-	CommandListResponses[keyof CommandListResponses];
+export type ProjectCommandListResponse =
+	ProjectCommandListResponses[keyof ProjectCommandListResponses];
 
-export type AppAgentsData = {
+export type ProjectAgentListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/agent";
+	url: "/project/{projectID}/agent";
 };
 
-export type AppAgentsResponses = {
+export type ProjectAgentListResponses = {
 	/**
 	 * List of agents
 	 */
 	200: Array<Agent>;
 };
 
-export type AppAgentsResponse = AppAgentsResponses[keyof AppAgentsResponses];
+export type ProjectAgentListResponse =
+	ProjectAgentListResponses[keyof ProjectAgentListResponses];
 
-export type AppSkillsData = {
+export type ProjectSkillListData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/skill";
+	url: "/project/{projectID}/skill";
 };
 
-export type AppSkillsResponses = {
+export type ProjectSkillListResponses = {
 	/**
 	 * List of skills
 	 */
@@ -5648,63 +5743,68 @@ export type AppSkillsResponses = {
 	}>;
 };
 
-export type AppSkillsResponse = AppSkillsResponses[keyof AppSkillsResponses];
+export type ProjectSkillListResponse =
+	ProjectSkillListResponses[keyof ProjectSkillListResponses];
 
-export type LspStatusData = {
+export type ProjectLspStatusData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/lsp";
+	url: "/project/{projectID}/lsp";
 };
 
-export type LspStatusResponses = {
+export type ProjectLspStatusResponses = {
 	/**
 	 * LSP server status
 	 */
 	200: Array<LspStatus>;
 };
 
-export type LspStatusResponse = LspStatusResponses[keyof LspStatusResponses];
+export type ProjectLspStatusResponse =
+	ProjectLspStatusResponses[keyof ProjectLspStatusResponses];
 
-export type FormatterStatusData = {
+export type ProjectFormatterStatusData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/formatter";
+	url: "/project/{projectID}/formatter";
 };
 
-export type FormatterStatusResponses = {
+export type ProjectFormatterStatusResponses = {
 	/**
 	 * Formatter status
 	 */
 	200: Array<FormatterStatus>;
 };
 
-export type FormatterStatusResponse =
-	FormatterStatusResponses[keyof FormatterStatusResponses];
+export type ProjectFormatterStatusResponse =
+	ProjectFormatterStatusResponses[keyof ProjectFormatterStatusResponses];
 
-export type EventSubscribeData = {
+export type ProjectEventSubscribeData = {
 	body?: never;
-	path?: never;
+	path: {
+		projectID: string;
+	};
 	query?: {
-		directory?: string;
 		workspace?: string;
 	};
-	url: "/event";
+	url: "/project/{projectID}/event";
 };
 
-export type EventSubscribeResponses = {
+export type ProjectEventSubscribeResponses = {
 	/**
 	 * Event stream
 	 */
 	200: Event;
 };
 
-export type EventSubscribeResponse =
-	EventSubscribeResponses[keyof EventSubscribeResponses];
+export type ProjectEventSubscribeResponse =
+	ProjectEventSubscribeResponses[keyof ProjectEventSubscribeResponses];

@@ -5,7 +5,13 @@ import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
 import { Filesystem } from "@/util/filesystem"
+import { WorkspaceID } from "../control-plane/schema"
+import { WorkspaceContext } from "../control-plane/workspace-context"
 import { Flag } from "../flag/flag"
+import { InstanceBootstrap } from "../project/bootstrap"
+import { Instance } from "../project/instance"
+import { Project } from "../project/project"
+import { ProjectID } from "../project/schema"
 import { Provider } from "../provider/provider"
 import { NotFoundError } from "../storage/db"
 import type { Log } from "../util/log"
@@ -61,7 +67,7 @@ export function authMiddleware(): MiddlewareHandler {
 
 export function requestLogger(log: Log.Logger): MiddlewareHandler {
   return async (c, next) => {
-    const skipLogging = c.req.path === "/global/log" || c.req.path === "/global/health"
+    const skipLogging = c.req.path === "/log" || c.req.path === "/health"
     if (!skipLogging) {
       log.info("request", {
         method: c.req.method,
@@ -103,6 +109,46 @@ export function corsMiddleware(opts?: { cors?: string[] }): MiddlewareHandler {
       return
     },
   })
+}
+
+// ---------------------------------------------------------------------------
+// Project-scoped middleware — resolves :projectID → project → Instance
+// ---------------------------------------------------------------------------
+
+/**
+ * Middleware for project-scoped routes under `/project/:projectID/*`.
+ * Resolves the projectID from the path parameter, looks up the project in the
+ * database, and boots the Instance context using the project's registered
+ * directory. Returns 404 if the project is not registered.
+ */
+export function projectContextMiddleware(): MiddlewareHandler {
+  return async (c, next) => {
+    const rawProjectID = c.req.param("projectID")
+    if (!rawProjectID) {
+      throw new HTTPException(400, { message: "Missing projectID path parameter" })
+    }
+
+    const projectID = ProjectID.make(rawProjectID)
+    const project = Project.get(projectID)
+    if (!project) {
+      throw new HTTPException(404, { message: `Project not found: ${rawProjectID}` })
+    }
+
+    const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
+
+    return WorkspaceContext.provide({
+      workspaceID: rawWorkspaceID ? WorkspaceID.make(rawWorkspaceID) : undefined,
+      async fn() {
+        return Instance.provide({
+          directory: project.worktree,
+          init: InstanceBootstrap,
+          async fn() {
+            return next()
+          },
+        })
+      },
+    })
+  }
 }
 
 // ---------------------------------------------------------------------------
