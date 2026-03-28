@@ -10,12 +10,12 @@ import { createMemo, For, Match, Show, Switch } from "solid-js"
 import { Portal } from "solid-js/web"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
 import { DialogSelectServer } from "@/components/dialog-select-server"
+import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { usePlatform } from "@/context/platform"
 import { useServer } from "@/context/server"
-import { useGlobalSDK } from "@/context/global-sdk"
 
 export default function Home() {
   const sync = useGlobalSync()

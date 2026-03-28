@@ -401,7 +401,7 @@ export default function Layout(props: ParentProps) {
       (value) => {
         if (!value.ready || !value.layoutReady || !state.autoselect || value.dir) return
         const last = layout.projects.last()
-        
+
         if (value.list.length === 0 || !last) {
           setState("autoselect", false)
           return
@@ -409,7 +409,7 @@ export default function Layout(props: ParentProps) {
 
         const lastKey = workspaceKey(last)
         const next = value.list.find((p) => workspaceKey(p.worktree) === lastKey)
-        
+
         if (!next) {
           setState("autoselect", false)
           return

@@ -32,7 +32,7 @@ import { createRefreshQueue } from "./global-sync/queue"
 import { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"
 import { clearSessionPrefetchDirectory } from "./global-sync/session-prefetch"
 import { trimSessions } from "./global-sync/session-trim"
-import type { ProjectMeta, PathState } from "./global-sync/types"
+import type { PathState, ProjectMeta } from "./global-sync/types"
 import { SESSION_RECENT_LIMIT } from "./global-sync/types"
 import { sanitizeProject } from "./global-sync/utils"
 

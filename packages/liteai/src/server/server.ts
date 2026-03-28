@@ -281,8 +281,8 @@ export namespace Server {
       opts.hostname !== "127.0.0.1" &&
       opts.hostname !== "localhost" &&
       opts.hostname !== "::1"
-    if (publishedMDNS) {
-      MDNS.publish(server.port!, opts.mdnsDomain)
+    if (publishedMDNS && server.port) {
+      MDNS.publish(server.port, opts.mdnsDomain)
     } else if (opts.mdns) {
       log.warn("mDNS enabled but hostname is loopback; skipping mDNS publish")
     }

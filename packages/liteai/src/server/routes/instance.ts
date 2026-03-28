@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { streamSSE } from "hono/streaming"
-import { describeRoute, resolver, validator } from "hono-openapi"
+import { describeRoute, resolver } from "hono-openapi"
 import z from "zod"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
@@ -25,8 +25,7 @@ export const InstanceRoutes = lazy(() =>
       "/instance/info",
       describeRoute({
         summary: "Get instance info",
-        description:
-          "Retrieve instance-scoped information including directory, worktree, and project details.",
+        description: "Retrieve instance-scoped information including directory, worktree, and project details.",
         operationId: "instance.info",
         responses: {
           200: {

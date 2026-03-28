@@ -450,7 +450,14 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.instance
               .info()
               .then((x) =>
-                setStore("path", reconcile(x.data ? { home: "", state: "", config: "", worktree: x.data.worktree, directory: x.data.directory } : { home: "", state: "", config: "", worktree: "", directory: "" })),
+                setStore(
+                  "path",
+                  reconcile(
+                    x.data
+                      ? { home: "", state: "", config: "", worktree: x.data.worktree, directory: x.data.directory }
+                      : { home: "", state: "", config: "", worktree: "", directory: "" },
+                  ),
+                ),
               ),
             syncWorkspaces(),
           ]).then(() => {

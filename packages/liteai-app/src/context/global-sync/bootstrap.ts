@@ -14,8 +14,7 @@ import type {
 import { batch } from "solid-js"
 import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import { formatServerError } from "@/utils/server-errors"
-import type { State, VcsCache } from "./types"
-import type { PathState } from "./types"
+import type { PathState, State, VcsCache } from "./types"
 import { cmp, normalizeProviderList } from "./utils"
 
 type GlobalStore = {
@@ -86,7 +85,14 @@ export async function bootstrapGlobal(input: {
     ),
     retry(() =>
       input.globalSDK.global.path().then((x) => {
-        if (x.data) input.setGlobalStore("path", { home: x.data.home, state: x.data.state, config: x.data.config, worktree: "", directory: "" })
+        if (x.data)
+          input.setGlobalStore("path", {
+            home: x.data.home,
+            state: x.data.state,
+            config: x.data.config,
+            worktree: "",
+            directory: "",
+          })
       }),
     ),
   ]
@@ -128,10 +134,11 @@ export async function bootstrapDirectory(input: {
 
   try {
     const projRes = await retry(() =>
-      input.sdk.project.current().catch((e: any) => {
-        if (e?.name === "NotFoundError" || e?.response?.status === 404) return { data: null }
+      input.sdk.project.current().catch((e: unknown) => {
+        const err = e as { name?: string; response?: { status?: number } } | null | undefined
+        if (err?.name === "NotFoundError" || err?.response?.status === 404) return { data: null }
         throw e
-      })
+      }),
     )
     if (!projRes.data) {
       input.setStore("status", "partial")
@@ -168,7 +175,14 @@ export async function bootstrapDirectory(input: {
 
   Promise.all([
     input.sdk.instance.info().then((x) => {
-      if (x.data) input.setStore("path", { home: "", state: "", config: "", worktree: x.data.worktree, directory: x.data.directory })
+      if (x.data)
+        input.setStore("path", {
+          home: "",
+          state: "",
+          config: "",
+          worktree: x.data.worktree,
+          directory: x.data.directory,
+        })
     }),
     input.sdk.command.list().then((x) => input.setStore("command", x.data ?? [])),
     input.sdk.session.status().then((x) => {
