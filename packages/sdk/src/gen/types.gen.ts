@@ -1843,16 +1843,6 @@ export type Provider = {
 	};
 };
 
-export type ToolIds = Array<string>;
-
-export type ToolListItem = {
-	id: string;
-	description: string;
-	parameters: unknown;
-};
-
-export type ToolList = Array<ToolListItem>;
-
 export type Workspace = {
 	id: string;
 	type: string;
@@ -1883,14 +1873,6 @@ export type WorktreeRemoveInput = {
 
 export type WorktreeResetInput = {
 	directory: string;
-};
-
-export type McpResource = {
-	name: string;
-	uri: string;
-	description?: string;
-	mimeType?: string;
-	client: string;
 };
 
 export type TextPartInput = {
@@ -2060,6 +2042,24 @@ export type McpStatus =
 	| McpStatusFailed
 	| McpStatusNeedsAuth
 	| McpStatusNeedsClientRegistration;
+
+export type McpResource = {
+	name: string;
+	uri: string;
+	description?: string;
+	mimeType?: string;
+	client: string;
+};
+
+export type ToolIds = Array<string>;
+
+export type ToolListItem = {
+	id: string;
+	description: string;
+	parameters: unknown;
+};
+
+export type ToolList = Array<ToolListItem>;
 
 export type InstanceInfo = {
 	directory: string;
@@ -3055,70 +3055,6 @@ export type ProjectConfigProvidersResponses = {
 export type ProjectConfigProvidersResponse =
 	ProjectConfigProvidersResponses[keyof ProjectConfigProvidersResponses];
 
-export type ProjectToolIdsData = {
-	body?: never;
-	path: {
-		projectID: string;
-	};
-	query?: {
-		workspace?: string;
-	};
-	url: "/project/{projectID}/experimental/tool/ids";
-};
-
-export type ProjectToolIdsErrors = {
-	/**
-	 * Bad request
-	 */
-	400: BadRequestError;
-};
-
-export type ProjectToolIdsError =
-	ProjectToolIdsErrors[keyof ProjectToolIdsErrors];
-
-export type ProjectToolIdsResponses = {
-	/**
-	 * Tool IDs
-	 */
-	200: ToolIds;
-};
-
-export type ProjectToolIdsResponse =
-	ProjectToolIdsResponses[keyof ProjectToolIdsResponses];
-
-export type ProjectToolListData = {
-	body?: never;
-	path: {
-		projectID: string;
-	};
-	query: {
-		workspace?: string;
-		provider: string;
-		model: string;
-	};
-	url: "/project/{projectID}/experimental/tool";
-};
-
-export type ProjectToolListErrors = {
-	/**
-	 * Bad request
-	 */
-	400: BadRequestError;
-};
-
-export type ProjectToolListError =
-	ProjectToolListErrors[keyof ProjectToolListErrors];
-
-export type ProjectToolListResponses = {
-	/**
-	 * Tools
-	 */
-	200: ToolList;
-};
-
-export type ProjectToolListResponse =
-	ProjectToolListResponses[keyof ProjectToolListResponses];
-
 export type ProjectExperimentalWorkspaceListData = {
 	body?: never;
 	path: {
@@ -3321,29 +3257,6 @@ export type ProjectWorktreeResetResponses = {
 
 export type ProjectWorktreeResetResponse =
 	ProjectWorktreeResetResponses[keyof ProjectWorktreeResetResponses];
-
-export type ProjectExperimentalResourceListData = {
-	body?: never;
-	path: {
-		projectID: string;
-	};
-	query?: {
-		workspace?: string;
-	};
-	url: "/project/{projectID}/experimental/resource";
-};
-
-export type ProjectExperimentalResourceListResponses = {
-	/**
-	 * MCP resources
-	 */
-	200: {
-		[key: string]: McpResource;
-	};
-};
-
-export type ProjectExperimentalResourceListResponse =
-	ProjectExperimentalResourceListResponses[keyof ProjectExperimentalResourceListResponses];
 
 export type ProjectSessionListData = {
 	body?: never;
@@ -5073,6 +4986,29 @@ export type ProjectMcpDisconnectResponses = {
 export type ProjectMcpDisconnectResponse =
 	ProjectMcpDisconnectResponses[keyof ProjectMcpDisconnectResponses];
 
+export type ProjectMcpResourceListData = {
+	body?: never;
+	path: {
+		projectID: string;
+	};
+	query?: {
+		workspace?: string;
+	};
+	url: "/project/{projectID}/mcp/resource";
+};
+
+export type ProjectMcpResourceListResponses = {
+	/**
+	 * MCP resources
+	 */
+	200: {
+		[key: string]: McpResource;
+	};
+};
+
+export type ProjectMcpResourceListResponse =
+	ProjectMcpResourceListResponses[keyof ProjectMcpResourceListResponses];
+
 export type ProjectPluginListData = {
 	body?: never;
 	path: {
@@ -5640,6 +5576,70 @@ export type ProjectTuiControlResponseResponses = {
 
 export type ProjectTuiControlResponseResponse =
 	ProjectTuiControlResponseResponses[keyof ProjectTuiControlResponseResponses];
+
+export type ProjectToolIdsData = {
+	body?: never;
+	path: {
+		projectID: string;
+	};
+	query?: {
+		workspace?: string;
+	};
+	url: "/project/{projectID}/tool/ids";
+};
+
+export type ProjectToolIdsErrors = {
+	/**
+	 * Bad request
+	 */
+	400: BadRequestError;
+};
+
+export type ProjectToolIdsError =
+	ProjectToolIdsErrors[keyof ProjectToolIdsErrors];
+
+export type ProjectToolIdsResponses = {
+	/**
+	 * Tool IDs
+	 */
+	200: ToolIds;
+};
+
+export type ProjectToolIdsResponse =
+	ProjectToolIdsResponses[keyof ProjectToolIdsResponses];
+
+export type ProjectToolListData = {
+	body?: never;
+	path: {
+		projectID: string;
+	};
+	query: {
+		workspace?: string;
+		provider: string;
+		model: string;
+	};
+	url: "/project/{projectID}/tool";
+};
+
+export type ProjectToolListErrors = {
+	/**
+	 * Bad request
+	 */
+	400: BadRequestError;
+};
+
+export type ProjectToolListError =
+	ProjectToolListErrors[keyof ProjectToolListErrors];
+
+export type ProjectToolListResponses = {
+	/**
+	 * Tools
+	 */
+	200: ToolList;
+};
+
+export type ProjectToolListResponse =
+	ProjectToolListResponses[keyof ProjectToolListResponses];
 
 export type ProjectInstanceInfoData = {
 	body?: never;

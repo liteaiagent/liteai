@@ -12,6 +12,7 @@ import { SettingsModels } from "./settings-models"
 import { SettingsPlugins } from "./settings-plugins"
 import { SettingsProviders } from "./settings-providers"
 import { SettingsSkills } from "./settings-skills"
+import { SettingsTools } from "./settings-tools"
 
 export const DialogSettings: Component<{ tab?: string }> = (props) => {
   const language = useLanguage()
@@ -70,6 +71,10 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
                       <Icon name="brain" />
                       Plugins
                     </Tabs.Trigger>
+                    <Tabs.Trigger value="tools">
+                      <Icon name="task" />
+                      {language.t("settings.tools.title") ?? "Tools"}
+                    </Tabs.Trigger>
                   </div>
                 </div>
               </div>
@@ -103,6 +108,9 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
         </Tabs.Content>
         <Tabs.Content value="plugins" class="no-scrollbar">
           <SettingsPlugins />
+        </Tabs.Content>
+        <Tabs.Content value="tools" class="no-scrollbar">
+          <SettingsTools />
         </Tabs.Content>
       </Tabs>
     </Dialog>

@@ -442,7 +442,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.project.mcp
               .status({ projectID: sdk.projectID })
               .then((x) => setStore("mcp", reconcile(x.data ?? {}))),
-            sdk.client.project.experimental.resource
+            sdk.client.project.mcp.resource
               .list({ projectID: sdk.projectID })
               .then((x) => setStore("mcp_resource", reconcile(x.data ?? {}))),
             sdk.client.project.formatter

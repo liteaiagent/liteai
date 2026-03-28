@@ -47,7 +47,6 @@ import type {
 	ProjectCreateResponses,
 	ProjectCurrentResponses,
 	ProjectEventSubscribeResponses,
-	ProjectExperimentalResourceListResponses,
 	ProjectExperimentalWorkspaceCreateErrors,
 	ProjectExperimentalWorkspaceCreateResponses,
 	ProjectExperimentalWorkspaceListResponses,
@@ -80,6 +79,7 @@ import type {
 	ProjectMcpAuthStartResponses,
 	ProjectMcpConnectResponses,
 	ProjectMcpDisconnectResponses,
+	ProjectMcpResourceListResponses,
 	ProjectMcpStatusResponses,
 	ProjectMcpToolsResponses,
 	ProjectPartDeleteErrors,
@@ -999,80 +999,6 @@ export class Config2 extends HeyApiClient {
 	}
 }
 
-export class Tool extends HeyApiClient {
-	/**
-	 * List tool IDs
-	 *
-	 * Get a list of all available tool IDs, including both built-in tools and dynamically registered tools.
-	 */
-	public ids<ThrowOnError extends boolean = false>(
-		parameters: {
-			projectID: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "projectID" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			ProjectToolIdsResponses,
-			ProjectToolIdsErrors,
-			ThrowOnError
-		>({
-			url: "/project/{projectID}/experimental/tool/ids",
-			...options,
-			...params,
-		});
-	}
-
-	/**
-	 * List tools
-	 *
-	 * Get a list of available tools with their JSON schema parameters for a specific provider and model combination.
-	 */
-	public list<ThrowOnError extends boolean = false>(
-		parameters: {
-			projectID: string;
-			workspace?: string;
-			provider: string;
-			model: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "projectID" },
-						{ in: "query", key: "workspace" },
-						{ in: "query", key: "provider" },
-						{ in: "query", key: "model" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			ProjectToolListResponses,
-			ProjectToolListErrors,
-			ThrowOnError
-		>({
-			url: "/project/{projectID}/experimental/tool",
-			...options,
-			...params,
-		});
-	}
-}
-
 export class Workspace extends HeyApiClient {
 	/**
 	 * List workspaces
@@ -1192,51 +1118,10 @@ export class Workspace extends HeyApiClient {
 	}
 }
 
-export class Resource extends HeyApiClient {
-	/**
-	 * Get MCP resources
-	 *
-	 * Get all available MCP resources from connected servers. Optionally filter by name.
-	 */
-	public list<ThrowOnError extends boolean = false>(
-		parameters: {
-			projectID: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "projectID" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			ProjectExperimentalResourceListResponses,
-			unknown,
-			ThrowOnError
-		>({
-			url: "/project/{projectID}/experimental/resource",
-			...options,
-			...params,
-		});
-	}
-}
-
 export class Experimental extends HeyApiClient {
 	private _workspace?: Workspace;
 	get workspace(): Workspace {
 		return (this._workspace ??= new Workspace({ client: this.client }));
-	}
-
-	private _resource?: Resource;
-	get resource(): Resource {
-		return (this._resource ??= new Resource({ client: this.client }));
 	}
 }
 
@@ -3299,6 +3184,42 @@ export class Auth2 extends HeyApiClient {
 	}
 }
 
+export class Resource extends HeyApiClient {
+	/**
+	 * Get MCP resources
+	 *
+	 * Get all available MCP resources from connected servers. Optionally filter by name.
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "projectID" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			ProjectMcpResourceListResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}/mcp/resource",
+			...options,
+			...params,
+		});
+	}
+}
+
 export class Mcp extends HeyApiClient {
 	/**
 	 * Get MCP status
@@ -3482,6 +3403,11 @@ export class Mcp extends HeyApiClient {
 	private _auth?: Auth2;
 	get auth(): Auth2 {
 		return (this._auth ??= new Auth2({ client: this.client }));
+	}
+
+	private _resource?: Resource;
+	get resource(): Resource {
+		return (this._resource ??= new Resource({ client: this.client }));
 	}
 }
 
@@ -4306,6 +4232,80 @@ export class Tui extends HeyApiClient {
 	}
 }
 
+export class Tool extends HeyApiClient {
+	/**
+	 * List tool IDs
+	 *
+	 * Get a list of all available build-in tools IDs.
+	 */
+	public ids<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "projectID" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			ProjectToolIdsResponses,
+			ProjectToolIdsErrors,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}/tool/ids",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * List tools
+	 *
+	 * Get a list of available built-in tools with their JSON schema parameters for a specific provider and model combination.
+	 */
+	public list<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+			workspace?: string;
+			provider: string;
+			model: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "projectID" },
+						{ in: "query", key: "workspace" },
+						{ in: "query", key: "provider" },
+						{ in: "query", key: "model" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			ProjectToolListResponses,
+			ProjectToolListErrors,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}/tool",
+			...options,
+			...params,
+		});
+	}
+}
+
 export class Instance extends HeyApiClient {
 	/**
 	 * Get instance info
@@ -4868,11 +4868,6 @@ export class Project extends HeyApiClient {
 		return (this._config ??= new Config2({ client: this.client }));
 	}
 
-	private _tool?: Tool;
-	get tool(): Tool {
-		return (this._tool ??= new Tool({ client: this.client }));
-	}
-
 	private _experimental?: Experimental;
 	get experimental(): Experimental {
 		return (this._experimental ??= new Experimental({ client: this.client }));
@@ -4926,6 +4921,11 @@ export class Project extends HeyApiClient {
 	private _tui?: Tui;
 	get tui(): Tui {
 		return (this._tui ??= new Tui({ client: this.client }));
+	}
+
+	private _tool?: Tool;
+	get tool(): Tool {
+		return (this._tool ??= new Tool({ client: this.client }));
 	}
 
 	private _instance?: Instance;

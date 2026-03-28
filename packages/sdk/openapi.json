@@ -1919,126 +1919,6 @@
         ]
       }
     },
-    "/project/{projectID}/experimental/tool/ids": {
-      "get": {
-        "operationId": "project.tool.ids",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "List tool IDs",
-        "description": "Get a list of all available tool IDs, including both built-in tools and dynamically registered tools.",
-        "responses": {
-          "200": {
-            "description": "Tool IDs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolIDs"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestError"
-                }
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.ids({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/project/{projectID}/experimental/tool": {
-      "get": {
-        "operationId": "project.tool.list",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "provider",
-            "schema": {
-              "type": "string"
-            },
-            "required": true
-          },
-          {
-            "in": "query",
-            "name": "model",
-            "schema": {
-              "type": "string"
-            },
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "List tools",
-        "description": "Get a list of available tools with their JSON schema parameters for a specific provider and model combination.",
-        "responses": {
-          "200": {
-            "description": "Tools",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolList"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestError"
-                }
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.list({\n  ...\n})"
-          }
-        ]
-      }
-    },
     "/project/{projectID}/experimental/workspace": {
       "post": {
         "operationId": "project.experimental.workspace.create",
@@ -2456,54 +2336,6 @@
           {
             "lang": "js",
             "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.reset({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/project/{projectID}/experimental/resource": {
-      "get": {
-        "operationId": "project.experimental.resource.list",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "Get MCP resources",
-        "description": "Get all available MCP resources from connected servers. Optionally filter by name.",
-        "responses": {
-          "200": {
-            "description": "MCP resources",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {
-                    "$ref": "#/components/schemas/McpResource"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.resource.list({\n  ...\n})"
           }
         ]
       }
@@ -6516,6 +6348,54 @@
         ]
       }
     },
+    "/project/{projectID}/mcp/resource": {
+      "get": {
+        "operationId": "project.mcp.resource.list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Get MCP resources",
+        "description": "Get all available MCP resources from connected servers. Optionally filter by name.",
+        "responses": {
+          "200": {
+            "description": "MCP resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/McpResource"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.resource.list({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/project/{projectID}/plugin": {
       "get": {
         "operationId": "project.plugin.list",
@@ -7802,6 +7682,126 @@
           {
             "lang": "js",
             "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.response({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/tool/ids": {
+      "get": {
+        "operationId": "project.tool.ids",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "List tool IDs",
+        "description": "Get a list of all available build-in tools IDs.",
+        "responses": {
+          "200": {
+            "description": "Tool IDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolIDs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.ids({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/tool": {
+      "get": {
+        "operationId": "project.tool.list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "List tools",
+        "description": "Get a list of available built-in tools with their JSON schema parameters for a specific provider and model combination.",
+        "responses": {
+          "200": {
+            "description": "Tools",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.list({\n  ...\n})"
           }
         ]
       }
@@ -13644,35 +13644,6 @@
           "models"
         ]
       },
-      "ToolIDs": {
-        "type": "array",
-        "items": {
-          "type": "string"
-        }
-      },
-      "ToolListItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "parameters": {}
-        },
-        "required": [
-          "id",
-          "description",
-          "parameters"
-        ]
-      },
-      "ToolList": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/ToolListItem"
-        }
-      },
       "Workspace": {
         "type": "object",
         "properties": {
@@ -13786,31 +13757,6 @@
         },
         "required": [
           "directory"
-        ]
-      },
-      "McpResource": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "uri": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "mimeType": {
-            "type": "string"
-          },
-          "client": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "uri",
-          "client"
         ]
       },
       "TextPartInput": {
@@ -14471,6 +14417,60 @@
             "$ref": "#/components/schemas/MCPStatusNeedsClientRegistration"
           }
         ]
+      },
+      "McpResource": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "client": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "uri",
+          "client"
+        ]
+      },
+      "ToolIDs": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "ToolListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parameters": {}
+        },
+        "required": [
+          "id",
+          "description",
+          "parameters"
+        ]
+      },
+      "ToolList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ToolListItem"
+        }
       },
       "InstanceInfo": {
         "type": "object",

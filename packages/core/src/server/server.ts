@@ -35,6 +35,7 @@ import { SessionRoutes } from "./routes/session"
 import { SystemRoutes } from "./routes/system"
 import { TraceRoutes } from "./routes/trace"
 import { TuiRoutes } from "./routes/tui"
+import { ToolRoutes } from "./routes/tool"
 
 // ---------------------------------------------------------------------------
 // Suppress verbose AI SDK warnings at import time.
@@ -76,6 +77,7 @@ export namespace Server {
       .route("/mcp", McpRoutes())
       .route("/plugin", PluginRoutes())
       .route("/tui", TuiRoutes())
+      .route("/tool", ToolRoutes())
       .route("/", InstanceRoutes())
   }
 

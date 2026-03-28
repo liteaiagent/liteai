@@ -242,5 +242,26 @@ export const McpRoutes = lazy(() =>
         await MCP.disconnect(name)
         return c.json(true)
       },
+    )
+    .get(
+      "/resource",
+      describeRoute({
+        summary: "Get MCP resources",
+        description: "Get all available MCP resources from connected servers. Optionally filter by name.",
+        operationId: "project.mcp.resource.list",
+        responses: {
+          200: {
+            description: "MCP resources",
+            content: {
+              "application/json": {
+                schema: resolver(z.record(z.string(), MCP.Resource)),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json(await MCP.resources())
+      },
     ),
 )
