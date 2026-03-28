@@ -369,7 +369,10 @@ async function loadPlugins(
 ) {
   for (const [id, provider] of AUTH_PROVIDERS) {
     const providerID = ProviderID.make(id)
-    if (disabled.has(providerID)) continue
+    if (disabled.has(providerID)) {
+      log.info("auth plugin skipped (disabled)", { providerID })
+      continue
+    }
 
     // For github-copilot, check if auth exists for either github-copilot or github-copilot-enterprise
     let hasAuth = false
@@ -382,8 +385,16 @@ async function loadPlugins(
       if (enterpriseAuth) hasAuth = true
     }
 
-    if (!hasAuth) continue
-    if (!provider.auth.loader) continue
+    if (!hasAuth) {
+      log.info("auth plugin skipped (no credentials)", { providerID })
+      continue
+    }
+    if (!provider.auth.loader) {
+      log.info("auth plugin skipped (no loader)", { providerID })
+      continue
+    }
+
+    log.info("running auth plugin", { providerID })
 
     // Load for the main provider if auth exists
     if (auth) {
@@ -392,6 +403,7 @@ async function loadPlugins(
       const opts = options ?? {}
       const patch: Partial<Provider.Info> = providers[providerID] ? { options: opts } : { source: "api", options: opts }
       merge(providerID, patch)
+      log.info("auth plugin loaded", { providerID })
     }
 
     // If this is github-copilot, also register for github-copilot-enterprise if auth exists
@@ -400,6 +412,7 @@ async function loadPlugins(
       if (!disabled.has(enterpriseProviderID)) {
         const enterpriseAuth = await Auth.get(enterpriseProviderID)
         if (enterpriseAuth) {
+          log.info("running auth plugin (enterprise)", { providerID: enterpriseProviderID })
           const enterpriseOptions = await provider.auth.loader(
             // biome-ignore lint/suspicious/noExplicitAny: auth getter returns different shapes per provider
             () => Auth.get(enterpriseProviderID) as any,
@@ -410,6 +423,7 @@ async function loadPlugins(
             ? { options: opts }
             : { source: "api", options: opts }
           merge(enterpriseProviderID, patch)
+          log.info("auth plugin loaded (enterprise)", { providerID: enterpriseProviderID })
         }
       }
     }
@@ -435,7 +449,7 @@ async function loadCustom(
     const result = await fn(data).catch((err) => {
       // Custom loaders may call Env.get / Config.get which require Instance context.
       // When resolving the global provider list (no project selected), skip them gracefully.
-      log.debug("custom loader skipped (no instance context)", { providerID, error: err })
+      log.debug("custom loader skipped (no instance context)", { providerID })
       return undefined
     })
     if (result && (result.autoload || providers[providerID])) {

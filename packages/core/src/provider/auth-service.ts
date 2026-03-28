@@ -170,6 +170,8 @@ export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService,
             refresh: result.refresh,
             expires: result.expires,
             ...(result.accountId ? { accountId: result.accountId } : {}),
+            ...(result.clientId ? { clientId: result.clientId } : {}),
+            ...(result.clientSecret ? { clientSecret: result.clientSecret } : {}),
           })
         }
       })

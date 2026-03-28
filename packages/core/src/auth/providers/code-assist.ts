@@ -338,11 +338,6 @@ let cached: { project?: string } | undefined
 
 export const CodeAssistAuth: AuthProvider = {
   provider: "google-code-assist",
-  async setup() {
-    // Pre-cache is not possible without auth at boot time.
-    // setup() is called once at daemon boot before any auth exists.
-    // The actual setup resolves lazily inside the loader on first use.
-  },
   auth: {
     async loader(getAuth) {
       const auth = await getAuth()

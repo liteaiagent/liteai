@@ -103,6 +103,8 @@ export type AuthOauthResult = { url: string; instructions: string } & (
                 access: string
                 expires: number
                 accountId?: string
+                clientId?: string
+                clientSecret?: string
               }
             | { key: string }
           ))
@@ -123,6 +125,8 @@ export type AuthOauthResult = { url: string; instructions: string } & (
                 access: string
                 expires: number
                 accountId?: string
+                clientId?: string
+                clientSecret?: string
               }
             | { key: string }
           ))

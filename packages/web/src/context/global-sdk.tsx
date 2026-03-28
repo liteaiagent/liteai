@@ -101,6 +101,7 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
     }
 
     let streamErrorLogged = false
+    let hasConnected = false
     const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
     const aborted = (error: unknown) => abortError.safeParse(error).success
 
@@ -134,6 +135,7 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
             signal: attempt.signal,
             onSseError: (error) => {
               if (aborted(error)) return
+              if (!hasConnected) return
               if (streamErrorLogged) return
               streamErrorLogged = true
               console.error("[global-sdk] event stream error", {
@@ -147,6 +149,7 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
           resetHeartbeat()
           for await (const event of events.stream) {
             resetHeartbeat()
+            hasConnected = true
             streamErrorLogged = false
             const directory = event.directory ?? "global"
             const payload = event.payload
@@ -171,7 +174,7 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
             await wait(0)
           }
         } catch (error) {
-          if (!aborted(error) && !streamErrorLogged) {
+          if (!aborted(error) && hasConnected && !streamErrorLogged) {
             streamErrorLogged = true
             console.error("[global-sdk] event stream failed", {
               url: currentServer.http.url,

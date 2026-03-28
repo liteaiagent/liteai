@@ -7,91 +7,83 @@ import type { LoaderInput, LoaderResult } from "./types"
 const log = Log.create({ service: "provider.ai4all" })
 
 const APIGEE_HOST = "api-dev.valeo.com"
-const TOKEN_URL = `https://${APIGEE_HOST}/rsd/ai4all/auth/token-exchange`
 const REFRESH_URL = `https://${APIGEE_HOST}/rsd/ai4all/auth/token`
 const HEADER = `liteai/${Installation.VERSION}`
 
-let cached: { token: string; expires: number } | undefined
-
-async function gcloud(): Promise<string | undefined> {
-  const proc = Bun.spawn(["gcloud", "auth", "print-identity-token"], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-  const code = await proc.exited
-  if (code !== 0) return undefined
-  return new Response(proc.stdout).text().then((t) => t.trim())
+/**
+ * Parse the `exp` claim from a JWT access token.
+ * Returns the expiry as a Unix-ms timestamp, or 0 if parsing fails.
+ */
+function jwtExpiry(token: string): number {
+  try {
+    const payload = token.split(".")[1]
+    if (!payload) return 0
+    // Handle base64url → base64 conversion and padding
+    const b64 = payload.replace(/-/g, "+").replace(/_/g, "/")
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4)
+    const json = Buffer.from(padded, "base64").toString("utf-8")
+    const { exp } = JSON.parse(json) as { exp?: number }
+    return exp ? exp * 1000 : 0
+  } catch {
+    return 0
+  }
 }
 
-async function exchange(id: string, secret: string): Promise<string | undefined> {
-  const identity = await gcloud()
-  if (!identity) {
-    log.error("gcloud auth failed — run 'gcloud auth login' first")
-    return undefined
-  }
+/** 60-second buffer before considering a token expired (matches working CLI script). */
+const EXPIRY_BUFFER_MS = 60_000
 
-  const creds = Buffer.from(`${id}:${secret}`).toString("base64")
-  const res = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${creds}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "x-ai4all-client": HEADER,
-    },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-      subject_token: identity,
-      subject_token_type: "urn:ietf:params:oauth:token-type:id_token",
-    }),
-  })
-
-  if (!res.ok) {
-    log.error("token exchange failed", { status: res.status })
-    return undefined
-  }
-
-  const body = (await res.json()) as { access_token?: string; expires_in?: number }
-  if (!body.access_token) return undefined
-
-  cached = {
-    token: body.access_token,
-    expires: Date.now() + ((body.expires_in ?? 3600) - 60) * 1000,
-  }
-  log.info("token exchanged successfully")
-  return body.access_token
+function isTokenExpired(auth: { access: string; expires: number }): boolean {
+  // Prefer the JWT `exp` claim when available (more reliable than stored expires_in)
+  const jwtExp = jwtExpiry(auth.access)
+  const effectiveExpiry = jwtExp || auth.expires
+  return Date.now() >= effectiveExpiry - EXPIRY_BUFFER_MS
 }
 
 async function refresh(input: LoaderInput): Promise<string | undefined> {
   const auth = await Auth.get("ai4all")
   if (!auth || auth.type !== "oauth") return undefined
-  if (Date.now() < auth.expires) return auth.access
+
+  // If the access token is still valid, return it
+  if (!isTokenExpired(auth)) return auth.access
 
   // Access token expired — try refresh
-  if (!auth.refresh) return undefined
-
-  const id = input.options.clientId ?? Env.get("AI4ALL_CLIENT_ID")
-  const secret = input.options.clientSecret ?? Env.get("AI4ALL_CLIENT_SECRET")
-  if (!id || !secret) {
-    log.error("cannot refresh — no client credentials")
+  if (!auth.refresh) {
+    log.warn("access token expired but no refresh token available — re-login required")
     return undefined
   }
 
+  const id = input.options.clientId ?? Env.get("AI4ALL_CLIENT_ID") ?? auth.clientId
+  const secret = input.options.clientSecret ?? Env.get("AI4ALL_CLIENT_SECRET") ?? auth.clientSecret
+  if (!id || !secret) {
+    log.error("cannot refresh — no client credentials (AI4ALL_CLIENT_ID / AI4ALL_CLIENT_SECRET)")
+    return undefined
+  }
+
+  log.info("access token expired, refreshing via refresh_token…")
+
   const creds = Buffer.from(`${id}:${secret}`).toString("base64")
-  const res = await fetch(REFRESH_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${creds}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "x-ai4all-client": HEADER,
-    },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: auth.refresh,
-    }),
-  })
+  let res: Response
+  try {
+    res = await fetch(REFRESH_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${creds}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-ai4all-client": HEADER,
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: auth.refresh,
+      }),
+    })
+  } catch (err) {
+    log.error("refresh request failed (network error)", { error: err })
+    return undefined
+  }
 
   if (!res.ok) {
-    log.error("refresh failed", { status: res.status })
+    const body = await res.text().catch(() => "")
+    log.error("refresh failed", { status: res.status, body })
     return undefined
   }
 
@@ -100,7 +92,10 @@ async function refresh(input: LoaderInput): Promise<string | undefined> {
     refresh_token?: string
     expires_in?: number
   }
-  if (!body.access_token) return undefined
+  if (!body.access_token) {
+    log.error("refresh response missing access_token")
+    return undefined
+  }
 
   const expires = Date.now() + ((body.expires_in ?? 3600) - 60) * 1000
   await Auth.set("ai4all", {
@@ -115,23 +110,12 @@ async function refresh(input: LoaderInput): Promise<string | undefined> {
 }
 
 async function token(input: LoaderInput): Promise<string | undefined> {
-  // 1. Explicit env var (manual paste from llm-cli.sh)
+  // 1. Explicit env var (manual paste)
   const key = Env.get("AI4ALL_API_KEY")
   if (key) return key
 
   // 2. OAuth stored credentials (with auto-refresh)
-  const fresh = await refresh(input)
-  if (fresh) return fresh
-
-  // 3. Cached auto-exchanged token (gcloud flow)
-  if (cached && Date.now() < cached.expires) return cached.token
-
-  // 4. Auto-exchange via gcloud
-  const id = input.options.clientId ?? Env.get("AI4ALL_CLIENT_ID")
-  const secret = input.options.clientSecret ?? Env.get("AI4ALL_CLIENT_SECRET")
-  if (!id || !secret) return undefined
-
-  return exchange(id, secret)
+  return refresh(input)
 }
 
 export async function ai4all(input: LoaderInput): Promise<LoaderResult> {
@@ -145,29 +129,36 @@ export async function ai4all(input: LoaderInput): Promise<LoaderResult> {
         "x-ai4all-client": HEADER,
       },
       fetch: async (url: unknown, init?: RequestInit) => {
-        // Refresh token before each request if using auto-exchange
         if (!Env.get("AI4ALL_API_KEY")) {
-          // Try OAuth refresh first
           const fresh = await refresh(input)
-          if (fresh && init?.headers) {
-            const hdrs = new Headers(init.headers)
+          if (fresh) {
+            const hdrs = new Headers(init?.headers)
             hdrs.set("Authorization", `Bearer ${fresh}`)
             init = { ...init, headers: hdrs }
-          } else if (cached && Date.now() >= cached.expires) {
-            // Fall back to gcloud re-exchange
-            const id = input.options.clientId ?? Env.get("AI4ALL_CLIENT_ID")
-            const secret = input.options.clientSecret ?? Env.get("AI4ALL_CLIENT_SECRET")
-            if (id && secret) {
-              const token = await exchange(id, secret)
-              if (token && init?.headers) {
-                const hdrs = new Headers(init.headers)
-                hdrs.set("Authorization", `Bearer ${token}`)
-                init = { ...init, headers: hdrs }
-              }
-            }
           }
         }
-        return fetch(url as string, init)
+
+        const res = await fetch(url as string, init)
+
+        // On 401, force a token refresh and retry once
+        if (res.status === 401 && !Env.get("AI4ALL_API_KEY")) {
+          log.warn("received 401 — forcing token refresh and retrying…")
+
+          // Invalidate the stored expiry so refresh() actually calls the server
+          const auth = await Auth.get("ai4all")
+          if (auth && auth.type === "oauth") {
+            await Auth.set("ai4all", { ...auth, expires: 0 })
+          }
+
+          const retryToken = await refresh(input)
+          if (retryToken) {
+            const hdrs = new Headers(init?.headers)
+            hdrs.set("Authorization", `Bearer ${retryToken}`)
+            return fetch(url as string, { ...init, headers: hdrs })
+          }
+        }
+
+        return res
       },
     },
   }
