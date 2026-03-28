@@ -326,12 +326,12 @@ export const CopilotAuth: AuthProvider = {
 
       const client = sdk()
 
-      const parts = await client.session
+      const parts = await client.project.session
         .message(
           {
             sessionID: incoming.message.sessionID,
             messageID: incoming.message.id,
-            directory: Instance.directory,
+            projectID: Instance.directory,
           },
           { throwOnError: true },
         )
@@ -342,11 +342,11 @@ export const CopilotAuth: AuthProvider = {
         return
       }
 
-      const session = await client.session
+      const session = await client.project.session
         .get(
           {
             sessionID: incoming.sessionID,
-            directory: Instance.directory,
+            projectID: Instance.directory,
           },
           { throwOnError: true },
         )

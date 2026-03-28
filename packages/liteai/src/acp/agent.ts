@@ -28,7 +28,7 @@ import {
   type ToolKind,
   type Usage,
 } from "@agentclientprotocol/sdk"
-import type { AssistantMessage, Event, LiteaiClient, SessionMessageResponse, ToolPart } from "@liteai-ai/sdk"
+import type { AssistantMessage, Event, LiteaiClient, ProjectSessionMessageResponse, ToolPart } from "@liteai-ai/sdk"
 import { LoadAPIKeyError } from "ai"
 import { applyPatch } from "diff"
 import { z } from "zod"
@@ -59,8 +59,8 @@ export namespace ACP {
     modelID: ModelID,
     directory: string,
   ): Promise<number | null> {
-    const providers = await sdk.config
-      .providers({ directory })
+    const providers = await sdk.project.config
+      .providers({ projectID: directory })
       .then((x) => x.data?.providers ?? [])
       .catch((error) => {
         log.error("failed to get providers for context limit", { error })
@@ -78,8 +78,8 @@ export namespace ACP {
     sessionID: string,
     directory: string,
   ): Promise<void> {
-    const messages = await sdk.session
-      .messages({ sessionID, directory }, { throwOnError: true })
+    const messages = await sdk.project.session
+      .messages({ sessionID, projectID: directory }, { throwOnError: true })
       .then((x) => x.data)
       .catch((error) => {
         log.error("failed to fetch messages for usage update", { error })
@@ -89,7 +89,8 @@ export namespace ACP {
     if (!messages) return
 
     const assistantMessages = messages.filter(
-      (m): m is { info: AssistantMessage; parts: SessionMessageResponse["parts"] } => m.info.role === "assistant",
+      (m): m is { info: AssistantMessage; parts: ProjectSessionMessageResponse["parts"] } =>
+        m.info.role === "assistant",
     )
 
     const lastAssistant = assistantMessages[assistantMessages.length - 1]
@@ -166,7 +167,7 @@ export namespace ACP {
     private async runEventSubscription() {
       while (true) {
         if (this.eventAbort.signal.aborted) return
-        const events = await this.sdk.global.event({
+        const events = await this.sdk.event.subscribe({
           signal: this.eventAbort.signal,
         })
         for await (const event of events.stream) {
@@ -211,20 +212,20 @@ export namespace ACP {
                     permissionID: permission.id,
                     sessionID: permission.sessionID,
                   })
-                  await this.sdk.permission.reply({
+                  await this.sdk.project.permission.reply({
                     requestID: permission.id,
                     reply: "reject",
-                    directory,
+                    projectID: directory,
                   })
                   return undefined
                 })
 
               if (!res) return
               if (res.outcome.outcome !== "selected") {
-                await this.sdk.permission.reply({
+                await this.sdk.project.permission.reply({
                   requestID: permission.id,
                   reply: "reject",
-                  directory,
+                  projectID: directory,
                 })
                 return
               }
@@ -245,10 +246,10 @@ export namespace ACP {
                 }
               }
 
-              await this.sdk.permission.reply({
+              await this.sdk.project.permission.reply({
                 requestID: permission.id,
                 reply: res.outcome.optionId as "once" | "always" | "reject",
-                directory,
+                projectID: directory,
               })
             })
             .catch((error) => {
@@ -458,12 +459,12 @@ export namespace ACP {
           if (!session) return
           const sessionId = session.id
 
-          const message = await this.sdk.session
+          const message = await this.sdk.project.session
             .message(
               {
                 sessionID: props.sessionID,
                 messageID: props.messageID,
-                directory: session.cwd,
+                projectID: session.cwd,
               },
               { throwOnError: true },
             )
@@ -620,11 +621,11 @@ export namespace ACP {
         })
 
         // Replay session history
-        const messages = await this.sdk.session
+        const messages = await this.sdk.project.session
           .messages(
             {
               sessionID: sessionId,
-              directory,
+              projectID: directory,
             },
             { throwOnError: true },
           )
@@ -671,10 +672,10 @@ export namespace ACP {
         const cursor = params.cursor ? Number(params.cursor) : undefined
         const limit = 100
 
-        const sessions = await this.sdk.session
+        const sessions = await this.sdk.project.session
           .list(
             {
-              directory: params.cwd ?? undefined,
+              projectID: params.cwd ?? "",
               roots: true,
             },
             { throwOnError: true },
@@ -718,11 +719,11 @@ export namespace ACP {
       try {
         const model = await defaultModel(this.config, directory)
 
-        const forked = await this.sdk.session
+        const forked = await this.sdk.project.session
           .fork(
             {
               sessionID: params.sessionId,
-              directory,
+              projectID: directory,
             },
             { throwOnError: true },
           )
@@ -743,11 +744,11 @@ export namespace ACP {
           sessionId,
         })
 
-        const messages = await this.sdk.session
+        const messages = await this.sdk.project.session
           .messages(
             {
               sessionID: sessionId,
-              directory,
+              projectID: directory,
             },
             { throwOnError: true },
           )
@@ -807,7 +808,7 @@ export namespace ACP {
       }
     }
 
-    private async processMessage(message: SessionMessageResponse) {
+    private async processMessage(message: ProjectSessionMessageResponse) {
       log.debug("process message", message)
       if (message.info.role !== "assistant" && message.info.role !== "user") return
       const sessionId = message.info.sessionID
@@ -1112,10 +1113,10 @@ export namespace ACP {
     }
 
     private async loadAvailableModes(directory: string): Promise<ModeOption[]> {
-      const agents = await this.config.sdk.app
-        .agents(
+      const agents = await this.config.sdk.project.agent
+        .list(
           {
-            directory,
+            projectID: directory,
           },
           { throwOnError: true },
         )
@@ -1154,7 +1155,7 @@ export namespace ACP {
       const model = await defaultModel(this.config, directory)
       const sessionId = params.sessionId
 
-      const providers = await this.sdk.config.providers({ directory }).then((x) => x.data?.providers)
+      const providers = await this.sdk.project.config.providers({ projectID: directory }).then((x) => x.data?.providers)
       const entries = sortProvidersByName(providers ?? [])
       const availableVariants = modelVariantsFromProviders(entries, model)
       const currentVariant = this.sessionManager.getVariant(sessionId)
@@ -1171,10 +1172,10 @@ export namespace ACP {
           }
         : undefined
 
-      const commands = await this.config.sdk.command
+      const commands = await this.config.sdk.project.command
         .list(
           {
-            directory,
+            projectID: directory,
           },
           { throwOnError: true },
         )
@@ -1216,10 +1217,10 @@ export namespace ACP {
 
       await Promise.all(
         Object.entries(mcpServers).map(async ([key, mcp]) => {
-          await this.sdk.mcp
+          await this.sdk.project.mcp
             .add(
               {
-                directory,
+                projectID: directory,
                 name: key,
                 config: mcp,
               },
@@ -1258,8 +1259,8 @@ export namespace ACP {
 
     async unstable_setSessionModel(params: SetSessionModelRequest) {
       const session = this.sessionManager.get(params.sessionId)
-      const providers = await this.sdk.config
-        .providers({ directory: session.cwd }, { throwOnError: true })
+      const providers = await this.sdk.project.config
+        .providers({ projectID: session.cwd }, { throwOnError: true })
         .then((x) => x.data?.providers)
 
       const selection = parseModelSelection(params.modelId, providers)
@@ -1406,7 +1407,7 @@ export namespace ACP {
       })
 
       if (!cmd) {
-        const response = await this.sdk.session.prompt({
+        const response = await this.sdk.project.session.prompt({
           sessionID,
           model: {
             providerID: model.providerID,
@@ -1415,7 +1416,7 @@ export namespace ACP {
           variant: this.sessionManager.getVariant(sessionID),
           parts,
           agent,
-          directory,
+          projectID: directory,
         })
         const msg = response.data?.info
 
@@ -1428,17 +1429,17 @@ export namespace ACP {
         }
       }
 
-      const command = await this.config.sdk.command
-        .list({ directory }, { throwOnError: true })
+      const command = await this.config.sdk.project.command
+        .list({ projectID: directory }, { throwOnError: true })
         .then((x) => x.data?.find((c) => c.name === cmd.name))
       if (command) {
-        const response = await this.sdk.session.command({
+        const response = await this.sdk.project.session.command({
           sessionID,
           command: command.name,
           arguments: cmd.args,
           model: `${model.providerID}/${model.modelID}`,
           agent,
-          directory,
+          projectID: directory,
         })
         const msg = response.data?.info
 
@@ -1453,10 +1454,10 @@ export namespace ACP {
 
       switch (cmd.name) {
         case "compact":
-          await this.config.sdk.session.summarize(
+          await this.config.sdk.project.session.summarize(
             {
               sessionID,
-              directory,
+              projectID: directory,
               providerID: model.providerID,
               modelID: model.modelID,
             },
@@ -1475,10 +1476,10 @@ export namespace ACP {
 
     async cancel(params: CancelNotification) {
       const session = this.sessionManager.get(params.sessionId)
-      await this.config.sdk.session.abort(
+      await this.config.sdk.project.session.abort(
         {
           sessionID: params.sessionId,
-          directory: session.cwd,
+          projectID: session.cwd,
         },
         { throwOnError: true },
       )
@@ -1539,8 +1540,8 @@ export namespace ACP {
 
     const directory = cwd ?? process.cwd()
 
-    const specified = await sdk.config
-      .get({ directory }, { throwOnError: true })
+    const specified = await sdk.project.config
+      .get({ projectID: directory }, { throwOnError: true })
       .then((resp) => {
         const cfg = resp.data
         if (!cfg || !cfg.model) return undefined
@@ -1551,8 +1552,8 @@ export namespace ACP {
         return undefined
       })
 
-    const providers = await sdk.config
-      .providers({ directory }, { throwOnError: true })
+    const providers = await sdk.project.config
+      .providers({ projectID: directory }, { throwOnError: true })
       .then((x) => x.data?.providers ?? [])
       .catch((error) => {
         log.error("failed to list providers for default model", { error })

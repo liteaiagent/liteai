@@ -18,10 +18,10 @@ export class ACPSessionManager {
   }
 
   async create(cwd: string, mcpServers: McpServer[], model?: ACPSessionState["model"]): Promise<ACPSessionState> {
-    const session = await this.sdk.session
+    const session = await this.sdk.project.session
       .create(
         {
-          directory: cwd,
+          projectID: cwd,
         },
         { throwOnError: true },
       )
@@ -49,11 +49,11 @@ export class ACPSessionManager {
     mcpServers: McpServer[],
     model?: ACPSessionState["model"],
   ): Promise<ACPSessionState> {
-    const session = await this.sdk.session
+    const session = await this.sdk.project.session
       .get(
         {
           sessionID: sessionId,
-          directory: cwd,
+          projectID: cwd,
         },
         { throwOnError: true },
       )

@@ -379,25 +379,33 @@ export const RunCommand = cmd({
     }
 
     async function session(sdk: LiteaiClient) {
-      const baseID = args.continue ? (await sdk.session.list()).data?.find((s) => !s.parentID)?.id : args.session
+      const projID = directory ?? process.cwd()
+      const baseID = args.continue
+        ? (await sdk.project.session.list({ projectID: projID })).data?.find((s) => !s.parentID)?.id
+        : args.session
 
       if (baseID && args.fork) {
-        const forked = await sdk.session.fork({ sessionID: baseID })
+        const forked = await sdk.project.session.fork({ sessionID: baseID, projectID: projID })
         return forked.data?.id
       }
 
       if (baseID) return baseID
 
       const name = title()
-      const result = await sdk.session.create({ title: name, permission: rules })
+      const result = await sdk.project.session.create({
+        title: name,
+        permission: rules,
+        projectID: directory ?? process.cwd(),
+      })
       return result.data?.id
     }
 
     async function share(sdk: LiteaiClient, sessionID: string) {
-      const cfg = await sdk.config.get()
+      const projID = directory ?? process.cwd()
+      const cfg = await sdk.project.config.get({ projectID: projID })
       if (!cfg.data) return
       if (cfg.data.share !== "auto" && !Flag.LITEAI_AUTO_SHARE && !args.share) return
-      const res = await sdk.session.share({ sessionID }).catch((error) => {
+      const res = await sdk.project.session.share({ sessionID, projectID: projID }).catch((error) => {
         if (error instanceof Error && error.message.includes("disabled")) {
           UI.println(`${UI.Style.TEXT_DANGER_BOLD}!  ${error.message}`)
         }
@@ -409,8 +417,9 @@ export const RunCommand = cmd({
     }
 
     async function execute(sdk: LiteaiClient) {
+      const projID = directory ?? process.cwd()
       try {
-        await sdk.project.current()
+        await sdk.project.current({ projectID: projID })
       } catch (e: unknown) {
         const err = e as { response?: { status?: number } }
         if (err?.response?.status === 404) {
@@ -453,7 +462,9 @@ export const RunCommand = cmd({
       async function loop() {
         const toggles = new Map<string, boolean>()
 
-        for await (const event of events.stream) {
+        for await (const rawEvent of events.stream) {
+          // biome-ignore lint/suspicious/noExplicitAny: dynamic stream payload
+          const event: any = (rawEvent as any).payload || rawEvent
           if (
             event.type === "message.updated" &&
             event.properties.info.role === "assistant" &&
@@ -558,9 +569,10 @@ export const RunCommand = cmd({
               UI.Style.TEXT_NORMAL +
                 `permission requested: ${permission.permission} (${permission.patterns.join(", ")}); auto-rejecting`,
             )
-            await sdk.permission.reply({
+            await sdk.project.permission.reply({
               requestID: permission.id,
               reply: "reject",
+              projectID: projID,
             })
           }
         }
@@ -572,8 +584,8 @@ export const RunCommand = cmd({
 
         // When attaching, validate against the running server instead of local Instance state.
         if (args.attach) {
-          const modes = await sdk.app
-            .agents(undefined, { throwOnError: true })
+          const modes = await sdk.project.agent
+            .list({ projectID: projID }, { throwOnError: true })
             .then((x) => x.data ?? [])
             .catch(() => undefined)
 
@@ -641,8 +653,9 @@ export const RunCommand = cmd({
       })
 
       if (args.command) {
-        await sdk.session.command({
+        await sdk.project.session.command({
           sessionID,
+          projectID: projID,
           agent,
           model: args.model,
           command: args.command,
@@ -651,8 +664,9 @@ export const RunCommand = cmd({
         })
       } else {
         const model = args.model ? Provider.parseModel(args.model) : undefined
-        await sdk.session.prompt({
+        await sdk.project.session.prompt({
           sessionID,
+          projectID: projID,
           agent,
           model,
           variant: args.variant,
