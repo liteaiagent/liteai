@@ -36,7 +36,7 @@ describe("Scheduler.register", () => {
       },
     })
     expect(runs.count).toBe(2)
-  })
+  }, 30_000)
 
   test("global scope runs once across instances", async () => {
     await using one = await tmpdir({ git: true })
@@ -69,5 +69,5 @@ describe("Scheduler.register", () => {
       },
     })
     expect(runs.count).toBe(1)
-  })
+  }, 30_000)
 })

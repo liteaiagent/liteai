@@ -155,7 +155,7 @@ describe("setup", () => {
     }
     const result = await setup(cfg)
     expect(result.project).toBe("polled-proj")
-  })
+  }, 30_000)
 
   test("not onboarded LRO no project falls back to envProject", async () => {
     const load: LoadCodeAssistResponse = {

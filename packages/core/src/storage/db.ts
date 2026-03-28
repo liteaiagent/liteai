@@ -32,6 +32,7 @@ const log = Log.create({ service: "db" })
 
 export namespace Database {
   export const Path = iife(() => {
+    if (Flag.LITEAI_DB_MEMORY) return ":memory:"
     const channel = Installation.CHANNEL
     if (["latest", "beta"].includes(channel) || Flag.LITEAI_DISABLE_CHANNEL_DB)
       return path.join(Global.Path.data, "liteai.db")
@@ -87,12 +88,14 @@ export namespace Database {
     const sqlite = new BunDatabase(Path, { create: true })
     state.sqlite = sqlite
 
-    sqlite.run("PRAGMA journal_mode = WAL")
-    sqlite.run("PRAGMA synchronous = NORMAL")
-    sqlite.run("PRAGMA busy_timeout = 5000")
-    sqlite.run("PRAGMA cache_size = -64000")
     sqlite.run("PRAGMA foreign_keys = ON")
-    sqlite.run("PRAGMA wal_checkpoint(PASSIVE)")
+    sqlite.run("PRAGMA cache_size = -64000")
+    if (Path !== ":memory:") {
+      sqlite.run("PRAGMA journal_mode = WAL")
+      sqlite.run("PRAGMA synchronous = NORMAL")
+      sqlite.run("PRAGMA busy_timeout = 5000")
+      sqlite.run("PRAGMA wal_checkpoint(PASSIVE)")
+    }
 
     const db = drizzle({ client: sqlite })
 

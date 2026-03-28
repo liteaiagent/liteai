@@ -43,7 +43,6 @@ export namespace Flag {
   export const LITEAI_DISABLE_EXTERNAL_SKILLS = LITEAI_DISABLE_CLAUDE_CODE_SKILLS || truthy("DISABLE_EXTERNAL_SKILLS")
   export declare const LITEAI_DISABLE_EXTERNAL_AGENTS: boolean
   export declare const LITEAI_DISABLE_PROJECT_CONFIG: boolean
-  export const LITEAI_FAKE_VCS = env("FAKE_VCS")
   export declare const LITEAI_CLIENT: string
   export const LITEAI_SERVER_PASSWORD = env("SERVER_PASSWORD")
   export const LITEAI_SERVER_USERNAME = env("SERVER_USERNAME")
@@ -67,16 +66,23 @@ export namespace Flag {
   export const LITEAI_EXPERIMENTAL_WORKSPACES = LITEAI_EXPERIMENTAL || truthy("EXPERIMENTAL_WORKSPACES")
   export const LITEAI_EXPERIMENTAL_MARKDOWN = !falsy("EXPERIMENTAL_MARKDOWN")
   export const LITEAI_MODELS_URL = env("MODELS_URL")
-  export const LITEAI_MODELS_PATH = env("MODELS_PATH")
-  export const LITEAI_DISABLE_CHANNEL_DB = truthy("DISABLE_CHANNEL_DB")
-  export const LITEAI_SKIP_MIGRATIONS = truthy("SKIP_MIGRATIONS")
 
+  // Configuration Overrides
   export const LITEAI_HOME = env("HOME")
   export const LITEAI_MODEL = env("MODEL")
   export const LITEAI_PROVIDER = env("PROVIDER")
 
   /** Plugin directories (repeatable, comma-separated). Set at runtime via `--plugin-dir`. */
   export declare const LITEAI_PLUGIN_DIR: string[] | undefined
+
+  // DB Testing
+  export const LITEAI_DB_MEMORY = truthy("DB_MEMORY")
+  export const LITEAI_DISABLE_CHANNEL_DB = truthy("DISABLE_CHANNEL_DB")
+  export const LITEAI_SKIP_MIGRATIONS = truthy("SKIP_MIGRATIONS")
+
+  // General Testing
+  export const LITEAI_FAKE_VCS = env("FAKE_VCS")
+  export const LITEAI_MODELS_PATH = env("MODELS_PATH")
 }
 
 Object.defineProperty(Flag, "LITEAI_DISABLE_EXTERNAL_AGENTS", {
