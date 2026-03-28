@@ -21,11 +21,7 @@ type EventController = {
   close: () => void
 }
 
-type MockSdk = {
-  [ns: string]: {
-    [method: string]: (...args: never[]) => unknown
-  }
-}
+type MockSdk = Record<string, any>
 
 function inProgressText(update: SessionUpdateParams["update"]) {
   if (update.sessionUpdate !== "tool_call_update") return undefined
@@ -160,97 +156,102 @@ function createFakeAgent() {
   }
 
   const sdk: MockSdk = {
-    global: {
-      event: async (opts?: { signal?: AbortSignal }) => {
+    event: {
+      subscribe: async (opts?: { signal?: AbortSignal }) => {
         calls.eventSubscribe++
         return { stream: stream(opts?.signal) }
       },
     },
-    session: {
-      create: async (_params?: Record<string, unknown>) => {
-        calls.sessionCreate++
-        return {
-          data: {
-            id: `ses_${calls.sessionCreate}`,
-            time: { created: new Date().toISOString() },
-          },
-        }
-      },
-      get: async (_params?: Record<string, unknown>) => {
-        return {
-          data: {
-            id: "ses_1",
-            time: { created: new Date().toISOString() },
-          },
-        }
-      },
-      messages: async () => {
-        return { data: [] }
-      },
-      message: async (params?: Record<string, unknown>) => {
-        // Return a message with parts that can be looked up by partID
-        return {
-          data: {
-            info: {
-              role: "assistant",
+    project: {
+      session: {
+        create: async (_params?: Record<string, unknown>) => {
+          calls.sessionCreate++
+          return {
+            data: {
+              id: `ses_${calls.sessionCreate}`,
+              time: { created: new Date().toISOString() },
             },
-            parts: [
-              {
-                id: params?.messageID ? `${params.messageID as string}_part` : "part_1",
-                type: "text",
-                text: "",
+          }
+        },
+        get: async (_params?: Record<string, unknown>) => {
+          return {
+            data: {
+              id: "ses_1",
+              time: { created: new Date().toISOString() },
+            },
+          }
+        },
+        messages: async () => {
+          return { data: [] }
+        },
+        message: async (params?: Record<string, unknown>) => {
+          // Return a message with parts that can be looked up by partID
+          return {
+            data: {
+              info: {
+                role: "assistant",
               },
-            ],
-          },
-        }
-      },
-    },
-    permission: {
-      respond: async () => {
-        return { data: true }
-      },
-      reply: async (_params: Record<string, unknown>) => {
-        return { data: true }
-      },
-    },
-    config: {
-      providers: async () => {
-        return {
-          data: {
-            providers: [
-              {
-                id: "liteai",
-                name: "liteai",
-                models: {
-                  "big-pickle": { id: "big-pickle", name: "big-pickle" },
+              parts: [
+                {
+                  id: params?.messageID ? `${params.messageID as string}_part` : "part_1",
+                  type: "text",
+                  text: "",
                 },
+              ],
+            },
+          }
+        },
+      },
+      permission: {
+        respond: async () => {
+          return { data: true }
+        },
+        reply: async (_params: Record<string, unknown>) => {
+          return { data: true }
+        },
+      },
+      config: {
+        providers: async () => {
+          return {
+            data: {
+              providers: [
+                {
+                  id: "liteai",
+                  name: "liteai",
+                  models: {
+                    "big-pickle": { id: "big-pickle", name: "big-pickle" },
+                  },
+                },
+              ],
+            },
+          }
+        },
+        get: async () => {
+          return { data: {} }
+        },
+      },
+      agent: {
+        list: async () => {
+          return {
+            data: [
+              {
+                name: "build",
+                description: "build",
+                mode: "agent",
               },
             ],
-          },
-        }
+          }
+        },
       },
-    },
-    app: {
-      agents: async () => {
-        return {
-          data: [
-            {
-              name: "build",
-              description: "build",
-              mode: "agent",
-            },
-          ],
-        }
+      command: {
+        list: async () => {
+          return { data: [] }
+        },
       },
-    },
-    command: {
-      list: async () => {
-        return { data: [] }
-      },
-    },
-    mcp: {
-      add: async () => {
-        return { data: true }
+      mcp: {
+        add: async () => {
+          return { data: true }
+        },
       },
     },
   }
@@ -262,7 +263,7 @@ function createFakeAgent() {
 
   const stop = () => {
     controller.close()
-    ;(agent as unknown as { eventAbort: AbortController }).eventAbort.abort()
+    ;(agent as unknown as { eventStreamer: { stop: () => void } }).eventStreamer.stop()
   }
 
   return { agent, controller, calls, updates, chunks, sessionUpdates, stop, sdk, connection }
@@ -385,7 +386,7 @@ describe("acp.agent event subscription", () => {
       fn: async () => {
         const permissionReplies: string[] = []
         const { agent, controller, stop, sdk } = createFakeAgent()
-        sdk.permission.reply = async (params: Record<string, unknown>) => {
+        sdk.project.permission.reply = async (params: Record<string, unknown>) => {
           permissionReplies.push(params.requestID as string)
           return { data: true }
         }
@@ -441,7 +442,7 @@ describe("acp.agent event subscription", () => {
           return originalRequestPermission(params)
         }
 
-        sdk.permission.reply = async (params: Record<string, unknown>) => {
+        sdk.project.permission.reply = async (params: Record<string, unknown>) => {
           permissionReplies.push(params.requestID as string)
           return { data: true }
         }
@@ -593,7 +594,7 @@ describe("acp.agent event subscription", () => {
         const sessionId = await agent.newSession({ cwd, mcpServers: [] } as NewSessionRequest).then((x) => x.sessionId)
         const input = { command: "echo hi", description: "run command" }
 
-        sdk.session.messages = async () => ({
+        sdk.project.session.messages = async () => ({
           data: [
             {
               info: {
