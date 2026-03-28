@@ -1,5 +1,5 @@
 /**
- * Interactive chat client for liteai-api-node.
+ * Interactive chat client for gca-proxy.
  *
  * Usage: bun scripts/chat.ts [options]
  *

@@ -1,12 +1,12 @@
 {
-  "name": "liteai-api",
+  "name": "@liteai/gca-proxy",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build --compile src/index.ts --outfile dist/liteai-api keys/api_public.pem keys/api_private.pem",
-    "start": "./dist/liteai-api",
+    "build": "bun build --compile src/index.ts --outfile dist/gca-proxy keys/api_public.pem keys/api_private.pem",
+    "start": "./dist/gca-proxy",
     "typecheck": "tsc --noEmit",
     "lint": "biome check --write .",
     "lint:check": "biome check .",

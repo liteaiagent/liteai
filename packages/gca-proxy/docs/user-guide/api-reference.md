@@ -1,4 +1,4 @@
-# LiteAI API Node — API Routes Reference
+# GCA Proxy — API Routes Reference
 
 > OpenAI-compatible API server powered by Google Gemini models.
 >
@@ -10,7 +10,7 @@
 http://localhost:9000
 ```
 
-Port is configurable via `PORT` env var or `~/.liteai/liteai-api-node.json`.
+Port is configurable via `PORT` env var or `~/.liteai/gca-proxy.json`.
 
 ---
 
@@ -166,7 +166,7 @@ Update settings at runtime. Set a value to `null` to reset it.
 
 #### `POST /v1/settings/save`
 
-Persist runtime overrides to `~/.liteai/liteai-api-node.json`.
+Persist runtime overrides to `~/.liteai/gca-proxy.json`.
 
 #### `POST /v1/settings/reload`
 

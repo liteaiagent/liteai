@@ -1,12 +1,12 @@
-# LiteAI API Node — Getting Started
+# GCA Proxy — Getting Started
 
-> Get up and running with the LiteAI API Node server in minutes.
+> Get up and running with the GCA Proxy server in minutes.
 
 ---
 
-## What is LiteAI API Node?
+## What is GCA Proxy?
 
-LiteAI API Node is an **OpenAI-compatible API server** that proxies requests to Google Gemini models. It translates OpenAI-format chat completions into Gemini API calls, so any tool that speaks the OpenAI protocol (VS Code extensions, chat UIs, CLI tools) can use Gemini without modification.
+GCA Proxy is an **OpenAI-compatible API server** that proxies requests to Google Gemini models. It translates OpenAI-format chat completions into Gemini API calls, so any tool that speaks the OpenAI protocol (VS Code extensions, chat UIs, CLI tools) can use Gemini without modification.
 
 **Key features:**
 - OpenAI-compatible `/v1/chat/completions` endpoint (streaming and non-streaming)
@@ -32,7 +32,7 @@ LiteAI API Node is an **OpenAI-compatible API server** that proxies requests to 
 ```bash
 # Clone the monorepo
 git clone <repo-url>
-cd liteai/apps/liteai-api-node
+cd liteai/packages/gca-proxy
 
 # Install dependencies
 bun install
@@ -131,7 +131,7 @@ The test suite auto-generates a JWT from `keys/api_private.pem` and tests health
 ## Project Structure
 
 ```
-liteai-api-node/
+gca-proxy/
 ├── src/
 │   ├── index.ts              # Server entry point (Hono + Bun)
 │   ├── content-generator.ts  # SDK & Code Assist content generators

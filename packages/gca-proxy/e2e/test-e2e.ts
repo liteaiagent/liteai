@@ -1,5 +1,5 @@
 /**
- * E2E test for liteai-api-node server.
+ * E2E test for gca-proxy server.
  *
  * Usage: npx tsx e2e/test-e2e.ts
  *

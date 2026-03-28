@@ -1,4 +1,4 @@
-# LiteAI API Node — Configuration Guide
+# GCA Proxy — Configuration Guide
 
 > All the ways to configure the server: environment variables, user settings file, and runtime API.
 
@@ -171,6 +171,6 @@ curl -X POST http://localhost:9000/v1/settings/reload \
 | `~/.liteai/liteai.json` | User settings (model, server) |
 | `~/.gemini/oauth_creds.json` | OAuth credential cache (shared with Gemini CLI) |
 | `~/.liteai/telemetry.jsonl` | Local telemetry log (JSONL) |
-| `./logs/liteai-api-node.log` | Server log file |
+| `./logs/gca-proxy.log` | Server log file |
 | `./keys/api_public.pem` | RSA public key for JWT verification |
 | `./keys/api_private.pem` | RSA private key for signing JWTs |

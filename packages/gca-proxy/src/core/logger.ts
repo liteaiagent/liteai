@@ -28,9 +28,9 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 let currentLevel: LogLevel = "INFO"
 let fileLogLevel: LogLevel = "DEBUG" // file always captures debug+
 
-// Log file path: ./logs/liteai-api-node.log
+// Log file path: ./logs/gca-proxy.log
 const LOG_DIR = join(process.cwd(), "logs")
-const LOG_FILE = join(LOG_DIR, "liteai-api-node.log")
+const LOG_FILE = join(LOG_DIR, "gca-proxy.log")
 
 // Ensure log directory exists
 try {

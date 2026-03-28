@@ -1,5 +1,5 @@
 /**
- * CLI tool to generate and manage LiteAI API keys (liteai-api-node).
+ * CLI tool to generate and manage LiteAI API keys (gca-proxy).
  *
  * Uses RS256 asymmetric signing (jose library):
  *   - SIGNING:      requires the private key (admin only)

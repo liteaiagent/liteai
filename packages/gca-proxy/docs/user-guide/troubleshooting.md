@@ -1,4 +1,4 @@
-# LiteAI API Node — Troubleshooting
+# GCA Proxy — Troubleshooting
 
 > Common issues, debugging tips, and how to read the logs.
 
@@ -21,7 +21,7 @@ Set via `LOG_LEVEL` env var (default: `INFO`):
 ### Log Outputs
 
 - **Console** — follows `LOG_LEVEL`
-- **File** — always captures `DEBUG`+ to `./logs/liteai-api-node.log`
+- **File** — always captures `DEBUG`+ to `./logs/gca-proxy.log`
 
 ### Request Correlation
 
@@ -179,7 +179,7 @@ When something isn't working:
 
 1. **Check health:** `curl http://localhost:9000/health`
 2. **Check auth status:** `curl http://localhost:9000/auth/status`
-3. **Check the log file:** `tail -100 ./logs/liteai-api-node.log`
+3. **Check the log file:** `tail -100 ./logs/gca-proxy.log`
 4. **Enable debug logging:** `LOG_LEVEL=DEBUG bun run dev`
 5. **Enable trace logging:** `LOG_LEVEL=TRACE bun run dev` (shows full payloads)
 6. **Check telemetry:** `tail -5 ~/.liteai/telemetry.jsonl | jq .`
