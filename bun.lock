@@ -25,9 +25,6 @@
     "packages/liteai": {
       "name": "liteai",
       "version": "1.0.0",
-      "bin": {
-        "liteai": "./bin/liteai",
-      },
       "dependencies": {
         "@actions/core": "1.11.1",
         "@actions/github": "6.0.1",

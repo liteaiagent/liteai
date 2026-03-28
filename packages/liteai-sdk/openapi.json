@@ -838,6 +838,45 @@
             "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.list({\n  ...\n})"
           }
         ]
+      },
+      "post": {
+        "operationId": "project.create",
+        "summary": "Create project",
+        "description": "Initialize or register a project for a given directory.",
+        "responses": {
+          "200": {
+            "description": "Created project information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.create({\n  ...\n})"
+          }
+        ]
       }
     },
     "/project/current": {

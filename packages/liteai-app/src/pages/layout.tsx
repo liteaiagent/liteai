@@ -401,19 +401,23 @@ export default function Layout(props: ParentProps) {
       (value) => {
         if (!value.ready || !value.layoutReady || !state.autoselect || value.dir) return
         const last = layout.projects.last()
-        if (value.list.length === 0) {
-          if (!last) return
+        
+        if (value.list.length === 0 || !last) {
           setState("autoselect", false)
-          openProject(navDeps, last, false)
-          navigateToProject(navDeps, last)
           return
         }
-        const lastKey = last ? workspaceKey(last) : undefined
-        const next =
-          (lastKey ? value.list.find((p) => workspaceKey(p.worktree) === lastKey) : undefined) ?? value.list[0]
-        if (!next) return
+
+        const lastKey = workspaceKey(last)
+        const next = value.list.find((p) => workspaceKey(p.worktree) === lastKey)
+        
+        if (!next) {
+          setState("autoselect", false)
+          return
+        }
+
         setState("autoselect", false)
-        openProject(navDeps, next.worktree, false)
+        // Soft select without triggering heavy API calls (preventing "open actions")
+        layout.projects.open(next.worktree)
         navigateToProject(navDeps, next.worktree)
       },
     ),

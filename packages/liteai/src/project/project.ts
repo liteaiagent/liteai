@@ -102,8 +102,8 @@ export namespace Project {
       .catch(() => undefined)
   }
 
-  export async function fromDirectory(directory: string) {
-    log.info("fromDirectory", { directory })
+  export async function fromDirectory(directory: string, opts?: { autoCreate?: boolean }) {
+    log.info("fromDirectory", { directory, opts })
 
     if (!existsSync(directory)) {
       throw new NotFoundError({ message: `Directory does not exist: ${directory}` })
@@ -231,6 +231,11 @@ export namespace Project {
     })
 
     const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, data.id)).get())
+
+    if (!row && !opts?.autoCreate) {
+      throw new NotFoundError({ message: `Project not found for directory: ${directory}` })
+    }
+
     const existing = row
       ? fromRow(row)
       : {
@@ -385,7 +390,7 @@ export namespace Project {
       throw new Error(text || "Failed to initialize git repository")
     }
 
-    return (await fromDirectory(input.directory)).project
+    return (await fromDirectory(input.directory, { autoCreate: true })).project
   }
 
   export const update = fn(

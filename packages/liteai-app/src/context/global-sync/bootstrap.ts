@@ -121,23 +121,31 @@ export async function bootstrapDirectory(input: {
 }) {
   if (input.store.status !== "complete") input.setStore("status", "loading")
 
-  const blockingRequests = {
-    project: () =>
-      input.sdk.project.current().then((x) => {
-        if (x.data?.id) input.setStore("project", x.data.id)
-      }),
-    provider: () =>
-      input.sdk.provider.list().then((x) => {
-        if (x.data) input.setStore("provider", normalizeProviderList(x.data))
-      }),
-    agent: () => input.sdk.app.agents().then((x) => input.setStore("agent", x.data ?? [])),
-    config: () =>
-      input.sdk.config.get().then((x) => {
-        if (x.data) input.setStore("config", x.data)
-      }),
-  }
-
   try {
+    const projRes = await retry(() =>
+      input.sdk.project.current().catch((e: any) => {
+        if (e?.name === "NotFoundError" || e?.response?.status === 404) return { data: null }
+        throw e
+      })
+    )
+    if (!projRes.data) {
+      input.setStore("status", "partial")
+      return
+    }
+    input.setStore("project", projRes.data.id)
+
+    const blockingRequests = {
+      provider: () =>
+        input.sdk.provider.list().then((x) => {
+          if (x.data) input.setStore("provider", normalizeProviderList(x.data))
+        }),
+      agent: () => input.sdk.app.agents().then((x) => input.setStore("agent", x.data ?? [])),
+      config: () =>
+        input.sdk.config.get().then((x) => {
+          if (x.data) input.setStore("config", x.data)
+        }),
+    }
+
     await Promise.all(Object.values(blockingRequests).map((p) => retry(p)))
   } catch (err) {
     console.error("Failed to bootstrap instance", err)

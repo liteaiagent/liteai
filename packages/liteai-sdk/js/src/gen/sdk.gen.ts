@@ -95,6 +95,7 @@ import type {
 	PluginUninstallResponses,
 	ProjectArchiveErrors,
 	ProjectArchiveResponses,
+	ProjectCreateResponses,
 	ProjectCurrentResponses,
 	ProjectInitGitResponses,
 	ProjectListResponses,
@@ -592,6 +593,40 @@ export class Project extends HeyApiClient {
 			unknown,
 			ThrowOnError
 		>({ url: "/project", ...options });
+	}
+
+	/**
+	 * Create project
+	 *
+	 * Initialize or register a project for a given directory.
+	 */
+	public create<ThrowOnError extends boolean = false>(
+		parameters?: {
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			ProjectCreateResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/project",
+			...options,
+			...params,
+		});
 	}
 
 	/**

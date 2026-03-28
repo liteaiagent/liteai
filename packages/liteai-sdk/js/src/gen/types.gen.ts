@@ -2524,6 +2524,26 @@ export type ProjectListResponses = {
 export type ProjectListResponse =
 	ProjectListResponses[keyof ProjectListResponses];
 
+export type ProjectCreateData = {
+	body?: never;
+	path?: never;
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/project";
+};
+
+export type ProjectCreateResponses = {
+	/**
+	 * Created project information
+	 */
+	200: Project;
+};
+
+export type ProjectCreateResponse =
+	ProjectCreateResponses[keyof ProjectCreateResponses];
+
 export type ProjectCurrentData = {
 	body?: never;
 	path?: never;

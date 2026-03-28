@@ -608,7 +608,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         last() {
           return store.lastProject
         },
-        touch(directory: string) {
+        touch(directory: string | undefined) {
           setStore("lastProject", directory)
         },
       },

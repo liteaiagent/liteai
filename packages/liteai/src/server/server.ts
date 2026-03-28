@@ -218,6 +218,95 @@ export namespace Server {
           return c.json(Project.list())
         },
       )
+      .post(
+        "/project",
+        describeRoute({
+          summary: "Create project",
+          description: "Initialize or register a project for a given directory.",
+          operationId: "project.create",
+          responses: {
+            200: {
+              description: "Created project information",
+              content: { "application/json": { schema: resolver(Project.Info) } },
+            },
+          },
+        }),
+        validator(
+          "query",
+          z.object({
+            directory: z.string().optional(),
+            workspace: z.string().optional(),
+          }),
+        ),
+        async (c) => {
+          const raw = c.req.valid("query").directory || c.req.header("x-liteai-directory")
+          if (!raw) {
+            throw new HTTPException(400, {
+              message:
+                "Missing required directory context: set the 'directory' query parameter or 'x-liteai-directory' header",
+            })
+          }
+          const directory = Filesystem.resolve(
+            (() => {
+              try {
+                return decodeURIComponent(raw)
+              } catch (e) {
+                log.debug("decodeURIComponent failed, using raw directory", { raw, error: e })
+                return raw
+              }
+            })(),
+          )
+          const result = await Project.fromDirectory(directory, { autoCreate: true })
+          return c.json(result.project)
+        },
+      )
+      .get(
+        "/path",
+        describeRoute({
+          summary: "Get paths",
+          description: "Retrieve the current working directory and related path information for the LiteAI instance.",
+          operationId: "path.get",
+          responses: {
+            200: {
+              description: "Path",
+              content: {
+                "application/json": {
+                  schema: resolver(
+                    z
+                      .object({
+                        home: z.string(),
+                        state: z.string(),
+                        config: z.string(),
+                        worktree: z.string(),
+                        directory: z.string(),
+                      })
+                      .meta({
+                        ref: "Path",
+                      }),
+                  ),
+                },
+              },
+            },
+          },
+        }),
+        async (c) => {
+          let worktree = ""
+          let directory = ""
+          try {
+            worktree = Instance.worktree
+            directory = Instance.directory
+          } catch {
+            // expected when accessing globally outside an instance context
+          }
+          return c.json({
+            home: Global.Path.home,
+            state: Global.Path.state,
+            config: Global.Path.config,
+            worktree,
+            directory,
+          })
+        },
+      )
       .use(async (c, next) => {
         if (c.req.path === "/log") return next()
         const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
@@ -308,45 +397,6 @@ export namespace Server {
         async (c) => {
           await Instance.dispose()
           return c.json(true)
-        },
-      )
-      .get(
-        "/path",
-        describeRoute({
-          summary: "Get paths",
-          description: "Retrieve the current working directory and related path information for the LiteAI instance.",
-          operationId: "path.get",
-          responses: {
-            200: {
-              description: "Path",
-              content: {
-                "application/json": {
-                  schema: resolver(
-                    z
-                      .object({
-                        home: z.string(),
-                        state: z.string(),
-                        config: z.string(),
-                        worktree: z.string(),
-                        directory: z.string(),
-                      })
-                      .meta({
-                        ref: "Path",
-                      }),
-                  ),
-                },
-              },
-            },
-          },
-        }),
-        async (c) => {
-          return c.json({
-            home: Global.Path.home,
-            state: Global.Path.state,
-            config: Global.Path.config,
-            worktree: Instance.worktree,
-            directory: Instance.directory,
-          })
         },
       )
       .get(

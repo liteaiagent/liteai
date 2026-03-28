@@ -58,10 +58,10 @@ export default function Layout(props: ParentProps) {
         directory: raw,
         throwOnError: true,
       })
-      .path.get()
+      .project.current()
       .then((x) => {
         if (params.dir !== current) return
-        const next = x.data?.directory ?? raw
+        const next = x.data?.worktree ?? raw
         batch(() => {
           setState("invalid", "")
           setState("resolved", next)

@@ -66,7 +66,7 @@ function boot(input: { directory: string; init?: () => Promise<void>; project?: 
             worktree: input.worktree,
             project: input.project,
           }
-        : await Project.fromDirectory(input.directory).then(({ project, sandbox }) => ({
+        : await Project.fromDirectory(input.directory, { autoCreate: false }).then(({ project, sandbox }) => ({
             directory: input.directory,
             worktree: sandbox,
             project,

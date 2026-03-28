@@ -409,6 +409,14 @@ export const RunCommand = cmd({
     }
 
     async function execute(sdk: LiteaiClient) {
+      try {
+        await sdk.project.current()
+      } catch (e: any) {
+        if (e && e.response && e.response.status === 404) {
+          await sdk.project.create({ directory: directory ?? process.cwd() })
+        }
+      }
+
       function tool(part: ToolPart) {
         try {
           if (part.tool === "run_command") return run_command(props<typeof RunCommandTool>(part))

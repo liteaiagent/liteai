@@ -15,9 +15,11 @@ import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { usePlatform } from "@/context/platform"
 import { useServer } from "@/context/server"
+import { useGlobalSDK } from "@/context/global-sdk"
 
 export default function Home() {
   const sync = useGlobalSync()
+  const globalSDK = useGlobalSDK()
   const layout = useLayout()
   const platform = usePlatform()
   const dialog = useDialog()
@@ -39,20 +41,25 @@ export default function Home() {
     return "bg-border-weak-base"
   })
 
-  function openProject(directory: string) {
+  async function openProject(directory: string) {
+    try {
+      await globalSDK.client.project.create({ directory })
+    } catch {
+      // ignore
+    }
     layout.projects.open(directory)
     layout.projects.touch(directory)
     navigate(`/${base64Encode(directory)}`)
   }
 
   async function chooseProject() {
-    function resolve(result: string | string[] | null) {
+    async function resolve(result: string | string[] | null) {
       if (Array.isArray(result)) {
         for (const directory of result) {
-          openProject(directory)
+          await openProject(directory)
         }
       } else if (result) {
-        openProject(result)
+        await openProject(result)
       }
     }
 

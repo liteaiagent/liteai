@@ -6,6 +6,7 @@ import { resolveNetworkOptions, withNetworkOptions } from "@/cli/network"
 import { UI } from "@/cli/ui"
 import { TuiConfig } from "@/config/tui"
 import { Instance } from "@/project/instance"
+import { Project } from "@/project/project"
 import { Filesystem } from "@/util/filesystem"
 import { Log } from "@/util/log"
 import { Rpc } from "@/util/rpc"
@@ -177,6 +178,12 @@ export const TuiThreadCommand = cmd({
       }
 
       const prompt = await input(args.prompt)
+      
+      // Explicitly initialize the project for this directory so Instance.provide won't 404
+      await Project.fromDirectory(cwd, { autoCreate: true }).catch((err) => {
+        Log.Default.warn("project init failed", { error: String(err) })
+      })
+
       const config = await Instance.provide({
         directory: cwd,
         fn: () => TuiConfig.get(),

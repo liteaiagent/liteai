@@ -188,9 +188,14 @@ export function navigateToSession(deps: NavigationDeps, session: Session | undef
   deps.navigateWithSidebarReset(`/${base64Encode(session.directory)}/session/${session.id}`)
 }
 
-export function openProject(deps: NavigationDeps, directory: string, nav = true) {
+export async function openProject(deps: NavigationDeps, directory: string, nav = true) {
+  try {
+    await deps.globalSDK.client.project.create({ directory })
+  } catch {
+    // ignore explicit creation failures
+  }
   deps.layout.projects.open(directory)
-  if (nav) navigateToProject(deps, directory)
+  if (nav) await navigateToProject(deps, directory)
 }
 
 export function closeProject(deps: NavigationDeps, directory: string) {
@@ -226,6 +231,7 @@ export function closeProject(deps: NavigationDeps, directory: string) {
   }
 
   if (!active) {
+    if (deps.layout.projects.last() === directory) deps.layout.projects.touch(undefined)
     deps.layout.projects.close(directory)
     return
   }
@@ -234,6 +240,7 @@ export function closeProject(deps: NavigationDeps, directory: string) {
   console.debug("[project] close active → navigate to", target?.worktree ?? "home")
 
   if (!target) {
+    deps.layout.projects.touch(undefined)
     deps.layout.projects.close(directory)
     deps.navigate("/")
     return
@@ -309,7 +316,7 @@ export async function restoreProject(deps: NavigationDeps, directory: string) {
   console.debug("[project] restore", { directory, id: project?.id })
   if (!project?.id || project.id === "global") return
   await deps.globalSDK.client.project.unarchive({ projectID: project.id })
-  openProject(deps, directory)
+  await openProject(deps, directory)
 }
 
 export function deleteSession(deps: NavigationDeps, session: Session) {
@@ -426,15 +433,15 @@ export function navigateSessionByUnseen(deps: NavigationDeps, offset: number) {
   }
 }
 
-export function handleDeepLinks(deps: NavigationDeps, urls: string[]) {
+export async function handleDeepLinks(deps: NavigationDeps, urls: string[]) {
   if (!deps.server.isLocal()) return
 
   for (const directory of collectOpenProjectDeepLinks(urls)) {
-    openProject(deps, directory)
+    await openProject(deps, directory)
   }
 
   for (const link of collectNewSessionDeepLinks(urls)) {
-    openProject(deps, link.directory, false)
+    await openProject(deps, link.directory, false)
     const slug = base64Encode(link.directory)
     if (link.prompt) {
       setSessionHandoff(slug, { prompt: link.prompt })
