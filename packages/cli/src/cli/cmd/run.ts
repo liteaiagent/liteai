@@ -1,7 +1,7 @@
 import { EOL } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
-import { createLiteaiClient, type LiteaiClient, type ToolPart } from "@liteai-ai/sdk"
+import { createLiteaiClient, type LiteaiClient, type ToolPart } from "@liteai/sdk"
 import { Agent } from "@liteai/core/agent/agent"
 import { Flag } from "@liteai/core/flag/flag"
 import type { PermissionNext } from "@liteai/core/permission/next"

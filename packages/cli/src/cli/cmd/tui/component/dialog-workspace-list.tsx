@@ -1,5 +1,5 @@
-import type { Session } from "@liteai-ai/sdk"
-import { createLiteaiClient } from "@liteai-ai/sdk"
+import type { Session } from "@liteai/sdk"
+import { createLiteaiClient } from "@liteai/sdk"
 import { useRoute } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { useDialog } from "@tui/ui/dialog"

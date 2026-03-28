@@ -10,7 +10,7 @@ import type {
   ProviderListResponse,
   QuestionRequest,
   Todo,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 import { batch } from "solid-js"
 import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import { formatServerError } from "@/utils/server-errors"

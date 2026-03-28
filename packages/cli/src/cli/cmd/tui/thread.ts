@@ -1,6 +1,6 @@
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import type { Event } from "@liteai-ai/sdk"
+import type { Event } from "@liteai/sdk"
 import { TuiConfig } from "@liteai/core/config/tui"
 import { Instance } from "@liteai/core/project/instance"
 import { Project } from "@liteai/core/project/project"

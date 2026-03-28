@@ -1,5 +1,5 @@
 import { base64Encode } from "@liteai/util/encode"
-import type { Project } from "@liteai-ai/sdk/client"
+import type { Project } from "@liteai/sdk/client"
 
 let projectRegistry: Project[] = []
 

@@ -33,9 +33,11 @@
 			"path": "packages/liteai-vscode"
 		},
 		{
-			"path": "packages/liteai-sdk"
+			"name": "sdk",
+			"path": "packages/sdk"
 		},
 		{
+			"name": "cli",
 			"path": "packages/cli"
 		}
 	],

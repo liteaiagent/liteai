@@ -1,4 +1,4 @@
-import type { AssistantMessage, Session } from "@liteai-ai/sdk"
+import type { AssistantMessage, Session } from "@liteai/sdk"
 import { useTerminalDimensions } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"
 import { useCommandDialog } from "@tui/component/dialog-command"

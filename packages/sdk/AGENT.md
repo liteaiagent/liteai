@@ -1,4 +1,4 @@
-# LiteAI SDK (`@liteai-ai/sdk`)
+# LiteAI SDK (`@liteai/sdk`)
 
 ## Overview
 
@@ -7,10 +7,10 @@ The LiteAI SDK is an auto-generated TypeScript client for the LiteAI server API.
 ## Package Structure
 
 ```
-packages/liteai-sdk/
+packages/sdk/
 ├── openapi.json              # OpenAPI spec (source of truth)
 ├── js/
-│   ├── package.json          # Published as @liteai-ai/sdk
+│   ├── package.json          # Published as @liteai/sdk
 │   ├── tsconfig.json
 │   ├── src/
 │   │   ├── index.ts          # Convenience: re-exports client + server
@@ -34,16 +34,16 @@ The package has three entry points:
 
 | Import path | Description |
 |---|---|
-| `@liteai-ai/sdk` | Full SDK: client + server + types |
-| `@liteai-ai/sdk/client` | Client-only: `createLiteaiClient`, `LiteaiClient`, all types |
-| `@liteai-ai/sdk/server` | Server-only: `createLiteaiServer`, `createLiteaiTui` |
+| `@liteai/sdk` | Full SDK: client + server + types |
+| `@liteai/sdk/client` | Client-only: `createLiteaiClient`, `LiteaiClient`, all types |
+| `@liteai/sdk/server` | Server-only: `createLiteaiServer`, `createLiteaiTui` |
 
 ## Creating a Client
 
 ### Client-only (connect to existing server)
 
 ```ts
-import { createLiteaiClient } from "@liteai-ai/sdk/client"
+import { createLiteaiClient } from "@liteai/sdk/client"
 
 const client = createLiteaiClient({
   baseUrl: "http://localhost:4096",
@@ -55,7 +55,7 @@ const client = createLiteaiClient({
 ### Client + Server (full setup)
 
 ```ts
-import { createLiteai } from "@liteai-ai/sdk"
+import { createLiteai } from "@liteai/sdk"
 
 const { client, server } = await createLiteai({
   hostname: "127.0.0.1",
@@ -216,7 +216,7 @@ await client.pty.remove({ ptyID: pty.id })
 
 ## Key Types
 
-All types are exported from `@liteai-ai/sdk/client`:
+All types are exported from `@liteai/sdk/client`:
 
 ```ts
 import type {
@@ -241,7 +241,7 @@ import type {
 
   // Config
   Config,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 ```
 
 ## In the LiteAI App (SolidJS)
@@ -273,7 +273,7 @@ sdk.client.session.trace.get({ sessionID: id, traceID: tid })
 When the server API changes, regenerate the SDK:
 
 ```bash
-cd packages/liteai-sdk/js
+cd packages/sdk/js
 bun run build
 ```
 

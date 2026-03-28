@@ -1,5 +1,5 @@
 import { getFilename } from "@liteai/util/path"
-import type { Session } from "@liteai-ai/sdk/client"
+import type { Session } from "@liteai/sdk/client"
 
 export const normalizePath = (path: string) => {
   const norm = path.replace(/\\/g, "/")

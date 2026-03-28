@@ -1,4 +1,4 @@
-import type { AssistantMessage, Message } from "@liteai-ai/sdk/client"
+import type { AssistantMessage, Message } from "@liteai/sdk/client"
 
 type Provider = {
   id: string

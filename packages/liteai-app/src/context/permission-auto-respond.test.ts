@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { base64Encode } from "@liteai/util/encode"
-import type { PermissionRequest, Session } from "@liteai-ai/sdk/client"
+import type { PermissionRequest, Session } from "@liteai/sdk/client"
 import { autoRespondsPermission, isDirectoryAutoAccepting } from "./permission-auto-respond"
 
 const session = (input: { id: string; parentID?: string }) =>

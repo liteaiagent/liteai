@@ -1,4 +1,4 @@
-import type { TextPart } from "@liteai-ai/sdk"
+import type { TextPart } from "@liteai/sdk"
 import type { PromptInfo } from "@tui/component/prompt/history"
 import { useRoute } from "@tui/context/route"
 import { useSDK } from "@tui/context/sdk"

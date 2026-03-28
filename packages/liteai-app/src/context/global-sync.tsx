@@ -7,7 +7,7 @@ import type {
   ProviderAuthResponse,
   ProviderListResponse,
   Todo,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 import {
   createContext,
   getOwner,

@@ -1,4 +1,4 @@
-import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as UserMessageInfo } from "@liteai-ai/sdk"
+import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as UserMessageInfo } from "@liteai/sdk"
 import { SplitBorder } from "@tui/component/border"
 import { useKeybind } from "@tui/context/keybind"
 import { useLocal } from "@tui/context/local"

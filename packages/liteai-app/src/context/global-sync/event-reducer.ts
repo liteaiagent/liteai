@@ -9,7 +9,7 @@ import type {
   Session,
   SessionStatus,
   Todo,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 import { produce, reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import { dropSessionCaches } from "./session-cache"
 import { trimSessions } from "./session-trim"

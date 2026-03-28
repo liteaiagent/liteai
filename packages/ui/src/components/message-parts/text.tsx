@@ -1,4 +1,4 @@
-import type { AssistantMessage, TextPart } from "@liteai-ai/sdk"
+import type { AssistantMessage, TextPart } from "@liteai/sdk"
 import { createMemo, createSignal, Show } from "solid-js"
 import { useData } from "../../context"
 import { useI18n } from "../../context/i18n"

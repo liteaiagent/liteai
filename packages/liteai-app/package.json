@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@kobalte/core": "catalog:",
-    "@liteai-ai/sdk": "workspace:*",
+    "@liteai/sdk": "workspace:*",
     "@liteai/ui": "workspace:*",
     "@liteai/util": "workspace:*",
     "@shikijs/transformers": "3.9.2",

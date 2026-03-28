@@ -1,5 +1,5 @@
 import { getFilename } from "@liteai/util/path"
-import type { AgentPartInput, FilePartInput, Part, TextPartInput } from "@liteai-ai/sdk/client"
+import type { AgentPartInput, FilePartInput, Part, TextPartInput } from "@liteai/sdk/client"
 import type { FileSelection } from "@/context/file"
 import { encodeFilePath } from "@/context/file/path"
 import type { AgentPart, FileAttachmentPart, ImageAttachmentPart, Prompt } from "@/context/prompt"

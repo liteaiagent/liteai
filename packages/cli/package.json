@@ -31,7 +31,7 @@
   "dependencies": {
     "@liteai/core": "workspace:*",
     "@liteai/util": "workspace:*",
-    "@liteai-ai/sdk": "workspace:*",
+    "@liteai/sdk": "workspace:*",
     "@agentclientprotocol/sdk": "0.14.1",
     "@actions/core": "1.11.1",
     "@actions/github": "6.0.1",

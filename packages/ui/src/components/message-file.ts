@@ -1,4 +1,4 @@
-import type { FilePart } from "@liteai-ai/sdk"
+import type { FilePart } from "@liteai/sdk"
 
 export function attached(part: FilePart) {
   return part.url.startsWith("data:")

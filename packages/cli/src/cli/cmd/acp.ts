@@ -1,5 +1,5 @@
 import { AgentSideConnection, ndJsonStream } from "@agentclientprotocol/sdk"
-import { createLiteaiClient } from "@liteai-ai/sdk"
+import { createLiteaiClient } from "@liteai/sdk"
 import { ACP } from "@liteai/core/acp/agent"
 import { Server } from "@liteai/core/server/server"
 import { Log } from "@liteai/core/util/log"

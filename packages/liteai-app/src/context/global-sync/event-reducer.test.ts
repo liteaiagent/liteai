@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part, PermissionRequest, Project, QuestionRequest, Session } from "@liteai-ai/sdk/client"
+import type { Message, Part, PermissionRequest, Project, QuestionRequest, Session } from "@liteai/sdk/client"
 import { createStore } from "solid-js/store"
 import { applyDirectoryEvent, applyGlobalEvent, cleanupDroppedSessionCaches } from "./event-reducer"
 import type { State } from "./types"

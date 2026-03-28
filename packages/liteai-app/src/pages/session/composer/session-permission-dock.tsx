@@ -1,7 +1,7 @@
 import { Button } from "@liteai/ui/button"
 import { DockPrompt } from "@liteai/ui/dock-prompt"
 import { Icon } from "@liteai/ui/icon"
-import type { PermissionRequest } from "@liteai-ai/sdk"
+import type { PermissionRequest } from "@liteai/sdk"
 import { For, Show } from "solid-js"
 import { useLanguage } from "@/context/language"
 

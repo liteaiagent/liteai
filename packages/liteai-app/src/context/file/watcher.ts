@@ -1,4 +1,4 @@
-import type { FileNode } from "@liteai-ai/sdk"
+import type { FileNode } from "@liteai/sdk"
 
 type WatcherEvent = {
   type: string

@@ -1,5 +1,5 @@
 import path from "node:path"
-import type { PermissionRequest } from "@liteai-ai/sdk"
+import type { PermissionRequest } from "@liteai/sdk"
 import type { TextareaRenderable } from "@opentui/core"
 import { type JSX, Portal, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"

@@ -1,4 +1,4 @@
-import { createLiteaiClient } from "@liteai-ai/sdk"
+import { createLiteaiClient } from "@liteai/sdk"
 import { AUTH_PROVIDERS } from "../auth/registry"
 import { Bus } from "../bus"
 import { Config } from "../config/config"

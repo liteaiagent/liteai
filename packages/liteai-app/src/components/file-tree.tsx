@@ -1,7 +1,7 @@
 import { Collapsible } from "@liteai/ui/collapsible"
 import { FileIcon } from "@liteai/ui/file-icon"
 import { Icon } from "@liteai/ui/icon"
-import type { FileNode } from "@liteai-ai/sdk"
+import type { FileNode } from "@liteai/sdk"
 import {
   type ComponentProps,
   createEffect,

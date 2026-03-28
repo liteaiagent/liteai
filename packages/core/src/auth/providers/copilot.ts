@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises"
-import { createLiteaiClient } from "@liteai-ai/sdk"
+import { createLiteaiClient } from "@liteai/sdk"
 import { Flag } from "@/flag/flag"
 import { Installation } from "@/installation"
 import { Instance } from "@/project/instance"

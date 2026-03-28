@@ -39,7 +39,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.health({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.health({\n  ...\n})"
           }
         ]
       }
@@ -64,7 +64,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.event.subscribe({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.event.subscribe({\n  ...\n})"
           }
         ]
       }
@@ -89,7 +89,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.get({\n  ...\n})"
           }
         ]
       },
@@ -131,7 +131,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.config.update({\n  ...\n})"
           }
         ]
       }
@@ -156,7 +156,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.dispose({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.dispose({\n  ...\n})"
           }
         ]
       }
@@ -196,7 +196,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.browse({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.browse({\n  ...\n})"
           }
         ]
       }
@@ -239,7 +239,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.log({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.log({\n  ...\n})"
           }
         ]
       },
@@ -304,7 +304,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.log.write({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.log.write({\n  ...\n})"
           }
         ]
       }
@@ -329,7 +329,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.path({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.path({\n  ...\n})"
           }
         ]
       }
@@ -367,7 +367,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.system.file.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.system.file.list({\n  ...\n})"
           }
         ]
       }
@@ -432,7 +432,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.system.find.files({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.system.find.files({\n  ...\n})"
           }
         ]
       }
@@ -486,7 +486,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.auth.set({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.auth.set({\n  ...\n})"
           }
         ]
       },
@@ -529,7 +529,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.auth.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.auth.remove({\n  ...\n})"
           }
         ]
       }
@@ -824,7 +824,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.list({\n  ...\n})"
           }
         ]
       }
@@ -858,7 +858,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.auth({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.auth({\n  ...\n})"
           }
         ]
       }
@@ -932,7 +932,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.oauth.authorize({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.oauth.authorize({\n  ...\n})"
           }
         ]
       }
@@ -1000,7 +1000,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.oauth.callback({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.provider.oauth.callback({\n  ...\n})"
           }
         ]
       }
@@ -1028,7 +1028,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.list({\n  ...\n})"
           }
         ]
       },
@@ -1071,7 +1071,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.create({\n  ...\n})"
           }
         ]
       }
@@ -1116,7 +1116,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.get({\n  ...\n})"
           }
         ]
       },
@@ -1206,7 +1206,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.update({\n  ...\n})"
           }
         ]
       }
@@ -1251,7 +1251,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.archive({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.archive({\n  ...\n})"
           }
         ]
       }
@@ -1296,7 +1296,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.unarchive({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.unarchive({\n  ...\n})"
           }
         ]
       }
@@ -1351,7 +1351,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.initGit({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.initGit({\n  ...\n})"
           }
         ]
       }
@@ -1396,7 +1396,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.list({\n  ...\n})"
           }
         ]
       },
@@ -1481,7 +1481,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.create({\n  ...\n})"
           }
         ]
       }
@@ -1542,7 +1542,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.get({\n  ...\n})"
           }
         ]
       },
@@ -1630,7 +1630,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.update({\n  ...\n})"
           }
         ]
       },
@@ -1689,7 +1689,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.remove({\n  ...\n})"
           }
         ]
       }
@@ -1750,7 +1750,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.connect({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.pty.connect({\n  ...\n})"
           }
         ]
       }
@@ -1792,7 +1792,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.get({\n  ...\n})"
           }
         ]
       },
@@ -1851,7 +1851,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.update({\n  ...\n})"
           }
         ]
       }
@@ -1914,7 +1914,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.providers({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.config.providers({\n  ...\n})"
           }
         ]
       }
@@ -1966,7 +1966,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.ids({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.ids({\n  ...\n})"
           }
         ]
       }
@@ -2034,7 +2034,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tool.list({\n  ...\n})"
           }
         ]
       }
@@ -2127,7 +2127,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.create({\n  ...\n})"
           }
         ]
       },
@@ -2170,7 +2170,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.list({\n  ...\n})"
           }
         ]
       }
@@ -2231,7 +2231,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.workspace.remove({\n  ...\n})"
           }
         ]
       }
@@ -2292,7 +2292,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.create({\n  ...\n})"
           }
         ]
       },
@@ -2335,7 +2335,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.list({\n  ...\n})"
           }
         ]
       },
@@ -2394,7 +2394,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.remove({\n  ...\n})"
           }
         ]
       }
@@ -2455,7 +2455,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.reset({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.worktree.reset({\n  ...\n})"
           }
         ]
       }
@@ -2503,7 +2503,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.resource.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.experimental.resource.list({\n  ...\n})"
           }
         ]
       }
@@ -2596,7 +2596,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.list({\n  ...\n})"
           }
         ]
       },
@@ -2671,7 +2671,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.create({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.create({\n  ...\n})"
           }
         ]
       }
@@ -2729,7 +2729,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.status({\n  ...\n})"
           }
         ]
       }
@@ -2803,7 +2803,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.get({\n  ...\n})"
           }
         ]
       },
@@ -2872,7 +2872,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.delete({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.delete({\n  ...\n})"
           }
         ]
       },
@@ -2963,7 +2963,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.update({\n  ...\n})"
           }
         ]
       }
@@ -3040,7 +3040,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.children({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.children({\n  ...\n})"
           }
         ]
       }
@@ -3114,7 +3114,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.todo({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.todo({\n  ...\n})"
           }
         ]
       }
@@ -3211,7 +3211,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.init({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.init({\n  ...\n})"
           }
         ]
       }
@@ -3277,7 +3277,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.fork({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.fork({\n  ...\n})"
           }
         ]
       }
@@ -3348,7 +3348,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.abort({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.abort({\n  ...\n})"
           }
         ]
       }
@@ -3419,7 +3419,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.share({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.share({\n  ...\n})"
           }
         ]
       },
@@ -3488,7 +3488,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unshare({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unshare({\n  ...\n})"
           }
         ]
       }
@@ -3550,7 +3550,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.diff({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.diff({\n  ...\n})"
           }
         ]
       }
@@ -3646,7 +3646,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.summarize({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.summarize({\n  ...\n})"
           }
         ]
       }
@@ -3752,7 +3752,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.messages({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.messages({\n  ...\n})"
           }
         ]
       },
@@ -3903,7 +3903,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.prompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.prompt({\n  ...\n})"
           }
         ]
       }
@@ -3998,7 +3998,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.message({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.message({\n  ...\n})"
           }
         ]
       },
@@ -4076,7 +4076,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.deleteMessage({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.deleteMessage({\n  ...\n})"
           }
         ]
       }
@@ -4164,7 +4164,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.part.delete({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.part.delete({\n  ...\n})"
           }
         ]
       },
@@ -4259,7 +4259,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.part.update({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.part.update({\n  ...\n})"
           }
         ]
       }
@@ -4390,7 +4390,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.prompt_async({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.prompt_async({\n  ...\n})"
           }
         ]
       }
@@ -4547,7 +4547,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.command({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.command({\n  ...\n})"
           }
         ]
       }
@@ -4654,7 +4654,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.shell({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.shell({\n  ...\n})"
           }
         ]
       }
@@ -4747,7 +4747,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.revert({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.revert({\n  ...\n})"
           }
         ]
       }
@@ -4818,7 +4818,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unrevert({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unrevert({\n  ...\n})"
           }
         ]
       }
@@ -4921,7 +4921,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.respond({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.respond({\n  ...\n})"
           }
         ]
       }
@@ -4982,7 +4982,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.list({\n  ...\n})"
           }
         ]
       }
@@ -5053,7 +5053,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.search({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.search({\n  ...\n})"
           }
         ]
       }
@@ -5109,7 +5109,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.export({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.export({\n  ...\n})"
           }
         ]
       }
@@ -5172,7 +5172,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.get({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.get({\n  ...\n})"
           }
         ]
       }
@@ -5268,7 +5268,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.reply({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.reply({\n  ...\n})"
           }
         ]
       }
@@ -5313,7 +5313,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.permission.list({\n  ...\n})"
           }
         ]
       }
@@ -5358,7 +5358,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.list({\n  ...\n})"
           }
         ]
       }
@@ -5450,7 +5450,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.reply({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.reply({\n  ...\n})"
           }
         ]
       }
@@ -5521,7 +5521,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.reject({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.question.reject({\n  ...\n})"
           }
         ]
       }
@@ -5641,7 +5641,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.text({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.text({\n  ...\n})"
           }
         ]
       }
@@ -5725,7 +5725,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.files({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.files({\n  ...\n})"
           }
         ]
       }
@@ -5778,7 +5778,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.symbols({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.find.symbols({\n  ...\n})"
           }
         ]
       }
@@ -5831,7 +5831,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.list({\n  ...\n})"
           }
         ]
       }
@@ -5881,7 +5881,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.read({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.read({\n  ...\n})"
           }
         ]
       }
@@ -5926,7 +5926,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.file.status({\n  ...\n})"
           }
         ]
       }
@@ -5974,7 +5974,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.status({\n  ...\n})"
           }
         ]
       },
@@ -6058,7 +6058,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.add({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.add({\n  ...\n})"
           }
         ]
       }
@@ -6109,7 +6109,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.tools({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.tools({\n  ...\n})"
           }
         ]
       }
@@ -6188,7 +6188,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.start({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.start({\n  ...\n})"
           }
         ]
       },
@@ -6255,7 +6255,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.remove({\n  ...\n})"
           }
         ]
       }
@@ -6343,7 +6343,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.callback({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.callback({\n  ...\n})"
           }
         ]
       }
@@ -6413,7 +6413,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.authenticate({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.auth.authenticate({\n  ...\n})"
           }
         ]
       }
@@ -6462,7 +6462,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.connect({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.connect({\n  ...\n})"
           }
         ]
       }
@@ -6511,7 +6511,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.disconnect({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.mcp.disconnect({\n  ...\n})"
           }
         ]
       }
@@ -6587,7 +6587,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.list({\n  ...\n})"
           }
         ]
       }
@@ -6636,7 +6636,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.enable({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.enable({\n  ...\n})"
           }
         ]
       }
@@ -6685,7 +6685,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.disable({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.disable({\n  ...\n})"
           }
         ]
       }
@@ -6734,7 +6734,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.uninstall({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.uninstall({\n  ...\n})"
           }
         ]
       }
@@ -6829,7 +6829,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.list({\n  ...\n})"
           }
         ]
       },
@@ -6897,7 +6897,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.add({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.add({\n  ...\n})"
           }
         ]
       }
@@ -6946,7 +6946,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.remove({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.remove({\n  ...\n})"
           }
         ]
       }
@@ -7021,7 +7021,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.plugins({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.plugins({\n  ...\n})"
           }
         ]
       }
@@ -7078,7 +7078,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.install({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.plugin.marketplace.install({\n  ...\n})"
           }
         ]
       }
@@ -7147,7 +7147,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.appendPrompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.appendPrompt({\n  ...\n})"
           }
         ]
       }
@@ -7189,7 +7189,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openHelp({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openHelp({\n  ...\n})"
           }
         ]
       }
@@ -7231,7 +7231,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openSessions({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openSessions({\n  ...\n})"
           }
         ]
       }
@@ -7273,7 +7273,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openThemes({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openThemes({\n  ...\n})"
           }
         ]
       }
@@ -7315,7 +7315,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openModels({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.openModels({\n  ...\n})"
           }
         ]
       }
@@ -7357,7 +7357,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.submitPrompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.submitPrompt({\n  ...\n})"
           }
         ]
       }
@@ -7399,7 +7399,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.clearPrompt({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.clearPrompt({\n  ...\n})"
           }
         ]
       }
@@ -7468,7 +7468,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.executeCommand({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.executeCommand({\n  ...\n})"
           }
         ]
       }
@@ -7545,7 +7545,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.showToast({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.showToast({\n  ...\n})"
           }
         ]
       }
@@ -7619,7 +7619,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.publish({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.publish({\n  ...\n})"
           }
         ]
       }
@@ -7700,7 +7700,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.selectSession({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.selectSession({\n  ...\n})"
           }
         ]
       }
@@ -7752,7 +7752,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.next({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.next({\n  ...\n})"
           }
         ]
       }
@@ -7801,7 +7801,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.response({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.tui.control.response({\n  ...\n})"
           }
         ]
       }
@@ -7843,7 +7843,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.instance.info({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.instance.info({\n  ...\n})"
           }
         ]
       }
@@ -7885,7 +7885,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.current({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.current({\n  ...\n})"
           }
         ]
       }
@@ -7927,7 +7927,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.instance.dispose({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.instance.dispose({\n  ...\n})"
           }
         ]
       }
@@ -7969,7 +7969,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.vcs({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.vcs({\n  ...\n})"
           }
         ]
       }
@@ -8014,7 +8014,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.command.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.command.list({\n  ...\n})"
           }
         ]
       }
@@ -8059,7 +8059,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.agent.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.agent.list({\n  ...\n})"
           }
         ]
       }
@@ -8155,7 +8155,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.skill.list({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.skill.list({\n  ...\n})"
           }
         ]
       }
@@ -8200,7 +8200,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.lsp.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.lsp.status({\n  ...\n})"
           }
         ]
       }
@@ -8245,7 +8245,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.formatter.status({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.formatter.status({\n  ...\n})"
           }
         ]
       }
@@ -8287,7 +8287,7 @@
         "x-codeSamples": [
           {
             "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai-ai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.event.subscribe({\n  ...\n})"
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.event.subscribe({\n  ...\n})"
           }
         ]
       }

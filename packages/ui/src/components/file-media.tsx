@@ -1,4 +1,4 @@
-import type { FileContent } from "@liteai-ai/sdk"
+import type { FileContent } from "@liteai/sdk"
 import { createEffect, createMemo, createResource, type JSX, Match, on, Show, Switch } from "solid-js"
 import { useI18n } from "../context/i18n"
 import {

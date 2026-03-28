@@ -1,4 +1,4 @@
-import type { SessionStatus } from "@liteai-ai/sdk/client"
+import type { SessionStatus } from "@liteai/sdk/client"
 import { createEffect, createMemo, createSignal, on, onCleanup, Show } from "solid-js"
 import { useI18n } from "../context/i18n"
 import { Card } from "./card"

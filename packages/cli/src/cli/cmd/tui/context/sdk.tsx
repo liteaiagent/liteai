@@ -1,4 +1,4 @@
-import { createLiteaiClient, type Event } from "@liteai-ai/sdk"
+import { createLiteaiClient, type Event } from "@liteai/sdk"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { batch, onCleanup, onMount } from "solid-js"
 import { createSimpleContext } from "./helper"

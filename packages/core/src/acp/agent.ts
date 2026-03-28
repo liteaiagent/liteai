@@ -28,7 +28,7 @@ import {
   type ToolKind,
   type Usage,
 } from "@agentclientprotocol/sdk"
-import type { AssistantMessage, Event, LiteaiClient, ProjectSessionMessageResponse, ToolPart } from "@liteai-ai/sdk"
+import type { AssistantMessage, Event, LiteaiClient, ProjectSessionMessageResponse, ToolPart } from "@liteai/sdk"
 import { LoadAPIKeyError } from "ai"
 import { applyPatch } from "diff"
 import { z } from "zod"

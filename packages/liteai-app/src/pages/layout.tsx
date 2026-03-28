@@ -1,7 +1,7 @@
 import { useDialog } from "@liteai/ui/context/dialog"
 import { useTheme } from "@liteai/ui/theme"
 import { getFilename } from "@liteai/util/path"
-import type { Session } from "@liteai-ai/sdk/client"
+import type { Session } from "@liteai/sdk/client"
 import { useLocation, useNavigate, useParams } from "@solidjs/router"
 import type { DragEvent } from "@thisbeyond/solid-dnd"
 import { createEffect, createMemo, on, onCleanup, onMount, type ParentProps } from "solid-js"

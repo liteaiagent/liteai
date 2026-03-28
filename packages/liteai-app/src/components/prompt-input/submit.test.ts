@@ -60,7 +60,7 @@ beforeAll(async () => {
     useParams: () => params,
   }))
 
-  mock.module("@liteai-ai/sdk/client", () => ({
+  mock.module("@liteai/sdk/client", () => ({
     createLiteaiClient: () => mockClient,
   }))
 

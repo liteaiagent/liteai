@@ -1,4 +1,4 @@
-import type { ReasoningPart } from "@liteai-ai/sdk"
+import type { ReasoningPart } from "@liteai/sdk"
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js"
 import { useI18n } from "../../context/i18n"
 import { Collapsible } from "../collapsible"

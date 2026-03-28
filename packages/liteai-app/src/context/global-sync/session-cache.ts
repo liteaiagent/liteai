@@ -6,7 +6,7 @@ import type {
   QuestionRequest,
   SessionStatus,
   Todo,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 
 export const SESSION_CACHE_LIMIT = 40
 

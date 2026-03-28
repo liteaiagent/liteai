@@ -1,4 +1,4 @@
-import type { Todo } from "@liteai-ai/sdk"
+import type { Todo } from "@liteai/sdk"
 
 export const composerEvent = "liteai:e2e:composer"
 

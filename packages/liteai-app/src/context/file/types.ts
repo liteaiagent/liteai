@@ -1,4 +1,4 @@
-import type { FileContent } from "@liteai-ai/sdk"
+import type { FileContent } from "@liteai/sdk"
 
 export type FileSelection = {
   startLine: number

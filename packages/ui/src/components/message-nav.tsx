@@ -1,4 +1,4 @@
-import type { UserMessage } from "@liteai-ai/sdk"
+import type { UserMessage } from "@liteai/sdk"
 import { type ComponentProps, For, Match, Show, Switch, splitProps } from "solid-js"
 import { useI18n } from "../context/i18n"
 import { DiffChanges } from "./diff-changes"

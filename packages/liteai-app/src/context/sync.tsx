@@ -1,7 +1,7 @@
 import { createSimpleContext } from "@liteai/ui/context"
 import { Binary } from "@liteai/util/binary"
 import { retry } from "@liteai/util/retry"
-import type { Message, Part } from "@liteai-ai/sdk/client"
+import type { Message, Part } from "@liteai/sdk/client"
 import { batch, createMemo } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { toProjectID } from "@/utils/project-id"

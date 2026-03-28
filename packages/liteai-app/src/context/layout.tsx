@@ -1,5 +1,5 @@
 import { createSimpleContext } from "@liteai/ui/context"
-import type { Project } from "@liteai-ai/sdk"
+import type { Project } from "@liteai/sdk"
 import { type Accessor, batch, createEffect, createMemo, onCleanup, onMount } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { workspaceKey } from "@/pages/layout/helpers"

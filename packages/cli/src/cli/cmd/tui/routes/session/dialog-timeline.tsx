@@ -1,4 +1,4 @@
-import type { TextPart } from "@liteai-ai/sdk"
+import type { TextPart } from "@liteai/sdk"
 import type { PromptInfo } from "@tui/component/prompt/history"
 import { useSync } from "@tui/context/sync"
 import { useDialog } from "@tui/ui/dialog"

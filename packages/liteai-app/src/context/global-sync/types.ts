@@ -14,7 +14,7 @@ import type {
   SessionStatus,
   Todo,
   VcsInfo,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 import type { Accessor } from "solid-js"
 import type { SetStoreFunction, Store } from "solid-js/store"
 

@@ -1,4 +1,4 @@
-import type { FilePart, AgentPart as MessageAgentPart, Part, TextPart } from "@liteai-ai/sdk"
+import type { FilePart, AgentPart as MessageAgentPart, Part, TextPart } from "@liteai/sdk"
 import type { AgentPart, FileAttachmentPart, ImageAttachmentPart, Prompt } from "@/context/prompt"
 
 type Inline =

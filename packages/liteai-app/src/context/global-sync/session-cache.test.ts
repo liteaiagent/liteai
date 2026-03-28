@@ -7,7 +7,7 @@ import type {
   QuestionRequest,
   SessionStatus,
   Todo,
-} from "@liteai-ai/sdk/client"
+} from "@liteai/sdk/client"
 import { dropSessionCaches, pickSessionCacheEvictions } from "./session-cache"
 
 const msg = (id: string, sessionID: string) =>

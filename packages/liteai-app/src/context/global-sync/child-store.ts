@@ -1,4 +1,4 @@
-import type { VcsInfo } from "@liteai-ai/sdk/client"
+import type { VcsInfo } from "@liteai/sdk/client"
 import { createRoot, getOwner, type Owner, onCleanup, runWithOwner } from "solid-js"
 import { createStore, type SetStoreFunction, type Store } from "solid-js/store"
 import { Persist, persisted } from "@/utils/persist"

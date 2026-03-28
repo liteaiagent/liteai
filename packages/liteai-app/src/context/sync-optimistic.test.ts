@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message, Part } from "@liteai-ai/sdk/client"
+import type { Message, Part } from "@liteai/sdk/client"
 import { applyOptimisticAdd, applyOptimisticRemove, mergeOptimisticPage } from "./sync"
 
 type Text = Extract<Part, { type: "text" }>

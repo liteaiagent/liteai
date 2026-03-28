@@ -1,6 +1,6 @@
 import { Binary } from "@liteai/util/binary"
 import { getFilename } from "@liteai/util/path"
-import type { Project, Session } from "@liteai-ai/sdk/client"
+import type { Project, Session } from "@liteai/sdk/client"
 import { type Accessor, untrack } from "solid-js"
 import { produce } from "solid-js/store"
 import type { useGlobalSDK } from "@/context/global-sdk"

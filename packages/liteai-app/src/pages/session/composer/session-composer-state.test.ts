@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { PermissionRequest, QuestionRequest, Session } from "@liteai-ai/sdk/client"
+import type { PermissionRequest, QuestionRequest, Session } from "@liteai/sdk/client"
 import { todoState } from "./session-composer-state"
 import { sessionPermissionRequest, sessionQuestionRequest } from "./session-request-tree"
 

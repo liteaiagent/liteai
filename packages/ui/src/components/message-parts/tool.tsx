@@ -1,4 +1,4 @@
-import type { ToolPart } from "@liteai-ai/sdk"
+import type { ToolPart } from "@liteai/sdk"
 import { useLocation } from "@solidjs/router"
 import { createMemo, Match, Show, Switch } from "solid-js"
 import { Dynamic } from "solid-js/web"

@@ -1,4 +1,4 @@
-import type { FileNode } from "@liteai-ai/sdk"
+import type { FileNode } from "@liteai/sdk"
 import { createStore, produce, reconcile } from "solid-js/store"
 
 type DirectoryState = {

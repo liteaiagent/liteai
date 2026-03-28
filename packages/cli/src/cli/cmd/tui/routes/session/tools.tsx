@@ -1,5 +1,5 @@
 import path from "node:path"
-import type { ToolPart } from "@liteai-ai/sdk"
+import type { ToolPart } from "@liteai/sdk"
 import { type BoxRenderable, type RGBA, TextAttributes } from "@opentui/core"
 import { type JSX, useRenderer } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"

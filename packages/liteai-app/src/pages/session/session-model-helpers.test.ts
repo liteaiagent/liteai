@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { UserMessage } from "@liteai-ai/sdk"
+import type { UserMessage } from "@liteai/sdk"
 import { resetSessionModel, syncSessionModel } from "./session-model-helpers"
 
 const message = (input?: Partial<Pick<UserMessage, "agent" | "model" | "variant">>) =>

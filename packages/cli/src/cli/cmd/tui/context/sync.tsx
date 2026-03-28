@@ -18,7 +18,7 @@ import type {
   Todo,
   VcsInfo,
   Workspace,
-} from "@liteai-ai/sdk"
+} from "@liteai/sdk"
 import { useSDK } from "@tui/context/sdk"
 import type { Snapshot } from "@liteai/core/snapshot/index"
 import { Log } from "@liteai/core/util/log"

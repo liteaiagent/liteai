@@ -82,12 +82,12 @@ export const Info = z
 
 ### 1.2 Regenerate SDK types
 
-The `SessionStatus` type is auto-generated into `packages/liteai-sdk/js/src/gen/types.gen.ts` via the OpenAPI spec. After changing the Zod schema, regenerate with the standard codegen flow.
+The `SessionStatus` type is auto-generated into `packages/sdk/js/src/gen/types.gen.ts` via the OpenAPI spec. After changing the Zod schema, regenerate with the standard codegen flow.
 
 ### 1.3 Verify
 
 - SDK `SessionStatus` type includes `{ type: "paused"; step: number }`
-- Frontend `SessionStatus` import in `@liteai-ai/sdk` includes the new variant
+- Frontend `SessionStatus` import in `@liteai/sdk` includes the new variant
 - Existing `idle` / `busy` / `retry` behavior unchanged
 
 ---
@@ -643,7 +643,7 @@ When in step mode, optionally add subtle step separators in the message timeline
 |---|---|---|
 | `src/components/message-part.tsx` | 5 | Add `stepBack` to `UserActions`, icon button in `UserMessageDisplay` |
 
-### SDK (`packages/liteai-sdk`)
+### SDK (`packages/sdk`)
 
 | File | Phase | Change |
 |---|---|---|

@@ -51,7 +51,7 @@ graph LR
   end
 
   subgraph Core ["LiteAI Core"]
-    SDK["@liteai-ai/sdk"] --> S["Session"]
+    SDK["@liteai/sdk"] --> S["Session"]
     S --> T["Tools"]
     S --> P["Providers"]
   end

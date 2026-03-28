@@ -1,5 +1,5 @@
 import { createSimpleContext } from "@liteai/ui/context"
-import type { PermissionRequest } from "@liteai-ai/sdk/client"
+import type { PermissionRequest } from "@liteai/sdk/client"
 import { useParams } from "@solidjs/router"
 import { createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"

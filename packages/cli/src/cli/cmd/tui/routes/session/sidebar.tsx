@@ -1,4 +1,4 @@
-import type { AssistantMessage } from "@liteai-ai/sdk"
+import type { AssistantMessage } from "@liteai/sdk"
 import { TodoItem } from "@tui/component/todo-item"
 import { useDirectory } from "@tui/context/directory"
 import { useKV } from "@tui/context/kv"

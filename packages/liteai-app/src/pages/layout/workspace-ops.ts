@@ -1,5 +1,5 @@
 import { showToast, toaster } from "@liteai/ui/toast"
-import type { Project, Session } from "@liteai-ai/sdk/client"
+import type { Project, Session } from "@liteai/sdk/client"
 import type { Accessor } from "solid-js"
 import type { useGlobalSDK } from "@/context/global-sdk"
 import type { useGlobalSync } from "@/context/global-sync"

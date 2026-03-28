@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Message } from "@liteai-ai/sdk/client"
+import type { Message } from "@liteai/sdk/client"
 import { getSessionContextMetrics } from "./session-context-metrics"
 
 const assistant = (

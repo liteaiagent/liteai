@@ -1,4 +1,4 @@
-import { createLiteaiClient } from "@liteai-ai/sdk/client"
+import { createLiteaiClient } from "@liteai/sdk/client"
 import type { ServerConnection } from "@/context/server"
 
 export function createSdkForServer({

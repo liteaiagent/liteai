@@ -1,4 +1,4 @@
-import type { Message, Part } from "@liteai-ai/sdk/client"
+import type { Message, Part } from "@liteai/sdk/client"
 
 export type SessionContextBreakdownKey = "system" | "user" | "assistant" | "thinking" | "tool" | "defs" | "other"
 

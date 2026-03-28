@@ -1,4 +1,4 @@
-import type { PermissionRequest, Session } from "@liteai-ai/sdk/client"
+import type { PermissionRequest, Session } from "@liteai/sdk/client"
 import { SESSION_RECENT_LIMIT, SESSION_RECENT_WINDOW } from "./types"
 import { cmp } from "./utils"
 

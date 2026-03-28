@@ -13,7 +13,7 @@ export const GenerateCommand = {
           {
             lang: "js",
             source: [
-              `import { createLiteaiClient } from "@liteai-ai/sdk`,
+              `import { createLiteaiClient } from "@liteai/sdk`,
               ``,
               `const client = createLiteaiClient()`,
               `await client.${operation.operationId}({`,

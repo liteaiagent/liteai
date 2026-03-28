@@ -1,4 +1,4 @@
-import type { ProviderAuthAuthorization } from "@liteai-ai/sdk"
+import type { ProviderAuthAuthorization } from "@liteai/sdk"
 import { TextAttributes } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
 import { useSync } from "@tui/context/sync"

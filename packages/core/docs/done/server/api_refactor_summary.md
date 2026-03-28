@@ -37,7 +37,7 @@
 | [workspace.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/routes/workspace.ts) | Added `project.` to operationIds |
 
 ### SDK Regenerated
-- `packages/liteai-sdk/js` — full rebuild from new OpenAPI spec
+- `packages/sdk/js` — full rebuild from new OpenAPI spec
 - All generated files in `src/gen/` updated automatically
 
 ---
@@ -93,6 +93,6 @@ client.skill.list({ projectID })     // was: client.app.skills()
 |------|-------------|
 | `src/cli/cmd/tui/context/sync.tsx` | All SDK calls need `projectID` |
 
-#### `packages/liteai-sdk/js/src/client.ts`
+#### `packages/sdk/js/src/client.ts`
 - The `createLiteaiClient` factory still sends `x-liteai-directory` header — this is now unnecessary for project-scoped routes since `projectID` is in the URL
 - The `directory` config option should be deprecated

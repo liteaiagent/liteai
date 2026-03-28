@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import type { Todo } from "@liteai-ai/sdk"
+import type { Todo } from "@liteai/sdk"
 import { createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useGlobalSync } from "@/context/global-sync"

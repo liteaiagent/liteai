@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { AssistantMessage, Part, UserMessage } from "@liteai-ai/sdk"
+import type { AssistantMessage, Part, UserMessage } from "@liteai/sdk"
 import {
   formatAssistantHeader,
   formatMessage,

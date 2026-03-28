@@ -1,4 +1,4 @@
-import type { AssistantMessage, ReasoningPart, TextPart, ToolPart } from "@liteai-ai/sdk"
+import type { AssistantMessage, ReasoningPart, TextPart, ToolPart } from "@liteai/sdk"
 import { SplitBorder } from "@tui/component/border"
 import { useSync } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"

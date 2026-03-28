@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import type { Message, Part, Session } from "@liteai-ai/sdk"
+import type { Message, Part, Session } from "@liteai/sdk"
 import {
   parseShareUrl,
   type ShareData,

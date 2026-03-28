@@ -1,4 +1,4 @@
-import type { UserMessage } from "@liteai-ai/sdk"
+import type { UserMessage } from "@liteai/sdk"
 
 type Local = {
   session: {

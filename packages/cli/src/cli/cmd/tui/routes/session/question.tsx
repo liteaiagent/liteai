@@ -1,4 +1,4 @@
-import type { QuestionAnswer, QuestionRequest } from "@liteai-ai/sdk"
+import type { QuestionAnswer, QuestionRequest } from "@liteai/sdk"
 import type { TextareaRenderable } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"

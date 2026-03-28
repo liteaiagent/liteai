@@ -1,5 +1,5 @@
 import { EOL } from "node:os"
-import type { Part, Message as SDKMessage, Session as SDKSession } from "@liteai-ai/sdk"
+import type { Part, Message as SDKMessage, Session as SDKSession } from "@liteai/sdk"
 import { Instance } from "@liteai/core/project/instance"
 import { Session } from "@liteai/core/session/index"
 import { Message } from "@liteai/core/session/message"

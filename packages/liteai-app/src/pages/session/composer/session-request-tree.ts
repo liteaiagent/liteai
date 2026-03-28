@@ -1,4 +1,4 @@
-import type { PermissionRequest, QuestionRequest, Session } from "@liteai-ai/sdk/client"
+import type { PermissionRequest, QuestionRequest, Session } from "@liteai/sdk/client"
 
 function sessionTreeRequest<T>(
   session: Session[],

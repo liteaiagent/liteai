@@ -1,6 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises"
 import { NamedError } from "@liteai/util/error"
-import { createLiteaiClient, type Event } from "@liteai-ai/sdk"
+import { createLiteaiClient, type Event } from "@liteai/sdk"
 import type { BunWebSocketData } from "hono/bun"
 import { GlobalBus } from "@liteai/core/bus/global"
 import { Config } from "@liteai/core/config/config"

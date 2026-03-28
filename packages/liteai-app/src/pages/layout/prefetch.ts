@@ -1,5 +1,5 @@
 import { retry } from "@liteai/util/retry"
-import type { Message, Session } from "@liteai-ai/sdk/client"
+import type { Message, Session } from "@liteai/sdk/client"
 import { type Accessor, batch, createEffect, untrack } from "solid-js"
 import { produce, reconcile } from "solid-js/store"
 import type { useGlobalSDK } from "@/context/global-sdk"

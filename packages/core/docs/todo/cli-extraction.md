@@ -63,7 +63,7 @@ packages/cli  (NEW - CLI entry point)
 ### Phase 2: Scaffold `packages/cli` ✅
 
 - Created `package.json` with all required dependencies:
-  - `liteai`, `@liteai/util`, `@liteai-ai/sdk` as workspace deps
+  - `liteai`, `@liteai/util`, `@liteai/sdk` as workspace deps
   - TUI deps: `@opentui/core`, `@opentui/solid`, `solid-js`, etc.
   - CLI deps: `yargs`, `@clack/prompts`, `clipboardy`, etc.
   - GitHub Actions deps: `@actions/core`, `@actions/github`, `@octokit/*`

@@ -1,4 +1,4 @@
-import type { AssistantMessage, Part, UserMessage } from "@liteai-ai/sdk"
+import type { AssistantMessage, Part, UserMessage } from "@liteai/sdk"
 import { Locale } from "@liteai/core/util/locale"
 
 export type TranscriptOptions = {

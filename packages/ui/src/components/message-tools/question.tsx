@@ -1,4 +1,4 @@
-import type { QuestionAnswer, QuestionInfo } from "@liteai-ai/sdk"
+import type { QuestionAnswer, QuestionInfo } from "@liteai/sdk"
 import { createMemo, For, Show } from "solid-js"
 
 import { useI18n } from "../../context/i18n"

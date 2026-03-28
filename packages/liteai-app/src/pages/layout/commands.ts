@@ -1,6 +1,6 @@
 import type { ColorScheme, useTheme } from "@liteai/ui/theme"
 import { showToast } from "@liteai/ui/toast"
-import type { Session } from "@liteai-ai/sdk/client"
+import type { Session } from "@liteai/sdk/client"
 import { type Accessor, createMemo } from "solid-js"
 import type { CommandOption, useCommand } from "@/context/command"
 import type { Locale, useLanguage } from "@/context/language"

@@ -8,7 +8,7 @@ import type {
   TextPart,
   ToolPart,
   UserMessage,
-} from "@liteai-ai/sdk"
+} from "@liteai/sdk"
 import { type Component, createMemo, createSignal, For, Index, Match, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"

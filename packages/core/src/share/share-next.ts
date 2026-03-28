@@ -1,4 +1,4 @@
-import type * as SDK from "@liteai-ai/sdk"
+import type * as SDK from "@liteai/sdk"
 import { Account } from "@/account"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"

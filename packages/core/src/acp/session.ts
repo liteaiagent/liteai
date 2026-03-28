@@ -1,5 +1,5 @@
 import { type McpServer, RequestError } from "@agentclientprotocol/sdk"
-import type { LiteaiClient } from "@liteai-ai/sdk"
+import type { LiteaiClient } from "@liteai/sdk"
 import { Log } from "@/util/log"
 import type { ACPSessionState } from "./types"
 

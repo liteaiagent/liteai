@@ -1,4 +1,4 @@
-import type { UserMessage } from "@liteai-ai/sdk"
+import type { UserMessage } from "@liteai/sdk"
 import { useLocation, useNavigate } from "@solidjs/router"
 import { createEffect, createMemo, onCleanup, onMount } from "solid-js"
 import { messageIdFromHash } from "./message-id-from-hash"

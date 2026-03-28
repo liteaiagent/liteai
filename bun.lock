@@ -6,8 +6,8 @@
       "name": "liteai",
       "dependencies": {
         "@aws-sdk/client-s3": "3.933.0",
-        "@liteai-ai/sdk": "workspace:*",
         "@liteai/script": "workspace:*",
+        "@liteai/sdk": "workspace:*",
         "typescript": "catalog:",
       },
       "devDependencies": {
@@ -30,8 +30,8 @@
         "@actions/github": "6.0.1",
         "@agentclientprotocol/sdk": "0.14.1",
         "@clack/prompts": "1.0.0-alpha.1",
-        "@liteai-ai/sdk": "workspace:*",
         "@liteai/core": "workspace:*",
+        "@liteai/sdk": "workspace:*",
         "@liteai/util": "workspace:*",
         "@modelcontextprotocol/sdk": "1.25.2",
         "@octokit/graphql": "9.0.2",
@@ -190,7 +190,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@kobalte/core": "catalog:",
-        "@liteai-ai/sdk": "workspace:*",
+        "@liteai/sdk": "workspace:*",
         "@liteai/ui": "workspace:*",
         "@liteai/util": "workspace:*",
         "@shikijs/transformers": "3.9.2",
@@ -236,17 +236,6 @@
         "vite-plugin-solid": "catalog:",
       },
     },
-    "packages/liteai-sdk": {
-      "name": "@liteai-ai/sdk",
-      "version": "1.2.26",
-      "devDependencies": {
-        "@hey-api/openapi-ts": "0.90.10",
-        "@tsconfig/node22": "catalog:",
-        "@types/node": "catalog:",
-        "@typescript/native-preview": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
     "packages/liteai-vscode": {
       "name": "liteai-vscode",
       "version": "1.2.26",
@@ -271,12 +260,23 @@
         "@types/semver": "^7.5.8",
       },
     },
+    "packages/sdk": {
+      "name": "@liteai/sdk",
+      "version": "1.2.26",
+      "devDependencies": {
+        "@hey-api/openapi-ts": "0.90.10",
+        "@tsconfig/node22": "catalog:",
+        "@types/node": "catalog:",
+        "@typescript/native-preview": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/ui": {
       "name": "@liteai/ui",
       "version": "1.0.0",
       "dependencies": {
         "@kobalte/core": "catalog:",
-        "@liteai-ai/sdk": "workspace:*",
+        "@liteai/sdk": "workspace:*",
         "@liteai/util": "workspace:*",
         "@pierre/diffs": "catalog:",
         "@shikijs/transformers": "3.9.2",
@@ -856,8 +856,6 @@
 
     "@leichtgewicht/ip-codec": ["@leichtgewicht/ip-codec@2.0.5", "", {}, "sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw=="],
 
-    "@liteai-ai/sdk": ["@liteai-ai/sdk@workspace:packages/liteai-sdk"],
-
     "@liteai/cli": ["@liteai/cli@workspace:packages/cli"],
 
     "@liteai/core": ["@liteai/core@workspace:packages/core"],
@@ -865,6 +863,8 @@
     "@liteai/gca-proxy": ["@liteai/gca-proxy@workspace:packages/gca-proxy"],
 
     "@liteai/script": ["@liteai/script@workspace:packages/script"],
+
+    "@liteai/sdk": ["@liteai/sdk@workspace:packages/sdk"],
 
     "@liteai/ui": ["@liteai/ui@workspace:packages/ui"],
 

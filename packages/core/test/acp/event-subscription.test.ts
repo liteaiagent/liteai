@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { AgentSideConnection, LoadSessionRequest, NewSessionRequest } from "@agentclientprotocol/sdk"
-import type { Event, EventMessagePartUpdated, ToolStatePending, ToolStateRunning } from "@liteai-ai/sdk"
+import type { Event, EventMessagePartUpdated, ToolStatePending, ToolStateRunning } from "@liteai/sdk"
 
 import { ACP } from "../../src/acp/agent"
 import type { ACPConfig } from "../../src/acp/types"

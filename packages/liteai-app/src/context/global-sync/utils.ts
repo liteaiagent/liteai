@@ -1,4 +1,4 @@
-import type { Project, ProviderListResponse } from "@liteai-ai/sdk/client"
+import type { Project, ProviderListResponse } from "@liteai/sdk/client"
 
 export const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 

@@ -84,7 +84,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.933.0",
     "@liteai/script": "workspace:*",
-    "@liteai-ai/sdk": "workspace:*",
+    "@liteai/sdk": "workspace:*",
     "typescript": "catalog:"
   },
   "repository": {

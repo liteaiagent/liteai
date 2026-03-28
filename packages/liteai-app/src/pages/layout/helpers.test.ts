@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { Session } from "@liteai-ai/sdk/client"
+import type { Session } from "@liteai/sdk/client"
 import {
   collectNewSessionDeepLinks,
   collectOpenProjectDeepLinks,

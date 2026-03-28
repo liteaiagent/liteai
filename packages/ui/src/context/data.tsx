@@ -1,4 +1,4 @@
-import type { FileDiff, Message, Part, ProviderListResponse, Session, SessionStatus } from "@liteai-ai/sdk"
+import type { FileDiff, Message, Part, ProviderListResponse, Session, SessionStatus } from "@liteai/sdk"
 import type { PreloadMultiFileDiffResult } from "@pierre/diffs/ssr"
 import { createSimpleContext } from "./helper"
 

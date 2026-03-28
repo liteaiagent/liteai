@@ -1,4 +1,4 @@
-import type { AssistantMessage as AssistantMessageInfo, UserMessage as UserMessageInfo } from "@liteai-ai/sdk"
+import type { AssistantMessage as AssistantMessageInfo, UserMessage as UserMessageInfo } from "@liteai/sdk"
 import { addDefaultParsers, MacOSScrollAccel, RGBA, type ScrollBoxRenderable } from "@opentui/core"
 import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"

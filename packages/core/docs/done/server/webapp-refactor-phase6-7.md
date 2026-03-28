@@ -74,7 +74,7 @@ Files with SDK mocks that need updating:
 
 ### 7.2 Remove `x-liteai-directory` from SDK client factory
 
-**File**: `packages/liteai-sdk/js/src/client.ts`
+**File**: `packages/sdk/js/src/client.ts`
 
 After all consumers are migrated:
 

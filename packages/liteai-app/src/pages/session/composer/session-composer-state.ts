@@ -1,5 +1,5 @@
 import { showToast } from "@liteai/ui/toast"
-import type { PermissionRequest, QuestionRequest, Todo } from "@liteai-ai/sdk"
+import type { PermissionRequest, QuestionRequest, Todo } from "@liteai/sdk"
 import { useParams } from "@solidjs/router"
 import { createEffect, createMemo, on, onCleanup, onMount } from "solid-js"
 import { createStore } from "solid-js/store"

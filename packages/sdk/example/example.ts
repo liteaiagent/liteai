@@ -1,4 +1,4 @@
-import { createLiteaiClient, createLiteaiServer } from "@liteai-ai/sdk"
+import { createLiteaiClient, createLiteaiServer } from "@liteai/sdk"
 import { pathToFileURL } from "bun"
 
 const server = await createLiteaiServer()

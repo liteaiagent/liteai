@@ -1,7 +1,7 @@
 import { createSimpleContext } from "@liteai/ui/context"
 import { Binary } from "@liteai/util/binary"
 import { base64Encode } from "@liteai/util/encode"
-import type { EventSessionError } from "@liteai-ai/sdk"
+import type { EventSessionError } from "@liteai/sdk"
 import { useParams } from "@solidjs/router"
 import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"

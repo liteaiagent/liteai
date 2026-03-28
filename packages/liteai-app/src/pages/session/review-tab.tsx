@@ -4,7 +4,7 @@ import type {
   SessionReviewCommentUpdate,
 } from "@liteai/ui/session-review"
 import { SessionReview } from "@liteai/ui/session-review"
-import type { FileDiff } from "@liteai-ai/sdk"
+import type { FileDiff } from "@liteai/sdk"
 import { createEffect, type JSX, onCleanup } from "solid-js"
 import type { LineComment } from "@/context/comments"
 import type { SelectedLineRange } from "@/context/file"
