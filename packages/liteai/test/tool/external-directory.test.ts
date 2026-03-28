@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import type { PermissionNext } from "../../src/permission/next"
 import { Instance } from "../../src/project/instance"
+import { Project } from "../../src/project/project"
 import { MessageID, SessionID } from "../../src/session/schema"
 import { assertExternalDirectory } from "../../src/tool/external-directory"
 import type { Tool } from "../../src/tool/tool"
@@ -23,13 +24,15 @@ let tmpDir = ""
 let tmpProject = ""
 let tmpOutside = ""
 
-beforeAll(() => {
+beforeAll(async () => {
   tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), "liteai-ext-"))
   tmpDir = path.join(tmpBase, "tmp")
   tmpProject = path.join(tmpDir, "project")
   tmpOutside = path.join(tmpDir, "outside")
   fs.mkdirSync(tmpProject, { recursive: true })
   fs.mkdirSync(tmpOutside, { recursive: true })
+  await Project.fromDirectory(tmpDir)
+  await Project.fromDirectory(tmpProject)
 })
 
 afterAll(() => {

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
 import { Instance } from "../../src/project/instance"
+import { Project } from "../../src/project/project"
 import { Server } from "../../src/server/server"
 import { Session } from "../../src/session"
 import { Log } from "../../src/util/log"
@@ -15,16 +16,20 @@ describe("tui.selectSession endpoint", () => {
       fn: async () => {
         // #given
         const session = await Session.create({})
+        const resolved = await Project.resolve(projectRoot)
 
         // #when
         const app = Server.Default()
-        const response = await app.request("/tui/select-session", {
+        const response = await app.request(`/project/${resolved.id}/tui/select-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionID: session.id }),
         })
 
         // #then
+        if (response.status !== 200) {
+          console.error(await response.text())
+        }
         expect(response.status).toBe(200)
         const body = await response.json()
         expect(body).toBe(true)
@@ -40,10 +45,11 @@ describe("tui.selectSession endpoint", () => {
       fn: async () => {
         // #given
         const nonExistentSessionID = "ses_nonexistent123"
+        const resolved = await Project.resolve(projectRoot)
 
         // #when
         const app = Server.Default()
-        const response = await app.request("/tui/select-session", {
+        const response = await app.request(`/project/${resolved.id}/tui/select-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionID: nonExistentSessionID }),
@@ -61,10 +67,11 @@ describe("tui.selectSession endpoint", () => {
       fn: async () => {
         // #given
         const invalidSessionID = "invalid_session_id"
+        const resolved = await Project.resolve(projectRoot)
 
         // #when
         const app = Server.Default()
-        const response = await app.request("/tui/select-session", {
+        const response = await app.request(`/project/${resolved.id}/tui/select-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionID: invalidSessionID }),

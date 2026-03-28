@@ -2,6 +2,8 @@ import { Hono } from "hono"
 import { HTTPException } from "hono/http-exception"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
+import { InstanceBootstrap } from "../../project/bootstrap"
+import { Instance } from "../../project/instance"
 import { Project } from "../../project/project"
 import { ProjectID } from "../../project/schema"
 import { lazy } from "../../util/lazy"
@@ -161,6 +163,9 @@ export const ProjectRoutes = lazy(() =>
         }
 
         const next = await Project.initGit({ directory, project: existing })
+        if (existing.vcs !== "git") {
+          Instance.reload({ directory, init: InstanceBootstrap })
+        }
         return c.json(next)
       },
     ),

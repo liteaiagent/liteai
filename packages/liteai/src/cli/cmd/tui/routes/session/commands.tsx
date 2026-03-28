@@ -255,11 +255,16 @@ export function useCommands(deps: CommandDeps) {
       slash: { name: "undo" },
       onSelect: async (dialog: DialogContext) => {
         const status = sync.data.session_status?.[route.sessionID]
-        if (status?.type !== "idle") await sdk.client.project.session.abort({ projectID: sdk.projectID, sessionID: route.sessionID }).catch(() => {})
+        if (status?.type !== "idle")
+          await sdk.client.project.session
+            .abort({ projectID: sdk.projectID, sessionID: route.sessionID })
+            .catch(() => {})
         const revert = deps.session()?.revert?.messageID
         const message = deps.messages().findLast((x) => (!revert || x.id < revert) && x.role === "user")
         if (!message) return
-        sdk.client.project.session.revert({ projectID: sdk.projectID, sessionID: route.sessionID, messageID: message.id }).then(() => deps.toBottom())
+        sdk.client.project.session
+          .revert({ projectID: sdk.projectID, sessionID: route.sessionID, messageID: message.id })
+          .then(() => deps.toBottom())
         const parts = sync.data.part[message.id]
         deps.prompt().set(
           parts.reduce(
@@ -293,7 +298,11 @@ export function useCommands(deps: CommandDeps) {
           deps.prompt().set({ input: "", parts: [] })
           return
         }
-        sdk.client.project.session.revert({ projectID: sdk.projectID, sessionID: route.sessionID, messageID: message.id })
+        sdk.client.project.session.revert({
+          projectID: sdk.projectID,
+          sessionID: route.sessionID,
+          messageID: message.id,
+        })
       },
     },
     {

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
 import { Instance } from "../../src/project/instance"
+import { Project } from "../../src/project/project"
 import { Server } from "../../src/server/server"
 import { Session } from "../../src/session"
 import type { Message } from "../../src/session/message"
@@ -42,10 +43,12 @@ describe("session messages endpoint", () => {
       directory: root,
       fn: async () => {
         const session = await Session.create({})
+        const resolved = await Project.resolve(root)
         const ids = await fill(session.id, 5)
         const app = Server.Default()
 
-        const a = await app.request(`/session/${session.id}/message?limit=2`)
+        const a = await app.request(`/project/${resolved.id}/session/${session.id}/message?limit=2`)
+        if (a.status !== 200) console.error(await a.text())
         expect(a.status).toBe(200)
         const aBody = (await a.json()) as Message.WithParts[]
         expect(aBody.map((item) => item.info.id)).toEqual(ids.slice(-2))
@@ -54,7 +57,9 @@ describe("session messages endpoint", () => {
         if (!cursor) throw new Error("expected cursor")
         expect(a.headers.get("link")).toContain('rel="next"')
 
-        const b = await app.request(`/session/${session.id}/message?limit=2&before=${encodeURIComponent(cursor)}`)
+        const b = await app.request(
+          `/project/${resolved.id}/session/${session.id}/message?limit=2&before=${encodeURIComponent(cursor)}`,
+        )
         expect(b.status).toBe(200)
         const bBody = (await b.json()) as Message.WithParts[]
         expect(bBody.map((item) => item.info.id)).toEqual(ids.slice(-4, -2))
@@ -69,10 +74,11 @@ describe("session messages endpoint", () => {
       directory: root,
       fn: async () => {
         const session = await Session.create({})
+        const resolved = await Project.resolve(root)
         const ids = await fill(session.id, 3)
         const app = Server.Default()
 
-        const res = await app.request(`/session/${session.id}/message`)
+        const res = await app.request(`/project/${resolved.id}/session/${session.id}/message`)
         expect(res.status).toBe(200)
         const body = (await res.json()) as Message.WithParts[]
         expect(body.map((item) => item.info.id)).toEqual(ids)
@@ -87,12 +93,13 @@ describe("session messages endpoint", () => {
       directory: root,
       fn: async () => {
         const session = await Session.create({})
+        const resolved = await Project.resolve(root)
         const app = Server.Default()
 
-        const bad = await app.request(`/session/${session.id}/message?limit=2&before=bad`)
+        const bad = await app.request(`/project/${resolved.id}/session/${session.id}/message?limit=2&before=bad`)
         expect(bad.status).toBe(400)
 
-        const miss = await app.request(`/session/ses_missing/message?limit=2`)
+        const miss = await app.request(`/project/${resolved.id}/session/ses_missing/message?limit=2`)
         expect(miss.status).toBe(404)
 
         await Session.remove(session.id)
@@ -105,10 +112,11 @@ describe("session messages endpoint", () => {
       directory: root,
       fn: async () => {
         const session = await Session.create({})
+        const resolved = await Project.resolve(root)
         await fill(session.id, 520)
         const app = Server.Default()
 
-        const res = await app.request(`/session/${session.id}/message?limit=510`)
+        const res = await app.request(`/project/${resolved.id}/session/${session.id}/message?limit=510`)
         expect(res.status).toBe(200)
         const body = (await res.json()) as Message.WithParts[]
         expect(body).toHaveLength(510)

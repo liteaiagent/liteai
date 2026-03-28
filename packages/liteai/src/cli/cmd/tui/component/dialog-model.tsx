@@ -79,7 +79,7 @@ export function DialogModel(props: { providerID?: string }) {
           provider.models,
           entries(),
           filter(([_, info]) => info.status !== "deprecated"),
-          filter(([_, info]) => (props.providerID ? provider.id === props.providerID : true)),
+          filter(([_, _info]) => (props.providerID ? provider.id === props.providerID : true)),
           map(([model, info]) => ({
             value: { providerID: provider.id, modelID: model },
             title: info.name ?? model,

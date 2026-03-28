@@ -563,6 +563,8 @@ export function Prompt(props: PromptProps) {
       sessionID = res.data.id
     }
 
+    if (!sessionID) return
+
     const messageID = MessageID.ascending()
     let inputText = store.prompt.input
 
@@ -592,7 +594,7 @@ export function Prompt(props: PromptProps) {
     if (store.mode === "shell") {
       sdk.client.project.session.shell({
         projectID: sdk.projectID,
-        sessionID: sessionID!,
+        sessionID: sessionID,
         agent: local.agent.current().name,
         model: {
           providerID: selectedModel.providerID,
@@ -618,7 +620,7 @@ export function Prompt(props: PromptProps) {
 
       sdk.client.project.session.command({
         projectID: sdk.projectID,
-        sessionID: sessionID!,
+        sessionID: sessionID,
         command: command.slice(1),
         arguments: args,
         agent: local.agent.current().name,
@@ -636,7 +638,7 @@ export function Prompt(props: PromptProps) {
       sdk.client.project.session
         .prompt({
           projectID: sdk.projectID,
-          sessionID: sessionID!,
+          sessionID: sessionID,
           ...selectedModel,
           messageID,
           agent: local.agent.current().name,
@@ -673,7 +675,7 @@ export function Prompt(props: PromptProps) {
       setTimeout(() => {
         route.navigate({
           type: "session",
-          sessionID: sessionID!,
+          sessionID: sessionID,
         })
       }, 50)
     input.clear()

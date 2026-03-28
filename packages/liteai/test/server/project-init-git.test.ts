@@ -54,11 +54,7 @@ describe("project.initGit endpoint", () => {
         ).toBe(true)
         expect(await Filesystem.exists(path.join(tmp.path, ".git", "liteai"))).toBe(false)
 
-        const current = await app.request("/project/current", {
-          headers: {
-            "x-liteai-directory": tmp.path,
-          },
-        })
+        const current = await app.request(`/project/${body.id}`, {})
         expect(current.status).toBe(200)
         expect(await current.json()).toMatchObject({
           vcs: "git",
@@ -98,7 +94,8 @@ describe("project.initGit endpoint", () => {
         },
       })
       expect(init.status).toBe(200)
-      expect(await init.json()).toMatchObject({
+      const body = await init.json()
+      expect(body).toMatchObject({
         vcs: "git",
         worktree: tmp.path,
       })
@@ -110,11 +107,7 @@ describe("project.initGit endpoint", () => {
       ).toBe(0)
       expect(reloadSpy).toHaveBeenCalledTimes(0)
 
-      const current = await app.request("/project/current", {
-        headers: {
-          "x-liteai-directory": tmp.path,
-        },
-      })
+      const current = await app.request(`/project/${body.id}`, {})
       expect(current.status).toBe(200)
       expect(await current.json()).toMatchObject({
         vcs: "git",

@@ -506,11 +506,9 @@ async function resolveProviders(
   const modelsDev = await ModelsDev.get()
   const database: Record<string, Provider.Info> = mapValues(modelsDev, fromModelsDevProvider)
 
-  // Provider filtering is always global — per-project disabled/enabled_providers is not supported.
-  // This ensures the runtime never rejects a provider that the UI (global list) shows as available.
-  const globalConfig = await Config.getGlobal()
-  const disabled = new Set(globalConfig.disabled_providers ?? [])
-  const enabled = globalConfig.enabled_providers ? new Set(globalConfig.enabled_providers) : null
+  // Provider filtering uses the provided config (which may be global or project-specific depending on context)
+  const disabled = new Set(config.disabled_providers ?? [])
+  const enabled = config.enabled_providers ? new Set(config.enabled_providers) : null
 
   function allowed(providerID: ProviderID): boolean {
     if (enabled && !enabled.has(providerID)) return false

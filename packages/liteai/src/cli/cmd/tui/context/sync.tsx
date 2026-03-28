@@ -10,7 +10,6 @@ import type {
   Message,
   Part,
   PermissionRequest,
-  Provider,
   ProviderAuthMethod,
   ProviderListResponse,
   QuestionRequest,
@@ -107,7 +106,9 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     const sdk = useSDK()
 
     async function syncWorkspaces() {
-      const result = await sdk.client.project.experimental.workspace.list({ projectID: sdk.projectID }).catch(() => undefined)
+      const result = await sdk.client.project.experimental.workspace
+        .list({ projectID: sdk.projectID })
+        .catch(() => undefined)
       if (!result?.data) return
       setStore("workspaceList", reconcile(result.data))
     }
@@ -432,11 +433,21 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           // non-blocking
           Promise.all([
             ...(args.continue ? [] : [sessionListPromise.then((sessions) => setStore("session", reconcile(sessions)))]),
-            sdk.client.project.command.list({ projectID: sdk.projectID }).then((x) => setStore("command", reconcile(x.data ?? []))),
-            sdk.client.project.lsp.status({ projectID: sdk.projectID }).then((x) => setStore("lsp", reconcile(x.data ?? []))),
-            sdk.client.project.mcp.status({ projectID: sdk.projectID }).then((x) => setStore("mcp", reconcile(x.data ?? {}))),
-            sdk.client.project.experimental.resource.list({ projectID: sdk.projectID }).then((x) => setStore("mcp_resource", reconcile(x.data ?? {}))),
-            sdk.client.project.formatter.status({ projectID: sdk.projectID }).then((x) => setStore("formatter", reconcile(x.data ?? []))),
+            sdk.client.project.command
+              .list({ projectID: sdk.projectID })
+              .then((x) => setStore("command", reconcile(x.data ?? []))),
+            sdk.client.project.lsp
+              .status({ projectID: sdk.projectID })
+              .then((x) => setStore("lsp", reconcile(x.data ?? []))),
+            sdk.client.project.mcp
+              .status({ projectID: sdk.projectID })
+              .then((x) => setStore("mcp", reconcile(x.data ?? {}))),
+            sdk.client.project.experimental.resource
+              .list({ projectID: sdk.projectID })
+              .then((x) => setStore("mcp_resource", reconcile(x.data ?? {}))),
+            sdk.client.project.formatter
+              .status({ projectID: sdk.projectID })
+              .then((x) => setStore("formatter", reconcile(x.data ?? []))),
             sdk.client.project.session.status({ projectID: sdk.projectID }).then((x) => {
               setStore("session_status", reconcile(x.data ?? {}))
             }),
