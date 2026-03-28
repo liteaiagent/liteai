@@ -5,7 +5,7 @@
 			"path": "."
 		},
 		{
-			"name": "liteai",
+			"name": "core",
 			"path": "packages/core"
 		},
 		{
