@@ -10,8 +10,6 @@ import {
 import type {
 	AgentPartInput,
 	AppAgentsResponses,
-	AppLogErrors,
-	AppLogResponses,
 	AppSkillsResponses,
 	Auth as Auth3,
 	AuthRemoveErrors,
@@ -30,7 +28,6 @@ import type {
 	EventTuiSessionSelect,
 	EventTuiToastShow,
 	ExperimentalResourceListResponses,
-	ExperimentalSessionListResponses,
 	ExperimentalWorkspaceCreateErrors,
 	ExperimentalWorkspaceCreateResponses,
 	ExperimentalWorkspaceListResponses,
@@ -53,7 +50,10 @@ import type {
 	GlobalEventResponses,
 	GlobalHealthResponses,
 	GlobalLogResponses,
+	GlobalLogWriteResponses,
+	GlobalPathResponses,
 	InstanceDisposeResponses,
+	InstanceInfoResponses,
 	LspStatusResponses,
 	McpAddErrors,
 	McpAddResponses,
@@ -77,7 +77,6 @@ import type {
 	PartDeleteResponses,
 	PartUpdateErrors,
 	PartUpdateResponses,
-	PathGetResponses,
 	PermissionListResponses,
 	PermissionReplyErrors,
 	PermissionReplyResponses,
@@ -97,6 +96,9 @@ import type {
 	ProjectArchiveResponses,
 	ProjectCreateResponses,
 	ProjectCurrentResponses,
+	ProjectGetErrors,
+	ProjectGetResponses,
+	ProjectInitGitErrors,
 	ProjectInitGitResponses,
 	ProjectListResponses,
 	ProjectUnarchiveErrors,
@@ -307,6 +309,53 @@ export class Config extends HeyApiClient {
 	}
 }
 
+export class Log extends HeyApiClient {
+	/**
+	 * Write log
+	 *
+	 * Write a log entry to the server logs with specified level and metadata.
+	 */
+	public write<ThrowOnError extends boolean = false>(
+		parameters?: {
+			service?: string;
+			level?: "debug" | "info" | "error" | "warn";
+			message?: string;
+			extra?: {
+				[key: string]: unknown;
+			};
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "body", key: "service" },
+						{ in: "body", key: "level" },
+						{ in: "body", key: "message" },
+						{ in: "body", key: "extra" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).post<
+			GlobalLogWriteResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/global/log",
+			...options,
+			...params,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...params.headers,
+			},
+		});
+	}
+}
+
 export class Global extends HeyApiClient {
 	/**
 	 * Get health
@@ -383,9 +432,29 @@ export class Global extends HeyApiClient {
 		>({ url: "/global/log", ...options });
 	}
 
+	/**
+	 * Get global paths
+	 *
+	 * Retrieve global path information for the LiteAI installation (home, state, config).
+	 */
+	public path<ThrowOnError extends boolean = false>(
+		options?: Options<never, ThrowOnError>,
+	) {
+		return (options?.client ?? this.client).get<
+			GlobalPathResponses,
+			unknown,
+			ThrowOnError
+		>({ url: "/global/path", ...options });
+	}
+
 	private _config?: Config;
 	get config(): Config {
 		return (this._config ??= new Config({ client: this.client }));
+	}
+
+	private _log?: Log;
+	get log2(): Log {
+		return (this._log ??= new Log({ client: this.client }));
 	}
 }
 
@@ -598,7 +667,7 @@ export class Project extends HeyApiClient {
 	/**
 	 * Create project
 	 *
-	 * Initialize or register a project for a given directory.
+	 * Register a project for a given directory. Idempotent — returns the existing project if already registered.
 	 */
 	public create<ThrowOnError extends boolean = false>(
 		parameters?: {
@@ -624,6 +693,162 @@ export class Project extends HeyApiClient {
 			ThrowOnError
 		>({
 			url: "/project",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Get project
+	 *
+	 * Retrieve a project by its ID.
+	 */
+	public get<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[{ args: [{ in: "path", key: "projectID" }] }],
+		);
+		return (options?.client ?? this.client).get<
+			ProjectGetResponses,
+			ProjectGetErrors,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Update project
+	 *
+	 * Update project properties such as name, icon, and commands.
+	 */
+	public update<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+			name?: string;
+			icon?: {
+				url?: string;
+				override?: string;
+				color?: string;
+			};
+			commands?: {
+				/**
+				 * Startup script to run when creating a new workspace (worktree)
+				 */
+				start?: string;
+			};
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "path", key: "projectID" },
+						{ in: "body", key: "name" },
+						{ in: "body", key: "icon" },
+						{ in: "body", key: "commands" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).patch<
+			ProjectUpdateResponses,
+			ProjectUpdateErrors,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}",
+			...options,
+			...params,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...params.headers,
+			},
+		});
+	}
+
+	/**
+	 * Archive project
+	 *
+	 * Archive a project to hide it from the project list. Data and sessions are preserved.
+	 */
+	public archive<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[{ args: [{ in: "path", key: "projectID" }] }],
+		);
+		return (options?.client ?? this.client).patch<
+			ProjectArchiveResponses,
+			ProjectArchiveErrors,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}/archive",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Unarchive project
+	 *
+	 * Restore an archived project so it appears in the project list again.
+	 */
+	public unarchive<ThrowOnError extends boolean = false>(
+		parameters: {
+			projectID: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[{ args: [{ in: "path", key: "projectID" }] }],
+		);
+		return (options?.client ?? this.client).patch<
+			ProjectUnarchiveResponses,
+			ProjectUnarchiveErrors,
+			ThrowOnError
+		>({
+			url: "/project/{projectID}/unarchive",
+			...options,
+			...params,
+		});
+	}
+
+	/**
+	 * Initialize git repository
+	 *
+	 * Create a git repository for a project directory and return the refreshed project info. Requires a directory parameter.
+	 */
+	public initGit<ThrowOnError extends boolean = false>(
+		parameters?: {
+			directory?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[{ args: [{ in: "query", key: "directory" }] }],
+		);
+		return (options?.client ?? this.client).post<
+			ProjectInitGitResponses,
+			ProjectInitGitErrors,
+			ThrowOnError
+		>({
+			url: "/project/git/init",
 			...options,
 			...params,
 		});
@@ -658,168 +883,6 @@ export class Project extends HeyApiClient {
 			ThrowOnError
 		>({
 			url: "/project/current",
-			...options,
-			...params,
-		});
-	}
-
-	/**
-	 * Initialize git repository
-	 *
-	 * Create a git repository for the current project and return the refreshed project info.
-	 */
-	public initGit<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).post<
-			ProjectInitGitResponses,
-			unknown,
-			ThrowOnError
-		>({
-			url: "/project/git/init",
-			...options,
-			...params,
-		});
-	}
-
-	/**
-	 * Update project
-	 *
-	 * Update project properties such as name, icon, and commands.
-	 */
-	public update<ThrowOnError extends boolean = false>(
-		parameters: {
-			projectID: string;
-			directory?: string;
-			workspace?: string;
-			name?: string;
-			icon?: {
-				url?: string;
-				override?: string;
-				color?: string;
-			};
-			commands?: {
-				/**
-				 * Startup script to run when creating a new workspace (worktree)
-				 */
-				start?: string;
-			};
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "projectID" },
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-						{ in: "body", key: "name" },
-						{ in: "body", key: "icon" },
-						{ in: "body", key: "commands" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).patch<
-			ProjectUpdateResponses,
-			ProjectUpdateErrors,
-			ThrowOnError
-		>({
-			url: "/project/{projectID}",
-			...options,
-			...params,
-			headers: {
-				"Content-Type": "application/json",
-				...options?.headers,
-				...params.headers,
-			},
-		});
-	}
-
-	/**
-	 * Archive project
-	 *
-	 * Archive a project to hide it from the project list. Data and sessions are preserved.
-	 */
-	public archive<ThrowOnError extends boolean = false>(
-		parameters: {
-			projectID: string;
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "projectID" },
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).patch<
-			ProjectArchiveResponses,
-			ProjectArchiveErrors,
-			ThrowOnError
-		>({
-			url: "/project/{projectID}/archive",
-			...options,
-			...params,
-		});
-	}
-
-	/**
-	 * Unarchive project
-	 *
-	 * Restore an archived project so it appears in the project list again.
-	 */
-	public unarchive<ThrowOnError extends boolean = false>(
-		parameters: {
-			projectID: string;
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "path", key: "projectID" },
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).patch<
-			ProjectUnarchiveResponses,
-			ProjectUnarchiveErrors,
-			ThrowOnError
-		>({
-			url: "/project/{projectID}/unarchive",
 			...options,
 			...params,
 		});
@@ -1373,54 +1436,6 @@ export class Workspace extends HeyApiClient {
 	}
 }
 
-export class Session extends HeyApiClient {
-	/**
-	 * List sessions
-	 *
-	 * Get a list of all LiteAI sessions across projects, sorted by most recently updated. Archived sessions are excluded by default.
-	 */
-	public list<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
-			roots?: boolean;
-			start?: number;
-			cursor?: number;
-			search?: string;
-			limit?: number;
-			archived?: boolean;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-						{ in: "query", key: "roots" },
-						{ in: "query", key: "start" },
-						{ in: "query", key: "cursor" },
-						{ in: "query", key: "search" },
-						{ in: "query", key: "limit" },
-						{ in: "query", key: "archived" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			ExperimentalSessionListResponses,
-			unknown,
-			ThrowOnError
-		>({
-			url: "/experimental/session",
-			...options,
-			...params,
-		});
-	}
-}
-
 export class Resource extends HeyApiClient {
 	/**
 	 * Get MCP resources
@@ -1461,11 +1476,6 @@ export class Experimental extends HeyApiClient {
 	private _workspace?: Workspace;
 	get workspace(): Workspace {
 		return (this._workspace ??= new Workspace({ client: this.client }));
-	}
-
-	private _session?: Session;
-	get session(): Session {
-		return (this._session ??= new Session({ client: this.client }));
 	}
 
 	private _resource?: Resource;
@@ -1787,7 +1797,7 @@ export class Trace extends HeyApiClient {
 	}
 }
 
-export class Session2 extends HeyApiClient {
+export class Session extends HeyApiClient {
 	/**
 	 * List sessions
 	 *
@@ -4540,6 +4550,40 @@ export class Tui extends HeyApiClient {
 
 export class Instance extends HeyApiClient {
 	/**
+	 * Get instance info
+	 *
+	 * Retrieve instance-scoped information including directory, worktree, and project details.
+	 */
+	public info<ThrowOnError extends boolean = false>(
+		parameters?: {
+			directory?: string;
+			workspace?: string;
+		},
+		options?: Options<never, ThrowOnError>,
+	) {
+		const params = buildClientParams(
+			[parameters],
+			[
+				{
+					args: [
+						{ in: "query", key: "directory" },
+						{ in: "query", key: "workspace" },
+					],
+				},
+			],
+		);
+		return (options?.client ?? this.client).get<
+			InstanceInfoResponses,
+			unknown,
+			ThrowOnError
+		>({
+			url: "/instance/info",
+			...options,
+			...params,
+		});
+	}
+
+	/**
 	 * Dispose instance
 	 *
 	 * Clean up and dispose the current LiteAI instance, releasing all resources.
@@ -4568,42 +4612,6 @@ export class Instance extends HeyApiClient {
 			ThrowOnError
 		>({
 			url: "/instance/dispose",
-			...options,
-			...params,
-		});
-	}
-}
-
-export class Path extends HeyApiClient {
-	/**
-	 * Get paths
-	 *
-	 * Retrieve the current working directory and related path information for the LiteAI instance.
-	 */
-	public get<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).get<
-			PathGetResponses,
-			unknown,
-			ThrowOnError
-		>({
-			url: "/path",
 			...options,
 			...params,
 		});
@@ -4683,55 +4691,6 @@ export class Command extends HeyApiClient {
 }
 
 export class App extends HeyApiClient {
-	/**
-	 * Write log
-	 *
-	 * Write a log entry to the server logs with specified level and metadata.
-	 */
-	public log<ThrowOnError extends boolean = false>(
-		parameters?: {
-			directory?: string;
-			workspace?: string;
-			service?: string;
-			level?: "debug" | "info" | "error" | "warn";
-			message?: string;
-			extra?: {
-				[key: string]: unknown;
-			};
-		},
-		options?: Options<never, ThrowOnError>,
-	) {
-		const params = buildClientParams(
-			[parameters],
-			[
-				{
-					args: [
-						{ in: "query", key: "directory" },
-						{ in: "query", key: "workspace" },
-						{ in: "body", key: "service" },
-						{ in: "body", key: "level" },
-						{ in: "body", key: "message" },
-						{ in: "body", key: "extra" },
-					],
-				},
-			],
-		);
-		return (options?.client ?? this.client).post<
-			AppLogResponses,
-			AppLogErrors,
-			ThrowOnError
-		>({
-			url: "/log",
-			...options,
-			...params,
-			headers: {
-				"Content-Type": "application/json",
-				...options?.headers,
-				...params.headers,
-			},
-		});
-	}
-
 	/**
 	 * List agents
 	 *
@@ -4965,9 +4924,9 @@ export class LiteaiClient extends HeyApiClient {
 		return (this._worktree ??= new Worktree({ client: this.client }));
 	}
 
-	private _session?: Session2;
-	get session(): Session2 {
-		return (this._session ??= new Session2({ client: this.client }));
+	private _session?: Session;
+	get session(): Session {
+		return (this._session ??= new Session({ client: this.client }));
 	}
 
 	private _part?: Part;
@@ -5013,11 +4972,6 @@ export class LiteaiClient extends HeyApiClient {
 	private _instance?: Instance;
 	get instance(): Instance {
 		return (this._instance ??= new Instance({ client: this.client }));
-	}
-
-	private _path?: Path;
-	get path(): Path {
-		return (this._path ??= new Path({ client: this.client }));
 	}
 
 	private _vcs?: Vcs;

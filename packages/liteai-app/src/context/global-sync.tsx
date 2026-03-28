@@ -3,7 +3,6 @@ import { getFilename } from "@liteai/util/path"
 import type {
   Config,
   LiteaiClient,
-  Path,
   Project,
   ProviderAuthResponse,
   ProviderListResponse,
@@ -33,14 +32,14 @@ import { createRefreshQueue } from "./global-sync/queue"
 import { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"
 import { clearSessionPrefetchDirectory } from "./global-sync/session-prefetch"
 import { trimSessions } from "./global-sync/session-trim"
-import type { ProjectMeta } from "./global-sync/types"
+import type { ProjectMeta, PathState } from "./global-sync/types"
 import { SESSION_RECENT_LIMIT } from "./global-sync/types"
 import { sanitizeProject } from "./global-sync/utils"
 
 type GlobalStore = {
   ready: boolean
   error?: InitError
-  path: Path
+  path: PathState
   project: Project[]
   session_todo: {
     [sessionID: string]: Todo[]

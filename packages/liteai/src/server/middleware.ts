@@ -61,7 +61,7 @@ export function authMiddleware(): MiddlewareHandler {
 
 export function requestLogger(log: Log.Logger): MiddlewareHandler {
   return async (c, next) => {
-    const skipLogging = c.req.path === "/log" || c.req.path === "/global/health"
+    const skipLogging = c.req.path === "/global/log" || c.req.path === "/global/health"
     if (!skipLogging) {
       log.info("request", {
         method: c.req.method,

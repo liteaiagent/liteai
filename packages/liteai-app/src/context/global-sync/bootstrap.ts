@@ -4,7 +4,6 @@ import { retry } from "@liteai/util/retry"
 import type {
   Config,
   LiteaiClient,
-  Path,
   PermissionRequest,
   Project,
   ProviderAuthResponse,
@@ -16,11 +15,12 @@ import { batch } from "solid-js"
 import { reconcile, type SetStoreFunction, type Store } from "solid-js/store"
 import { formatServerError } from "@/utils/server-errors"
 import type { State, VcsCache } from "./types"
+import type { PathState } from "./types"
 import { cmp, normalizeProviderList } from "./utils"
 
 type GlobalStore = {
   ready: boolean
-  path: Path
+  path: PathState
   project: Project[]
   session_todo: {
     [sessionID: string]: Todo[]
@@ -82,6 +82,11 @@ export async function bootstrapGlobal(input: {
     retry(() =>
       input.globalSDK.provider.auth().then((x) => {
         input.setGlobalStore("provider_auth", x.data ?? {})
+      }),
+    ),
+    retry(() =>
+      input.globalSDK.global.path().then((x) => {
+        if (x.data) input.setGlobalStore("path", { home: x.data.home, state: x.data.state, config: x.data.config, worktree: "", directory: "" })
       }),
     ),
   ]
@@ -162,8 +167,8 @@ export async function bootstrapDirectory(input: {
   if (input.store.status !== "complete") input.setStore("status", "partial")
 
   Promise.all([
-    input.sdk.path.get().then((x) => {
-      if (x.data) input.setStore("path", x.data)
+    input.sdk.instance.info().then((x) => {
+      if (x.data) input.setStore("path", { home: "", state: "", config: "", worktree: x.data.worktree, directory: x.data.directory })
     }),
     input.sdk.command.list().then((x) => input.setStore("command", x.data ?? [])),
     input.sdk.session.status().then((x) => {

@@ -162,6 +162,13 @@ export type EventServerConnected = {
 	};
 };
 
+export type EventServerHeartbeat = {
+	type: "server.heartbeat";
+	properties: {
+		[key: string]: unknown;
+	};
+};
+
 export type EventGlobalDisposed = {
 	type: "global.disposed";
 	properties: {
@@ -667,6 +674,20 @@ export type EventTodoUpdated = {
 	};
 };
 
+export type EventWorkspaceReady = {
+	type: "workspace.ready";
+	properties: {
+		name: string;
+	};
+};
+
+export type EventWorkspaceFailed = {
+	type: "workspace.failed";
+	properties: {
+		message: string;
+	};
+};
+
 export type EventTuiPromptAppend = {
 	type: "tui.prompt.append";
 	properties: {
@@ -733,6 +754,16 @@ export type EventMcpBrowserOpenFailed = {
 	properties: {
 		mcpName: string;
 		url: string;
+	};
+};
+
+export type EventCommandExecuted = {
+	type: "command.executed";
+	properties: {
+		name: string;
+		sessionID: string;
+		arguments: string;
+		messageID: string;
 	};
 };
 
@@ -874,30 +905,6 @@ export type EventSessionError = {
 	};
 };
 
-export type EventCommandExecuted = {
-	type: "command.executed";
-	properties: {
-		name: string;
-		sessionID: string;
-		arguments: string;
-		messageID: string;
-	};
-};
-
-export type EventWorkspaceReady = {
-	type: "workspace.ready";
-	properties: {
-		name: string;
-	};
-};
-
-export type EventWorkspaceFailed = {
-	type: "workspace.failed";
-	properties: {
-		message: string;
-	};
-};
-
 export type EventVcsBranchUpdated = {
 	type: "vcs.branch.updated";
 	properties: {
@@ -970,6 +977,7 @@ export type Event =
 	| EventQuestionReplied
 	| EventQuestionRejected
 	| EventServerConnected
+	| EventServerHeartbeat
 	| EventGlobalDisposed
 	| EventLspClientDiagnostics
 	| EventLspUpdated
@@ -979,12 +987,15 @@ export type Event =
 	| EventMessagePartDelta
 	| EventMessagePartRemoved
 	| EventTodoUpdated
+	| EventWorkspaceReady
+	| EventWorkspaceFailed
 	| EventTuiPromptAppend
 	| EventTuiCommandExecute
 	| EventTuiToastShow
 	| EventTuiSessionSelect
 	| EventMcpToolsChanged
 	| EventMcpBrowserOpenFailed
+	| EventCommandExecuted
 	| EventSessionStatus
 	| EventSessionIdle
 	| EventSessionCompacted
@@ -995,9 +1006,6 @@ export type Event =
 	| EventSessionDeleted
 	| EventSessionDiff
 	| EventSessionError
-	| EventCommandExecuted
-	| EventWorkspaceReady
-	| EventWorkspaceFailed
 	| EventVcsBranchUpdated
 	| EventWorktreeReady
 	| EventWorktreeFailed
@@ -1662,6 +1670,12 @@ export type BadRequestError = {
 	success: false;
 };
 
+export type GlobalPath = {
+	home: string;
+	state: string;
+	config: string;
+};
+
 export type OAuth = {
 	type: "oauth";
 	refresh: string;
@@ -1848,46 +1862,6 @@ export type WorktreeResetInput = {
 	directory: string;
 };
 
-export type ProjectSummary = {
-	id: string;
-	name?: string;
-	worktree: string;
-};
-
-export type GlobalSession = {
-	id: string;
-	slug: string;
-	projectID: string;
-	workspaceID?: string;
-	directory: string;
-	parentID?: string;
-	summary?: {
-		additions: number;
-		deletions: number;
-		files: number;
-		diffs?: Array<FileDiff>;
-	};
-	share?: {
-		url: string;
-	};
-	title: string;
-	version: string;
-	time: {
-		created: number;
-		updated: number;
-		compacting?: number;
-		archived?: number;
-	};
-	permission?: PermissionRuleset;
-	revert?: {
-		messageID: string;
-		partID?: string;
-		snapshot?: string;
-		diff?: string;
-	};
-	project: ProjectSummary | null;
-};
-
 export type McpResource = {
 	name: string;
 	uri: string;
@@ -2072,12 +2046,10 @@ export type McpStatus =
 	| McpStatusNeedsAuth
 	| McpStatusNeedsClientRegistration;
 
-export type Path = {
-	home: string;
-	state: string;
-	config: string;
-	worktree: string;
+export type InstanceInfo = {
 	directory: string;
+	worktree: string;
+	project: Project;
 };
 
 export type VcsInfo = {
@@ -2265,6 +2237,58 @@ export type GlobalLogResponses = {
 };
 
 export type GlobalLogResponse = GlobalLogResponses[keyof GlobalLogResponses];
+
+export type GlobalLogWriteData = {
+	body?: {
+		/**
+		 * Service name for the log entry
+		 */
+		service: string;
+		/**
+		 * Log level
+		 */
+		level: "debug" | "info" | "error" | "warn";
+		/**
+		 * Log message
+		 */
+		message: string;
+		/**
+		 * Additional metadata for the log entry
+		 */
+		extra?: {
+			[key: string]: unknown;
+		};
+	};
+	path?: never;
+	query?: never;
+	url: "/global/log";
+};
+
+export type GlobalLogWriteResponses = {
+	/**
+	 * Log entry written successfully
+	 */
+	200: boolean;
+};
+
+export type GlobalLogWriteResponse =
+	GlobalLogWriteResponses[keyof GlobalLogWriteResponses];
+
+export type GlobalPathData = {
+	body?: never;
+	path?: never;
+	query?: never;
+	url: "/global/path";
+};
+
+export type GlobalPathResponses = {
+	/**
+	 * Global paths
+	 */
+	200: GlobalPath;
+};
+
+export type GlobalPathResponse = GlobalPathResponses[keyof GlobalPathResponses];
 
 export type AuthRemoveData = {
 	body?: never;
@@ -2536,53 +2560,44 @@ export type ProjectCreateData = {
 
 export type ProjectCreateResponses = {
 	/**
-	 * Created project information
+	 * Existing project information
 	 */
 	200: Project;
+	/**
+	 * Newly created project information
+	 */
+	201: Project;
 };
 
 export type ProjectCreateResponse =
 	ProjectCreateResponses[keyof ProjectCreateResponses];
 
-export type ProjectCurrentData = {
+export type ProjectGetData = {
 	body?: never;
-	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
+	path: {
+		projectID: string;
 	};
-	url: "/project/current";
+	query?: never;
+	url: "/project/{projectID}";
 };
 
-export type ProjectCurrentResponses = {
+export type ProjectGetErrors = {
 	/**
-	 * Current project information
+	 * Not found
+	 */
+	404: NotFoundError;
+};
+
+export type ProjectGetError = ProjectGetErrors[keyof ProjectGetErrors];
+
+export type ProjectGetResponses = {
+	/**
+	 * Project information
 	 */
 	200: Project;
 };
 
-export type ProjectCurrentResponse =
-	ProjectCurrentResponses[keyof ProjectCurrentResponses];
-
-export type ProjectInitGitData = {
-	body?: never;
-	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/project/git/init";
-};
-
-export type ProjectInitGitResponses = {
-	/**
-	 * Project information after git initialization
-	 */
-	200: Project;
-};
-
-export type ProjectInitGitResponse =
-	ProjectInitGitResponses[keyof ProjectInitGitResponses];
+export type ProjectGetResponse = ProjectGetResponses[keyof ProjectGetResponses];
 
 export type ProjectUpdateData = {
 	body?: {
@@ -2602,10 +2617,7 @@ export type ProjectUpdateData = {
 	path: {
 		projectID: string;
 	};
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
+	query?: never;
 	url: "/project/{projectID}";
 };
 
@@ -2637,10 +2649,7 @@ export type ProjectArchiveData = {
 	path: {
 		projectID: string;
 	};
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
+	query?: never;
 	url: "/project/{projectID}/archive";
 };
 
@@ -2669,10 +2678,7 @@ export type ProjectUnarchiveData = {
 	path: {
 		projectID: string;
 	};
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
+	query?: never;
 	url: "/project/{projectID}/unarchive";
 };
 
@@ -2695,6 +2701,39 @@ export type ProjectUnarchiveResponses = {
 
 export type ProjectUnarchiveResponse =
 	ProjectUnarchiveResponses[keyof ProjectUnarchiveResponses];
+
+export type ProjectInitGitData = {
+	body?: never;
+	path?: never;
+	query?: {
+		directory?: string;
+	};
+	url: "/project/git/init";
+};
+
+export type ProjectInitGitErrors = {
+	/**
+	 * Bad request
+	 */
+	400: BadRequestError;
+	/**
+	 * Not found
+	 */
+	404: NotFoundError;
+};
+
+export type ProjectInitGitError =
+	ProjectInitGitErrors[keyof ProjectInitGitErrors];
+
+export type ProjectInitGitResponses = {
+	/**
+	 * Project information after git initialization
+	 */
+	200: Project;
+};
+
+export type ProjectInitGitResponse =
+	ProjectInitGitResponses[keyof ProjectInitGitResponses];
 
 export type PtyListData = {
 	body?: never;
@@ -3203,53 +3242,6 @@ export type WorktreeResetResponses = {
 
 export type WorktreeResetResponse =
 	WorktreeResetResponses[keyof WorktreeResetResponses];
-
-export type ExperimentalSessionListData = {
-	body?: never;
-	path?: never;
-	query?: {
-		/**
-		 * Filter sessions by project directory
-		 */
-		directory?: string;
-		workspace?: string;
-		/**
-		 * Only return root sessions (no parentID)
-		 */
-		roots?: boolean;
-		/**
-		 * Filter sessions updated on or after this timestamp (milliseconds since epoch)
-		 */
-		start?: number;
-		/**
-		 * Return sessions updated before this timestamp (milliseconds since epoch)
-		 */
-		cursor?: number;
-		/**
-		 * Filter sessions by title (case-insensitive)
-		 */
-		search?: string;
-		/**
-		 * Maximum number of sessions to return
-		 */
-		limit?: number;
-		/**
-		 * Include archived sessions (default false)
-		 */
-		archived?: boolean;
-	};
-	url: "/experimental/session";
-};
-
-export type ExperimentalSessionListResponses = {
-	/**
-	 * List of sessions
-	 */
-	200: Array<GlobalSession>;
-};
-
-export type ExperimentalSessionListResponse =
-	ExperimentalSessionListResponses[keyof ExperimentalSessionListResponses];
 
 export type ExperimentalResourceListData = {
 	body?: never;
@@ -5506,6 +5498,46 @@ export type TuiControlResponseResponses = {
 export type TuiControlResponseResponse =
 	TuiControlResponseResponses[keyof TuiControlResponseResponses];
 
+export type InstanceInfoData = {
+	body?: never;
+	path?: never;
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/instance/info";
+};
+
+export type InstanceInfoResponses = {
+	/**
+	 * Instance information
+	 */
+	200: InstanceInfo;
+};
+
+export type InstanceInfoResponse =
+	InstanceInfoResponses[keyof InstanceInfoResponses];
+
+export type ProjectCurrentData = {
+	body?: never;
+	path?: never;
+	query?: {
+		directory?: string;
+		workspace?: string;
+	};
+	url: "/project/current";
+};
+
+export type ProjectCurrentResponses = {
+	/**
+	 * Current project information
+	 */
+	200: Project;
+};
+
+export type ProjectCurrentResponse =
+	ProjectCurrentResponses[keyof ProjectCurrentResponses];
+
 export type InstanceDisposeData = {
 	body?: never;
 	path?: never;
@@ -5525,25 +5557,6 @@ export type InstanceDisposeResponses = {
 
 export type InstanceDisposeResponse =
 	InstanceDisposeResponses[keyof InstanceDisposeResponses];
-
-export type PathGetData = {
-	body?: never;
-	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/path";
-};
-
-export type PathGetResponses = {
-	/**
-	 * Path
-	 */
-	200: Path;
-};
-
-export type PathGetResponse = PathGetResponses[keyof PathGetResponses];
 
 export type VcsGetData = {
 	body?: never;
@@ -5583,53 +5596,6 @@ export type CommandListResponses = {
 
 export type CommandListResponse =
 	CommandListResponses[keyof CommandListResponses];
-
-export type AppLogData = {
-	body?: {
-		/**
-		 * Service name for the log entry
-		 */
-		service: string;
-		/**
-		 * Log level
-		 */
-		level: "debug" | "info" | "error" | "warn";
-		/**
-		 * Log message
-		 */
-		message: string;
-		/**
-		 * Additional metadata for the log entry
-		 */
-		extra?: {
-			[key: string]: unknown;
-		};
-	};
-	path?: never;
-	query?: {
-		directory?: string;
-		workspace?: string;
-	};
-	url: "/log";
-};
-
-export type AppLogErrors = {
-	/**
-	 * Bad request
-	 */
-	400: BadRequestError;
-};
-
-export type AppLogError = AppLogErrors[keyof AppLogErrors];
-
-export type AppLogResponses = {
-	/**
-	 * Log entry written successfully
-	 */
-	200: boolean;
-};
-
-export type AppLogResponse = AppLogResponses[keyof AppLogResponses];
 
 export type AppAgentsData = {
 	body?: never;

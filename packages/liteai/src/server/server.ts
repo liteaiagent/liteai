@@ -8,7 +8,6 @@ import { lazy } from "@/util/lazy"
 import { WorkspaceID } from "../control-plane/schema"
 import { WorkspaceContext } from "../control-plane/workspace-context"
 import { WorkspaceRouterMiddleware } from "../control-plane/workspace-router-middleware"
-import { Global } from "../global"
 import { Installation } from "../installation"
 import { InstanceBootstrap } from "../project/bootstrap"
 import { Instance } from "../project/instance"
@@ -85,11 +84,16 @@ export namespace Server {
           "/project",
           describeRoute({
             summary: "Create project",
-            description: "Initialize or register a project for a given directory.",
+            description:
+              "Register a project for a given directory. Idempotent — returns the existing project if already registered.",
             operationId: "project.create",
             responses: {
               200: {
-                description: "Created project information",
+                description: "Existing project information",
+                content: { "application/json": { schema: resolver(Project.Info) } },
+              },
+              201: {
+                description: "Newly created project information",
                 content: { "application/json": { schema: resolver(Project.Info) } },
               },
             },
@@ -110,61 +114,24 @@ export namespace Server {
               })
             }
             const directory = safeDecodeDirectory(raw, log)
-            const result = await Project.fromDirectory(directory, { autoCreate: true })
-            return c.json(result.project)
-          },
-        )
-        .get(
-          "/path",
-          describeRoute({
-            summary: "Get paths",
-            description: "Retrieve the current working directory and related path information for the LiteAI instance.",
-            operationId: "path.get",
-            responses: {
-              200: {
-                description: "Path",
-                content: {
-                  "application/json": {
-                    schema: resolver(
-                      z
-                        .object({
-                          home: z.string(),
-                          state: z.string(),
-                          config: z.string(),
-                          worktree: z.string(),
-                          directory: z.string(),
-                        })
-                        .meta({
-                          ref: "Path",
-                        }),
-                    ),
-                  },
-                },
-              },
-            },
-          }),
-          async (c) => {
-            let worktree = ""
-            let directory = ""
-            try {
-              worktree = Instance.worktree
-              directory = Instance.directory
-            } catch {
-              // expected when accessing globally outside an instance context
+
+            // Check if the project already exists before registering
+            const resolved = await Project.resolve(directory)
+            const existing = Project.get(resolved.id)
+            if (existing) {
+              return c.json(existing, 200)
             }
-            return c.json({
-              home: Global.Path.home,
-              state: Global.Path.state,
-              config: Global.Path.config,
-              worktree,
-              directory,
-            })
+
+            const result = await Project.register(resolved)
+            return c.json(result.project, 201)
           },
         )
 
+        // ─── Tier 2: Project routes (no instance boot required) ─────────
+        .route("/project", ProjectRoutes())
+
         // ─── Instance context middleware ────────────────────────────────
         .use(async (c, next) => {
-          if (c.req.path === "/log") return next()
           const rawWorkspaceID = c.req.query("workspace") || c.req.header("x-liteai-workspace")
           const raw = c.req.query("directory") || c.req.header("x-liteai-directory")
           if (!raw) {
@@ -201,7 +168,7 @@ export namespace Server {
           }),
         )
 
-        // ─── Instance-scoped routes ─────────────────────────────────────
+        // ─── Instance-scoped routes (Tier 3) ────────────────────────────
         .use(
           validator(
             "query",
@@ -211,7 +178,6 @@ export namespace Server {
             }),
           ),
         )
-        .route("/project", ProjectRoutes())
         .route("/pty", PtyRoutes())
         .route("/config", ConfigRoutes())
         .route("/experimental", ExperimentalRoutes())

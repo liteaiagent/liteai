@@ -381,5 +381,89 @@ export const GlobalRoutes = lazy(() =>
 
         return c.json({ lines: all, services: [...services].sort() })
       },
+    )
+    .post(
+      "/log",
+      describeRoute({
+        summary: "Write log",
+        description: "Write a log entry to the server logs with specified level and metadata.",
+        operationId: "global.log.write",
+        responses: {
+          200: {
+            description: "Log entry written successfully",
+            content: {
+              "application/json": {
+                schema: resolver(z.boolean()),
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "json",
+        z.object({
+          service: z.string().meta({ description: "Service name for the log entry" }),
+          level: z.enum(["debug", "info", "error", "warn"]).meta({ description: "Log level" }),
+          message: z.string().meta({ description: "Log message" }),
+          extra: z
+            .record(z.string(), z.any())
+            .optional()
+            .meta({ description: "Additional metadata for the log entry" }),
+        }),
+      ),
+      async (c) => {
+        const { service, level, message, extra } = c.req.valid("json")
+        const logger = Log.create({ service })
+
+        switch (level) {
+          case "debug":
+            logger.debug(message, extra)
+            break
+          case "info":
+            logger.info(message, extra)
+            break
+          case "error":
+            logger.error(message, extra)
+            break
+          case "warn":
+            logger.warn(message, extra)
+            break
+        }
+
+        return c.json(true)
+      },
+    )
+    .get(
+      "/path",
+      describeRoute({
+        summary: "Get global paths",
+        description: "Retrieve global path information for the LiteAI installation (home, state, config).",
+        operationId: "global.path",
+        responses: {
+          200: {
+            description: "Global paths",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z
+                    .object({
+                      home: z.string(),
+                      state: z.string(),
+                      config: z.string(),
+                    })
+                    .meta({ ref: "GlobalPath" }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json({
+          home: Global.Path.home,
+          state: Global.Path.state,
+          config: Global.Path.config,
+        })
+      },
     ),
 )

@@ -7,7 +7,6 @@ import type {
   McpStatus,
   Message,
   Part,
-  Path,
   PermissionRequest,
   ProviderListResponse,
   QuestionRequest,
@@ -18,6 +17,15 @@ import type {
 } from "@liteai-ai/sdk/client"
 import type { Accessor } from "solid-js"
 import type { SetStoreFunction, Store } from "solid-js/store"
+
+/** Combined path state — populated from /global/path and /instance/info */
+export type PathState = {
+  home: string
+  state: string
+  config: string
+  worktree: string
+  directory: string
+}
 
 export type ProjectMeta = {
   name?: string
@@ -39,7 +47,7 @@ export type State = {
   icon: string | undefined
   provider: ProviderListResponse
   config: Config
-  path: Path
+  path: PathState
   session: Session[]
   sessionTotal: number
   session_status: {

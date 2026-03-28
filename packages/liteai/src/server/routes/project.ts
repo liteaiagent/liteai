@@ -1,69 +1,44 @@
 import { Hono } from "hono"
+import { HTTPException } from "hono/http-exception"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
-import { InstanceBootstrap } from "../../project/bootstrap"
-import { Instance } from "../../project/instance"
 import { Project } from "../../project/project"
 import { ProjectID } from "../../project/schema"
 import { lazy } from "../../util/lazy"
 import { errors } from "../error"
+import { safeDecodeDirectory } from "../middleware"
 
+/**
+ * Tier 2 project routes — these operate on projectID and do NOT require
+ * instance context (no LSP, plugins, MCP, file watchers, etc.).
+ */
 export const ProjectRoutes = lazy(() =>
   new Hono()
     .get(
-      "/current",
+      "/:projectID",
       describeRoute({
-        summary: "Get current project",
-        description: "Retrieve the currently active project that LiteAI is working with.",
-        operationId: "project.current",
+        summary: "Get project",
+        description: "Retrieve a project by its ID.",
+        operationId: "project.get",
         responses: {
           200: {
-            description: "Current project information",
+            description: "Project information",
             content: {
               "application/json": {
                 schema: resolver(Project.Info),
               },
             },
           },
+          ...errors(404),
         },
       }),
+      validator("param", z.object({ projectID: ProjectID.zod })),
       async (c) => {
-        return c.json(Instance.project)
-      },
-    )
-
-    .post(
-      "/git/init",
-      describeRoute({
-        summary: "Initialize git repository",
-        description: "Create a git repository for the current project and return the refreshed project info.",
-        operationId: "project.initGit",
-        responses: {
-          200: {
-            description: "Project information after git initialization",
-            content: {
-              "application/json": {
-                schema: resolver(Project.Info),
-              },
-            },
-          },
-        },
-      }),
-      async (c) => {
-        const dir = Instance.directory
-        const prev = Instance.project
-        const next = await Project.initGit({
-          directory: dir,
-          project: prev,
-        })
-        if (next.id === prev.id && next.vcs === prev.vcs && next.worktree === prev.worktree) return c.json(next)
-        await Instance.reload({
-          directory: dir,
-          worktree: dir,
-          project: next,
-          init: InstanceBootstrap,
-        })
-        return c.json(next)
+        const project = Project.get(c.req.valid("param").projectID)
+        if (!project) {
+          throw new HTTPException(404, { message: "Project not found" })
+        }
+        return c.json(project)
       },
     )
     .patch(
@@ -139,6 +114,54 @@ export const ProjectRoutes = lazy(() =>
       async (c) => {
         const project = await Project.setArchived({ projectID: c.req.valid("param").projectID, time: undefined })
         return c.json(project)
+      },
+    )
+    .post(
+      "/git/init",
+      describeRoute({
+        summary: "Initialize git repository",
+        description:
+          "Create a git repository for a project directory and return the refreshed project info. Requires a directory parameter.",
+        operationId: "project.initGit",
+        responses: {
+          200: {
+            description: "Project information after git initialization",
+            content: {
+              "application/json": {
+                schema: resolver(Project.Info),
+              },
+            },
+          },
+          ...errors(400, 404),
+        },
+      }),
+      validator(
+        "query",
+        z.object({
+          directory: z.string().optional(),
+        }),
+      ),
+      async (c) => {
+        const raw = c.req.valid("query").directory || c.req.header("x-liteai-directory")
+        if (!raw) {
+          throw new HTTPException(400, {
+            message:
+              "Missing required directory context: set the 'directory' query parameter or 'x-liteai-directory' header",
+          })
+        }
+        const directory = safeDecodeDirectory(raw)
+
+        // Resolve project from directory
+        const resolved = await Project.resolve(directory)
+        const existing = Project.get(resolved.id)
+        if (!existing) {
+          throw new HTTPException(404, {
+            message: `Project not registered for directory: ${directory}. Register via POST /project first.`,
+          })
+        }
+
+        const next = await Project.initGit({ directory, project: existing })
+        return c.json(next)
       },
     ),
 )

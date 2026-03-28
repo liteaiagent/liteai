@@ -9,7 +9,6 @@ import type {
   McpStatus,
   Message,
   Part,
-  Path,
   PermissionRequest,
   Provider,
   ProviderAuthMethod,
@@ -73,7 +72,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       }
       formatter: FormatterStatus[]
       vcs: VcsInfo | undefined
-      path: Path
+      path: { home: string; state: string; config: string; worktree: string; directory: string }
       workspaceList: Workspace[]
     }>({
       provider_next: {
@@ -448,10 +447,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             }),
             sdk.client.provider.auth().then((x) => setStore("provider_auth", reconcile(x.data ?? {}))),
             sdk.client.vcs.get().then((x) => setStore("vcs", reconcile(x.data))),
-            sdk.client.path
-              .get()
+            sdk.client.instance
+              .info()
               .then((x) =>
-                setStore("path", reconcile(x.data ?? { home: "", state: "", config: "", worktree: "", directory: "" })),
+                setStore("path", reconcile(x.data ? { home: "", state: "", config: "", worktree: x.data.worktree, directory: x.data.directory } : { home: "", state: "", config: "", worktree: "", directory: "" })),
               ),
             syncWorkspaces(),
           ]).then(() => {

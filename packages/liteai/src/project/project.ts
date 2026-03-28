@@ -66,6 +66,15 @@ export namespace Project {
     })
   export type Info = z.infer<typeof Info>
 
+  /** Result of resolving a directory to project coordinates — no DB writes. */
+  export const ResolvedProject = z.object({
+    id: ProjectID.zod,
+    worktree: z.string(),
+    sandbox: z.string(),
+    vcs: z.literal("git").optional(),
+  })
+  export type ResolvedProject = z.infer<typeof ResolvedProject>
+
   export const Event = {
     Updated: BusEvent.define("project.updated", Info),
   }
@@ -101,14 +110,18 @@ export namespace Project {
       .catch(() => undefined)
   }
 
-  export async function fromDirectory(directory: string, opts?: { autoCreate?: boolean }) {
-    log.info("fromDirectory", { directory, opts })
+  /**
+   * Pure resolution — walks the filesystem and git history to compute project
+   * coordinates. **No database writes, no side effects.**
+   */
+  export async function resolve(directory: string): Promise<ResolvedProject> {
+    log.info("resolve", { directory })
 
     if (!existsSync(directory)) {
       throw new NotFoundError({ message: `Directory does not exist: ${directory}` })
     }
 
-    const data = await iife(async () => {
+    return iife(async () => {
       const matches = Filesystem.up({ targets: [".git"], start: directory })
       const dotgit = await matches.next().then((x) => x.value)
       await matches.return()
@@ -228,12 +241,16 @@ export namespace Project {
         vcs: Info.shape.vcs.parse(Flag.LITEAI_FAKE_VCS),
       }
     })
+  }
+
+  /**
+   * Register (upsert) a resolved project in the database.
+   * Returns the persisted `Project.Info` and the sandbox directory.
+   */
+  export async function register(data: ResolvedProject): Promise<{ project: Info; sandbox: string }> {
+    log.info("register", { id: data.id })
 
     const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, data.id)).get())
-
-    if (!row && !opts?.autoCreate) {
-      throw new NotFoundError({ message: `Project not found for directory: ${directory}` })
-    }
 
     const existing = row
       ? fromRow(row)
@@ -296,6 +313,16 @@ export namespace Project {
       },
     })
     return { project: result, sandbox: data.sandbox }
+  }
+
+  /**
+   * Convenience: resolve a directory then register the project in the DB.
+   * This is the single entry point for project creation / registration.
+   */
+  export async function fromDirectory(directory: string) {
+    log.info("fromDirectory", { directory })
+    const resolved = await resolve(directory)
+    return register(resolved)
   }
 
   export async function discover(input: Info) {
@@ -365,7 +392,7 @@ export namespace Project {
       throw new Error(text || "Failed to initialize git repository")
     }
 
-    return (await fromDirectory(input.directory, { autoCreate: true })).project
+    return (await fromDirectory(input.directory)).project
   }
 
   export const update = fn(

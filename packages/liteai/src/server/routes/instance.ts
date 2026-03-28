@@ -9,6 +9,7 @@ import { Command } from "../../command"
 import { Format } from "../../format"
 import { LSP } from "../../lsp"
 import { Instance } from "../../project/instance"
+import { Project } from "../../project/project"
 import { Vcs } from "../../project/vcs"
 import { Skill } from "../../skill/skill"
 import { lazy } from "../../util/lazy"
@@ -20,6 +21,61 @@ const log = Log.create({ service: "server" })
 
 export const InstanceRoutes = lazy(() =>
   new Hono()
+    .get(
+      "/instance/info",
+      describeRoute({
+        summary: "Get instance info",
+        description:
+          "Retrieve instance-scoped information including directory, worktree, and project details.",
+        operationId: "instance.info",
+        responses: {
+          200: {
+            description: "Instance information",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z
+                    .object({
+                      directory: z.string(),
+                      worktree: z.string(),
+                      project: Project.Info,
+                    })
+                    .meta({ ref: "InstanceInfo" }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json({
+          directory: Instance.directory,
+          worktree: Instance.worktree,
+          project: Instance.project,
+        })
+      },
+    )
+    .get(
+      "/project/current",
+      describeRoute({
+        summary: "Get current project",
+        description: "Retrieve the currently active project that LiteAI is working with.",
+        operationId: "project.current",
+        responses: {
+          200: {
+            description: "Current project information",
+            content: {
+              "application/json": {
+                schema: resolver(Project.Info),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json(Instance.project)
+      },
+    )
     .post(
       "/instance/dispose",
       describeRoute({
@@ -86,57 +142,6 @@ export const InstanceRoutes = lazy(() =>
       async (c) => {
         const commands = await Command.list()
         return c.json(commands)
-      },
-    )
-    .post(
-      "/log",
-      describeRoute({
-        summary: "Write log",
-        description: "Write a log entry to the server logs with specified level and metadata.",
-        operationId: "app.log",
-        responses: {
-          200: {
-            description: "Log entry written successfully",
-            content: {
-              "application/json": {
-                schema: resolver(z.boolean()),
-              },
-            },
-          },
-        },
-      }),
-      validator(
-        "json",
-        z.object({
-          service: z.string().meta({ description: "Service name for the log entry" }),
-          level: z.enum(["debug", "info", "error", "warn"]).meta({ description: "Log level" }),
-          message: z.string().meta({ description: "Log message" }),
-          extra: z
-            .record(z.string(), z.any())
-            .optional()
-            .meta({ description: "Additional metadata for the log entry" }),
-        }),
-      ),
-      async (c) => {
-        const { service, level, message, extra } = c.req.valid("json")
-        const logger = Log.create({ service })
-
-        switch (level) {
-          case "debug":
-            logger.debug(message, extra)
-            break
-          case "info":
-            logger.info(message, extra)
-            break
-          case "error":
-            logger.error(message, extra)
-            break
-          case "warn":
-            logger.warn(message, extra)
-            break
-        }
-
-        return c.json(true)
       },
     )
     .get(

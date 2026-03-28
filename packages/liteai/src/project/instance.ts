@@ -66,11 +66,20 @@ function boot(input: { directory: string; init?: () => Promise<void>; project?: 
             worktree: input.worktree,
             project: input.project,
           }
-        : await Project.fromDirectory(input.directory, { autoCreate: false }).then(({ project, sandbox }) => ({
-            directory: input.directory,
-            worktree: sandbox,
-            project,
-          }))
+        : await iife(async () => {
+            const resolved = await Project.resolve(input.directory)
+            const project = Project.get(resolved.id)
+            if (!project) {
+              throw new Error(
+                `Project not registered for directory: ${input.directory}. Register via POST /project first.`,
+              )
+            }
+            return {
+              directory: input.directory,
+              worktree: resolved.sandbox,
+              project,
+            }
+          })
     await context.provide(ctx, async () => {
       await input.init?.()
     })

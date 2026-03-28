@@ -259,7 +259,7 @@ export async function renameProject(deps: NavigationDeps, project: LocalProject,
   const name = next === getFilename(project.worktree) ? "" : next
 
   if (project.id && project.id !== "global") {
-    await deps.globalSDK.client.project.update({ projectID: project.id, directory: project.worktree, name })
+    await deps.globalSDK.client.project.update({ projectID: project.id, name })
     return
   }
 

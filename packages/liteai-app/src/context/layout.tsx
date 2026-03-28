@@ -552,7 +552,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         }
 
         void globalSdk.client.project
-          .update({ projectID: project.id, directory: worktree, icon: { color } })
+          .update({ projectID: project.id, icon: { color } })
           .catch(() => {
             if (colorRequested.get(worktree) === color) colorRequested.delete(worktree)
           })
