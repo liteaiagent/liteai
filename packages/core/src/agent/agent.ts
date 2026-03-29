@@ -37,8 +37,8 @@ function parseBuiltinAgent(raw: string): Config.Agent {
 }
 
 const builtinAgents: Record<string, Config.Agent> = {
-  build: parseBuiltinAgent(AGENT_BUILD),
   plan: parseBuiltinAgent(AGENT_PLAN),
+  build: parseBuiltinAgent(AGENT_BUILD),
   general: parseBuiltinAgent(AGENT_GENERAL),
   explore: parseBuiltinAgent(AGENT_EXPLORE),
   compaction: parseBuiltinAgent(AGENT_COMPACTION),
@@ -241,7 +241,7 @@ export namespace Agent {
     return pipe(
       await state(),
       values(),
-      sortBy([(x) => (cfg.default_agent ? x.name === cfg.default_agent : x.name === "build"), "desc"]),
+      sortBy([(x) => (cfg.default_agent ? x.name === cfg.default_agent : x.name === "plan"), "desc"]),
     )
   }
 
