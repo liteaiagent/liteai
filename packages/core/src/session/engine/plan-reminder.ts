@@ -1,49 +1,19 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import type { Agent } from "../../agent/agent"
-import PROMPT_PLAN from "../../agent/prompt/plan.md"
-import { Flag } from "../../flag/flag"
 import { Filesystem } from "../../util/filesystem"
 import { Session } from ".."
 import type { Message } from "../message"
 import { PartID } from "../schema"
 import BUILD_SWITCH from "../templates/build-switch.md"
 
-export async function insertReminders(input: {
+export async function insertPlanReminder(input: {
   messages: Message.WithParts[]
   agent: Agent.Info
   session: Session.Info
 }) {
   const userMessage = input.messages.findLast((msg) => msg.info.role === "user")
   if (!userMessage) return input.messages
-
-  // Original logic when experimental plan mode is disabled
-  if (!Flag.LITEAI_EXPERIMENTAL_PLAN_MODE) {
-    if (input.agent.name === "plan") {
-      userMessage.parts.push({
-        id: PartID.ascending(),
-        messageID: userMessage.info.id,
-        sessionID: userMessage.info.sessionID,
-        type: "text",
-        text: PROMPT_PLAN,
-        synthetic: true,
-      })
-    }
-    const wasPlan = input.messages.some((msg) => msg.info.role === "assistant" && msg.info.agent === "plan")
-    if (wasPlan && input.agent.name === "build") {
-      userMessage.parts.push({
-        id: PartID.ascending(),
-        messageID: userMessage.info.id,
-        sessionID: userMessage.info.sessionID,
-        type: "text",
-        text: BUILD_SWITCH,
-        synthetic: true,
-      })
-    }
-    return input.messages
-  }
-
-  // New plan mode logic when flag is enabled
   const assistantMessage = input.messages.findLast((msg) => msg.info.role === "assistant")
 
   // Switching from plan mode to build mode

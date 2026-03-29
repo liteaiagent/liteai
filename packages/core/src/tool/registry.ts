@@ -25,7 +25,7 @@ import { WriteTool } from "./write"
 export namespace ToolRegistry {
   async function all(): Promise<Tool.Info[]> {
     const config = await Config.get()
-    const question = ["app", "cli", "desktop"].includes(Flag.LITEAI_CLIENT) || Flag.LITEAI_ENABLE_QUESTION_TOOL
+    const question = ["app", "cli", "desktop"].includes(Flag.LITEAI_CLIENT)
 
     return [
       InvalidTool,
@@ -39,6 +39,9 @@ export namespace ToolRegistry {
       TaskTool,
       WebFetchTool,
       TodoWriteTool,
+      // Intentionally disabled. The agent remembers the current state of its tasks through its
+      // previous TodoWriteTool outputs in the chat history. Enabling a read tool wastes tokens
+      // and can cause the agent to get stuck in "idle read" loops when it should be taking action.
       // TodoReadTool,
       WebSearchTool,
       CodeSearchTool,
@@ -46,7 +49,7 @@ export namespace ToolRegistry {
       ApplyPatchTool,
       LspTool,
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
-      ...(Flag.LITEAI_EXPERIMENTAL_PLAN_MODE && Flag.LITEAI_CLIENT === "cli" ? [PlanExitTool] : []),
+      PlanExitTool,
     ]
   }
 

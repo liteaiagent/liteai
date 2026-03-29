@@ -27,7 +27,7 @@ import { ensureTitle } from "../tasks/title"
 import MAX_STEPS from "../templates/max-steps.md"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
-import { insertReminders } from "./reminders"
+import { insertPlanReminder } from "./plan-reminder"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
@@ -352,7 +352,7 @@ export const loop = fn(LoopInput, async (input) => {
         text: text?.slice(0, 200),
       })
     }
-    msgs = await insertReminders({
+    msgs = await insertPlanReminder({
       messages: msgs,
       agent,
       session,
