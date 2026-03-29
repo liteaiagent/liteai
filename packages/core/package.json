@@ -7,6 +7,7 @@
   "private": true,
   "scripts": {
     "build": "tsc -b",
+    "build:exe": "bun run script/build.ts",
     "db": "bun drizzle-kit",
     "typecheck": "tsc --noEmit",
     "check": "tsgo --noEmit",
