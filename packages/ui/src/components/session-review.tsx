@@ -446,18 +446,19 @@ export const SessionReview = (props: SessionReviewProps) => {
                               </div>
                               <div data-slot="session-review-trigger-actions">
                                 <Show when={isMarkdown()}>
+                                  {/* biome-ignore lint/a11y/noStaticElementInteractions: Catching events to stop propagation */}
                                   <div
                                     class="mr-2"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                    }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onKeyDown={(e) => e.stopPropagation()}
                                   >
                                     <RadioGroup
                                       options={["preview", "code"] as const}
                                       current={previewMode() ? "preview" : "code"}
                                       size="small"
                                       value={(v) => v}
-                                      label={(v) => v === "preview" ? "Preview" : "Code"}
+                                      label={(v) => (v === "preview" ? "Preview" : "Code")}
                                       onSelect={(v) => {
                                         if (v) setStore("preview", file, v === "preview")
                                       }}
@@ -506,7 +507,10 @@ export const SessionReview = (props: SessionReviewProps) => {
                               <Switch>
                                 <Match when={previewMode()}>
                                   <div class="px-6 py-4 bg-surface-base select-text">
-                                    <Markdown text={isDeleted() ? beforeText() : afterText()} class="max-w-none text-14-regular" />
+                                    <Markdown
+                                      text={isDeleted() ? beforeText() : afterText()}
+                                      class="max-w-none text-14-regular"
+                                    />
                                   </div>
                                 </Match>
                                 <Match when={tooLarge()}>

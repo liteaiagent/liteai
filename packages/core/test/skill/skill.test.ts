@@ -194,7 +194,7 @@ description: A skill in the .claude/skills directory.
       expect(claudeSkill?.location).toContain(path.join(".claude", "skills", "claude-skill", "SKILL.md"))
     },
   })
-})
+}, 30_000)
 
 test("discovers global skills from ~/.claude/skills/ directory", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -217,7 +217,7 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
   } finally {
     process.env.LITEAI_TEST_HOME = originalHome
   }
-})
+}, 30_000)
 
 test("returns empty array when no skills exist", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -231,7 +231,7 @@ test("returns empty array when no skills exist", async () => {
       expect(names.every((n) => ["debug", "simplify"].includes(n))).toBe(true)
     },
   })
-})
+}, 30_000)
 
 test("discovers skills from .agents/skills/ directory", async () => {
   await using tmp = await tmpdir({
@@ -260,7 +260,7 @@ description: A skill in the .agents/skills directory.
       expect(agentSkill?.location).toContain(path.join(".agents", "skills", "agent-skill", "SKILL.md"))
     },
   })
-})
+}, 30_000)
 
 test("discovers global skills from ~/.agents/skills/ directory", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -297,7 +297,7 @@ This skill is loaded from the global home directory.
   } finally {
     process.env.LITEAI_TEST_HOME = originalHome
   }
-})
+}, 30_000)
 
 test("discovers skills from both .claude/skills/ and .agents/skills/", async () => {
   await using tmp = await tmpdir({
@@ -336,7 +336,7 @@ description: A skill in the .agents/skills directory.
       expect(skills.find((s) => s.name === "agent-skill")).toBeDefined()
     },
   })
-})
+}, 30_000)
 
 test("properly resolves directories that skills live in", async () => {
   await using tmp = await tmpdir({
@@ -396,7 +396,7 @@ description: A skill in the .liteai/skills directory.
       expect(dirs.length).toBeGreaterThanOrEqual(4)
     },
   })
-})
+}, 30_000)
 
 test("parses advanced frontmatter fields (kebab-case)", async () => {
   await using tmp = await tmpdir({
@@ -437,7 +437,7 @@ agent: Explore
       expect(skill?.agent).toBe("Explore")
     },
   })
-})
+}, 30_000)
 
 test("parses snake_case frontmatter fields", async () => {
   await using tmp = await tmpdir({

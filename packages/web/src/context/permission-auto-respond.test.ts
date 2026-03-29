@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "bun:test"
+import { beforeEach, describe, expect, test } from "bun:test"
 import type { PermissionRequest, Project, Session } from "@liteai/sdk/client"
 import { __updateProjectRegistry } from "@/utils/project-id"
 import { autoRespondsPermission, isDirectoryAutoAccepting } from "./permission-auto-respond"
@@ -100,4 +100,3 @@ describe("isDirectoryAutoAccepting", () => {
     expect(isDirectoryAutoAccepting(autoAccept, DIRECTORY)).toBe(false)
   })
 })
-

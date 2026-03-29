@@ -77,9 +77,8 @@
     "@typescript/native-preview": "catalog:",
     "glob": "13.0.5",
     "husky": "9.1.7",
-
     "semver": "^7.6.0",
-    "turbo": "2.8.20"
+    "turbo": "2.8.21"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.933.0",
@@ -92,7 +91,6 @@
     "url": "https://github.com/liteaiagent/liteai"
   },
   "license": "MIT",
-
   "trustedDependencies": [
     "esbuild",
     "protobufjs",

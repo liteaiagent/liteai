@@ -11,6 +11,24 @@ const __dirname = path.dirname(__filename)
 const dir = path.resolve(__dirname, "..")
 const coreDir = path.resolve(dir, "../core")
 
+const rawPlugin: import("bun").BunPlugin = {
+  name: "raw-plugin",
+  setup(build) {
+    build.onResolve({ filter: /\?raw$/ }, (args) => {
+      return {
+        path: path.isAbsolute(args.path) ? args.path.replace(/\?raw$/, "") : path.join(path.dirname(args.importer), args.path.replace(/\?raw$/, "")),
+        namespace: "raw",
+      }
+    })
+    build.onLoad({ filter: /.*/, namespace: "raw" }, async (args) => {
+      return {
+        contents: `export default ${JSON.stringify(await Bun.file(args.path).text())};`,
+        loader: "js",
+      }
+    })
+  },
+}
+
 process.chdir(dir)
 
 import corePkg from "../../core/package.json"
@@ -233,7 +251,7 @@ for (const name of names()) {
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
-    plugins: [solidPlugin],
+    plugins: [solidPlugin, rawPlugin],
     compile: {
       autoloadBunfig: false,
       autoloadDotenv: false,

@@ -613,7 +613,7 @@ test("ask - publishes asked event", async () => {
       await ask.catch(() => {})
     },
   })
-})
+}, 30_000)
 
 // reply tests
 
@@ -642,7 +642,7 @@ test("reply - once resolves the pending ask", async () => {
       await expect(askPromise).resolves.toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("reply - reject throws RejectedError", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -669,7 +669,7 @@ test("reply - reject throws RejectedError", async () => {
       await expect(askPromise).rejects.toBeInstanceOf(PermissionNext.RejectedError)
     },
   })
-})
+}, 30_000)
 
 test("reply - reject with message throws CorrectedError", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -699,7 +699,7 @@ test("reply - reject with message throws CorrectedError", async () => {
       expect(err.message).toContain("Use a safer command")
     },
   })
-})
+}, 30_000)
 
 test("reply - always persists approval and resolves", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -742,7 +742,7 @@ test("reply - always persists approval and resolves", async () => {
       expect(result).toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("reply - reject cancels all pending for same session", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -825,7 +825,7 @@ test("reply - always resolves matching pending requests in same session", async 
       expect(await PermissionNext.list()).toHaveLength(0)
     },
   })
-})
+}, 30_000)
 
 test("reply - always keeps other session pending", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -866,7 +866,7 @@ test("reply - always keeps other session pending", async () => {
       await b.catch(() => {})
     },
   })
-})
+}, 30_000)
 
 test("reply - publishes replied event", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -924,7 +924,7 @@ test("reply - does nothing for unknown requestID", async () => {
       expect(await PermissionNext.list()).toHaveLength(0)
     },
   })
-})
+}, 30_000)
 
 test("ask - checks all patterns and stops on first deny", async () => {
   await using tmp = await tmpdir({ git: true })

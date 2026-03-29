@@ -3,8 +3,8 @@ import { DropdownMenu } from "@liteai/ui/dropdown-menu"
 import type { FileSearchHandle } from "@liteai/ui/file"
 import { IconButton } from "@liteai/ui/icon-button"
 import { createLineCommentController } from "@liteai/ui/line-comment-annotations"
-import { cloneSelectedLineRange, previewSelectedLines } from "@liteai/ui/pierre/selection-bridge"
 import { Markdown } from "@liteai/ui/markdown"
+import { cloneSelectedLineRange, previewSelectedLines } from "@liteai/ui/pierre/selection-bridge"
 import { RadioGroup } from "@liteai/ui/radio-group"
 import { ScrollView } from "@liteai/ui/scroll-view"
 import { Tabs } from "@liteai/ui/tabs"
@@ -224,7 +224,7 @@ function FileTabCommentScope(props: {
             current={previewMode() ? "preview" : "code"}
             size="small"
             value={(v) => v}
-            label={(v) => v === "preview" ? "Preview" : "Code"}
+            label={(v) => (v === "preview" ? "Preview" : "Code")}
             onSelect={(v) => {
               if (v) setPreviewMode(v === "preview")
             }}
@@ -241,44 +241,44 @@ function FileTabCommentScope(props: {
         <Match when={true}>
           <Dynamic
             component={fileComponent}
-        mode="text"
-        file={{
-          name: props.path,
-          contents: props.contents(),
-          cacheKey: props.cacheKey(),
-        }}
-        enableLineSelection
-        enableHoverUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={props.queueRestore}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderHoverUtility={commentsUi.renderHoverUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        search={props.search}
-        overflow="scroll"
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: props.path,
-          current: props.state()?.content,
-          onLoad: props.queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
+            mode="text"
+            file={{
+              name: props.path,
+              contents: props.contents(),
+              cacheKey: props.cacheKey(),
+            }}
+            enableLineSelection
+            enableHoverUtility
+            selectedLines={activeSelection()}
+            commentedLines={commentedLines()}
+            onRendered={props.queueRestore}
+            annotations={commentsUi.annotations()}
+            renderAnnotation={commentsUi.renderAnnotation}
+            renderHoverUtility={commentsUi.renderHoverUtility}
+            onLineSelected={(range: SelectedLineRange | null) => {
+              commentsUi.onLineSelected(range)
+            }}
+            onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
+            onLineSelectionEnd={(range: SelectedLineRange | null) => {
+              commentsUi.onLineSelectionEnd(range)
+            }}
+            search={props.search}
+            overflow="scroll"
+            class="select-text"
+            media={{
+              mode: "auto",
+              path: props.path,
+              current: props.state()?.content,
+              onLoad: props.queueRestore,
+              onError: (args: { kind: "image" | "audio" | "svg" }) => {
+                if (args.kind !== "svg") return
+                showToast({
+                  variant: "error",
+                  title: language.t("toast.file.loadFailed.title"),
+                })
+              },
+            }}
+          />
         </Match>
       </Switch>
     </div>

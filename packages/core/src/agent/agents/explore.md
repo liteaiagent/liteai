@@ -12,6 +12,7 @@ permission:
   websearch: allow
   codesearch: allow
   read: allow
+  external_directory: ask
 ---
 You are a file search specialist. You excel at thoroughly navigating and exploring codebases.
 

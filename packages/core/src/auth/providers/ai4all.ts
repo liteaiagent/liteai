@@ -137,7 +137,12 @@ export const Ai4allAuth: AuthProvider = {
             log.warn("received 401 — forcing token refresh and retrying…")
             // Invalidate stored expiry so doRefresh() calls the server
             await Auth.set("ai4all", { ...auth, expires: 0, clientId: auth.clientId, clientSecret: auth.clientSecret })
-            const retried = await doRefresh({ ...auth, expires: 0, clientId: auth.clientId, clientSecret: auth.clientSecret })
+            const retried = await doRefresh({
+              ...auth,
+              expires: 0,
+              clientId: auth.clientId,
+              clientSecret: auth.clientSecret,
+            })
             if (retried && retried.type === "oauth") {
               hdrs.set("Authorization", `Bearer ${retried.access}`)
               return fetch(request, { ...init, headers: hdrs })

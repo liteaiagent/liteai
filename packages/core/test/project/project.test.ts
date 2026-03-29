@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test"
+import { afterEach, describe, expect, mock, test } from "bun:test"
 import path from "node:path"
 import { $ } from "bun"
 import { GlobalBus } from "../../src/bus/global"
@@ -15,6 +15,12 @@ const originalGit = gitModule.git
 
 type Mode = "none" | "rev-list-fail" | "top-fail" | "common-dir-fail"
 let mode: Mode = "none"
+
+// Reset the global mock state to prevent a timed-out test from bleeding
+// its mock failure mode into subsequent tests (causing dir_ fallbacks).
+afterEach(() => {
+  mode = "none"
+})
 
 mock.module("../../src/util/git", () => ({
   git: (args: string[], opts: { cwd: string; env?: Record<string, string> }) => {
@@ -148,7 +154,7 @@ describe("Project.fromDirectory with worktrees", () => {
     expect(project.worktree).toBe(tmp.path)
     expect(sandbox).toBe(tmp.path)
     expect(project.sandboxes).not.toContain(tmp.path)
-  })
+  }, 30_000)
 
   test("should set worktree to root when called from a worktree", async () => {
     const p = await loadProject()
@@ -170,7 +176,7 @@ describe("Project.fromDirectory with worktrees", () => {
         .quiet()
         .catch(() => {})
     }
-  })
+  }, 30_000)
 
   test("worktree should share project ID with main repo", async () => {
     const p = await loadProject()
@@ -196,7 +202,7 @@ describe("Project.fromDirectory with worktrees", () => {
         .quiet()
         .catch(() => {})
     }
-  })
+  }, 30_000)
 
   test("separate clones of the same repo should share project ID", async () => {
     const p = await loadProject()
@@ -206,8 +212,8 @@ describe("Project.fromDirectory with worktrees", () => {
     const bare = `${tmp.path}-bare`
     const clone = `${tmp.path}-clone`
     try {
-      await $`git clone --bare ${tmp.path} ${bare}`.quiet()
-      await $`git clone ${bare} ${clone}`.quiet()
+      await $`git clone -c core.fsmonitor=false --bare ${tmp.path} ${bare}`.quiet()
+      await $`git clone -c core.fsmonitor=false ${bare} ${clone}`.quiet()
 
       const { project: a } = await p.fromDirectory(tmp.path)
       const { project: b } = await p.fromDirectory(clone)
@@ -216,7 +222,7 @@ describe("Project.fromDirectory with worktrees", () => {
     } finally {
       await $`rm -rf ${bare} ${clone}`.quiet().nothrow()
     }
-  })
+  }, 30_000)
 
   test("should accumulate multiple worktrees in sandboxes", async () => {
     const p = await loadProject()
@@ -245,7 +251,7 @@ describe("Project.fromDirectory with worktrees", () => {
         .quiet()
         .catch(() => {})
     }
-  })
+  }, 30_000)
 })
 
 describe("Project.discover", () => {

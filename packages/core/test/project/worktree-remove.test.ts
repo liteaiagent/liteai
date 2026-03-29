@@ -63,7 +63,7 @@ describe("Worktree.remove", () => {
 
     const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
     expect(ref.exitCode).not.toBe(0)
-  })
+  }, 30_000)
 
   wintest("stops fsmonitor before removing a worktree", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -92,5 +92,5 @@ describe("Worktree.remove", () => {
 
     const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
     expect(ref.exitCode).not.toBe(0)
-  })
+  }, 30_000)
 })

@@ -24,4 +24,3 @@ export function toDirectory(projectID: string): string | undefined {
   const match = projectRegistry.find((p) => p.id === projectID)
   return match?.worktree
 }
-
