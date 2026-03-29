@@ -1,6 +1,6 @@
 # LiteAI VSCode Extension — Architecture & Implementation Plan
 
-> **Status:** Draft  
+> **Status:** In Progress — Phase 1 ✅, Phase 2 (contexts) ✅, Phase 2 (components) pending  
 > **Date:** 2026-03-30  
 > **Scope:** Extract reusable UI from `@liteai/web`, bundle `liteai-core` in a VSCode extension, deliver a chat experience inside the IDE.
 
@@ -321,38 +321,41 @@ export type Platform = {
 
 ### 5.3 PaneProviders
 
-Single wrapper that provides all contexts needed by any Pane:
+Single wrapper that provides all contexts needed by any Pane.
+
+> **Implementation note:** `LanguageProvider` accepts an optional `dictionaries` prop,
+> allowing the host (web app) to inject additional i18n translations on top of the
+> UI-package base translations via `mergeHostDictionaries()`. Without it, only UI-package
+> strings are available (sufficient for the VSCode extension).
 
 ```typescript
-// ui/src/panes/shared/pane-providers.tsx
+// ui/src/panes/shared/pane-providers.tsx (IMPLEMENTED)
 export function PaneProviders(props: ParentProps & {
   platform: Platform
   route: Accessor<PaneRoute>
   server: ServerConnection.Key
+  servers?: Array<ServerConnection.Any>
+  dictionaries?: Record<Locale, Record<string, unknown>>
 }) {
   return (
     <PlatformProvider value={props.platform}>
-      <ServerProvider defaultServer={props.server}>
+      <ServerProvider defaultServer={props.server} servers={props.servers}>
         <GlobalSDKProvider>
-          <GlobalSyncProvider>
-            <PaneRouteProvider route={props.route}>
-              <SettingsProvider>
-                <PermissionProvider>
+          <LanguageProvider dictionaries={props.dictionaries}>
+            <SettingsProvider>
+              <PaneRouteProvider route={props.route}>
+                <GlobalSyncProvider>
                   <ModelsProvider>
-                    <SDKProvider>
-                      <SyncProvider>
-                        <LocalProvider>
-                          <PromptProvider>
-                            {props.children}
-                          </PromptProvider>
-                        </LocalProvider>
-                      </SyncProvider>
-                    </SDKProvider>
+                    <PromptProvider>
+                      <PermissionProvider>
+                        <LocalProvider>{props.children}</LocalProvider>
+                      </PermissionProvider>
+                    </PromptProvider>
                   </ModelsProvider>
-                </PermissionProvider>
-              </SettingsProvider>
-            </PaneRouteProvider>
-          </GlobalSyncProvider>
+                </GlobalSyncProvider>
+              </PaneRouteProvider>
+            </SettingsProvider>
+          </LanguageProvider>
         </GlobalSDKProvider>
       </ServerProvider>
     </PlatformProvider>
@@ -397,26 +400,47 @@ ui/src/
 ├── components/              ← existing primitives (unchanged)
 ├── context/                 ← existing base contexts (unchanged)
 │
-├── panes/                   ← NEW
-│   ├── index.ts             ← public exports
+├── panes/                   ← Pane system (Phase 1 + 2 complete)
+│   ├── index.ts             ← barrel exports (all contexts, hooks, types)
 │   │
-│   ├── shared/              ← contexts migrated from web
-│   │   ├── pane-route.tsx
-│   │   ├── pane-providers.tsx
-│   │   ├── platform.tsx          ← from web/context/
-│   │   ├── server.tsx            ← from web/context/
-│   │   ├── global-sdk.tsx        ← from web/context/
-│   │   ├── sdk.tsx               ← from web/context/
-│   │   ├── sync.tsx              ← from web/context/
-│   │   ├── global-sync.tsx       ← from web/context/
-│   │   ├── prompt.tsx            ← from web/context/
-│   │   ├── models.tsx            ← from web/context/
-│   │   ├── settings.tsx          ← from web/context/
-│   │   ├── permission.tsx        ← from web/context/
-│   │   ├── local.tsx             ← from web/context/
-│   │   └── language.tsx          ← from web/context/
+│   ├── shared/              ← contexts + utilities migrated from web
+│   │   ├── pane-route.tsx        ✅ Phase 1 — router-agnostic route signal
+│   │   ├── pane-providers.tsx    ✅ Phase 2 — all providers nested correctly
+│   │   ├── platform.tsx          ✅ Phase 1 — from web/context/
+│   │   ├── server.tsx            ✅ Phase 1 — from web/context/
+│   │   ├── server-util.ts        ✅ Phase 1 — SDK factory for server connections
+│   │   ├── server-health.ts      ✅ Phase 1 — health check utility
+│   │   ├── global-sdk.tsx        ✅ Phase 1 — from web/context/
+│   │   ├── sdk.tsx               ✅ Phase 1 — from web/context/ (uses usePaneRoute)
+│   │   ├── persist.ts            ✅ Phase 1 — from web/utils/
+│   │   ├── language.tsx          ✅ Phase 2 — injectable dictionaries for host i18n
+│   │   ├── settings.tsx          ✅ Phase 2 — from web/context/
+│   │   ├── global-sync.tsx       ✅ Phase 2 — from web/context/
+│   │   ├── global-sync/          ✅ Phase 2 — 12 submodules migrated
+│   │   │   ├── bootstrap.ts
+│   │   │   ├── child-store.ts
+│   │   │   ├── error-types.ts    ← InitError extracted from web/pages/error.tsx
+│   │   │   ├── event-reducer.ts
+│   │   │   ├── eviction.ts
+│   │   │   ├── queue.ts
+│   │   │   ├── session-cache.ts
+│   │   │   ├── session-load.ts
+│   │   │   ├── session-prefetch.ts
+│   │   │   ├── session-trim.ts
+│   │   │   ├── types.ts
+│   │   │   └── utils.ts
+│   │   ├── sync.tsx              ✅ Phase 2 — from web/context/
+│   │   ├── models.tsx            ✅ Phase 2 — from web/context/
+│   │   ├── prompt.tsx            ✅ Phase 2 — uses usePaneRoute, inline FileSelection
+│   │   ├── permission.tsx        ✅ Phase 2 — uses usePaneRoute
+│   │   ├── local.tsx             ✅ Phase 2 — uses usePaneRoute
+│   │   ├── use-providers.ts      ✅ Phase 2 — from web/hooks/
+│   │   ├── project-id.ts         ✅ Phase 2 — from web/utils/
+│   │   ├── server-errors.ts      ✅ Phase 2 — from web/utils/
+│   │   ├── model-variant.ts      ✅ Phase 2 — from web/context/
+│   │   └── permission-auto-respond.ts ✅ Phase 2 — from web/context/
 │   │
-│   ├── chat/                ← ChatPane
+│   ├── chat/                ← ChatPane (Phase 2 — pending)
 │   │   ├── chat-pane.tsx         ← main component
 │   │   ├── message-timeline.tsx  ← from web/pages/session/
 │   │   ├── prompt-input/         ← from web/components/prompt-input/
@@ -461,23 +485,32 @@ vscode/
 
 ## 7. What Moves, What Stays
 
-### Moves to `@liteai/ui/panes/shared/`
+### Moves to `@liteai/ui/panes/shared/` — ✅ Complete
 
-| File | Size | Dependencies |
-|------|------|-------------|
-| `platform.tsx` | 2KB | None (clean interface) |
-| `server.tsx` | 8KB | `@liteai/sdk`, persist utils |
-| `global-sdk.tsx` | 8KB | server, `@liteai/sdk`, event-bus, zod |
-| `sdk.tsx` | 5KB | global-sdk, PaneRoute |
-| `global-sync.tsx` + subdir | 15KB | global-sdk, `@liteai/sdk` |
-| `sync.tsx` | 22KB | global-sync, sdk |
-| `prompt.tsx` | 5KB | sync, PaneRoute |
-| `models.tsx` | 4KB | global-sdk |
-| `settings.tsx` | 3KB | global-sdk |
-| `permission.tsx` | 3KB | sdk |
-| `local.tsx` | 3KB | sync, models |
-| `language.tsx` | 2KB | PaneRoute |
-| Persist utilities | 3KB | @solid-primitives/storage |
+| File | Size | Status | Key Changes |
+|------|------|--------|-------------|
+| `platform.tsx` | 2KB | ✅ Phase 1 | Clean interface, no changes |
+| `server.tsx` | 6KB | ✅ Phase 1 | + `server-util.ts` (1KB), `server-health.ts` (3KB) |
+| `global-sdk.tsx` | 8KB | ✅ Phase 1 | Uses `createSdkForServer` from server-util |
+| `sdk.tsx` | 1KB | ✅ Phase 1 | `useParams()` → `usePaneRoute()` |
+| `persist.ts` | 11KB | ✅ Phase 1 | Moved from web/utils/ |
+| `pane-route.tsx` | 1KB | ✅ Phase 1 | New — router-agnostic route signal |
+| `pane-providers.tsx` | 2KB | ✅ Phase 2 | All 12 providers in dependency order |
+| `language.tsx` | 7KB | ✅ Phase 2 | Injectable dictionaries via `mergeHostDictionaries()` |
+| `settings.tsx` | 9KB | ✅ Phase 2 | Imports updated to relative paths |
+| `global-sync.tsx` + subdir | 12KB + 42KB | ✅ Phase 2 | 12 submodule files + `InitError` extracted |
+| `sync.tsx` | 23KB | ✅ Phase 2 | `@/utils/project-id` → `./project-id` |
+| `models.tsx` | 5KB | ✅ Phase 2 | Uses local `use-providers` and `persist` |
+| `prompt.tsx` | 9KB | ✅ Phase 2 | `useParams()` → `usePaneRoute()`, inline `FileSelection` |
+| `permission.tsx` | 9KB | ✅ Phase 2 | `useParams()` → `usePaneRoute()` |
+| `local.tsx` | 12KB | ✅ Phase 2 | `useParams()` → `usePaneRoute()`, removed test probe |
+| `use-providers.ts` | 1KB | ✅ Phase 2 | Moved from web/hooks/ |
+| `project-id.ts` | 1KB | ✅ Phase 2 | Moved from web/utils/ |
+| `server-errors.ts` | 3KB | ✅ Phase 2 | Moved from web/utils/ |
+| `model-variant.ts` | 2KB | ✅ Phase 2 | Moved from web/context/ |
+| `permission-auto-respond.ts` | 2KB | ✅ Phase 2 | Moved from web/context/ |
+
+**Total: 22 files + 12 global-sync submodules = 34 files in `panes/shared/`**
 
 ### Moves to `@liteai/ui/panes/chat/`
 
@@ -541,7 +574,7 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 
 ## 9. Implementation Phases
 
-### Phase 1 — Infrastructure (Week 1)
+### Phase 1 — Infrastructure ✅ Complete
 
 - [x] Create `ui/src/panes/` directory structure
 - [x] Create `PaneRoute` abstraction
@@ -554,9 +587,32 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 - [x] Update `@liteai/ui` package.json exports
 - [x] Verify web app still works (re-export from new locations)
 
-### Phase 2 — ChatPane Extraction (Week 2-3)
+### Phase 2 — ChatPane Extraction (in progress)
 
-- [ ] Move remaining contexts: `global-sync`, `sync`, `prompt`, `models`, `settings`, `permission`, `local`, `language`
+**Context & utility migration: ✅ Complete**
+- [x] Move utility: `project-id.ts` → `ui/panes/shared/`
+- [x] Move utility: `server-errors.ts` → `ui/panes/shared/`
+- [x] Move utility: `model-variant.ts` → `ui/panes/shared/`
+- [x] Move utility: `permission-auto-respond.ts` → `ui/panes/shared/`
+- [x] Move hook: `use-providers.ts` → `ui/panes/shared/`
+- [x] Move context: `settings.tsx` → `ui/panes/shared/`
+- [x] Move context: `language.tsx` → `ui/panes/shared/` (with injectable dictionaries)
+- [x] Move context: `global-sync.tsx` + 12 submodules → `ui/panes/shared/`
+- [x] Extract `InitError` type from `web/pages/error.tsx` → `ui/panes/shared/global-sync/error-types.ts`
+- [x] Move context: `sync.tsx` → `ui/panes/shared/`
+- [x] Move context: `models.tsx` → `ui/panes/shared/`
+- [x] Move context: `prompt.tsx` → `ui/panes/shared/` (replace `useParams()` with `usePaneRoute()`)
+- [x] Move context: `permission.tsx` → `ui/panes/shared/` (replace `useParams()` with `usePaneRoute()`)
+- [x] Move context: `local.tsx` → `ui/panes/shared/` (replace `useParams()`, remove test probe)
+- [x] Update `PaneProviders` with all new providers in correct nesting order
+- [x] Update `panes/index.ts` barrel export
+- [x] Create re-export stubs in web for all moved contexts/utilities
+- [x] Add `@solid-primitives/i18n` dependency to `@liteai/ui`
+- [x] Verify: `bun typecheck` passes (ui, web, storybook)
+- [x] Verify: `bun run build` passes (web)
+- [x] Verify: `bun test` passes (291/291 tests, 0 failures)
+
+**Component extraction: pending**
 - [ ] Move `PromptInput` component tree to `ui/panes/chat/`
 - [ ] Move `MessageTimeline` to `ui/panes/chat/`
 - [ ] Move `ModelSelector`, `NewSessionView` to `ui/panes/chat/`
@@ -600,5 +656,9 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 | 3 | **Storybook** — Should Panes have stories? | Yes. Create `MockPaneProviders` in storybook package that provides fake SDK/Sync data. |
 | 4 | **Shared server across windows** — One server per VSCode window or shared? | Shared. One `liteai-core` process per machine. If a second window opens, detect the existing server and reuse it (store port in a lockfile). |
 | 5 | **Auto-update** — When extension updates, bundled binary updates too. | Show toast: "LiteAI updated. Restart to apply." Let user restart when ready. |
-| 6 | **`@liteai/ui` new dependencies** — Moving contexts adds deps. | Accept: `@solid-primitives/event-bus`, `@solid-primitives/storage`, `zod`. These are lightweight and already used transitively. |
-| 7 | **Web app backward compatibility** — How to avoid breaking the web app during migration? | Re-export from old paths during transition. Web app imports from `@liteai/ui/panes/shared/*` once stable. |
+| 6 | **`@liteai/ui` new dependencies** — Moving contexts adds deps. | Accept: `@solid-primitives/event-bus`, `@solid-primitives/storage`, `@solid-primitives/i18n`, `zod`. These are lightweight and already used transitively. |
+| 7 | **Web app backward compatibility** — How to avoid breaking the web app during migration? | ✅ Resolved — all moved contexts have re-export stubs in web. All 291 tests pass, production build succeeds. Web imports from `@liteai/ui/panes` via the barrel export. |
+| 8 | **Language i18n across hosts** — Web has additional i18n strings beyond UI package. How to share? | ✅ Resolved — `LanguageProvider` uses UI-only dictionaries by default. Host can inject additional translations via `mergeHostDictionaries()` passed as `dictionaries` prop to `PaneProviders`. |
+| 9 | **`useParams()` replacement** — Router-specific hooks in contexts. | ✅ Resolved — All contexts refactored to use `usePaneRoute()`. Three contexts affected: `prompt.tsx`, `permission.tsx`, `local.tsx`. |
+| 10 | **`InitError` type** — Defined in `web/pages/error.tsx`, used by `global-sync.tsx`. | ✅ Resolved — Extracted to `ui/panes/shared/global-sync/error-types.ts`. Simple `{ name: string; data: Record<string, unknown> }` type. |
+| 11 | **Test-only code in shared contexts** — `local.tsx` had `modelProbe` test instrumentation. | ✅ Resolved — Removed from shared version. Web can add back via wrapper if needed. |
