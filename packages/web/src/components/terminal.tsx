@@ -5,7 +5,6 @@ import { type ComponentProps, createEffect, createMemo, onCleanup, onMount, spli
 import { SerializeAddon } from "@/addons/serialize"
 import { matchKeybind, parseKeybind } from "@/context/command"
 import { useLanguage } from "@/context/language"
-import { usePlatform } from "@/context/platform"
 import { useSDK } from "@/context/sdk"
 import { useServer } from "@/context/server"
 import { monoFontFamily, useSettings } from "@/context/settings"
@@ -162,7 +161,6 @@ const persistTerminal = (input: {
 }
 
 export const Terminal = (props: TerminalProps) => {
-  const platform = usePlatform()
   const sdk = useSDK()
   const settings = useSettings()
   const theme = useTheme()
@@ -302,14 +300,6 @@ export const Terminal = (props: TerminalProps) => {
     scheduleFit()
   })
 
-  let zoom = platform.webviewZoom?.()
-  createEffect(() => {
-    const next = platform.webviewZoom?.()
-    if (next === undefined) return
-    if (next === zoom) return
-    zoom = next
-    scheduleFit()
-  })
 
   const focusTerminal = () => {
     const t = term
@@ -339,7 +329,7 @@ export const Terminal = (props: TerminalProps) => {
 
     event.preventDefault()
     event.stopImmediatePropagation()
-    platform.openLink(text)
+    window.open(text, "_blank", "noopener,noreferrer")
   }
 
   onMount(() => {

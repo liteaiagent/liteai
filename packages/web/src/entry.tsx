@@ -6,7 +6,6 @@ import { type Platform, PlatformProvider } from "@/context/platform"
 import { dict as en } from "@/i18n/en"
 import { dict as zh } from "@/i18n/zh"
 import { handleNotificationClick } from "@/utils/notification-click"
-import pkg from "../package.json"
 import { ServerConnection } from "./context/server"
 
 const DEFAULT_SERVER_URL_KEY = "liteai.settings.dat:defaultServerUrl"
@@ -126,7 +125,6 @@ const getDefaultUrl = () => {
 
 const platform: Platform = {
   platform: "web",
-  version: pkg.version,
   openLink,
   back,
   forward,

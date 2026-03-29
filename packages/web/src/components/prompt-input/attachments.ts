@@ -30,7 +30,6 @@ type PromptAttachmentsInput = {
   setDraggingType: (type: "image" | "@mention" | null) => void
   focusEditor: () => void
   addPart: (part: ContentPart) => boolean
-  readClipboardImage?: () => Promise<File | null>
 }
 
 export function createPromptAttachments(input: PromptAttachmentsInput) {
@@ -100,15 +99,6 @@ export function createPromptAttachments(input: PromptAttachmentsInput) {
     }
 
     const plainText = clipboardData.getData("text/plain") ?? ""
-
-    // Desktop: Browser clipboard has no images and no text, try platform's native clipboard for images
-    if (input.readClipboardImage && !plainText) {
-      const file = await input.readClipboardImage()
-      if (file) {
-        await addAttachment(file)
-        return
-      }
-    }
 
     if (!plainText) return
 

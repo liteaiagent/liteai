@@ -6,14 +6,15 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "test": "bun test --timeout 30000",
-    "test:cov": "bun test --coverage --coverage-reporter=lcov --coverage-dir=./coverage --timeout 30000",
     "build": "tsc -b",
     "db": "bun drizzle-kit",
+    "typecheck": "tsc --noEmit",
+    "check": "tsgo --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write",
-    "lint:format": "biome format --write"
+    "lint:format": "biome format --write",
+    "test": "bun test --timeout 30000",
+    "test:cov": "bun test --coverage --coverage-reporter=lcov --coverage-dir=./coverage --timeout 30000"
   },
   "exports": {
     "./*": {

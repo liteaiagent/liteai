@@ -4,7 +4,6 @@ import { batch, createEffect, createMemo, createRoot, on, onCleanup } from "soli
 import { createStore, produce } from "solid-js/store"
 import { Persist, persisted, removePersisted } from "@/utils/persist"
 import { toProjectID } from "@/utils/project-id"
-import type { Platform } from "./platform"
 import { useSDK } from "./sdk"
 import { defaultTitle, titleNumber } from "./terminal-title"
 
@@ -111,14 +110,14 @@ const trimTerminal = (pty: LocalPTY) => {
   }
 }
 
-export function clearWorkspaceTerminals(dir: string, sessionIDs?: string[], platform?: Platform) {
+export function clearWorkspaceTerminals(dir: string, sessionIDs?: string[]) {
   const key = getWorkspaceTerminalCacheKey(dir)
   for (const cache of caches) {
     const entry = cache.get(key)
     entry?.value.clear()
   }
 
-  removePersisted(Persist.workspace(dir, "terminal"), platform)
+  removePersisted(Persist.workspace(dir, "terminal"))
 
   const legacy = new Set(getLegacyTerminalStorageKeys(dir))
   for (const id of sessionIDs ?? []) {
@@ -127,7 +126,7 @@ export function clearWorkspaceTerminals(dir: string, sessionIDs?: string[], plat
     }
   }
   for (const key of legacy) {
-    removePersisted({ key }, platform)
+    removePersisted({ key })
   }
 }
 

@@ -6,7 +6,8 @@
   "scripts": {
     "storybook": "storybook dev -p 6006",
     "build": "storybook build",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsc --noEmit",
+    "check": "tsgo --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write"
   },

@@ -3,7 +3,6 @@ import { Icon } from "@liteai/ui/icon"
 import { Tabs } from "@liteai/ui/tabs"
 import type { Component } from "solid-js"
 import { useLanguage } from "@/context/language"
-import { usePlatform } from "@/context/platform"
 import { SettingsAgents } from "./settings-agents"
 import { SettingsGeneral } from "./settings-general"
 import { SettingsKeybinds } from "./settings-keybinds"
@@ -16,7 +15,6 @@ import { SettingsTools } from "./settings-tools"
 
 export const DialogSettings: Component<{ tab?: string }> = (props) => {
   const language = useLanguage()
-  const platform = usePlatform()
 
   return (
     <Dialog size="x-large" transition>
@@ -81,7 +79,6 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
             </div>
             <div class="flex flex-col gap-1 pl-1 py-1 text-12-medium text-text-weak">
               <span>{language.t("app.name.desktop")}</span>
-              <span class="text-11-regular">v{platform.version}</span>
             </div>
           </div>
         </Tabs.List>

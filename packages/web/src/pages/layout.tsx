@@ -51,7 +51,7 @@ import {
   syncSessionRoute,
   touchProjectRoute,
 } from "./layout/navigation"
-import { useSDKNotificationToasts, useUpdatePolling } from "./layout/notifications"
+import { useSDKNotificationToasts } from "./layout/notifications"
 import { createPrefetch } from "./layout/prefetch"
 import { LayoutShell } from "./layout/shell"
 import { ProjectDragOverlay, type ProjectSidebarContext } from "./layout/sidebar-project"
@@ -365,7 +365,6 @@ export default function Layout(props: ParentProps) {
     globalSync,
     language,
     layout,
-    platform,
     params,
     navigate,
     currentDir,
@@ -503,7 +502,7 @@ export default function Layout(props: ParentProps) {
   }
 
   // --- notifications & commands ---
-  useUpdatePolling({ platform, language, settings })
+
   useSDKNotificationToasts({
     globalSDK,
     globalSync,

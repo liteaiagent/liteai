@@ -5,8 +5,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "build": "bun ./script/build.ts"
+    "build": "bun ./script/build.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "tsgo --noEmit",
+    "lint": "biome check",
+    "lint:fix": "biome check --write"
   },
   "exports": {
     ".": "./src/index.ts",

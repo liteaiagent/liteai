@@ -5,7 +5,6 @@ import type { useGlobalSDK } from "@/context/global-sdk"
 import type { useGlobalSync } from "@/context/global-sync"
 import type { useLanguage } from "@/context/language"
 import type { LocalProject, useLayout } from "@/context/layout"
-import type { usePlatform } from "@/context/platform"
 import { clearWorkspaceTerminals } from "@/context/terminal"
 import { toProjectID } from "@/utils/project-id"
 import { Worktree as WorktreeState } from "@/utils/worktree"
@@ -16,7 +15,6 @@ export type WorkspaceOpsDeps = {
   globalSync: ReturnType<typeof useGlobalSync>
   language: ReturnType<typeof useLanguage>
   layout: ReturnType<typeof useLayout>
-  platform: ReturnType<typeof usePlatform>
   params: { projectID?: string; id?: string }
   navigate: (href: string) => void
   currentDir: Accessor<string>
@@ -116,7 +114,6 @@ export async function resetWorkspace(deps: WorkspaceOpsDeps, root: string, direc
   clearWorkspaceTerminals(
     directory,
     sessions.map((s) => s.id),
-    deps.platform,
   )
   await deps.globalSDK.client.project.instance.dispose({ projectID: toProjectID(directory) }).catch(() => undefined)
 

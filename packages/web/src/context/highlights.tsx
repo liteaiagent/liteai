@@ -3,7 +3,7 @@ import { useDialog } from "@liteai/ui/context/dialog"
 import { createEffect, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { DialogReleaseNotes, type Highlight } from "@/components/dialog-release-notes"
-import { usePlatform } from "@/context/platform"
+import pkg from "../../package.json"
 import { useSettings } from "@/context/settings"
 import { persisted } from "@/utils/persist"
 
@@ -141,7 +141,6 @@ export const { use: useHighlights, provider: HighlightsProvider } = createSimple
   name: "Highlights",
   gate: false,
   init: () => {
-    const platform = usePlatform()
     const dialog = useDialog()
     const settings = useSettings()
     const [store, setStore, _, ready] = persisted("highlights.v1", createStore<Store>({ version: undefined }))
@@ -160,8 +159,8 @@ export const { use: useHighlights, provider: HighlightsProvider } = createSimple
     }
 
     const markSeen = () => {
-      if (!platform.version) return
-      setStore("version", platform.version)
+      if (!pkg.version) return
+      setStore("version", pkg.version)
     }
 
     const start = (previous: string) => {
@@ -170,7 +169,7 @@ export const { use: useHighlights, provider: HighlightsProvider } = createSimple
         return
       }
 
-      const fetcher = platform.fetch ?? fetch
+      const fetcher = fetch
       const controller = new AbortController()
       onCleanup(() => {
         controller.abort()
@@ -184,7 +183,7 @@ export const { use: useHighlights, provider: HighlightsProvider } = createSimple
         .then((response) => (response.ok ? (response.json() as Promise<unknown>) : undefined))
         .then((json) => {
           if (!json) return
-          const highlights = loadReleaseHighlights(json, platform.version, previous)
+          const highlights = loadReleaseHighlights(json, pkg.version, previous)
           if (controller.signal.aborted) return
 
           if (highlights.length === 0) {
@@ -205,18 +204,18 @@ export const { use: useHighlights, provider: HighlightsProvider } = createSimple
       if (state.started) return
       if (!ready()) return
       if (!settings.ready()) return
-      if (!platform.version) return
+      if (!pkg.version) return
       state.started = true
 
       const previous = store.version
       if (!previous) {
-        setStore("version", platform.version)
+        setStore("version", pkg.version)
         return
       }
 
-      if (previous === platform.version) return
+      if (previous === pkg.version) return
 
-      setRange({ from: previous, to: platform.version })
+      setRange({ from: previous, to: pkg.version })
       start(previous)
     })
 

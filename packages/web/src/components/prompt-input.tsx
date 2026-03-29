@@ -410,8 +410,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     }
   }
 
-  const escBlur = () => platform.platform === "desktop" && platform.os === "macos"
-
   const pick = () => fileInputRef?.click()
 
   const setMode = (mode: "normal" | "shell") => {
@@ -1019,7 +1017,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       setCursorPosition(editorRef, promptLength(prompt.current()))
     },
     addPart,
-    readClipboardImage: platform.readClipboardImage,
   })
 
   const variants = createMemo(() => ["default", ...local.model.variant.list()])
@@ -1117,13 +1114,6 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
       if (working()) {
         abort()
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
-
-      if (escBlur()) {
-        editorRef.blur()
         event.preventDefault()
         event.stopPropagation()
         return

@@ -26,63 +26,6 @@ export type NotificationDeps = {
   setBusy: (directory: string, value: boolean) => void
 }
 
-export function useUpdatePolling(deps: {
-  platform: ReturnType<typeof usePlatform>
-  language: ReturnType<typeof useLanguage>
-  settings: ReturnType<typeof useSettings>
-}) {
-  onMount(() => {
-    if (!deps.platform.checkUpdate || !deps.platform.update || !deps.platform.restart) return
-
-    let toastId: number | undefined
-    let interval: ReturnType<typeof setInterval> | undefined
-
-    const poll = () =>
-      deps.platform.checkUpdate?.().then(({ updateAvailable, version }) => {
-        if (!updateAvailable) return
-        if (toastId !== undefined) return
-        toastId = showToast({
-          persistent: true,
-          icon: "download",
-          title: deps.language.t("toast.update.title"),
-          description: deps.language.t("toast.update.description", { version: version ?? "" }),
-          actions: [
-            {
-              label: deps.language.t("toast.update.action.installRestart"),
-              onClick: async () => {
-                await deps.platform.update?.()
-                await deps.platform.restart?.()
-              },
-            },
-            {
-              label: deps.language.t("toast.update.action.notYet"),
-              onClick: "dismiss",
-            },
-          ],
-        })
-      })
-
-    createEffect(() => {
-      if (!deps.settings.ready()) return
-
-      if (!deps.settings.updates.startup()) {
-        if (interval === undefined) return
-        clearInterval(interval)
-        interval = undefined
-        return
-      }
-
-      if (interval !== undefined) return
-      void poll()
-      interval = setInterval(poll, 10 * 60 * 1000)
-    })
-
-    onCleanup(() => {
-      if (interval === undefined) return
-      clearInterval(interval)
-    })
-  })
-}
 
 export function useSDKNotificationToasts(deps: NotificationDeps) {
   onMount(() => {

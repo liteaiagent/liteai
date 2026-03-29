@@ -6,6 +6,9 @@
     "typecheck": {
       "dependsOn": ["^typecheck", "^build"]
     },
+    "check": {
+      "dependsOn": ["^check", "^build"]
+    },
     "lint": {},
     "lint:fix": {},
     "build": {
