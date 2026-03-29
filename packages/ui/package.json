@@ -24,10 +24,10 @@
     "./audio/*": "./src/assets/audio/*"
   },
   "scripts": {
+    "dev": "vite",
     "typecheck": "tsgo --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write",
-    "dev": "vite",
     "generate:tailwind": "bun run script/tailwind.ts"
   },
   "devDependencies": {

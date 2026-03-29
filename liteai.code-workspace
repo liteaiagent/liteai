@@ -39,6 +39,9 @@
 		{
 			"name": "cli",
 			"path": "packages/cli"
+		},
+		{
+			"path": "packages/storybook"
 		}
 	],
 	"settings": {
