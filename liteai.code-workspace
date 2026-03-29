@@ -29,8 +29,8 @@
 			"path": "packages/gca-proxy"
 		},
 		{
-			"name": "liteai-vscode",
-			"path": "packages/liteai-vscode"
+			"name": "vscode",
+			"path": "packages/vscode"
 		},
 		{
 			"name": "sdk",

@@ -1706,6 +1706,8 @@ export type OAuth = {
 	expires: number;
 	accountId?: string;
 	enterpriseUrl?: string;
+	clientId?: string;
+	clientSecret?: string;
 };
 
 export type ApiAuth = {

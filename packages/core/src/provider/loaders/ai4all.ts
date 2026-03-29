@@ -103,6 +103,8 @@ async function refresh(input: LoaderInput): Promise<string | undefined> {
     access: body.access_token,
     refresh: body.refresh_token ?? auth.refresh,
     expires,
+    clientId: id,
+    clientSecret: secret,
   })
 
   log.info("token refreshed successfully")
@@ -147,7 +149,7 @@ export async function ai4all(input: LoaderInput): Promise<LoaderResult> {
           // Invalidate the stored expiry so refresh() actually calls the server
           const auth = await Auth.get("ai4all")
           if (auth && auth.type === "oauth") {
-            await Auth.set("ai4all", { ...auth, expires: 0 })
+            await Auth.set("ai4all", { ...auth, expires: 0, clientId: auth.clientId, clientSecret: auth.clientSecret })
           }
 
           const retryToken = await refresh(input)

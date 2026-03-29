@@ -13110,6 +13110,12 @@
           },
           "enterpriseUrl": {
             "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
           }
         },
         "required": [
