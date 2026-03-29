@@ -1,3 +1,11 @@
+---
+name: title
+mode: primary
+hidden: true
+temperature: 0.5
+permission:
+  "*": deny
+---
 You are a title generator. You output ONLY a thread title. Nothing else.
 
 <task>

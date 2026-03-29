@@ -1,5 +1,6 @@
 import path from "node:path"
 import { generateObject, type ModelMessage, streamObject } from "ai"
+import matter from "gray-matter"
 import { mergeDeep, pipe, sortBy, values } from "remeda"
 import z from "zod"
 import { Brand } from "@/brand"
@@ -9,6 +10,7 @@ import { Plugin } from "@/plugin"
 import { Log } from "@/util/log"
 import { Auth } from "../auth"
 import { Config } from "../config/config"
+import { Agent as AgentSchema } from "../config/schema"
 import { Instance } from "../project/instance"
 import { Provider } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
@@ -16,11 +18,35 @@ import { ProviderTransform } from "../provider/transform"
 import { SystemPrompt } from "../session/engine/system"
 import { Skill } from "../skill"
 import { Truncate } from "../tool/truncation"
-import PROMPT_COMPACTION from "./prompt/compaction.md"
-import PROMPT_EXPLORE from "./prompt/explore.md"
+import AGENT_BUILD from "./agents/build.md"
+import AGENT_COMPACTION from "./agents/compaction.md"
+import AGENT_EXPLORE from "./agents/explore.md"
+import AGENT_GENERAL from "./agents/general.md"
+import AGENT_PLAN from "./agents/plan.md"
+import AGENT_SUMMARY from "./agents/summary.md"
+import AGENT_TITLE from "./agents/title.md"
 import PROMPT_GENERATE from "./prompt/generate.md"
-import PROMPT_SUMMARY from "./prompt/summary.md"
-import PROMPT_TITLE from "./prompt/title.md"
+
+/**
+ * Built-in declarative agents defined as .md files with YAML frontmatter.
+ * Parsed once at module load using gray-matter — the same mechanism as user-defined
+ * agent .md files — so the schema, merge path, and override behaviour are identical.
+ */
+function parseBuiltinAgent(raw: string): Config.Agent {
+  const { data, content } = matter(raw)
+  const config = { ...data, prompt: content.trim() || undefined }
+  return AgentSchema.parse(config)
+}
+
+const builtinAgents: Record<string, Config.Agent> = {
+  build: parseBuiltinAgent(AGENT_BUILD),
+  plan: parseBuiltinAgent(AGENT_PLAN),
+  general: parseBuiltinAgent(AGENT_GENERAL),
+  explore: parseBuiltinAgent(AGENT_EXPLORE),
+  compaction: parseBuiltinAgent(AGENT_COMPACTION),
+  title: parseBuiltinAgent(AGENT_TITLE),
+  summary: parseBuiltinAgent(AGENT_SUMMARY),
+}
 
 export namespace Agent {
   const log = Log.create({ service: "agent" })
@@ -126,138 +152,34 @@ export namespace Agent {
     })
     const user = PermissionNext.fromConfig(cfg.permission ?? {})
 
-    const result: Record<string, Info> = {
-      build: {
-        name: "build",
-        description: "The default agent. Executes tools based on configured permissions.",
+    const result: Record<string, Info> = {}
+
+    // Populate built-in declarative agents via the same merge path as user config.
+    // This allows user config to override or disable any built-in agent.
+    const builtinEntries = Object.entries(builtinAgents)
+    for (const [key, value] of builtinEntries) {
+      result[key] = {
+        name: key,
+        mode: value.mode ?? "all",
+        permission: PermissionNext.merge(defaults, PermissionNext.fromConfig(value.permission ?? {}), user),
         options: {},
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            edit: "ask",
-            question: "allow",
-            plan_enter: "allow",
-          }),
-          user,
-        ),
-        mode: "primary",
+        prompt: value.prompt,
+        description: value.description,
+        temperature: value.temperature,
+        topP: value.top_p,
+        hidden: value.hidden,
         native: true,
-      },
-      plan: {
-        name: "plan",
-        description: "Plan mode. Disallows all edit tools.",
-        options: {},
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            question: "allow",
-            plan_exit: "allow",
-            external_directory: {
-              [path.join(Global.Path.data, "plans", "*")]: "allow",
-            },
-            edit: {
-              "*": "deny",
-              [path.join(Brand.dir, "plans", "*.md")]: "allow",
-              [path.relative(Instance.worktree, path.join(Global.Path.data, path.join("plans", "*.md")))]: "allow",
-            },
-          }),
-          user,
-        ),
-        mode: "primary",
-        native: true,
-      },
-      general: {
-        name: "general",
-        description: `General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.`,
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            todoread: "deny",
-            todowrite: "deny",
-          }),
-          user,
-        ),
-        options: {},
-        mode: "subagent",
-        native: true,
-      },
-      explore: {
-        name: "explore",
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            "*": "deny",
-            grep: "allow",
-            glob: "allow",
-            list: "allow",
-            bash: "allow",
-            webfetch: "allow",
-            websearch: "allow",
-            codesearch: "allow",
-            read: "allow",
-            external_directory: {
-              "*": "ask",
-              ...Object.fromEntries(whitelistedDirs.map((dir) => [dir, "allow"])),
-            },
-          }),
-          user,
-        ),
-        description: `Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?"). When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "very thorough" for comprehensive analysis across multiple locations and naming conventions.`,
-        prompt: PROMPT_EXPLORE,
-        options: {},
-        mode: "subagent",
-        native: true,
-      },
-      compaction: {
-        name: "compaction",
-        mode: "primary",
-        native: true,
-        hidden: true,
-        prompt: PROMPT_COMPACTION,
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            "*": "deny",
-          }),
-          user,
-        ),
-        options: {},
-      },
-      title: {
-        name: "title",
-        mode: "primary",
-        options: {},
-        native: true,
-        hidden: true,
-        temperature: 0.5,
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            "*": "deny",
-          }),
-          user,
-        ),
-        prompt: PROMPT_TITLE,
-      },
-      summary: {
-        name: "summary",
-        mode: "primary",
-        options: {},
-        native: true,
-        hidden: true,
-        permission: PermissionNext.merge(
-          defaults,
-          PermissionNext.fromConfig({
-            "*": "deny",
-          }),
-          user,
-        ),
-        prompt: PROMPT_SUMMARY,
-      },
+      }
     }
 
     for (const [key, value] of Object.entries(cfg.agent ?? {})) {
       log.info("processing agent config", { name: key })
+      // Hidden built-in agents (compaction, title, summary) are protected system agents.
+      // Skip user config entries for them to prevent accidental breakage.
+      if (result[key]?.hidden) {
+        log.warn("ignoring user config for protected hidden agent", { name: key })
+        continue
+      }
       if (value.disable) {
         delete result[key]
         continue

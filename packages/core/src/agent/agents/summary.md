@@ -1,3 +1,10 @@
+---
+name: summary
+mode: primary
+hidden: true
+permission:
+  "*": deny
+---
 Summarize what was done in this conversation. Write like a pull request description.
 
 Rules:
