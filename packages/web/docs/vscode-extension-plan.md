@@ -543,16 +543,16 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 
 ### Phase 1 — Infrastructure (Week 1)
 
-- [ ] Create `ui/src/panes/` directory structure
-- [ ] Create `PaneRoute` abstraction
-- [ ] Move `Platform` interface to `ui/panes/shared/`
-- [ ] Move persist utilities to `ui/panes/shared/`
-- [ ] Move `server.tsx` → `ui/panes/shared/`
-- [ ] Move `global-sdk.tsx` → `ui/panes/shared/`
-- [ ] Move `sdk.tsx` → `ui/panes/shared/` (replace `useParams()` with `usePaneRoute()`)
-- [ ] Create `PaneProviders` wrapper
-- [ ] Update `@liteai/ui` package.json exports
-- [ ] Verify web app still works (re-export from new locations)
+- [x] Create `ui/src/panes/` directory structure
+- [x] Create `PaneRoute` abstraction
+- [x] Move `Platform` interface to `ui/panes/shared/`
+- [x] Move persist utilities to `ui/panes/shared/`
+- [x] Move `server.tsx` → `ui/panes/shared/`
+- [x] Move `global-sdk.tsx` → `ui/panes/shared/`
+- [x] Move `sdk.tsx` → `ui/panes/shared/` (replace `useParams()` with `usePaneRoute()`)
+- [x] Create `PaneProviders` wrapper
+- [x] Update `@liteai/ui` package.json exports
+- [x] Verify web app still works (re-export from new locations)
 
 ### Phase 2 — ChatPane Extraction (Week 2-3)
 
