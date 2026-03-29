@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The chat panel in `liteai-app` is deeply integrated with web-app-specific concerns (routing, layout management, file trees, terminals). To share it with a VSCode webview, we need to extract the **core chat experience** into reusable layers. The analysis identifies **3 tiers** of work: what's already shared, what should move to `@liteai/ui`, and what stays app-specific.
+The chat panel in `web` is deeply integrated with web-app-specific concerns (routing, layout management, file trees, terminals). To share it with a VSCode webview, we need to extract the **core chat experience** into reusable layers. The analysis identifies **3 tiers** of work: what's already shared, what should move to `@liteai/ui`, and what stays app-specific.
 
 ---
 
@@ -24,49 +24,49 @@ The UI package already contains the **rendering components** for the chat:
 | Contexts | `createSimpleContext`, `DialogProvider`, `I18nProvider` | Context utilities |
 | Hooks | `createAutoScroll`, `useFilteredList` | Shared hooks |
 
-### What's in `liteai-app` Only (❌ Not Shared)
+### What's in `@liteai/web` Only (❌ Not Shared)
 
 The chat panel is assembled from several large files and context providers in the app:
 
-#### Chat Panel Components (in `liteai-app`)
+#### Chat Panel Components (in `@liteai/web`)
 
 | Component | File | Lines | What It Does |
 |---|---|---|---|
-| **Session Page** | [session.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/pages/session.tsx) | 1823 | Orchestrates entire chat view: timeline, review panel, terminal, file tree, prompt dock |
-| **Message Timeline** | [message-timeline.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/pages/session/message-timeline.tsx) | 1029 | Renders message list with scroll, staging, title editing, sharing, archiving |
-| **Prompt Input** | [prompt-input.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/prompt-input.tsx) | 1569 | Rich contenteditable editor with @ mentions, slash commands, file/image attachments |
-| **Prompt Submit** | [submit.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/prompt-input/submit.ts) | 585 | Session creation, message sending, optimistic updates |
-| **Slash Popover** | [slash-popover.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/prompt-input/slash-popover.tsx) | ~200 | @ and / command popovers |
-| **Context Items** | [context-items.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/prompt-input/context-items.tsx) | ~130 | Renders attached context (files, selections) |
-| **Editor DOM** | [editor-dom.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/prompt-input/editor-dom.ts) | ~160 | ContentEditable cursor/text utilities |
-| **History** | [history.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/prompt-input/history.ts) | ~250 | Prompt history navigation |
-| **Session Header** | [session-header.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/session/session-header.tsx) | 490 | Titlebar with project name, app launcher, panel toggles |
-| **New Session View** | [session-new-view.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/session/session-new-view.tsx) | 92 | Empty state before first message |
-| **Model Selector** | [dialog-select-model.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/components/dialog-select-model.tsx) | ~250 | Model picker popover |
+| **Session Page** | [session.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/pages/session.tsx) | 1823 | Orchestrates entire chat view: timeline, review panel, terminal, file tree, prompt dock |
+| **Message Timeline** | [message-timeline.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/pages/session/message-timeline.tsx) | 1029 | Renders message list with scroll, staging, title editing, sharing, archiving |
+| **Prompt Input** | [prompt-input.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input.tsx) | 1569 | Rich contenteditable editor with @ mentions, slash commands, file/image attachments |
+| **Prompt Submit** | [submit.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input/submit.ts) | 585 | Session creation, message sending, optimistic updates |
+| **Slash Popover** | [slash-popover.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input/slash-popover.tsx) | ~200 | @ and / command popovers |
+| **Context Items** | [context-items.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input/context-items.tsx) | ~130 | Renders attached context (files, selections) |
+| **Editor DOM** | [editor-dom.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input/editor-dom.ts) | ~160 | ContentEditable cursor/text utilities |
+| **History** | [history.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input/history.ts) | ~250 | Prompt history navigation |
+| **Session Header** | [session-header.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/session/session-header.tsx) | 490 | Titlebar with project name, app launcher, panel toggles |
+| **New Session View** | [session-new-view.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/session/session-new-view.tsx) | 92 | Empty state before first message |
+| **Model Selector** | [dialog-select-model.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/dialog-select-model.tsx) | ~250 | Model picker popover |
 
-#### Context Providers (in `liteai-app`)
+#### Context Providers (in `@liteai/web`)
 
 | Context | File | Purpose | VSCode Needs? |
 |---|---|---|---|
-| `SDK` | [sdk.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/sdk.tsx) | Per-project SDK client + events | **Yes** |
-| `GlobalSDK` | [global-sdk.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/global-sdk.tsx) | SSE event stream, client factory | **Yes** |
-| `Sync` | [sync.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/sync.tsx) | Session messages, diffs, history | **Yes** |
-| `GlobalSync` | [global-sync.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/global-sync.tsx) | Sessions list, config, providers | **Yes** |
-| `Prompt` | [prompt.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/prompt.tsx) | Prompt state (text, context items) | **Yes** |
-| `Local` | [local.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/local.tsx) | Model/agent selection per session | **Yes** |
-| `Server` | [server.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/server.tsx) | Server connection management | **Yes** |
-| `Platform` | [platform.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/platform.tsx) | Platform abstraction (web/desktop) | **Yes** (VSCode variant) |
-| `Language` | [language.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/language.tsx) | i18n translations | **Yes** |
-| `Models` | [models.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/models.tsx) | Model registry + recent | **Yes** |
-| `Settings` | [settings.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/settings.tsx) | User settings | **Yes** |
-| `Permission` | [permission.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/permission.tsx) | Auto-accept permissions | **Yes** |
-| `Command` | [command.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/command.tsx) | Command palette & keybinds | Partial |
-| `Comments` | [comments.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/comments.tsx) | Line comments in review | No |
-| `File` | [file.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/file.tsx) | File content cache + search | Partial |
-| `Terminal` | [terminal.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/terminal.tsx) | Terminal sessions | No |
-| `Layout` | [layout.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/layout.tsx) | Panel sizing/visibility state | No |
-| `Highlights` | [highlights.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/highlights.tsx) | Syntax highlighting | No |
-| `Notification` | [notification.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/liteai-app/src/context/notification.tsx) | System notifications | No |
+| `SDK` | [sdk.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/sdk.tsx) | Per-project SDK client + events | **Yes** |
+| `GlobalSDK` | [global-sdk.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/global-sdk.tsx) | SSE event stream, client factory | **Yes** |
+| `Sync` | [sync.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/sync.tsx) | Session messages, diffs, history | **Yes** |
+| `GlobalSync` | [global-sync.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/global-sync.tsx) | Sessions list, config, providers | **Yes** |
+| `Prompt` | [prompt.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/prompt.tsx) | Prompt state (text, context items) | **Yes** |
+| `Local` | [local.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/local.tsx) | Model/agent selection per session | **Yes** |
+| `Server` | [server.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/server.tsx) | Server connection management | **Yes** |
+| `Platform` | [platform.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/platform.tsx) | Platform abstraction (web/desktop) | **Yes** (VSCode variant) |
+| `Language` | [language.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/language.tsx) | i18n translations | **Yes** |
+| `Models` | [models.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/models.tsx) | Model registry + recent | **Yes** |
+| `Settings` | [settings.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/settings.tsx) | User settings | **Yes** |
+| `Permission` | [permission.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/permission.tsx) | Auto-accept permissions | **Yes** |
+| `Command` | [command.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/command.tsx) | Command palette & keybinds | Partial |
+| `Comments` | [comments.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/comments.tsx) | Line comments in review | No |
+| `File` | [file.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/file.tsx) | File content cache + search | Partial |
+| `Terminal` | [terminal.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/terminal.tsx) | Terminal sessions | No |
+| `Layout` | [layout.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/layout.tsx) | Panel sizing/visibility state | No |
+| `Highlights` | [highlights.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/highlights.tsx) | Syntax highlighting | No |
+| `Notification` | [notification.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/notification.tsx) | System notifications | No |
 
 ---
 
@@ -88,16 +88,16 @@ ui/src/context/
 ├── worker-pool.tsx     (existing)
 │
 │  ── NEW ──
-├── platform.tsx        ← from liteai-app (Platform abstraction interface)
-├── server.tsx          ← from liteai-app (server connection management)
-├── global-sdk.tsx      ← from liteai-app (SSE + client factory)
-├── sdk.tsx             ← from liteai-app (per-project SDK client)
-├── prompt.tsx          ← from liteai-app (prompt state management)
-└── models.tsx          ← from liteai-app (model registry)
+├── platform.tsx        ← from web (Platform abstraction interface)
+├── server.tsx          ← from web (server connection management)
+├── global-sdk.tsx      ← from web (SSE + client factory)
+├── sdk.tsx             ← from web (per-project SDK client)
+├── prompt.tsx          ← from web (prompt state management)
+└── models.tsx          ← from web (model registry)
 ```
 
 > [!IMPORTANT]
-> `platform.tsx` defines a Platform interface. Both `liteai-app` and `liteai-vscode` would provide their own implementations. This is the primary injection point for platform differences.
+> `platform.tsx` defines a Platform interface. Both `web` and `vscode` would provide their own implementations. This is the primary injection point for platform differences.
 
 **Dependencies to resolve:**
 - `platform.tsx` — No internal deps, pure interface. Clean move.
@@ -150,7 +150,7 @@ ui/src/context/
 └── permission.tsx     ← Permission auto-accept
 ```
 
-### What Stays in `liteai-app` (App-Specific)
+### What Stays in `web` (App-Specific)
 
 | Component | Reason |
 |---|---|
@@ -191,8 +191,8 @@ export const { use: useChatRoute, provider: ChatRouteProvider } = createSimpleCo
 })
 ```
 
-- `liteai-app` derives it from `useParams()` (URL-based routing)
-- `liteai-vscode` drives it from the extension's state (command-based navigation)
+- `web` derives it from `useParams()` (URL-based routing)
+- `vscode` drives it from the extension's state (command-based navigation)
 
 ### 2. Persistence Abstraction
 
@@ -223,7 +223,7 @@ platform.navigateSession?: (projectID: string, sessionID: string) => void
 ## VSCode Extension Architecture
 
 ```
-liteai-vscode/
+vscode/
 ├── src/
 │   ├── extension.ts              ← Extension activation + commands
 │   ├── chat-panel.ts             ← WebviewViewProvider (sidebar)
@@ -239,7 +239,7 @@ liteai-vscode/
 The webview would compose the shared components like this:
 
 ```tsx
-// liteai-vscode/src/webview/entry.tsx
+// vscode/src/webview/entry.tsx
 import { AppBaseProviders } from "@liteai/ui/app"  // after extraction
 import { ChatTimeline } from "@liteai/ui/chat-timeline"
 import { PromptInput } from "@liteai/ui/prompt-input"
@@ -305,7 +305,7 @@ graph TD
         NSV[New Session View]
     end
 
-    subgraph "Stays in liteai-app"
+    subgraph "Stays in web"
         SP[Session Page Orchestrator]
         SH[Session Header]
         TP[Terminal Panel]
@@ -316,7 +316,7 @@ graph TD
         Terminal[Terminal Context]
     end
 
-    subgraph "New: liteai-vscode"
+    subgraph "New: vscode"
         VE[Extension Host]
         VP[VSCode Chat Panel]
     end

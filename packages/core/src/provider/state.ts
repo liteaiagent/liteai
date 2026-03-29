@@ -201,6 +201,10 @@ function registerAi4all(database: Record<string, Provider.Info>) {
     if (id.startsWith("gemini")) return database.google?.models[id]
     if (id.startsWith("claude")) return database.anthropic?.models[id]
     if (id.startsWith("mistral")) return database.mistral?.models[id]
+    if (id.startsWith("deepseek")) {
+      // Strip -maas suffix (AI4ALL-specific) to match models.dev entries
+      return database.deepseek?.models[id] ?? database.deepseek?.models[id.replace(/-maas$/, "")]
+    }
     return undefined
   }
 
@@ -214,6 +218,11 @@ function registerAi4all(database: Record<string, Provider.Info>) {
 
   const model = (id: string): Provider.Model => {
     const r = ref(id)
+    // DeepSeek-R1 models are always reasoning models, even without a ref match
+    const capabilities = r?.capabilities ?? {
+      ...fallback.capabilities,
+      reasoning: id.includes("-r1-") || fallback.capabilities.reasoning,
+    }
     return {
       id: ModelID.make(id),
       providerID: pid,
@@ -227,7 +236,7 @@ function registerAi4all(database: Record<string, Provider.Info>) {
         npm: "@ai-sdk/openai-compatible",
         url: "https://api-dev.valeo.com/rsd/ai4all/llm/v1",
       },
-      capabilities: r?.capabilities ?? fallback.capabilities,
+      capabilities,
       limit: r?.limit ?? fallback.limit,
       cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
       release_date: r?.release_date ?? fallback.release_date,

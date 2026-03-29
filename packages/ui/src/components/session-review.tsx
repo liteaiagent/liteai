@@ -18,6 +18,7 @@ import { FileIcon } from "./file-icon"
 import { Icon } from "./icon"
 import { IconButton } from "./icon-button"
 import { createLineCommentController } from "./line-comment-annotations"
+import { Markdown } from "./markdown"
 import { RadioGroup } from "./radio-group"
 import { ScrollView } from "./scroll-view"
 import { StickyAccordionHeader } from "./sticky-accordion-header"
@@ -147,6 +148,7 @@ export const SessionReview = (props: SessionReviewProps) => {
   const [store, setStore] = createStore({
     open: [] as string[],
     force: {} as Record<string, boolean>,
+    preview: {} as Record<string, boolean>,
     selection: null as SessionReviewSelection | null,
     commenting: null as SessionReviewSelection | null,
     opened: null as SessionReviewFocus | null,
@@ -333,6 +335,13 @@ export const SessionReview = (props: SessionReviewProps) => {
                       return current.range
                     })
 
+                    const isMarkdown = () => file.endsWith(".md") || file.endsWith(".mdx")
+                    const previewMode = () => {
+                      const mode = store.preview[file]
+                      if (mode !== undefined) return mode
+                      return isMarkdown()
+                    }
+
                     const commentsUi = createLineCommentController<SessionReviewComment>({
                       comments,
                       label: i18n.t("ui.lineComment.submit"),
@@ -436,6 +445,25 @@ export const SessionReview = (props: SessionReviewProps) => {
                                 </div>
                               </div>
                               <div data-slot="session-review-trigger-actions">
+                                <Show when={isMarkdown()}>
+                                  <div
+                                    class="mr-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                    }}
+                                  >
+                                    <RadioGroup
+                                      options={["preview", "code"] as const}
+                                      current={previewMode() ? "preview" : "code"}
+                                      size="small"
+                                      value={(v) => v}
+                                      label={(v) => v === "preview" ? "Preview" : "Code"}
+                                      onSelect={(v) => {
+                                        if (v) setStore("preview", file, v === "preview")
+                                      }}
+                                    />
+                                  </div>
+                                </Show>
                                 <Switch>
                                   <Match when={isAdded()}>
                                     <div data-slot="session-review-change-group" data-type="added">
@@ -476,6 +504,11 @@ export const SessionReview = (props: SessionReviewProps) => {
                           >
                             <Show when={expanded()}>
                               <Switch>
+                                <Match when={previewMode()}>
+                                  <div class="px-6 py-4 bg-surface-base select-text">
+                                    <Markdown text={isDeleted() ? beforeText() : afterText()} class="max-w-none text-14-regular" />
+                                  </div>
+                                </Match>
                                 <Match when={tooLarge()}>
                                   <div data-slot="session-review-large-diff">
                                     <div data-slot="session-review-large-diff-title">

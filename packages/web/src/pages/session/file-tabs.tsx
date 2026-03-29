@@ -4,11 +4,13 @@ import type { FileSearchHandle } from "@liteai/ui/file"
 import { IconButton } from "@liteai/ui/icon-button"
 import { createLineCommentController } from "@liteai/ui/line-comment-annotations"
 import { cloneSelectedLineRange, previewSelectedLines } from "@liteai/ui/pierre/selection-bridge"
+import { Markdown } from "@liteai/ui/markdown"
+import { RadioGroup } from "@liteai/ui/radio-group"
 import { ScrollView } from "@liteai/ui/scroll-view"
 import { Tabs } from "@liteai/ui/tabs"
 import { showToast } from "@liteai/ui/toast"
 import { sampledChecksum } from "@liteai/util/encode"
-import { createEffect, createMemo, Match, onCleanup, Show, Switch } from "solid-js"
+import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { useComments } from "@/context/comments"
@@ -210,10 +212,35 @@ function FileTabCommentScope(props: {
     requestAnimationFrame(() => comments.clearFocus())
   })
 
+  const isMarkdown = () => props.path.endsWith(".md") || props.path.endsWith(".mdx")
+  const [previewMode, setPreviewMode] = createSignal(true)
+
   return (
-    <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
+    <div class="relative overflow-hidden pb-40 min-h-full group">
+      <Show when={isMarkdown()}>
+        <div class="absolute top-4 right-[28px] z-10 mr-2 border border-border-[transparent] rounded-md overflow-hidden flex bg-surface-base shadow-sm opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+          <RadioGroup
+            options={["preview", "code"] as const}
+            current={previewMode() ? "preview" : "code"}
+            size="small"
+            value={(v) => v}
+            label={(v) => v === "preview" ? "Preview" : "Code"}
+            onSelect={(v) => {
+              if (v) setPreviewMode(v === "preview")
+            }}
+          />
+        </div>
+      </Show>
+
+      <Switch>
+        <Match when={isMarkdown() && previewMode()}>
+          <div class="px-8 py-6 max-w-4xl block w-full select-text">
+            <Markdown text={props.contents()} class="max-w-none text-14-regular" cacheKey={props.cacheKey()} />
+          </div>
+        </Match>
+        <Match when={true}>
+          <Dynamic
+            component={fileComponent}
         mode="text"
         file={{
           name: props.path,
@@ -252,6 +279,8 @@ function FileTabCommentScope(props: {
           },
         }}
       />
+        </Match>
+      </Switch>
     </div>
   )
 }
