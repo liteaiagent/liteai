@@ -645,16 +645,16 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 
 ### Phase 3 — VSCode Extension
 
-- [ ] Create `ServerManager` (spawn, health check, restart, shutdown)
-- [ ] Add `--csrf-token` flag to `liteai-core` server + middleware
-- [ ] Create `postMessage` bridge (fetch proxy + SSE relay)
-- [ ] Create `ChatViewProvider` (WebviewViewProvider for sidebar)
-- [ ] Create webview SolidJS entry point with `vscodePlatform`
-- [ ] Set up Vite build for webview assets
-- [ ] Set up build script to copy platform binary to `vscode/bin/`
-- [ ] Update `package.json` contributes (views, viewsContainers, commands)
-- [ ] Add settings: `liteai.server.url`, `liteai.server.username`, `liteai.server.password`
-- [ ] Add CSS bridge (VSCode CSS variables → liteai design tokens)
+- [x] Create `ServerManager` (spawn, health check, restart, shutdown)
+- [x] Add `--csrf-token` flag to `liteai-core` server + middleware
+- [x] Create `postMessage` bridge (fetch proxy + SSE relay)
+- [x] Create `ChatViewProvider` (WebviewViewProvider for sidebar)
+- [x] Create webview SolidJS entry point with `vscodePlatform`
+- [x] Set up Vite build for webview assets
+- [x] Set up build script to copy platform binary to `vscode/bin/`
+- [x] Update `package.json` contributes (views, viewsContainers, commands)
+- [x] Add settings: `liteai.server.url`, `liteai.server.username`, `liteai.server.password`
+- [x] Add CSS bridge (VSCode CSS variables → liteai design tokens)
 - [ ] Test: local topology
 - [ ] Test: remote server topology
 - [ ] Test: Remote SSH topology

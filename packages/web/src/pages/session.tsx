@@ -178,6 +178,50 @@ export default function Page() {
   const diffs = createMemo(() => (params.id ? (sync.data.session_diff[params.id] ?? []) : []))
   const reviewTab = createMemo(() => isDesktop())
 
+  // --- Stores and message chain must be declared before createSessionReview ---
+  // because createSessionReview's internal createMemo calls eagerly evaluate
+  // input.changes() and input.lastUserMessage().
+
+  const [store, setStore] = createStore({
+    messageId: undefined as string | undefined,
+    mobileTab: "session" as "session" | "changes",
+    changes: "session" as "session" | "turn",
+    newSessionWorktree: "main",
+    deferRender: false,
+  })
+
+  const [followup, setFollowup] = createStore({
+    items: {} as Record<string, (FollowupDraft & { id: string })[] | undefined>,
+    sending: {} as Record<string, string | undefined>,
+    failed: {} as Record<string, string | undefined>,
+    paused: {} as Record<string, boolean | undefined>,
+    edit: {} as Record<
+      string,
+      { id: string; prompt: FollowupDraft["prompt"]; context: FollowupDraft["context"] } | undefined
+    >,
+  })
+
+  const revertMessageID = createMemo(() => info()?.revert?.messageID)
+  const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
+
+  const userMessages = createMemo(
+    () => messages().filter((m) => m.role === "user") as UserMessage[],
+    emptyUserMessages,
+    { equals: same },
+  )
+  const visibleUserMessages = createMemo(
+    () => {
+      const revert = revertMessageID()
+      if (!revert) return userMessages()
+      return userMessages().filter((m) => m.id < revert)
+    },
+    emptyUserMessages,
+    {
+      equals: same,
+    },
+  )
+  const lastUserMessage = createMemo(() => visibleUserMessages().at(-1))
+
   const review = createSessionReview({
     sessionID: () => params.id,
     sessionKey,
@@ -215,8 +259,6 @@ export default function Page() {
   const _openedTabs = tabState.openedTabs
   const _activeTab = tabState.activeTab
   const activeFileTab = tabState.activeFileTab
-  const revertMessageID = createMemo(() => info()?.revert?.messageID)
-  const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
   const messagesReady = createMemo(() => {
     const id = params.id
     if (!id) return true
@@ -232,24 +274,6 @@ export default function Page() {
     if (!id) return false
     return sync.session.history.loading(id)
   })
-
-  const userMessages = createMemo(
-    () => messages().filter((m) => m.role === "user") as UserMessage[],
-    emptyUserMessages,
-    { equals: same },
-  )
-  const visibleUserMessages = createMemo(
-    () => {
-      const revert = revertMessageID()
-      if (!revert) return userMessages()
-      return userMessages().filter((m) => m.id < revert)
-    },
-    emptyUserMessages,
-    {
-      equals: same,
-    },
-  )
-  const lastUserMessage = createMemo(() => visibleUserMessages().at(-1))
 
   createEffect(() => {
     const tab = activeFileTab()
@@ -281,25 +305,6 @@ export default function Page() {
       { defer: true },
     ),
   )
-
-  const [store, setStore] = createStore({
-    messageId: undefined as string | undefined,
-    mobileTab: "session" as "session" | "changes",
-    changes: "session" as "session" | "turn",
-    newSessionWorktree: "main",
-    deferRender: false,
-  })
-
-  const [followup, setFollowup] = createStore({
-    items: {} as Record<string, (FollowupDraft & { id: string })[] | undefined>,
-    sending: {} as Record<string, string | undefined>,
-    failed: {} as Record<string, string | undefined>,
-    paused: {} as Record<string, boolean | undefined>,
-    edit: {} as Record<
-      string,
-      { id: string; prompt: FollowupDraft["prompt"]; context: FollowupDraft["context"] } | undefined
-    >,
-  })
 
   createComputed((prev) => {
     const key = sessionKey()

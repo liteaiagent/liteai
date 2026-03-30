@@ -1,5 +1,5 @@
 // ─── Shared Pane Providers ───
-
+export * from "./chat/index"
 // ─── File Types ───
 export type { SelectedLineRange } from "./shared/file-types"
 export { selectionFromLines } from "./shared/file-types"

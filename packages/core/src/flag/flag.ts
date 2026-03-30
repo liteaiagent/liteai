@@ -46,6 +46,7 @@ export namespace Flag {
   export declare const LITEAI_CLIENT: string
   export const LITEAI_SERVER_PASSWORD = env("SERVER_PASSWORD")
   export const LITEAI_SERVER_USERNAME = env("SERVER_USERNAME")
+  export const LITEAI_SERVER_CSRF_TOKEN = env("SERVER_CSRF_TOKEN")
 
   // Experimental
   export const LITEAI_EXPERIMENTAL = truthy("EXPERIMENTAL")

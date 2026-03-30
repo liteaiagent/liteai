@@ -8,7 +8,7 @@ import { Font } from "@liteai/ui/font"
 import { Splash } from "@liteai/ui/logo"
 import { ThemeProvider } from "@liteai/ui/theme"
 import { MetaProvider } from "@solidjs/meta"
-import { type BaseRouterProps, Navigate, Route, Router } from "@solidjs/router"
+import { type BaseRouterProps, Navigate, Route, Router, useParams } from "@solidjs/router"
 import { type Duration, Effect } from "effect"
 import {
   type Component,
@@ -36,12 +36,14 @@ import { LayoutProvider } from "@/context/layout"
 import { ModelsProvider } from "@/context/models"
 import { NotificationProvider } from "@/context/notification"
 import { PermissionProvider } from "@/context/permission"
+import { PaneRouteProvider } from "@liteai/ui/panes"
 import { PromptProvider } from "@/context/prompt"
 import { ServerConnection, ServerProvider, serverName, useServer } from "@/context/server"
 import { SettingsProvider } from "@/context/settings"
 import { TerminalProvider } from "@/context/terminal"
 import DirectoryLayout from "@/pages/directory-layout"
 import Layout from "@/pages/layout"
+import { webDictionaries } from "@/i18n"
 import { ErrorPage } from "./pages/error"
 import { useCheckServerHealth } from "./utils/server-health"
 
@@ -88,22 +90,33 @@ function MarkedProviderWithNativeParser(props: ParentProps) {
   return <MarkedProvider>{props.children}</MarkedProvider>
 }
 
+function WebPaneRouteProvider(props: ParentProps) {
+  const params = useParams()
+  const route = createMemo(() => ({
+    projectID: params.projectID,
+    sessionID: params.id,
+  }))
+  return <PaneRouteProvider route={route}>{props.children}</PaneRouteProvider>
+}
+
 function AppShellProviders(props: ParentProps) {
   return (
     <SettingsProvider>
-      <PermissionProvider>
-        <LayoutProvider>
-          <NotificationProvider>
-            <ModelsProvider>
-              <CommandProvider>
-                <HighlightsProvider>
-                  <Layout>{props.children}</Layout>
-                </HighlightsProvider>
-              </CommandProvider>
-            </ModelsProvider>
-          </NotificationProvider>
-        </LayoutProvider>
-      </PermissionProvider>
+      <WebPaneRouteProvider>
+        <PermissionProvider>
+          <LayoutProvider>
+            <NotificationProvider>
+              <ModelsProvider>
+                <CommandProvider>
+                  <HighlightsProvider>
+                    <Layout>{props.children}</Layout>
+                  </HighlightsProvider>
+                </CommandProvider>
+              </ModelsProvider>
+            </NotificationProvider>
+          </LayoutProvider>
+        </PermissionProvider>
+      </WebPaneRouteProvider>
     </SettingsProvider>
   )
 }
@@ -138,7 +151,7 @@ export function AppBaseProviders(props: ParentProps) {
           void window.api?.setTitlebar?.({ mode })
         }}
       >
-        <LanguageProvider>
+        <LanguageProvider dictionaries={webDictionaries}>
           <UiI18nBridge>
             <ErrorBoundary fallback={(error) => <ErrorPage error={error} />}>
               <DialogProvider>

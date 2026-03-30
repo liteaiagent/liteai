@@ -23,6 +23,45 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "liteai-explorer",
+          "title": "LiteAI",
+          "icon": "images/button-light.svg"
+        }
+      ]
+    },
+    "views": {
+      "liteai-explorer": [
+        {
+          "type": "webview",
+          "id": "liteai.chatView",
+          "name": "Chat",
+          "icon": "images/button-light.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "LiteAI",
+      "properties": {
+        "liteai.server.url": {
+          "type": "string",
+          "default": "",
+          "description": "URL of a remote LiteAI server. If empty, the extension will bundle and spawn a local liteai-core server."
+        },
+        "liteai.server.username": {
+          "type": "string",
+          "default": "",
+          "description": "Basic Auth username for remote server connection."
+        },
+        "liteai.server.password": {
+          "type": "string",
+          "default": "",
+          "description": "Basic Auth password for remote server connection."
+        }
+      }
+    },
     "commands": [
       {
         "command": "liteai.openTerminal",
@@ -81,27 +120,36 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "bun run package",
-    "compile": "bun run check-types && bun run lint && node esbuild.js",
+    "compile-webview": "vite build",
+    "compile": "bun run compile-webview && bun run check-types && bun run lint && node esbuild.js",
+    "watch:webview": "vite build --watch",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "bun run typecheck && bun run lint && node esbuild.js --production",
+    "package": "bun run script/build.ts",
+    "build:exe": "bun run --cwd ../core build:exe",
+    "test-exe-copy": "node script/copy-exe.mjs",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "bun run compile-tests && bun run compile && bun run lint",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check --write .",
-    "lint:check": "biome check .",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
     "test": "vscode-test"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
-    "@types/vscode": "^1.94.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.94.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.25.3",
     "typescript": "^5.8.3",
-    "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "vite": "8.0.3",
+    "vite-plugin-solid": "2.11.11"
+  },
+  "dependencies": {
+    "solid-js": "catalog:",
+    "@liteai/ui": "workspace:*"
   }
 }

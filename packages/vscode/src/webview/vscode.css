@@ -1,0 +1,52 @@
+/* vscode.css
+ * Maps VSCode CSS variables into @liteai/ui/styles design tokens 
+ */
+
+:root {
+  /*
+   * Base colors 
+   */
+  --liteai-color-bg-app: var(--vscode-editor-background);
+  --liteai-color-bg-nav: var(--vscode-sideBar-background);
+  --liteai-color-bg-sub: var(--vscode-sideBarSectionHeader-background);
+  --liteai-color-bg-popover: var(--vscode-editorWidget-background);
+  --liteai-color-bg-hover: var(--vscode-list-hoverBackground);
+  --liteai-color-bg-active: var(--vscode-list-activeSelectionBackground);
+
+  --liteai-color-text-main: var(--vscode-editor-foreground);
+  --liteai-color-text-muted: var(--vscode-descriptionForeground);
+  --liteai-color-text-subtle: var(--vscode-editorGhostText-foreground);
+  --liteai-color-text-on-accent: var(--vscode-button-foreground);
+
+  --liteai-color-border-main: var(--vscode-editorGroup-border);
+  --liteai-color-border-subtle: var(--vscode-widget-border);
+
+  --liteai-color-control-bg: var(--vscode-input-background);
+  --liteai-color-control-border: var(--vscode-input-border);
+  --liteai-color-control-hover: var(--vscode-list-hoverBackground);
+
+  --liteai-color-accent-bg: var(--vscode-button-background);
+  --liteai-color-accent-hover: var(--vscode-button-hoverBackground);
+  --liteai-color-accent-text: var(--vscode-textLink-foreground);
+
+  --liteai-color-error-text: var(--vscode-errorForeground);
+  --liteai-color-error-bg: var(--vscode-inputValidation-errorBackground);
+  --liteai-color-error-border: var(--vscode-inputValidation-errorBorder);
+
+  --liteai-color-warning-text: var(--vscode-editorWarning-foreground);
+  --liteai-color-success-text: var(--vscode-editorInfo-foreground);
+
+  /*
+   * Font families mapping (defaults)
+   */
+  --liteai-font-sans: var(--vscode-font-family);
+  --liteai-font-mono: var(--vscode-editor-font-family);
+  --liteai-font-size-base: var(--vscode-font-size);
+
+  /*
+   * Add any specific mappings required to overwrite the default theme variables
+   */
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-editor-foreground);
+  font-family: var(--vscode-font-family);
+}

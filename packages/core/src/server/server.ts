@@ -13,6 +13,7 @@ import { MDNS } from "./mdns"
 import {
   authMiddleware,
   corsMiddleware,
+  csrfMiddleware,
   errorHandler,
   projectContextMiddleware,
   requestLogger,
@@ -87,6 +88,7 @@ export namespace Server {
       app
         // ─── Global middleware ───────────────────────────────────────────
         .onError(errorHandler(log))
+        .use(csrfMiddleware())
         .use(authMiddleware())
         .use(requestLogger(log))
         .use(corsMiddleware(opts))

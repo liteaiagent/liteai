@@ -1,11 +1,22 @@
-// This method is called when your extension is deactivated
-export function deactivate() {}
-
 import * as vscode from "vscode"
+import { ChatViewProvider } from "./chat-view-provider"
+import { ServerManager } from "./server-manager"
 
 const TERMINAL_NAME = "liteai"
+let serverManager: ServerManager
+
+export function deactivate() {
+  if (serverManager) {
+    serverManager.dispose()
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
+  serverManager = new ServerManager()
+
+  const provider = new ChatViewProvider(context, serverManager)
+  context.subscriptions.push(vscode.window.registerWebviewViewProvider(ChatViewProvider.viewType, provider))
+
   const _openNewTerminalDisposable = vscode.commands.registerCommand("liteai.openNewTerminal", async () => {
     await openTerminal()
   })
@@ -40,7 +51,13 @@ export function activate(context: vscode.ExtensionContext) {
     }
   })
 
-  context.subscriptions.push(openTerminalDisposable, addFilepathDisposable)
+  // Start the server manager (it will connect to remote or wait until explicitly told)
+  // We provide the extension context. Note: ChatViewProvider will tell it to start when webview is ready.
+  // Although ServerManager.start() handles the context argument now, we can pass context here
+  // and bind it. Wait, ServerManager.start() takes `context`.
+  // Let's modify ServerManager to take context in constructor or we just pass context.
+
+  context.subscriptions.push(_openNewTerminalDisposable, openTerminalDisposable, addFilepathDisposable)
 
   async function openTerminal() {
     // Create a new terminal in split screen

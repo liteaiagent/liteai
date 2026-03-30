@@ -30,6 +30,10 @@ const args = await yargs(hideBin(process.argv))
     default: false,
     describe: "Print logs to stderr",
   })
+  .option("csrf-token", {
+    type: "string",
+    describe: "CSRF token required for all API requests",
+  })
   .option("debug", {
     alias: "d",
     type: "boolean",
@@ -39,6 +43,10 @@ const args = await yargs(hideBin(process.argv))
   .help()
   .version(Installation.VERSION)
   .parse()
+
+if (args.csrfToken) {
+  process.env.LITEAI_SERVER_CSRF_TOKEN = args.csrfToken
+}
 
 await Log.init({
   print: args.printLogs,

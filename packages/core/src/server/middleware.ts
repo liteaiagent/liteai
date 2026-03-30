@@ -62,6 +62,33 @@ export function authMiddleware(): MiddlewareHandler {
 }
 
 // ---------------------------------------------------------------------------
+// CSRF middleware — verifies Authorization Bearer token matches SERVER_CSRF_TOKEN
+// ---------------------------------------------------------------------------
+
+export function csrfMiddleware(): MiddlewareHandler {
+  return (c, next) => {
+    const expectedToken = Flag.LITEAI_SERVER_CSRF_TOKEN
+    // If no CSRF token is configured, skip CSRF check
+    if (!expectedToken) return next()
+
+    // Allow CORS preflight requests to succeed without auth.
+    if (c.req.method === "OPTIONS") return next()
+
+    const authHeader = c.req.header("Authorization")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      throw new HTTPException(403, { message: "Missing or invalid Authorization header (CSRF token required)" })
+    }
+
+    const providedToken = authHeader.slice("Bearer ".length).trim()
+    if (providedToken !== expectedToken) {
+      throw new HTTPException(403, { message: "Invalid CSRF token" })
+    }
+
+    return next()
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Request logger — logs incoming requests with SSE-aware timer
 // ---------------------------------------------------------------------------
 
