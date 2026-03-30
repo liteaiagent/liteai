@@ -1,6 +1,6 @@
 # Antigravity Architecture Analysis & LiteAI Implications
 
-## What Antigravity Does (Reverse-Engineered)
+## What Antigravity Do
 
 ### The Big Picture
 
@@ -81,6 +81,7 @@ Extension Host generates:
 
 Spawns:
   language_server.exe \
+    --enable_lsp \
     --csrf_token e94573176-2bc704932... \
     --extension_server_port 55318 \
     --extension_server_csrf_token d41783fe-0105...

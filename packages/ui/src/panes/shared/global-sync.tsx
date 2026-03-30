@@ -7,15 +7,7 @@ import type {
   Todo,
 } from "@liteai/sdk/client"
 import { getFilename } from "@liteai/util/path"
-import {
-  createContext,
-  getOwner,
-  onCleanup,
-  onMount,
-  type ParentProps,
-  untrack,
-  useContext,
-} from "solid-js"
+import { createContext, getOwner, onCleanup, onMount, type ParentProps, untrack, useContext } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { showToast } from "../../components/toast"
 import { useGlobalSDK } from "./global-sdk"
@@ -248,7 +240,7 @@ function createGlobalSync() {
   }
 
   async function bootstrapInstance(directory: string) {
-    if (!directory) return
+    if (directory === undefined) return
     const pending = booting.get(directory)
     if (pending) return pending
 
@@ -395,9 +387,7 @@ const GlobalSyncContext = createContext<ReturnType<typeof createGlobalSync>>()
 
 export function GlobalSyncProvider(props: ParentProps) {
   const value = createGlobalSync()
-  return (
-    <GlobalSyncContext.Provider value={value}>{props.children}</GlobalSyncContext.Provider>
-  )
+  return <GlobalSyncContext.Provider value={value}>{props.children}</GlobalSyncContext.Provider>
 }
 
 export function useGlobalSync() {
