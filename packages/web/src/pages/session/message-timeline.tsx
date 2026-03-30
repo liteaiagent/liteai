@@ -15,18 +15,15 @@ import { TextField } from "@liteai/ui/text-field"
 import { showToast } from "@liteai/ui/toast"
 import { Binary } from "@liteai/util/binary"
 import { getFilename } from "@liteai/util/path"
-import { useNavigate } from "@solidjs/router"
 import { createEffect, createMemo, For, Index, type JSX, on, onCleanup, Show } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { SessionContextUsage } from "@/components/session-context-usage"
-import { useGlobalSDK } from "@/context/global-sdk"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { useSDK } from "@/context/sdk"
 import { useSettings } from "@/context/settings"
 import { useSync } from "@/context/sync"
 import { normalizeWheelDelta, shouldMarkBoundaryGesture } from "@/pages/session/message-gesture"
-import { useSessionKey } from "@/pages/session/session-layout"
 import { messageAgentColor } from "@/utils/agent"
 import { parseCommentNote, readCommentMetadata } from "@/utils/comment-note"
 
@@ -97,102 +94,7 @@ const markBoundaryGesture = (input: {
   }
 }
 
-type StageConfig = {
-  init: number
-  batch: number
-}
-
-type TimelineStageInput = {
-  sessionKey: () => string
-  turnStart: () => number
-  messages: () => UserMessage[]
-  config: StageConfig
-}
-
-/**
- * Defer-mounts small timeline windows so revealing older turns does not
- * block first paint with a large DOM mount.
- *
- * Once staging completes for a session it never re-stages — backfill and
- * new messages render immediately.
- */
-function createTimelineStaging(input: TimelineStageInput) {
-  const [state, setState] = createStore({
-    activeSession: "",
-    completedSession: "",
-    count: 0,
-  })
-
-  const stagedCount = createMemo(() => {
-    const total = input.messages().length
-    if (input.turnStart() <= 0) return total
-    if (state.completedSession === input.sessionKey()) return total
-    const init = Math.min(total, input.config.init)
-    if (state.count <= init) return init
-    if (state.count >= total) return total
-    return state.count
-  })
-
-  const stagedUserMessages = createMemo(() => {
-    const list = input.messages()
-    const count = stagedCount()
-    if (count >= list.length) return list
-    return list.slice(Math.max(0, list.length - count))
-  })
-
-  let frame: number | undefined
-  const cancel = () => {
-    if (frame === undefined) return
-    cancelAnimationFrame(frame)
-    frame = undefined
-  }
-
-  createEffect(
-    on(
-      () => [input.sessionKey(), input.turnStart() > 0, input.messages().length] as const,
-      ([sessionKey, isWindowed, total]) => {
-        cancel()
-        const shouldStage =
-          isWindowed &&
-          total > input.config.init &&
-          state.completedSession !== sessionKey &&
-          state.activeSession !== sessionKey
-        if (!shouldStage) {
-          setState({ activeSession: "", count: total })
-          return
-        }
-
-        let count = Math.min(total, input.config.init)
-        setState({ activeSession: sessionKey, count })
-
-        const step = () => {
-          if (input.sessionKey() !== sessionKey) {
-            frame = undefined
-            return
-          }
-          const currentTotal = input.messages().length
-          count = Math.min(currentTotal, count + input.config.batch)
-          setState("count", count)
-          if (count >= currentTotal) {
-            setState({ completedSession: sessionKey, activeSession: "" })
-            frame = undefined
-            return
-          }
-          frame = requestAnimationFrame(step)
-        }
-        frame = requestAnimationFrame(step)
-      },
-    ),
-  )
-
-  const isStaging = createMemo(() => {
-    const key = input.sessionKey()
-    return state.activeSession === key && state.completedSession !== key
-  })
-
-  onCleanup(cancel)
-  return { messages: stagedUserMessages, isStaging }
-}
+import { createTimelineStaging } from "@/pages/session/timeline-staging"
 
 export function MessageTimeline(props: {
   mobileChanges: boolean
@@ -216,21 +118,23 @@ export function MessageTimeline(props: {
   onLoadEarlier: () => void
   renderedUserMessages: UserMessage[]
   anchor: (id: string) => string
+  sessionID?: string
+  projectID?: string
+  sessionKey: string
+  onNavigateSession?: (projectID: string, sessionID: string) => void
+  onNavigateSessionList?: (projectID: string) => void
 }) {
   let touchGesture: number | undefined
 
-  const navigate = useNavigate()
-  const globalSDK = useGlobalSDK()
   const sdk = useSDK()
   const sync = useSync()
   const settings = useSettings()
   const dialog = useDialog()
   const language = useLanguage()
-  const { params, sessionKey } = useSessionKey()
   const platform = usePlatform()
 
   const rendered = createMemo(() => props.renderedUserMessages.map((message) => message.id))
-  const sessionID = createMemo(() => params.id)
+  const sessionID = createMemo(() => props.sessionID)
   const sessionMessages = createMemo(() => {
     const id = sessionID()
     if (!id) return emptyMessages
@@ -312,7 +216,7 @@ export function MessageTimeline(props: {
   const showHeader = createMemo(() => !!(titleValue() || parentID()))
   const stageCfg = { init: 1, batch: 3 }
   const staging = createTimelineStaging({
-    sessionKey,
+    sessionKey: () => props.sessionKey,
     turnStart: () => props.turnStart,
     messages: () => props.renderedUserMessages,
     config: stageCfg,
@@ -342,7 +246,7 @@ export function MessageTimeline(props: {
     if (!id || req.share) return
     if (!shareEnabled()) return
     setReq("share", true)
-    globalSDK.client.project.session
+    sdk.client.project.session
       .share({ sessionID: id, projectID: sdk.projectID })
       .catch((err: unknown) => {
         console.error("Failed to share session", err)
@@ -357,7 +261,7 @@ export function MessageTimeline(props: {
     if (!id || req.unshare) return
     if (!shareEnabled()) return
     setReq("unshare", true)
-    globalSDK.client.project.session
+    sdk.client.project.session
       .unshare({ sessionID: id, projectID: sdk.projectID })
       .catch((err: unknown) => {
         console.error("Failed to unshare session", err)
@@ -385,7 +289,7 @@ export function MessageTimeline(props: {
   // Title/share state is identity-local: reset when session key changes.
   // onCleanup fires before the next effect run and on disposal.
   createEffect(() => {
-    sessionKey()
+    props.sessionKey
     onCleanup(() => {
       setTitle({
         draft: "",
@@ -446,16 +350,17 @@ export function MessageTimeline(props: {
   }
 
   const navigateAfterSessionRemoval = (sessionID: string, parentID?: string, nextSessionID?: string) => {
-    if (params.id !== sessionID) return
+    if (props.sessionID !== sessionID) return
+    const projectID = props.projectID ?? ""
     if (parentID) {
-      navigate(`/${params.projectID}/session/${parentID}`)
+      props.onNavigateSession?.(projectID, parentID)
       return
     }
     if (nextSessionID) {
-      navigate(`/${params.projectID}/session/${nextSessionID}`)
+      props.onNavigateSession?.(projectID, nextSessionID)
       return
     }
-    navigate(`/${params.projectID}/session`)
+    props.onNavigateSessionList?.(projectID)
   }
 
   const archiveSession = async (sessionID: string) => {
@@ -548,7 +453,7 @@ export function MessageTimeline(props: {
   const navigateParent = () => {
     const id = parentID()
     if (!id) return
-    navigate(`/${params.projectID}/session/${id}`)
+    props.onNavigateSession?.(props.projectID ?? "", id)
   }
 
   function DialogDeleteSession(props: { sessionID: string }) {
