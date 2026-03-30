@@ -1,8 +1,7 @@
 import type { Event } from "@liteai/sdk/client"
-import { createSimpleContext } from "../../context"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { type Accessor, createEffect, createMemo, onCleanup } from "solid-js"
-import { createSdkForServer } from "./server-util"
+import { createSimpleContext } from "../../context"
 import { useGlobalSDK } from "./global-sdk"
 
 type SDKEventMap = {

@@ -1,5 +1,5 @@
-import { createSimpleContext } from "../../context"
 import type { AsyncStorage, SyncStorage } from "@solid-primitives/storage"
+import { createSimpleContext } from "../../context"
 import type { ServerConnection } from "./server"
 
 type PickerPaths = string | string[] | null

@@ -36,8 +36,8 @@ process.on("uncaughtException", (e) => {
 
 // Forward global bus events to the main thread via RPC.
 // Unwrap the { directory, payload } wrapper — the TUI expects { type, properties }.
-GlobalBus.on("event", (event) => {
-  if (event?.payload) {
+GlobalBus.on("event", (event: unknown) => {
+  if (event && typeof event === "object" && "payload" in event && event.payload) {
     Rpc.emit("event", event.payload)
   }
 })
@@ -67,6 +67,7 @@ export const rpc = {
   async server(input: { port: number; hostname: string; mdns?: boolean; cors?: string[] }) {
     if (server) await server.stop(true)
     server = Server.listen(input)
+    if (!server) throw new Error("Failed to start server")
     return { url: server.url.toString() }
   },
   async checkUpgrade(input: { directory: string }) {

@@ -1,11 +1,11 @@
 import type { Event } from "@liteai/sdk/client"
-import { createSimpleContext } from "../../context"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
 import { batch, onCleanup } from "solid-js"
 import z from "zod"
-import { createSdkForServer } from "./server-util"
+import { createSimpleContext } from "../../context"
 import { usePlatform } from "./platform"
 import { useServer } from "./server"
+import { createSdkForServer } from "./server-util"
 
 const abortError = z.object({
   name: z.literal("AbortError"),
@@ -210,7 +210,7 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
     })
 
     const sdk = createSdkForServer({
-      server: server.current!.http,
+      server: server.current?.http,
       fetch: platform.fetch,
       throwOnError: true,
     })

@@ -1,5 +1,5 @@
 import { checksum } from "@liteai/util/encode"
-import { type AsyncStorage, makePersisted, type SyncStorage } from "@solid-primitives/storage"
+import { makePersisted, type SyncStorage } from "@solid-primitives/storage"
 import { type Accessor, createResource } from "solid-js"
 import type { SetStoreFunction, Store } from "solid-js/store"
 
@@ -13,7 +13,7 @@ type PersistTarget = {
   migrate?: (value: unknown) => unknown
 }
 
-const LEGACY_STORAGE = "default.dat"
+const _LEGACY_STORAGE = "default.dat"
 const GLOBAL_STORAGE = "liteai.global.dat"
 const LOCAL_PREFIX = "liteai."
 const fallback = new Map<string, boolean>()

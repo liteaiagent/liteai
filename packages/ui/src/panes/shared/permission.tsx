@@ -1,18 +1,18 @@
 import type { PermissionRequest } from "@liteai/sdk/client"
-import { createSimpleContext } from "../../context"
 import { createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore, produce } from "solid-js/store"
+import { createSimpleContext } from "../../context"
 import { useGlobalSDK } from "./global-sdk"
-import { Persist, persisted } from "./persist"
-import { usePaneRoute } from "./pane-route"
-import { toProjectID } from "./project-id"
 import { useGlobalSync } from "./global-sync"
+import { usePaneRoute } from "./pane-route"
 import {
   acceptKey,
   autoRespondsPermission,
   directoryAcceptKey,
   isDirectoryAutoAccepting,
 } from "./permission-auto-respond"
+import { Persist, persisted } from "./persist"
+import { toProjectID } from "./project-id"
 
 type PermissionRespondFn = (input: {
   sessionID: string

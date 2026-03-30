@@ -1,6 +1,6 @@
-import { createSimpleContext } from "../../context"
 import { createEffect, createMemo } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
+import { createSimpleContext } from "../../context"
 import { persisted } from "./persist"
 
 export interface NotificationSettings {

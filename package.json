@@ -11,6 +11,7 @@
     "dev:web": "bun --cwd packages/web dev",
     "dev:storybook": "bun --cwd packages/storybook storybook",
     "typecheck": "bun turbo typecheck",
+    "check": "bun turbo check",
     "lint": "bun turbo lint",
     "lint:fix": "bun turbo lint:fix",
     "prepare": "husky",

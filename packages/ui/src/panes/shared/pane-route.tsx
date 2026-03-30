@@ -1,4 +1,4 @@
-import { type Accessor, createContext, useContext } from "solid-js"
+import { type Accessor, createContext, type JSX, useContext } from "solid-js"
 
 /**
  * PaneRoute — Router-agnostic route state for Panes.
@@ -15,7 +15,7 @@ export type PaneRoute = {
 
 const PaneRouteContext = createContext<Accessor<PaneRoute>>()
 
-export function PaneRouteProvider(props: { route: Accessor<PaneRoute>; children: any }) {
+export function PaneRouteProvider(props: { route: Accessor<PaneRoute>; children: JSX.Element }) {
   return <PaneRouteContext.Provider value={props.route}>{props.children}</PaneRouteContext.Provider>
 }
 

@@ -1,13 +1,12 @@
 #!/usr/bin/env bun
-import { fileURLToPath } from "url"
+import { fileURLToPath } from "node:url"
 
 const dir = fileURLToPath(new URL("..", import.meta.url))
 process.chdir(dir)
 
-import { $ } from "bun"
-import path from "path"
-
+import path from "node:path"
 import { createClient } from "@hey-api/openapi-ts"
+import { $ } from "bun"
 
 const spec = await $`bun run --conditions=browser script/generate-openapi.ts`.cwd(path.resolve(dir, "../core")).text()
 const openapi = path.resolve(dir, "openapi.json")
@@ -27,7 +26,11 @@ await createClient({
     },
     {
       name: "@hey-api/sdk",
-      operations: { strategy: "single", containerName: "LiteaiClient", methods: "instance" },
+      operations: {
+        strategy: "single",
+        containerName: "LiteaiClient",
+        methods: "instance",
+      },
       exportFromIndex: false,
       auth: false,
       paramsStructure: "flat",
@@ -40,6 +43,6 @@ await createClient({
   ],
 })
 
-await $`bun biome format --write src/gen`
+await $`bun biome format --write src/gen openapi.json`
 await $`rm -rf dist`
 await $`bun tsc`

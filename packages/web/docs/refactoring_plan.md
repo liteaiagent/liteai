@@ -317,8 +317,8 @@ These are file-level moves that don't change any interfaces:
 2. ✅ **Extract `createTimelineStaging`** → `session/timeline-staging.ts`
 3. ⏸️ **Extract followup logic** → *Deferred (coupled to local state, moves easily as part of ChatPane)*
 4. ⏸️ **Extract fork/revert/restore** → *Deferred (coupled to local state, moves easily as part of ChatPane)*
-5. ⏳ **Extract review management** → `session/session-review.ts`
-6. ⏳ **Extract session title bar** → `session/session-title-bar.tsx`
+5. ✅ **Extract review management** → `session/session-review.tsx`
+6. ✅ **Extract session title bar** → `session/session-title-bar.tsx`
 
 After each: `bun typecheck && bun run build && bun test`
 

@@ -65,32 +65,36 @@ describe("Worktree.remove", () => {
     expect(ref.exitCode).not.toBe(0)
   }, 30_000)
 
-  wintest("stops fsmonitor before removing a worktree", async () => {
-    await using tmp = await tmpdir({ git: true })
-    const root = tmp.path
-    const name = `remove-fsmonitor-${Date.now().toString(36)}`
-    const branch = `liteai/${name}`
-    const dir = path.join(root, "..", name)
+  wintest(
+    "stops fsmonitor before removing a worktree",
+    async () => {
+      await using tmp = await tmpdir({ git: true })
+      const root = tmp.path
+      const name = `remove-fsmonitor-${Date.now().toString(36)}`
+      const branch = `liteai/${name}`
+      const dir = path.join(root, "..", name)
 
-    await $`git worktree add --no-checkout -b ${branch} ${dir}`.cwd(root).quiet()
-    await $`git reset --hard`.cwd(dir).quiet()
-    await $`git config core.fsmonitor true`.cwd(dir).quiet()
-    await $`git fsmonitor--daemon stop`.cwd(dir).quiet().nothrow()
-    await Bun.write(path.join(dir, "tracked.txt"), "next\n")
-    await $`git diff`.cwd(dir).quiet()
+      await $`git worktree add --no-checkout -b ${branch} ${dir}`.cwd(root).quiet()
+      await $`git reset --hard`.cwd(dir).quiet()
+      await $`git config core.fsmonitor true`.cwd(dir).quiet()
+      await $`git fsmonitor--daemon stop`.cwd(dir).quiet().nothrow()
+      await Bun.write(path.join(dir, "tracked.txt"), "next\n")
+      await $`git diff`.cwd(dir).quiet()
 
-    const before = await $`git fsmonitor--daemon status`.cwd(dir).quiet().nothrow()
-    expect(before.exitCode).toBe(0)
+      const before = await $`git fsmonitor--daemon status`.cwd(dir).quiet().nothrow()
+      expect(before.exitCode).toBe(0)
 
-    const ok = await Instance.provide({
-      directory: root,
-      fn: () => Worktree.remove({ directory: dir }),
-    })
+      const ok = await Instance.provide({
+        directory: root,
+        fn: () => Worktree.remove({ directory: dir }),
+      })
 
-    expect(ok).toBe(true)
-    expect(await Filesystem.exists(dir)).toBe(false)
+      expect(ok).toBe(true)
+      expect(await Filesystem.exists(dir)).toBe(false)
 
-    const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
-    expect(ref.exitCode).not.toBe(0)
-  }, 30_000)
+      const ref = await $`git show-ref --verify --quiet refs/heads/${branch}`.cwd(root).quiet().nothrow()
+      expect(ref.exitCode).not.toBe(0)
+    },
+    30_000,
+  )
 })

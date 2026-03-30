@@ -2,7 +2,6 @@ import { Button } from "@liteai/ui/button"
 import { Logo } from "@liteai/ui/logo"
 import { TextField } from "@liteai/ui/text-field"
 import { type Component, Show } from "solid-js"
-import { createStore } from "solid-js/store"
 import { useLanguage } from "@/context/language"
 import pkg from "../../package.json"
 

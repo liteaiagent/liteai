@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { type Config } from "./gen/types.gen.js"
+import type { Config } from "./gen/types.gen.js"
 
 export type ServerOptions = {
   hostname?: string
@@ -50,11 +50,11 @@ export async function createLiteaiServer(options?: ServerOptions) {
       for (const line of lines) {
         if (line.startsWith("liteai server listening")) {
           const match = line.match(/on\s+(https?:\/\/[^\s]+)/)
-          if (!match) {
+          if (!match?.[1]) {
             throw new Error(`Failed to parse server url from output: ${line}`)
           }
           clearTimeout(id)
-          resolve(match[1]!)
+          resolve(match[1])
           return
         }
       }

@@ -1,10 +1,9 @@
 import type { Message, Part } from "@liteai/sdk/client"
-import { createSimpleContext } from "../../context"
 import { Binary } from "@liteai/util/binary"
 import { retry } from "@liteai/util/retry"
 import { batch, createMemo } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
-import { toProjectID } from "./project-id"
+import { createSimpleContext } from "../../context"
 import { useGlobalSync } from "./global-sync"
 import { dropSessionCaches, pickSessionCacheEvictions, SESSION_CACHE_LIMIT } from "./global-sync/session-cache"
 import {
@@ -13,6 +12,7 @@ import {
   getSessionPrefetchPromise,
   setSessionPrefetch,
 } from "./global-sync/session-prefetch"
+import { toProjectID } from "./project-id"
 import { useSDK } from "./sdk"
 
 function sortParts(parts: Part[]) {

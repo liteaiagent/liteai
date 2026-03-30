@@ -1,10 +1,10 @@
-import { createSimpleContext } from "../../context"
 import { type Accessor, batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
+import { createSimpleContext } from "../../context"
 
 import { Persist, persisted } from "./persist"
-import { createCheckServerHealth } from "./server-health"
 import { usePlatform } from "./platform"
+import { createCheckServerHealth } from "./server-health"
 
 type StoredServer = string | ServerConnection.HttpBase | ServerConnection.Http
 const HEALTH_POLL_INTERVAL_MS = 10_000

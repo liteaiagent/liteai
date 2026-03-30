@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import yargs from "yargs"
+import { hideBin } from "yargs/helpers"
 /**
  * Standalone core server entrypoint.
  * Starts the LiteAI server without TUI or CLI chrome.
@@ -8,8 +10,6 @@ import { Instance } from "./project/instance"
 import { Server } from "./server/server"
 import { Database } from "./storage/db"
 import { Log } from "./util/log"
-import yargs from "yargs"
-import { hideBin } from "yargs/helpers"
 
 const args = await yargs(hideBin(process.argv))
   .scriptName("liteai-core")

@@ -16,7 +16,9 @@ const rawPlugin: import("bun").BunPlugin = {
   setup(build) {
     build.onResolve({ filter: /\?raw$/ }, (args) => {
       return {
-        path: path.isAbsolute(args.path) ? args.path.replace(/\?raw$/, "") : path.join(path.dirname(args.importer), args.path.replace(/\?raw$/, "")),
+        path: path.isAbsolute(args.path)
+          ? args.path.replace(/\?raw$/, "")
+          : path.join(path.dirname(args.importer), args.path.replace(/\?raw$/, "")),
         namespace: "raw",
       }
     })

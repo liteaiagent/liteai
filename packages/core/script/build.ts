@@ -43,13 +43,8 @@ const rawPlugin: import("bun").BunPlugin = {
 
 // ── Load migrations ────────────────────────────────────────
 const migrationDir = path.join(dir, "migration")
-const migrationDirs = (
-  await fs.promises.readdir(migrationDir, { withFileTypes: true })
-)
-  .filter(
-    (entry) =>
-      entry.isDirectory() && /^\d{4}\d{2}\d{2}\d{2}\d{2}\d{2}/.test(entry.name),
-  )
+const migrationDirs = (await fs.promises.readdir(migrationDir, { withFileTypes: true }))
+  .filter((entry) => entry.isDirectory() && /^\d{4}\d{2}\d{2}\d{2}\d{2}\d{2}/.test(entry.name))
   .map((entry) => entry.name)
   .sort()
 
@@ -104,16 +99,11 @@ const targets = buildAll
   ? allTargets
   : allTargets.filter(
       (item) =>
-        item.os === process.platform &&
-        item.arch === process.arch &&
-        item.avx2 !== false &&
-        item.abi === undefined,
+        item.os === process.platform && item.arch === process.arch && item.avx2 !== false && item.abi === undefined,
     )
 
 if (targets.length === 0) {
-  console.error(
-    `No matching target for ${process.platform}-${process.arch}. Use --all to build all platforms.`,
-  )
+  console.error(`No matching target for ${process.platform}-${process.arch}. Use --all to build all platforms.`)
   process.exit(1)
 }
 
@@ -164,8 +154,7 @@ for (const item of targets) {
       LITEAI_VERSION: `'${version}'`,
       LITEAI_MIGRATIONS: JSON.stringify(migrations),
       LITEAI_CHANNEL: `'${channel}'`,
-      LITEAI_LIBC:
-        item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "undefined",
+      LITEAI_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "undefined",
     },
   })
 

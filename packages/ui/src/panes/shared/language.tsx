@@ -1,3 +1,6 @@
+import * as i18n from "@solid-primitives/i18n"
+import { createEffect, createMemo } from "solid-js"
+import { createStore } from "solid-js/store"
 import { createSimpleContext } from "../../context"
 import { dict as uiAr } from "../../i18n/ar"
 import { dict as uiBr } from "../../i18n/br"
@@ -16,9 +19,6 @@ import { dict as uiTh } from "../../i18n/th"
 import { dict as uiTr } from "../../i18n/tr"
 import { dict as uiZh } from "../../i18n/zh"
 import { dict as uiZht } from "../../i18n/zht"
-import * as i18n from "@solid-primitives/i18n"
-import { createEffect, createMemo } from "solid-js"
-import { createStore } from "solid-js/store"
 import { Persist, persisted } from "./persist"
 
 export type Locale =

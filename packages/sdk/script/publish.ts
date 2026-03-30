@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
+import { fileURLToPath } from "node:url"
 import { Script } from "@liteai/script"
 import { $ } from "bun"
-import { fileURLToPath } from "url"
 
 const dir = fileURLToPath(new URL("..", import.meta.url))
 process.chdir(dir)
@@ -18,8 +18,8 @@ function transformExports(exports: Record<string, string | object>) {
     } else if (typeof value === "string") {
       const file = value.replace("./src/", "./dist/").replace(".ts", "")
       exports[key] = {
-        import: file + ".js",
-        types: file + ".d.ts",
+        import: `${file}.js`,
+        types: `${file}.d.ts`,
       }
     }
   }

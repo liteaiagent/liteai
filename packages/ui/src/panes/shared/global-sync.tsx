@@ -6,7 +6,6 @@ import type {
   ProviderListResponse,
   Todo,
 } from "@liteai/sdk/client"
-import { showToast } from "../../components/toast"
 import { getFilename } from "@liteai/util/path"
 import {
   createContext,
@@ -20,14 +19,11 @@ import {
   useContext,
 } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
-import { useLanguage } from "./language"
-import { Persist, persisted } from "./persist"
-import { __updateProjectRegistry, toProjectID } from "./project-id"
-import { formatServerError } from "./server-errors"
-import type { InitError } from "./global-sync/error-types"
+import { showToast } from "../../components/toast"
 import { useGlobalSDK } from "./global-sdk"
 import { bootstrapDirectory, bootstrapGlobal } from "./global-sync/bootstrap"
 import { createChildStoreManager } from "./global-sync/child-store"
+import type { InitError } from "./global-sync/error-types"
 import { applyDirectoryEvent, applyGlobalEvent, cleanupDroppedSessionCaches } from "./global-sync/event-reducer"
 import { createRefreshQueue } from "./global-sync/queue"
 import { estimateRootSessionTotal, loadRootSessionsWithFallback } from "./global-sync/session-load"
@@ -36,6 +32,10 @@ import { trimSessions } from "./global-sync/session-trim"
 import type { PathState, ProjectMeta } from "./global-sync/types"
 import { SESSION_RECENT_LIMIT } from "./global-sync/types"
 import { sanitizeProject } from "./global-sync/utils"
+import { useLanguage } from "./language"
+import { Persist, persisted } from "./persist"
+import { __updateProjectRegistry, toProjectID } from "./project-id"
+import { formatServerError } from "./server-errors"
 
 type GlobalStore = {
   ready: boolean

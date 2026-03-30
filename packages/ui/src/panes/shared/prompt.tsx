@@ -1,9 +1,9 @@
-import { createSimpleContext } from "../../context"
 import { checksum } from "@liteai/util/encode"
 import { batch, createMemo, createRoot, onCleanup } from "solid-js"
 import { createStore, type SetStoreFunction } from "solid-js/store"
-import { Persist, persisted } from "./persist"
+import { createSimpleContext } from "../../context"
 import { usePaneRoute } from "./pane-route"
+import { Persist, persisted } from "./persist"
 
 export type FileSelection = {
   startLine: number

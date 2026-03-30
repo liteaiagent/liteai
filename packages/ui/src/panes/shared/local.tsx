@@ -1,14 +1,14 @@
-import { createSimpleContext } from "../../context"
-import { batch, createEffect, createMemo, onCleanup } from "solid-js"
+import { batch, createEffect, createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
-import { useModels } from "./models"
-import { useProviders } from "./use-providers"
-import { Persist, persisted } from "./persist"
-import { usePaneRoute } from "./pane-route"
-import { toProjectID } from "./project-id"
+import { createSimpleContext } from "../../context"
 import { cycleModelVariant, getConfiguredAgentVariant, resolveModelVariant } from "./model-variant"
+import { useModels } from "./models"
+import { usePaneRoute } from "./pane-route"
+import { Persist, persisted } from "./persist"
+import { toProjectID } from "./project-id"
 import { useSDK } from "./sdk"
 import { useSync } from "./sync"
+import { useProviders } from "./use-providers"
 
 export type ModelKey = { providerID: string; modelID: string }
 

@@ -1,12 +1,7 @@
-import { Button } from "@liteai/ui/button"
-import { Icon } from "@liteai/ui/icon"
 import { Select } from "@liteai/ui/select"
 import { Switch } from "@liteai/ui/switch"
 import { type ColorScheme, useTheme } from "@liteai/ui/theme"
-import { showToast } from "@liteai/ui/toast"
-import { Tooltip } from "@liteai/ui/tooltip"
-import { type Component, createMemo, createResource, type JSX, Show } from "solid-js"
-import { createStore } from "solid-js/store"
+import { type Component, createMemo, type JSX } from "solid-js"
 import { useLanguage } from "@/context/language"
 import { usePlatform } from "@/context/platform"
 import { monoFontFamily, useSettings } from "@/context/settings"
@@ -41,7 +36,7 @@ const playDemoSound = (src: string | undefined) => {
 export const SettingsGeneral: Component = () => {
   const theme = useTheme()
   const language = useLanguage()
-  const platform = usePlatform()
+  const _platform = usePlatform()
   const settings = useSettings()
 
   const themeOptions = createMemo(() =>
