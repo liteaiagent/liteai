@@ -57,7 +57,24 @@ export function activate(context: vscode.ExtensionContext) {
   // and bind it. Wait, ServerManager.start() takes `context`.
   // Let's modify ServerManager to take context in constructor or we just pass context.
 
-  context.subscriptions.push(_openNewTerminalDisposable, openTerminalDisposable, addFilepathDisposable)
+  // ─── Workspace folder sync (Task 3.4) ───────────────────────────────────
+  // When workspace folders change, register new ones with Core so it never
+  // hits "Project not found in registry" errors.
+  const workspaceFolderWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async (event) => {
+    if (serverManager.mode !== "production") return
+    for (const added of event.added) {
+      serverManager.registerOneFolder(added.uri.fsPath).catch(() => {
+        // Non-fatal — folder will be registered on next server restart
+      })
+    }
+  })
+
+  context.subscriptions.push(
+    _openNewTerminalDisposable,
+    openTerminalDisposable,
+    addFilepathDisposable,
+    workspaceFolderWatcher,
+  )
 
   async function openTerminal() {
     // Create a new terminal in split screen

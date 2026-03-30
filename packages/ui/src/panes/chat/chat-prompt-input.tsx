@@ -7,6 +7,7 @@ import { Select } from "@liteai/ui/select"
 import { Tooltip } from "@liteai/ui/tooltip"
 import { type Component, createEffect, createMemo, createSignal, Match, on, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
+import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
 import { useLocal } from "../shared/local"
 import { usePermission } from "../shared/permission"
@@ -21,9 +22,6 @@ import {
   type Prompt,
   usePrompt,
 } from "../shared/prompt"
-import { useSDK } from "../shared/sdk"
-import { useSync } from "../shared/sync"
-import { useProviders } from "../shared/use-providers"
 import { ChatModelSelector } from "./chat-model-selector"
 import { createPromptAttachments } from "./prompt-input/attachments"
 import { PromptContextItems } from "./prompt-input/context-items"
@@ -114,12 +112,10 @@ const NON_EMPTY_TEXT = /[^\s\u200B]/
  * without command palette, comment system, or worktree management.
  */
 export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
-  const sdk = useSDK()
-  const sync = useSync()
+  const controller = useChatController()
   const local = useLocal()
   const prompt = usePrompt()
   const dialog = useDialog()
-  const _providers = useProviders()
   const _permission = usePermission()
   const language = useLanguage()
   const _platform = usePlatform()
@@ -185,7 +181,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   const sessionStatus = createMemo(() => {
     const id = props.sessionID
     if (!id) return { type: "idle" as const }
-    return sync.data.session_status[id] ?? { type: "idle" as const }
+    return controller.sessionStatus(id)
   })
 
   const working = createMemo(() => sessionStatus().type !== "idle")
@@ -193,9 +189,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   const assistantRunning = createMemo(() => {
     const id = props.sessionID
     if (!id) return false
-    return (sync.data.message[id] ?? []).some(
-      (item) => item.role === "assistant" && typeof item.time.completed !== "number",
-    )
+    return controller.messages(id).some((item) => item.role === "assistant" && typeof item.time.completed !== "number")
   })
 
   const busy = createMemo(() => working() || assistantRunning())
@@ -209,7 +203,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   // ─── History ───
 
   const [history, setHistory] = persisted(
-    Persist.workspace(sdk.directory, "prompt-history"),
+    Persist.workspace(controller.directory(), "prompt-history"),
     createStore<{ entries: PromptHistoryStoredEntry[] }>({ entries: [] }),
   )
 
@@ -236,7 +230,8 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
 
   // @ mention: agents + files
   const agents = createMemo(() =>
-    sync.data.agent
+    controller
+      .agents()
       .filter((item) => item.mode !== "subagent" && !item.hidden)
       .map((item) => ({
         type: "agent" as const,

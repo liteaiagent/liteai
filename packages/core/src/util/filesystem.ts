@@ -4,11 +4,15 @@ import { dirname, join, resolve as pathResolve, relative } from "node:path"
 import { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 import { lookup } from "mime-types"
+import { Capabilities } from "../capabilities/context"
 import { Glob } from "./glob"
 
 export namespace Filesystem {
   // Fast sync version for metadata checks
   export async function exists(p: string): Promise<boolean> {
+    if (Capabilities.ready() && Capabilities.isHosted()) {
+      return Capabilities.get().fs.exists(p)
+    }
     return existsSync(p)
   }
 
@@ -30,6 +34,9 @@ export namespace Filesystem {
   }
 
   export async function readText(p: string): Promise<string> {
+    if (Capabilities.ready() && Capabilities.isHosted()) {
+      return Capabilities.get().fs.readFile(p)
+    }
     return readFile(p, "utf-8")
   }
 
@@ -38,6 +45,9 @@ export namespace Filesystem {
   }
 
   export async function readBytes(p: string): Promise<Buffer> {
+    if (Capabilities.ready() && Capabilities.isHosted()) {
+      return Capabilities.get().fs.readFileBytes(p)
+    }
     return readFile(p)
   }
 
@@ -51,6 +61,9 @@ export namespace Filesystem {
   }
 
   export async function write(p: string, content: string | Buffer | Uint8Array, mode?: number): Promise<void> {
+    if (Capabilities.ready() && Capabilities.isHosted() && !mode) {
+      return Capabilities.get().fs.writeFile(p, content)
+    }
     try {
       if (mode) {
         await writeFile(p, content, { mode })

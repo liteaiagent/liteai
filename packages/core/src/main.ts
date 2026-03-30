@@ -5,6 +5,7 @@ import { hideBin } from "yargs/helpers"
  * Standalone core server entrypoint.
  * Starts the LiteAI server without TUI or CLI chrome.
  */
+import { Capabilities, createHostedCapabilities, createLocalCapabilities } from "./capabilities"
 import { Installation } from "./installation"
 import { Instance } from "./project/instance"
 import { Server } from "./server/server"
@@ -40,6 +41,29 @@ const args = await yargs(hideBin(process.argv))
     default: false,
     describe: "Enable debug logging",
   })
+  .option("hosted", {
+    type: "boolean",
+    default: false,
+    describe:
+      "Run in hosted mode — delegate filesystem, git, and workspace operations to the host IDE via HTTP callbacks",
+  })
+  .option("callback-port", {
+    type: "number",
+    describe: "Port of the host IDE callback server (required when --hosted is set)",
+  })
+  .option("callback-csrf-token", {
+    type: "string",
+    describe: "CSRF token for the host IDE callback server (required when --hosted is set)",
+  })
+  .check((argv) => {
+    if (argv.hosted && !argv.callbackPort) {
+      throw new Error("--callback-port is required when --hosted is set")
+    }
+    if (argv.hosted && !argv.callbackCsrfToken) {
+      throw new Error("--callback-csrf-token is required when --hosted is set")
+    }
+    return true
+  })
   .help()
   .version(Installation.VERSION)
   .parse()
@@ -54,14 +78,41 @@ await Log.init({
   level: args.debug ? "DEBUG" : "INFO",
 })
 
+const log = Log.create({ service: "main" })
+
+// ─── Initialize capabilities ────────────────────────────────────────────────
+
+if (args.hosted) {
+  const callbackUrl = `http://127.0.0.1:${args.callbackPort}`
+  log.info("starting in hosted mode", {
+    callbackUrl,
+    port: args.port,
+  })
+  Capabilities.set(
+    createHostedCapabilities({
+      callbackUrl,
+      csrfToken: args.callbackCsrfToken as string,
+    }),
+  )
+} else {
+  log.info("starting in local mode", { port: args.port })
+  Capabilities.set(createLocalCapabilities())
+}
+
+// ─── Initialize database (skip in hosted mode if configured) ────────────────
+
 Database.Client()
 
 const server = Server.listen({ port: args.port, hostname: args.hostname })
 console.log(`liteai core server listening on http://${server.hostname}:${server.port}`)
 
+if (Capabilities.isHosted()) {
+  log.info("hosted mode active — filesystem and git operations delegate to callback server")
+}
+
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.on(signal, async () => {
-    Log.Default.info("received signal, shutting down", { signal })
+    log.info("received signal, shutting down", { signal })
     Server.shutdown()
     await Instance.disposeAll().catch(() => {})
     process.exit(0)

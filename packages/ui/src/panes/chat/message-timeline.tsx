@@ -7,10 +7,9 @@ import { FileIcon } from "../../components/file-icon"
 import { Icon } from "../../components/icon"
 import { ScrollView } from "../../components/scroll-view"
 import { SessionTurn } from "../../components/session-turn"
+import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
-import { useSDK } from "../shared/sdk"
 import { useSettings } from "../shared/settings"
-import { useSync } from "../shared/sync"
 import { messageAgentColor } from "./agent-color"
 import { parseCommentNote, readCommentMetadata } from "./comment-note"
 import { normalizeWheelDelta, shouldMarkBoundaryGesture } from "./message-gesture"
@@ -117,8 +116,7 @@ export function MessageTimeline(props: {
 }) {
   let touchGesture: number | undefined
 
-  const _sdk = useSDK()
-  const sync = useSync()
+  const controller = useChatController()
   const settings = useSettings()
   const language = useLanguage()
 
@@ -127,7 +125,7 @@ export function MessageTimeline(props: {
   const sessionMessages = createMemo(() => {
     const id = sessionID()
     if (!id) return emptyMessages
-    return sync.data.message[id] ?? emptyMessages
+    return controller.messages(id)
   })
   const pending = createMemo(() =>
     sessionMessages().findLast(
@@ -137,10 +135,10 @@ export function MessageTimeline(props: {
   const sessionStatus = createMemo(() => {
     const id = sessionID()
     if (!id) return idle
-    return sync.data.session_status[id] ?? idle
+    return controller.sessionStatus(id)
   })
   const working = createMemo(() => !!pending() || sessionStatus().type !== "idle")
-  const tint = createMemo(() => messageAgentColor(sessionMessages(), sync.data.agent))
+  const tint = createMemo(() => messageAgentColor(sessionMessages(), controller.agents()))
 
   const activeMessageID = createMemo(() => {
     const parentID = pending()?.parentID
@@ -164,7 +162,7 @@ export function MessageTimeline(props: {
   const info = createMemo(() => {
     const id = sessionID()
     if (!id) return
-    return sync.session.get(id)
+    return controller.session.get(id)
   })
   const titleValue = createMemo(() => info()?.title)
   const parentID = createMemo(() => info()?.parentID)
@@ -293,7 +291,7 @@ export function MessageTimeline(props: {
               <For each={rendered()}>
                 {(messageID) => {
                   const active = createMemo(() => activeMessageID() === messageID)
-                  const comments = createMemo(() => messageComments(sync.data.part[messageID] ?? []), [], {
+                  const comments = createMemo(() => messageComments(controller.parts(messageID)), [], {
                     equals: (a, b) => JSON.stringify(a) === JSON.stringify(b),
                   })
                   const commentCount = createMemo(() => comments().length)

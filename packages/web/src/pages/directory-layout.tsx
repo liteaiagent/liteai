@@ -8,6 +8,7 @@ import { useLanguage } from "@/context/language"
 import { LocalProvider } from "@/context/local"
 import { SDKProvider } from "@/context/sdk"
 import { SyncProvider, useSync } from "@/context/sync"
+import { WebChatContextProvider } from "@/context/web-chat-context"
 import { toProjectID } from "@/utils/project-id"
 
 function DirectoryDataProvider(props: ParentProps<{ directory: string }>) {
@@ -22,7 +23,9 @@ function DirectoryDataProvider(props: ParentProps<{ directory: string }>) {
       onNavigateToSession={(sessionID: string) => navigate(`/${slug()}/session/${sessionID}`)}
       onSessionHref={(sessionID: string) => `/${slug()}/session/${sessionID}`}
     >
-      <LocalProvider>{props.children}</LocalProvider>
+      <WebChatContextProvider>
+        <LocalProvider>{props.children}</LocalProvider>
+      </WebChatContextProvider>
     </DataProvider>
   )
 }

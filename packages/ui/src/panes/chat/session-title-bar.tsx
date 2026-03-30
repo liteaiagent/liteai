@@ -1,6 +1,6 @@
 import { Popover as KobaltePopover } from "@kobalte/core/popover"
 import { createEffect, createMemo, type JSX, on, onCleanup, Show } from "solid-js"
-import { createStore, produce } from "solid-js/store"
+import { createStore } from "solid-js/store"
 import { Button } from "../../components/button"
 import { Dialog } from "../../components/dialog"
 import { DropdownMenu } from "../../components/dropdown-menu"
@@ -10,10 +10,9 @@ import { Spinner } from "../../components/spinner"
 import { TextField } from "../../components/text-field"
 import { showToast } from "../../components/toast"
 import { useDialog } from "../../context/dialog"
+import { useChatController, useSessionController } from "../controllers"
 import { useLanguage } from "../shared/language"
 import { usePlatform } from "../shared/platform"
-import { useSDK } from "../shared/sdk"
-import { useSync } from "../shared/sync"
 
 export function SessionTitleBar(props: {
   sessionID: () => string | undefined
@@ -27,8 +26,8 @@ export function SessionTitleBar(props: {
   /** Optional slot for session context usage indicator (e.g. token/cost display). Web-only. */
   contextUsage?: JSX.Element
 }) {
-  const sdk = useSDK()
-  const sync = useSync()
+  const controller = useChatController()
+  const sessionCtrl = useSessionController()
   const dialog = useDialog()
   const language = useLanguage()
   const platform = usePlatform()
@@ -73,11 +72,11 @@ export function SessionTitleBar(props: {
   const info = createMemo(() => {
     const id = props.sessionID()
     if (!id) return
-    return sync.session.get(id)
+    return controller.session.get(id)
   })
   const titleValue = createMemo(() => info()?.title)
   const shareUrl = createMemo(() => info()?.share?.url)
-  const shareEnabled = createMemo(() => sync.data.config.share !== "disabled")
+  const shareEnabled = createMemo(() => controller.shareEnabled())
   const parentID = createMemo(() => info()?.parentID)
   const showHeader = createMemo(() => !!(titleValue() || parentID()))
 
@@ -109,8 +108,8 @@ export function SessionTitleBar(props: {
     if (!id || req.share) return
     if (!shareEnabled()) return
     setReq("share", true)
-    sdk.client.project.session
-      .share({ sessionID: id, projectID: sdk.projectID })
+    sessionCtrl
+      .share(id)
       .catch((err: unknown) => {
         console.error("Failed to share session", err)
       })
@@ -124,8 +123,8 @@ export function SessionTitleBar(props: {
     if (!id || req.unshare) return
     if (!shareEnabled()) return
     setReq("unshare", true)
-    sdk.client.project.session
-      .unshare({ sessionID: id, projectID: sdk.projectID })
+    sessionCtrl
+      .unshare(id)
       .catch((err: unknown) => {
         console.error("Failed to unshare session", err)
       })
@@ -192,15 +191,9 @@ export function SessionTitleBar(props: {
     }
 
     setTitle("saving", true)
-    await sdk.client.project.session
-      .update({ sessionID: id, title: next, projectID: sdk.projectID })
+    await sessionCtrl
+      .rename(id, next)
       .then(() => {
-        sync.set(
-          produce((draft) => {
-            const index = draft.session.findIndex((s) => s.id === id)
-            if (index !== -1) draft.session[index].title = next
-          }),
-        )
         setTitle({ editing: false, saving: false })
       })
       .catch((err) => {
@@ -229,22 +222,16 @@ export function SessionTitleBar(props: {
   }
 
   const archiveSession = async (sessionID: string) => {
-    const session = sync.session.get(sessionID)
+    const session = controller.session.get(sessionID)
     if (!session) return
 
-    const sessions = sync.data.session ?? []
+    const sessions = controller.sessions()
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
-    await sdk.client.project.session
-      .update({ sessionID, time: { archived: Date.now() }, projectID: sdk.projectID })
+    await sessionCtrl
+      .archive(sessionID)
       .then(() => {
-        sync.set(
-          produce((draft) => {
-            const index = draft.session.findIndex((s) => s.id === sessionID)
-            if (index !== -1) draft.session.splice(index, 1)
-          }),
-        )
         navigateAfterSessionRemoval(sessionID, session.parentID, nextSession?.id)
       })
       .catch((err) => {
@@ -256,60 +243,22 @@ export function SessionTitleBar(props: {
   }
 
   const deleteSession = async (sessionID: string) => {
-    const session = sync.session.get(sessionID)
+    const session = controller.session.get(sessionID)
     if (!session) return false
 
-    const sessions = (sync.data.session ?? []).filter((s) => !s.parentID && !s.time?.archived)
+    const sessions = controller.sessions().filter((s) => !s.parentID && !s.time?.archived)
     const index = sessions.findIndex((s) => s.id === sessionID)
     const nextSession = index === -1 ? undefined : (sessions[index + 1] ?? sessions[index - 1])
 
-    const result = await sdk.client.project.session
-      .delete({ sessionID, projectID: sdk.projectID })
-      .then((x) => x.data)
-      .catch((err) => {
-        showToast({
-          title: language.t("session.delete.failed.title"),
-          description: errorMessage(err),
-        })
-        return false
+    const result = await sessionCtrl.delete(sessionID).catch((err) => {
+      showToast({
+        title: language.t("session.delete.failed.title"),
+        description: errorMessage(err),
       })
+      return false
+    })
 
     if (!result) return false
-
-    sync.set(
-      produce((draft) => {
-        const removed = new Set<string>([sessionID])
-
-        const byParent = new Map<string, string[]>()
-        for (const item of draft.session) {
-          const parentID = item.parentID
-          if (!parentID) continue
-          const existing = byParent.get(parentID)
-          if (existing) {
-            existing.push(item.id)
-            continue
-          }
-          byParent.set(parentID, [item.id])
-        }
-
-        const stack = [sessionID]
-        while (stack.length) {
-          const parentID = stack.pop()
-          if (!parentID) continue
-
-          const children = byParent.get(parentID)
-          if (!children) continue
-
-          for (const child of children) {
-            if (removed.has(child)) continue
-            removed.add(child)
-            stack.push(child)
-          }
-        }
-
-        draft.session = draft.session.filter((s) => !removed.has(s.id))
-      }),
-    )
 
     navigateAfterSessionRemoval(sessionID, session.parentID, nextSession?.id)
     return true
@@ -322,7 +271,9 @@ export function SessionTitleBar(props: {
   }
 
   function DialogDeleteSession(innerProps: { sessionID: string }) {
-    const name = createMemo(() => sync.session.get(innerProps.sessionID)?.title ?? language.t("command.session.new"))
+    const name = createMemo(
+      () => controller.session.get(innerProps.sessionID)?.title ?? language.t("command.session.new"),
+    )
     const handleDelete = async () => {
       await deleteSession(innerProps.sessionID)
       dialog.close()

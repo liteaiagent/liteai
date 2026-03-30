@@ -3,11 +3,10 @@ import { createAutoScroll } from "@liteai/ui/hooks"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { type Component, createEffect, createMemo, type JSX, Match, on, onCleanup, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
+import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
 import { usePaneRoute } from "../shared/pane-route"
 import { usePrompt } from "../shared/prompt"
-import { useSDK } from "../shared/sdk"
-import { useSync } from "../shared/sync"
 import { ChatNewSession } from "./chat-new-session"
 import { ChatPromptInput, type ChatPromptSubmitHandler } from "./chat-prompt-input"
 import { createSessionHistoryWindow, emptyUserMessages } from "./history-window"
@@ -69,8 +68,7 @@ interface ChatPaneProps {
  */
 export const ChatPane: Component<ChatPaneProps> = (props) => {
   const route = usePaneRoute()
-  const _sdk = useSDK()
-  const sync = useSync()
+  const controller = useChatController()
   const _prompt = usePrompt()
   const _language = useLanguage()
 
@@ -80,25 +78,25 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
   const messages = createMemo(() => {
     const id = sessionID()
     if (!id) return []
-    return sync.data.message[id] ?? []
+    return controller.messages(id)
   })
 
   const messagesReady = createMemo(() => {
     const id = sessionID()
     if (!id) return true
-    return sync.data.message[id] !== undefined
+    return controller.messagesReady(id)
   })
 
   const historyMore = createMemo(() => {
     const id = sessionID()
     if (!id) return false
-    return sync.session.history.more(id)
+    return controller.session.history.more(id)
   })
 
   const historyLoading = createMemo(() => {
     const id = sessionID()
     if (!id) return false
-    return sync.session.history.loading(id)
+    return controller.session.history.loading(id)
   })
 
   const userMessages = createMemo(
@@ -109,7 +107,7 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
 
   const info = createMemo(() => {
     const id = sessionID()
-    return id ? sync.session.get(id) : undefined
+    return id ? controller.session.get(id) : undefined
   })
 
   const revertMessageID = createMemo(() => info()?.revert?.messageID)
@@ -187,7 +185,7 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
     visibleUserMessages,
     historyMore,
     historyLoading,
-    loadMore: (id) => sync.session.history.loadMore(id),
+    loadMore: (id) => controller.session.history.loadMore(id),
     userScrolled: autoScroll.userScrolled,
     scroller: () => scroller,
   })
@@ -199,7 +197,7 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
       () => sessionID(),
       (id) => {
         if (!id) return
-        void sync.session.sync(id)
+        void controller.session.sync(id)
       },
     ),
   )

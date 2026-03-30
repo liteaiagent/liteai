@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-import { $ } from "bun"
 import path from "node:path"
+import { $ } from "bun"
 
 const dir = path.resolve(import.meta.dir, "..")
 process.chdir(dir)

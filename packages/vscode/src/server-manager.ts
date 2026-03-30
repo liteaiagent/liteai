@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from "node:child_process"
 import * as crypto from "node:crypto"
 import * as path from "node:path"
 import * as vscode from "vscode"
+import { ExtensionServer } from "./extension-server"
 
 export type ServerMode = "dev" | "production" | "remote"
 
@@ -12,6 +13,8 @@ export class ServerManager {
   private _readyListeners: Array<() => void> = []
   private _isReady = false
   private _mode: ServerMode = "production"
+  private _extensionServer: ExtensionServer | null = null
+  private _outputChannel: vscode.OutputChannel | null = null
 
   get url() {
     return this._url
@@ -23,16 +26,24 @@ export class ServerManager {
     return this._mode
   }
 
+  private getOutputChannel(): vscode.OutputChannel {
+    if (!this._outputChannel) {
+      this._outputChannel = vscode.window.createOutputChannel("LiteAI Server")
+    }
+    return this._outputChannel
+  }
+
   /**
    * Start or connect to the LiteAI server.
    *
    * Resolution order:
    * 1. `LITEAI_DEV_SERVER_URL` env var → dev mode (connect to external dev server)
    * 2. `liteai.server.url` VS Code setting → remote mode (connect to remote server)
-   * 3. Spawn bundled binary → production mode
+   * 3. Spawn bundled binary → production mode (with Extension Server for hosted ops)
    */
   async start(context: vscode.ExtensionContext): Promise<string> {
     const config = vscode.workspace.getConfiguration("liteai.server")
+    const outputChannel = this.getOutputChannel()
 
     // Priority 1: Dev server URL from environment (set in launch.json)
     const devUrl = process.env.LITEAI_DEV_SERVER_URL
@@ -40,7 +51,6 @@ export class ServerManager {
       this._mode = "dev"
       this._url = devUrl
       this._isReady = true
-      const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
       outputChannel.appendLine(`[dev] Connecting to dev server: ${devUrl}`)
       return devUrl
     }
@@ -51,12 +61,11 @@ export class ServerManager {
       this._mode = "remote"
       this._url = remoteUrl
       this._isReady = true
-      const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
       outputChannel.appendLine(`[remote] Connecting to remote server: ${remoteUrl}`)
       return remoteUrl
     }
 
-    // Priority 3: Spawn bundled binary
+    // Priority 3: Spawn bundled binary in hosted mode
     this._mode = "production"
 
     if (this._process || this._url) {
@@ -70,6 +79,18 @@ export class ServerManager {
 
     this._csrf = crypto.randomUUID()
 
+    // ─── Start Extension Callback Server ──────────────────────────────
+    // Core will delegate filesystem, git, and workspace operations back
+    // to this server via HTTP when running in hosted mode.
+    const callbackCsrfToken = crypto.randomUUID()
+    this._extensionServer = new ExtensionServer({
+      csrfToken: callbackCsrfToken,
+      outputChannel,
+    })
+    const callbackPort = await this._extensionServer.start()
+    outputChannel.appendLine(`[production] Extension callback server listening on port ${callbackPort}`)
+
+    // ─── Spawn Core ───────────────────────────────────────────────────
     // Platform folder mapping
     const binName = process.platform === "win32" ? "liteai-core.exe" : "liteai-core"
 
@@ -79,13 +100,26 @@ export class ServerManager {
 
     const binPath = path.join(context.extensionPath, "bin", platformFolder, binName)
 
-    const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
     outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
 
-    this._process = spawn(binPath, ["--port", "0", "--csrf-token", this._csrf], {
-      env: { ...process.env },
-      windowsHide: true,
-    })
+    this._process = spawn(
+      binPath,
+      [
+        "--port",
+        "0",
+        "--csrf-token",
+        this._csrf,
+        "--hosted",
+        "--callback-port",
+        String(callbackPort),
+        "--callback-csrf-token",
+        callbackCsrfToken,
+      ],
+      {
+        env: { ...process.env },
+        windowsHide: true,
+      },
+    )
 
     return new Promise((resolve, reject) => {
       let timeoutId: NodeJS.Timeout
@@ -100,6 +134,12 @@ export class ServerManager {
           this._url = match[1]
           this._isReady = true
           clearTimeout(timeoutId)
+
+          // Register workspace folders now that Core is ready
+          this.registerWorkspaceFolders().catch((err) => {
+            outputChannel.appendLine(`[production] Workspace registration warning: ${err}`)
+          })
+
           resolve(this._url)
           this._readyListeners.forEach((cb) => {
             cb()
@@ -132,7 +172,61 @@ export class ServerManager {
     })
   }
 
+  // ─── Workspace Registration (Task 3.4) ────────────────────────────────────
+
+  /**
+   * Push all current workspace folders to Core via POST /project?directory=...
+   * This eliminates the "Project not found in registry" error.
+   */
+  async registerWorkspaceFolders(): Promise<void> {
+    if (!this._url || !this._csrf) return
+
+    const folders = vscode.workspace.workspaceFolders ?? []
+    const outputChannel = this.getOutputChannel()
+
+    for (const folder of folders) {
+      try {
+        await this.registerOneFolder(folder.uri.fsPath)
+        outputChannel.appendLine(`[hosted] Registered workspace folder: ${folder.uri.fsPath}`)
+      } catch (err) {
+        outputChannel.appendLine(
+          `[hosted] Failed to register folder ${folder.uri.fsPath}: ${err instanceof Error ? err.message : err}`,
+        )
+      }
+    }
+  }
+
+  /**
+   * Register a single workspace folder with Core.
+   * Public so extension.ts can call it from onDidChangeWorkspaceFolders.
+   */
+  async registerOneFolder(directory: string): Promise<void> {
+    if (!this._url || !this._csrf) return
+
+    const url = new URL("/project", this._url)
+    url.searchParams.set("directory", directory)
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this._csrf}`,
+      },
+    })
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "")
+      throw new Error(`HTTP ${response.status}: ${text}`)
+    }
+  }
+
   dispose() {
+    // Stop Extension Callback Server
+    if (this._extensionServer) {
+      this._extensionServer.dispose()
+      this._extensionServer = null
+    }
+
+    // Stop Core process
     if (this._process) {
       this._process.kill("SIGTERM")
       setTimeout(() => {

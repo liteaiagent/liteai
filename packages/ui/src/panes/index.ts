@@ -1,5 +1,9 @@
+// ─── Controller Interfaces ───
+
 // ─── Shared Pane Providers ───
 export * from "./chat/index"
+export type { ChatController, ModelController, ModelInfo, ProjectInfo, SessionController } from "./controllers"
+export { ChatContextProvider, useChatController, useSessionController } from "./controllers"
 // ─── File Types ───
 export type { SelectedLineRange } from "./shared/file-types"
 export { selectionFromLines } from "./shared/file-types"

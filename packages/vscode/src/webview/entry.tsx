@@ -1,6 +1,8 @@
-import { ChatPane, PaneProviders, type PaneRoute, ServerConnection, useServer } from "@liteai/ui/panes"
-import { createSignal, ErrorBoundary, type ParentProps, Show } from "solid-js"
+import { DialogProvider } from "@liteai/ui/context/dialog"
+import { ChatContextProvider, ChatPane, PaneProviders, type PaneRoute } from "@liteai/ui/panes"
+import { createSignal, ErrorBoundary, type ParentProps } from "solid-js"
 import { render } from "solid-js/web"
+import { createVscodeChatController, createVscodeSessionController } from "./vscode-chat-controller"
 import { vscodePlatform } from "./vscode-platform"
 import "./vscode.css"
 import "@liteai/ui/styles"
@@ -16,46 +18,26 @@ function logError(...args: unknown[]) {
   console.error(LOG_PREFIX, ...args)
 }
 
-/** Connection status dot shown in the panel header */
-function ConnectionStatus() {
-  const server = useServer()
-
-  return (
-    <div class="connection-status" title={`Server: ${server.name || server.key}`}>
-      <div
-        classList={{
-          "status-dot": true,
-          "status-connected": server.healthy() === true,
-          "status-disconnected": server.healthy() === false,
-          "status-unknown": server.healthy() === undefined,
-        }}
-      />
-      <span class="status-label">
-        {server.healthy() === true ? "Connected" : server.healthy() === false ? "Disconnected" : "Connecting..."}
-      </span>
-    </div>
-  )
-}
-
 /** Wrapper that shows a header bar with connection status */
 function PanelLayout(props: ParentProps) {
   return (
     <div class="panel-root">
       <div class="panel-header">
-        <ConnectionStatus />
+        <div class="connection-status" title="LiteAI">
+          <div class="status-dot status-connected" />
+          <span class="status-label">LiteAI</span>
+        </div>
       </div>
-      <div class="panel-body">
-        {props.children}
-      </div>
+      <div class="panel-body">{props.children}</div>
     </div>
   )
 }
 
 function App() {
   const [route, _setRoute] = createSignal<PaneRoute>({})
-  
+
   // url injected synchronously from the host via <script> tag
-  const injectedUrl = (window as any).LITEAI_SERVER_URL
+  const injectedUrl = (window as unknown as Record<string, unknown>).LITEAI_SERVER_URL as string | undefined
   const serverUrl = injectedUrl || DEFAULT_SERVER_URL
 
   log("App initializing", {
@@ -65,25 +47,30 @@ function App() {
     documentReady: document.readyState,
   })
 
+  // Create VSCode-specific controllers (Phase 1 stubs)
+  const chatController = createVscodeChatController({ serverUrl })
+  const sessionController = createVscodeSessionController({ serverUrl })
+
   return (
-    <ErrorBoundary fallback={(err) => {
-      logError("ErrorBoundary caught:", err)
-      return (
-        <div class="error-screen">
-          <div class="error-title">LiteAI Error</div>
-          <pre class="error-body">{err.stack || err.toString()}</pre>
-        </div>
-      )
-    }}>
-      <PaneProviders 
-        platform={vscodePlatform} 
-        route={route} 
-        server={ServerConnection.Key.make(serverUrl)}
-        servers={[{ type: "http", http: { url: serverUrl } }]}
-      >
-        <PanelLayout>
-          <ChatPane handler={{ submit: () => {}, abort: () => {} }} />
-        </PanelLayout>
+    <ErrorBoundary
+      fallback={(err) => {
+        logError("ErrorBoundary caught:", err)
+        return (
+          <div class="error-screen">
+            <div class="error-title">LiteAI Error</div>
+            <pre class="error-body">{err.stack || err.toString()}</pre>
+          </div>
+        )
+      }}
+    >
+      <PaneProviders platform={vscodePlatform} route={route}>
+        <DialogProvider>
+          <ChatContextProvider chat={chatController} session={sessionController}>
+            <PanelLayout>
+              <ChatPane handler={{ submit: () => {}, abort: () => {} }} />
+            </PanelLayout>
+          </ChatContextProvider>
+        </DialogProvider>
       </PaneProviders>
     </ErrorBoundary>
   )

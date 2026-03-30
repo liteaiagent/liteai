@@ -3,9 +3,8 @@ import { Mark } from "@liteai/ui/logo"
 import { getDirectory, getFilename } from "@liteai/util/path"
 import { DateTime } from "luxon"
 import { type Component, createMemo, Show } from "solid-js"
+import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
-import { useSDK } from "../shared/sdk"
-import { useSync } from "../shared/sync"
 
 const MAIN_WORKTREE = "main"
 const CREATE_WORKTREE = "create"
@@ -19,28 +18,27 @@ interface ChatNewSessionProps {
  * Displays project info and branch context.
  */
 export const ChatNewSession: Component<ChatNewSessionProps> = (props) => {
-  const sync = useSync()
-  const sdk = useSDK()
+  const controller = useChatController()
   const language = useLanguage()
 
-  const sandboxes = createMemo(() => sync.project?.sandboxes ?? [])
+  const sandboxes = createMemo(() => controller.project()?.sandboxes ?? [])
   const options = createMemo(() => [MAIN_WORKTREE, ...sandboxes(), CREATE_WORKTREE])
   const current = createMemo(() => {
     const selection = props.worktree ?? MAIN_WORKTREE
     if (options().includes(selection)) return selection
     return MAIN_WORKTREE
   })
-  const projectRoot = createMemo(() => sync.project?.worktree ?? sdk.directory)
+  const projectRoot = createMemo(() => controller.project()?.worktree ?? controller.directory())
   const isWorktree = createMemo(() => {
-    const project = sync.project
+    const project = controller.project()
     if (!project) return false
-    return sdk.directory !== project.worktree
+    return controller.directory() !== project.worktree
   })
 
   const label = (value: string) => {
     if (value === MAIN_WORKTREE) {
       if (isWorktree()) return language.t("session.new.worktree.main")
-      const branch = sync.data.vcs?.branch
+      const branch = controller.vcs()?.branch
       if (branch) return language.t("session.new.worktree.mainWithBranch", { branch })
       return language.t("session.new.worktree.main")
     }
@@ -72,7 +70,7 @@ export const ChatNewSession: Component<ChatNewSessionProps> = (props) => {
                 {label(current())}
               </div>
             </div>
-            <Show when={sync.project}>
+            <Show when={controller.project()}>
               {(project) => (
                 <div class="flex items-start justify-center gap-3 min-h-5">
                   <div class="text-12-medium text-text-weak leading-5 min-w-0 max-w-160 break-words text-center">
