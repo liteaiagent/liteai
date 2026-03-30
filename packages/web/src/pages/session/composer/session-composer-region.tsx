@@ -10,7 +10,6 @@ import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { usePrompt } from "@/context/prompt"
 import { useSync } from "@/context/sync"
-import { createSessionTabs } from "@/pages/session/helpers"
 import type { SessionComposerState } from "@/pages/session/composer/session-composer-state"
 import { SessionFollowupDock } from "@/pages/session/composer/session-followup-dock"
 import { SessionPermissionDock } from "@/pages/session/composer/session-permission-dock"
@@ -18,6 +17,7 @@ import { SessionQuestionDock } from "@/pages/session/composer/session-question-d
 import { SessionRevertDock } from "@/pages/session/composer/session-revert-dock"
 import { SessionTodoDock } from "@/pages/session/composer/session-todo-dock"
 import { getSessionHandoff, setSessionHandoff } from "@/pages/session/handoff"
+import { createSessionTabs } from "@/pages/session/helpers"
 import { useSessionKey, useSessionLayout } from "@/pages/session/session-layout"
 
 export function SessionComposerRegion(props: {

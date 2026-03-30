@@ -35,28 +35,32 @@ describe("file fsmonitor", () => {
     expect(after.exitCode).not.toBe(0)
   })
 
-  wintest("read does not start fsmonitor for git diffs", async () => {
-    await using tmp = await tmpdir({ git: true })
-    const target = path.join(tmp.path, "tracked.txt")
+  wintest(
+    "read does not start fsmonitor for git diffs",
+    async () => {
+      await using tmp = await tmpdir({ git: true })
+      const target = path.join(tmp.path, "tracked.txt")
 
-    await fs.writeFile(target, "base\n")
-    await $`git add tracked.txt`.cwd(tmp.path).quiet()
-    await $`git commit -m init`.cwd(tmp.path).quiet()
-    await $`git config core.fsmonitor true`.cwd(tmp.path).quiet()
-    await $`git fsmonitor--daemon stop`.cwd(tmp.path).quiet().nothrow()
-    await fs.writeFile(target, "next\n")
+      await fs.writeFile(target, "base\n")
+      await $`git add tracked.txt`.cwd(tmp.path).quiet()
+      await $`git commit -m init`.cwd(tmp.path).quiet()
+      await $`git config core.fsmonitor true`.cwd(tmp.path).quiet()
+      await $`git fsmonitor--daemon stop`.cwd(tmp.path).quiet().nothrow()
+      await fs.writeFile(target, "next\n")
 
-    const before = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
-    expect(before.exitCode).not.toBe(0)
+      const before = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
+      expect(before.exitCode).not.toBe(0)
 
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        await File.read("tracked.txt")
-      },
-    })
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
+          await File.read("tracked.txt")
+        },
+      })
 
-    const after = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
-    expect(after.exitCode).not.toBe(0)
-  }, 30_000)
+      const after = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
+      expect(after.exitCode).not.toBe(0)
+    },
+    30_000,
+  )
 })

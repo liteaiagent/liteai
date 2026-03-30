@@ -6,10 +6,12 @@
 > **Approach:** Refactor in-place (still in `@liteai/web`), verify nothing breaks,
 > *then* move the portable pieces to ui/panes in a separate step.
 
-**Current Status:** Refactoring is underway. 
+**Current Status:** All three refactoring phases are complete.
 - `createSessionHistoryWindow` extracted from `session.tsx` (-427 lines).
 - `createTimelineStaging` extracted from `message-timeline.tsx` (-95 lines).
 - `MessageTimeline` parameterized to remove router dependencies (now 100% portable contexts).
+- `PromptInput` abstracted: `useCommand`, `useComments`, `useFile`, `useSessionLayout` → optional props.
+- **Phase C complete:** Portable pieces moved to `@liteai/ui/panes/chat/`. Web re-export stubs in place.
 
 ---
 
@@ -335,9 +337,9 @@ After each: `bun typecheck && bun run build && bun test`
 
 ### Phase C: ChatPane extraction (separate PR — the actual plan Phase 2 components)
 
-11. Move portable pieces to `ui/panes/chat/`
-12. Create `ChatPane` wrapper  
-13. Web re-export stubs
+11. ✅ **Move portable pieces to `ui/panes/chat/`** — history-window, timeline-staging, message-gesture, message-timeline, session-title-bar, agent-color, comment-note, same
+12. ⏸️ **Create `ChatPane` wrapper** — *Deferred until PromptInput is also extracted (model selector dialogs, file context still web-entangled)*
+13. ✅ **Web re-export stubs** — all web consumers continue importing from original paths, now re-exported from `@liteai/ui/panes/chat`
 
 ---
 

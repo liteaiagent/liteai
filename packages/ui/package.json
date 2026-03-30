@@ -13,6 +13,7 @@
     "./context": "./src/context/index.ts",
     "./context/*": "./src/context/*.tsx",
     "./panes": "./src/panes/index.ts",
+    "./panes/chat": "./src/panes/chat/index.ts",
     "./panes/shared/*": "./src/panes/shared/*",
     "./styles": "./src/styles/index.css",
     "./styles/tailwind": "./src/styles/tailwind/index.css",
