@@ -122,9 +122,7 @@ export function SessionHeader() {
                       aria-label={language.t("session.header.open.copyPath")}
                     >
                       <Icon name="copy" size="small" class="text-icon-base" />
-                      <span class="text-12-regular text-text-strong">
-                        {language.t("session.header.open.copyPath")}
-                      </span>
+                      <span class="text-12-regular text-text-strong">{language.t("session.header.open.copyPath")}</span>
                     </Button>
                   </div>
                 </div>

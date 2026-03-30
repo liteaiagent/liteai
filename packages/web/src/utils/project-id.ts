@@ -1,2 +1,2 @@
 // Re-export from @liteai/ui/panes for backward compatibility
-export { __updateProjectRegistry, toProjectID, toDirectory } from "@liteai/ui/panes"
+export { __updateProjectRegistry, toDirectory, toProjectID } from "@liteai/ui/panes"

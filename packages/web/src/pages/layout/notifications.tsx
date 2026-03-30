@@ -26,7 +26,6 @@ export type NotificationDeps = {
   setBusy: (directory: string, value: boolean) => void
 }
 
-
 export function useSDKNotificationToasts(deps: NotificationDeps) {
   onMount(() => {
     const params = useParams()

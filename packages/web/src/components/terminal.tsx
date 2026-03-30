@@ -300,7 +300,6 @@ export const Terminal = (props: TerminalProps) => {
     scheduleFit()
   })
 
-
   const focusTerminal = () => {
     const t = term
     if (!t) return

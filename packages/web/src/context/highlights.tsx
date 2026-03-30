@@ -3,9 +3,9 @@ import { useDialog } from "@liteai/ui/context/dialog"
 import { createEffect, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { DialogReleaseNotes, type Highlight } from "@/components/dialog-release-notes"
-import pkg from "../../package.json"
 import { useSettings } from "@/context/settings"
 import { persisted } from "@/utils/persist"
+import pkg from "../../package.json"
 
 const CHANGELOG_URL = "https://liteai.ai/changelog.json"
 
