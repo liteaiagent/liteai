@@ -1,5 +1,8 @@
 // ─── Shared Pane Providers ───
 
+// ─── File Types ───
+export type { SelectedLineRange } from "./shared/file-types"
+export { selectionFromLines } from "./shared/file-types"
 export { GlobalSDKProvider, useGlobalSDK } from "./shared/global-sdk"
 // ─── Global Sync ───
 export { GlobalSyncProvider, useGlobalSync } from "./shared/global-sync"
@@ -84,3 +87,5 @@ export {
   useSync,
 } from "./shared/sync"
 export { popularProviders, useProviders } from "./shared/use-providers"
+// ─── UUID ───
+export { uuid } from "./shared/uuid"

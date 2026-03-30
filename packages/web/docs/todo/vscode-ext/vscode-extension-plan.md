@@ -440,12 +440,27 @@ ui/src/
 │   │   ├── model-variant.ts      ✅ Phase 2 — from web/context/
 │   │   └── permission-auto-respond.ts ✅ Phase 2 — from web/context/
 │   │
-│   ├── chat/                ← ChatPane (Phase 2 — pending)
-│   │   ├── chat-pane.tsx         ← main component
-│   │   ├── message-timeline.tsx  ← from web/pages/session/
-│   │   ├── prompt-input/         ← from web/components/prompt-input/
-│   │   ├── model-selector.tsx    ← from web/
-│   │   └── new-session-view.tsx  ← from web/
+│   ├── chat/                ← ChatPane (Phase 2 — ✅ Complete)
+│   │   ├── chat-pane.tsx         ✅ Top-level chat wrapper (MessageTimeline + ChatPromptInput)
+│   │   ├── chat-prompt-input.tsx ✅ Streamlined prompt editor (~730 lines, purpose-built)
+│   │   ├── chat-model-selector.tsx ✅ Portable model picker with callback props
+│   │   ├── chat-new-session.tsx  ✅ Empty-state view for new sessions
+│   │   ├── message-timeline.tsx  ✅ From web/pages/session/ (already extracted)
+│   │   ├── session-title-bar.tsx ✅ From web/pages/session/ (already extracted)
+│   │   ├── prompt-input/         ✅ 10 portable sub-modules shared with web
+│   │   │   ├── attachments.ts
+│   │   │   ├── context-items.tsx
+│   │   │   ├── drag-overlay.tsx
+│   │   │   ├── editor-dom.ts
+│   │   │   ├── files.ts
+│   │   │   ├── history.ts
+│   │   │   ├── image-attachments.tsx
+│   │   │   ├── paste.ts
+│   │   │   ├── placeholder.ts
+│   │   │   └── slash-popover.tsx
+│   │   ├── history-window.ts     ✅ Already extracted
+│   │   ├── comment-note.ts       ✅ Already extracted
+│   │   └── same.ts               ✅ Already extracted
 │   │
 │   ├── trace/               ← TracePane (future)
 │   │   └── trace-pane.tsx
@@ -587,7 +602,7 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 - [x] Update `@liteai/ui` package.json exports
 - [x] Verify web app still works (re-export from new locations)
 
-### Phase 2 — ChatPane Extraction (in progress)
+### Phase 2 — ChatPane Extraction ✅ Complete
 
 **Context & utility migration: ✅ Complete**
 - [x] Move utility: `project-id.ts` → `ui/panes/shared/`
@@ -612,15 +627,23 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 - [x] Verify: `bun run build` passes (web)
 - [x] Verify: `bun test` passes (291/291 tests, 0 failures)
 
-**Component extraction: pending**
-- [ ] Move `PromptInput` component tree to `ui/panes/chat/`
-- [ ] Move `MessageTimeline` to `ui/panes/chat/`
-- [ ] Move `ModelSelector`, `NewSessionView` to `ui/panes/chat/`
-- [ ] Create `ChatPane` wrapper component
-- [ ] Refactor `web/src/pages/session.tsx` to use `ChatPane`
-- [ ] Verify web app is fully functional with extracted Panes
+**Component extraction: ✅ Complete**
 
-### Phase 3 — VSCode Extension (Week 3-4)
+> **Strategy shift:** Instead of extracting the massive web PromptInput (1559 lines, deep web deps),
+> created purpose-built simpler components for VSCode/panes. Web's PromptInput stays untouched.
+
+- [x] Move portable prompt-input sub-modules to `ui/panes/chat/prompt-input/` (10 files)
+- [x] Move shared types: `SelectedLineRange`, `selectionFromLines` → `ui/panes/shared/file-types.ts`
+- [x] Move shared utility: `uuid` → `ui/panes/shared/uuid.ts`
+- [x] Create `ChatPromptInput` — streamlined prompt editor (~730 lines, no web deps)
+- [x] Create `ChatModelSelector` — portable model picker with `onManageModels`/`onConnectProvider` callbacks
+- [x] Create `ChatNewSession` — empty-state view for new sessions
+- [x] Create `ChatPane` — top-level wrapper composing MessageTimeline + ChatPromptInput
+- [x] Update barrel exports (`ui/panes/chat/index.ts`, `ui/panes/index.ts`)
+- [x] Verify: `bun typecheck` passes (ui, web)
+- [ ] Refactor `web/src/pages/session.tsx` to consume `ChatPane` (optional — web can continue using its own components)
+
+### Phase 3 — VSCode Extension
 
 - [ ] Create `ServerManager` (spawn, health check, restart, shutdown)
 - [ ] Add `--csrf-token` flag to `liteai-core` server + middleware
@@ -636,7 +659,7 @@ Each VSIX is ~60MB (dominated by the Bun executable).
 - [ ] Test: remote server topology
 - [ ] Test: Remote SSH topology
 
-### Phase 4 — Polish & Future Panes (Week 5+)
+### Phase 4 — Polish & Future Panes
 
 - [ ] Persistent server option (keep running after VSCode closes)
 - [ ] TracePane extraction

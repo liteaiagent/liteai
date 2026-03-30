@@ -6,12 +6,18 @@
 > **Approach:** Refactor in-place (still in `@liteai/web`), verify nothing breaks,
 > *then* move the portable pieces to ui/panes in a separate step.
 
-**Current Status:** All three refactoring phases are complete.
+**Current Status:** All three refactoring phases are complete. Phase 2 (Component Extraction) also complete.
 - `createSessionHistoryWindow` extracted from `session.tsx` (-427 lines).
 - `createTimelineStaging` extracted from `message-timeline.tsx` (-95 lines).
 - `MessageTimeline` parameterized to remove router dependencies (now 100% portable contexts).
 - `PromptInput` abstracted: `useCommand`, `useComments`, `useFile`, `useSessionLayout` → optional props.
 - **Phase C complete:** Portable pieces moved to `@liteai/ui/panes/chat/`. Web re-export stubs in place.
+- **Phase 2 (Component Extraction) complete:** Purpose-built components created in `@liteai/ui/panes/chat/`:
+  - `ChatPane` — top-level chat wrapper composing MessageTimeline + ChatPromptInput
+  - `ChatPromptInput` — streamlined prompt editor (~730 lines, no web deps)
+  - `ChatModelSelector` — portable model picker with callback props for dialog actions
+  - `ChatNewSession` — empty-state view for new sessions
+  - `prompt-input/` sub-modules — 10 portable modules (history, editor-dom, attachments, etc.) shared with web
 
 ---
 
