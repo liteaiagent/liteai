@@ -9,6 +9,29 @@ export class WebviewBridge {
     this.panel.webview.onDidReceiveMessage(this.onMessage.bind(this))
   }
 
+  /**
+   * Wait for the server URL to become available (handles race with
+   * serverManager.start() which runs in parallel with webview mount).
+   */
+  private async waitForUrl(timeoutMs = 5000): Promise<string> {
+    if (this.serverManager.url) return this.serverManager.url
+    const start = Date.now()
+    return new Promise((resolve, reject) => {
+      const check = () => {
+        if (this.serverManager.url) {
+          resolve(this.serverManager.url)
+          return
+        }
+        if (Date.now() - start > timeoutMs) {
+          reject(new Error("Server URL not available (timeout)"))
+          return
+        }
+        setTimeout(check, 50)
+      }
+      check()
+    })
+  }
+
   // biome-ignore lint/suspicious/noExplicitAny: VS Code webview messages are untyped
   async onMessage(msg: any) {
     if (msg.type === "vscode-command") {
@@ -26,10 +49,8 @@ export class WebviewBridge {
 
     if (msg.type === "fetch") {
       try {
-        if (!this.serverManager.url) {
-          throw new Error("Server URL not ready")
-        }
-        const url = new URL(msg.url, this.serverManager.url)
+        const baseUrl = await this.waitForUrl()
+        const url = new URL(msg.url, baseUrl)
         const headers = new Headers(msg.headers || {})
         if (this.serverManager.csrf) {
           headers.set("Authorization", `Bearer ${this.serverManager.csrf}`)
@@ -96,3 +117,4 @@ export class WebviewBridge {
     // any cleanup
   }
 }
+

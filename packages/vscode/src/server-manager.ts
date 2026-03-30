@@ -3,12 +3,15 @@ import * as crypto from "node:crypto"
 import * as path from "node:path"
 import * as vscode from "vscode"
 
+export type ServerMode = "dev" | "production" | "remote"
+
 export class ServerManager {
   private _url: string | null = null
   private _csrf: string | null = null
   private _process: ChildProcess | null = null
   private _readyListeners: Array<() => void> = []
   private _isReady = false
+  private _mode: ServerMode = "production"
 
   get url() {
     return this._url
@@ -16,15 +19,45 @@ export class ServerManager {
   get csrf() {
     return this._csrf
   }
+  get mode() {
+    return this._mode
+  }
 
+  /**
+   * Start or connect to the LiteAI server.
+   *
+   * Resolution order:
+   * 1. `LITEAI_DEV_SERVER_URL` env var → dev mode (connect to external dev server)
+   * 2. `liteai.server.url` VS Code setting → remote mode (connect to remote server)
+   * 3. Spawn bundled binary → production mode
+   */
   async start(context: vscode.ExtensionContext): Promise<string> {
     const config = vscode.workspace.getConfiguration("liteai.server")
-    const remoteUrl = process.env.LITEAI_DEV_SERVER_URL || config.get<string>("url")
+
+    // Priority 1: Dev server URL from environment (set in launch.json)
+    const devUrl = process.env.LITEAI_DEV_SERVER_URL
+    if (devUrl) {
+      this._mode = "dev"
+      this._url = devUrl
+      this._isReady = true
+      const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
+      outputChannel.appendLine(`[dev] Connecting to dev server: ${devUrl}`)
+      return devUrl
+    }
+
+    // Priority 2: Remote server URL from VS Code settings
+    const remoteUrl = config.get<string>("url")
     if (remoteUrl) {
+      this._mode = "remote"
       this._url = remoteUrl
       this._isReady = true
+      const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
+      outputChannel.appendLine(`[remote] Connecting to remote server: ${remoteUrl}`)
       return remoteUrl
     }
+
+    // Priority 3: Spawn bundled binary
+    this._mode = "production"
 
     if (this._process || this._url) {
       if (this._isReady && this._url) return this._url
@@ -47,7 +80,7 @@ export class ServerManager {
     const binPath = path.join(context.extensionPath, "bin", platformFolder, binName)
 
     const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
-    outputChannel.appendLine(`Spawning local server: ${binPath}`)
+    outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
 
     this._process = spawn(binPath, ["--port", "0", "--csrf-token", this._csrf], {
       env: { ...process.env },

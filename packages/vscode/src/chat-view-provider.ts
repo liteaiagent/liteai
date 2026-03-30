@@ -32,19 +32,42 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._context.extensionUri],
     }
 
-    try {
-      const url = await this._serverManager.start(this._context)
-      webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, url)
-      this._bridge = new WebviewBridge(webviewView, this._serverManager)
+    // Render the webview immediately — the SolidJS app defaults to
+    // http://127.0.0.1:9000 if no URL is injected, so the panel always
+    // mounts and shows the connection status indicator.
+    // If we already know the URL (e.g. dev mode env var), inject it now.
+    const devUrl = process.env.LITEAI_DEV_SERVER_URL
+    const configUrl = vscode.workspace.getConfiguration("liteai.server").get<string>("url")
+    const knownUrl = devUrl || configUrl || ""
 
-      webviewView.onDidDispose(() => {
-        this._bridge = undefined
-      })
-    } catch (e: any) {
-      vscode.window.showErrorMessage(`Failed to start server: ${e?.message}`)
-      webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, "")
-      this._bridge = new WebviewBridge(webviewView, this._serverManager)
-    }
+    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, knownUrl)
+    this._bridge = new WebviewBridge(webviewView, this._serverManager)
+
+    webviewView.onDidDispose(() => {
+      this._bridge = undefined
+    })
+
+    // Always start the server manager — even in dev/remote mode, this sets
+    // serverManager.url which the WebviewBridge needs to proxy fetch requests.
+    this._serverManager.start(this._context).then(
+      (url) => {
+        if (this._serverManager.mode === "dev") {
+          vscode.window.setStatusBarMessage(`LiteAI: Dev mode → ${url}`, 5000)
+        } else if (this._serverManager.mode === "remote") {
+          vscode.window.setStatusBarMessage(`LiteAI: Remote → ${url}`, 5000)
+        } else {
+          vscode.window.setStatusBarMessage(`LiteAI: Server started → ${url}`, 5000)
+          // For production, reload with the actual URL since we didn't know it upfront
+          if (this._view && !knownUrl) {
+            this._view.webview.html = this._getHtmlForWebview(this._view.webview, url)
+          }
+        }
+      },
+      (err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err)
+        vscode.window.showErrorMessage(`LiteAI: Failed to start server — ${message}`)
+      },
+    )
   }
 
   private _getHtmlForWebview(webview: vscode.Webview, serverUrl: string) {
@@ -55,20 +78,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       vscode.Uri.joinPath(this._context.extensionUri, "dist", "webview", "assets", "index.css"),
     )
 
+    // Build CSP connect-src to allow network requests to the server
+    const cspServerUrl = serverUrl || "http://127.0.0.1:* http://localhost:*"
+    const csp = [
+      `default-src 'none'`,
+      `style-src ${webview.cspSource} 'unsafe-inline'`,
+      `font-src ${webview.cspSource}`,
+      `img-src ${webview.cspSource} data: blob:`,
+      `script-src ${webview.cspSource} 'unsafe-inline'`,
+      `connect-src ${cspServerUrl} http://127.0.0.1:* http://localhost:*`,
+    ].join("; ")
+
+    // Inject the server URL. If empty, the webview entry.tsx will fall back to
+    // the default dev URL (http://127.0.0.1:9000).
+    const urlScript = serverUrl
+      ? `<script>window.LITEAI_SERVER_URL = "${serverUrl}"</script>`
+      : `<script>window.LITEAI_SERVER_URL = ""</script>`
+
     return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="${csp}">
     <title>LiteAI</title>
     <link href="${styleUri}" rel="stylesheet">
   </head>
   <body>
     <div id="root"></div>
-    <script>window.LITEAI_SERVER_URL = "${serverUrl}"</script>
-    <!-- We will use Vite out with specific hashes so we should adapt to dynamic inject or just generic names -->
+    ${urlScript}
     <script type="module" src="${scriptUri}"></script>
   </body>
 </html>`
   }
 }
+
+

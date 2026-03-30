@@ -10,11 +10,9 @@ import { getFilename } from "@liteai/util/path"
 import {
   createContext,
   getOwner,
-  Match,
   onCleanup,
   onMount,
   type ParentProps,
-  Switch,
   untrack,
   useContext,
 } from "solid-js"
@@ -398,11 +396,7 @@ const GlobalSyncContext = createContext<ReturnType<typeof createGlobalSync>>()
 export function GlobalSyncProvider(props: ParentProps) {
   const value = createGlobalSync()
   return (
-    <Switch>
-      <Match when={value.ready}>
-        <GlobalSyncContext.Provider value={value}>{props.children}</GlobalSyncContext.Provider>
-      </Match>
-    </Switch>
+    <GlobalSyncContext.Provider value={value}>{props.children}</GlobalSyncContext.Provider>
   )
 }
 

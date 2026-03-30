@@ -1,38 +1,100 @@
-import { ChatPane, PaneProviders, type PaneRoute, ServerConnection, SDKProvider, SyncProvider } from "@liteai/ui/panes"
-import { createSignal, ErrorBoundary } from "solid-js"
+import { ChatPane, PaneProviders, type PaneRoute, ServerConnection, useServer } from "@liteai/ui/panes"
+import { createSignal, ErrorBoundary, type ParentProps, Show } from "solid-js"
 import { render } from "solid-js/web"
 import { vscodePlatform } from "./vscode-platform"
 import "./vscode.css"
 import "@liteai/ui/styles"
 
+const DEFAULT_SERVER_URL = "http://127.0.0.1:9000"
+const LOG_PREFIX = "[liteai-webview]"
+
+function log(...args: unknown[]) {
+  console.log(LOG_PREFIX, ...args)
+}
+
+function logError(...args: unknown[]) {
+  console.error(LOG_PREFIX, ...args)
+}
+
+/** Connection status dot shown in the panel header */
+function ConnectionStatus() {
+  const server = useServer()
+
+  return (
+    <div class="connection-status" title={`Server: ${server.name || server.key}`}>
+      <div
+        classList={{
+          "status-dot": true,
+          "status-connected": server.healthy() === true,
+          "status-disconnected": server.healthy() === false,
+          "status-unknown": server.healthy() === undefined,
+        }}
+      />
+      <span class="status-label">
+        {server.healthy() === true ? "Connected" : server.healthy() === false ? "Disconnected" : "Connecting..."}
+      </span>
+    </div>
+  )
+}
+
+/** Wrapper that shows a header bar with connection status */
+function PanelLayout(props: ParentProps) {
+  return (
+    <div class="panel-root">
+      <div class="panel-header">
+        <ConnectionStatus />
+      </div>
+      <div class="panel-body">
+        {props.children}
+      </div>
+    </div>
+  )
+}
+
 function App() {
-  const [route, setRoute] = createSignal<PaneRoute>({})
+  const [route, _setRoute] = createSignal<PaneRoute>({})
   
   // url injected synchronously from the host via <script> tag
   const injectedUrl = (window as any).LITEAI_SERVER_URL
-  const serverUrl = injectedUrl || "http://127.0.0.1:0" // safe dummy URL for disconnected state
+  const serverUrl = injectedUrl || DEFAULT_SERVER_URL
+
+  log("App initializing", {
+    injectedUrl,
+    serverUrl,
+    hasWindow: typeof window !== "undefined",
+    documentReady: document.readyState,
+  })
 
   return (
-    <ErrorBoundary fallback={(err) => <div class="bg-red-950 text-red-400 p-6 h-screen font-mono text-sm whitespace-pre-wrap overflow-auto">Fatal Crash:\n\n{err.stack || err.toString()}</div>}>
+    <ErrorBoundary fallback={(err) => {
+      logError("ErrorBoundary caught:", err)
+      return (
+        <div class="error-screen">
+          <div class="error-title">LiteAI Error</div>
+          <pre class="error-body">{err.stack || err.toString()}</pre>
+        </div>
+      )
+    }}>
       <PaneProviders 
         platform={vscodePlatform} 
         route={route} 
         server={ServerConnection.Key.make(serverUrl)}
         servers={[{ type: "http", http: { url: serverUrl } }]}
       >
-        <SDKProvider projectID={() => route()?.projectID || ""} directory={() => route()?.projectID || ""}>
-          <SyncProvider>
-            <div class="h-screen w-full bg-app text-app overscroll-none">
-              <ChatPane handler={{ submit: () => {}, abort: () => {} }} />
-            </div>
-          </SyncProvider>
-        </SDKProvider>
+        <PanelLayout>
+          <ChatPane handler={{ submit: () => {}, abort: () => {} }} />
+        </PanelLayout>
       </PaneProviders>
     </ErrorBoundary>
   )
 }
 
+log("Module loaded, mounting app")
 const root = document.getElementById("root")
 if (root) {
+  log("Root element found, rendering")
   render(() => <App />, root)
+  log("render() called")
+} else {
+  logError("Root element #root not found!")
 }

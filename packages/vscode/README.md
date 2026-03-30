@@ -18,8 +18,42 @@ bun install
 
 ### Running in Dev Mode
 
+The extension supports three server connection modes:
+
+#### 1. Dev Mode (recommended for development)
+
+Connect to a separately running `liteai-core` dev server. This is the fastest workflow for iterating on both the extension and the core server.
+
+**Step 1**: Start the core dev server in a separate terminal:
+```bash
+cd packages/core
+bun dev
+# Server starts on http://127.0.0.1:9000
+```
+
+**Step 2**: Open the `packages/vscode` directory in VS Code and press **`F5`** to launch the Extension Development Host. The `launch.json` is pre-configured with `LITEAI_DEV_SERVER_URL=http://127.0.0.1:9000`.
+
+The extension will connect to the external dev server instead of spawning its own binary.
+
+#### 2. Remote Mode
+
+Set the `liteai.server.url` VS Code setting to connect to a remote server:
+
+```json
+{
+  "liteai.server.url": "http://your-server:9000"
+}
+```
+
+#### 3. Production Mode (default)
+
+If no dev URL or remote URL is configured, the extension spawns the bundled `liteai-core` binary from `bin/<platform>-<arch>/`.
+
+### F5 Development Workflow
+
 1. Open the workspace (`liteai.code-workspace`) or the `packages/vscode` directory in VS Code.
-2. Press **`F5`** to launch the Extension Development Host window. This will automatically run `--watch` builds for both the webview and the extension host in the background.
+2. Start the core server: `cd packages/core && bun dev`
+3. Press **`F5`** to launch the Extension Development Host window. This will automatically run `--watch` builds for both the webview and the extension host in the background.
 
 > **Tip**: If you make changes to the Webview UI, right-click inside the Webview in the debug window and select **Reload Webview** to see changes without restarting the extension host. For Extension Host changes, use `Cmd+Shift+P` -> **Developer: Reload Window**.
 

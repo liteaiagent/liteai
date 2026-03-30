@@ -1,6 +1,6 @@
 import type { Event } from "@liteai/sdk/client"
 import { createGlobalEmitter } from "@solid-primitives/event-bus"
-import { batch, onCleanup } from "solid-js"
+import { batch, createEffect, createMemo, on, onCleanup } from "solid-js"
 import z from "zod"
 import { createSimpleContext } from "../../context"
 import { usePlatform } from "./platform"
@@ -13,30 +13,12 @@ const abortError = z.object({
 
 export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleContext({
   name: "GlobalSDK",
+  gate: false,
   init: () => {
     const server = useServer()
     const platform = usePlatform()
     const abort = new AbortController()
 
-    const eventFetch = (() => {
-      if (!platform.fetch || !server.current) return
-      try {
-        const url = new URL(server.current.http.url)
-        const loopback = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1"
-        if (url.protocol === "http:" && !loopback) return platform.fetch
-      } catch {
-        return
-      }
-    })()
-
-    const currentServer = server.current
-    if (!currentServer) throw new Error("No server available")
-
-    const eventSdk = createSdkForServer({
-      signal: abort.signal,
-      fetch: eventFetch,
-      server: currentServer.http,
-    })
     const emitter = createGlobalEmitter<{
       [key: string]: Event
     }>()
@@ -100,7 +82,7 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
 
     let streamErrorLogged = false
     let hasConnected = false
-    const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+    const waitMs = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
     const aborted = (error: unknown) => abortError.safeParse(error).success
 
     let attempt: AbortController | undefined
@@ -120,76 +102,124 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
       heartbeat = undefined
     }
 
-    void (async () => {
-      while (!abort.signal.aborted) {
-        attempt = new AbortController()
-        lastEventAt = Date.now()
-        const onAbort = () => {
-          attempt?.abort()
-        }
-        abort.signal.addEventListener("abort", onAbort)
-        try {
-          const events = await eventSdk.event.subscribe({
-            signal: attempt.signal,
-            onSseError: (error) => {
-              if (aborted(error)) return
-              if (!hasConnected) return
-              if (streamErrorLogged) return
-              streamErrorLogged = true
-              console.error("[global-sdk] event stream error", {
-                url: currentServer.http.url,
-                fetch: eventFetch ? "platform" : "webview",
-                error,
-              })
-            },
-          })
-          let yielded = Date.now()
-          resetHeartbeat()
-          for await (const event of events.stream) {
-            resetHeartbeat()
-            hasConnected = true
-            streamErrorLogged = false
-            const directory = event.directory ?? "global"
-            const payload = event.payload
-            const k = key(directory, payload)
-            if (k) {
-              const i = coalesced.get(k)
-              if (i !== undefined) {
-                queue[i] = { directory, payload }
-                if (payload.type === "message.part.updated") {
-                  const part = payload.properties.part
-                  staleDeltas.add(deltaKey(directory, part.messageID, part.id))
-                }
-                continue
-              }
-              coalesced.set(k, queue.length)
+    // Reactive: start/stop SSE loop when server becomes available/unavailable
+    let sseAbort: AbortController | undefined
+    createEffect(
+      on(
+        () => server.current,
+        (currentServer) => {
+          // Tear down previous SSE loop if server changed
+          sseAbort?.abort()
+          if (!currentServer) return
+
+          const eventFetch = (() => {
+            if (!platform.fetch) return
+            try {
+              const url = new URL(currentServer.http.url)
+              const loopback =
+                url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1"
+              if (url.protocol === "http:" && !loopback) return platform.fetch
+            } catch {
+              return
             }
-            queue.push({ directory, payload })
-            schedule()
+          })()
 
-            if (Date.now() - yielded < STREAM_YIELD_MS) continue
-            yielded = Date.now()
-            await wait(0)
-          }
-        } catch (error) {
-          if (!aborted(error) && hasConnected && !streamErrorLogged) {
-            streamErrorLogged = true
-            console.error("[global-sdk] event stream failed", {
-              url: currentServer.http.url,
-              fetch: eventFetch ? "platform" : "webview",
-              error,
-            })
-          }
-        } finally {
-          abort.signal.removeEventListener("abort", onAbort)
-          attempt = undefined
-          clearHeartbeat()
-        }
+          const eventSdk = createSdkForServer({
+            signal: abort.signal,
+            fetch: eventFetch,
+            server: currentServer.http,
+          })
 
-        if (abort.signal.aborted) return
-        await wait(RECONNECT_DELAY_MS)
-      }
-    })().finally(flush)
+          const loopAbort = new AbortController()
+          sseAbort = loopAbort
+
+          const combined = new AbortController()
+          const onOuterAbort = () => combined.abort()
+          const onLoopAbort = () => combined.abort()
+          abort.signal.addEventListener("abort", onOuterAbort)
+          loopAbort.signal.addEventListener("abort", onLoopAbort)
+
+          void (async () => {
+            while (!combined.signal.aborted) {
+              attempt = new AbortController()
+              lastEventAt = Date.now()
+              const onCombinedAbort = () => {
+                attempt?.abort()
+              }
+              combined.signal.addEventListener("abort", onCombinedAbort)
+              try {
+                const events = await eventSdk.event.subscribe({
+                  signal: attempt.signal,
+                  onSseError: (error: unknown) => {
+                    if (aborted(error)) return
+                    if (!hasConnected) return
+                    if (streamErrorLogged) return
+                    streamErrorLogged = true
+                    console.error("[global-sdk] event stream error", {
+                      url: currentServer.http.url,
+                      fetch: eventFetch ? "platform" : "webview",
+                      error,
+                    })
+                  },
+                })
+                let yielded = Date.now()
+                resetHeartbeat()
+                for await (const event of events.stream) {
+                  resetHeartbeat()
+                  hasConnected = true
+                  streamErrorLogged = false
+                  const directory = event.directory ?? "global"
+                  const payload = event.payload
+                  const k = key(directory, payload)
+                  if (k) {
+                    const i = coalesced.get(k)
+                    if (i !== undefined) {
+                      queue[i] = { directory, payload }
+                      if (payload.type === "message.part.updated") {
+                        const part = payload.properties.part
+                        staleDeltas.add(deltaKey(directory, part.messageID, part.id))
+                      }
+                      continue
+                    }
+                    coalesced.set(k, queue.length)
+                  }
+                  queue.push({ directory, payload })
+                  schedule()
+
+                  if (Date.now() - yielded < STREAM_YIELD_MS) continue
+                  yielded = Date.now()
+                  await waitMs(0)
+                }
+              } catch (error) {
+                if (!aborted(error) && hasConnected && !streamErrorLogged) {
+                  streamErrorLogged = true
+                  console.error("[global-sdk] event stream failed", {
+                    url: currentServer.http.url,
+                    fetch: eventFetch ? "platform" : "webview",
+                    error,
+                  })
+                }
+              } finally {
+                combined.signal.removeEventListener("abort", onCombinedAbort)
+                attempt = undefined
+                clearHeartbeat()
+              }
+
+              if (combined.signal.aborted) return
+              await waitMs(RECONNECT_DELAY_MS)
+            }
+          })().finally(() => {
+            abort.signal.removeEventListener("abort", onOuterAbort)
+            loopAbort.signal.removeEventListener("abort", onLoopAbort)
+            flush()
+          })
+
+          onCleanup(() => {
+            loopAbort.abort()
+          })
+        },
+      ),
+    )
 
     const onVisibility = () => {
       if (typeof document === "undefined") return
@@ -205,19 +235,35 @@ export const { use: useGlobalSDK, provider: GlobalSDKProvider } = createSimpleCo
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", onVisibility)
       }
+      sseAbort?.abort()
       abort.abort()
       flush()
     })
 
-    const sdk = createSdkForServer({
-      server: server.current?.http,
-      fetch: platform.fetch,
-      throwOnError: true,
+    const url = createMemo(() => server.current?.http.url ?? "")
+
+    const sdk = createMemo(() => {
+      const s = server.current
+      if (!s) return undefined
+      return createSdkForServer({
+        server: s.http,
+        fetch: platform.fetch,
+        throwOnError: true,
+      })
     })
 
     return {
-      url: currentServer.http.url,
-      client: sdk,
+      get url() {
+        return url()
+      },
+      get client() {
+        const s = sdk()
+        if (!s) throw new Error("Server not available")
+        return s
+      },
+      get connected() {
+        return !!server.current
+      },
       event: emitter,
       createClient(opts: Omit<Parameters<typeof createSdkForServer>[0], "server" | "fetch">) {
         const s = server.current

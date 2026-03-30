@@ -336,7 +336,11 @@ export function PaneProviders(props: ParentProps & {
   server: ServerConnection.Key
   servers?: Array<ServerConnection.Any>
   dictionaries?: Record<Locale, Record<string, unknown>>
+  directory?: Accessor<string>
 }) {
+  const projectID = createMemo(() => props.route()?.projectID ?? "")
+  const directory = createMemo(() => props.directory ? props.directory() : projectID())
+
   return (
     <PlatformProvider value={props.platform}>
       <ServerProvider defaultServer={props.server} servers={props.servers}>
@@ -345,13 +349,17 @@ export function PaneProviders(props: ParentProps & {
             <SettingsProvider>
               <PaneRouteProvider route={props.route}>
                 <GlobalSyncProvider>
-                  <ModelsProvider>
-                    <PromptProvider>
-                      <PermissionProvider>
-                        <LocalProvider>{props.children}</LocalProvider>
-                      </PermissionProvider>
-                    </PromptProvider>
-                  </ModelsProvider>
+                  <SDKProvider projectID={projectID} directory={directory}>
+                    <SyncProvider>
+                      <ModelsProvider>
+                        <PromptProvider>
+                          <PermissionProvider>
+                            <LocalProvider>{props.children}</LocalProvider>
+                          </PermissionProvider>
+                        </PromptProvider>
+                      </ModelsProvider>
+                    </SyncProvider>
+                  </SDKProvider>
                 </GlobalSyncProvider>
               </PaneRouteProvider>
             </SettingsProvider>
