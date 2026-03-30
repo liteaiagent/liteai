@@ -13,11 +13,10 @@ import { type Component, createEffect, createMemo, createSignal, Match, on, onCl
 import { createStore } from "solid-js/store"
 import { ModelSelectorPopover } from "@/components/dialog-select-model"
 import { DialogSelectModelUnpaid } from "@/components/dialog-select-model-unpaid"
-import { useCommand } from "@/context/command"
-import { useComments } from "@/context/comments"
-import { type SelectedLineRange, selectionFromLines, useFile } from "@/context/file"
+import type { CommandOption } from "@/context/command"
+import type { LineComment } from "@/context/comments"
+import { type SelectedLineRange, selectionFromLines } from "@/context/file"
 import { useLanguage } from "@/context/language"
-import { useLayout } from "@/context/layout"
 import { useLocal } from "@/context/local"
 import { usePermission } from "@/context/permission"
 import { usePlatform } from "@/context/platform"
@@ -34,8 +33,6 @@ import {
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { useProviders } from "@/hooks/use-providers"
-import { createSessionTabs } from "@/pages/session/helpers"
-import { useSessionLayout } from "@/pages/session/session-layout"
 import { Persist, persisted } from "@/utils/persist"
 import { createPromptAttachments } from "./prompt-input/attachments"
 import { PromptContextItems } from "./prompt-input/context-items"
@@ -56,6 +53,37 @@ import { promptPlaceholder } from "./prompt-input/placeholder"
 import { type AtOption, PromptPopover, type SlashCommand } from "./prompt-input/slash-popover"
 import { createPromptSubmit, type FollowupDraft } from "./prompt-input/submit"
 
+type CommentFocus = { file: string; id: string }
+
+/**
+ * Command palette integration (web-only).
+ * When omitted, no commands are registered and keybind tooltips show nothing.
+ * Structurally compatible with the return type of useCommand().
+ */
+export interface PromptCommands {
+  register: {
+    (cb: () => CommandOption[]): void
+    (key: string, cb: () => CommandOption[]): void
+  }
+  keybind: (id: string) => string
+  trigger: (id: string, source?: "palette" | "keybind" | "slash") => void
+  options: CommandOption[]
+}
+
+/**
+ * Comment system integration (web-only).
+ * When omitted, comment history and navigation features are disabled.
+ */
+export interface PromptCommentActions {
+  all: () => LineComment[]
+  replace: (items: LineComment[]) => void
+  setActive: (focus: CommentFocus | null) => void
+  setFocus: (focus: CommentFocus) => void
+  focus: () => CommentFocus | null
+  active: () => CommentFocus | null
+  remove: (file: string, id: string) => void
+}
+
 interface PromptInputProps {
   class?: string
   ref?: (el: HTMLDivElement) => void
@@ -67,6 +95,29 @@ interface PromptInputProps {
   onQueue?: (draft: FollowupDraft) => void
   onAbort?: () => void
   onSubmit?: () => void
+
+  // === Abstracted web-specific dependencies (Phase B) ===
+
+  /** Session ID from router params. Required for session-aware features. */
+  sessionID?: string
+
+  /** Command palette integration. When omitted, keybinds show nothing and no commands are registered. */
+  commands?: PromptCommands
+
+  /** Comment system. When omitted, comment history/navigation is disabled. */
+  commentActions?: PromptCommentActions
+
+  /** Search files/directories for @ mention popover. When omitted, only agents appear. */
+  searchFiles?: (query: string) => Promise<string[]>
+
+  /** Recent file paths for @ mention priority ordering. */
+  recentFiles?: () => string[]
+
+  /** Callback when user clicks on a context item's comment. Web-specific navigation. */
+  onOpenComment?: (item: { path: string; commentID?: string; commentOrigin?: "review" | "file" }) => void
+
+  /** Diffs in current session, used to determine if a context item comment remove also
+   *  needs to remove from the comment store. Not needed if commentActions is omitted. */
 }
 
 const EXAMPLES = [
@@ -99,21 +150,18 @@ const EXAMPLES = [
 
 const NON_EMPTY_TEXT = /[^\s\u200B]/
 
+const NO_OP_KEYBIND = () => ""
+
 export const PromptInput: Component<PromptInputProps> = (props) => {
   const sdk = useSDK()
   const sync = useSync()
   const local = useLocal()
-  const files = useFile()
   const prompt = usePrompt()
-  const layout = useLayout()
-  const comments = useComments()
   const dialog = useDialog()
   const providers = useProviders()
-  const command = useCommand()
   const permission = usePermission()
   const language = useLanguage()
   const _platform = usePlatform()
-  const { params, tabs, view } = useSessionLayout()
   let editorRef!: HTMLDivElement
   let fileInputRef: HTMLInputElement | undefined
   let scrollRef!: HTMLDivElement
@@ -122,6 +170,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const mirror = { input: false }
   const inset = 56
   const space = `${inset}px`
+
+  const keybind = createMemo(() => props.commands?.keybind ?? NO_OP_KEYBIND)
 
   const scrollCursorIntoView = () => {
     const container = scrollRef
@@ -163,82 +213,17 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     })
   }
 
-  const activeFileTab = createSessionTabs({
-    tabs,
-    pathFromTab: files.pathFromTab,
-    normalizeTab: (tab) => (tab.startsWith("file://") ? files.tab(tab) : tab),
-  }).activeFileTab
+  const recent = createMemo(() => props.recentFiles?.() ?? [])
 
-  const commentInReview = (path: string) => {
-    const sessionID = params.id
-    if (!sessionID) return false
+  const sessionID = () => props.sessionID
 
-    const diffs = sync.data.session_diff[sessionID]
-    if (!diffs) return false
-    return diffs.some((diff) => diff.file === path)
-  }
-
-  const openComment = (item: { path: string; commentID?: string; commentOrigin?: "review" | "file" }) => {
-    if (!item.commentID) return
-
-    const focus = { file: item.path, id: item.commentID }
-    comments.setActive(focus)
-
-    const queueCommentFocus = (attempts = 6) => {
-      const schedule = (left: number) => {
-        requestAnimationFrame(() => {
-          comments.setFocus({ ...focus })
-          if (left <= 0) return
-          requestAnimationFrame(() => {
-            const current = comments.focus()
-            if (!current) return
-            if (current.file !== focus.file || current.id !== focus.id) return
-            schedule(left - 1)
-          })
-        })
-      }
-
-      schedule(attempts)
-    }
-
-    const wantsReview = item.commentOrigin === "review" || (item.commentOrigin !== "file" && commentInReview(item.path))
-    if (wantsReview) {
-      if (!view().reviewPanel.opened()) view().reviewPanel.open()
-      layout.fileTree.setTab("changes")
-      tabs().setActive("review")
-      queueCommentFocus()
-      return
-    }
-
-    if (!view().reviewPanel.opened()) view().reviewPanel.open()
-    layout.fileTree.setTab("all")
-    const tab = files.tab(item.path)
-    tabs().open(tab)
-    tabs().setActive(tab)
-    Promise.resolve(files.load(item.path)).finally(() => queueCommentFocus())
-  }
-
-  const recent = createMemo(() => {
-    const all = tabs().all()
-    const active = activeFileTab()
-    const order = active ? [active, ...all.filter((x) => x !== active)] : all
-    const seen = new Set<string>()
-    const paths: string[] = []
-
-    for (const tab of order) {
-      const path = files.pathFromTab(tab)
-      if (!path) continue
-      if (seen.has(path)) continue
-      seen.add(path)
-      paths.push(path)
-    }
-
-    return paths
+  const info = createMemo(() => {
+    const id = sessionID()
+    return id ? sync.session.get(id) : undefined
   })
-  const info = createMemo(() => (params.id ? sync.session.get(params.id) : undefined))
   const status = createMemo(
     () =>
-      sync.data.session_status[params.id ?? ""] ?? {
+      sync.data.session_status[sessionID() ?? ""] ?? {
         type: "idle",
       },
   )
@@ -288,9 +273,9 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   })
 
   const hasUserPrompt = createMemo(() => {
-    const sessionID = params.id
-    if (!sessionID) return false
-    const messages = sync.data.message[sessionID]
+    const id = sessionID()
+    if (!id) return false
+    const messages = sync.data.message[id]
     if (!messages) return false
     return messages.some((m) => m.role === "user")
   })
@@ -325,7 +310,10 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   )
 
   const historyComments = () => {
-    const byID = new Map(comments.all().map((item) => [`${item.file}\n${item.id}`, item] as const))
+    const commentActions = props.commentActions
+    const byID = commentActions
+      ? new Map(commentActions.all().map((item) => [`${item.file}\n${item.id}`, item] as const))
+      : new Map<string, LineComment>()
     return prompt.context.items().flatMap((item) => {
       if (item.type !== "file") return []
       const comment = item.comment?.trim()
@@ -357,7 +345,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   }
 
   const applyHistoryComments = (items: PromptHistoryComment[]) => {
-    comments.replace(
+    props.commentActions?.replace(
       items.map((item) => ({
         id: item.id,
         file: item.path,
@@ -421,32 +409,36 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   const shellModeKey = "mod+shift+x"
   const normalModeKey = "mod+shift+e"
 
-  command.register("prompt-input", () => [
-    {
-      id: "file.attach",
-      title: language.t("prompt.action.attachFile"),
-      category: language.t("command.category.file"),
-      keybind: "mod+u",
-      disabled: store.mode !== "normal",
-      onSelect: pick,
-    },
-    {
-      id: "prompt.mode.shell",
-      title: language.t("command.prompt.mode.shell"),
-      category: language.t("command.category.session"),
-      keybind: shellModeKey,
-      disabled: store.mode === "shell",
-      onSelect: () => setMode("shell"),
-    },
-    {
-      id: "prompt.mode.normal",
-      title: language.t("command.prompt.mode.normal"),
-      category: language.t("command.category.session"),
-      keybind: normalModeKey,
-      disabled: store.mode === "normal",
-      onSelect: () => setMode("normal"),
-    },
-  ])
+  // Register commands when command palette integration is available
+  if (props.commands) {
+    const commands = props.commands
+    commands.register("prompt-input", () => [
+      {
+        id: "file.attach",
+        title: language.t("prompt.action.attachFile"),
+        category: language.t("command.category.file"),
+        keybind: "mod+u",
+        disabled: store.mode !== "normal",
+        onSelect: pick,
+      },
+      {
+        id: "prompt.mode.shell",
+        title: language.t("command.prompt.mode.shell"),
+        category: language.t("command.category.session"),
+        keybind: shellModeKey,
+        disabled: store.mode === "shell",
+        onSelect: () => setMode("shell"),
+      },
+      {
+        id: "prompt.mode.normal",
+        title: language.t("command.prompt.mode.normal"),
+        category: language.t("command.category.session"),
+        keybind: normalModeKey,
+        disabled: store.mode === "normal",
+        onSelect: () => setMode("normal"),
+      },
+    ])
+  }
 
   const closePopover = () => setStore("popover", null)
 
@@ -490,8 +482,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   }
 
   createEffect(() => {
-    params.id
-    if (params.id) return
+    sessionID()
+    if (sessionID()) return
     if (!suggest()) return
     const interval = setInterval(() => {
       setStore("placeholder", (prev) => (prev + 1) % EXAMPLES.length)
@@ -552,7 +544,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
       const open = recent()
       const seen = new Set(open)
       const pinned: AtOption[] = open.map((path) => ({ type: "file", path, display: path, recent: true }))
-      const paths = await files.searchFilesAndDirectories(query)
+      const paths = props.searchFiles ? await props.searchFiles(query) : []
       const fileOptions: AtOption[] = paths
         .filter((path: string) => !seen.has(path))
         .map((path: string) => ({ type: "file", path, display: path }))
@@ -577,7 +569,8 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
   })
 
   const slashCommands = createMemo<SlashCommand[]>(() => {
-    const builtin = command.options
+    const commandOptions = props.commands?.options ?? []
+    const builtin = commandOptions
       .filter((opt) => !opt.disabled && !opt.id.startsWith("suggested.") && opt.slash)
       .map((opt) => ({
         id: opt.id,
@@ -614,7 +607,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
     clearEditor()
     prompt.set([{ type: "text", content: "", start: 0, end: 0 }], 0)
-    command.trigger(cmd.id, "slash")
+    props.commands?.trigger(cmd.id, "slash")
   }
 
   const {
@@ -1021,7 +1014,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
 
   const variants = createMemo(() => ["default", ...local.model.variant.list()])
   const accepting = createMemo(() => {
-    const id = params.id
+    const id = sessionID()
     if (!id) return permission.isAutoAcceptingDirectory(sdk.directory)
     return permission.isAutoAccepting(id, sdk.directory)
   })
@@ -1029,12 +1022,13 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     language.t(accepting() ? "command.permissions.autoaccept.disable" : "command.permissions.autoaccept.enable"),
   )
   const toggleAccept = () => {
-    if (!params.id) {
+    const id = sessionID()
+    if (!id) {
       permission.toggleAutoAcceptDirectory(sdk.directory)
       return
     }
 
-    permission.toggleAutoAccept(params.id, sdk.directory)
+    permission.toggleAutoAccept(id, sdk.directory)
   }
 
   const { abort, handleSubmit } = createPromptSubmit({
@@ -1216,7 +1210,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         slashActive={slashActive() ?? undefined}
         setSlashActive={setSlashActive}
         onSlashSelect={handleSlashSelect}
-        commandKeybind={command.keybind}
+        commandKeybind={keybind()}
         t={(key) => language.t(key as Parameters<typeof language.t>[0])}
       />
       <DockShellForm
@@ -1235,12 +1229,18 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
         <PromptContextItems
           items={contextItems()}
           active={(item) => {
-            const active = comments.active()
+            const active = props.commentActions?.active()
             return !!item.commentID && item.commentID === active?.id && item.path === active?.file
           }}
-          openComment={openComment}
+          openComment={(item) => {
+            props.onOpenComment?.({
+              path: item.path,
+              commentID: item.commentID,
+              commentOrigin: item.commentOrigin,
+            })
+          }}
           remove={(item) => {
-            if (item.commentID) comments.remove(item.path, item.commentID)
+            if (item.commentID) props.commentActions?.remove(item.path, item.commentID)
             prompt.context.remove(item.key)
           }}
           t={(key) => language.t(key as Parameters<typeof language.t>[0])}
@@ -1384,7 +1384,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               <TooltipKeybind
                 placement="top"
                 title={language.t("prompt.action.attachFile")}
-                keybind={command.keybind("file.attach")}
+                keybind={keybind()("file.attach")}
               >
                 <Button
                   data-action="prompt-attach"
@@ -1424,7 +1424,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                     placement="top"
                     gutter={4}
                     title={language.t("command.agent.cycle")}
-                    keybind={command.keybind("agent.cycle")}
+                    keybind={keybind()("agent.cycle")}
                   >
                     <Select
                       size="normal"
@@ -1447,7 +1447,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                         placement="top"
                         gutter={4}
                         title={language.t("command.model.choose")}
-                        keybind={command.keybind("model.choose")}
+                        keybind={keybind()("model.choose")}
                       >
                         <Button
                           data-action="prompt-model"
@@ -1477,7 +1477,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                       placement="top"
                       gutter={4}
                       title={language.t("command.model.choose")}
-                      keybind={command.keybind("model.choose")}
+                      keybind={keybind()("model.choose")}
                     >
                       <ModelSelectorPopover
                         model={local.model}
@@ -1510,7 +1510,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                     placement="top"
                     gutter={4}
                     title={language.t("command.model.variant.cycle")}
-                    keybind={command.keybind("model.variant.cycle")}
+                    keybind={keybind()("model.variant.cycle")}
                   >
                     <Select
                       size="normal"
@@ -1530,7 +1530,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
                   placement="top"
                   gutter={8}
                   title={acceptLabel()}
-                  keybind={command.keybind("permissions.autoaccept")}
+                  keybind={keybind()("permissions.autoaccept")}
                 >
                   <Button
                     data-action="prompt-permissions"

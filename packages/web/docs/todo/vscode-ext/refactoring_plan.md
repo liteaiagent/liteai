@@ -327,9 +327,9 @@ After each: `bun typecheck && bun run build && bun test`
 These change component APIs but don't move files:
 
 7. ✅ **MessageTimeline:** Replace `useNavigate`/`useSessionKey` with props
-8. ⏳ **PromptInput:** Abstract `useCommand` to optional prop
-9. ⏳ **PromptInput:** Abstract `useComments`/`useFile` to optional props  
-10. ⏳ **PromptInput:** Abstract `useSessionLayout` to props
+8. ✅ **PromptInput:** Abstract `useCommand` to optional prop
+9. ✅ **PromptInput:** Abstract `useComments`/`useFile` to optional props  
+10. ✅ **PromptInput:** Abstract `useSessionLayout` to props
 
 After each: `bun typecheck && bun run build && bun test`
 

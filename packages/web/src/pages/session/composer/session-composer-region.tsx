@@ -3,8 +3,14 @@ import { createEffect, createMemo, onCleanup, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { PromptInput } from "@/components/prompt-input"
 import type { FollowupDraft } from "@/components/prompt-input/submit"
+import { useCommand } from "@/context/command"
+import { useComments } from "@/context/comments"
+import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
+import { useLayout } from "@/context/layout"
 import { usePrompt } from "@/context/prompt"
+import { useSync } from "@/context/sync"
+import { createSessionTabs } from "@/pages/session/helpers"
 import type { SessionComposerState } from "@/pages/session/composer/session-composer-state"
 import { SessionFollowupDock } from "@/pages/session/composer/session-followup-dock"
 import { SessionPermissionDock } from "@/pages/session/composer/session-permission-dock"
@@ -12,7 +18,7 @@ import { SessionQuestionDock } from "@/pages/session/composer/session-question-d
 import { SessionRevertDock } from "@/pages/session/composer/session-revert-dock"
 import { SessionTodoDock } from "@/pages/session/composer/session-todo-dock"
 import { getSessionHandoff, setSessionHandoff } from "@/pages/session/handoff"
-import { useSessionKey } from "@/pages/session/session-layout"
+import { useSessionKey, useSessionLayout } from "@/pages/session/session-layout"
 
 export function SessionComposerRegion(props: {
   state: SessionComposerState
@@ -45,6 +51,12 @@ export function SessionComposerRegion(props: {
   const prompt = usePrompt()
   const language = useLanguage()
   const route = useSessionKey()
+  const command = useCommand()
+  const comments = useComments()
+  const files = useFile()
+  const layout = useLayout()
+  const sync = useSync()
+  const { params, tabs, view } = useSessionLayout()
 
   const handoffPrompt = createMemo(() => getSessionHandoff(route.sessionKey())?.prompt)
 
@@ -64,6 +76,82 @@ export function SessionComposerRegion(props: {
     if (!prompt.ready()) return
     setSessionHandoff(route.sessionKey(), { prompt: previewPrompt() })
   })
+
+  // === Build injected props for PromptInput ===
+
+  const activeFileTab = createSessionTabs({
+    tabs,
+    pathFromTab: files.pathFromTab,
+    normalizeTab: (tab) => (tab.startsWith("file://") ? files.tab(tab) : tab),
+  }).activeFileTab
+
+  const recentFiles = createMemo(() => {
+    const all = tabs().all()
+    const active = activeFileTab()
+    const order = active ? [active, ...all.filter((x) => x !== active)] : all
+    const seen = new Set<string>()
+    const paths: string[] = []
+
+    for (const tab of order) {
+      const path = files.pathFromTab(tab)
+      if (!path) continue
+      if (seen.has(path)) continue
+      seen.add(path)
+      paths.push(path)
+    }
+
+    return paths
+  })
+
+  const commentInReview = (path: string) => {
+    const sessionID = params.id
+    if (!sessionID) return false
+    const diffs = sync.data.session_diff[sessionID]
+    if (!diffs) return false
+    return diffs.some((diff) => diff.file === path)
+  }
+
+  const openComment = (item: { path: string; commentID?: string; commentOrigin?: "review" | "file" }) => {
+    if (!item.commentID) return
+
+    const focus = { file: item.path, id: item.commentID }
+    comments.setActive(focus)
+
+    const queueCommentFocus = (attempts = 6) => {
+      const schedule = (left: number) => {
+        requestAnimationFrame(() => {
+          comments.setFocus({ ...focus })
+          if (left <= 0) return
+          requestAnimationFrame(() => {
+            const current = comments.focus()
+            if (!current) return
+            if (current.file !== focus.file || current.id !== focus.id) return
+            schedule(left - 1)
+          })
+        })
+      }
+
+      schedule(attempts)
+    }
+
+    const wantsReview = item.commentOrigin === "review" || (item.commentOrigin !== "file" && commentInReview(item.path))
+    if (wantsReview) {
+      if (!view().reviewPanel.opened()) view().reviewPanel.open()
+      layout.fileTree.setTab("changes")
+      tabs().setActive("review")
+      queueCommentFocus()
+      return
+    }
+
+    if (!view().reviewPanel.opened()) view().reviewPanel.open()
+    layout.fileTree.setTab("all")
+    const tab = files.tab(item.path)
+    tabs().open(tab)
+    tabs().setActive(tab)
+    Promise.resolve(files.load(item.path)).finally(() => queueCommentFocus())
+  }
+
+  // === End injected props ===
 
   const [store, setStore] = createStore({
     ready: false,
@@ -245,6 +333,12 @@ export function SessionComposerRegion(props: {
                 onQueue={props.followup?.onQueue}
                 onAbort={props.followup?.onAbort}
                 onSubmit={props.onSubmit}
+                sessionID={params.id}
+                commands={command}
+                commentActions={comments}
+                searchFiles={(query) => files.searchFilesAndDirectories(query)}
+                recentFiles={recentFiles}
+                onOpenComment={openComment}
               />
             </div>
           </Show>

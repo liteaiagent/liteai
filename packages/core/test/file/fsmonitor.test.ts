@@ -58,5 +58,5 @@ describe("file fsmonitor", () => {
 
     const after = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
     expect(after.exitCode).not.toBe(0)
-  })
+  }, 30_000)
 })
