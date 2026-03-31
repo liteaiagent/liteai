@@ -19,9 +19,9 @@
 
 ---
 
-## Phase 1: Extend Controller Interfaces
+## Phase 1: Extend Controller Interfaces ✅
 
-> Add missing capabilities to the existing controller interfaces so the UI component can access everything it needs without web-specific imports.
+> **Completed.** ChatController extended with `commands()` and `hasPaidProviders()`. PermissionController created. ChatPromptInputProps extended with optional command, comment, edit, queue, and worktree props.
 
 ### 1a. Extend `ChatController` ([chat-controller.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/controllers/chat-controller.ts))
 
@@ -90,9 +90,9 @@ interface ChatPromptInputProps {
 
 ---
 
-## Phase 2: Extract Portable Editor Logic
+## Phase 2: Extract Portable Editor Logic ✅
 
-> Move editor internals that the current UI version is MISSING into the shared `prompt-input/` sub-directory that already exists.
+> **Completed.** Created `editor-reconciler.ts` (createPill, isNormalizedEditor, renderEditor, parseFromDOM, reconcile), `ime-handler.ts` (createImeHandler), and `add-part.ts` (addPartAtCursor). All re-exported from `prompt-input/index.ts`.
 
 ### 2a. New file: `prompt-input/editor-reconciler.ts`
 
@@ -121,9 +121,9 @@ Re-export the new modules.
 
 ---
 
-## Phase 3: Rewrite UI `ChatPromptInput`
+## Phase 3: Rewrite UI `ChatPromptInput` ✅
 
-> Replace the current 735-line simplified version with the full web version, using controller interfaces for all data access.
+> **Completed.** Replaced the simplified 827-line version with the full web-parity implementation. Layout changed to sibling `DockShellForm` + `DockTray attach="top"`. Uses Phase 2 modules (editor-reconciler, ime-handler, add-part). Full keydown handler with shell mode, cascading Escape, Ctrl+G abort, popover navigation, history with comments. Spring animation for shell/normal mode transitions. Gradient overlay. `useFilteredList` for @ and / popovers. Auto-accept (YOLO) button via `PermissionController`. `ChatModelSelector` for model selection. All data access via controller interfaces.
 
 ### 3a. Replace the render tree
 

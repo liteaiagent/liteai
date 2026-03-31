@@ -8,8 +8,8 @@ export { ChatPane } from "./chat-pane"
 export type {
   ChatCommandOption,
   ChatCommentFocus,
-  ChatPromptCommentActions,
   ChatPromptCommands,
+  ChatPromptCommentActions,
   ChatPromptSubmitHandler,
 } from "./chat-prompt-input"
 export { ChatPromptInput } from "./chat-prompt-input"

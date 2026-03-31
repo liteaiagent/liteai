@@ -49,8 +49,6 @@ export const UserMessage = {
   ...story.Basic,
   args: {
     message: { ...mockMessage, role: "user" },
-    parts: [
-      { id: "u1", type: "text", text: "Can you list the files in this directory?" },
-    ],
+    parts: [{ id: "u1", type: "text", text: "Can you list the files in this directory?" }],
   },
 }
