@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "storybook": "storybook dev -p 6006",
+    "dev": "storybook dev -p 6006",
     "build": "storybook build",
     "typecheck": "tsc --noEmit",
     "check": "tsgo --noEmit",

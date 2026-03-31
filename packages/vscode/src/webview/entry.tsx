@@ -90,9 +90,7 @@ function App() {
 
       if (projects.length > 0) {
         // Try to match by workspace directory first
-        const match = workspaceDir
-          ? projects.find((p) => p.worktree === workspaceDir)
-          : undefined
+        const match = workspaceDir ? projects.find((p) => p.worktree === workspaceDir) : undefined
         const chosen = match ?? projects[0]
         projectID = chosen.id
         store.setProject(chosen.worktree, chosen.id)
