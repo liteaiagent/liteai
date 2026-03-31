@@ -10,7 +10,7 @@ console.log("▶ Building liteai-core exes...")
 await $`bun run build:exe`
 
 console.log("▶ Copying exes into bin/...")
-await $`node script/copy-exe.mjs`
+await $`bun run script/copy-exe.ts`
 
 console.log("▶ Compiling webview...")
 await $`bun run compile-webview`

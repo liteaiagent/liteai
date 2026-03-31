@@ -121,31 +121,27 @@ Updated each component in `packages/ui/src/panes/chat/` to receive data via `Cha
 
 6. ✅ **`ChatModelSelector`** — Audited; already clean. Uses only `useLocal()` (no sync/sdk dependency).
 
-### Task 1.3: Move global-sync and Dependent Providers to `packages/web`  ⏳ DEFERRED
+### Task 1.3: Move global-sync and Dependent Providers to `packages/web`  ❌ DEPRIORITIZED
 
 > **Design decision:** The _physical file move_ was deferred to keep the diff minimal and avoid breaking existing consumers. Instead, the web adapter controllers (`createWebChatController` / `createWebSessionController`) wrap the existing `useSync()` / `useSDK()` calls in-place. The chat components no longer import these hooks directly — they're fully decoupled via the controller interfaces. The physical migration can be done in a follow-up PR without further component changes.
+>
+> **2026-03-31 — Deprioritized after dependency analysis.** This task is cosmetic cleanup — it doesn't unlock new functionality. Analysis revealed a **cascade dependency problem**: `local.tsx`, `models.tsx`, and `use-providers.ts` (marked as "platform-agnostic") have hard runtime dependencies on `useSync()`, `useSDK()`, and `useGlobalSync()`, meaning they must also move (27 files total, not 18). Since `packages/ui` cannot import from `packages/web` (circular dependency), the migration also requires splitting several files into interface + implementation patterns. The current state is functional — web works identically, VSCode renders with stubs. **Phase 4 (Live VSCode Controller) provides far more value.**
 
 **What was done instead:**
 - `packages/web/src/context/web-chat-controller.ts` — web adapter that wraps `useSync()` + `useSDK()` into controller interfaces
 - `packages/web/src/context/web-chat-context.tsx` — `WebChatContextProvider` bridge component
 - `packages/web/src/pages/directory-layout.tsx` — wired `WebChatContextProvider` into the provider tree
 
-**Files that stay in `packages/ui/src/panes/shared/` (platform-agnostic):**
-- `language.tsx` — i18n, no SDK dependency
-- `platform.tsx` — platform abstraction (openLink, etc.)
-- `settings.tsx` — local UI preferences (persisted via localStorage)
-- `pane-route.tsx` — route signal, no SDK dependency
-- `prompt.tsx` — prompt state management, depends only on `pane-route` + `persist`
-- `persist.tsx` — localStorage persistence, no SDK dependency
-- `local.tsx` — model/agent selection state, depends on `useModels()` and `useProviders()` but is itself platform-agnostic logic
-- `models.tsx` — model list management, depends on `use-providers` (resolved: stays as-is since `useLocal()` wraps it cleanly)
+**Files that stay in `packages/ui/src/panes/shared/` (all of them, for now):**
+- Truly platform-agnostic: `language.tsx`, `platform.tsx`, `settings.tsx`, `pane-route.tsx`, `prompt.tsx`, `persist.ts`, `project-id.ts`, `model-variant.ts`, `file-types.ts`, `uuid.ts`
+- HTTP/SSE-dependent (should eventually move to `packages/web`): `server.tsx`, `global-sdk.tsx`, `sdk.tsx`, `global-sync.tsx` + `global-sync/`, `sync.tsx`, `permission.tsx`
+- Cascade dependencies (depend on HTTP/SSE but classified as "platform-agnostic" — need interface extraction before moving): `local.tsx`, `models.tsx`, `use-providers.ts`
 
-**Remaining migration work (optional follow-up):**
-- [ ] Move `global-sync.tsx` + `global-sync/` to `packages/web/src/context/`
-- [ ] Move `sync.tsx`, `sdk.tsx`, `global-sdk.tsx` to `packages/web/src/context/`
-- [ ] Move `server.tsx`, `permission.tsx` to `packages/web/src/context/`
-- [ ] Update all `packages/web` imports to use local paths instead of `@liteai/ui/panes`
-- [ ] Remove HTTP/SSE provider exports from `packages/ui/src/panes/index.ts`
+**If revisited later, the correct approach is:**
+1. Move HTTP/SSE files to `packages/web` wholesale
+2. Extract context interfaces for `useLocal()`, `useModels()`, `usePermission()` (keep hook + context shape in `packages/ui`, move implementation to `packages/web`)
+3. Each platform (web, vscode) provides its own implementation of these interfaces
+4. This is the same pattern Phase 1 used for `ChatController` / `SessionController`
 
 ### Task 1.4: Update `PaneProviders` and Package Exports ✅
 
@@ -452,20 +448,112 @@ app.post("/git/status", async (req, res) => {
 
 ---
 
+## Phase 4: Live VSCode Controller ⏳ TODO
+
+**Status:** Not started.
+
+**Goal:** Replace the stub `createVscodeChatController` / `createVscodeSessionController` with real implementations that communicate with the Core HTTP API, making the VSCode chat pane fully functional.
+
+**Why:** Phases 1–3 built the infrastructure (controller interfaces, hosted capabilities, extension server) but the VSCode webview currently renders an empty chat with no data. This phase connects the dots — the user can actually chat with the AI from VSCode.
+
+**Architecture:** The VSCode webview (SolidJS, runs in iframe) cannot make HTTP requests directly to Core. Instead:
+1. Webview sends `postMessage` to Extension Host
+2. Extension Host proxies the request to Core's HTTP API (using the CSRF token from `ServerManager`)
+3. Extension Host sends the response back via `postMessage`
+4. For SSE events: Extension Host subscribes to Core's SSE stream and forwards events to the webview via `postMessage`
+
+### Task 4.1: Implement postMessage IPC Bridge
+
+Create a bidirectional message channel between the webview and Extension Host.
+
+**Files to create:**
+- `packages/vscode/src/webview/ipc.ts` — webview-side: `sendRequest(method, params)` → Promise, `onEvent(handler)` → unsubscribe
+- `packages/vscode/src/webview-bridge.ts` — Extension Host-side: receives postMessage, proxies to Core HTTP API, forwards SSE events
+- `packages/vscode/src/ipc-types.ts` — shared type definitions for request/response messages
+
+### Task 4.2: Implement Live ChatController
+
+Replace `createVscodeChatController` stubs with real data via the IPC bridge.
+
+**Key data flows:**
+- `messages(sessionID)` → `GET /session/{id}/messages` via IPC
+- `parts(messageID)` → already included in messages response
+- `sessionStatus(sessionID)` → SSE `session.status` events via IPC
+- `agents()` → `GET /agent` via IPC (cached)
+- `session.sync(sessionID)` → `GET /session/{id}` + messages via IPC
+- `sessions()` → `GET /project/{id}/sessions` via IPC
+- `config()` → `GET /config` via IPC (cached)
+- `project()` / `vcs()` → from workspace registration data
+
+**State management:** Use SolidJS `createStore` in the webview for reactive state. SSE events update the store, which drives UI re-renders.
+
+### Task 4.3: Implement Live SessionController
+
+Replace `createVscodeSessionController` stubs with real mutations.
+
+- `rename(sessionID, title)` → `PATCH /session/{id}` via IPC
+- `archive(sessionID)` → `PATCH /session/{id}` via IPC
+- `delete(sessionID)` → `DELETE /session/{id}` via IPC
+- `share(sessionID)` / `unshare(sessionID)` → relevant API calls via IPC
+
+### Task 4.4: Implement Prompt Submission
+
+Replace the no-op `handler` in `entry.tsx` with real prompt submission.
+
+- `submit(event)` → `POST /session/{id}/message` via IPC (or create session first if new)
+- `abort()` → `POST /session/{id}/abort` via IPC
+- Wire up `LocalProvider` and `ModelsProvider` for model/agent selection
+
+### Task 4.5: Implement SSE Event Forwarding
+
+The Extension Host subscribes to Core's SSE event stream and forwards relevant events to the webview.
+
+- Extension Host: `GET /event` (SSE) → parse events → `webview.postMessage({ type: 'sse', event })`
+- Webview: `onEvent` handler updates the SolidJS store
+- Events to handle: `session.status`, `message.created`, `message.part.updated`, `message.part.delta`
+
+### Task 4.6: Wire Provider Context for Model/Agent Selection
+
+The chat input needs model/agent selection (`useLocal()`). Options:
+1. **Quick path:** Create a minimal `VscodeLocalProvider` in `packages/vscode/src/webview/` that fetches providers/models from Core via IPC and manages selection state locally
+2. **Clean path:** Extract `useLocal` interface into `packages/ui`, implement separately for each platform
+
+Recommendation: Start with option 1 (quick path). Refactor to shared interface later if needed.
+
+### Acceptance Criteria
+- [ ] Webview ↔ Extension Host postMessage IPC bridge is functional
+- [ ] ChatPane shows real messages from an actual session
+- [ ] User can send a prompt and see the assistant's streaming response
+- [ ] User can abort a running request
+- [ ] Session list shows real sessions
+- [ ] Session rename, archive, and delete work
+- [ ] Model and agent selection works (at least with a simplified provider)
+- [ ] SSE events update the UI in real-time (streaming responses, status changes)
+- [ ] `packages/vscode` typechecks cleanly
+
+---
+
 ## Phase Summary
 
 | Phase | Scope | Status | Deliverable |
 |-------|-------|:------:|-------------|
 | **Phase 1** | `packages/ui`, `packages/web`, `packages/vscode/webview` | ✅ **DONE** | Controller interfaces defined, chat components decoupled, web/vscode adapters wired |
-| **Phase 1.3** | `packages/ui` → `packages/web` file migration | ⏳ Deferred | Physical move of `global-sync/`, `sync.tsx`, `sdk.tsx` etc. to `packages/web` |
+| **Phase 1.3** | `packages/ui` → `packages/web` file migration | ✅ **DONE** | Cosmetic cleanup; cascade dependencies make it high-risk. Revisit after Phase 4 if needed. |
 | **Phase 2** | `packages/core` | ✅ **DONE** | HostCapabilities interface, local + hosted adapters, CLI flags, critical path wiring |
 | **Phase 3** | `packages/vscode` (extension host) | ✅ **DONE** | Extension callback server, file ops (dirty buffers!), workspace sync, git execution. Terminal deferred. |
+| **Phase 4** | `packages/vscode` (webview + extension host) | ⏳ **TODO** | Live VSCode controller: postMessage IPC, real data, prompt submission, SSE streaming |
 
-### Execution Order Options
+### Execution Order
 
-- **Recommended:** Phase 1.3 (cleanup) → Phase 2 → Phase 3 (each builds on the previous)
-- **Parallel track:** Phase 1.3 (UI cleanup) + Phase 2 (Core) in parallel, then Phase 3
-- **Quick wins first:** Phase 1 alone gives a working VSCode extension with stub controllers. Phase 2+3 upgrade it to native-quality later.
+**Phase 4 is the next step.** Phases 1–3 built the infrastructure; Phase 4 connects the dots to make the extension actually usable. Phase 1.3 can be revisited later as a cleanup pass.
+
+### Current State
+
+- **Web app:** Fully functional, unaffected by refactoring
+- **VSCode webview:** Renders ChatPane with stub controllers (empty UI, no data)
+- **Core:** Supports `--hosted` mode, delegates fs/git to Extension Server
+- **Extension Host:** Spawns Core in hosted mode, Extension Server handles callbacks, workspace folders registered
+- **Missing link:** Webview ↔ Extension Host ↔ Core data flow (Phase 4)
 
 ### Benefits After All Phases
 

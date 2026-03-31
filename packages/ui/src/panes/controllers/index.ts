@@ -1,10 +1,9 @@
 // ─── Controller interfaces ───
 
 // ─── Chat context ───
-export { ChatContextProvider, useChatController, useSessionController } from "./chat-context"
+export { ChatContextProvider, useChatController, useSelectionController, useSessionController } from "./chat-context"
 export type { ChatController, ProjectInfo } from "./chat-controller"
 export type { ModelController, ModelInfo, ModelKey } from "./model-controller"
-
 // ─── Prompt types (re-export for convenience) ───
 export type {
   AgentPart,
@@ -17,4 +16,5 @@ export type {
   Prompt,
   TextPart,
 } from "./prompt-controller"
+export type { SelectionController } from "./selection-controller"
 export type { SessionController } from "./session-controller"

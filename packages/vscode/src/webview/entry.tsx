@@ -2,7 +2,11 @@ import { DialogProvider } from "@liteai/ui/context/dialog"
 import { ChatContextProvider, ChatPane, PaneProviders, type PaneRoute } from "@liteai/ui/panes"
 import { createSignal, ErrorBoundary, type ParentProps } from "solid-js"
 import { render } from "solid-js/web"
-import { createVscodeChatController, createVscodeSessionController } from "./vscode-chat-controller"
+import {
+  createVscodeChatController,
+  createVscodeSelectionController,
+  createVscodeSessionController,
+} from "./vscode-chat-controller"
 import { vscodePlatform } from "./vscode-platform"
 import "./vscode.css"
 import "@liteai/ui/styles"
@@ -50,6 +54,7 @@ function App() {
   // Create VSCode-specific controllers (Phase 1 stubs)
   const chatController = createVscodeChatController({ serverUrl })
   const sessionController = createVscodeSessionController({ serverUrl })
+  const selectionController = createVscodeSelectionController()
 
   return (
     <ErrorBoundary
@@ -65,7 +70,7 @@ function App() {
     >
       <PaneProviders platform={vscodePlatform} route={route}>
         <DialogProvider>
-          <ChatContextProvider chat={chatController} session={sessionController}>
+          <ChatContextProvider chat={chatController} session={sessionController} selection={selectionController}>
             <PanelLayout>
               <ChatPane handler={{ submit: () => {}, abort: () => {} }} />
             </PanelLayout>

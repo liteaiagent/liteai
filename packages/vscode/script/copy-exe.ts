@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const platformMap = {
+const platformMap: Record<string, string> = {
   "win32-x64": "windows-x64",
   "darwin-arm64": "darwin-arm64",
   "darwin-x64": "darwin-x64",

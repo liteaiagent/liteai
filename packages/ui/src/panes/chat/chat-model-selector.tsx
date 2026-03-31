@@ -6,11 +6,14 @@ import { Tag } from "@liteai/ui/tag"
 import { Tooltip } from "@liteai/ui/tooltip"
 import { type Component, createMemo, type JSX, Show, type ValidComponent } from "solid-js"
 import { createStore } from "solid-js/store"
+import { useSelectionController } from "../controllers"
+import type { SelectionController } from "../controllers/selection-controller"
 import { useLanguage } from "../shared/language"
-import { useLocal } from "../shared/local"
-import { popularProviders } from "../shared/use-providers"
 
-type ModelState = ReturnType<typeof useLocal>["model"]
+/** Well-known provider IDs for sort ordering in the model selector. */
+export const popularProviders = ["anthropic", "google", "openai", "google-code-assist", "ai4all"]
+
+type ModelState = SelectionController["model"]
 
 const isFree = (provider: string, cost: { input: number } | undefined) =>
   provider === "opencode" && (!cost || cost.input === 0)
@@ -32,7 +35,7 @@ type ChatModelSelectorProps = {
  * instead uses callback props for management actions.
  */
 export const ChatModelSelector: Component<ChatModelSelectorProps> = (props) => {
-  const model = () => props.model ?? useLocal().model
+  const model = () => props.model ?? useSelectionController().model
   const language = useLanguage()
 
   const [store, setStore] = createStore<{

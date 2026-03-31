@@ -1,6 +1,5 @@
 import type { AsyncStorage, SyncStorage } from "@solid-primitives/storage"
 import { createSimpleContext } from "../../context"
-import type { ServerConnection } from "./server"
 
 type PickerPaths = string | string[] | null
 type OpenDirectoryPickerOptions = { title?: string; multiple?: boolean }
@@ -34,10 +33,10 @@ export type Platform = {
   fetch?: typeof fetch
 
   /** Get the configured default server URL */
-  getDefaultServer?(): Promise<ServerConnection.Key | null>
+  getDefaultServer?(): Promise<string | null>
 
   /** Set the default server URL to use on app startup */
-  setDefaultServer?(url: ServerConnection.Key | null): Promise<void> | void
+  setDefaultServer?(url: string | null): Promise<void> | void
 
   /** Search files in the workspace (VSCode: workspace.findFiles) */
   searchFiles?: (query: string) => Promise<string[]>

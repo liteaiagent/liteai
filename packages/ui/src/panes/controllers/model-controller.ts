@@ -43,7 +43,7 @@ export type ModelKey = {
 export type ModelInfo = {
   id: string
   name: string
-  family: string
+  family?: string
   release_date: string
   latest: boolean
   variants?: Record<string, unknown>

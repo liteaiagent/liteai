@@ -3,7 +3,9 @@
 import type { Todo } from "@liteai/sdk"
 import { createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
-import { useGlobalSync } from "@/context/global-sync"
+
+const useGlobalSync = () => ({ todo: { set: () => {} } })
+
 import { createSessionComposerState, SessionComposerRegion } from "@/pages/session/composer"
 
 export default {

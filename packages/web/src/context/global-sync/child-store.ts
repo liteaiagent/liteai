@@ -1,7 +1,7 @@
 import type { VcsInfo } from "@liteai/sdk/client"
+import { Persist, persisted } from "@liteai/ui/panes"
 import { createRoot, getOwner, type Owner, onCleanup, runWithOwner } from "solid-js"
 import { createStore, type SetStoreFunction, type Store } from "solid-js/store"
-import { Persist, persisted } from "@/utils/persist"
 import { canDisposeDirectory, pickDirectoriesToEvict } from "./eviction"
 import {
   type ChildOptions,
@@ -33,19 +33,19 @@ export function createChildStoreManager(input: {
   const disposers = new Map<string, () => void>()
 
   const mark = (directory: string) => {
-    if (!directory) return
+    if (directory === undefined) return
     lifecycle.set(directory, { lastAccessAt: Date.now() })
     runEviction(directory)
   }
 
   const pin = (directory: string) => {
-    if (!directory) return
+    if (directory === undefined) return
     pins.set(directory, (pins.get(directory) ?? 0) + 1)
     mark(directory)
   }
 
   const unpin = (directory: string) => {
-    if (!directory) return
+    if (directory === undefined) return
     const next = (pins.get(directory) ?? 0) - 1
     if (next > 0) {
       pins.set(directory, next)
@@ -122,7 +122,7 @@ export function createChildStoreManager(input: {
   }
 
   function ensureChild(directory: string) {
-    if (!directory) console.error("No directory provided")
+    if (directory === undefined) console.error("No directory provided")
     if (!children[directory]) {
       const vcs = runWithOwner(input.owner, () =>
         persisted(

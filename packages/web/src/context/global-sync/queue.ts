@@ -32,7 +32,7 @@ export function createRefreshQueue(input: QueueInput) {
   }
 
   const push = (directory: string) => {
-    if (!directory) return
+    if (directory === undefined) return
     queued.add(directory)
     if (input.paused()) return
     schedule()

@@ -1,18 +1,21 @@
 import { createContext, type ParentProps, useContext } from "solid-js"
 import type { ChatController } from "./chat-controller"
+import type { SelectionController } from "./selection-controller"
 import type { SessionController } from "./session-controller"
 
 /**
- * ChatContext — provides ChatController + SessionController to chat components.
+ * ChatContext — provides ChatController + SessionController + SelectionController
+ * to chat components.
  *
  * Host platforms create their own implementations of these interfaces
  * and wrap the chat UI with this provider. This replaces direct
- * `useSync()` / `useSDK()` calls in component bodies.
+ * `useSync()` / `useSDK()` / `useLocal()` calls in component bodies.
  */
 
 type ChatContextValue = {
   chat: ChatController
   session: SessionController
+  selection: SelectionController
 }
 
 const ChatContext = createContext<ChatContextValue>()
@@ -22,6 +25,7 @@ export function ChatContextProvider(
   props: ParentProps<{
     chat: ChatController
     session: SessionController
+    selection: SelectionController
   }>,
 ) {
   const value: ChatContextValue = {
@@ -30,6 +34,9 @@ export function ChatContextProvider(
     },
     get session() {
       return props.session
+    },
+    get selection() {
+      return props.selection
     },
   }
 
@@ -48,4 +55,11 @@ export function useSessionController(): SessionController {
   const ctx = useContext(ChatContext)
   if (!ctx) throw new Error("useSessionController must be used within a ChatContextProvider")
   return ctx.session
+}
+
+/** Access the SelectionController from context. */
+export function useSelectionController(): SelectionController {
+  const ctx = useContext(ChatContext)
+  if (!ctx) throw new Error("useSelectionController must be used within a ChatContextProvider")
+  return ctx.selection
 }

@@ -1,6 +1,6 @@
+import { usePaneRoute } from "@liteai/ui/panes"
 import { createMemo } from "solid-js"
 import { useGlobalSync } from "./global-sync"
-import { usePaneRoute } from "./pane-route"
 
 export const popularProviders = ["anthropic", "google", "openai", "google-code-assist", "ai4all"]
 const popularProviderSet = new Set(popularProviders)

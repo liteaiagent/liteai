@@ -1,5 +1,5 @@
 import type { Agent, Config, Message, Session, SessionStatus, VcsInfo } from "@liteai/sdk/client"
-import type { ChatController, ProjectInfo, SessionController } from "@liteai/ui/panes"
+import type { ChatController, ProjectInfo, SelectionController, SessionController } from "@liteai/ui/panes"
 
 /**
  * VSCode ChatController — lightweight implementation for the extension webview.
@@ -98,6 +98,56 @@ export function createVscodeSessionController(_opts: { serverUrl: string }): Ses
     },
     async unshare(_sessionID: string) {
       console.log("[vscode] SessionController.unshare not yet implemented")
+    },
+  }
+}
+
+/**
+ * VSCode SelectionController — lightweight stub for the extension webview.
+ *
+ * Phase 1: Returns empty data so the ChatPane can render.
+ * Phase 4: This will be replaced with a full implementation that provides
+ * model/agent selection via postMessage IPC.
+ */
+export function createVscodeSelectionController(): SelectionController {
+  const emptyAgents: Agent[] = []
+
+  return {
+    agent: {
+      current() {
+        return undefined
+      },
+      list() {
+        return emptyAgents
+      },
+      set(_name: string | undefined) {
+        console.log("[vscode] SelectionController.agent.set not yet implemented")
+      },
+    },
+    model: {
+      current() {
+        return undefined
+      },
+      list() {
+        return []
+      },
+      visible(_key) {
+        return true
+      },
+      set(_key, _options) {
+        console.log("[vscode] SelectionController.model.set not yet implemented")
+      },
+      variant: {
+        current() {
+          return undefined
+        },
+        list() {
+          return []
+        },
+        set(_value) {
+          console.log("[vscode] SelectionController.model.variant.set not yet implemented")
+        },
+      },
     },
   }
 }

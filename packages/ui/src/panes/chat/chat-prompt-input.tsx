@@ -7,10 +7,8 @@ import { Select } from "@liteai/ui/select"
 import { Tooltip } from "@liteai/ui/tooltip"
 import { type Component, createEffect, createMemo, createSignal, Match, on, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
-import { useChatController } from "../controllers"
+import { useChatController, useSelectionController } from "../controllers"
 import { useLanguage } from "../shared/language"
-import { useLocal } from "../shared/local"
-import { usePermission } from "../shared/permission"
 import { Persist, persisted } from "../shared/persist"
 import { usePlatform } from "../shared/platform"
 import {
@@ -113,10 +111,9 @@ const NON_EMPTY_TEXT = /[^\s\u200B]/
  */
 export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   const controller = useChatController()
-  const local = useLocal()
+  const selection = useSelectionController()
   const prompt = usePrompt()
   const dialog = useDialog()
-  const _permission = usePermission()
   const language = useLanguage()
   const _platform = usePlatform()
   let editorRef!: HTMLDivElement
@@ -196,9 +193,9 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
 
   // ─── Agent/Model ───
 
-  const agent = createMemo(() => local.agent.current())
+  const agent = createMemo(() => selection.agent.current())
   const agentName = createMemo(() => agent()?.name)
-  const model = createMemo(() => local.model.current())
+  const model = createMemo(() => selection.model.current())
 
   // ─── History ───
 
@@ -509,14 +506,14 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   // ─── Render ───
 
   const agentOptions = createMemo(() =>
-    local.agent.list().map((item) => ({
+    selection.agent.list().map((item) => ({
       value: item.name,
       label: item.name,
     })),
   )
 
   const variantOptions = createMemo(() =>
-    local.model.variant.list().map((v) => ({
+    selection.model.variant.list().map((v) => ({
       value: v,
       label: v,
     })),
@@ -654,7 +651,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                 options={agentOptions()}
                 value={(x) => x.value}
                 label={(x) => x.label}
-                onSelect={(item) => local.agent.set(item?.value)}
+                onSelect={(item) => selection.agent.set(item?.value)}
                 class="h-7 text-13-regular"
                 size="sm"
               />
@@ -679,11 +676,11 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                 data-slot="variant-select"
                 placement="top-start"
                 gutter={8}
-                current={variantOptions().find((o) => o.value === (local.model.variant.current() ?? ""))}
+                current={variantOptions().find((o) => o.value === (selection.model.variant.current() ?? ""))}
                 options={variantOptions()}
                 value={(x) => x.value}
                 label={(x) => x.label}
-                onSelect={(item) => local.model.variant.set(item?.value || undefined)}
+                onSelect={(item) => selection.model.variant.set(item?.value || undefined)}
                 class="h-7 text-13-regular"
                 size="sm"
               />

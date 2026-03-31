@@ -127,7 +127,7 @@
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "package": "bun run script/build.ts",
     "build:exe": "bun run --cwd ../core build:exe",
-    "test-exe-copy": "node script/copy-exe.mjs",
+    "test-exe-copy": "bun run script/copy-exe.ts",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "bun run compile-tests && bun run compile && bun run lint",
@@ -138,6 +138,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@types/bun": "catalog:",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
     "@types/vscode": "^1.94.0",

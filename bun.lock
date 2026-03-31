@@ -299,6 +299,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "catalog:",
+        "@types/bun": "catalog:",
         "@types/mocha": "^10.0.10",
         "@types/node": "20.x",
         "@types/vscode": "^1.94.0",
