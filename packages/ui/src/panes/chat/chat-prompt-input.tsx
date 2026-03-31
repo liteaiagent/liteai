@@ -48,6 +48,74 @@ export interface ChatPromptSubmitHandler {
   abort: () => void
 }
 
+/**
+ * A command option that can appear in the palette or be triggered by keybind.
+ * This is the portable UI version — the web platform adapts its richer
+ * CommandOption into this shape.
+ */
+export interface ChatCommandOption {
+  id: string
+  title: string
+  description?: string
+  category?: string
+  keybind?: string
+  slash?: string
+  suggested?: boolean
+  disabled?: boolean
+  onSelect?: (source?: string) => void
+  onHighlight?: () => (() => void) | undefined
+}
+
+/**
+ * Command palette integration.
+ * When omitted, no commands are registered and keybind tooltips show nothing.
+ */
+export interface ChatPromptCommands {
+  register: {
+    (cb: () => ChatCommandOption[]): void
+    (key: string, cb: () => ChatCommandOption[]): void
+  }
+  keybind: (id: string) => string
+  trigger: (id: string, source?: string) => void
+  options: ChatCommandOption[]
+}
+
+/**
+ * Inline comment focus target.
+ */
+export interface ChatCommentFocus {
+  file: string
+  id: string
+}
+
+/**
+ * Comment system integration.
+ * When omitted, comment history and navigation features are disabled.
+ */
+export interface ChatPromptCommentActions {
+  all: () => Array<{
+    file: string
+    id: string
+    comment: string
+    time: number
+    selection?: { start: number; end: number }
+  }>
+  replace: (
+    items: Array<{
+      id: string
+      file: string
+      comment: string
+      time: number
+      selection?: { start: number; end: number }
+    }>,
+  ) => void
+  setActive: (focus: ChatCommentFocus | null) => void
+  setFocus: (focus: ChatCommentFocus) => void
+  focus: () => ChatCommentFocus | null
+  active: () => ChatCommentFocus | null
+  remove: (file: string, id: string) => void
+}
+
 interface ChatPromptInputProps {
   class?: string
   ref?: (el: HTMLDivElement) => void
@@ -73,6 +141,30 @@ interface ChatPromptInputProps {
 
   /** Keybind display function */
   keybind?: (id: string) => string
+
+  // ─── Phase 1c: Optional extension props ───
+
+  /** Command palette integration. When omitted, no commands are registered. */
+  commands?: ChatPromptCommands
+
+  /** Comment system. When omitted, comment features are disabled. */
+  commentActions?: ChatPromptCommentActions
+
+  /** Callback when a context item's comment is opened. */
+  onOpenComment?: (item: { path: string; commentID?: string; commentOrigin?: string }) => void
+
+  /** New session worktree selection. */
+  newSessionWorktree?: string
+  onNewSessionWorktreeReset?: () => void
+
+  /** Edit mode (re-edit a previous message). */
+  edit?: { id: string; prompt: Prompt; context: ContextItem[] }
+  onEditLoaded?: () => void
+
+  /** Queue mode for follow-up prompts while session is busy. */
+  shouldQueue?: () => boolean
+  onQueue?: (draft: unknown) => void
+  onAbort?: () => void
 }
 
 const EXAMPLES = [

@@ -151,6 +151,14 @@ export function createVscodeChatController(opts: { store: VscodeStore; client: L
     shareEnabled() {
       return (s.config as Record<string, unknown>)?.share !== "disabled"
     },
+    commands() {
+      // VSCode: no custom commands yet — will be wired when extension gains MCP support
+      return []
+    },
+    hasPaidProviders() {
+      // VSCode: assume paid until provider list is wired
+      return true
+    },
   }
 }
 

@@ -30,6 +30,8 @@ export function createMockChatController(overrides?: Partial<ChatController>): C
     project: () => ({ time: { created: Date.now() } }) as ProjectInfo,
     vcs: () => undefined,
     shareEnabled: () => false,
+    commands: () => [],
+    hasPaidProviders: () => true,
     ...overrides,
   }
 }

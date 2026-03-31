@@ -6,11 +6,18 @@ export type {
   ChatController,
   ModelController,
   ModelInfo,
+  PermissionController,
   ProjectInfo,
   SelectionController,
   SessionController,
 } from "./controllers"
-export { ChatContextProvider, useChatController, useSelectionController, useSessionController } from "./controllers"
+export {
+  ChatContextProvider,
+  useChatController,
+  usePermissionController,
+  useSelectionController,
+  useSessionController,
+} from "./controllers"
 // ─── File Types ───
 export type { SelectedLineRange } from "./shared/file-types"
 export { selectionFromLines } from "./shared/file-types"

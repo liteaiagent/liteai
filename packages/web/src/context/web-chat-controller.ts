@@ -3,6 +3,7 @@ import type { ChatController, ProjectInfo, SessionController } from "@liteai/ui/
 import { produce } from "solid-js/store"
 import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
+import { useProviders } from "../hooks/use-providers"
 
 /**
  * Creates a ChatController backed by the web app's useSync() + useSDK().
@@ -14,6 +15,7 @@ import { useSync } from "../context/sync"
 export function createWebChatController(): ChatController {
   const sync = useSync()
   const sdk = useSDK()
+  const providers = useProviders()
 
   return {
     messages(sessionID: string) {
@@ -76,6 +78,12 @@ export function createWebChatController(): ChatController {
     },
     shareEnabled() {
       return sync.data.config.share !== "disabled"
+    },
+    commands() {
+      return sync.data.command
+    },
+    hasPaidProviders() {
+      return providers.paid().length > 0
     },
   }
 }

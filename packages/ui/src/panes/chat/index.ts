@@ -5,7 +5,13 @@ export { ChatModelSelector } from "./chat-model-selector"
 export { ChatNewSession } from "./chat-new-session"
 // ─── Chat Pane: New portable components ───
 export { ChatPane } from "./chat-pane"
-export type { ChatPromptSubmitHandler } from "./chat-prompt-input"
+export type {
+  ChatCommandOption,
+  ChatCommentFocus,
+  ChatPromptCommentActions,
+  ChatPromptCommands,
+  ChatPromptSubmitHandler,
+} from "./chat-prompt-input"
 export { ChatPromptInput } from "./chat-prompt-input"
 export type { PromptComment } from "./comment-note"
 export { createCommentMetadata, formatCommentNote, parseCommentNote, readCommentMetadata } from "./comment-note"

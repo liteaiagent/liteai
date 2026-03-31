@@ -1,4 +1,4 @@
-import type { Agent, Config, Message, Part, Session, SessionStatus, VcsInfo } from "@liteai/sdk/client"
+import type { Agent, Command, Config, Message, Part, Session, SessionStatus, VcsInfo } from "@liteai/sdk/client"
 
 /**
  * ChatController — abstract interface for reading chat/session data.
@@ -71,6 +71,16 @@ export interface ChatController {
 
   /** Whether sharing is enabled for this project. */
   shareEnabled(): boolean
+
+  // ─── Commands ───
+
+  /** Custom slash commands (from .liteai/commands/ or MCP). */
+  commands(): Command[]
+
+  // ─── Providers ───
+
+  /** Whether there are any paid providers configured. */
+  hasPaidProviders(): boolean
 }
 
 /** Subset of project data needed by chat components. */
