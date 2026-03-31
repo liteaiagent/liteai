@@ -1,54 +1,27 @@
 /* vscode.css
- * Maps VSCode CSS variables into @liteai/ui/styles design tokens 
+ * VSCode webview CSS overrides for LiteAI UI
+ *
+ * The LiteAI theme.css provides all design tokens (--background-base,
+ * --surface-raised-stronger-non-alpha, --border-weak-base, --text-strong, etc.)
+ * with `@media (prefers-color-scheme: dark)` variants.
+ *
+ * VSCode webviews respect color-scheme via the body class `vscode-dark` or
+ * `vscode-light`, but `prefers-color-scheme` might not match those automatically.
+ * We force `color-scheme: dark` here since most VSCode users use dark themes.
+ *
+ * For full VSCode theme integration, you'd map each --background-base etc.
+ * to var(--vscode-editor-background) and so on. For now, the LiteAI built-in
+ * dark theme provides a good baseline.
  */
 
 :root {
-  /*
-   * Base colors 
-   */
-  --liteai-color-bg-app: var(--vscode-editor-background);
-  --liteai-color-bg-nav: var(--vscode-sideBar-background);
-  --liteai-color-bg-sub: var(--vscode-sideBarSectionHeader-background);
-  --liteai-color-bg-popover: var(--vscode-editorWidget-background);
-  --liteai-color-bg-hover: var(--vscode-list-hoverBackground);
-  --liteai-color-bg-active: var(--vscode-list-activeSelectionBackground);
+  /* Force dark color-scheme so the theme.css dark-mode variables activate */
+  color-scheme: dark;
 
-  --liteai-color-text-main: var(--vscode-editor-foreground);
-  --liteai-color-text-muted: var(--vscode-descriptionForeground);
-  --liteai-color-text-subtle: var(--vscode-editorGhostText-foreground);
-  --liteai-color-text-on-accent: var(--vscode-button-foreground);
-
-  --liteai-color-border-main: var(--vscode-editorGroup-border);
-  --liteai-color-border-subtle: var(--vscode-widget-border);
-
-  --liteai-color-control-bg: var(--vscode-input-background);
-  --liteai-color-control-border: var(--vscode-input-border);
-  --liteai-color-control-hover: var(--vscode-list-hoverBackground);
-
-  --liteai-color-accent-bg: var(--vscode-button-background);
-  --liteai-color-accent-hover: var(--vscode-button-hoverBackground);
-  --liteai-color-accent-text: var(--vscode-textLink-foreground);
-
-  --liteai-color-error-text: var(--vscode-errorForeground);
-  --liteai-color-error-bg: var(--vscode-inputValidation-errorBackground);
-  --liteai-color-error-border: var(--vscode-inputValidation-errorBorder);
-
-  --liteai-color-warning-text: var(--vscode-editorWarning-foreground);
-  --liteai-color-success-text: var(--vscode-editorInfo-foreground);
-
-  /*
-   * Font families mapping (defaults)
-   */
-  --liteai-font-sans: var(--vscode-font-family);
-  --liteai-font-mono: var(--vscode-editor-font-family);
-  --liteai-font-size-base: var(--vscode-font-size);
-
-  /*
-   * Add any specific mappings required to overwrite the default theme variables
-   */
-  background-color: var(--vscode-editor-background);
-  color: var(--vscode-editor-foreground);
-  font-family: var(--vscode-font-family);
+  /* Basic VSCode font integration */
+  --font-family-sans: var(--vscode-font-family, "Inter", sans-serif);
+  --font-family-mono: var(--vscode-editor-font-family, "IBM Plex Mono", monospace);
+  --font-size-base: var(--vscode-font-size, 14px);
 }
 
 /* ─── Panel layout ─── */
@@ -68,7 +41,7 @@
   height: 28px;
   min-height: 28px;
   padding: 0 8px;
-  border-bottom: 1px solid var(--vscode-editorGroup-border, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--border-weak-base, rgba(255, 255, 255, 0.08));
   flex-shrink: 0;
 }
 
@@ -87,7 +60,7 @@
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: var(--vscode-descriptionForeground, #888);
+  color: var(--text-weak, #888);
   cursor: default;
   user-select: none;
   padding: 2px 4px;
@@ -96,7 +69,7 @@
 }
 
 .connection-status:hover {
-  background-color: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+  background-color: var(--surface-base-hover, rgba(255, 255, 255, 0.05));
 }
 
 .status-dot {
@@ -148,22 +121,30 @@
   padding: 24px;
   height: 100vh;
   overflow: auto;
-  background-color: var(--vscode-editor-background);
+  background-color: var(--background-base, #101010);
 }
 
 .error-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--vscode-errorForeground, #f85149);
+  color: var(--text-on-critical-base, #f85149);
 }
 
 .error-body {
   font-size: 12px;
-  font-family: var(--vscode-editor-font-family, monospace);
-  color: var(--vscode-editor-foreground, #ccc);
+  font-family: var(--font-family-mono, monospace);
+  color: var(--text-strong, #ccc);
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
   line-height: 1.5;
   opacity: 0.85;
+}
+
+/* ─── Prompt dock padding ─── */
+/* Match the web app's px-3 padding around the prompt area */
+[data-dock-surface="tray"] {
+  margin-left: 12px;
+  margin-right: 12px;
+  margin-bottom: 8px;
 }

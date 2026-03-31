@@ -23,9 +23,9 @@ function DirectoryDataProvider(props: ParentProps<{ directory: string }>) {
       onNavigateToSession={(sessionID: string) => navigate(`/${slug()}/session/${sessionID}`)}
       onSessionHref={(sessionID: string) => `/${slug()}/session/${sessionID}`}
     >
-      <WebChatContextProvider>
-        <LocalProvider>{props.children}</LocalProvider>
-      </WebChatContextProvider>
+      <LocalProvider>
+        <WebChatContextProvider>{props.children}</WebChatContextProvider>
+      </LocalProvider>
     </DataProvider>
   )
 }

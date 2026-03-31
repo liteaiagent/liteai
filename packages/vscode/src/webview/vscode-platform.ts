@@ -22,8 +22,10 @@ export const vscodePlatform: Platform = {
   openFile(path: string) {
     vscode.postMessage({ type: "vscode-command", command: "openFile", args: { path } })
   },
-  // We implements fetch by proxying it to the extension host by an ID
-  fetch: async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  // We implement fetch by proxying it to the extension host by an ID.
+  // Cast needed because Bun's `typeof fetch` includes `preconnect` which
+  // doesn't exist on a plain async function signature.
+  fetch: (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     return new Promise((resolve, reject) => {
       const id = Date.now().toString() + Math.random().toString()
       const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
@@ -89,5 +91,5 @@ export const vscodePlatform: Platform = {
         body: init?.body, // Assumes body is string or undefined (ArrayBuffer etc. need special handling but SDK sends JSON)
       })
     })
-  },
+  }) as Platform["fetch"],
 }

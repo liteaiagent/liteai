@@ -1,9 +1,10 @@
 import path from "node:path"
+import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "vite"
 import solidPlugin from "vite-plugin-solid"
 
 export default defineConfig({
-  plugins: [solidPlugin()],
+  plugins: [tailwindcss(), solidPlugin()],
   build: {
     outDir: path.resolve(__dirname, "dist", "webview"),
     emptyOutDir: true,

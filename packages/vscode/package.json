@@ -138,6 +138,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
+    "@tailwindcss/vite": "4.2.2",
     "@types/bun": "catalog:",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
@@ -151,6 +152,7 @@
   },
   "dependencies": {
     "solid-js": "catalog:",
+    "@liteai/sdk": "workspace:*",
     "@liteai/ui": "workspace:*"
   }
 }

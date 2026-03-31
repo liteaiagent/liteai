@@ -91,9 +91,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     // Inject the server URL. If empty, the webview entry.tsx will fall back to
     // the default dev URL (http://127.0.0.1:9000).
-    const urlScript = serverUrl
-      ? `<script>window.LITEAI_SERVER_URL = "${serverUrl}"</script>`
-      : `<script>window.LITEAI_SERVER_URL = ""</script>`
+    // Also inject the workspace directory so the webview can derive the project ID
+    // from it immediately.
+    const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ""
+    const urlScript = [
+      `<script>`,
+      `  window.LITEAI_SERVER_URL = "${serverUrl}";`,
+      `  window.LITEAI_WORKSPACE_DIR = ${JSON.stringify(workspaceDir)};`,
+      `</script>`,
+    ].join("\n")
 
     return `<!DOCTYPE html>
 <html lang="en">
