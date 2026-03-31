@@ -51,7 +51,7 @@ import { type AtOption, PromptPopover, type SlashCommand } from "./prompt-input/
  */
 export interface ChatPromptSubmitHandler {
   /** Submit the prompt for the given session (or create a new one) */
-  submit: (event: Event) => Promise<void> | void
+  submit: (event: Event, options?: { mode: "normal" | "shell" }) => Promise<void> | void
   /** Abort the current running request */
   abort: () => void
 }
@@ -913,7 +913,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
     addToHistory(prompt.current(), store.mode)
     resetHistoryNavigation(true)
 
-    void props.handler.submit(event)
+    void props.handler.submit(event, { mode: store.mode })
 
     prompt.reset()
     clearEditor()

@@ -218,15 +218,7 @@ describe("prompt submit worktree selection", () => {
       imageAttachments: () => [],
       commentCount: () => 0,
       autoAccept: () => false,
-      mode: () => "shell",
       working: () => false,
-      editor: () => undefined,
-      queueScroll: () => undefined,
-      promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
-      addToHistory: () => undefined,
-      resetHistoryNavigation: () => undefined,
-      setMode: () => undefined,
-      setPopover: () => undefined,
       newSessionWorktree: () => selected,
       onNewSessionWorktreeReset: () => undefined,
       onSubmit: () => undefined,
@@ -234,9 +226,9 @@ describe("prompt submit worktree selection", () => {
 
     const event = { preventDefault: () => undefined } as unknown as Event
 
-    await submit.handleSubmit(event)
+    await submit.handleSubmit(event, { mode: "shell" })
     selected = "/repo/worktree-b"
-    await submit.handleSubmit(event)
+    await submit.handleSubmit(event, { mode: "shell" })
 
     expect(createdSessions).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
     expect(sentShell).toEqual(["/repo/worktree-a", "/repo/worktree-b"])
@@ -254,15 +246,7 @@ describe("prompt submit worktree selection", () => {
       imageAttachments: () => [],
       commentCount: () => 0,
       autoAccept: () => true,
-      mode: () => "shell",
       working: () => false,
-      editor: () => undefined,
-      queueScroll: () => undefined,
-      promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
-      addToHistory: () => undefined,
-      resetHistoryNavigation: () => undefined,
-      setMode: () => undefined,
-      setPopover: () => undefined,
       newSessionWorktree: () => selected,
       onNewSessionWorktreeReset: () => undefined,
       onSubmit: () => undefined,
@@ -270,7 +254,7 @@ describe("prompt submit worktree selection", () => {
 
     const event = { preventDefault: () => undefined } as unknown as Event
 
-    await submit.handleSubmit(event)
+    await submit.handleSubmit(event, { mode: "shell" })
 
     expect(enabledAutoAccept).toEqual([{ sessionID: "session-1", directory: "/repo/worktree-a" }])
   })
@@ -284,15 +268,7 @@ describe("prompt submit worktree selection", () => {
       imageAttachments: () => [],
       commentCount: () => 0,
       autoAccept: () => false,
-      mode: () => "normal",
       working: () => false,
-      editor: () => undefined,
-      queueScroll: () => undefined,
-      promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
-      addToHistory: () => undefined,
-      resetHistoryNavigation: () => undefined,
-      setMode: () => undefined,
-      setPopover: () => undefined,
       onSubmit: () => undefined,
     })
 
@@ -316,15 +292,7 @@ describe("prompt submit worktree selection", () => {
       imageAttachments: () => [],
       commentCount: () => 0,
       autoAccept: () => false,
-      mode: () => "normal",
       working: () => false,
-      editor: () => undefined,
-      queueScroll: () => undefined,
-      promptLength: (value) => value.reduce((sum, part) => sum + ("content" in part ? part.content.length : 0), 0),
-      addToHistory: () => undefined,
-      resetHistoryNavigation: () => undefined,
-      setMode: () => undefined,
-      setPopover: () => undefined,
       newSessionWorktree: () => selected,
       onNewSessionWorktreeReset: () => undefined,
       onSubmit: () => undefined,

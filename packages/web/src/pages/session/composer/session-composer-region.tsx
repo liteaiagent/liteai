@@ -1,7 +1,7 @@
 import { useSpring } from "@liteai/ui/motion-spring"
 import { createEffect, createMemo, onCleanup, Show } from "solid-js"
 import { createStore } from "solid-js/store"
-import { PromptInput } from "@/components/prompt-input"
+import { PromptInputWrapper as PromptInput } from "@/components/prompt-input-wrapper"
 import type { FollowupDraft } from "@/components/prompt-input/submit"
 import { useCommand } from "@/context/command"
 import { useComments } from "@/context/comments"
@@ -111,7 +111,7 @@ export function SessionComposerRegion(props: {
     return diffs.some((diff) => diff.file === path)
   }
 
-  const openComment = (item: { path: string; commentID?: string; commentOrigin?: "review" | "file" }) => {
+  const openComment = (item: { path: string; commentID?: string; commentOrigin?: string }) => {
     if (!item.commentID) return
 
     const focus = { file: item.path, id: item.commentID }
@@ -334,8 +334,6 @@ export function SessionComposerRegion(props: {
                 onAbort={props.followup?.onAbort}
                 onSubmit={props.onSubmit}
                 sessionID={params.id}
-                commands={command}
-                commentActions={comments}
                 searchFiles={(query) => files.searchFilesAndDirectories(query)}
                 recentFiles={recentFiles}
                 onOpenComment={openComment}

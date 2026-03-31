@@ -18,7 +18,6 @@ import { toProjectID } from "@/utils/project-id"
 import { formatServerError } from "@/utils/server-errors"
 import { Worktree as WorktreeState } from "@/utils/worktree"
 import { buildRequestParts } from "./build-request-parts"
-import { setCursorPosition } from "./editor-dom"
 
 type PendingPrompt = {
   abort: AbortController
@@ -173,15 +172,7 @@ type PromptSubmitInput = {
   imageAttachments: Accessor<ImageAttachmentPart[]>
   commentCount: Accessor<number>
   autoAccept: Accessor<boolean>
-  mode: Accessor<"normal" | "shell">
   working: Accessor<boolean>
-  editor: () => HTMLDivElement | undefined
-  queueScroll: () => void
-  promptLength: (prompt: Prompt) => number
-  addToHistory: (prompt: Prompt, mode: "normal" | "shell") => void
-  resetHistoryNavigation: () => void
-  setMode: (mode: "normal" | "shell") => void
-  setPopover: (popover: "at" | "slash" | null) => void
   newSessionWorktree?: Accessor<string | undefined>
   onNewSessionWorktreeReset?: () => void
   shouldQueue?: Accessor<boolean>
@@ -285,13 +276,14 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     })
   }
 
-  const handleSubmit = async (event: Event) => {
+  // Expect event and mode from ChatPromptInput wrapper
+  const handleSubmit = async (event: Event, options?: { mode: "normal" | "shell" }) => {
     event.preventDefault()
 
     const currentPrompt = prompt.current()
     const text = currentPrompt.map((part) => ("content" in part ? part.content : "")).join("")
     const images = input.imageAttachments().slice()
-    const mode = input.mode()
+    const mode = options?.mode ?? "normal"
 
     if (text.trim().length === 0 && images.length === 0 && input.commentCount() === 0) {
       if (input.working()) abort()
@@ -308,9 +300,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       })
       return
     }
-
-    input.addToHistory(currentPrompt, mode)
-    input.resetHistoryNavigation()
 
     const projectDirectory = sdk.directory
     const isNewSession = !params.id
@@ -403,36 +392,19 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       variant,
     }
 
-    const clearInput = () => {
-      prompt.reset()
-      input.setMode("normal")
-      input.setPopover(null)
-    }
-
     const restoreInput = () => {
-      prompt.set(currentPrompt, input.promptLength(currentPrompt))
-      input.setMode(mode)
-      input.setPopover(null)
-      requestAnimationFrame(() => {
-        const editor = input.editor()
-        if (!editor) return
-        editor.focus()
-        setCursorPosition(editor, input.promptLength(currentPrompt))
-        input.queueScroll()
-      })
+      prompt.set(currentPrompt, 0)
     }
 
     if (!isNewSession && mode === "normal" && input.shouldQueue?.()) {
       input.onQueue?.(draft)
       clearContext()
-      clearInput()
       return
     }
 
     input.onSubmit?.()
 
     if (mode === "shell") {
-      clearInput()
       client.project.session
         .shell({
           sessionID: session.id,
@@ -456,7 +428,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       const commandName = cmdName.slice(1)
       const customCommand = sync.data.command.find((c) => c.name === commandName)
       if (customCommand) {
-        clearInput()
         client.project.session
           .command({
             sessionID: session.id,
@@ -497,7 +468,6 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     }
 
     removeCommentItems(commentItems)
-    clearInput()
 
     const waitForWorktree = async () => {
       const worktree = WorktreeState.get(sessionDirectory)
@@ -582,3 +552,4 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     handleSubmit,
   }
 }
+
