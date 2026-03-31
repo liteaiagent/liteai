@@ -1,13 +1,11 @@
-import { Popover as Kobalte } from "@kobalte/core/popover"
 import { Button } from "@liteai/ui/button"
 import { useDialog } from "@liteai/ui/context/dialog"
 import { Dialog } from "@liteai/ui/dialog"
-import { IconButton } from "@liteai/ui/icon-button"
 import { List } from "@liteai/ui/list"
+import { ProviderIcon } from "@liteai/ui/provider-icon"
 import { Tag } from "@liteai/ui/tag"
 import { Tooltip } from "@liteai/ui/tooltip"
-import { type Component, type ComponentProps, createMemo, type JSX, Show, type ValidComponent } from "solid-js"
-import { createStore } from "solid-js/store"
+import { type Component, createMemo, type JSX, Show } from "solid-js"
 import { useLanguage } from "@/context/language"
 import { useLocal } from "@/context/local"
 import { popularProviders } from "@/hooks/use-providers"
@@ -48,6 +46,15 @@ const ModelList: Component<{
       filterKeys={["provider.name", "name", "id"]}
       sortBy={(a, b) => a.name.localeCompare(b.name)}
       groupBy={(x) => x.provider.name}
+      groupHeader={(group) => {
+        const provider = group.items[0].provider
+        return (
+          <div class="flex items-center gap-1.5 text-text-weak">
+            <ProviderIcon id={provider.id} class="size-3.5 shrink-0 opacity-80" />
+            <span class="truncate font-medium">{provider.name}</span>
+          </div>
+        )
+      }}
       sortGroupsBy={(a, b) => {
         const aProvider = a.items[0].provider.id
         const bProvider = b.items[0].provider.id
@@ -87,111 +94,11 @@ const ModelList: Component<{
   )
 }
 
-type ModelSelectorTriggerProps = Omit<ComponentProps<typeof Kobalte.Trigger>, "as" | "ref">
-
-export function ModelSelectorPopover(props: {
-  provider?: string
-  model?: ModelState
-  children?: JSX.Element
-  triggerAs?: ValidComponent
-  triggerProps?: ModelSelectorTriggerProps
-}) {
-  const [store, setStore] = createStore<{
-    open: boolean
-    dismiss: "escape" | "outside" | null
-  }>({
-    open: false,
-    dismiss: null,
-  })
-  const dialog = useDialog()
-
-  const handleManage = () => {
-    setStore("open", false)
-    dialog.show(() => <DialogManageModels />)
-  }
-
-  const handleConnectProvider = () => {
-    setStore("open", false)
-    dialog.show(() => <DialogSelectProvider />)
-  }
-  const language = useLanguage()
-
-  return (
-    <Kobalte
-      open={store.open}
-      onOpenChange={(next) => {
-        if (next) setStore("dismiss", null)
-        setStore("open", next)
-      }}
-      modal={false}
-      placement="top-start"
-      gutter={4}
-    >
-      <Kobalte.Trigger as={props.triggerAs ?? "div"} {...props.triggerProps}>
-        {props.children}
-      </Kobalte.Trigger>
-      <Kobalte.Portal>
-        <Kobalte.Content
-          class="w-72 h-80 flex flex-col p-2 rounded-md border border-border-base bg-surface-raised-stronger-non-alpha shadow-md z-50 outline-none overflow-hidden"
-          onEscapeKeyDown={(event) => {
-            setStore("dismiss", "escape")
-            setStore("open", false)
-            event.preventDefault()
-            event.stopPropagation()
-          }}
-          onPointerDownOutside={() => {
-            setStore("dismiss", "outside")
-            setStore("open", false)
-          }}
-          onFocusOutside={() => {
-            setStore("dismiss", "outside")
-            setStore("open", false)
-          }}
-          onCloseAutoFocus={(event) => {
-            if (store.dismiss === "outside") event.preventDefault()
-            setStore("dismiss", null)
-          }}
-        >
-          <Kobalte.Title class="sr-only">{language.t("dialog.model.select.title")}</Kobalte.Title>
-          <ModelList
-            provider={props.provider}
-            model={props.model}
-            onSelect={() => setStore("open", false)}
-            class="p-1"
-            action={
-              <div class="flex items-center gap-1">
-                <Tooltip placement="top" value={language.t("command.provider.connect")}>
-                  <IconButton
-                    icon="plus-small"
-                    variant="ghost"
-                    iconSize="normal"
-                    class="size-6"
-                    aria-label={language.t("command.provider.connect")}
-                    onClick={handleConnectProvider}
-                  />
-                </Tooltip>
-                <Tooltip placement="top" value={language.t("dialog.model.manage")}>
-                  <IconButton
-                    icon="sliders"
-                    variant="ghost"
-                    iconSize="normal"
-                    class="size-6"
-                    aria-label={language.t("dialog.model.manage")}
-                    onClick={handleManage}
-                  />
-                </Tooltip>
-              </div>
-            }
-          />
-        </Kobalte.Content>
-      </Kobalte.Portal>
-    </Kobalte>
-  )
-}
 
 export const DialogSelectModel: Component<{ provider?: string; model?: ModelState }> = (props) => {
   const dialog = useDialog()
   const language = useLanguage()
+  const model = props.model ?? useLocal().model
 
   return (
     <Dialog
@@ -207,11 +114,11 @@ export const DialogSelectModel: Component<{ provider?: string; model?: ModelStat
         </Button>
       }
     >
-      <ModelList provider={props.provider} model={props.model} onSelect={() => dialog.close()} />
+      <ModelList provider={props.provider} model={model} onSelect={() => dialog.close()} />
       <Button
         variant="ghost"
         class="ml-3 mt-5 mb-6 text-text-base self-start"
-        onClick={() => dialog.show(() => <DialogManageModels />)}
+        onClick={() => dialog.show(() => <DialogManageModels model={model} />)}
       >
         {language.t("dialog.model.manage")}
       </Button>

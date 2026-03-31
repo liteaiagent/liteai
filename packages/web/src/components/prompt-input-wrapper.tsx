@@ -1,14 +1,15 @@
-import { ModelSelectorPopover } from "@/components/dialog-select-model"
-import { DialogSelectModelUnpaid } from "@/components/dialog-select-model-unpaid"
-import { createPromptSubmit, type FollowupDraft } from "@/components/prompt-input/submit"
-import { useCommand } from "@/context/command"
-import { useComments } from "@/context/comments"
-import { usePermission } from "@/context/permission"
-import { type ContextItem, type ImageAttachmentPart, type Prompt, usePrompt } from "@/context/prompt"
-import { useSync } from "@/context/sync"
 import { useDialog } from "@liteai/ui/context/dialog"
 import { ChatPromptInput } from "@liteai/ui/panes"
 import { type Component, createMemo } from "solid-js"
+import { DialogManageModels } from "@/components/dialog-manage-models"
+import { DialogSelectProvider } from "@/components/dialog-select-provider"
+import { createPromptSubmit, type FollowupDraft } from "@/components/prompt-input/submit"
+import { useCommand } from "@/context/command"
+import { useComments } from "@/context/comments"
+import { useLocal } from "@/context/local"
+import { usePermission } from "@/context/permission"
+import { type ContextItem, type ImageAttachmentPart, type Prompt, usePrompt } from "@/context/prompt"
+import { useSync } from "@/context/sync"
 
 export interface PromptInputWrapperProps {
   class?: string
@@ -30,6 +31,7 @@ export interface PromptInputWrapperProps {
 export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) => {
   const sync = useSync()
   const prompt = usePrompt()
+  const local = useLocal()
   const permission = usePermission()
   const command = useCommand()
   const comments = useComments()
@@ -71,14 +73,14 @@ export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) =>
 
   // Manage models flow from the old web PromptInput (using dialogs)
   const handleManageModels = () => {
-    dialog.show((() => <DialogSelectModelUnpaid />) as any)
+    dialog.show((() => <DialogManageModels model={local.model} />) as any)
   }
 
   const handleConnectProvider = () => {
-    dialog.show((() => <ModelSelectorPopover />) as any)
+    dialog.show((() => <DialogSelectProvider />) as any)
   }
 
-  // Workaround since ChatPromptCommands is slightly structurally different than what useCommand() returns in terms of typing, 
+  // Workaround since ChatPromptCommands is slightly structurally different than what useCommand() returns in terms of typing,
   // but matches at runtime. We assert its type via any.
   const commandsAsProps: any = command
 

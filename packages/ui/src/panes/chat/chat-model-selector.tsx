@@ -2,6 +2,7 @@ import { Popover as Kobalte } from "@kobalte/core/popover"
 import { Button } from "@liteai/ui/button"
 import { Icon } from "@liteai/ui/icon"
 import { List } from "@liteai/ui/list"
+import { ProviderIcon } from "@liteai/ui/provider-icon"
 import { Tag } from "@liteai/ui/tag"
 import { Tooltip } from "@liteai/ui/tooltip"
 import { type Component, createMemo, type JSX, Show, type ValidComponent } from "solid-js"
@@ -35,7 +36,10 @@ type ChatModelSelectorProps = {
  * instead uses callback props for management actions.
  */
 export const ChatModelSelector: Component<ChatModelSelectorProps> = (props) => {
-  const model = () => props.model ?? useSelectionController().model
+  // Resolve context during render so it doesn't crash inside event handlers,
+  // but only if a model wasn't explicitly provided (to avoid crashing in standalone dialogs).
+  const ctx = props.model ? undefined : useSelectionController()
+  const model = () => props.model ?? ctx!.model
   const language = useLanguage()
 
   const [store, setStore] = createStore<{
@@ -135,6 +139,15 @@ export const ChatModelSelector: Component<ChatModelSelectorProps> = (props) => {
             filterKeys={["provider.name", "name", "id"]}
             sortBy={(a, b) => a.name.localeCompare(b.name)}
             groupBy={(x) => x.provider.name}
+            groupHeader={(group) => {
+              const provider = group.items[0].provider
+              return (
+                <div class="flex items-center gap-1.5 text-text-weak">
+                  <ProviderIcon id={provider.id} class="size-3.5 shrink-0 opacity-80" />
+                  <span class="truncate font-medium">{provider.name}</span>
+                </div>
+              )
+            }}
             sortGroupsBy={(a, b) => {
               const aProvider = a.items[0].provider.id
               const bProvider = b.items[0].provider.id

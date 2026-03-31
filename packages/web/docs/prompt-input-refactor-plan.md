@@ -191,9 +191,9 @@ background: linear-gradient(to top, var(--surface-raised-stronger-non-alpha) cal
 
 ---
 
-## Phase 4: Wire Web to Use UI Component
+## Phase 4: Wire Web to Use UI Component ✅
 
-> Replace web's 1559-line monolith with a thin wrapper.
+> **Completed.** Replaced web's 1559-line monolith with a thin wrapper.
 
 ### 4a. Create `packages/web/src/components/prompt-input-wrapper.tsx`
 
