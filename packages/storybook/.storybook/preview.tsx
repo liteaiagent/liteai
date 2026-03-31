@@ -55,9 +55,9 @@ const frame = createJSXDecorator((Story, context) => {
         <DialogProvider>
           <MarkedProvider>
             <div
+              class="text-12-regular antialiased"
               style={{
                 "min-height": "100vh",
-                padding: "24px",
                 "background-color": "var(--background-base)",
                 color: "var(--text-base)",
               }}

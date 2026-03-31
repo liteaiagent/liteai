@@ -6,7 +6,7 @@ import { createStore } from "solid-js/store"
 
 const useGlobalSync = () => ({ todo: { set: () => {} } })
 
-import { createSessionComposerState, SessionComposerRegion } from "@/pages/session/composer"
+import { createSessionComposerState, SessionComposerRegion } from "../../../web/src/pages/session/composer"
 
 export default {
   title: "UI/Todo Panel Motion",
@@ -19,7 +19,7 @@ export default {
 This playground renders the real session composer region from app code.
 
 ### Source path
-- \`packages/app/src/pages/session/composer/session-composer-region.tsx\`
+- \`packages/web/src/pages/session/composer/session-composer-region.tsx\`
 
 ### Includes
 - \`SessionTodoDock\` (real)

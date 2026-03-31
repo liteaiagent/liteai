@@ -4,6 +4,9 @@ import { ChatPane } from "./chat-pane"
 const meta = {
   title: "Panes/Chat/ChatPane",
   component: ChatPane,
+  parameters: {
+    layout: "fullscreen",
+  },
   decorators: [
     (Story: import("solid-js").Component) => (
       <StoryWrapper>

@@ -527,11 +527,11 @@ export function AssistantMessageDisplay(props: {
   showReasoningSummaries?: boolean
 }) {
   const emptyTools: ToolPart[] = []
-  const part = createMemo(() => index(props.parts))
+  const part = createMemo(() => index(props.parts || []))
   const grouped = createMemo(
     () =>
       groupParts(
-        props.parts
+        (props.parts || [])
           .filter((part) => renderable(part, props.showReasoningSummaries ?? true))
           .map((part) => ({
             messageID: props.message.id,

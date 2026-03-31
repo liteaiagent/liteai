@@ -24,7 +24,7 @@ export function StoryWrapper(
         dictionaries={{ en: {} } as unknown as Record<import("../../shared/language").Locale, Record<string, unknown>>}
       >
         <MockChatProviders chat={props.chat} selection={props.selection} session={props.session}>
-          <div class="h-[600px] w-[500px] bg-background-base overflow-hidden border border-border-weak relative flex flex-col">
+          <div class="@container h-[600px] w-[500px] bg-background-stronger overflow-hidden border border-border-weak relative flex flex-col">
             {props.children}
           </div>
           <Toast.Region />

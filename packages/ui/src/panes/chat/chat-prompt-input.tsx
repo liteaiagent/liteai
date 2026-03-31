@@ -2,6 +2,7 @@ import { useDialog } from "@liteai/ui/context/dialog"
 import { DockShellForm, DockTray } from "@liteai/ui/dock-surface"
 import { IconButton } from "@liteai/ui/icon-button"
 import { ImagePreview } from "@liteai/ui/image-preview"
+import { Icon } from "@liteai/ui/icon"
 import { ProviderIcon } from "@liteai/ui/provider-icon"
 import { Select } from "@liteai/ui/select"
 import { Tooltip } from "@liteai/ui/tooltip"
@@ -642,49 +643,59 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
           {/* Bottom bar: agent/model selectors, file attach */}
           <div class="flex items-center gap-1 px-2 pb-2">
             {/* Agent selector */}
-            <Show when={agentOptions().length > 1}>
-              <Select
-                data-slot="agent-select"
-                placement="top-start"
-                gutter={8}
-                current={agentOptions().find((o) => o.value === agentName())}
-                options={agentOptions()}
-                value={(x) => x.value}
-                label={(x) => x.label}
-                onSelect={(item) => selection.agent.set(item?.value)}
-                class="h-7 text-13-regular"
-                size="sm"
-              />
-            </Show>
+            <Select
+              data-slot="agent-select"
+              placement="top-start"
+              gutter={8}
+              current={agentOptions().find((o) => o.value === agentName())}
+              options={agentOptions()}
+              value={(x: any) => x.value}
+              label={(x: any) => x.label}
+              onSelect={(item) => selection.agent.set(item?.value)}
+              class="h-7 text-13-regular"
+              size="sm"
+            />
 
             {/* Model selector */}
             <ChatModelSelector onManageModels={props.onManageModels} onConnectProvider={props.onConnectProvider}>
-              <Tooltip placement="top" value={language.t("prompt.action.selectModel")}>
+              <Tooltip placement="top" gutter={4} value={language.t("prompt.action.selectModel")}>
                 <button
+                  data-action="prompt-model"
                   type="button"
-                  class="flex items-center gap-1.5 h-7 px-2 rounded-md text-13-regular text-text-weak hover:text-text-strong hover:bg-surface-interactive-weak transition-colors"
+                  class="flex items-center justify-center gap-1.5 h-7 px-3 rounded-md text-13-regular text-text-base hover:bg-surface-interactive-weak transition-colors min-w-0 max-w-[320px] group"
                 >
-                  <Show when={providerIcon()}>{(id) => <ProviderIcon id={id()} class="size-3.5" />}</Show>
-                  <span class="truncate max-w-32">{modelName()}</span>
+                  <Show when={providerIcon()}>
+                    {(id) => (
+                      <ProviderIcon
+                        id={id()}
+                        class="size-4 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity duration-150"
+                        style={{ "will-change": "opacity", transform: "translateZ(0)" }}
+                      />
+                    )}
+                  </Show>
+                  <span class="truncate">{modelName()}</span>
+                  <Icon name="chevron-down" size="small" class="shrink-0" />
                 </button>
               </Tooltip>
             </ChatModelSelector>
 
             {/* Variant selector */}
-            <Show when={variantOptions().length > 0}>
-              <Select
-                data-slot="variant-select"
-                placement="top-start"
-                gutter={8}
-                current={variantOptions().find((o) => o.value === (selection.model.variant.current() ?? ""))}
-                options={variantOptions()}
-                value={(x) => x.value}
-                label={(x) => x.label}
-                onSelect={(item) => selection.model.variant.set(item?.value || undefined)}
-                class="h-7 text-13-regular"
-                size="sm"
-              />
-            </Show>
+            <Select
+              data-slot="variant-select"
+              placement="top-start"
+              gutter={8}
+              current={
+                [{ value: "default", label: language.t("common.default") as string }, ...variantOptions()].find(
+                  (o) => o.value === (selection.model.variant.current() || "default")
+                )
+              }
+              options={[{ value: "default", label: language.t("common.default") as string }, ...variantOptions()]}
+              value={(x: any) => x.value}
+              label={(x: any) => x.label}
+              onSelect={(item) => selection.model.variant.set(item?.value === "default" ? undefined : item?.value)}
+              class="h-7 text-13-regular"
+              size="sm"
+            />
 
             <div class="flex-1" />
 

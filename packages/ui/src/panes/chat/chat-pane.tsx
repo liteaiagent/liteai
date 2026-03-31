@@ -296,6 +296,7 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
           ref={(el) => {
             promptDock = el
           }}
+          class="mt-auto px-3 pb-3"
         >
           <ChatPromptInput
             ref={props.inputRef}
