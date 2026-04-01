@@ -156,6 +156,7 @@
   "dependencies": {
     "solid-js": "catalog:",
     "@liteai/sdk": "workspace:*",
-    "@liteai/ui": "workspace:*"
+    "@liteai/ui": "workspace:*",
+    "vscode-languageclient": "9.0.1"
   }
 }

@@ -135,7 +135,7 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
 
     setStore("responding", perm.id)
     sdk.client.project.permission
-      .respond({ sessionID: perm.sessionID, permissionID: perm.id, response, projectID: sdk.projectID })
+      .reply({ requestID: perm.id, reply: response, projectID: sdk.projectID })
       .catch((err: unknown) => {
         const description = err instanceof Error ? err.message : String(err)
         showToast({ title: language.t("common.requestFailed"), description })

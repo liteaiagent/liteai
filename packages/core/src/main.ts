@@ -41,6 +41,12 @@ const args = await yargs(hideBin(process.argv))
     default: false,
     describe: "Enable debug logging",
   })
+  .option("lsp", {
+    type: "boolean",
+    default: false,
+    describe:
+      "Also start an LSP server on stdin/stdout for AI editor features (inline completions). Redirects the startup listen message to stderr.",
+  })
   .option("hosted", {
     type: "boolean",
     default: false,
@@ -104,10 +110,24 @@ if (args.hosted) {
 Database.Client()
 
 const server = Server.listen({ port: args.port, hostname: args.hostname })
-console.log(`liteai core server listening on http://${server.hostname}:${server.port}`)
+
+// When --lsp is active stdout belongs to LSP JSON-RPC framing — redirect to stderr
+const listenMsg = `liteai core server listening on http://${server.hostname}:${server.port}`
+if (args.lsp) {
+  process.stderr.write(listenMsg + "\n")
+} else {
+  console.log(listenMsg)
+}
 
 if (Capabilities.isHosted()) {
   log.info("hosted mode active — filesystem and git operations delegate to callback server")
+}
+
+// Start LSP server on stdio (runs alongside HTTP — purely additive, no changes to HTTP behavior)
+if (args.lsp) {
+  const { startLSPHandler } = await import("./lsp/lsp-handler")
+  startLSPHandler()
+  log.info("LSP handler started on stdio")
 }
 
 for (const signal of ["SIGTERM", "SIGINT"] as const) {

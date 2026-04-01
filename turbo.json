@@ -4,10 +4,10 @@
   "globalPassThroughEnv": ["CI", "LITEAI_DISABLE_SHARE"],
   "tasks": {
     "typecheck": {
-      "dependsOn": ["^typecheck", "^build"]
+      "dependsOn": ["^build"]
     },
     "check": {
-      "dependsOn": ["^check", "^build"]
+      "dependsOn": ["^build"]
     },
     "lint": {},
     "lint:fix": {},

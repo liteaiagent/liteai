@@ -1,11 +1,16 @@
 import * as vscode from "vscode"
 import { ChatViewProvider } from "./chat-view-provider"
+import { createLanguageClient } from "./language-client"
 import { ServerManager } from "./server-manager"
 
 const TERMINAL_NAME = "liteai"
 let serverManager: ServerManager
+let languageClient: ReturnType<typeof createLanguageClient> | undefined
 
 export function deactivate() {
+  if (languageClient) {
+    languageClient.stop()
+  }
   if (serverManager) {
     serverManager.dispose()
   }
@@ -118,6 +123,18 @@ export function activate(context: vscode.ExtensionContext) {
       })
     }
   })
+
+  // ─── LSP: start LanguageClient once core is ready ──────────────────────
+  // The LanguageClient attaches to the child process stdio (which runs the
+  // LSP handler alongside the HTTP server). No extra process or port needed.
+  serverManager.onReady(() => {
+    const proc = serverManager.process
+    if (!proc) return
+    languageClient = createLanguageClient(proc, context)
+    languageClient.start()
+    context.subscriptions.push(languageClient)
+  })
+
 
   context.subscriptions.push(
     openTerminalDisposable,

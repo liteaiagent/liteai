@@ -25,6 +25,21 @@ export class ServerManager {
   get mode() {
     return this._mode
   }
+  /** Expose the child process so LanguageClient can attach to its stdin/stdout. */
+  get process() {
+    return this._process
+  }
+  /**
+   * Register a callback to be called once the server is ready.
+   * If the server is already ready, the callback fires synchronously.
+   */
+  onReady(cb: () => void): void {
+    if (this._isReady) {
+      cb()
+    } else {
+      this._readyListeners.push(cb)
+    }
+  }
 
   private getOutputChannel(): vscode.OutputChannel {
     if (!this._outputChannel) {
@@ -100,6 +115,7 @@ export class ServerManager {
       String(callbackPort),
       "--extension-server-csrf-token",
       callbackCsrfToken,
+      "--lsp",
     ]
     const spawnOpts: SpawnOptions = {
       env: { ...process.env },
@@ -124,11 +140,13 @@ export class ServerManager {
     return new Promise((resolve, reject) => {
       let timeoutId: NodeJS.Timeout
 
-      const onStdout = (data: Buffer) => {
+      // With --lsp active, core writes the listen message to stderr (stdout is LSP JSON-RPC).
+      // We parse the ready URL from stderr. All other stderr content is also logged.
+      const onStderr = (data: Buffer) => {
         const text = data.toString()
         outputChannel.append(text)
 
-        // Look for: "listening on http://127.0.0.1:XXXXX" or "listening on http://localhost:XXXXX"
+        // Look for: "liteai core server listening on http://127.0.0.1:XXXXX"
         const match = text.match(/listening on (http:\/\/[^\s]+)/)
         if (match) {
           this._url = match[1]
@@ -148,8 +166,11 @@ export class ServerManager {
         }
       }
 
-      const onStderr = (data: Buffer) => {
-        outputChannel.append(data.toString())
+      const onStdout = (data: Buffer) => {
+        // stdout is owned by LSP JSON-RPC when --lsp is active — do NOT log or parse it here.
+        // Without --lsp it would contain the listen message, but we always use --lsp now.
+        // Log only for debugging purposes at trace level if needed.
+        void data
       }
 
       this._process?.stdout?.on("data", onStdout)

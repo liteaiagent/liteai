@@ -117,8 +117,9 @@ export const { use: usePermission, provider: PermissionProvider } = createSimple
 
     const respond: PermissionRespondFn = (input) => {
       globalSDK.client.project.permission
-        .respond({
-          ...input,
+        .reply({
+          requestID: input.permissionID,
+          reply: input.response,
           projectID: toProjectID(
             input.directory ?? useGlobalSync().data.project.find((p) => p.id === route()?.projectID)?.worktree ?? "",
           ),

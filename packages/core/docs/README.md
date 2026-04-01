@@ -14,8 +14,9 @@ LiteAI fundamentally functions as a core engine for managing **Projects**, isola
 
 The system leverages several interfaces to stream execution feedback to the user:
 - **Web App**: Connects via HTTP API and Server-Sent Events (SSE).
-- **IDE Extensions**: Integrates via the API or SDK to provide developer experiences.
+- **IDE Extensions**: In production, integrates via HTTP/SSE for chat, HTTP callbacks for hosted fs/git, and LSP over stdio for AI editor features (inline completions).
 - **TUI / CLI**: Integrates directly with the internal code (domain layer), bypassing the network API.
+- **LSP (server role)**: Core exposes an LSP server on stdin/stdout (`--lsp`) alongside its HTTP server, enabling native editor features.
 
 ```mermaid
 graph TD
@@ -123,14 +124,24 @@ Tracking differences, snapshotting project boundaries, and ensuring safe filesys
 How external actors subscribe to and control the core agent.
 - **Source:** [`src/server/`](../src/server/), [`src/sdk/`](../src/sdk/), [`src/mcp/`](../src/mcp/)
 - **Documentation:**
+  - [**Communication Channels**](./channels.md) — All transports: HTTP/SSE (primary API), Extension Server callbacks (hosted mode), and LSP stdio (editor features). **Start here.**
   - [**SDK Implementation**](./sdk.md) — Integrating LiteAI into Node/Bun environments programmatically.
   - [**SSE Events**](./sse.md) — Server-Sent Events (SSE) provide real-time streaming updates over HTTP, essential for Web App reactivity.
 
 ### 🔍 Code Intelligence (LSP)
-LiteAI acts as an LSP client to spawn third-party Language Servers (like Pyright, TSServer, Clangd) to perform static analysis. This empowers the LLM to access rich references, diagnostics, and implementations.
+LiteAI has a dual role in the Language Server Protocol ecosystem:
+
+**As an LSP client:** LiteAI spawns third-party Language Servers (like Pyright, TSServer, Clangd) as child processes to perform static analysis. This empowers the LLM to access rich references, diagnostics, and implementations from existing language tools.
+
+**As an LSP server:** When started with `--lsp`, LiteAI exposes its own LSP server on stdin/stdout. VS Code's `LanguageClient` connects to this endpoint for AI-powered editor features:
+- `textDocument/inlineCompletion` — ghost-text completions using the small model
+- `textDocument/codeAction` — AI-powered fixes and refactors _(Phase 2)_
+- `textDocument/hover` — AI-enhanced tooltips _(Phase 2)_
+
 - **Source:** [`src/lsp/`](../src/lsp/)
 - **Documentation:**
-  - [**LSP Engine**](./lsp.md) — How LiteAI queries language servers for code intelligence instead of using them as a UI protocol.
+  - [**LSP Engine**](./lsp.md) — How LiteAI queries language servers for code intelligence (client role).
+  - [**Communication Channels**](./channels.md) — All transports including the LSP server channel.
 
 ### 📊 Observability & Engineering
 Tracking step-by-step executions for debugging regressions and providing the user with detailed audit logs.

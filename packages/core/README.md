@@ -1,6 +1,6 @@
-# liteai
+# liteai core
 
-The core backend package for liteai — an AI coding agent for the terminal. This package contains the CLI, agent loop, provider integrations, and all server logic. It compiles into self-contained native binaries via Bun.
+The core backend package for LiteAI — an AI coding agent for the terminal, web, and IDE. This package contains the agent loop, provider integrations, LSP client, and all server logic. It compiles into self-contained native binaries via Bun.
 
 ## Requirements
 
@@ -14,127 +14,118 @@ From the repo root:
 bun install
 ```
 
-## Development
+---
+
+## Running
+
+### Standard dev server
 
 ```bash
 bun run dev
 ```
+
+Starts the HTTP/SSE server on `http://127.0.0.1:9000`. Used by the web app and CLI.
+
+### Hosted mode (spawned by VS Code extension — production)
+
+```bash
+liteai-core \
+  --hosted \
+  --port 0 \
+  --csrf-token <csrf> \
+  --extension-port <callbackPort> \
+  --extension-server-csrf-token <callbackCsrf>
+```
+
+Core delegates filesystem, git, and workspace operations back to the VS Code extension via HTTP callbacks. See [Communication Channels](./docs/channels.md) for details.
+
+### Hosted mode + LSP (spawned by VS Code extension — with AI editor features)
+
+```bash
+liteai-core \
+  --hosted \
+  --port 0 \
+  --csrf-token <csrf> \
+  --extension-port <callbackPort> \
+  --extension-server-csrf-token <callbackCsrf> \
+  --lsp
+```
+
+Adds an LSP server on `stdin/stdout` alongside the HTTP server. The VS Code extension's `LanguageClient` connects to this stdio pipe for AI inline completions. The HTTP server and hosted callback behaviour are unchanged.
+
+> **Note:** When `--lsp` is active, the `"listening on http://..."` startup message is written to **stderr** instead of stdout (stdout is owned by LSP JSON-RPC framing).
+
+### All flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--port` / `-p` | `0` | HTTP port (`0` = OS auto-assigns) |
+| `--hostname` / `-H` | `127.0.0.1` | HTTP bind address |
+| `--csrf-token` | — | Bearer token required for all API requests |
+| `--debug` / `-d` | `false` | Enable `DEBUG`-level logging |
+| `--print-logs` | `false` | Print structured logs to stderr |
+| `--hosted` | `false` | Delegate fs/git/workspace to IDE via HTTP callbacks |
+| `--extension-port` | — | IDE callback server port (required with `--hosted`) |
+| `--extension-server-csrf-token` | — | CSRF token for IDE callback server (required with `--hosted`) |
+| `--lsp` | `false` | Start LSP server on stdio for AI editor features (inline completions) |
+
+---
 
 ## Building
 
 ### Dev build — current platform only (fast, for local testing)
 
 ```bash
-bun run build
+bun run build:exe
 ```
 
-Produces a native binary for your current OS/arch at:
+Produces a native binary at:
 ```
-dist/liteai-<os>-<arch>/bin/liteai[.exe]
+dist/liteai-core-<os>-<arch>/bin/liteai-core[.exe]
 ```
 
 You can run it directly:
 ```bash
-./dist/liteai-linux-x64/bin/liteai --version
+./dist/liteai-core-linux-x64/bin/liteai-core --version
 # Windows:
-.\dist\liteai-windows-x64\bin\liteai.exe --version
+.\dist\liteai-core-windows-x64\bin\liteai-core.exe --version
 ```
 
 ### Build all platforms (needed before releasing)
 
 ```bash
-bun run build:all
+bun run build:exe --all
 ```
 
 This builds **12 targets** across all platforms:
 
 | Target | For |
 |--------|-----|
-| `liteai-linux-arm64` | Linux ARM64 (glibc) |
-| `liteai-linux-x64` | Linux x64 (glibc, AVX2) |
-| `liteai-linux-x64-baseline` | Linux x64 (glibc, no AVX2 — older CPUs) |
-| `liteai-linux-arm64-musl` | Linux ARM64 (Alpine/musl) |
-| `liteai-linux-x64-musl` | Linux x64 (Alpine/musl, AVX2) |
-| `liteai-linux-x64-baseline-musl` | Linux x64 (Alpine/musl, no AVX2) |
-| `liteai-darwin-arm64` | macOS Apple Silicon |
-| `liteai-darwin-x64` | macOS Intel (AVX2) |
-| `liteai-darwin-x64-baseline` | macOS Intel (no AVX2 — older Macs) |
-| `liteai-windows-arm64` | Windows ARM64 |
-| `liteai-windows-x64` | Windows x64 (AVX2) |
-| `liteai-windows-x64-baseline` | Windows x64 (no AVX2 — older CPUs) |
-
-The `bin/liteai` wrapper script (installed on PATH by npm) automatically detects which variant to run at runtime.
+| `liteai-core-linux-arm64` | Linux ARM64 (glibc) |
+| `liteai-core-linux-x64` | Linux x64 (glibc, AVX2) |
+| `liteai-core-linux-x64-baseline` | Linux x64 (glibc, no AVX2 — older CPUs) |
+| `liteai-core-linux-arm64-musl` | Linux ARM64 (Alpine/musl) |
+| `liteai-core-linux-x64-musl` | Linux x64 (Alpine/musl, AVX2) |
+| `liteai-core-linux-x64-baseline-musl` | Linux x64 (Alpine/musl, no AVX2) |
+| `liteai-core-darwin-arm64` | macOS Apple Silicon |
+| `liteai-core-darwin-x64` | macOS Intel (AVX2) |
+| `liteai-core-darwin-x64-baseline` | macOS Intel (no AVX2 — older Macs) |
+| `liteai-core-windows-arm64` | Windows ARM64 |
+| `liteai-core-windows-x64` | Windows x64 (AVX2) |
+| `liteai-core-windows-x64-baseline` | Windows x64 (no AVX2 — older CPUs) |
 
 ---
 
 ## Releasing
 
-All release scripts default to:
-- **bump**: `patch` (e.g. `1.2.26` → `1.2.27`)
-- **channel**: `latest`
-- **repo**: `liteaiagent/liteai`
-
-No env vars needed for a standard patch release.
-
-### Prerequisites
-
-- **GitHub release**: [`gh`](https://cli.github.com/) CLI installed and authenticated (`gh auth login`)
-- **npm publish**: logged in to npm (`npm login`)
-
----
-
-### Release to GitHub only
-
-Builds all platforms and uploads `.tar.gz` / `.zip` to GitHub Releases.
-Users can download the binary directly from the releases page.
+The `@liteai/core` package is not released independently. To release the full LiteAI application, use the scripts from the repository root:
 
 ```bash
-bun run release:gh
-```
-
-For a minor or major bump:
-```bash
-bun run release:gh -- --bump minor
-bun run release:gh -- --bump major
-```
-
----
-
-### Release to npm only
-
-Builds all platforms and publishes `liteai` + all platform packages to npm.
-Users install with `npm install -g liteai`.
-
-```bash
-bun run release:npm
-```
-
----
-
-### Release to both GitHub and npm
-
-```bash
+# Run from the repository root
 bun run release
 ```
 
 ---
-
-### Optional env var overrides
-
-Only set these if you need to override the defaults:
-
-| Variable | Default | Description |
-|---|---|---|
-| `LITEAI_VERSION` | auto-incremented from npm | Pin an exact version, e.g. `1.5.0` |
-| `LITEAI_CHANNEL` | `latest` | Set to a branch name for preview releases |
-| `LITEAI_BUMP` | `patch` | `patch`, `minor`, or `major` |
-| `GH_REPO` | `liteaiagent/liteai` | Target GitHub repo for release uploads |
-
-Example — release a specific version:
-```bash
-LITEAI_VERSION=2.0.0 bun run release
-```
-
 
 ## Type checking
 
@@ -149,3 +140,23 @@ bun test
 ```
 
 > Tests must be run from this directory (`packages/core`), not the repo root.
+
+### Running specific test suites
+
+```bash
+# LSP handler unit tests (prompt building, edge cases)
+bun test test/lsp/lsp-handler.test.ts
+
+# LSP handler integration tests (subprocess JSON-RPC handshake)
+bun test test/lsp/lsp-handler-integration.test.ts
+
+# All LSP tests
+bun test test/lsp
+```
+
+---
+
+## Documentation
+
+- [Communication Channels](./docs/channels.md) — all transports used between core, the IDE, and clients
+- [Architecture Overview](./docs/README.md) — module directory and high-level design
