@@ -1,5 +1,12 @@
 import type { Agent, LiteaiClient, Message, Part, Session, VcsInfo } from "@liteai/sdk/client"
-import type { ChatController, ModelInfo, ProjectInfo, SelectionController, SessionController } from "@liteai/ui/panes"
+import type {
+  ChatController,
+  ModelInfo,
+  PermissionController,
+  ProjectInfo,
+  SelectionController,
+  SessionController,
+} from "@liteai/ui/panes"
 import { createSignal } from "solid-js"
 import { produce } from "solid-js/store"
 import type { VscodeStore } from "./vscode-store"
@@ -425,6 +432,40 @@ export function createVscodeSelectionController(opts: {
           setSelectedVariant(value)
         },
       },
+    },
+  }
+}
+
+/**
+ * VSCode PermissionController — manages auto-accept (YOLO) mode for sessions.
+ *
+ * State is stored locally in a reactive signal. The string "global" key is
+ * used when no sessionID is provided, allowing a session-agnostic toggle.
+ * Note: state is not persisted across webview reloads — this matches the web
+ * behavior where YOLO mode is tied to the directory permission layer.
+ */
+export function createVscodePermissionController(): PermissionController {
+  // Set of session IDs (or "global") that have auto-accept enabled
+  const [autoAcceptKeys, setAutoAcceptKeys] = createSignal<Set<string>>(new Set(), { equals: false })
+
+  const resolveKey = (sessionID: string | undefined) => sessionID ?? "global"
+
+  return {
+    isAutoAccepting(sessionID: string | undefined): boolean {
+      return autoAcceptKeys().has(resolveKey(sessionID))
+    },
+
+    toggle(sessionID: string | undefined): void {
+      const key = resolveKey(sessionID)
+      setAutoAcceptKeys((prev) => {
+        const next = new Set(prev)
+        if (next.has(key)) {
+          next.delete(key)
+        } else {
+          next.add(key)
+        }
+        return next
+      })
     },
   }
 }

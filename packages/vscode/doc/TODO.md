@@ -1,0 +1,3 @@
+- [ ] Persistent server option (keep running after VSCode closes)
+- [ ] TracePane extraction
+- [ ] SettingsPane extraction

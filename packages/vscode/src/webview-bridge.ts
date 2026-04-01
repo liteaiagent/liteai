@@ -2,11 +2,39 @@ import * as vscode from "vscode"
 import type { ServerManager } from "./server-manager"
 
 export class WebviewBridge {
+  private _recentFiles: string[] = []
+  private _recentDisposable?: vscode.Disposable
+
   constructor(
     private readonly panel: vscode.WebviewView,
     private readonly serverManager: ServerManager,
   ) {
     this.panel.webview.onDidReceiveMessage(this.onMessage.bind(this))
+
+    // Track recently opened editors and push the list to the webview whenever
+    // it changes. This gives the @ mention popover a live "recent files" list.
+    this._recentDisposable = vscode.window.onDidChangeVisibleTextEditors(() => {
+      this._updateRecentFiles()
+    })
+    // Send initial list
+    this._updateRecentFiles()
+  }
+
+  private _updateRecentFiles() {
+    const files = vscode.window.visibleTextEditors
+      .map((e) => e.document.uri.fsPath)
+      .filter((p) => !p.startsWith("extension-output") && !p.includes("\\output\\"))
+    // Deduplicate while preserving order
+    const seen = new Set<string>()
+    const unique: string[] = []
+    for (const f of files) {
+      if (!seen.has(f)) {
+        seen.add(f)
+        unique.push(f)
+      }
+    }
+    this._recentFiles = unique
+    this.panel.webview.postMessage({ type: "recent-files", files: unique })
   }
 
   /**
@@ -43,6 +71,25 @@ export class WebviewBridge {
         vscode.window.showTextDocument(doc)
       } else if (msg.command === "notify") {
         vscode.window.showInformationMessage(msg.args.title)
+      } else if (msg.command === "manageModels") {
+        // Open the LiteAI provider/model settings section
+        vscode.commands.executeCommand("workbench.action.openSettings", "liteai")
+      } else if (msg.command === "connectProvider") {
+        // Open the LiteAI server settings section
+        vscode.commands.executeCommand("workbench.action.openSettings", "liteai.server")
+      }
+      return
+    }
+
+    if (msg.type === "search-files") {
+      try {
+        // Use VS Code's workspace file search — respects .gitignore and excludes
+        const pattern = msg.query ? `**/*${msg.query}*` : "**/*"
+        const uris = await vscode.workspace.findFiles(pattern, "**/node_modules/**", 50)
+        const files = uris.map((u) => u.fsPath)
+        this.panel.webview.postMessage({ type: "search-files-response", id: msg.id, files })
+      } catch {
+        this.panel.webview.postMessage({ type: "search-files-response", id: msg.id, files: [] })
       }
       return
     }
@@ -114,6 +161,6 @@ export class WebviewBridge {
   }
 
   dispose() {
-    // any cleanup
+    this._recentDisposable?.dispose()
   }
 }

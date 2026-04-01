@@ -93,3 +93,13 @@ export const vscodePlatform: Platform = {
     })
   }) as Platform["fetch"],
 }
+
+/**
+ * Send an arbitrary postMessage to the extension host.
+ * Use this for non-fetch IPC (e.g. search-files, vscode-command).
+ * The `vscode` object from `acquireVsCodeApi()` is module-scoped and can only
+ * be obtained once — this helper shares that single instance.
+ */
+export function vscodePlatformPostMessage(message: unknown): void {
+  vscode.postMessage(message)
+}

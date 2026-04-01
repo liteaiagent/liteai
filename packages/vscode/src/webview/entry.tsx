@@ -1,14 +1,22 @@
 import { createLiteaiClient } from "@liteai/sdk/client"
 import { DialogProvider } from "@liteai/ui/context/dialog"
-import { ChatContextProvider, ChatPane, PaneProviders, type PaneRoute, PromptProvider } from "@liteai/ui/panes"
+import {
+  ChatContextProvider,
+  ChatPane,
+  type ChatPromptCommands,
+  PaneProviders,
+  type PaneRoute,
+  PromptProvider,
+} from "@liteai/ui/panes"
 import { createEffect, createSignal, ErrorBoundary, on, onCleanup, type ParentProps } from "solid-js"
 import { render } from "solid-js/web"
 import {
   createVscodeChatController,
+  createVscodePermissionController,
   createVscodeSelectionController,
   createVscodeSessionController,
 } from "./vscode-chat-controller"
-import { vscodePlatform } from "./vscode-platform"
+import { vscodePlatform, vscodePlatformPostMessage } from "./vscode-platform"
 import { createSseSubscription } from "./vscode-sse"
 import { createVscodeStore } from "./vscode-store"
 import "./vscode.css"
@@ -34,6 +42,29 @@ function getInjectedConfig() {
   }
 }
 
+// ─── Platform keybind helper ───────────────────────────────────────────────────
+// Provides human-readable keybind strings appropriate for the current platform.
+// On macOS, "mod" → "⌘"; on Windows/Linux, "mod" → "Ctrl".
+
+const IS_MAC =
+  typeof navigator !== "undefined" &&
+  (navigator.platform.toLowerCase().startsWith("mac") || navigator.userAgent.toLowerCase().includes("mac os"))
+
+const MOD = IS_MAC ? "⌘" : "Ctrl"
+
+/** Static map of keybind IDs used by ChatPromptInput tooltips to display strings. */
+const KEYBIND_MAP: Record<string, string> = {
+  "prompt.mode.shell": `${MOD}+Shift+X`,
+  "prompt.mode.normal": `${MOD}+Shift+E`,
+  "file.attach": `${MOD}+U`,
+}
+
+function resolveKeybind(id: string): string {
+  return KEYBIND_MAP[id] ?? ""
+}
+
+// ─── Wrapper layout ───────────────────────────────────────────────────────────
+
 /** Wrapper that shows a header bar with connection status */
 function PanelLayout(props: ParentProps<{ connected: boolean }>) {
   return (
@@ -52,6 +83,9 @@ function PanelLayout(props: ParentProps<{ connected: boolean }>) {
 function App() {
   const [route, setRoute] = createSignal<PaneRoute>({})
   const [connected, setConnected] = createSignal(false)
+
+  // Recent files pushed from the extension host via postMessage
+  const [recentFiles, setRecentFiles] = createSignal<string[]>([])
 
   const config = getInjectedConfig()
   const { serverUrl, workspaceDir } = config
@@ -164,14 +198,27 @@ function App() {
     ),
   )
 
+  // ─── Recent files from extension host ────────────────────────────────────
+  // The WebviewBridge sends { type: "recent-files", files: [...] } on init
+  // and whenever visible editors change.
+  const handleWindowMessage = (event: MessageEvent) => {
+    const msg = event.data as Record<string, unknown>
+    if (msg?.type === "recent-files" && Array.isArray(msg.files)) {
+      setRecentFiles(msg.files as string[])
+    }
+  }
+  window.addEventListener("message", handleWindowMessage)
+
   onCleanup(() => {
     cleanupSse?.()
+    window.removeEventListener("message", handleWindowMessage)
   })
 
   // ─── Controllers ───────────────────────────────────────────────────────────
   const chatController = createVscodeChatController({ store, client })
   const sessionController = createVscodeSessionController({ store, client })
   const selectionController = createVscodeSelectionController({ store, client })
+  const permissionController = createVscodePermissionController()
 
   // ─── Submit / Abort Handler ────────────────────────────────────────────────
   const handler = {
@@ -255,6 +302,105 @@ function App() {
     },
   }
 
+  // ─── File Search ───────────────────────────────────────────────────────────
+  // Sends a `search-files` postMessage to the extension host's WebviewBridge,
+  // which runs `vscode.workspace.findFiles()` and returns matching file paths.
+  const searchFiles = async (query: string): Promise<string[]> => {
+    return new Promise((resolve) => {
+      const id = `sf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
+      const handleResponse = (event: MessageEvent) => {
+        const msg = event.data as Record<string, unknown>
+        if (msg?.type === "search-files-response" && msg.id === id) {
+          window.removeEventListener("message", handleResponse)
+          resolve(Array.isArray(msg.files) ? (msg.files as string[]) : [])
+        }
+      }
+
+      window.addEventListener("message", handleResponse)
+
+      // Timeout safety — return empty array if extension host does not respond
+      const timeout = setTimeout(() => {
+        window.removeEventListener("message", handleResponse)
+        resolve([])
+      }, 3000)
+
+      try {
+        vscodePlatformPostMessage({ type: "search-files", id, query })
+      } catch {
+        clearTimeout(timeout)
+        window.removeEventListener("message", handleResponse)
+        resolve([])
+      }
+    })
+  }
+
+  // ─── Commands ─────────────────────────────────────────────────────────────
+  // Minimal command registry for VS Code. No external command palette is wired
+  // yet — this stub allows command registration and keybind display to work
+  // without throwing. Lays the foundation for future MCP command support.
+
+  type CommandCb = () => ChatPromptCommands["options"]
+  const commandEntries: Array<{ key: string | undefined; cb: CommandCb }> = []
+  const [commandOptions, setCommandOptions] = createSignal<ChatPromptCommands["options"]>([])
+
+  const refreshCommandOptions = () => {
+    const allOptions: ChatPromptCommands["options"] = []
+    for (const entry of commandEntries) {
+      allOptions.push(...entry.cb())
+    }
+    setCommandOptions(allOptions)
+  }
+
+  const commands: ChatPromptCommands = {
+    register(
+      keyOrCb: string | CommandCb,
+      cb?: CommandCb,
+    ) {
+      if (typeof keyOrCb === "function") {
+        commandEntries.push({ key: undefined, cb: keyOrCb })
+      } else if (cb) {
+        commandEntries.push({ key: keyOrCb, cb })
+      }
+      refreshCommandOptions()
+    },
+
+    keybind(id: string): string {
+      return resolveKeybind(id)
+    },
+
+    trigger(id: string, source?: string): void {
+      // Invoke matching command option's onSelect
+      const option = commandOptions().find((o) => o.id === id)
+      option?.onSelect?.(source)
+    },
+
+    get options() {
+      return commandOptions()
+    },
+  }
+
+  // ─── Model management callbacks ────────────────────────────────────────────
+  // These notify the extension host to open VS Code settings panels.
+
+  const onManageModels = () => {
+    vscodePlatformPostMessage({ type: "vscode-command", command: "manageModels" })
+  }
+
+  const onConnectProvider = () => {
+    vscodePlatformPostMessage({ type: "vscode-command", command: "connectProvider" })
+  }
+
+  // ─── shouldQueue ──────────────────────────────────────────────────────────
+  // Return true while the session is actively running so the UI shows a
+  // "queue" affordance instead of immediately submitting.
+
+  const shouldQueue = (): boolean => {
+    const id = route()?.sessionID
+    if (!id) return false
+    return chatController.sessionStatus(id).type !== "idle"
+  }
+
   return (
     <ErrorBoundary
       fallback={(err) => {
@@ -270,13 +416,26 @@ function App() {
       <PaneProviders platform={vscodePlatform} route={route}>
         <DialogProvider>
           <PromptProvider>
-            <ChatContextProvider chat={chatController} session={sessionController} selection={selectionController}>
+            <ChatContextProvider
+              chat={chatController}
+              session={sessionController}
+              selection={selectionController}
+              permission={permissionController}
+            >
               <PanelLayout connected={connected()}>
                 <ChatPane
                   handler={handler}
                   onNavigateSession={(_projectID, sessionID) => {
                     setRoute({ sessionID, projectID: store.store.projectID })
                   }}
+                  searchFiles={searchFiles}
+                  recentFiles={recentFiles}
+                  keybind={resolveKeybind}
+                  commands={commands}
+                  onManageModels={onManageModels}
+                  onConnectProvider={onConnectProvider}
+                  shouldQueue={shouldQueue}
+                  onAbort={handler.abort}
                 />
               </PanelLayout>
             </ChatContextProvider>

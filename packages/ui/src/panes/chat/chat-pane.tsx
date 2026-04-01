@@ -6,9 +6,14 @@ import { createStore } from "solid-js/store"
 import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
 import { usePaneRoute } from "../shared/pane-route"
-import { usePrompt } from "../shared/prompt"
+import { type ContextItem, type Prompt, usePrompt } from "../shared/prompt"
 import { ChatNewSession } from "./chat-new-session"
-import { ChatPromptInput, type ChatPromptSubmitHandler } from "./chat-prompt-input"
+import {
+  ChatPromptInput,
+  type ChatPromptCommentActions,
+  type ChatPromptCommands,
+  type ChatPromptSubmitHandler,
+} from "./chat-prompt-input"
 import { createSessionHistoryWindow, emptyUserMessages } from "./history-window"
 import { MessageTimeline } from "./message-timeline"
 import { same } from "./same"
@@ -59,6 +64,49 @@ interface ChatPaneProps {
 
   /** Extra JSX rendered below the prompt input */
   footer?: JSX.Element
+
+  // ─── Advanced prompt input props (proxied through to ChatPromptInput) ───
+
+  /**
+   * Command palette integration.
+   * When omitted, no commands are registered and keybind tooltips show empty strings.
+   */
+  commands?: ChatPromptCommands
+
+  /**
+   * Comment system integration.
+   * When omitted, comment history/navigation features are disabled.
+   */
+  commentActions?: ChatPromptCommentActions
+
+  /**
+   * Called when a context item's inline comment is opened from the tray.
+   */
+  onOpenComment?: (item: { path: string; commentID?: string; commentOrigin?: string }) => void
+
+  /**
+   * Returns true when the prompt should be queued rather than submitted directly
+   * (e.g. the session is busy and the host wants to buffer the next prompt).
+   */
+  shouldQueue?: () => boolean
+
+  /**
+   * Called with the draft payload when shouldQueue() returns true and the user
+   * submits. The host is responsible for persisting and re-submitting later.
+   */
+  onQueue?: (draft: unknown) => void
+
+  /**
+   * Called when the user requests an abort (e.g. Ctrl+G, Stop button).
+   * Defaults to handler.abort() when omitted.
+   */
+  onAbort?: () => void
+
+  /**
+   * Pre-populates the editor with an existing message for editing.
+   */
+  edit?: { id: string; prompt: Prompt; context: ContextItem[] }
+  onEditLoaded?: () => void
 }
 
 /**
@@ -311,6 +359,14 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
             onManageModels={props.onManageModels}
             onConnectProvider={props.onConnectProvider}
             keybind={props.keybind}
+            commands={props.commands}
+            commentActions={props.commentActions}
+            onOpenComment={props.onOpenComment}
+            shouldQueue={props.shouldQueue}
+            onQueue={props.onQueue}
+            onAbort={props.onAbort}
+            edit={props.edit}
+            onEditLoaded={props.onEditLoaded}
           />
         </div>
 
