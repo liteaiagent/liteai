@@ -83,7 +83,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const csp = [
       `default-src 'none'`,
       `style-src ${webview.cspSource} 'unsafe-inline'`,
-      `font-src ${webview.cspSource}`,
+      // data: needed for base64-embedded fonts in the bundled CSS (woff2 data URIs)
+      `font-src ${webview.cspSource} data:`,
       `img-src ${webview.cspSource} data: blob:`,
       `script-src ${webview.cspSource} 'unsafe-inline'`,
       `connect-src ${cspServerUrl} http://127.0.0.1:* http://localhost:*`,

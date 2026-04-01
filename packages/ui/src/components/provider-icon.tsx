@@ -1,7 +1,23 @@
 import type { Component, JSX } from "solid-js"
-import { createMemo, splitProps } from "solid-js"
-import sprite from "./provider-icons/sprite.svg"
+import { createMemo, onMount, splitProps } from "solid-js"
+import spriteRaw from "./provider-icons/sprite.svg?raw"
 import { type IconName, iconNames } from "./provider-icons/types"
+
+/** Injects the provider-icon SVG sprite sheet as a hidden DOM element.
+ * Must be mounted once, above any ProviderIcon usage. */
+export const ProviderIconSprite: Component = () => {
+  let ref: HTMLDivElement | undefined
+  onMount(() => {
+    if (ref) ref.innerHTML = spriteRaw
+  })
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      style="position:absolute;width:0;height:0;overflow:hidden"
+    />
+  )
+}
 
 export type ProviderIconProps = JSX.SVGElementTags["svg"] & {
   id: string
@@ -20,7 +36,7 @@ export const ProviderIcon: Component<ProviderIconProps> = (props) => {
       }}
     >
       <title>{local.id}</title>
-      <use href={`${sprite}#${resolved()}`} />
+      <use href={`#${resolved()}`} />
     </svg>
   )
 }

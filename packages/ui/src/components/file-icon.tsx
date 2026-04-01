@@ -1,7 +1,26 @@
 import type { Component, JSX } from "solid-js"
-import { createMemo, createUniqueId, Show, splitProps } from "solid-js"
-import sprite from "./file-icons/sprite.svg"
+import { createMemo, createUniqueId, onMount, Show, splitProps } from "solid-js"
+// ?raw gives us the SVG markup as a string so we can inline it into the DOM.
+// External <use href="url.svg#id"> requests are blocked in VS Code webviews
+// (403 Forbidden). Fragment-only <use href="#id"> is same-document and safe.
+import spriteRaw from "./file-icons/sprite.svg?raw"
 import type { IconName } from "./file-icons/types"
+
+/** Injects the file-icon SVG sprite sheet as a hidden DOM element.
+ * Must be mounted once, above any FileIcon usage. */
+export const FileIconSprite: Component = () => {
+  let ref: HTMLDivElement | undefined
+  onMount(() => {
+    if (ref) ref.innerHTML = spriteRaw
+  })
+  return (
+    <div
+      ref={ref}
+      aria-hidden="true"
+      style="position:absolute;width:0;height:0;overflow:hidden"
+    />
+  )
+}
 
 export type FileIconProps = JSX.GSVGAttributes<SVGSVGElement> & {
   node: { path: string; type: "file" | "directory" }
@@ -23,10 +42,10 @@ export const FileIcon: Component<FileIconProps> = (props) => {
       }}
     >
       <title>{name() ?? "File Icon"}</title>
-      <Show when={local.mono} fallback={<use href={`${sprite}#${name()}`} />}>
+      <Show when={local.mono} fallback={<use href={`#${name()}`} />}>
         <defs>
           <mask id={id} mask-type="alpha">
-            <use href={`${sprite}#${name()}`} />
+            <use href={`#${name()}`} />
           </mask>
         </defs>
         <rect width="100%" height="100%" fill="currentColor" mask={`url(#${id})`} />

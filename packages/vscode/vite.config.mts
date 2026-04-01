@@ -5,6 +5,13 @@ import solidPlugin from "vite-plugin-solid"
 
 export default defineConfig({
   plugins: [tailwindcss(), solidPlugin()],
+  // Set base to match the webview resource URL structure.
+  // VS Code maps vscode-webview://ID/<path> → {extensionUri}/<path>.
+  // Our files live at dist/webview/assets/*, so requests must start with
+  // /dist/webview/ to resolve to the right location on disk.
+  // (The script and style tags in chat-view-provider are overridden via
+  //  webview.asWebviewUri(), so the base doesn't affect them.)
+  base: "/dist/webview/",
   build: {
     outDir: path.resolve(__dirname, "dist", "webview"),
     emptyOutDir: true,
@@ -26,3 +33,4 @@ export default defineConfig({
     },
   },
 })
+

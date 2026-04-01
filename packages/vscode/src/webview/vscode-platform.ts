@@ -69,8 +69,16 @@ export const vscodePlatform: Platform = {
             })
             resolve(response)
           } else {
-            // Normal response
-            const response = new Response(msg.body ? new Uint8Array(msg.body) : null, {
+            // Normal response.
+            // HTTP statuses 101, 204, 205, 304 are "null body" statuses per the
+            // Fetch spec — constructing a Response with a body for these throws
+            // "Response with null body status cannot have body".
+            const NULL_BODY_STATUSES = new Set([101, 204, 205, 304])
+            const body =
+              NULL_BODY_STATUSES.has(msg.status) || !msg.body
+                ? null
+                : new Uint8Array(msg.body)
+            const response = new Response(body, {
               status: msg.status,
               statusText: msg.statusText,
               headers: new Headers(msg.headers),

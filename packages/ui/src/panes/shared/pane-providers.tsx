@@ -1,4 +1,6 @@
 import type { Accessor, ParentProps } from "solid-js"
+import { FileIconSprite } from "../../components/file-icon"
+import { ProviderIconSprite } from "../../components/provider-icon"
 import { LanguageProvider, type Locale } from "./language"
 import type { PaneRoute } from "./pane-route"
 import { PaneRouteProvider } from "./pane-route"
@@ -24,6 +26,11 @@ export function PaneProviders(
 ) {
   return (
     <PlatformProvider value={props.platform}>
+      {/* Inline SVG sprite sheets — fragment-only <use href="#id"> references
+          work same-document and never trigger external HTTP requests (which
+          VS Code webviews block with 403 for cross-origin SVG assets). */}
+      <FileIconSprite />
+      <ProviderIconSprite />
       <LanguageProvider dictionaries={props.dictionaries}>
         <SettingsProvider>
           <PaneRouteProvider route={props.route}>{props.children}</PaneRouteProvider>
