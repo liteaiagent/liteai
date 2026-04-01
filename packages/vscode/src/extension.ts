@@ -26,10 +26,6 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   )
 
-  const _openNewTerminalDisposable = vscode.commands.registerCommand("liteai.openNewTerminal", async () => {
-    await openTerminal()
-  })
-
   const openTerminalDisposable = vscode.commands.registerCommand("liteai.openTerminal", async () => {
     // A liteai terminal already exists => focus it
     const existing = vscode.window.terminals.find((t) => t.name === TERMINAL_NAME)
@@ -121,7 +117,6 @@ export function activate(context: vscode.ExtensionContext) {
   })
 
   context.subscriptions.push(
-    _openNewTerminalDisposable,
     openTerminalDisposable,
     addFilepathDisposable,
     showStatusDisposable,
@@ -135,8 +130,8 @@ export function activate(context: vscode.ExtensionContext) {
     const terminal = vscode.window.createTerminal({
       name: TERMINAL_NAME,
       iconPath: {
-        light: vscode.Uri.file(context.asAbsolutePath("images/button-dark.svg")),
-        dark: vscode.Uri.file(context.asAbsolutePath("images/button-light.svg")),
+        light: vscode.Uri.file(context.asAbsolutePath("images/activity-bar-dark.svg")),
+        dark: vscode.Uri.file(context.asAbsolutePath("images/activity-bar-light.svg")),
       },
       location: {
         viewColumn: vscode.ViewColumn.Beside,

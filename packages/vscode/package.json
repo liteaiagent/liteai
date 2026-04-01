@@ -28,7 +28,7 @@
         {
           "id": "liteai-explorer",
           "title": "LiteAI",
-          "icon": "images/button-light.svg"
+          "icon": "images/activity-bar-light.svg"
         }
       ]
     },
@@ -38,7 +38,7 @@
           "type": "webview",
           "id": "liteai.chatView",
           "name": "Chat",
-          "icon": "images/button-light.svg"
+          "icon": "images/activity-bar-light.svg"
         }
       ]
     },
@@ -67,16 +67,8 @@
         "command": "liteai.openTerminal",
         "title": "Open liteai",
         "icon": {
-          "light": "images/button-dark.svg",
-          "dark": "images/button-light.svg"
-        }
-      },
-      {
-        "command": "liteai.openNewTerminal",
-        "title": "Open liteai in new tab",
-        "icon": {
-          "light": "images/button-dark.svg",
-          "dark": "images/button-light.svg"
+          "light": "images/submit-dark.svg",
+          "dark": "images/submit-light.svg"
         }
       },
       {
@@ -91,16 +83,13 @@
       {
         "command": "liteai.newSession",
         "title": "LiteAI: New Session",
-        "icon": "$(add)"
+        "icon": {
+          "light": "images/activity-bar-dark.svg",
+          "dark": "images/activity-bar-light.svg"
+        }
       }
     ],
     "menus": {
-      "editor/title": [
-        {
-          "command": "liteai.openNewTerminal",
-          "group": "navigation"
-        }
-      ],
       "view/title": [
         {
           "command": "liteai.newSession",
@@ -122,14 +111,6 @@
         "mac": "cmd+escape",
         "win": "ctrl+escape",
         "linux": "ctrl+escape"
-      },
-      {
-        "command": "liteai.openNewTerminal",
-        "title": "Run liteai",
-        "key": "cmd+shift+escape",
-        "mac": "cmd+shift+escape",
-        "win": "ctrl+shift+escape",
-        "linux": "ctrl+shift+escape"
       },
       {
         "command": "liteai.addFilepathToTerminal",
