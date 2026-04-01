@@ -215,7 +215,7 @@ function DialogDeleteSession(props: { session: Session; onDelete: (session: Sess
           <Button variant="ghost" size="large" onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
-          <Button variant="primary" size="large" onClick={() => void handle()}>
+          <Button variant="primary" size="large" onClick={() => void handle()} autofocus>
             {language.t("session.delete.button")}
           </Button>
         </div>

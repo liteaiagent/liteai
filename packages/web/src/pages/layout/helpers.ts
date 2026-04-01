@@ -23,10 +23,22 @@ function sortSessions(now: number) {
     const bUpdated = b.time.updated ?? b.time.created
     const aRecent = aUpdated > oneMinuteAgo
     const bRecent = bUpdated > oneMinuteAgo
-    if (aRecent && bRecent) return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    if (aRecent && bRecent) {
+      const aTitle = a.title?.trim() || a.id
+      const bTitle = b.title?.trim() || b.id
+      const cmp = aTitle.localeCompare(bTitle)
+      if (cmp !== 0) return cmp
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    }
     if (aRecent && !bRecent) return -1
     if (!aRecent && bRecent) return 1
-    return bUpdated - aUpdated
+    const timeDiff = bUpdated - aUpdated
+    if (timeDiff !== 0) return timeDiff
+    const aTitle = a.title?.trim() || a.id
+    const bTitle = b.title?.trim() || b.id
+    const cmp = aTitle.localeCompare(bTitle)
+    if (cmp !== 0) return cmp
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
   }
 }
 

@@ -36,7 +36,12 @@ export function Dialog(props: DialogProps) {
             const autofocusEl = target?.querySelector("[autofocus]") as HTMLElement | null
             if (autofocusEl) {
               e.preventDefault()
-              autofocusEl.focus()
+              try {
+                // @ts-expect-error focusVisible is not in all TS versions
+                autofocusEl.focus({ focusVisible: true })
+              } catch {
+                autofocusEl.focus()
+              }
             }
           }}
         >

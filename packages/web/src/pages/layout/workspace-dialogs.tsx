@@ -71,7 +71,7 @@ export function DialogDeleteWorkspace(props: { root: string; directory: string; 
           <Button variant="ghost" size="large" onClick={() => dialog.close()}>
             {props.deps.language.t("common.cancel")}
           </Button>
-          <Button variant="primary" size="large" disabled={data.status === "loading"} onClick={handleDelete}>
+          <Button variant="primary" size="large" disabled={data.status === "loading"} onClick={handleDelete} autofocus>
             {props.deps.language.t("workspace.delete.button")}
           </Button>
         </div>
@@ -148,7 +148,7 @@ export function DialogResetWorkspace(props: { root: string; directory: string; d
           <Button variant="ghost" size="large" onClick={() => dialog.close()}>
             {props.deps.language.t("common.cancel")}
           </Button>
-          <Button variant="primary" size="large" disabled={state.status === "loading"} onClick={handleReset}>
+          <Button variant="primary" size="large" disabled={state.status === "loading"} onClick={handleReset} autofocus>
             {props.deps.language.t("workspace.reset.button")}
           </Button>
         </div>
