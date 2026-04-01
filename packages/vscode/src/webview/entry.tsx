@@ -93,16 +93,10 @@ function resolveKeybind(id: string): string {
 
 // ─── Wrapper layout ───────────────────────────────────────────────────────────
 
-/** Wrapper that shows a header bar with connection status */
-function PanelLayout(props: ParentProps<{ connected: boolean }>) {
+/** Main layout wrapper */
+function PanelLayout(props: ParentProps) {
   return (
     <div class="panel-root">
-      <div class="panel-header">
-        <div class="connection-status" title="LiteAI">
-          <div class={`status-dot ${props.connected ? "status-connected" : "status-disconnected"}`} />
-          <span class="status-label">LiteAI</span>
-        </div>
-      </div>
       <div class="panel-body">{props.children}</div>
     </div>
   )
@@ -233,6 +227,8 @@ function App() {
     const msg = event.data as Record<string, unknown>
     if (msg?.type === "recent-files" && Array.isArray(msg.files)) {
       setRecentFiles(msg.files as string[])
+    } else if (msg?.type === "new-session") {
+      setRoute({ projectID: store.store.projectID })
     }
   }
   window.addEventListener("message", handleWindowMessage)
@@ -493,7 +489,7 @@ function App() {
                     selection={selectionController}
                     permission={permissionController}
                   >
-                    <PanelLayout connected={connected()}>
+                    <PanelLayout>
                       <ChatPane
                         handler={handler}
                         onNavigateSession={(_projectID, sessionID) => {

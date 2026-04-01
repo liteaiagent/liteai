@@ -82,6 +82,16 @@
       {
         "command": "liteai.addFilepathToTerminal",
         "title": "Add Filepath to Terminal"
+      },
+      {
+        "command": "liteai.showStatus",
+        "title": "LiteAI: Connection Status",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "liteai.newSession",
+        "title": "LiteAI: New Session",
+        "icon": "$(add)"
       }
     ],
     "menus": {
@@ -89,6 +99,18 @@
         {
           "command": "liteai.openNewTerminal",
           "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "liteai.newSession",
+          "when": "view == 'liteai.chatView'",
+          "group": "navigation@0"
+        },
+        {
+          "command": "liteai.showStatus",
+          "when": "view == 'liteai.chatView'",
+          "group": "navigation@1"
         }
       ]
     },

@@ -60,6 +60,48 @@ export function activate(context: vscode.ExtensionContext) {
     }
   })
 
+  const showStatusDisposable = vscode.commands.registerCommand("liteai.showStatus", async () => {
+    const url = serverManager.url || "(Disconnected)"
+    const mode = serverManager.mode
+    
+    // QuickPick options:
+    const items: vscode.QuickPickItem[] = [
+      {
+        label: "$(server-environment) Server Status",
+        description: url,
+        detail: `Mode: ${mode}`,
+      },
+      {
+        label: "$(gear) Manage Server",
+        description: "Open LiteAI server settings",
+      },
+      {
+        label: "$(plug) MCP Tools",
+        description: "Status of configured MCP connections (View Only)",
+      },
+      {
+        label: "$(symbol-event) LSP Servers",
+        description: "Connected Language Servers (Native VS Code)",
+      },
+    ]
+
+    const selected = await vscode.window.showQuickPick(items, {
+      placeHolder: "LiteAI Status",
+    })
+
+    if (selected) {
+      if (selected.label.includes("Manage Server")) {
+        vscode.commands.executeCommand("workbench.action.openSettings", "liteai.server")
+      } else if (selected.label.includes("MCP Tools") || selected.label.includes("LSP Servers")) {
+        vscode.window.showInformationMessage("This information is managed directly via VS Code Extensions or LiteAI Config files in single-project mode. Full management is available in the standalone Web app.", "OK")
+      }
+    }
+  })
+
+  const newSessionDisposable = vscode.commands.registerCommand("liteai.newSession", () => {
+    provider.view?.webview.postMessage({ type: "new-session" })
+  })
+
   // Start the server manager (it will connect to remote or wait until explicitly told)
   // We provide the extension context. Note: ChatViewProvider will tell it to start when webview is ready.
   // Although ServerManager.start() handles the context argument now, we can pass context here
@@ -82,6 +124,8 @@ export function activate(context: vscode.ExtensionContext) {
     _openNewTerminalDisposable,
     openTerminalDisposable,
     addFilepathDisposable,
+    showStatusDisposable,
+    newSessionDisposable,
     workspaceFolderWatcher,
   )
 
