@@ -36,11 +36,11 @@ export type { PromptHistoryComment, PromptHistoryEntry, PromptHistoryStoredEntry
 export type { AtOption, SlashCommand } from "./prompt-input/slash-popover"
 // Utilities
 export { same } from "./same"
+export { SessionPermissionDock } from "./session-permission-dock"
+export { SessionQuestionDock } from "./session-question-dock"
 // Components
 export { SessionTitleBar } from "./session-title-bar"
+export { SessionTodoDock } from "./session-todo-dock"
 // Timeline staging
 export type { StageConfig, TimelineStageInput } from "./timeline-staging"
 export { createTimelineStaging } from "./timeline-staging"
-export { SessionPermissionDock } from "./session-permission-dock"
-export { SessionQuestionDock } from "./session-question-dock"
-export { SessionTodoDock } from "./session-todo-dock"

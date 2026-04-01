@@ -96,8 +96,6 @@ export function SessionTodoDock(props: {
     onCleanup(() => observer.disconnect())
   })
 
-
-
   return (
     <DockTray
       data-component="session-todo-dock"

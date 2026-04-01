@@ -10,13 +10,7 @@ export const ProviderIconSprite: Component = () => {
   onMount(() => {
     if (ref) ref.innerHTML = spriteRaw
   })
-  return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      style="position:absolute;width:0;height:0;overflow:hidden"
-    />
-  )
+  return <div ref={ref} aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" />
 }
 
 export type ProviderIconProps = JSX.SVGElementTags["svg"] & {

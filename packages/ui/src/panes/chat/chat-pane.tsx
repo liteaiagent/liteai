@@ -9,9 +9,9 @@ import { usePaneRoute } from "../shared/pane-route"
 import { type ContextItem, type Prompt, usePrompt } from "../shared/prompt"
 import { ChatNewSession } from "./chat-new-session"
 import {
-  ChatPromptInput,
-  type ChatPromptCommentActions,
   type ChatPromptCommands,
+  type ChatPromptCommentActions,
+  ChatPromptInput,
   type ChatPromptSubmitHandler,
 } from "./chat-prompt-input"
 import { createSessionHistoryWindow, emptyUserMessages } from "./history-window"

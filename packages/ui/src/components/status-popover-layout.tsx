@@ -1,8 +1,8 @@
+import type { JSXElement } from "solid-js"
 import { Button } from "./button"
 import { Icon } from "./icon"
 import { Popover } from "./popover"
 import { Tabs } from "./tabs"
-import { type JSXElement, Show } from "solid-js"
 
 export interface StatusPopoverLayoutProps {
   open: boolean
@@ -85,25 +85,19 @@ export function StatusPopoverLayout(props: StatusPopoverLayoutProps) {
 
           <Tabs.Content value="servers">
             <div class="flex flex-col px-2 pb-2">
-              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">
-                {props.serversContent}
-              </div>
+              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">{props.serversContent}</div>
             </div>
           </Tabs.Content>
 
           <Tabs.Content value="mcp">
             <div class="flex flex-col px-2 pb-2">
-              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">
-                {props.mcpContent}
-              </div>
+              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">{props.mcpContent}</div>
             </div>
           </Tabs.Content>
 
           <Tabs.Content value="lsp">
             <div class="flex flex-col px-2 pb-2">
-              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">
-                {props.lspContent}
-              </div>
+              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">{props.lspContent}</div>
             </div>
           </Tabs.Content>
         </Tabs>

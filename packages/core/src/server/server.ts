@@ -4,7 +4,6 @@ import { describeRoute, generateSpecs, openAPIRouteHandler, resolver, validator 
 import z from "zod"
 import { lazy } from "@/util/lazy"
 import { WorkspaceRouterMiddleware } from "../control-plane/workspace-router-middleware"
-import { Installation } from "../installation"
 import { Project } from "../project/project"
 import { Log } from "../util/log"
 import { API_INFO } from "./constants"
@@ -35,7 +34,6 @@ import { SessionRoutes } from "./routes/session"
 import { SystemRoutes } from "./routes/system"
 import { ToolRoutes } from "./routes/tool"
 import { TraceRoutes } from "./routes/trace"
-import { TuiRoutes } from "./routes/tui"
 
 // ---------------------------------------------------------------------------
 // Suppress verbose AI SDK warnings at import time.
@@ -76,7 +74,6 @@ export namespace Server {
       .route("/", FileRoutes())
       .route("/mcp", McpRoutes())
       .route("/plugin", PluginRoutes())
-      .route("/tui", TuiRoutes())
       .route("/tool", ToolRoutes())
       .route("/", InstanceRoutes())
   }
