@@ -2,7 +2,6 @@
 
 import { z } from "zod"
 import { Config } from "../src/config/config"
-import { TuiConfig } from "../src/config/tui"
 
 function generate(schema: z.ZodType) {
   const result = z.toJSONSchema(schema, {

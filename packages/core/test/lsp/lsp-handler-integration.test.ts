@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { type ChildProcess, spawn } from "node:child_process"
+import { spawn } from "node:child_process"
 import path from "node:path"
-import { encode, decodeFrames } from "../fixture/lsp/jsonrpc-helpers"
+import { decodeFrames, encode } from "../fixture/lsp/jsonrpc-helpers"
 
 const HANDLER_SCRIPT = path.join(__dirname, "../fixture/lsp/start-lsp-handler.ts")
 
@@ -18,10 +18,10 @@ function spawnHandler() {
       LITEAI_DB_MEMORY: "true",
     },
   })
-  let readBuffer = Buffer.alloc(0)
+  let readBuffer: Buffer = Buffer.alloc(0)
   const received: unknown[] = []
 
-  proc.stdout!.on("data", (chunk: Buffer) => {
+  proc.stdout?.on("data", (chunk: Buffer) => {
     readBuffer = Buffer.concat([readBuffer, chunk])
     const { messages, rest } = decodeFrames(readBuffer)
     readBuffer = rest
@@ -39,16 +39,16 @@ function spawnHandler() {
     received,
     sendRequest(method: string, params: unknown = {}) {
       const id = nextId++
-      proc.stdin!.write(encode({ jsonrpc: "2.0", id, method, params }))
+      proc.stdin?.write(encode({ jsonrpc: "2.0", id, method, params }))
       return id
     },
     sendNotification(method: string, params: unknown = {}) {
-      proc.stdin!.write(encode({ jsonrpc: "2.0", method, params }))
+      proc.stdin?.write(encode({ jsonrpc: "2.0", method, params }))
     },
     async waitForResponse(id: number, timeoutMs = 5000): Promise<unknown> {
       const start = Date.now()
       while (Date.now() - start < timeoutMs) {
-        const match = received.find((r: any) => r.id === id)
+        const match = received.find((r) => (r as { id?: number | string })?.id === id)
         if (match) return match
         await new Promise((r) => setTimeout(r, 50))
       }
@@ -77,7 +77,14 @@ describe("LSP handler integration", () => {
       capabilities: {},
     })
 
-    const response: any = await handler.waitForResponse(id)
+    const response = (await handler.waitForResponse(id)) as {
+      result: {
+        capabilities: {
+          inlineCompletionProvider: unknown
+          textDocumentSync: unknown
+        }
+      }
+    }
 
     expect(response.result).toBeDefined()
     expect(response.result.capabilities).toBeDefined()
@@ -94,7 +101,9 @@ describe("LSP handler integration", () => {
       capabilities: {},
     })
 
-    const response: any = await handler.waitForResponse(id)
+    const response = (await handler.waitForResponse(id)) as {
+      result: { capabilities: unknown }
+    }
     expect(response.result.capabilities).toBeDefined()
 
     // Send initialized notification (should not crash)
@@ -105,7 +114,9 @@ describe("LSP handler integration", () => {
 
     // The server should still be alive — send another request
     const shutdownId = handler.sendRequest("shutdown")
-    const shutdownResponse: any = await handler.waitForResponse(shutdownId)
+    const shutdownResponse = (await handler.waitForResponse(shutdownId)) as {
+      result: unknown
+    }
     expect(shutdownResponse.result).toBeNull()
   })
 })

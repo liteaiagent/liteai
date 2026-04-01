@@ -1,10 +1,10 @@
-import type { TuiConfig } from "../../../config/tui"
 import { Keybind } from "@liteai/core/util/keybind"
 import type { ParsedKey, Renderable } from "@opentui/core"
 import { useKeyboard, useRenderer } from "@opentui/solid"
 import { mapValues, pipe } from "remeda"
 import { createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
+import type { TuiConfig } from "../../../config/tui"
 import { createSimpleContext } from "./helper"
 import { useTuiConfig } from "./tui-config"
 

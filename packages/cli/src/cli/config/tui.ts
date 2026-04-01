@@ -1,13 +1,13 @@
 import { existsSync } from "node:fs"
-import { mergeDeep, unique } from "remeda"
-import type z from "zod"
 import { Brand } from "@liteai/core/brand"
+import { Config } from "@liteai/core/config/config"
+import { ConfigPaths } from "@liteai/core/config/paths"
 import { Flag } from "@liteai/core/flag/flag"
 import { Global } from "@liteai/core/global/index"
 import { Instance } from "@liteai/core/project/instance"
 import { Log } from "@liteai/core/util/log"
-import { Config } from "@liteai/core/config/config"
-import { ConfigPaths } from "@liteai/core/config/paths"
+import { mergeDeep, unique } from "remeda"
+import type z from "zod"
 import { TuiInfo } from "./tui-schema"
 
 export namespace TuiConfig {

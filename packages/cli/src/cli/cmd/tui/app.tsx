@@ -1,5 +1,4 @@
 import { writeHeapSnapshot } from "node:v8"
-import type { TuiConfig } from "../../config/tui"
 import { Flag } from "@liteai/core/flag/flag"
 import { Installation } from "@liteai/core/installation/index"
 import { MCP } from "@liteai/core/mcp/index"
@@ -30,6 +29,7 @@ import { Clipboard } from "@tui/util/clipboard"
 import { Selection } from "@tui/util/selection"
 import open from "open"
 import { batch, createEffect, createSignal, ErrorBoundary, Match, on, onMount, Switch } from "solid-js"
+import type { TuiConfig } from "../../config/tui"
 import { FrecencyProvider } from "./component/prompt/frecency"
 import { PromptHistoryProvider } from "./component/prompt/history"
 import { PromptStashProvider } from "./component/prompt/stash"
@@ -712,20 +712,33 @@ function App() {
     },
   ])
 
-  sdk.event.on(TuiEvent.CommandExecute.type, (evt) => {
+  // biome-ignore lint/complexity/noBannedTypes: local UI event
+  ;(sdk.event.on as Function)(TuiEvent.CommandExecute.type, (evt: { properties: { command: string } }) => {
     command.trigger(evt.properties.command)
   })
 
-  sdk.event.on(TuiEvent.ToastShow.type, (evt) => {
-    toast.show({
-      title: evt.properties.title,
-      message: evt.properties.message,
-      variant: evt.properties.variant,
-      duration: evt.properties.duration,
-    })
-  })
+  // biome-ignore lint/complexity/noBannedTypes: local UI event
+  ;(sdk.event.on as Function)(
+    TuiEvent.ToastShow.type,
+    (evt: {
+      properties: {
+        title?: string
+        message: string
+        variant?: "info" | "success" | "warning" | "error"
+        duration?: number
+      }
+    }) => {
+      toast.show({
+        title: evt.properties.title,
+        message: evt.properties.message,
+        variant: evt.properties.variant ?? "info",
+        duration: evt.properties.duration,
+      })
+    },
+  )
 
-  sdk.event.on(TuiEvent.SessionSelect.type, (evt) => {
+  // biome-ignore lint/complexity/noBannedTypes: local UI event
+  ;(sdk.event.on as Function)(TuiEvent.SessionSelect.type, (evt: { properties: { sessionID: string } }) => {
     route.navigate({
       type: "session",
       sessionID: evt.properties.sessionID,

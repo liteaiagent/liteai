@@ -19,7 +19,6 @@ afterAll(() => {
   Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = prevExternalSkills
 })
 
-
 test("discovers skills from .liteai/skill/ directory", async () => {
   await using tmp = await tmpdir({
     git: true,
@@ -150,7 +149,6 @@ Just some content without YAML frontmatter.
     },
   })
 })
-
 
 test("returns empty array when no skills exist", async () => {
   await using tmp = await tmpdir({ git: true })

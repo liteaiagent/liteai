@@ -1,5 +1,5 @@
-import { type ChildProcess } from "node:child_process"
-import { Readable, Writable } from "node:stream"
+import type { ChildProcess } from "node:child_process"
+import type { Readable, Writable } from "node:stream"
 import * as vscode from "vscode"
 import { LanguageClient, type LanguageClientOptions, type StreamInfo } from "vscode-languageclient/node"
 
@@ -14,10 +14,7 @@ import { LanguageClient, type LanguageClientOptions, type StreamInfo } from "vsc
  * We reuse the same process that ServerManager already spawned,
  * so there is no extra process, no extra port, no extra auth.
  */
-export function createLanguageClient(
-  coreProcess: ChildProcess,
-  context: vscode.ExtensionContext,
-): LanguageClient {
+export function createLanguageClient(coreProcess: ChildProcess, _context: vscode.ExtensionContext): LanguageClient {
   const clientOptions: LanguageClientOptions = {
     // Provide completions for all file types
     documentSelector: [{ scheme: "file", pattern: "**/*" }],

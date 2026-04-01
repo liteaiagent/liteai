@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs"
-import { TuiConfig } from "../../config/tui"
 import { Instance } from "@liteai/core/project/instance"
+import { TuiConfig } from "../../config/tui"
 import { UI } from "../../ui"
 import { cmd } from "../cmd"
 import { tui } from "./app"

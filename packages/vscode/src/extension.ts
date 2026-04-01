@@ -135,7 +135,6 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(languageClient)
   })
 
-
   context.subscriptions.push(
     openTerminalDisposable,
     addFilepathDisposable,

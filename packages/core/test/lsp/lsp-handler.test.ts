@@ -5,7 +5,7 @@ describe("buildCompletionPrompt", () => {
   test("includes language, file, prefix, and suffix", () => {
     const prompt = buildCompletionPrompt({
       prefix: "function hello() {\n  return ",
-      suffix: '\n}\n\nconsole.log(hello())',
+      suffix: "\n}\n\nconsole.log(hello())",
       languageId: "typescript",
       fileUri: "file:///path/to/file.ts",
     })

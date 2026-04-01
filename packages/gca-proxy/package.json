@@ -8,8 +8,8 @@
     "build": "bun build --compile src/index.ts --outfile dist/gca-proxy keys/api_public.pem keys/api_private.pem",
     "start": "./dist/gca-proxy",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check --write .",
-    "lint:check": "biome check .",
+    "lint": "biome check --write",
+    "lint:check": "biome check",
     "test": "bun test"
   },
   "dependencies": {

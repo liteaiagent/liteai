@@ -114,7 +114,7 @@ const server = Server.listen({ port: args.port, hostname: args.hostname })
 // When --lsp is active stdout belongs to LSP JSON-RPC framing — redirect to stderr
 const listenMsg = `liteai core server listening on http://${server.hostname}:${server.port}`
 if (args.lsp) {
-  process.stderr.write(listenMsg + "\n")
+  process.stderr.write(`${listenMsg}\n`)
 } else {
   console.log(listenMsg)
 }

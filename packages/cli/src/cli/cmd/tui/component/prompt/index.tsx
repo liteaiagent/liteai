@@ -97,7 +97,8 @@ export function Prompt(props: PromptProps) {
   const pasteStyleId = syntax().getStyleId("extmark.paste") ?? undefined
   let promptPartTypeId = 0
 
-  sdk.event.on(TuiEvent.PromptAppend.type, (evt) => {
+  // biome-ignore lint/complexity/noBannedTypes: local UI event
+  ;(sdk.event.on as Function)(TuiEvent.PromptAppend.type, (evt: { properties: { text: string } }) => {
     if (!input || input.isDestroyed) return
     input.insertText(evt.properties.text)
     setTimeout(() => {

@@ -45,7 +45,7 @@ export async function tmpdir(options?: TmpDirOptions) {
     await $`git commit --allow-empty -m "root commit ${dirpath}"`.cwd(dirpath).quiet()
   }
   const realpath = sanitizePath(await fs.realpath(dirpath))
-  
+
   if (options?.init) {
     await options.init(realpath)
   }

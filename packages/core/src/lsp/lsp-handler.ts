@@ -1,11 +1,11 @@
 import { generateText } from "ai"
 import {
   createConnection,
-  InlineCompletionItem,
-  InlineCompletionList,
+  type InlineCompletionItem,
+  type InlineCompletionList,
   ProposedFeatures,
-  TextDocuments,
   TextDocumentSyncKind,
+  TextDocuments,
 } from "vscode-languageserver/node"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { Provider } from "../provider/provider"

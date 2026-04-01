@@ -1,13 +1,13 @@
 import os from "node:os"
 import path from "node:path"
 import { Flag } from "@/flag/flag"
+import * as Platform from "@/platform"
 import { Config } from "../../config/config"
 import { Global } from "../../global"
 import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
 import { Glob } from "../../util/glob"
 import { Log } from "../../util/log"
-import * as Platform from "@/platform"
 import type { Message } from "../message"
 
 const log = Log.create({ service: "session.instruction" })

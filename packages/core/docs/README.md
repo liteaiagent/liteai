@@ -15,7 +15,7 @@ LiteAI fundamentally functions as a core engine for managing **Projects**, isola
 The system leverages several interfaces to stream execution feedback to the user:
 - **Web App**: Connects via HTTP API and Server-Sent Events (SSE).
 - **IDE Extensions**: In production, integrates via HTTP/SSE for chat, HTTP callbacks for hosted fs/git, and LSP over stdio for AI editor features (inline completions).
-- **TUI / CLI**: Integrates directly with the internal code (domain layer), bypassing the network API.
+- **TUI / CLI**: Connects via HTTP API and Server-Sent Events (SSE).
 - **LSP (server role)**: Core exposes an LSP server on stdin/stdout (`--lsp`) alongside its HTTP server, enabling native editor features.
 
 ```mermaid
@@ -24,11 +24,15 @@ graph TD
         WebApp[Web App]
         CLI[TUI / CLI]
         IDE[IDE / Editor]
-        SDK[SDK API]
+    end
+
+    subgraph Integration Layer
+        SDK[SDK Client]
     end
 
     subgraph Transport Layer
         API[Server & SSE]
+        LSPServer[LSP Server stdio]
     end
 
     subgraph Domain Entities
@@ -44,21 +48,26 @@ graph TD
     subgraph Peripherals
         Tools[Tools & Plugins]
         Provider[LLM Providers]
-        LSP[Language Servers Protocol]
+        LSPClient[LSP Client]
         Storage[Local Database]
         FS[Worktree & Files]
     end
 
-    WebApp --> API
-    IDE --> API
-    SDK --> API
+    %% UI interactions pass through the SDK Client (or directly via API)
+    WebApp --> SDK
+    CLI --> SDK
+    IDE --> SDK
+    
+    %% IDE uses LSP Server separately
+    IDE -.-> LSPServer
 
-    %% CLI directly executes the project
-    CLI --> Project
-    CLI --> Session
+    %% SDK translates commands to HTTP/SSE
+    SDK --> API
 
     API --> Project
     API --> Session
+    LSPServer --> Project
+    LSPServer --> Session
 
     Project --> Storage
     Project --> FS
@@ -68,9 +77,9 @@ graph TD
     
     Agent --> Tools
     Agent --> Provider
-    Agent --> LSP
+    Agent --> LSPClient
 
-    LSP -.-> FS
+    LSPClient -.-> FS
     Tools --> FS
 ```
 
@@ -107,7 +116,7 @@ State management, metadata, and local persistence for whatever source repository
 
 ### 🛠️ Tools, Commands & Execution
 Modules that allow the system to alter the host machine and parse CLI directives.
-- **Source:** [`src/tool/`](../src/tool/), [`src/cli/`](../src/cli/), [`src/command/`](../src/command/), [`src/skill/`](../src/skill/)
+- **Source:** [`src/tool/`](../src/tool/), [`src/command/`](../src/command/), [`src/skill/`](../src/skill/)
 - **Documentation:**
   - [**Commands Architecture**](./commands-architecture.md) — System entry and routing execution.
   - [**Shell & Tools**](./shell-tool.md) — Executing OS commands, rendering terminals, etc.

@@ -1,9 +1,9 @@
 import { afterEach, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
-import { TuiConfig } from "../../src/cli/config/tui"
 import { Global } from "@liteai/core/global/index"
 import { Instance } from "@liteai/core/project/instance"
+import { TuiConfig } from "../../src/cli/config/tui"
 import { tmpdir } from "../fixture/fixture"
 
 const managedConfigDir = process.env.LITEAI_TEST_MANAGED_CONFIG_DIR ?? ""

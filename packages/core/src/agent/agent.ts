@@ -4,8 +4,8 @@ import matter from "gray-matter"
 import { mergeDeep, pipe, sortBy, values } from "remeda"
 import z from "zod"
 import { PermissionNext } from "@/permission/next"
-import { Plugin } from "@/plugin"
 import * as Platform from "@/platform"
+import { Plugin } from "@/plugin"
 import { Log } from "@/util/log"
 import { Auth } from "../auth"
 import { Config } from "../config/config"
@@ -75,7 +75,6 @@ export namespace Agent {
       ref: "Agent",
     })
   export type Info = z.infer<typeof Info>
-
 
   const state = Instance.state(async () => {
     log.info("loading agents")
