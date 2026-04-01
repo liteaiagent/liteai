@@ -226,7 +226,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   let slashPopoverRef!: HTMLDivElement
 
   const mirror = { input: false }
-  const inset = 56
+  const inset = 44
   const space = `${inset}px`
 
   const keybind = createMemo(() => props.commands?.keybind ?? NO_OP_KEYBIND)
@@ -1222,7 +1222,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
           />
 
           {/* Submit / Stop button (bottom right) */}
-          <div class="pointer-events-none absolute bottom-2 right-2 flex items-center gap-2">
+          <div class="pointer-events-none absolute bottom-1.5 right-1.5 flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -1263,7 +1263,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                   tabIndex={store.mode === "normal" ? undefined : -1}
                   icon={working() ? "stop" : "arrow-up"}
                   variant="primary"
-                  class="size-8"
+                  class="size-7"
                   style={buttons()}
                   aria-label={working() ? language.t("prompt.action.stop") : language.t("prompt.action.send")}
                 />
@@ -1272,7 +1272,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
           </div>
 
           {/* Attach button (bottom left) */}
-          <div class="pointer-events-none absolute bottom-2 left-2">
+          <div class="pointer-events-none absolute bottom-1.5 left-1.5">
             <div
               aria-hidden={store.mode !== "normal"}
               class="pointer-events-auto"
@@ -1289,14 +1289,14 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                   data-action="prompt-attach"
                   type="button"
                   variant="ghost"
-                  class="size-8 p-0"
+                  class="size-7 p-0"
                   style={buttons()}
                   onClick={pick}
                   disabled={store.mode !== "normal"}
                   tabIndex={store.mode === "normal" ? undefined : -1}
                   aria-label={language.t("prompt.action.attachFile")}
                 >
-                  <Icon name="plus" class="size-4.5" />
+                  <Icon name="plus" class="size-4" />
                 </Button>
               </TooltipKeybind>
             </div>

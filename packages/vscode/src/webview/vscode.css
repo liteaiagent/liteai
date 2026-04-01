@@ -1,30 +1,120 @@
 /* vscode.css
  * VSCode webview CSS overrides for LiteAI UI
  *
- * The LiteAI theme.css provides all design tokens (--background-base,
- * --surface-raised-stronger-non-alpha, --border-weak-base, --text-strong, etc.)
- * with `@media (prefers-color-scheme: dark)` variants.
+ * This stylesheet creates a "compact density" layer that adapts the shared UI
+ * components (designed for ~800-1000px web layout) to fit VS Code's narrow
+ * sidebar panels (~300-400px). All overrides are scoped to [data-density="compact"]
+ * so they cannot affect the web version.
  *
- * VSCode webviews respect color-scheme via the body class `vscode-dark` or
- * `vscode-light`, but `prefers-color-scheme` might not match those automatically.
- * We force `color-scheme: dark` here since most VSCode users use dark themes.
- *
- * For full VSCode theme integration, you'd map each --background-base etc.
- * to var(--vscode-editor-background) and so on. For now, the LiteAI built-in
- * dark theme provides a good baseline.
+ * It also maps LiteAI design tokens to VS Code theme CSS variables so the panel
+ * respects the user's active theme (light, dark, high contrast).
  */
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 1. VS Code Theme Color Mapping
+ *
+ * Map LiteAI design tokens → VS Code CSS custom properties.
+ * VS Code injects --vscode-* variables on the <body>. We read those and
+ * feed them into our design system. Fallbacks use the existing dark theme
+ * values from theme.css so the UI still works if a variable is missing.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  /* Force dark color-scheme so the theme.css dark-mode variables activate */
+  /* Force color-scheme to match VS Code's body class */
   color-scheme: dark;
 
-  /* Basic VSCode font integration */
+  /* ── Fonts ── */
   --font-family-sans: var(--vscode-font-family, "Inter", sans-serif);
   --font-family-mono: var(--vscode-editor-font-family, "IBM Plex Mono", monospace);
-  --font-size-base: var(--vscode-font-size, 14px);
+
+  /* ── Background / Surface ── */
+  --background-base: var(--vscode-sideBar-background, #101010);
+  --background-weak: var(--vscode-editorGroupHeader-tabsBackground, #1e1e1e);
+  --background-strong: var(--vscode-editor-background, #121212);
+  --background-stronger: var(--vscode-editor-background, #151515);
+
+  --surface-raised-stronger-non-alpha: var(--vscode-input-background, #1c1c1c);
+  --surface-float-base: var(--vscode-editorWidget-background, #161616);
+
+  /* ── Text ── */
+  --text-strong: var(--vscode-editor-foreground, rgba(255, 255, 255, 0.936));
+  --text-base: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.618));
+  --text-weak: var(--vscode-disabledForeground, rgba(255, 255, 255, 0.422));
+  --text-weaker: rgba(255, 255, 255, 0.284);
+
+  /* ── Borders ── */
+  --border-base: var(--vscode-panel-border, rgba(255, 255, 255, 0.195));
+  --border-weak-base: var(--vscode-editorWidget-border, #282828);
+  --border-focus: var(--vscode-focusBorder, rgba(255, 255, 255, 0.418));
+  --border-selected: var(--vscode-focusBorder, #9dbefe);
+
+  /* ── Inputs ── */
+  --input-base: var(--vscode-input-background, #1c1c1c);
+  --input-focus: var(--vscode-input-background, #091123);
+
+  /* ── Buttons ── */
+  --button-primary-base: var(--vscode-button-background, #ededed);
+  --icon-invert-base: var(--vscode-button-foreground, #161616);
+  --button-secondary-base: var(--vscode-button-secondaryBackground, #1c1c1c);
+
+  /* ── Interactive (links, selections) ── */
+  --text-interactive-base: var(--vscode-textLink-foreground, #9dbefe);
+  --icon-interactive-base: var(--vscode-textLink-foreground, #034cff);
+
+  /* ── Status ── */
+  --text-on-success-base: var(--vscode-testing-iconPassed, #12c905);
+  --text-on-critical-base: var(--vscode-errorForeground, #fc533a);
+  --icon-success-base: var(--vscode-testing-iconPassed, #12c905);
+  --icon-critical-base: var(--vscode-testing-iconFailed, #fc533a);
+  --icon-warning-base: var(--vscode-editorWarning-foreground, #fbb73c);
+
+  /* ── Scrollbar ── */
+  --scrollbar-thumb: var(--vscode-scrollbarSlider-background, rgba(255, 255, 255, 0.1));
+  --scrollbar-thumb-hover: var(--vscode-scrollbarSlider-hoverBackground, rgba(255, 255, 255, 0.15));
 }
 
-/* ─── Panel layout ─── */
+/* Light theme support — VS Code adds .vscode-light to body */
+body.vscode-light {
+  color-scheme: light;
+}
+
+/* High contrast support */
+body.vscode-high-contrast {
+  --border-weak-base: var(--vscode-contrastBorder, #6fc3df);
+  --border-base: var(--vscode-contrastBorder, #6fc3df);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 2. Compact Density Tokens
+ *
+ * Scale down typography, spacing, and radii to match VS Code's native density.
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] {
+  /* Typography — match VS Code's native feel */
+  --font-size-small: 11px;
+  --font-size-base: var(--vscode-font-size, 13px);
+  --font-size-large: 13px;
+  --font-size-x-large: 16px;
+
+  /* Tighter line heights */
+  --line-height-normal: 125%;
+  --line-height-large: 145%;
+
+  /* Tighter spacing */
+  --spacing: 0.2rem;
+
+  /* Smaller border radii for panel-native feel */
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 3. Panel Layout
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 
 .panel-root {
   display: flex;
@@ -49,7 +139,10 @@
   flex-direction: column;
 }
 
-/* ─── Connection status ─── */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 4. Connection Status
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 
 .connection-status {
   display: flex;
@@ -93,13 +186,8 @@
 }
 
 @keyframes pulse-glow {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .status-label {
@@ -108,7 +196,10 @@
   text-overflow: ellipsis;
 }
 
-/* ─── Error screen ─── */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 5. Error Screen
+ * ═══════════════════════════════════════════════════════════════════════════════ */
 
 .error-screen {
   display: flex;
@@ -121,13 +212,13 @@
 }
 
 .error-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-on-critical-base, #f85149);
 }
 
 .error-body {
-  font-size: 12px;
+  font-size: 11px;
   font-family: var(--font-family-mono, monospace);
   color: var(--text-strong, #ccc);
   white-space: pre-wrap;
@@ -137,10 +228,553 @@
   opacity: 0.85;
 }
 
-/* ─── Prompt dock padding ─── */
-/* Match the web app's px-3 padding around the prompt area */
-[data-dock-surface="tray"] {
-  margin-left: 12px;
-  margin-right: 12px;
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 6. Dock Surfaces — Tighter for panels
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-dock-surface="shell"] {
+  border-radius: 8px;
+}
+
+[data-density="compact"] [data-dock-surface="tray"] {
+  border-radius: 8px;
+}
+
+[data-density="compact"] [data-dock-surface="tray"][data-dock-attach="top"] {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  margin-top: -0.5rem;
+}
+
+/* Prompt dock padding — tighter on all sides */
+[data-density="compact"] [data-dock-surface="tray"] {
+  margin-left: 8px;
+  margin-right: 8px;
+  margin-bottom: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 7. Button Size Overrides
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="button"][data-size="small"] {
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+[data-density="compact"] [data-component="button"][data-size="normal"] {
+  height: 24px;
+  line-height: 24px;
+  padding: 0 5px;
+  font-size: 11px;
+  gap: 6px;
+}
+
+[data-density="compact"] [data-component="button"][data-size="large"] {
+  height: 26px;
+  padding: 4px 10px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 8. Icon Button Size Override
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="icon-button"] {
+  width: 22px;
+  height: 22px;
+}
+
+[data-density="compact"] [data-component="icon-button"][data-size="small"] {
+  width: 20px;
+  height: 20px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 9. Selector Controls (Agent, Model, Variant tray)
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Tighter tray padding for the attached selector row */
+[data-density="compact"] [data-dock-surface="tray"][data-dock-attach="top"] > div {
+  padding-top: 0.75rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  gap: 0.25rem;
+}
+
+/* Smaller text in selector triggers */
+[data-density="compact"] [data-component="prompt-agent-control"] [data-component="select"] [data-slot="select-select-trigger"],
+[data-density="compact"] [data-component="prompt-variant-control"] [data-component="select"] [data-slot="select-select-trigger"] {
+  height: 22px;
+  font-size: 11px;
+  padding: 0 3px 0 6px;
+}
+
+/* Model button compact */
+[data-density="compact"] [data-action="prompt-model"] {
+  max-width: 180px !important;
+  height: 22px !important;
+  font-size: 11px !important;
+  padding: 0 4px 0 6px !important;
+}
+
+[data-density="compact"] [data-action="prompt-model"] .size-4 {
+  width: 14px;
+  height: 14px;
+}
+
+/* YOLO / auto-accept button compact */
+[data-density="compact"] [data-action="prompt-permissions"] {
+  height: 22px !important;
+  width: 22px !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 10. Chat Prompt Input Area
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Tighter prompt dock wrapper padding */
+[data-density="compact"] .mt-auto.px-3.pb-3 {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+
+/* Prompt editor text */
+[data-density="compact"] [data-dock-surface="shell"] [role="textbox"][contenteditable] {
+  font-size: var(--font-size-base);
+}
+
+/* Placeholder text */
+[data-density="compact"] [data-dock-surface="shell"] .text-14-regular.text-text-weak.pointer-events-none {
+  font-size: var(--font-size-base);
+}
+
+/* Submit button compact */
+[data-density="compact"] [data-action="prompt-submit"].size-8 {
+  width: 26px;
+  height: 26px;
+}
+
+/* Attach button compact */
+[data-density="compact"] [data-action="prompt-attach"].size-8 {
+  width: 26px;
+  height: 26px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 11. Question Dock — Compact
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] {
+  max-height: min(var(--question-prompt-max-height, 100dvh), 300px);
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-body"] {
+  padding: 6px 6px 0;
+  gap: 8px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-header"] {
+  padding: 0 6px;
+  gap: 8px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-header-title"] {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-text"] {
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-hint"] {
+  font-size: 11px;
+  padding: 0 6px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-options"] {
+  gap: 4px;
+  margin-top: 6px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-option"] {
+  padding: 5px 6px 5px 8px;
+  gap: 8px;
+  border-radius: 4px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="option-label"] {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="option-description"] {
+  font-size: 11px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-footer"] {
+  padding: 16px 6px 6px;
+  margin-top: -10px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="question"] [data-slot="question-progress-segment"] {
+  width: 12px;
+  height: 12px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 12. Todo Dock — Compact
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Toggle header */
+[data-density="compact"] [data-component="session-todo-dock"] [data-action="session-todo-toggle"] {
+  padding: 5px 6px 5px 8px;
+  gap: 4px;
+}
+
+[data-density="compact"] [data-component="session-todo-dock"] .text-14-regular {
+  font-size: 12px;
+}
+
+/* Todo list */
+[data-density="compact"] [data-component="session-todo-dock"] [data-slot="session-todo-list"] .px-3 {
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-bottom: 2rem;
+  max-height: 120px;
+}
+
+[data-density="compact"] [data-component="session-todo-dock"] [data-slot="session-todo-list"] .gap-1\.5 {
+  gap: 4px;
+}
+
+/* Checkbox density */
+[data-density="compact"] [data-component="session-todo-dock"] [data-component="checkbox"] {
+  gap: 8px;
+}
+
+[data-density="compact"] [data-component="session-todo-dock"] .text-14-regular.min-w-0 {
+  font-size: 12px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 13. Permission Dock — Compact
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-body"] {
+  padding: 8px 8px 0;
+  gap: 8px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-header-title"] {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-hint"] {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-patterns"] {
+  gap: 4px;
+  margin-top: 4px;
   margin-bottom: 8px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-patterns"] code {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-footer"] {
+  padding: 16px 6px 6px;
+  margin-top: -10px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 14. New Session Screen — Compact Hero
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Reduce oversized bottom padding */
+[data-density="compact"] .pb-30 {
+  padding-bottom: 3rem;
+}
+
+/* Top spacer - reduce */
+[data-density="compact"] .h-12.shrink-0[aria-hidden] {
+  height: 1rem;
+}
+
+/* Hero title */
+[data-density="compact"] .text-20-medium {
+  font-size: 14px;
+}
+
+/* Mark icon */
+[data-density="compact"] .w-10 {
+  width: 2rem;
+}
+
+/* Hero vertical gaps */
+[data-density="compact"] .flex.flex-col.items-center.gap-6 {
+  gap: 0.75rem;
+}
+
+[data-density="compact"] .flex.flex-col.gap-4.items-center {
+  gap: 0.375rem;
+}
+
+/* Hero meta text */
+[data-density="compact"] .text-12-medium.text-text-weak.select-text {
+  font-size: 11px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 15. Session Title Bar — Compact
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-session-title] {
+  padding-bottom: 0.5rem;
+}
+
+[data-density="compact"] [data-session-title] .h-12 {
+  height: 2rem;
+}
+
+[data-density="compact"] [data-session-title] .text-14-medium {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-session-title] h1 {
+  font-size: 12px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 16. Message Timeline — Full Width & Compact Text
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Remove web centering constraints */
+[data-density="compact"] [data-session-title].md\:max-w-200,
+[data-density="compact"] .md\:max-w-200 {
+  max-width: none;
+}
+
+[data-density="compact"] [data-session-title].md\:mx-auto,
+[data-density="compact"] .md\:mx-auto {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* User message bubble */
+[data-density="compact"] [data-component="user-message"] [data-slot="user-message-text"] {
+  padding: 6px 10px;
+  font-size: var(--font-size-base);
+  border-radius: 4px;
+}
+
+/* Assistant text */
+[data-density="compact"] [data-component="text-part"] [data-component="markdown"] {
+  font-size: var(--font-size-base);
+}
+
+/* Tool triggers */
+[data-density="compact"] [data-component="edit-trigger"] [data-slot="message-part-title"],
+[data-density="compact"] [data-component="write-trigger"] [data-slot="message-part-title"] {
+  font-size: 12px;
+}
+
+/* Reasoning trigger label */
+[data-density="compact"] [data-slot="reasoning-trigger-label"] {
+  font-size: 12px;
+}
+
+[data-density="compact"] [data-slot="reasoning-trigger-elapsed"] {
+  font-size: 11px;
+}
+
+/* Run command output code */
+[data-density="compact"] [data-slot="run_command-pre"] code {
+  font-size: 11px;
+}
+
+/* Turn gap & padding */
+[data-density="compact"] [data-component="session-turn"] {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 17. Select Dropdown — Compact
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="select-content"] {
+  border-radius: 6px;
+}
+
+[data-density="compact"] [data-component="select-content"] [data-slot="select-select-item"] {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 18. Model Selector Popover — Fit Panel Width
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* The model selector uses w-72 (288px) which barely fits a panel */
+[data-density="compact"] .w-72.h-80 {
+  width: 260px;
+  max-width: calc(100vw - 16px);
+  height: 260px;
+}
+
+[data-density="compact"] .w-72.h-80 .text-13-regular {
+  font-size: 11px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 19. Checkbox — Tighter for compact density
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="checkbox"] {
+  gap: 8px;
+}
+
+[data-density="compact"] [data-component="checkbox"] [data-slot="checkbox-checkbox-control"] {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 20. Tag — Smaller in compact context
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="tag"] {
+  font-size: 10px;
+  padding: 1px 4px;
+  height: 16px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 21. Tooltip — Smaller text for compact
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="tooltip-content"] {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 22. Scrollbar — Slim, matching VS Code
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+[data-density="compact"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-density="compact"] ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+}
+
+[data-density="compact"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.15));
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 23. Composer docks gap — tighter
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] .flex.flex-col.gap-3.relative.mb-3 {
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 24. Dialog — fit panel width
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="dialog"] {
+  max-width: calc(100vw - 24px);
+}
+
+[data-density="compact"] [data-component="dialog"] [data-slot="dialog-title"] {
+  font-size: 13px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 25. List component — compact search & items
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="list"] [data-slot="list-search"] input {
+  font-size: 11px;
+  height: 26px;
+}
+
+[data-density="compact"] [data-component="list"] [data-slot="list-item"] {
+  padding: 3px 6px;
+  min-height: 24px;
+  font-size: 11px;
+}
+
+[data-density="compact"] [data-component="list"] [data-slot="list-group-header"] {
+  font-size: 10px;
+  padding: 4px 6px 2px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+ * 26. Markdown content — honor compact font size
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-component="markdown"] {
+  font-size: var(--font-size-base);
+}
+
+[data-density="compact"] [data-component="markdown"] h1 {
+  font-size: 15px;
+}
+
+[data-density="compact"] [data-component="markdown"] h2 {
+  font-size: 14px;
+}
+
+[data-density="compact"] [data-component="markdown"] h3 {
+  font-size: 13px;
+}
+
+[data-density="compact"] [data-component="markdown"] code {
+  font-size: 11px;
+}
+
+[data-density="compact"] [data-component="markdown"] pre code {
+  font-size: 11px;
 }

@@ -86,7 +86,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // data: needed for base64-embedded fonts in the bundled CSS (woff2 data URIs)
       `font-src ${webview.cspSource} data:`,
       `img-src ${webview.cspSource} data: blob:`,
-      `script-src ${webview.cspSource} 'unsafe-inline'`,
+      `script-src ${webview.cspSource} 'unsafe-inline' 'wasm-unsafe-eval'`,
       `connect-src ${cspServerUrl} http://127.0.0.1:* http://localhost:*`,
     ].join("; ")
 
@@ -110,12 +110,50 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     <meta http-equiv="Content-Security-Policy" content="${csp}">
     <title>LiteAI</title>
     <link href="${styleUri}" rel="stylesheet">
+    <style>
+      .initial-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background-color: var(--vscode-sideBar-background, #101010);
+        font-family: var(--vscode-font-family, "Inter", sans-serif);
+        font-size: 13px;
+        user-select: none;
+      }
+      .shimmer-text {
+        color: rgba(255, 255, 255, 0.2);
+        background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.2) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 1.5s linear infinite;
+      }
+      body.vscode-light .shimmer-text {
+        color: rgba(0, 0, 0, 0.2);
+        background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 50%, rgba(0,0,0,0.2) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      @keyframes shimmer {
+        to { background-position: 200% center; }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="initial-loader">
+        <span class="shimmer-text">Loading...</span>
+      </div>
+    </div>
     ${urlScript}
     <script type="module" src="${scriptUri}"></script>
   </body>
 </html>`
   }
 }
+

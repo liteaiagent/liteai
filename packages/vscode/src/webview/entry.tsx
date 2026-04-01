@@ -97,7 +97,7 @@ function resolveKeybind(id: string): string {
 /** Main layout wrapper */
 function PanelLayout(props: ParentProps) {
   return (
-    <div class="panel-root">
+    <div class="panel-root" data-density="compact">
       <div class="panel-body">{props.children}</div>
     </div>
   )
@@ -530,6 +530,7 @@ log("Module loaded, mounting app")
 const root = document.getElementById("root")
 if (root) {
   log("Root element found, rendering")
+  root.innerHTML = "" // Clear the initial loading state
   render(() => <App />, root)
   log("render() called")
 } else {

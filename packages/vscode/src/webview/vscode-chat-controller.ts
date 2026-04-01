@@ -7,8 +7,9 @@ import type {
   SelectionController,
   SessionController,
 } from "@liteai/ui/panes"
-import { createSignal } from "solid-js"
-import { produce } from "solid-js/store"
+import { Persist, persisted } from "@liteai/ui/panes"
+import { createSignal, createEffect } from "solid-js"
+import { createStore, produce, reconcile } from "solid-js/store"
 import type { VscodeStore } from "./vscode-store"
 
 const LOG_PREFIX = "[liteai-controller]"
@@ -309,16 +310,28 @@ export function createVscodeSelectionController(opts: {
   const { store } = opts
   const s = store.store
 
-  // Local selection state
-  const [selectedAgentName, setSelectedAgentName] = createSignal<string | undefined>(undefined)
-  const [selectedModelKey, setSelectedModelKey] = createSignal<{ providerID: string; modelID: string } | undefined>(
-    undefined,
+  // Local selection state combined with cache for instant UI
+  const [state, setState] = persisted<{
+    agentName?: string
+    modelKey?: { providerID: string; modelID: string }
+    variant?: string
+    cachedProviders?: ProviderDef[]
+    cachedConnected?: string[]
+    cachedAgents?: Agent[]
+  }>(
+    Persist.workspace(s.directory || "default", "vscode-selection", ["vscode-selection.v2", "vscode-selection.v1"]),
+    createStore({}),
   )
-  const [selectedVariant, setSelectedVariant] = createSignal<string | undefined>(undefined)
 
-  // Provider/model data fetched from Core
-  const [providerList, setProviderList] = createSignal<ProviderDef[]>([])
-  const [connectedIds, setConnectedIds] = createSignal<Set<string>>(new Set())
+  const selectedAgentName = () => state.agentName
+  const setSelectedAgentName = (name: string | undefined) => setState("agentName", name)
+
+  const selectedModelKey = () => state.modelKey
+  const setSelectedModelKey = (key: { providerID: string; modelID: string } | undefined) => setState("modelKey", key)
+
+  const selectedVariant = () => state.variant
+  const setSelectedVariant = (variant: string | undefined) => setState("variant", variant)
+
   const [providersFetched, setProvidersFetched] = createSignal(false)
 
   // Fetch providers on demand
@@ -330,8 +343,9 @@ export function createVscodeSelectionController(opts: {
       if (data) {
         const allProviders = (data.all ?? []) as ProviderDef[]
         const connected = new Set<string>(data.connected ?? [])
-        setProviderList(allProviders)
-        setConnectedIds(connected)
+        
+        setState("cachedProviders", allProviders)
+        setState("cachedConnected", Array.from(connected))
 
         // Auto-select first connected model if none selected
         if (!selectedModelKey()) {
@@ -353,7 +367,19 @@ export function createVscodeSelectionController(opts: {
 
   void fetchProviders()
 
-  const agentList = () => s.agent.filter((a: Agent) => a.mode !== "subagent" && !a.hidden)
+  // Track live agents to cache them
+  createEffect(() => {
+    const live = s.agent
+    if (live && live.length > 0) {
+      setState("cachedAgents", reconcile(live))
+    }
+  })
+
+  const agentList = () => {
+    const live = s.agent.filter((a: Agent) => a.mode !== "subagent" && !a.hidden)
+    if (live.length > 0) return live
+    return (state.cachedAgents ?? []).filter((a: Agent) => a.mode !== "subagent" && !a.hidden)
+  }
 
   const currentAgent = () => {
     const name = selectedAgentName()
@@ -364,8 +390,8 @@ export function createVscodeSelectionController(opts: {
 
   const modelList = (): ModelInfo[] => {
     const result: ModelInfo[] = []
-    const connected = connectedIds()
-    for (const provider of providerList()) {
+    const connected = new Set(state.cachedConnected ?? [])
+    for (const provider of state.cachedProviders ?? []) {
       if (!connected.has(provider.id)) continue
       for (const model of Object.values(provider.models)) {
         result.push({
