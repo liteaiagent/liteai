@@ -6,7 +6,9 @@ import { BusEvent } from "@/bus/bus-event"
 import { GlobalBus } from "@/bus/global"
 import { Flag } from "@/flag/flag"
 import { iife } from "@/util/iife"
-import { Database, eq, NotFoundError } from "../storage/db"
+import { Database, eq, and, ne, NotFoundError } from "../storage/db"
+import { SessionTable, PermissionTable } from "../session/session.sql"
+import { WorkspaceTable } from "../control-plane/workspace.sql"
 import { Filesystem } from "../util/filesystem"
 import { git } from "../util/git"
 import { Glob } from "../util/glob"
@@ -250,20 +252,61 @@ export namespace Project {
   export async function register(data: ResolvedProject): Promise<{ project: Info; sandbox: string }> {
     log.info("register", { id: data.id })
 
+    // Detect worktree conflict: same directory registered under a different ID
+    // This happens when .git is deleted (git SHA → dir_hash) or when
+    // git init + first commit occurs (dir_hash → git SHA).
+    const conflict = Database.use((db) =>
+      db
+        .select()
+        .from(ProjectTable)
+        .where(and(eq(ProjectTable.worktree, data.worktree), ne(ProjectTable.id, data.id)))
+        .get(),
+    )
+    if (conflict) {
+      const oldId = conflict.id
+      const newId = data.id
+      log.warn("project ID changed, migrating", { oldId, newId, worktree: data.worktree })
+      Database.transaction((tx) => {
+        // Insert placeholder row for new ID so FK constraints are satisfied
+        tx.insert(ProjectTable)
+          .values({
+            id: newId,
+            worktree: data.worktree,
+            vcs: conflict.vcs ?? null,
+            time_created: conflict.time_created,
+            time_updated: Date.now(),
+            sandboxes: conflict.sandboxes,
+          })
+          .onConflictDoNothing()
+          .run()
+        tx.update(SessionTable).set({ project_id: newId }).where(eq(SessionTable.project_id, oldId)).run()
+        tx.update(PermissionTable).set({ project_id: newId }).where(eq(PermissionTable.project_id, oldId)).run()
+        tx.update(WorkspaceTable).set({ project_id: newId }).where(eq(WorkspaceTable.project_id, oldId)).run()
+        tx.delete(ProjectTable).where(eq(ProjectTable.id, oldId)).run()
+      })
+    }
+
     const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, data.id)).get())
 
+    // Carry over metadata from the old row if we just migrated
+    const migratedMeta = conflict ? fromRow(conflict) : undefined
     const existing = row
       ? fromRow(row)
-      : {
-          id: data.id,
-          worktree: data.worktree,
-          vcs: data.vcs as Info["vcs"],
-          sandboxes: [] as string[],
-          time: {
-            created: Date.now(),
-            updated: Date.now(),
-          },
-        }
+      : migratedMeta
+        ? {
+            ...migratedMeta,
+            id: data.id,
+          }
+        : {
+            id: data.id,
+            worktree: data.worktree,
+            vcs: data.vcs as Info["vcs"],
+            sandboxes: [] as string[],
+            time: {
+              created: Date.now(),
+              updated: Date.now(),
+            },
+          }
 
     if (Flag.LITEAI_EXPERIMENTAL_ICON_DISCOVERY) discover(existing)
 

@@ -69,14 +69,17 @@ function boot(input: { directory: string; init?: () => Promise<void>; project?: 
           }
         : await iife(async () => {
             const resolved = await Project.resolve(input.directory)
-            const project = Project.get(resolved.id)
+            let project = Project.get(resolved.id)
             if (!project) {
-              const all = Project.list()
-              throw new NotFoundError({
-                message: `Project not registered for directory: ${input.directory}. Resolved ID: ${resolved.id}. DB has: ${all
-                  .map((x) => x.id)
-                  .join(", ")}. Register via POST /project first.`,
+              // ID changed (e.g. .git deleted or git init + first commit).
+              // Re-register via fromDirectory() which triggers the migration
+              // in Project.register() to update all child table references.
+              Log.Default.info("project ID mismatch, re-registering", {
+                directory: input.directory,
+                resolvedId: resolved.id,
               })
+              const registered = await Project.fromDirectory(input.directory)
+              project = registered.project
             }
             return {
               directory: input.directory,

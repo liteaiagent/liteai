@@ -16,7 +16,8 @@ export function toProjectID(directory: string): string {
   )
   if (match?.id) return match.id
 
-  throw new Error(`Project not found in registry for directory: ${directory}`)
+  console.warn(`[toProjectID] Project not found in registry for directory: ${directory}`)
+  return ""
 }
 
 /** Map projectID -> directory path (reverse lookup) */
