@@ -362,20 +362,26 @@ body.vscode-high-contrast {
 }
 
 /* Submit button compact */
-[data-density="compact"] [data-action="prompt-submit"].size-8 {
+[data-density="compact"] [data-action="prompt-submit"].size-7 {
   width: 26px;
   height: 26px;
 }
 
 /* Attach button compact */
-[data-density="compact"] [data-action="prompt-attach"].size-8 {
+[data-density="compact"] [data-action="prompt-attach"].size-7 {
   width: 26px;
   height: 26px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
- * 11. Question Dock — Compact
+ * 11. Docks (Question & Permission) — Compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
+
+[data-density="compact"] [data-dock-surface="shell"] {
+  background-color: var(--background-base);
+  border: 1px solid var(--border-weak-base);
+  box-shadow: none;
+}
 
 [data-density="compact"] [data-component="dock-prompt"][data-kind="question"] {
   max-height: min(var(--question-prompt-max-height, 100dvh), 300px);
@@ -603,6 +609,17 @@ body.vscode-high-contrast {
 }
 
 /* Run command output code */
+[data-density="compact"] [data-component="run_command-output"] {
+  background: transparent !important;
+}
+
+[data-density="compact"] [data-component="run_command-output"] pre,
+[data-density="compact"] [data-component="run_command-output"] code {
+  background: transparent !important;
+  color: inherit;
+  box-shadow: none !important;
+}
+
 [data-density="compact"] [data-slot="run_command-pre"] code {
   font-size: 11px;
 }

@@ -76,20 +76,9 @@ export const VscodeComposerDocks: Component<{
 
   return (
     <div class="flex flex-col gap-3 relative mb-3 empty:mb-0 pointer-events-none empty:hidden">
-      <Show when={permission()} keyed>
-        {(req) => (
-          <div class="pointer-events-auto">
-            <SessionPermissionDock
-              request={req}
-              responding={permissionResponding()}
-              onDecide={handlePermissionDecide}
-            />
-          </div>
-        )}
-      </Show>
       <Show when={question()} keyed>
         {(req) => (
-          <div class="pointer-events-auto z-10 transition-transform origin-bottom duration-300">
+          <div class="pointer-events-auto z-20">
             <SessionQuestionDock
               request={req}
               onReply={handleQuestionReply}
@@ -99,7 +88,18 @@ export const VscodeComposerDocks: Component<{
           </div>
         )}
       </Show>
-      <Show when={todos().length > 0}>
+      <Show when={permission()} keyed>
+        {(req) => (
+          <div class="pointer-events-auto z-20">
+            <SessionPermissionDock
+              request={req}
+              responding={permissionResponding()}
+              onDecide={handlePermissionDecide}
+            />
+          </div>
+        )}
+      </Show>
+      <Show when={!question() && !permission() && todos().length > 0}>
         <div class="pointer-events-auto z-20">
           <SessionTodoDock
             sessionID={props.sessionID}
