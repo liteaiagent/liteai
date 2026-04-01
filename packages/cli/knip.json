@@ -1,0 +1,5 @@
+{
+  "entry": ["script/*.ts", "test/**/*.ts"],
+  "ignore": ["script/release.ts"],
+  "ignoreBinaries": ["biome", "gh", "build"]
+}

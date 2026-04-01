@@ -1,0 +1,5 @@
+{
+  "entry": ["script/**/*.ts"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreBinaries": ["biome", "script/e2e-local.ts"]
+}

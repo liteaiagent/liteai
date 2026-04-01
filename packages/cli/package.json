@@ -22,6 +22,7 @@
     "./*": "./src/*"
   },
   "devDependencies": {
+    "@effect/language-service": "0.79.0",
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
     "@types/semver": "^7.5.0",
@@ -43,7 +44,6 @@
     "@octokit/webhooks-types": "7.6.1",
     "@opentui/core": "0.1.87",
     "@opentui/solid": "0.1.87",
-    "@parcel/watcher": "2.5.1",
     "@solid-primitives/event-bus": "1.1.2",
     "@solid-primitives/scheduled": "1.5.2",
     "clipboardy": "4.0.0",
