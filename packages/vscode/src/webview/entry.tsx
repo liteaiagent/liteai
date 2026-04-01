@@ -1,5 +1,9 @@
 import { createLiteaiClient } from "@liteai/sdk/client"
+import { DataProvider } from "@liteai/ui/context"
 import { DialogProvider } from "@liteai/ui/context/dialog"
+import { FileComponentProvider } from "@liteai/ui/context/file"
+import { MarkedProvider } from "@liteai/ui/context/marked"
+import { File } from "@liteai/ui/file"
 import {
   ChatContextProvider,
   ChatPane,
@@ -31,6 +35,30 @@ function log(...args: unknown[]) {
 
 function logError(...args: unknown[]) {
   console.error(LOG_PREFIX, ...args)
+}
+
+// ─── Identifier ────────────────────────────────────────────────────────────────
+// Mirrors packages/web/src/utils/id.ts — generates sortable IDs with the
+// correct prefix required by the Core API (prt_, msg_, ses_, etc.).
+
+const ID_PREFIXES = { session: "ses", message: "msg", part: "prt" } as const
+type IdPrefix = keyof typeof ID_PREFIXES
+
+let _lastTs = 0
+let _counter = 0
+
+function ascendingID(prefix: IdPrefix): string {
+  const now = Date.now()
+  if (now !== _lastTs) { _lastTs = now; _counter = 0 }
+  _counter += 1
+  let ts = BigInt(now) * BigInt(0x1000) + BigInt(_counter)
+  const bytes = new Uint8Array(6)
+  for (let i = 0; i < 6; i++) bytes[i] = Number((ts >> BigInt(40 - 8 * i)) & BigInt(0xff))
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("")
+  const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  const rnd = crypto.getRandomValues(new Uint8Array(14))
+  const suffix = Array.from(rnd).map((b) => chars[b % 62]).join("")
+  return `${ID_PREFIXES[prefix]}_${hex}${suffix}`
 }
 
 /** Reads injected globals from the host HTML <script> tag. */
@@ -224,51 +252,72 @@ function App() {
   const handler = {
     async submit(_event: Event) {
       const projectID = store.store.projectID
+      log("submit() called — projectID:", projectID || "(empty)")
+
       if (!projectID) {
-        logError("Cannot submit: no project")
+        logError("Cannot submit: no project ID in store")
         return
       }
 
       const model = selectionController.model.current()
       const agent = selectionController.agent.current()
+      log("submit() — model:", model?.id, "provider:", model?.provider?.id, "agent:", agent?.name)
+
       if (!model || !agent) {
-        logError("Cannot submit: no model or agent selected")
+        logError("Cannot submit: no model or agent selected", { model, agent })
         return
       }
 
       const sessionID = route()?.sessionID
+      log("submit() — existing sessionID:", sessionID || "(none)")
 
       // The ChatPromptInput reads from usePrompt() and builds the prompt text.
       // The handler.submit is called after the prompt has been validated as non-empty.
       // We extract the text from the DOM because usePrompt() state is internal.
       const promptEl = document.querySelector('[role="textbox"][contenteditable]') as HTMLElement | null
       const text = promptEl?.innerText?.trim() ?? ""
-      if (!text) return
+      log("submit() — extracted text:", JSON.stringify(text))
+      if (!text) {
+        logError("submit() — text is empty, aborting")
+        return
+      }
 
       let targetSessionID = sessionID
 
       // Create a new session if we don't have one
       if (!targetSessionID) {
         try {
+          log("submit() — creating new session for projectID:", projectID)
           const createRes = await client.project.session.create({ projectID })
+          log("submit() — session.create raw response:", {
+            data: createRes.data,
+            error: createRes.error,
+            response: createRes.response?.status,
+          })
           const created = createRes.data
           if (!created?.id) {
-            logError("Failed to create session: no data returned")
+            logError("Failed to create session: no data returned. Full response:", {
+              data: createRes.data,
+              error: createRes.error,
+              status: createRes.response?.status,
+            })
             return
           }
           targetSessionID = created.id
           setRoute({ sessionID: targetSessionID, projectID })
           log("Created new session:", targetSessionID)
         } catch (err) {
-          logError("Failed to create session:", err)
+          logError("Failed to create session (exception):", err)
           return
         }
       }
 
-      // Submit the prompt
+      // Submit the prompt — mirrors web's sendFollowupDraft pattern
       try {
-        const partId = `part_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        await client.project.session.promptAsync({
+        const messageID = ascendingID("message")
+        const partID = ascendingID("part")
+        log("submit() — calling promptAsync on session:", targetSessionID, "text:", JSON.stringify(text))
+        const promptRes = await client.project.session.promptAsync({
           sessionID: targetSessionID,
           projectID,
           agent: agent.name,
@@ -276,14 +325,20 @@ function App() {
             providerID: model.provider.id,
             modelID: model.id,
           },
+          messageID,
           parts: [
             {
+              id: partID,
               type: "text" as const,
-              id: partId,
               text,
             },
           ],
           variant: selectionController.model.variant.current(),
+        })
+        log("submit() — promptAsync response:", {
+          data: promptRes.data,
+          error: promptRes.error,
+          status: promptRes.response?.status,
         })
         log("Prompt submitted to session:", targetSessionID)
       } catch (err) {
@@ -414,33 +469,52 @@ function App() {
       }}
     >
       <PaneProviders platform={vscodePlatform} route={route}>
-        <DialogProvider>
-          <PromptProvider>
-            <ChatContextProvider
-              chat={chatController}
-              session={sessionController}
-              selection={selectionController}
-              permission={permissionController}
+        <MarkedProvider>
+          <FileComponentProvider component={File}>
+            <DataProvider
+              data={{
+                session: store.store.session,
+                session_status: store.store.session_status,
+                session_diff: {},
+                message: store.store.message,
+                part: store.store.part,
+              }}
+              directory={store.store.directory}
+              onNavigateToSession={(sessionID: string) => {
+                setRoute({ sessionID, projectID: store.store.projectID })
+              }}
+              onSessionHref={(sessionID: string) => sessionID}
             >
-              <PanelLayout connected={connected()}>
-                <ChatPane
-                  handler={handler}
-                  onNavigateSession={(_projectID, sessionID) => {
-                    setRoute({ sessionID, projectID: store.store.projectID })
-                  }}
-                  searchFiles={searchFiles}
-                  recentFiles={recentFiles}
-                  keybind={resolveKeybind}
-                  commands={commands}
-                  onManageModels={onManageModels}
-                  onConnectProvider={onConnectProvider}
-                  shouldQueue={shouldQueue}
-                  onAbort={handler.abort}
-                />
-              </PanelLayout>
-            </ChatContextProvider>
-          </PromptProvider>
-        </DialogProvider>
+              <DialogProvider>
+                <PromptProvider>
+                  <ChatContextProvider
+                    chat={chatController}
+                    session={sessionController}
+                    selection={selectionController}
+                    permission={permissionController}
+                  >
+                    <PanelLayout connected={connected()}>
+                      <ChatPane
+                        handler={handler}
+                        onNavigateSession={(_projectID, sessionID) => {
+                          setRoute({ sessionID, projectID: store.store.projectID })
+                        }}
+                        searchFiles={searchFiles}
+                        recentFiles={recentFiles}
+                        keybind={resolveKeybind}
+                        commands={commands}
+                        onManageModels={onManageModels}
+                        onConnectProvider={onConnectProvider}
+                        shouldQueue={shouldQueue}
+                        onAbort={handler.abort}
+                      />
+                    </PanelLayout>
+                  </ChatContextProvider>
+                </PromptProvider>
+              </DialogProvider>
+            </DataProvider>
+          </FileComponentProvider>
+        </MarkedProvider>
       </PaneProviders>
     </ErrorBoundary>
   )

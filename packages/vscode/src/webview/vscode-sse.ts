@@ -52,7 +52,6 @@ export function createSseSubscription(opts: {
         }
 
         console.log(LOG_PREFIX, "Connected to event stream")
-
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ""
@@ -80,7 +79,10 @@ export function createSseSubscription(opts: {
         try {
           while (active) {
             const { done, value } = await reader.read()
-            if (done) break
+            if (done) {
+              console.log(LOG_PREFIX, "Stream reader done (server closed connection)")
+              break
+            }
 
             buffer += decoder.decode(value, { stream: true })
             const lines = buffer.split("\n")
@@ -96,12 +98,9 @@ export function createSseSubscription(opts: {
                 if (event && typeof event === "object" && event.type) {
                   // Project events come as { type, properties }
                   // Global events come as { directory, payload: { type, properties } }
-                  if (event.payload) {
-                    // Global event wrapper — extract the inner payload
-                    pendingEvents.push(event.payload)
-                  } else {
-                    pendingEvents.push(event)
-                  }
+                  const inner = event.payload ?? event
+                  console.log(LOG_PREFIX, "event received:", inner.type, inner)
+                  pendingEvents.push(inner)
                   scheduleFlush()
                 }
               } catch {

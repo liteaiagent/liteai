@@ -28,7 +28,7 @@ export const vscodePlatform: Platform = {
   fetch: (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     return new Promise((resolve, reject) => {
       const id = Date.now().toString() + Math.random().toString()
-      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url
 
       const handleMessage = (event: MessageEvent) => {
         const msg = event.data
@@ -82,14 +82,43 @@ export const vscodePlatform: Platform = {
 
       window.addEventListener("message", handleMessage)
 
-      vscode.postMessage({
-        type: "fetch",
-        id,
-        url,
-        method: init?.method ?? "GET",
-        headers: init?.headers,
-        body: init?.body, // Assumes body is string or undefined (ArrayBuffer etc. need special handling but SDK sends JSON)
-      })
+      // When the SDK passes a Request object as `input` (with no `init`),
+      // we must read method/headers/body from the Request itself.
+      // This is a key difference vs a plain URL+init call.
+      const req = !init && input instanceof Request ? (input as Request) : null
+
+      const method = init?.method ?? req?.method ?? "GET"
+
+      // Merge headers into a plain object for postMessage serialization
+      const rawHeaders: Record<string, string> = {}
+      const initHeaders = init?.headers ?? req?.headers
+      if (initHeaders instanceof Headers) {
+        initHeaders.forEach((value, key) => { rawHeaders[key] = value })
+      } else if (initHeaders && typeof initHeaders === "object") {
+        for (const [k, v] of Object.entries(initHeaders)) {
+          if (v != null) rawHeaders[k] = v as string
+        }
+      }
+
+      // Body: init.body is used when explicitly passed; otherwise read from Request.
+      // For a Request object, body must be consumed via .text() (JSON strings only).
+      const sendMessage = (body: string | undefined) => {
+        vscode.postMessage({
+          type: "fetch",
+          id,
+          url,
+          method,
+          headers: rawHeaders,
+          body,
+        })
+      }
+
+      if (req && !req.bodyUsed && req.body) {
+        req.text().then(sendMessage).catch(() => sendMessage(undefined))
+      } else {
+        const body = init?.body
+        sendMessage(typeof body === "string" ? body : body != null ? String(body) : undefined)
+      }
     })
   }) as Platform["fetch"],
 }
