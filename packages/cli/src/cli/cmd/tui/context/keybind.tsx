@@ -1,4 +1,4 @@
-import type { TuiConfig } from "@liteai/core/config/tui"
+import type { TuiConfig } from "../../../config/tui"
 import { Keybind } from "@liteai/core/util/keybind"
 import type { ParsedKey, Renderable } from "@opentui/core"
 import { useKeyboard, useRenderer } from "@opentui/solid"

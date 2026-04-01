@@ -1,19 +1,11 @@
 #!/usr/bin/env bun
 
 import { z } from "zod"
-import { Config } from "../src/config/config"
-import { TuiConfig } from "../src/config/tui"
+import { TuiConfig } from "../src/cli/config/tui"
 
 function generate(schema: z.ZodType) {
   const result = z.toJSONSchema(schema, {
-    io: "input", // Generate input shape (treats optional().default() as not required)
-    /**
-     * We'll use the `default` values of the field as the only value in `examples`.
-     * This will ensure no docs are needed to be read, as the configuration is
-     * self-documenting.
-     *
-     * See https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-validation-00#rfc.section.9.5
-     */
+    io: "input",
     override(ctx) {
       const schema = ctx.jsonSchema
 
@@ -51,12 +43,12 @@ function generate(schema: z.ZodType) {
   return result
 }
 
-const configFile = process.argv[2]
+const tuiFile = process.argv[2]
 
-if (!configFile) {
-  console.error("Error: configFile argument is required.")
+if (!tuiFile) {
+  console.error("Usage: bun run script/schema.ts <tui-out-file>")
   process.exit(1)
 }
 
-console.log(configFile)
-await Bun.write(configFile, JSON.stringify(generate(Config.Info), null, 2))
+console.log(tuiFile)
+await Bun.write(tuiFile, JSON.stringify(generate(TuiConfig.Info), null, 2))

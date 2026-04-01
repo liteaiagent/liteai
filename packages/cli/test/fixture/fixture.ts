@@ -31,6 +31,7 @@ async function stop(dir: string) {
 
 type TmpDirOptions = {
   git?: boolean
+  init?: (dir: string) => Promise<void>
 }
 
 export async function tmpdir(options?: TmpDirOptions) {
@@ -44,6 +45,10 @@ export async function tmpdir(options?: TmpDirOptions) {
     await $`git commit --allow-empty -m "root commit ${dirpath}"`.cwd(dirpath).quiet()
   }
   const realpath = sanitizePath(await fs.realpath(dirpath))
+  
+  if (options?.init) {
+    await options.init(realpath)
+  }
   const { Project } = await import("@liteai/core/project/project")
   await Project.fromDirectory(realpath)
   return {

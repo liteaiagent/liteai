@@ -1,5 +1,5 @@
 import z from "zod"
-import { Config } from "./config"
+import { Config } from "@liteai/core/config/config"
 
 const KeybindOverride = z
   .object(

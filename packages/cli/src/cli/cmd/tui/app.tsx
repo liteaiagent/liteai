@@ -1,5 +1,5 @@
 import { writeHeapSnapshot } from "node:v8"
-import type { TuiConfig } from "@liteai/core/config/tui"
+import type { TuiConfig } from "../../config/tui"
 import { Flag } from "@liteai/core/flag/flag"
 import { Installation } from "@liteai/core/installation/index"
 import { MCP } from "@liteai/core/mcp/index"
