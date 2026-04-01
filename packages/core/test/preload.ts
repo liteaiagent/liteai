@@ -60,7 +60,7 @@ beforeAll(async () => {
   await fs.writeFile(path.join(cacheDir, "version"), "14")
 
   const { Log } = await import("../src/util/log")
-  Log.init({
+  await Log.init({
     print: false,
     dev: true,
     level: "DEBUG",

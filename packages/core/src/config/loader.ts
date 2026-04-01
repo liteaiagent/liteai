@@ -65,7 +65,7 @@ function mergeConfigConcatArrays(target: Info, source: Info): Info {
 }
 
 // All recognized config file basenames, ordered by priority (later wins).
-const CONFIG_FILES = [`${Brand.config}.json`]
+const CONFIG_FILES = [`${Brand.config}.jsonc`, `${Brand.config}.json`]
 
 export type PluginSkill = {
   name: string
