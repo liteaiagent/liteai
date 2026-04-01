@@ -51,7 +51,12 @@ class HostedFilesystem implements FilesystemCapability {
       body: JSON.stringify({ path }),
     })
     if (!res.ok) {
-      throw new Error(`HostedCapabilities: readFile failed (${res.status}): ${await res.text()}`)
+      const text = await res.text()
+      const error = new Error(`HostedCapabilities: readFile failed (${res.status}): ${text}`) as NodeJS.ErrnoException
+      if (text.includes("ENOENT") || text.includes("FileNotFound") || res.status === 404) {
+        error.code = "ENOENT"
+      }
+      throw error
     }
     return res.text()
   }
@@ -66,7 +71,12 @@ class HostedFilesystem implements FilesystemCapability {
       body: JSON.stringify({ path }),
     })
     if (!res.ok) {
-      throw new Error(`HostedCapabilities: readFileBytes failed (${res.status}): ${await res.text()}`)
+      const text = await res.text()
+      const error = new Error(`HostedCapabilities: readFileBytes failed (${res.status}): ${text}`) as NodeJS.ErrnoException
+      if (text.includes("ENOENT") || text.includes("FileNotFound") || res.status === 404) {
+        error.code = "ENOENT"
+      }
+      throw error
     }
     const arrayBuffer = await res.arrayBuffer()
     return Buffer.from(arrayBuffer)

@@ -108,7 +108,7 @@ export class ServerManager {
     let spawnArgs = [
       "--hosted",
       "--port",
-      "0",
+      context.extensionMode !== vscode.ExtensionMode.Production ? "33863" : "0",
       "--csrf-token",
       this._csrf,
       "--extension-port",
@@ -122,19 +122,16 @@ export class ServerManager {
       windowsHide: true,
     }
 
-    if (__LITEAI_DEV__) {
-      if (process.env.LITEAI_SPAWN_DEV_SERVER === "true") {
-        outputChannel.appendLine(`[dev-hosted] Overriding binPath to run 'bun dev' from packages/core`)
-        spawnCmd = "bun"
-        spawnArgs = ["--watch", "run", "--conditions=browser", "./src/main.ts", ...spawnArgs]
-        spawnOpts.cwd = path.join(context.extensionPath, "../core")
-      } else {
-        outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
-      }
+    if (context.extensionMode !== vscode.ExtensionMode.Production) {
+      outputChannel.appendLine(`[dev-hosted] Overriding binPath to run 'bun dev' from packages/core`)
+      spawnCmd = "bun"
+      spawnArgs = ["--watch", "run", "--conditions=browser", "./src/main.ts", ...spawnArgs]
+      spawnOpts.cwd = path.join(context.extensionPath, "../core")
     } else {
       outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
     }
 
+    outputChannel.appendLine(`[spawn] Command: ${spawnCmd} ${spawnArgs.join(" ")}`)
     this._process = spawn(spawnCmd, spawnArgs, spawnOpts)
 
     return new Promise((resolve, reject) => {

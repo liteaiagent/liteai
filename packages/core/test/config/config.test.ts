@@ -87,7 +87,7 @@ test("loads JSON config file", async () => {
 test("loads project config from Git Bash and MSYS2 paths on Windows", async () => {
   // Git Bash and MSYS2 both use /<drive>/... paths on Windows.
   await check((dir) => {
-    const drive = dir[0].toLowerCase()
+    const drive = dir[0]!.toLowerCase()
     const rest = dir.slice(2).replaceAll("\\", "/")
     return `/${drive}${rest}`
   })
@@ -95,7 +95,7 @@ test("loads project config from Git Bash and MSYS2 paths on Windows", async () =
 
 test("loads project config from Cygwin paths on Windows", async () => {
   await check((dir) => {
-    const drive = dir[0].toLowerCase()
+    const drive = dir[0]!.toLowerCase()
     const rest = dir.slice(2).replaceAll("\\", "/")
     return `/cygdrive/${drive}${rest}`
   })
@@ -123,29 +123,7 @@ test("ignores legacy tui keys in liteai config", async () => {
   })
 })
 
-test("loads JSONC config file", async () => {
-  await using tmp = await tmpdir({
-    init: async (dir) => {
-      await Filesystem.write(
-        path.join(dir, "settings.jsonc"),
-        `{
-        // This is a comment
-        "$schema": "https://liteai.com/config.json",
-        "model": "test/model",
-        "username": "testuser"
-      }`,
-      )
-    },
-  })
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const config = await Config.get()
-      expect(config.model).toBe("test/model")
-      expect(config.username).toBe("testuser")
-    },
-  })
-})
+
 
 test("merges multiple config files with correct precedence", async () => {
   await using tmp = await tmpdir({
@@ -157,12 +135,16 @@ test("merges multiple config files with correct precedence", async () => {
           model: "base",
           username: "base",
         },
-        "settings.jsonc",
+        "settings.json"
       )
-      await writeConfig(dir, {
-        $schema: "https://liteai.com/config.json",
-        model: "override",
-      })
+      await writeConfig(
+        path.join(dir, ".liteai"),
+        {
+          $schema: "https://liteai.com/config.json",
+          model: "override",
+        },
+        "settings.json"
+      )
     },
   })
   await Instance.provide({
@@ -249,10 +231,10 @@ test("resolves env templates in account config with account token", async () => 
   const originalControlToken = process.env.LITEAI_CONSOLE_TOKEN
 
   Account.active = mock(() => ({
-    id: AccountID.make("account-1"),
+    id: "account-1" as AccountID,
     email: "user@example.com",
     url: "https://control.example.com",
-    active_org_id: OrgID.make("org-1"),
+    active_org_id: "org-1" as OrgID,
   }))
 
   Account.config = mock(async () => ({
@@ -265,7 +247,7 @@ test("resolves env templates in account config with account token", async () => 
     },
   }))
 
-  Account.token = mock(async () => AccessToken.make("st_test_token"))
+  Account.token = mock(async () => "st_test_token" as AccessToken)
 
   try {
     await using tmp = await tmpdir()

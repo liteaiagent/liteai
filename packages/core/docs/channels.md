@@ -129,7 +129,9 @@ Two CSRF tokens are needed — one for each direction:
 
 ### Dev / remote mode
 
-In dev mode (F5 with `LITEAI_SPAWN_DEV_SERVER=true`) and remote mode (`liteai.server.url` set), core runs without `--hosted`. Callbacks are not available — core reads files directly from disk.
+In dev mode (F5), core is spawned seamlessly by the extension via `bun --watch run` from the core directory and **includes** the `--hosted` and `--lsp` flags. This means dev mode runs exactly like production, with full Extension Callbacks and editor-native features active.
+
+In remote mode (when `liteai.server.url` is set), core runs independently without `--hosted`. Callbacks are not available — core reads files directly from disk.
 
 ---
 
@@ -232,7 +234,7 @@ The LSP handler uses `TextDocuments` (incremental sync) to maintain an up-to-dat
 | Mode | Who starts core | Channels active | Command |
 |---|---|---|---|
 | **Local dev** | Developer via `bun dev` | HTTP/SSE only | `bun run dev` |
-| **VS Code dev** | Developer via `bun dev`, extension connects | HTTP/SSE only | `bun run dev` + F5 |
+| **VS Code dev** | Extension (`ServerManager`) | HTTP/SSE + Callbacks + LSP | `bun --watch run ... --hosted --lsp` |
 | **VS Code production** | Extension (`ServerManager`) | HTTP/SSE + Callbacks + LSP | `liteai-core --hosted --lsp ...` |
 | **Remote** | External server | HTTP/SSE only | `liteai-core --port 9000` |
 | **CLI / TUI** | `@liteai/cli` package | HTTP/SSE (or direct import) | `bun dev` or binary |

@@ -147,20 +147,15 @@ The extension supports three server connection modes:
 
 #### 1. Dev Mode (recommended for development)
 
-Connect to a separately running `liteai-core` dev server. This is the fastest workflow for iterating on both the extension and the core server.
+The extension spawns its own core dev server directly from the `packages/core` directory. This is the fastest workflow for iterating on both the extension and the core server.
 
-**Step 1**: Start the core dev server in a separate terminal:
-```bash
-cd packages/core
-bun dev
-# Server starts on http://127.0.0.1:9000
-```
+**Step 1**: Open the `packages/vscode` directory in VS Code.
 
-**Step 2**: Open the `packages/vscode` directory in VS Code and press **`F5`** to launch the Extension Development Host. The `launch.json` is pre-configured with `LITEAI_SPAWN_DEV_SERVER=true`.
+**Step 2**: Press **`F5`** to launch the Extension Development Host.
 
-The extension will connect to the external dev server instead of spawning its own binary.
+The extension will automatically spawn the core dev server (`bun --watch run ...`) in the background.
 
-> **Note:** In dev mode, Core runs in **local mode** (no `--hosted` flag). This means hosted features like unsaved-buffer reads and automatic workspace registration are not active — Core reads files directly from disk, same as the web app. The `--hosted` flag, Extension Server callbacks, and workspace folder sync are only active in **production mode** when `ServerManager` spawns the binary itself.
+> **Note:** Because the extension manages spawning the core dev server natively in Development Mode, it now runs with full **`--hosted`** and **`--lsp`** capabilities. Hosted features like live editor buffers, automatic workspace registration, and AI inline completions are natively active during development, mirroring production!
 
 #### 2. Remote Mode
 
@@ -172,7 +167,7 @@ Set the `liteai.server.url` VS Code setting to connect to a remote server:
 }
 ```
 
-> **Note:** Same as dev mode — Core runs independently without `--hosted`, so hosted features are not available.
+> **Note:** When using Remote Mode, Core runs independently without `--hosted`, so hosted features like live editor buffers and automatic workspace registration are not available.
 
 #### 3. Production Mode (default)
 
@@ -181,8 +176,7 @@ If no dev URL or remote URL is configured, the extension spawns the bundled `lit
 ### F5 Development Workflow
 
 1. Open the workspace (`liteai.code-workspace`) or the `packages/vscode` directory in VS Code.
-2. Start the core server: `cd packages/core && bun dev`
-3. Press **`F5`** to launch the Extension Development Host window. This will automatically run `--watch` builds for both the webview and the extension host in the background.
+2. Press **`F5`** to launch the Extension Development Host window. This will automatically run `--watch` builds for both the webview and the extension host in the background, as well as seamlessly spawn the core server.
 
 > **Tip**: If you make changes to the Webview UI, right-click inside the Webview in the debug window and select **Reload Webview** to see changes without restarting the extension host. For Extension Host changes, use `Cmd+Shift+P` -> **Developer: Reload Window**.
 

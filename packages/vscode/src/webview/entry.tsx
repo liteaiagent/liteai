@@ -154,8 +154,9 @@ function App() {
       let projectID = ""
 
       if (projects.length > 0) {
-        // Try to match by workspace directory first
-        const match = workspaceDir ? projects.find((p) => p.worktree === workspaceDir) : undefined
+        // Try to match by workspace directory first (case-insensitive for Windows)
+        const normalize = (p: string) => p.replace(/\\/g, "/").toLowerCase()
+        const match = workspaceDir ? projects.find((p) => normalize(p.worktree) === normalize(workspaceDir)) : undefined
         const chosen = match ?? projects[0]
         projectID = chosen.id
         store.setProject(chosen.worktree, chosen.id)
