@@ -122,6 +122,7 @@ function App() {
     baseUrl: serverUrl,
     fetch: vscodePlatform.fetch,
     throwOnError: false,
+    client: "vscode",
   })
 
   // ─── Store ─────────────────────────────────────────────────────────────────

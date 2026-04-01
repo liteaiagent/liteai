@@ -15,6 +15,7 @@ export function createSdkForServer({
   })()
 
   return createLiteaiClient({
+    client: "web",
     ...config,
     headers: { ...config.headers, ...auth },
     baseUrl: server.url,

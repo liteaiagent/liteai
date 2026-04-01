@@ -1,11 +1,14 @@
 import { createWriteStream, type WriteStream } from "node:fs"
 import fs from "node:fs/promises"
 import path from "node:path"
+import { AsyncLocalStorage } from "node:async_hooks"
 import z from "zod"
 import { Global } from "../global"
 import { Glob } from "./glob"
 
 export namespace Log {
+  export const context = new AsyncLocalStorage<{ client?: string }>()
+
   export const Level = z.enum(["DEBUG", "INFO", "WARN", "ERROR"]).meta({ ref: "LogLevel", description: "Log level" })
   export type Level = z.infer<typeof Level>
 
@@ -90,8 +93,24 @@ export namespace Log {
   // Channel writers keyed by prefix (e.g. "server", "session")
   const channels = new Map<string, (msg: string) => void>()
 
+  const colors = {
+    INFO: "\x1b[32m", // Green
+    WARN: "\x1b[33m", // Yellow
+    ERROR: "\x1b[31m", // Red
+    DEBUG: "\x1b[34m", // Blue
+    RESET: "\x1b[0m",
+  }
+
+  function colorize(msg: string) {
+    if (msg.startsWith("INFO ")) return colors.INFO + msg + colors.RESET
+    if (msg.startsWith("WARN ")) return colors.WARN + msg + colors.RESET
+    if (msg.startsWith("ERROR ")) return colors.ERROR + msg + colors.RESET
+    if (msg.startsWith("DEBUG ")) return colors.DEBUG + msg + colors.RESET
+    return msg
+  }
+
   let write: (msg: string) => number | Promise<number> = (msg) => {
-    process.stderr.write(msg)
+    process.stderr.write(colorize(msg))
     return msg.length
   }
 
@@ -106,7 +125,7 @@ export namespace Log {
       for (const [prefix, writer] of channels) {
         if (service === prefix || service.startsWith(`${prefix}.`) || service.startsWith(`${prefix}:`)) {
           writer(msg)
-          return
+          break
         }
       }
     }
@@ -116,7 +135,7 @@ export namespace Log {
   export async function init(options: Options) {
     if (options.level) level = options.level
     cleanup(Global.Path.log)
-    if (options.print) return
+    
     logpath = path.join(
       Global.Path.log,
       options.dev ? "liteai.log" : `${new Date().toISOString().split(".")[0].replace(/:/g, "")}.log`,
@@ -124,6 +143,9 @@ export namespace Log {
     await fs.truncate(logpath).catch(() => {})
     const stream = createWriteStream(logpath, { flags: "a" })
     write = (msg: string) => {
+      if (options.print) {
+        process.stderr.write(colorize(msg))
+      }
       return new Promise<number>((resolve, reject) => {
         stream.write(msg, (err) => {
           if (err) reject(err)
@@ -178,8 +200,11 @@ export namespace Log {
     }
 
     function build(message: unknown, extra?: Record<string, unknown>) {
+      const ctx = context.getStore()
+      const clientTag = ctx?.client ? { client: ctx.client } : {}
       const prefix = Object.entries({
         ...tags,
+        ...clientTag,
         ...extra,
       })
         .filter(([_, value]) => value !== undefined && value !== null)
