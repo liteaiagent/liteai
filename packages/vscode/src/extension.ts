@@ -59,7 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
   const showStatusDisposable = vscode.commands.registerCommand("liteai.showStatus", async () => {
     const url = serverManager.url || "(Disconnected)"
     const mode = serverManager.mode
-    
+
     // QuickPick options:
     const items: vscode.QuickPickItem[] = [
       {
@@ -89,7 +89,10 @@ export function activate(context: vscode.ExtensionContext) {
       if (selected.label.includes("Manage Server")) {
         vscode.commands.executeCommand("workbench.action.openSettings", "liteai.server")
       } else if (selected.label.includes("MCP Tools") || selected.label.includes("LSP Servers")) {
-        vscode.window.showInformationMessage("This information is managed directly via VS Code Extensions or LiteAI Config files in single-project mode. Full management is available in the standalone Web app.", "OK")
+        vscode.window.showInformationMessage(
+          "This information is managed directly via VS Code Extensions or LiteAI Config files in single-project mode. Full management is available in the standalone Web app.",
+          "OK",
+        )
       }
     }
   })

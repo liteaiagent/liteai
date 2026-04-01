@@ -174,8 +174,6 @@ export namespace Server {
 
         // ─── Tier 3: Project-scoped routes (requires projectID in path) ──
         .route("/project/:projectID", createProjectScopedApp())
-
-
     )
   }
 

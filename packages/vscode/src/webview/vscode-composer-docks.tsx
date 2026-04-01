@@ -25,7 +25,7 @@ export const VscodeComposerDocks: Component<{
     const status = props.store.store.session_status[id]
     if (status?.type === "idle") return undefined
     const list = props.store.store.question[id] ?? []
-    return list.find((q) => true)
+    return list.find((_q) => true)
   })
 
   const permission = createMemo(() => {
@@ -34,7 +34,7 @@ export const VscodeComposerDocks: Component<{
     const status = props.store.store.session_status[id]
     if (status?.type === "idle") return undefined
     const list = props.store.store.permission[id] ?? []
-    return list.find((p) => true)
+    return list.find((_p) => true)
   })
 
   const handlePermissionDecide = async (response: "once" | "always" | "reject") => {

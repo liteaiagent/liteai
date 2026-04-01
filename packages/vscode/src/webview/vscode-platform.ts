@@ -74,10 +74,7 @@ export const vscodePlatform: Platform = {
             // Fetch spec — constructing a Response with a body for these throws
             // "Response with null body status cannot have body".
             const NULL_BODY_STATUSES = new Set([101, 204, 205, 304])
-            const body =
-              NULL_BODY_STATUSES.has(msg.status) || !msg.body
-                ? null
-                : new Uint8Array(msg.body)
+            const body = NULL_BODY_STATUSES.has(msg.status) || !msg.body ? null : new Uint8Array(msg.body)
             const response = new Response(body, {
               status: msg.status,
               statusText: msg.statusText,
@@ -101,7 +98,9 @@ export const vscodePlatform: Platform = {
       const rawHeaders: Record<string, string> = {}
       const initHeaders = init?.headers ?? req?.headers
       if (initHeaders instanceof Headers) {
-        initHeaders.forEach((value, key) => { rawHeaders[key] = value })
+        initHeaders.forEach((value, key) => {
+          rawHeaders[key] = value
+        })
       } else if (initHeaders && typeof initHeaders === "object") {
         for (const [k, v] of Object.entries(initHeaders)) {
           if (v != null) rawHeaders[k] = v as string
@@ -122,7 +121,10 @@ export const vscodePlatform: Platform = {
       }
 
       if (req && !req.bodyUsed && req.body) {
-        req.text().then(sendMessage).catch(() => sendMessage(undefined))
+        req
+          .text()
+          .then(sendMessage)
+          .catch(() => sendMessage(undefined))
       } else {
         const body = init?.body
         sendMessage(typeof body === "string" ? body : body != null ? String(body) : undefined)

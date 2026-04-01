@@ -1,4 +1,4 @@
-import { type ChildProcess, spawn, type SpawnOptions } from "node:child_process"
+import { type ChildProcess, type SpawnOptions, spawn } from "node:child_process"
 import * as crypto from "node:crypto"
 import * as path from "node:path"
 import * as vscode from "vscode"
@@ -101,7 +101,7 @@ export class ServerManager {
       "--extension-server-csrf-token",
       callbackCsrfToken,
     ]
-    let spawnOpts: SpawnOptions = {
+    const spawnOpts: SpawnOptions = {
       env: { ...process.env },
       windowsHide: true,
     }
@@ -110,10 +110,7 @@ export class ServerManager {
       if (process.env.LITEAI_SPAWN_DEV_SERVER === "true") {
         outputChannel.appendLine(`[dev-hosted] Overriding binPath to run 'bun dev' from packages/core`)
         spawnCmd = "bun"
-        spawnArgs = [
-          "--watch", "run", "--conditions=browser", "./src/main.ts",
-          ...spawnArgs
-        ]
+        spawnArgs = ["--watch", "run", "--conditions=browser", "./src/main.ts", ...spawnArgs]
         spawnOpts.cwd = path.join(context.extensionPath, "../core")
       } else {
         outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)

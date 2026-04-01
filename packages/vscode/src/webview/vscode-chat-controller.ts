@@ -8,7 +8,7 @@ import type {
   SessionController,
 } from "@liteai/ui/panes"
 import { Persist, persisted } from "@liteai/ui/panes"
-import { createSignal, createEffect } from "solid-js"
+import { createEffect, createSignal } from "solid-js"
 import { createStore, produce, reconcile } from "solid-js/store"
 import type { VscodeStore } from "./vscode-store"
 
@@ -343,7 +343,7 @@ export function createVscodeSelectionController(opts: {
       if (data) {
         const allProviders = (data.all ?? []) as ProviderDef[]
         const connected = new Set<string>(data.connected ?? [])
-        
+
         setState("cachedProviders", allProviders)
         setState("cachedConnected", Array.from(connected))
 

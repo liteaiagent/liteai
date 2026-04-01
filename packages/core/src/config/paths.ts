@@ -11,7 +11,7 @@ import { Filesystem } from "@/util/filesystem"
 export namespace ConfigPaths {
   export async function projectFiles(name: string, directory: string, worktree: string) {
     const files: string[] = []
-    for (const file of [`${name}.jsonc`, `${name}.json`]) {
+    for (const file of [`${name}.json`]) {
       const found = await Filesystem.findUp(file, directory, worktree)
       for (const resolved of found.toReversed()) {
         files.push(resolved)
@@ -44,7 +44,7 @@ export namespace ConfigPaths {
   }
 
   export function fileInDirectory(dir: string, name: string) {
-    return [path.join(dir, `${name}.jsonc`), path.join(dir, `${name}.json`)]
+    return [path.join(dir, `${name}.json`)]
   }
 
   export const JsonError = NamedError.create(

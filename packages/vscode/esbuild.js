@@ -36,7 +36,7 @@ async function main() {
     external: ["vscode"],
     logLevel: "silent",
     define: {
-      "__LITEAI_DEV__": production ? "false" : "true"
+      __LITEAI_DEV__: production ? "false" : "true",
     },
     plugins: [
       /* add to the end of plugins array */

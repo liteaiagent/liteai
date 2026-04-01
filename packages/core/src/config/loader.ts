@@ -65,7 +65,7 @@ function mergeConfigConcatArrays(target: Info, source: Info): Info {
 }
 
 // All recognized config file basenames, ordered by priority (later wins).
-const CONFIG_FILES = [`${Brand.config}.json`, `${Brand.config}.jsonc`]
+const CONFIG_FILES = [`${Brand.config}.json`]
 
 export type PluginSkill = {
   name: string
@@ -462,7 +462,7 @@ export const global = lazy(async () => {
   const exists = candidates.some((f) => existsSync(f))
   if (!exists) {
     await fs.mkdir(Global.Path.config, { recursive: true })
-    const target = path.join(Global.Path.config, "settings.jsonc")
+    const target = path.join(Global.Path.config, "settings.json")
     await Filesystem.writeJson(target, defaultConfig)
     log.info("created default config", { path: target })
   }
@@ -550,15 +550,15 @@ function globalConfigFile() {
   for (const file of candidates) {
     if (existsSync(file)) return file
   }
-  // Default to settings.jsonc for new files
-  return path.join(Global.Path.config, "settings.jsonc")
+  // Default to settings.json for new files
+  return path.join(Global.Path.config, "settings.json")
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value)
 }
 
-function patchJsonc(input: string, patch: unknown, path: string[] = []): string {
+function patchJson(input: string, patch: unknown, path: string[] = []): string {
   if (!isRecord(patch)) {
     const edits = modify(input, path, patch, {
       formattingOptions: {
@@ -571,7 +571,7 @@ function patchJsonc(input: string, patch: unknown, path: string[] = []): string 
 
   return Object.entries(patch).reduce((result, [key, value]) => {
     if (value === undefined) return result
-    return patchJsonc(result, value, [...path, key])
+    return patchJson(result, value, [...path, key])
   }, input)
 }
 
@@ -617,14 +617,7 @@ export async function updateGlobal(config: Info) {
   })
 
   const next = await (async () => {
-    if (!filepath.endsWith(".jsonc")) {
-      const existing = parseConfig(before, filepath)
-      const merged = mergeDeep(existing, config)
-      await Filesystem.writeJson(filepath, merged)
-      return merged
-    }
-
-    const updated = patchJsonc(before, config)
+    const updated = patchJson(before, config)
     const merged = parseConfig(updated, filepath)
     await Filesystem.write(filepath, updated)
     return merged

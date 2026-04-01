@@ -20,10 +20,10 @@ import {
   createVscodeSelectionController,
   createVscodeSessionController,
 } from "./vscode-chat-controller"
+import { VscodeComposerDocks } from "./vscode-composer-docks"
 import { vscodePlatform, vscodePlatformPostMessage } from "./vscode-platform"
 import { createSseSubscription } from "./vscode-sse"
 import { createVscodeStore } from "./vscode-store"
-import { VscodeComposerDocks } from "./vscode-composer-docks"
 import "./vscode.css"
 import "@liteai/ui/styles/tailwind"
 
@@ -50,15 +50,22 @@ let _counter = 0
 
 function ascendingID(prefix: IdPrefix): string {
   const now = Date.now()
-  if (now !== _lastTs) { _lastTs = now; _counter = 0 }
+  if (now !== _lastTs) {
+    _lastTs = now
+    _counter = 0
+  }
   _counter += 1
-  let ts = BigInt(now) * BigInt(0x1000) + BigInt(_counter)
+  const ts = BigInt(now) * BigInt(0x1000) + BigInt(_counter)
   const bytes = new Uint8Array(6)
   for (let i = 0; i < 6; i++) bytes[i] = Number((ts >> BigInt(40 - 8 * i)) & BigInt(0xff))
-  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("")
+  const hex = Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
   const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
   const rnd = crypto.getRandomValues(new Uint8Array(14))
-  const suffix = Array.from(rnd).map((b) => chars[b % 62]).join("")
+  const suffix = Array.from(rnd)
+    .map((b) => chars[b % 62])
+    .join("")
   return `${ID_PREFIXES[prefix]}_${hex}${suffix}`
 }
 
@@ -105,7 +112,7 @@ function PanelLayout(props: ParentProps) {
 
 function App() {
   const [route, setRoute] = createSignal<PaneRoute>({})
-  const [connected, setConnected] = createSignal(false)
+  const [_connected, setConnected] = createSignal(false)
 
   // Recent files pushed from the extension host via postMessage
   const [recentFiles, setRecentFiles] = createSignal<string[]>([])
@@ -406,10 +413,7 @@ function App() {
   }
 
   const commands: ChatPromptCommands = {
-    register(
-      keyOrCb: string | CommandCb,
-      cb?: CommandCb,
-    ) {
+    register(keyOrCb: string | CommandCb, cb?: CommandCb) {
       if (typeof keyOrCb === "function") {
         commandEntries.push({ key: undefined, cb: keyOrCb })
       } else if (cb) {

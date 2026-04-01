@@ -2,7 +2,6 @@ import * as vscode from "vscode"
 import type { ServerManager } from "./server-manager"
 
 export class WebviewBridge {
-  private _recentFiles: string[] = []
   private _recentDisposable?: vscode.Disposable
 
   constructor(
@@ -33,7 +32,6 @@ export class WebviewBridge {
         unique.push(f)
       }
     }
-    this._recentFiles = unique
     this.panel.webview.postMessage({ type: "recent-files", files: unique })
   }
 

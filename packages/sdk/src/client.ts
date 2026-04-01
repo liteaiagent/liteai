@@ -24,7 +24,7 @@ export function createLiteaiClient(config?: Config & { experimental_workspaceID?
       "x-liteai-workspace": config.experimental_workspaceID,
     }
   }
-  
+
   if (config?.client) {
     config.headers = {
       ...config.headers,

@@ -11,11 +11,7 @@ import type { Message } from "../message"
 
 const log = Log.create({ service: "session.instruction" })
 
-const FILES = [
-  "AGENTS.md",
-  "CLAUDE.md",
-  "CONTEXT.md", // deprecated
-]
+const FILES = ["AGENTS.md", "CLAUDE.md"]
 
 function globalFiles() {
   const files = []

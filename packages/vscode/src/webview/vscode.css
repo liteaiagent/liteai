@@ -84,7 +84,6 @@ body.vscode-high-contrast {
   --border-base: var(--vscode-contrastBorder, #6fc3df);
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 2. Compact Density Tokens
  *
@@ -110,7 +109,6 @@ body.vscode-high-contrast {
   --radius-lg: 6px;
   --radius-xl: 8px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 3. Panel Layout
@@ -138,7 +136,6 @@ body.vscode-high-contrast {
   display: flex;
   flex-direction: column;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 4. Connection Status
@@ -186,8 +183,13 @@ body.vscode-high-contrast {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .status-label {
@@ -195,7 +197,6 @@ body.vscode-high-contrast {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 5. Error Screen
@@ -228,7 +229,6 @@ body.vscode-high-contrast {
   opacity: 0.85;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 6. Dock Surfaces — Tighter for panels
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -253,7 +253,6 @@ body.vscode-high-contrast {
   margin-right: 8px;
   margin-bottom: 6px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 7. Button Size Overrides
@@ -281,7 +280,6 @@ body.vscode-high-contrast {
   gap: 6px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 8. Icon Button Size Override
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -295,7 +293,6 @@ body.vscode-high-contrast {
   width: 20px;
   height: 20px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 9. Selector Controls (Agent, Model, Variant tray)
@@ -311,8 +308,14 @@ body.vscode-high-contrast {
 }
 
 /* Smaller text in selector triggers */
-[data-density="compact"] [data-component="prompt-agent-control"] [data-component="select"] [data-slot="select-select-trigger"],
-[data-density="compact"] [data-component="prompt-variant-control"] [data-component="select"] [data-slot="select-select-trigger"] {
+[data-density="compact"]
+  [data-component="prompt-agent-control"]
+  [data-component="select"]
+  [data-slot="select-select-trigger"],
+[data-density="compact"]
+  [data-component="prompt-variant-control"]
+  [data-component="select"]
+  [data-slot="select-select-trigger"] {
   height: 22px;
   font-size: 11px;
   padding: 0 3px 0 6px;
@@ -320,10 +323,10 @@ body.vscode-high-contrast {
 
 /* Model button compact */
 [data-density="compact"] [data-action="prompt-model"] {
-  max-width: 180px !important;
-  height: 22px !important;
-  font-size: 11px !important;
-  padding: 0 4px 0 6px !important;
+  max-width: 180px;
+  height: 22px;
+  font-size: 11px;
+  padding: 0 4px 0 6px;
 }
 
 [data-density="compact"] [data-action="prompt-model"] .size-4 {
@@ -333,10 +336,9 @@ body.vscode-high-contrast {
 
 /* YOLO / auto-accept button compact */
 [data-density="compact"] [data-action="prompt-permissions"] {
-  height: 22px !important;
-  width: 22px !important;
+  height: 22px;
+  width: 22px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 10. Chat Prompt Input Area
@@ -370,7 +372,6 @@ body.vscode-high-contrast {
   width: 26px;
   height: 26px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 11. Question Dock — Compact
@@ -433,7 +434,6 @@ body.vscode-high-contrast {
   height: 12px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 12. Todo Dock — Compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -469,7 +469,6 @@ body.vscode-high-contrast {
   font-size: 12px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 13. Permission Dock — Compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -501,7 +500,6 @@ body.vscode-high-contrast {
   padding: 16px 6px 6px;
   margin-top: -10px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 14. New Session Screen — Compact Hero
@@ -541,7 +539,6 @@ body.vscode-high-contrast {
   font-size: 11px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 15. Session Title Bar — Compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -561,7 +558,6 @@ body.vscode-high-contrast {
 [data-density="compact"] [data-session-title] h1 {
   font-size: 12px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 16. Message Timeline — Full Width & Compact Text
@@ -617,7 +613,6 @@ body.vscode-high-contrast {
   padding-right: 8px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 17. Select Dropdown — Compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -631,7 +626,6 @@ body.vscode-high-contrast {
   padding: 2px 6px;
   border-radius: 3px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 18. Model Selector Popover — Fit Panel Width
@@ -648,7 +642,6 @@ body.vscode-high-contrast {
   font-size: 11px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 19. Checkbox — Tighter for compact density
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -662,7 +655,6 @@ body.vscode-high-contrast {
   height: 14px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 20. Tag — Smaller in compact context
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -673,7 +665,6 @@ body.vscode-high-contrast {
   height: 16px;
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 21. Tooltip — Smaller text for compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -682,7 +673,6 @@ body.vscode-high-contrast {
   font-size: 11px;
   padding: 3px 6px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 22. Scrollbar — Slim, matching VS Code
@@ -706,7 +696,6 @@ body.vscode-high-contrast {
   background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.15));
 }
 
-
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 23. Composer docks gap — tighter
  * ═══════════════════════════════════════════════════════════════════════════════ */
@@ -715,7 +704,6 @@ body.vscode-high-contrast {
   gap: 6px;
   margin-bottom: 6px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 24. Dialog — fit panel width
@@ -728,7 +716,6 @@ body.vscode-high-contrast {
 [data-density="compact"] [data-component="dialog"] [data-slot="dialog-title"] {
   font-size: 13px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 25. List component — compact search & items
@@ -749,7 +736,6 @@ body.vscode-high-contrast {
   font-size: 10px;
   padding: 4px 6px 2px;
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════════
  * 26. Markdown content — honor compact font size

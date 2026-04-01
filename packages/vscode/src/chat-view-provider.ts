@@ -153,4 +153,3 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 </html>`
   }
 }
-
