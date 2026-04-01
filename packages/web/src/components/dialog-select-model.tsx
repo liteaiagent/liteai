@@ -94,7 +94,6 @@ const ModelList: Component<{
   )
 }
 
-
 export const DialogSelectModel: Component<{ provider?: string; model?: ModelState }> = (props) => {
   const dialog = useDialog()
   const language = useLanguage()

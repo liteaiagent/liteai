@@ -7,7 +7,7 @@ import { Switch } from "@liteai/ui/switch"
 import { Tooltip } from "@liteai/ui/tooltip"
 import type { Component } from "solid-js"
 import { useLanguage } from "@/context/language"
-import { useLocal } from "@/context/local"
+import type { useLocal } from "@/context/local"
 import { popularProviders } from "@/hooks/use-providers"
 import { DialogSelectProvider } from "./dialog-select-provider"
 

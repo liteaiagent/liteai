@@ -73,15 +73,16 @@ export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) =>
 
   // Manage models flow from the old web PromptInput (using dialogs)
   const handleManageModels = () => {
-    dialog.show((() => <DialogManageModels model={local.model} />) as any)
+    dialog.show((() => <DialogManageModels model={local.model} />) as never)
   }
 
   const handleConnectProvider = () => {
-    dialog.show((() => <DialogSelectProvider />) as any)
+    dialog.show((() => <DialogSelectProvider />) as never)
   }
 
   // Workaround since ChatPromptCommands is slightly structurally different than what useCommand() returns in terms of typing,
   // but matches at runtime. We assert its type via any.
+  // biome-ignore lint/suspicious/noExplicitAny: Workaround
   const commandsAsProps: any = command
 
   return (
@@ -97,14 +98,14 @@ export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) =>
       onConnectProvider={handleConnectProvider}
       keybind={command.keybind}
       commands={commandsAsProps}
-      commentActions={comments as any}
-      onOpenComment={props.onOpenComment as any}
+      commentActions={comments as never}
+      onOpenComment={props.onOpenComment as never}
       newSessionWorktree={props.newSessionWorktree}
       onNewSessionWorktreeReset={props.onNewSessionWorktreeReset}
-      edit={props.edit as any}
+      edit={props.edit as never}
       onEditLoaded={props.onEditLoaded}
       shouldQueue={props.shouldQueue}
-      onQueue={props.onQueue as any}
+      onQueue={props.onQueue as never}
       onAbort={props.onAbort}
     />
   )

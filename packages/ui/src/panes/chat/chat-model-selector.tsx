@@ -39,7 +39,7 @@ export const ChatModelSelector: Component<ChatModelSelectorProps> = (props) => {
   // Resolve context during render so it doesn't crash inside event handlers,
   // but only if a model wasn't explicitly provided (to avoid crashing in standalone dialogs).
   const ctx = props.model ? undefined : useSelectionController()
-  const model = () => props.model ?? ctx!.model
+  const model = () => (props.model ?? ctx?.model) as ModelState
   const language = useLanguage()
 
   const [store, setStore] = createStore<{

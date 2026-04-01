@@ -3,7 +3,6 @@ import { createEffect, createMemo, onCleanup, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import type { FollowupDraft } from "@/components/prompt-input/submit"
 import { PromptInputWrapper as PromptInput } from "@/components/prompt-input-wrapper"
-import { useCommand } from "@/context/command"
 import { useComments } from "@/context/comments"
 import { useFile } from "@/context/file"
 import { useLanguage } from "@/context/language"
@@ -51,7 +50,6 @@ export function SessionComposerRegion(props: {
   const prompt = usePrompt()
   const language = useLanguage()
   const route = useSessionKey()
-  const command = useCommand()
   const comments = useComments()
   const files = useFile()
   const layout = useLayout()

@@ -552,4 +552,3 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     handleSubmit,
   }
 }
-
