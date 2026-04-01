@@ -1,5 +1,4 @@
 import type { ToolPart } from "@liteai/sdk"
-import { useLocation } from "@solidjs/router"
 import { createMemo, Match, Show, Switch } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { useData } from "../../context"
@@ -33,7 +32,7 @@ export function ToolPartDisplay(props: MessagePartProps) {
   })
   const taskHref = createMemo(() => {
     if (part().tool !== "task") return
-    return sessionLink(taskId(), useLocation().pathname, data.sessionHref)
+    return sessionLink(taskId(), "", data.sessionHref)
   })
   const taskSubtitle = createMemo(() => {
     if (part().tool !== "task") return undefined
@@ -67,6 +66,7 @@ export function ToolPartDisplay(props: MessagePartProps) {
                   defaultOpen={props.defaultOpen}
                   subtitle={taskSubtitle()}
                   href={taskHref()}
+                  taskId={taskId()}
                 />
               )
             }}

@@ -1,4 +1,3 @@
-import { useLocation, useNavigate } from "@solidjs/router"
 import { createMemo, Show } from "solid-js"
 
 import { useData } from "../../context"
@@ -13,8 +12,6 @@ ToolRegistry.register({
   render(props) {
     const data = useData()
     const i18n = useI18n()
-    const location = useLocation()
-    const navigate = useNavigate()
     const childSessionId = () => props.metadata.sessionId as string | undefined
     const type = createMemo(() => {
       const raw = props.input.subagent_type
@@ -29,7 +26,7 @@ ToolRegistry.register({
     })
     const running = createMemo(() => props.status === "pending" || props.status === "running")
 
-    const href = createMemo(() => sessionLink(childSessionId(), location.pathname, data.sessionHref))
+    const href = createMemo(() => sessionLink(childSessionId(), "", data.sessionHref))
 
     const titleContent = () => <TextShimmer text={title()} active={running()} />
 
@@ -49,7 +46,12 @@ ToolRegistry.register({
                 if (!url) return
                 e.stopPropagation()
                 e.preventDefault()
-                navigate(url)
+                const id = childSessionId()
+                if (id && data.navigateToSession) {
+                  data.navigateToSession(id)
+                } else {
+                  window.location.assign(url)
+                }
               }}
             >
               {subtitle()}

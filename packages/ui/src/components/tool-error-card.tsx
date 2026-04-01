@@ -1,6 +1,6 @@
-import { useNavigate } from "@solidjs/router"
 import { type ComponentProps, createMemo, Show, splitProps } from "solid-js"
 import { createStore } from "solid-js/store"
+import { useData } from "../context"
 import { useI18n } from "../context/i18n"
 import { Card, CardDescription } from "./card"
 import { Collapsible } from "./collapsible"
@@ -14,18 +14,19 @@ export interface ToolErrorCardProps extends Omit<ComponentProps<typeof Card>, "c
   defaultOpen?: boolean
   subtitle?: string
   href?: string
+  taskId?: string
 }
 
 export function ToolErrorCard(props: ToolErrorCardProps) {
   const i18n = useI18n()
-  const navigate = useNavigate()
+  const data = useData()
   const [state, setState] = createStore({
     open: props.defaultOpen ?? false,
     copied: false,
   })
   const open = () => state.open
   const copied = () => state.copied
-  const [split, rest] = splitProps(props, ["tool", "error", "defaultOpen", "subtitle", "href"])
+  const [split, rest] = splitProps(props, ["tool", "error", "defaultOpen", "subtitle", "href", "taskId"])
   const name = createMemo(() => {
     const map: Record<string, string> = {
       read: "ui.tool.read",
@@ -105,13 +106,21 @@ export function ToolErrorCard(props: ToolErrorCardProps) {
                         onClick={(e) => {
                           e.stopPropagation()
                           e.preventDefault()
-                          if (split.href) navigate(split.href)
+                          if (split.taskId && data.navigateToSession) {
+                            data.navigateToSession(split.taskId)
+                          } else if (split.href) {
+                            window.location.assign(split.href)
+                          }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.stopPropagation()
                             e.preventDefault()
-                            if (split.href) navigate(split.href)
+                            if (split.taskId && data.navigateToSession) {
+                              data.navigateToSession(split.taskId)
+                            } else if (split.href) {
+                              window.location.assign(split.href)
+                            }
                           }
                         }}
                       >
