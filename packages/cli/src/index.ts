@@ -29,7 +29,7 @@ import { AttachCommand } from "./cli/cmd/tui/attach"
 import { TuiThreadCommand } from "./cli/cmd/tui/thread"
 import { UninstallCommand } from "./cli/cmd/uninstall"
 import { UpgradeCommand } from "./cli/cmd/upgrade"
-import { WebCommand } from "./cli/cmd/web"
+
 import { WorkspaceServeCommand } from "./cli/cmd/workspace-serve"
 import { FormatError } from "./cli/error"
 import { UI } from "./cli/ui"
@@ -122,7 +122,6 @@ let cli = yargs(hideBin(process.argv))
   .command(UpgradeCommand)
   .command(UninstallCommand)
   .command(ServeCommand)
-  .command(WebCommand)
   .command(ModelsCommand)
   .command(StatsCommand)
   .command(ExportCommand)

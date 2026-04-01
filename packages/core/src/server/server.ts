@@ -1,6 +1,5 @@
 import { Hono } from "hono"
 import { type BunWebSocketData, websocket } from "hono/bun"
-import { proxy } from "hono/proxy"
 import { describeRoute, generateSpecs, openAPIRouteHandler, resolver, validator } from "hono-openapi"
 import z from "zod"
 import { lazy } from "@/util/lazy"
@@ -8,7 +7,7 @@ import { WorkspaceRouterMiddleware } from "../control-plane/workspace-router-mid
 import { Installation } from "../installation"
 import { Project } from "../project/project"
 import { Log } from "../util/log"
-import { API_INFO, DEFAULT_PORT, DEV_SERVER_URL } from "./constants"
+import { API_INFO } from "./constants"
 import { MDNS } from "./mdns"
 import {
   authMiddleware,
@@ -176,36 +175,7 @@ export namespace Server {
         // ─── Tier 3: Project-scoped routes (requires projectID in path) ──
         .route("/project/:projectID", createProjectScopedApp())
 
-        // ─── Static assets / dev proxy (must be last) ───────────────────
-        .all("/*", async (c) => {
-          const p = c.req.path === "/" ? "/index.html" : c.req.path
 
-          // Dev mode: proxy to local Vite dev server
-          if (Installation.isLocal()) {
-            return proxy(`${DEV_SERVER_URL}${p}`, {
-              ...c.req,
-              headers: {
-                ...c.req.raw.headers,
-                host: "localhost:3000",
-              },
-            })
-          }
-
-          // Production: serve from embedded assets
-          const { assets } = await import("./app-assets")
-          const entry = assets.get(p)
-          if (!entry) {
-            // SPA fallback: serve index.html for unmatched routes
-            const fallback = assets.get("/index.html")
-            if (!fallback) return c.notFound()
-            return c.body(Buffer.from(fallback.content, "base64"), {
-              headers: { "content-type": fallback.type },
-            })
-          }
-          return c.body(Buffer.from(entry.content, "base64"), {
-            headers: { "content-type": entry.type },
-          })
-        })
     )
   }
 
@@ -257,7 +227,7 @@ export namespace Server {
         return undefined
       }
     }
-    const server = opts.port === 0 ? (tryServe(DEFAULT_PORT) ?? tryServe(0)) : tryServe(opts.port)
+    const server = tryServe(opts.port)
     if (!server) throw new Error(`Failed to start server on port ${opts.port}`)
 
     publishedMDNS =

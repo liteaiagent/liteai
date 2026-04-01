@@ -47,20 +47,20 @@ const args = await yargs(hideBin(process.argv))
     describe:
       "Run in hosted mode — delegate filesystem, git, and workspace operations to the host IDE via HTTP callbacks",
   })
-  .option("callback-port", {
+  .option("extension-port", {
     type: "number",
     describe: "Port of the host IDE callback server (required when --hosted is set)",
   })
-  .option("callback-csrf-token", {
+  .option("extension-server-csrf-token", {
     type: "string",
     describe: "CSRF token for the host IDE callback server (required when --hosted is set)",
   })
   .check((argv) => {
-    if (argv.hosted && !argv.callbackPort) {
-      throw new Error("--callback-port is required when --hosted is set")
+    if (argv.hosted && !argv.extensionPort) {
+      throw new Error("--extension-port is required when --hosted is set")
     }
-    if (argv.hosted && !argv.callbackCsrfToken) {
-      throw new Error("--callback-csrf-token is required when --hosted is set")
+    if (argv.hosted && !argv.extensionServerCsrfToken) {
+      throw new Error("--extension-server-csrf-token is required when --hosted is set")
     }
     return true
   })
@@ -83,15 +83,15 @@ const log = Log.create({ service: "main" })
 // ─── Initialize capabilities ────────────────────────────────────────────────
 
 if (args.hosted) {
-  const callbackUrl = `http://127.0.0.1:${args.callbackPort}`
+  const extensionUrl = `http://127.0.0.1:${args.extensionPort}`
   log.info("starting in hosted mode", {
-    callbackUrl,
+    extensionUrl,
     port: args.port,
   })
   Capabilities.set(
     createHostedCapabilities({
-      callbackUrl,
-      csrfToken: args.callbackCsrfToken as string,
+      extensionUrl,
+      csrfToken: args.extensionServerCsrfToken as string,
     }),
   )
 } else {

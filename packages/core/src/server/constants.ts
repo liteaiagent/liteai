@@ -2,9 +2,6 @@
  * Server constants — extracted from scattered magic values throughout the server module.
  */
 
-/** Fallback port when the requested port is 0 (auto-select). */
-export const DEFAULT_PORT = 9000
-
 /** SSE heartbeat interval in milliseconds. */
 export const HEARTBEAT_INTERVAL_MS = 10_000
 

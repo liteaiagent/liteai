@@ -91,14 +91,14 @@ export class ServerManager {
 
     let spawnCmd = binPath
     let spawnArgs = [
+      "--hosted",
       "--port",
       "0",
       "--csrf-token",
       this._csrf,
-      "--hosted",
-      "--callback-port",
+      "--extension-port",
       String(callbackPort),
-      "--callback-csrf-token",
+      "--extension-server-csrf-token",
       callbackCsrfToken,
     ]
     let spawnOpts: SpawnOptions = {

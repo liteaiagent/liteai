@@ -156,7 +156,7 @@ bun dev
 # Server starts on http://127.0.0.1:9000
 ```
 
-**Step 2**: Open the `packages/vscode` directory in VS Code and press **`F5`** to launch the Extension Development Host. The `launch.json` is pre-configured with `LITEAI_DEV_SERVER_URL=http://127.0.0.1:9000`.
+**Step 2**: Open the `packages/vscode` directory in VS Code and press **`F5`** to launch the Extension Development Host. The `launch.json` is pre-configured with `LITEAI_SPAWN_DEV_SERVER=true`.
 
 The extension will connect to the external dev server instead of spawning its own binary.
 

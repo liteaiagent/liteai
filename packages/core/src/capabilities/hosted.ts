@@ -22,12 +22,12 @@ import type {
 
 class HostedFilesystem implements FilesystemCapability {
   constructor(
-    private baseUrl: string,
+    private extensionUrl: string,
     private csrfToken: string,
   ) {}
 
   private async post<T>(endpoint: string, body?: Record<string, unknown>): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${endpoint}`, {
+    const res = await fetch(`${this.extensionUrl}${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -42,7 +42,7 @@ class HostedFilesystem implements FilesystemCapability {
   }
 
   async readFile(path: string): Promise<string> {
-    const res = await fetch(`${this.baseUrl}/fs/readFile`, {
+    const res = await fetch(`${this.extensionUrl}/fs/readFile`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -57,7 +57,7 @@ class HostedFilesystem implements FilesystemCapability {
   }
 
   async readFileBytes(path: string): Promise<Buffer> {
-    const res = await fetch(`${this.baseUrl}/fs/readFileBytes`, {
+    const res = await fetch(`${this.extensionUrl}/fs/readFileBytes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -104,13 +104,13 @@ class HostedFilesystem implements FilesystemCapability {
 
 class HostedGit implements GitCapability {
   constructor(
-    private baseUrl: string,
+    private extensionUrl: string,
     private csrfToken: string,
   ) {}
 
   async run(args: string[], opts: { cwd: string; env?: Record<string, string> }): Promise<GitResult> {
     try {
-      const res = await fetch(`${this.baseUrl}/git/run`, {
+      const res = await fetch(`${this.extensionUrl}/git/run`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -140,12 +140,12 @@ class HostedGit implements GitCapability {
 
 class HostedWorkspace implements WorkspaceCapability {
   constructor(
-    private baseUrl: string,
+    private extensionUrl: string,
     private csrfToken: string,
   ) {}
 
   async getWorkspaceFolders(): Promise<WorkspaceFolder[]> {
-    const res = await fetch(`${this.baseUrl}/workspace/folders`, {
+    const res = await fetch(`${this.extensionUrl}/workspace/folders`, {
       headers: {
         "X-CSRF-Token": this.csrfToken,
       },
@@ -159,7 +159,7 @@ class HostedWorkspace implements WorkspaceCapability {
 
 export interface HostedCapabilitiesOptions {
   /** URL of the Extension Server callback endpoint, e.g. `http://127.0.0.1:12345` */
-  callbackUrl: string
+  extensionUrl: string
   /** CSRF token that the Extension Server validates on every request. */
   csrfToken: string
 }
@@ -169,11 +169,11 @@ export interface HostedCapabilitiesOptions {
  * external server (the IDE's Extension Host) via HTTP.
  */
 export function createHostedCapabilities(opts: HostedCapabilitiesOptions): HostCapabilities {
-  const { callbackUrl, csrfToken } = opts
+  const { extensionUrl, csrfToken } = opts
   return {
     hosted: true,
-    fs: new HostedFilesystem(callbackUrl, csrfToken),
-    git: new HostedGit(callbackUrl, csrfToken),
-    workspace: new HostedWorkspace(callbackUrl, csrfToken),
+    fs: new HostedFilesystem(extensionUrl, csrfToken),
+    git: new HostedGit(extensionUrl, csrfToken),
+    workspace: new HostedWorkspace(extensionUrl, csrfToken),
   }
 }
