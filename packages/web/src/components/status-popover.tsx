@@ -202,66 +202,64 @@ export function StatusPopover() {
       lspLabel={language.t("status.popover.tab.lsp")}
       serversContent={
         <>
-        <For each={sortedServers()}>
-          {(s) => {
-            const key = ServerConnection.key(s)
-            const isBlocked = () => health[key]?.healthy === false
-            return (
-              <button
-                type="button"
-                class="flex items-center gap-2 w-full h-8 pl-3 pr-1.5 py-1.5 rounded-md transition-colors text-left"
-                classList={{
-                  "hover:bg-surface-raised-base-hover": !isBlocked(),
-                  "cursor-not-allowed": isBlocked(),
-                }}
-                aria-disabled={isBlocked()}
-                onClick={() => {
-                  if (isBlocked()) return
-                  server.setActive(key)
-                  navigate("/")
-                }}
-              >
-                <ServerHealthIndicator health={health[key]} />
-                <ServerRow
-                  conn={s}
-                  dimmed={isBlocked()}
-                  status={health[key]}
-                  class="flex items-center gap-2 w-full min-w-0"
-                  nameClass="text-14-regular text-text-base truncate"
-                  versionClass="text-12-regular text-text-weak truncate"
-                  badge={
-                    <Show when={key === defaultServer.key()}>
-                      <span class="text-11-regular text-text-base bg-surface-base px-1.5 py-0.5 rounded-md">
-                        {language.t("common.default")}
-                      </span>
-                    </Show>
-                  }
+          <For each={sortedServers()}>
+            {(s) => {
+              const key = ServerConnection.key(s)
+              const isBlocked = () => health[key]?.healthy === false
+              return (
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full h-8 pl-3 pr-1.5 py-1.5 rounded-md transition-colors text-left"
+                  classList={{
+                    "hover:bg-surface-raised-base-hover": !isBlocked(),
+                    "cursor-not-allowed": isBlocked(),
+                  }}
+                  aria-disabled={isBlocked()}
+                  onClick={() => {
+                    if (isBlocked()) return
+                    server.setActive(key)
+                    navigate("/")
+                  }}
                 >
-                  <div class="flex-1" />
-                  <Show when={server.current && key === ServerConnection.key(server.current)}>
-                    <Icon name="check" size="small" class="text-icon-weak shrink-0" />
-                  </Show>
-                </ServerRow>
-              </button>
-            )
-          }}
-        </For>
-        <Button
-          variant="secondary"
-          class="mt-3 self-start h-8 px-3 py-1.5"
-          onClick={() => dialog.show(() => <DialogSelectServer />, defaultServer.refresh)}
-        >
-          {language.t("status.popover.action.manageServers")}
-        </Button>
-      </>
+                  <ServerHealthIndicator health={health[key]} />
+                  <ServerRow
+                    conn={s}
+                    dimmed={isBlocked()}
+                    status={health[key]}
+                    class="flex items-center gap-2 w-full min-w-0"
+                    nameClass="text-14-regular text-text-base truncate"
+                    versionClass="text-12-regular text-text-weak truncate"
+                    badge={
+                      <Show when={key === defaultServer.key()}>
+                        <span class="text-11-regular text-text-base bg-surface-base px-1.5 py-0.5 rounded-md">
+                          {language.t("common.default")}
+                        </span>
+                      </Show>
+                    }
+                  >
+                    <div class="flex-1" />
+                    <Show when={server.current && key === ServerConnection.key(server.current)}>
+                      <Icon name="check" size="small" class="text-icon-weak shrink-0" />
+                    </Show>
+                  </ServerRow>
+                </button>
+              )
+            }}
+          </For>
+          <Button
+            variant="secondary"
+            class="mt-3 self-start h-8 px-3 py-1.5"
+            onClick={() => dialog.show(() => <DialogSelectServer />, defaultServer.refresh)}
+          >
+            {language.t("status.popover.action.manageServers")}
+          </Button>
+        </>
       }
       mcpContent={
         <Show
           when={mcpNames().length > 0}
           fallback={
-            <div class="text-14-regular text-text-base text-center my-auto">
-              {language.t("dialog.mcp.empty")}
-            </div>
+            <div class="text-14-regular text-text-base text-center my-auto">{language.t("dialog.mcp.empty")}</div>
           }
         >
           <For each={mcpNames()}>
@@ -281,8 +279,7 @@ export function StatusPopover() {
                       "bg-icon-success-base": status() === "connected",
                       "bg-icon-critical-base": status() === "failed",
                       "bg-border-weak-base": status() === "disabled",
-                      "bg-icon-warning-base":
-                        status() === "needs_auth" || status() === "needs_client_registration",
+                      "bg-icon-warning-base": status() === "needs_auth" || status() === "needs_client_registration",
                     }}
                   />
                   <span class="text-14-regular text-text-base truncate flex-1">{name}</span>
@@ -292,11 +289,7 @@ export function StatusPopover() {
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                   >
-                    <Switch
-                      checked={enabled()}
-                      disabled={mcp.loading() === name}
-                      onChange={() => mcp.toggle(name)}
-                    />
+                    <Switch checked={enabled()} disabled={mcp.loading() === name} onChange={() => mcp.toggle(name)} />
                   </div>
                 </button>
               )
@@ -308,9 +301,7 @@ export function StatusPopover() {
         <Show
           when={lspItems().length > 0}
           fallback={
-            <div class="text-14-regular text-text-base text-center my-auto">
-              {language.t("dialog.lsp.empty")}
-            </div>
+            <div class="text-14-regular text-text-base text-center my-auto">{language.t("dialog.lsp.empty")}</div>
           }
         >
           <For each={lspItems()}>

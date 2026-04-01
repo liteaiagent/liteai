@@ -1378,27 +1378,29 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                 </div>
 
                 {/* Variant selector */}
-                <div data-component="prompt-variant-control">
-                  <TooltipKeybind
-                    placement="top"
-                    gutter={4}
-                    title={language.t("command.model.variant.cycle")}
-                    keybind={keybind()("model.variant.cycle")}
-                  >
-                    <Select
-                      size="normal"
-                      options={variants()}
-                      current={selection.model.variant.current() ?? "default"}
-                      label={(x) => (x === "default" ? language.t("common.default") : x)}
-                      onSelect={(x) => selection.model.variant.set(x === "default" ? undefined : x)}
-                      class="capitalize max-w-[160px] text-text-base"
-                      valueClass="truncate text-13-regular text-text-base"
-                      triggerStyle={control()}
-                      triggerProps={{ "data-action": "prompt-model-variant" }}
-                      variant="ghost"
-                    />
-                  </TooltipKeybind>
-                </div>
+                <Show when={selection.model.variant.list().length > 0}>
+                  <div data-component="prompt-variant-control">
+                    <TooltipKeybind
+                      placement="top"
+                      gutter={4}
+                      title={language.t("command.model.variant.cycle")}
+                      keybind={keybind()("model.variant.cycle")}
+                    >
+                      <Select
+                        size="normal"
+                        options={variants()}
+                        current={selection.model.variant.current() ?? "default"}
+                        label={(x) => (x === "default" ? language.t("ui.common.default") : x)}
+                        onSelect={(x) => selection.model.variant.set(x === "default" ? undefined : x)}
+                        class="capitalize max-w-[160px] text-text-base"
+                        valueClass="truncate text-13-regular text-text-base"
+                        triggerStyle={control()}
+                        triggerProps={{ "data-action": "prompt-model-variant" }}
+                        variant="ghost"
+                      />
+                    </TooltipKeybind>
+                  </div>
+                </Show>
 
                 {/* Auto-accept / YOLO button */}
                 <TooltipKeybind

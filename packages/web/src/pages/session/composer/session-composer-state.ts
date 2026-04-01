@@ -109,8 +109,6 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
     () => todos().length > 0 && todos().every((todo) => todo.status === "completed" || todo.status === "cancelled"),
   )
 
-
-
   const busy = createMemo(() => status().type !== "idle")
   const live = createMemo(() => {
     if (test.on && test.live !== undefined) return test.live

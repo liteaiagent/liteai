@@ -1,5 +1,4 @@
 import { Effect } from "effect"
-import { NotFoundError } from "@/storage/db"
 import { GlobalBus } from "@/bus/global"
 import { Filesystem } from "@/util/filesystem"
 import { iife } from "@/util/iife"

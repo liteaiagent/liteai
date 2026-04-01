@@ -1,7 +1,7 @@
+import { AsyncLocalStorage } from "node:async_hooks"
 import { createWriteStream, type WriteStream } from "node:fs"
 import fs from "node:fs/promises"
 import path from "node:path"
-import { AsyncLocalStorage } from "node:async_hooks"
 import z from "zod"
 import { Global } from "../global"
 import { Glob } from "./glob"
@@ -135,7 +135,7 @@ export namespace Log {
   export async function init(options: Options) {
     if (options.level) level = options.level
     cleanup(Global.Path.log)
-    
+
     logpath = path.join(
       Global.Path.log,
       options.dev ? "liteai.log" : `${new Date().toISOString().split(".")[0].replace(/:/g, "")}.log`,

@@ -35,10 +35,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Render the webview immediately — the SolidJS app defaults to
     // http://127.0.0.1:9000 if no URL is injected, so the panel always
     // mounts and shows the connection status indicator.
-    // If we already know the URL (e.g. dev mode env var), inject it now.
-    const devUrl = process.env.LITEAI_DEV_SERVER_URL
+    // If we already know the URL from config, inject it now.
     const configUrl = vscode.workspace.getConfiguration("liteai.server").get<string>("url")
-    const knownUrl = devUrl || configUrl || ""
+    const knownUrl = configUrl || ""
 
     webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, knownUrl)
     this._bridge = new WebviewBridge(webviewView, this._serverManager)
@@ -51,9 +50,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // serverManager.url which the WebviewBridge needs to proxy fetch requests.
     this._serverManager.start(this._context).then(
       (url) => {
-        if (this._serverManager.mode === "dev") {
-          vscode.window.setStatusBarMessage(`LiteAI: Dev mode → ${url}`, 5000)
-        } else if (this._serverManager.mode === "remote") {
+        if (this._serverManager.mode === "remote") {
           vscode.window.setStatusBarMessage(`LiteAI: Remote → ${url}`, 5000)
         } else {
           vscode.window.setStatusBarMessage(`LiteAI: Server started → ${url}`, 5000)

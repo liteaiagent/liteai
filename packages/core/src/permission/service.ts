@@ -174,18 +174,16 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
         const deferred = yield* Deferred.make<void, RejectedError | CorrectedError>()
         state.pending.set(id, { info, deferred })
         void Bus.publish(Event.Asked, info)
-        return yield* Effect.onInterrupt(
-          Deferred.await(deferred),
-          () =>
-            Effect.sync(() => {
-              if (state.pending.delete(id)) {
-                void Bus.publish(Event.Replied, {
-                  sessionID: info.sessionID,
-                  requestID: id,
-                  reply: "reject",
-                })
-              }
-            }),
+        return yield* Effect.onInterrupt(Deferred.await(deferred), () =>
+          Effect.sync(() => {
+            if (state.pending.delete(id)) {
+              void Bus.publish(Event.Replied, {
+                sessionID: info.sessionID,
+                requestID: id,
+                reply: "reject",
+              })
+            }
+          }),
         )
       })
 

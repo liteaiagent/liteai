@@ -35,6 +35,9 @@ async function main() {
     outfile: "dist/extension.js",
     external: ["vscode"],
     logLevel: "silent",
+    define: {
+      "__LITEAI_DEV__": production ? "false" : "true"
+    },
     plugins: [
       /* add to the end of plugins array */
       esbuildProblemMatcherPlugin,

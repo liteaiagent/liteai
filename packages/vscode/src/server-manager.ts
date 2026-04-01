@@ -1,10 +1,10 @@
-import { type ChildProcess, spawn } from "node:child_process"
+import { type ChildProcess, spawn, type SpawnOptions } from "node:child_process"
 import * as crypto from "node:crypto"
 import * as path from "node:path"
 import * as vscode from "vscode"
 import { ExtensionServer } from "./extension-server"
 
-export type ServerMode = "dev" | "production" | "remote"
+export type ServerMode = "production" | "remote"
 
 export class ServerManager {
   private _url: string | null = null
@@ -37,25 +37,14 @@ export class ServerManager {
    * Start or connect to the LiteAI server.
    *
    * Resolution order:
-   * 1. `LITEAI_DEV_SERVER_URL` env var → dev mode (connect to external dev server)
-   * 2. `liteai.server.url` VS Code setting → remote mode (connect to remote server)
-   * 3. Spawn bundled binary → production mode (with Extension Server for hosted ops)
+   * 1. `liteai.server.url` VS Code setting → remote mode (connect to remote server)
+   * 2. Spawn core server → production mode (with Extension Server for hosted ops)
    */
   async start(context: vscode.ExtensionContext): Promise<string> {
     const config = vscode.workspace.getConfiguration("liteai.server")
     const outputChannel = this.getOutputChannel()
 
-    // Priority 1: Dev server URL from environment (set in launch.json)
-    const devUrl = process.env.LITEAI_DEV_SERVER_URL
-    if (devUrl) {
-      this._mode = "dev"
-      this._url = devUrl
-      this._isReady = true
-      outputChannel.appendLine(`[dev] Connecting to dev server: ${devUrl}`)
-      return devUrl
-    }
-
-    // Priority 2: Remote server URL from VS Code settings
+    // Priority 1: Remote server URL from VS Code settings
     const remoteUrl = config.get<string>("url")
     if (remoteUrl) {
       this._mode = "remote"
@@ -100,26 +89,40 @@ export class ServerManager {
 
     const binPath = path.join(context.extensionPath, "bin", platformFolder, binName)
 
-    outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
+    let spawnCmd = binPath
+    let spawnArgs = [
+      "--port",
+      "0",
+      "--csrf-token",
+      this._csrf,
+      "--hosted",
+      "--callback-port",
+      String(callbackPort),
+      "--callback-csrf-token",
+      callbackCsrfToken,
+    ]
+    let spawnOpts: SpawnOptions = {
+      env: { ...process.env },
+      windowsHide: true,
+    }
 
-    this._process = spawn(
-      binPath,
-      [
-        "--port",
-        "0",
-        "--csrf-token",
-        this._csrf,
-        "--hosted",
-        "--callback-port",
-        String(callbackPort),
-        "--callback-csrf-token",
-        callbackCsrfToken,
-      ],
-      {
-        env: { ...process.env },
-        windowsHide: true,
-      },
-    )
+    if (__LITEAI_DEV__) {
+      if (process.env.LITEAI_SPAWN_DEV_SERVER === "true") {
+        outputChannel.appendLine(`[dev-hosted] Overriding binPath to run 'bun dev' from packages/core`)
+        spawnCmd = "bun"
+        spawnArgs = [
+          "--watch", "run", "--conditions=browser", "./src/main.ts",
+          ...spawnArgs
+        ]
+        spawnOpts.cwd = path.join(context.extensionPath, "../core")
+      } else {
+        outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
+      }
+    } else {
+      outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
+    }
+
+    this._process = spawn(spawnCmd, spawnArgs, spawnOpts)
 
     return new Promise((resolve, reject) => {
       let timeoutId: NodeJS.Timeout
