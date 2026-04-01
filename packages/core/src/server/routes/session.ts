@@ -2,8 +2,6 @@ import { Hono } from "hono"
 import { stream } from "hono/streaming"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
-import { PermissionNext } from "@/permission/next"
-import { PermissionID } from "@/permission/schema"
 import { ModelID, ProviderID } from "@/provider/schema"
 import { MessageID, PartID, SessionID } from "@/session/schema"
 import { SessionStatus } from "@/session/status"
@@ -984,42 +982,6 @@ export const SessionRoutes = lazy(() =>
         const sessionID = c.req.valid("param").sessionID
         const session = await SessionRevert.unrevert({ sessionID })
         return c.json(session)
-      },
-    )
-    .post(
-      "/:sessionID/permissions/:permissionID",
-      describeRoute({
-        summary: "Respond to permission",
-        deprecated: true,
-        description: "Approve or deny a permission request from the AI assistant.",
-        operationId: "project.permission.respond",
-        responses: {
-          200: {
-            description: "Permission processed successfully",
-            content: {
-              "application/json": {
-                schema: resolver(z.boolean()),
-              },
-            },
-          },
-          ...errors(400, 404),
-        },
-      }),
-      validator(
-        "param",
-        z.object({
-          sessionID: SessionID.zod,
-          permissionID: PermissionID.zod,
-        }),
-      ),
-      validator("json", z.object({ response: PermissionNext.Reply })),
-      async (c) => {
-        const params = c.req.valid("param")
-        PermissionNext.reply({
-          requestID: params.permissionID,
-          reply: c.req.valid("json").response,
-        })
-        return c.json(true)
       },
     ),
 )

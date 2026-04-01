@@ -3948,43 +3948,6 @@ export type ProjectSessionUnrevertResponses = {
 
 export type ProjectSessionUnrevertResponse = ProjectSessionUnrevertResponses[keyof ProjectSessionUnrevertResponses];
 
-export type ProjectPermissionRespondData = {
-    body?: {
-        response: 'once' | 'always' | 'reject';
-    };
-    path: {
-        sessionID: string;
-        permissionID: string;
-        projectID: string;
-    };
-    query?: {
-        workspace?: string;
-    };
-    url: '/project/{projectID}/session/{sessionID}/permissions/{permissionID}';
-};
-
-export type ProjectPermissionRespondErrors = {
-    /**
-     * Bad request
-     */
-    400: BadRequestError;
-    /**
-     * Not found
-     */
-    404: NotFoundError;
-};
-
-export type ProjectPermissionRespondError = ProjectPermissionRespondErrors[keyof ProjectPermissionRespondErrors];
-
-export type ProjectPermissionRespondResponses = {
-    /**
-     * Permission processed successfully
-     */
-    200: boolean;
-};
-
-export type ProjectPermissionRespondResponse = ProjectPermissionRespondResponses[keyof ProjectPermissionRespondResponses];
-
 export type ProjectSessionTraceListData = {
     body?: never;
     path: {
