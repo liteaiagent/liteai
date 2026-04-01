@@ -23,6 +23,7 @@ import {
 import { vscodePlatform, vscodePlatformPostMessage } from "./vscode-platform"
 import { createSseSubscription } from "./vscode-sse"
 import { createVscodeStore } from "./vscode-store"
+import { VscodeComposerDocks } from "./vscode-composer-docks"
 import "./vscode.css"
 import "@liteai/ui/styles/tailwind"
 
@@ -503,6 +504,14 @@ function App() {
                         onConnectProvider={onConnectProvider}
                         shouldQueue={shouldQueue}
                         onAbort={handler.abort}
+                        promptDocks={
+                          <VscodeComposerDocks
+                            store={store}
+                            client={client}
+                            projectID={store.store.projectID}
+                            sessionID={route()?.sessionID}
+                          />
+                        }
                       />
                     </PanelLayout>
                   </ChatContextProvider>

@@ -32,11 +32,19 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
   const language = useLanguage()
   const permission = usePermission()
 
+  const status = createMemo(() => {
+    const id = params.id
+    if (!id) return idle
+    return sync.data.session_status[id] ?? idle
+  })
+
   const questionRequest = createMemo((): QuestionRequest | undefined => {
+    if (status().type === "idle") return undefined
     return sessionQuestionRequest(sync.data.session, sync.data.question, params.id)
   })
 
   const permissionRequest = createMemo((): PermissionRequest | undefined => {
+    if (status().type === "idle") return undefined
     return sessionPermissionRequest(sync.data.session, sync.data.permission, params.id, (item) => {
       return !permission.autoResponds(item, sdk.directory)
     })
@@ -101,11 +109,7 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
     () => todos().length > 0 && todos().every((todo) => todo.status === "completed" || todo.status === "cancelled"),
   )
 
-  const status = createMemo(() => {
-    const id = params.id
-    if (!id) return idle
-    return sync.data.session_status[id] ?? idle
-  })
+
 
   const busy = createMemo(() => status().type !== "idle")
   const live = createMemo(() => {
@@ -141,6 +145,25 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
       .finally(() => {
         setStore("responding", (id) => (id === perm.id ? undefined : id))
       })
+  }
+
+  const replyQuestion = async (answers: import("@liteai/sdk").QuestionAnswer[]) => {
+    const q = questionRequest()
+    if (!q) return
+    await sdk.client.project.question.reply({
+      projectID: sdk.projectID,
+      requestID: q.id,
+      answers,
+    })
+  }
+
+  const rejectQuestion = async () => {
+    const q = questionRequest()
+    if (!q) return
+    await sdk.client.project.question.reject({
+      projectID: sdk.projectID,
+      requestID: q.id,
+    })
   }
 
   let timer: number | undefined
@@ -243,6 +266,8 @@ export function createSessionComposerState(options?: { closeMs?: number | (() =>
     dock: () => store.dock,
     closing: () => store.closing,
     opening: () => store.opening,
+    replyQuestion,
+    rejectQuestion,
   }
 }
 

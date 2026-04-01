@@ -5,13 +5,16 @@ import { Icon } from "@liteai/ui/icon"
 import { showToast } from "@liteai/ui/toast"
 import { type Component, createMemo, For, onCleanup, onMount, Show } from "solid-js"
 import { createStore } from "solid-js/store"
-import { useLanguage } from "@/context/language"
-import { useSDK } from "@/context/sdk"
+import { useLanguage } from "../shared/language"
 
 const cache = new Map<string, { tab: number; answers: QuestionAnswer[]; custom: string[]; customOn: boolean[] }>()
 
-export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit: () => void }> = (props) => {
-  const sdk = useSDK()
+export const SessionQuestionDock: Component<{
+  request: QuestionRequest
+  onSubmit: () => void
+  onReply: (answers: QuestionAnswer[]) => Promise<void>
+  onReject: () => Promise<void>
+}> = (props) => {
   const language = useLanguage()
 
   const questions = createMemo(() => props.request.questions)
@@ -132,11 +135,7 @@ export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit
     props.onSubmit()
     setStore("sending", true)
     try {
-      await sdk.client.project.question.reply({
-        requestID: props.request.id,
-        answers,
-        projectID: sdk.projectID,
-      })
+      await props.onReply(answers)
       replied = true
       cache.delete(props.request.id)
     } catch (err) {
@@ -152,7 +151,7 @@ export const SessionQuestionDock: Component<{ request: QuestionRequest; onSubmit
     props.onSubmit()
     setStore("sending", true)
     try {
-      await sdk.client.project.question.reject({ requestID: props.request.id, projectID: sdk.projectID })
+      await props.onReject()
       replied = true
       cache.delete(props.request.id)
     } catch (err) {

@@ -11,10 +11,8 @@ import { usePrompt } from "@/context/prompt"
 import { useSync } from "@/context/sync"
 import type { SessionComposerState } from "@/pages/session/composer/session-composer-state"
 import { SessionFollowupDock } from "@/pages/session/composer/session-followup-dock"
-import { SessionPermissionDock } from "@/pages/session/composer/session-permission-dock"
-import { SessionQuestionDock } from "@/pages/session/composer/session-question-dock"
 import { SessionRevertDock } from "@/pages/session/composer/session-revert-dock"
-import { SessionTodoDock } from "@/pages/session/composer/session-todo-dock"
+import { SessionPermissionDock, SessionQuestionDock, SessionTodoDock } from "@liteai/ui/panes"
 import { getSessionHandoff, setSessionHandoff } from "@/pages/session/handoff"
 import { createSessionTabs } from "@/pages/session/helpers"
 import { useSessionKey, useSessionLayout } from "@/pages/session/session-layout"
@@ -225,7 +223,12 @@ export function SessionComposerRegion(props: {
         <Show when={props.state.questionRequest()} keyed>
           {(request) => (
             <div>
-              <SessionQuestionDock request={request} onSubmit={props.onResponseSubmit} />
+              <SessionQuestionDock
+                request={request}
+                onSubmit={props.onResponseSubmit}
+                onReply={(answers) => props.state.replyQuestion(answers)}
+                onReject={() => props.state.rejectQuestion()}
+              />
             </div>
           )}
         </Show>

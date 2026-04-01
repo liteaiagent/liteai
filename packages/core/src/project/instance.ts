@@ -1,4 +1,5 @@
 import { Effect } from "effect"
+import { NotFoundError } from "@/storage/db"
 import { GlobalBus } from "@/bus/global"
 import { Filesystem } from "@/util/filesystem"
 import { iife } from "@/util/iife"
@@ -71,9 +72,11 @@ function boot(input: { directory: string; init?: () => Promise<void>; project?: 
             const project = Project.get(resolved.id)
             if (!project) {
               const all = Project.list()
-              throw new Error(
-                `Project not registered for directory: ${input.directory}. Resolved ID: ${resolved.id}. DB has: ${all.map((x) => x.id).join(", ")}. Register via POST /project first.`,
-              )
+              throw new NotFoundError({
+                message: `Project not registered for directory: ${input.directory}. Resolved ID: ${resolved.id}. DB has: ${all
+                  .map((x) => x.id)
+                  .join(", ")}. Register via POST /project first.`,
+              })
             }
             return {
               directory: input.directory,

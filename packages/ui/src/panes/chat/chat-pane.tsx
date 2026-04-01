@@ -65,6 +65,9 @@ interface ChatPaneProps {
   /** Extra JSX rendered below the prompt input */
   footer?: JSX.Element
 
+  /** Extra JSX rendered inside the input dock container, above the prompt input */
+  promptDocks?: JSX.Element
+
   // ─── Advanced prompt input props (proxied through to ChatPromptInput) ───
 
   /**
@@ -346,6 +349,7 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
           }}
           class="mt-auto px-3 pb-3"
         >
+          {props.promptDocks}
           <ChatPromptInput
             ref={props.inputRef}
             sessionID={sessionID()}

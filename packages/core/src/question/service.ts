@@ -129,11 +129,17 @@ export class QuestionService extends ServiceMap.Service<QuestionService, Questio
         pending.set(id, { info, deferred })
         Bus.publish(Event.Asked, info)
 
-        return yield* Effect.ensuring(
+        return yield* Effect.onInterrupt(
           Deferred.await(deferred),
-          Effect.sync(() => {
-            pending.delete(id)
-          }),
+          () =>
+            Effect.sync(() => {
+              if (pending.delete(id)) {
+                Bus.publish(Event.Rejected, {
+                  sessionID: info.sessionID,
+                  requestID: id,
+                })
+              }
+            }),
         )
       })
 

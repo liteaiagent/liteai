@@ -3,7 +3,7 @@ import { Button } from "@liteai/ui/button"
 import { DockPrompt } from "@liteai/ui/dock-prompt"
 import { Icon } from "@liteai/ui/icon"
 import { For, Show } from "solid-js"
-import { useLanguage } from "@/context/language"
+import { useLanguage } from "../shared/language"
 
 export function SessionPermissionDock(props: {
   request: PermissionRequest
