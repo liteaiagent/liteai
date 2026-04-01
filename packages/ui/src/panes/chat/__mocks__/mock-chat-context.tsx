@@ -1,7 +1,8 @@
 import type { Agent, Config, Provider } from "@liteai/sdk/client"
-import type { ParentProps } from "solid-js"
+import { createSignal, type ParentProps } from "solid-js"
 import { ChatContextProvider } from "../../controllers/chat-context"
 import type { ChatController, ProjectInfo } from "../../controllers/chat-controller"
+import type { PermissionController } from "../../controllers/permission-controller"
 import type { SelectionController } from "../../controllers/selection-controller"
 import type { SessionController } from "../../controllers/session-controller"
 import { PromptProvider } from "../../shared/prompt"
@@ -33,6 +34,21 @@ export function createMockChatController(overrides?: Partial<ChatController>): C
     commands: () => [],
     hasPaidProviders: () => true,
     ...overrides,
+  }
+}
+
+/** Minimal Mock Permission Controller */
+export function createMockPermissionController(overrides?: Partial<PermissionController>): PermissionController {
+  const [autoAccepting, setAutoAccepting] = createSignal(false)
+  return {
+    isAutoAccepting: (id) => (overrides?.isAutoAccepting ? overrides.isAutoAccepting(id) : autoAccepting()),
+    toggle: (id) => {
+      if (overrides?.toggle) {
+        overrides.toggle(id)
+      } else {
+        setAutoAccepting(!autoAccepting())
+      }
+    },
   }
 }
 
@@ -80,14 +96,16 @@ export function MockChatProviders(
     chat?: Partial<ChatController>
     selection?: Partial<SelectionController>
     session?: Partial<SessionController>
+    permission?: Partial<PermissionController>
   }>,
 ) {
   const chat = createMockChatController(props.chat)
   const selection = createMockSelectionController(props.selection)
   const session = createMockSessionController(props.session)
+  const permission = createMockPermissionController(props.permission)
 
   return (
-    <ChatContextProvider chat={chat} selection={selection} session={session}>
+    <ChatContextProvider chat={chat} selection={selection} session={session} permission={permission}>
       <PromptProvider>{props.children}</PromptProvider>
     </ChatContextProvider>
   )

@@ -10,6 +10,7 @@ export function StoryWrapper(
     chat?: Partial<import("../../controllers/chat-controller").ChatController>
     selection?: Partial<import("../../controllers/selection-controller").SelectionController>
     session?: Partial<import("../../controllers/session-controller").SessionController>
+    permission?: Partial<import("../../controllers/permission-controller").PermissionController>
   }>,
 ) {
   const [route, _setRoute] = createSignal(
@@ -23,7 +24,12 @@ export function StoryWrapper(
         route={route}
         dictionaries={{ en: {} } as unknown as Record<import("../../shared/language").Locale, Record<string, unknown>>}
       >
-        <MockChatProviders chat={props.chat} selection={props.selection} session={props.session}>
+        <MockChatProviders
+          chat={props.chat}
+          selection={props.selection}
+          session={props.session}
+          permission={props.permission}
+        >
           <div class="@container h-[600px] w-[500px] bg-background-stronger overflow-hidden border border-border-weak relative flex flex-col">
             {props.children}
           </div>

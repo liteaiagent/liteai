@@ -1,3 +1,5 @@
+export const popularProviders = ["anthropic", "google", "openai", "google-code-assist", "ai4all"]
+
 const model_id = "claude-3-7-sonnet"
 
 const provider = {
