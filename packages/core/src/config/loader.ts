@@ -28,6 +28,7 @@ import { Event } from "../server/event"
 import { Glob } from "../util/glob"
 import { lazy } from "../util/lazy"
 import { Log } from "../util/log"
+import * as Platform from "@/platform"
 import { ConfigMarkdown } from "./markdown"
 import { load as loadMcpJson, loadFile as loadMcpJsonFile } from "./mcp-json"
 import { ConfigPaths } from "./paths"
@@ -113,10 +114,13 @@ export const state = Instance.state(async () => {
 
   // ~/.liteai/.mcp.json user-scope file (Claude Code compatible).
   // Loaded before global config so settings.json entries take precedence.
-  // Cached at module level so multiple instances don't re-read the same file.
-  const globalMcpJson = await globalMcpJsonCache()
-  if (Object.keys(globalMcpJson).length > 0) {
-    result.mcp = { ...globalMcpJson, ...result.mcp }
+  // Only when the active platform supports .mcp.json format.
+  const profile = Platform.active()
+  if (profile?.mcpJson) {
+    const globalMcpJson = await globalMcpJsonCache()
+    if (Object.keys(globalMcpJson).length > 0) {
+      result.mcp = { ...globalMcpJson, ...result.mcp }
+    }
   }
 
   // Global user config overrides remote config.
@@ -138,7 +142,8 @@ export const state = Instance.state(async () => {
 
   // .mcp.json project-scope file (Claude Code compatible).
   // Loaded after project config so settings.json entries take precedence.
-  if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG) {
+  // Only when the active platform supports .mcp.json format.
+  if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
     log.info("scanning for .mcp.json", { start: Instance.directory, stop: Instance.worktree })
     const mcpJson = await loadMcpJson(Instance.directory, Instance.worktree)
     if (Object.keys(mcpJson).length > 0) {
@@ -347,8 +352,8 @@ async function loadCommand(dir: string) {
 }
 
 // External agent directories to search for (project-level and global).
-// These follow the directory layout used by Claude Code and other agents.
-const EXTERNAL_AGENT_DIRS = [".claude", ".agents"]
+// Driven by the active platform profile (e.g., ".claude" for Claude Code)
+// plus the neutral ".agents" convention.
 const EXTERNAL_AGENT_PATTERN = "agents/*.md"
 
 async function parseAgent(item: string): Promise<[string, z.infer<typeof Agent>] | undefined> {
@@ -426,7 +431,7 @@ async function scanAgents(root: string, scope: "global" | "project") {
 const globalExternalAgentsCache = lazy(async () => {
   if (Flag.LITEAI_DISABLE_EXTERNAL_AGENTS) return {}
   const result: Record<string, z.infer<typeof Agent>> = {}
-  for (const dir of EXTERNAL_AGENT_DIRS) {
+  for (const dir of Platform.externalDirs()) {
     const root = path.join(Global.Path.home, dir)
     if (!(await Filesystem.isDir(root))) continue
     Object.assign(result, await scanAgents(root, "global"))
@@ -440,7 +445,7 @@ async function loadExternalAgents() {
   const result: Record<string, z.infer<typeof Agent>> = { ...(await globalExternalAgentsCache()) }
 
   for await (const root of Filesystem.up({
-    targets: EXTERNAL_AGENT_DIRS,
+    targets: Platform.externalDirs(),
     start: Instance.directory,
     stop: Instance.worktree,
   })) {

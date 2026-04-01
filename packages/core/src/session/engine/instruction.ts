@@ -7,11 +7,13 @@ import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
 import { Glob } from "../../util/glob"
 import { Log } from "../../util/log"
+import * as Platform from "@/platform"
 import type { Message } from "../message"
 
 const log = Log.create({ service: "session.instruction" })
 
-const FILES = ["AGENTS.md", "CLAUDE.md"]
+/** Instruction file basenames — driven by the active platform profile. */
+const FILES = Platform.instructionFiles()
 
 function globalFiles() {
   const files = []
@@ -19,9 +21,7 @@ function globalFiles() {
     files.push(path.join(Flag.LITEAI_CONFIG_DIR, "AGENTS.md"))
   }
   files.push(path.join(Global.Path.config, "AGENTS.md"))
-  if (!Flag.LITEAI_DISABLE_CLAUDE_CODE_PROMPT) {
-    files.push(path.join(os.homedir(), ".claude", "CLAUDE.md"))
-  }
+  files.push(...Platform.globalInstructionPaths(os.homedir()))
   return files
 }
 

@@ -7,12 +7,12 @@ import { tmpdir } from "../fixture/fixture"
 
 let prev: string | undefined
 beforeAll(() => {
-  prev = process.env.LITEAI_ENABLE_CLAUDE_CODE
-  process.env.LITEAI_ENABLE_CLAUDE_CODE = "true"
+  prev = process.env.LITEAI_PLATFORM
+  process.env.LITEAI_PLATFORM = "claude"
 })
 afterAll(() => {
-  if (prev !== undefined) process.env.LITEAI_ENABLE_CLAUDE_CODE = prev
-  else delete process.env.LITEAI_ENABLE_CLAUDE_CODE
+  if (prev !== undefined) process.env.LITEAI_PLATFORM = prev
+  else delete process.env.LITEAI_PLATFORM
 })
 
 test("discovers agents from .claude/agents/ directory", async () => {

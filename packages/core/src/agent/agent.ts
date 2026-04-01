@@ -5,6 +5,7 @@ import { mergeDeep, pipe, sortBy, values } from "remeda"
 import z from "zod"
 import { PermissionNext } from "@/permission/next"
 import { Plugin } from "@/plugin"
+import * as Platform from "@/platform"
 import { Log } from "@/util/log"
 import { Auth } from "../auth"
 import { Config } from "../config/config"
@@ -75,53 +76,6 @@ export namespace Agent {
     })
   export type Info = z.infer<typeof Info>
 
-  /** Map Claude Code agent frontmatter (tools / disallowedTools / permissionMode) to permission rules. */
-  function ccPermission(value: Config.Agent): PermissionNext.Ruleset | undefined {
-    const rules: Config.Permission = {}
-    let any = false
-
-    // permissionMode presets
-    if (value.permissionMode === "dontAsk" || value.permissionMode === "bypassPermissions") {
-      rules["*"] = "allow"
-      any = true
-    } else if (value.permissionMode === "plan") {
-      Object.assign(rules, { "*": "deny", read: "allow", grep: "allow", glob: "allow", list: "allow" })
-      any = true
-    } else if (value.permissionMode === "acceptEdits") {
-      Object.assign(rules, { edit: "allow", write: "allow" })
-      any = true
-    }
-
-    // tools: allowed tool list (implies *:deny base)
-    if (value.tools) {
-      const list =
-        typeof value.tools === "string"
-          ? value.tools.split(",").map((t) => t.trim().toLowerCase())
-          : Array.isArray(value.tools)
-            ? value.tools.map((t) => t.toLowerCase())
-            : Object.entries(value.tools)
-                .filter(([, v]) => v)
-                .map(([k]) => k.toLowerCase())
-      if (list.length) {
-        rules["*"] = "deny"
-        for (const t of list) rules[t] = "allow"
-        any = true
-      }
-    }
-
-    // disallowedTools: denied tool list
-    if (value.disallowedTools) {
-      const list =
-        typeof value.disallowedTools === "string"
-          ? value.disallowedTools.split(",").map((t) => t.trim().toLowerCase())
-          : value.disallowedTools.map((t) => t.toLowerCase())
-      for (const t of list) rules[t] = "deny"
-      if (list.length) any = true
-    }
-
-    if (!any) return undefined
-    return PermissionNext.fromConfig(rules)
-  }
 
   const state = Instance.state(async () => {
     log.info("loading agents")
@@ -204,10 +158,12 @@ export namespace Agent {
       item.steps = value.maxTurns ?? value.steps ?? item.steps
       item.options = mergeDeep(item.options, value.options ?? {})
 
-      // Claude Code compatibility: map tools/disallowedTools/permissionMode → permission rules.
-      // These are applied before LiteAI's `permission` field so explicit `permission` always wins.
-      const cc = ccPermission(value)
-      if (cc) item.permission = PermissionNext.merge(item.permission, cc)
+      // Platform compatibility: map provider-specific fields (e.g., Claude Code's
+      // tools/disallowedTools/permissionMode) to LiteAI permission rules.
+      // Applied before LiteAI's `permission` field so explicit `permission` always wins.
+      const profile = Platform.active()
+      const compat = profile?.permissionTransform?.(value)
+      if (compat) item.permission = PermissionNext.merge(item.permission, compat)
 
       item.permission = PermissionNext.merge(item.permission, PermissionNext.fromConfig(value.permission ?? {}))
     }

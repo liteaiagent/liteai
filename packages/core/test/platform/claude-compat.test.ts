@@ -1,8 +1,18 @@
-import { expect, test } from "bun:test"
+import { afterAll, beforeAll, expect, test } from "bun:test"
 import { Agent } from "../../src/agent/agent"
 import { PermissionNext } from "../../src/permission/next"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
+
+let prev: string | undefined
+beforeAll(() => {
+  prev = process.env.LITEAI_PLATFORM
+  process.env.LITEAI_PLATFORM = "claude"
+})
+afterAll(() => {
+  if (prev !== undefined) process.env.LITEAI_PLATFORM = prev
+  else delete process.env.LITEAI_PLATFORM
+})
 
 function evalPerm(agent: Agent.Info | undefined, permission: string): PermissionNext.Action | undefined {
   if (!agent) return undefined

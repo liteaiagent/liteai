@@ -54,6 +54,11 @@ function generate(schema: z.ZodType) {
 const configFile = process.argv[2]
 const tuiFile = process.argv[3]
 
+if (!configFile) {
+  console.error("Error: configFile argument is required.")
+  process.exit(1)
+}
+
 console.log(configFile)
 await Bun.write(configFile, JSON.stringify(generate(Config.Info), null, 2))
 

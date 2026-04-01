@@ -14,6 +14,7 @@ import { ConfigMarkdown } from "../config/markdown"
 import { Instance } from "../project/instance"
 import { Glob } from "../util/glob"
 import { Log } from "../util/log"
+import * as Platform from "@/platform"
 import { Discovery } from "./discovery"
 
 export namespace Skill {
@@ -52,9 +53,8 @@ export namespace Skill {
     }),
   )
 
-  // External skill directories to search for (project-level and global)
-  // These follow the directory layout used by Claude Code and other agents.
-  const EXTERNAL_DIRS = [".claude", ".agents"]
+  // External skill directories to search for (project-level and global).
+  // Driven by the active platform profile + neutral .agents/ convention.
   const EXTERNAL_SKILL_PATTERN = "skills/**/SKILL.md"
   const CONFIG_SKILL_PATTERN = "{skill,skills}/**/SKILL.md"
   const SKILL_PATTERN = "**/SKILL.md"
@@ -130,17 +130,17 @@ export namespace Skill {
         })
     }
 
-    // Scan external skill directories (.claude/skills/, .agents/skills/, etc.)
+    // Scan external skill directories (platform-specific + .agents/skills/)
     // Load global (home) first, then project-level (so project-level overwrites)
     if (!Flag.LITEAI_DISABLE_EXTERNAL_SKILLS) {
-      for (const dir of EXTERNAL_DIRS) {
+      for (const dir of Platform.externalDirs()) {
         const root = path.join(Global.Path.home, dir)
         if (!(await Filesystem.isDir(root))) continue
         await scanExternal(root, "global")
       }
 
       for await (const root of Filesystem.up({
-        targets: EXTERNAL_DIRS,
+        targets: Platform.externalDirs(),
         start: Instance.directory,
         stop: Instance.worktree,
       })) {

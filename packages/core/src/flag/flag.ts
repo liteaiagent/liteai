@@ -37,10 +37,16 @@ export namespace Flag {
   export const LITEAI_ENABLE_EXPERIMENTAL_MODELS = truthy("ENABLE_EXPERIMENTAL_MODELS")
   export const LITEAI_DISABLE_AUTOCOMPACT = truthy("DISABLE_AUTOCOMPACT")
   export const LITEAI_DISABLE_MODELS_FETCH = truthy("DISABLE_MODELS_FETCH")
-  export const LITEAI_ENABLE_CLAUDE_CODE = truthy("ENABLE_CLAUDE_CODE")
-  export const LITEAI_DISABLE_CLAUDE_CODE_PROMPT = !LITEAI_ENABLE_CLAUDE_CODE || truthy("DISABLE_CLAUDE_CODE_PROMPT")
-  export const LITEAI_DISABLE_CLAUDE_CODE_SKILLS = !LITEAI_ENABLE_CLAUDE_CODE || truthy("DISABLE_CLAUDE_CODE_SKILLS")
-  export const LITEAI_DISABLE_EXTERNAL_SKILLS = LITEAI_DISABLE_CLAUDE_CODE_SKILLS || truthy("DISABLE_EXTERNAL_SKILLS")
+  /**
+   * Active external coding-agent platform whose directory conventions
+   * should be scanned (e.g., "claude", "gemini", "codex").
+   * When unset / "none", only the neutral `.agents/` dirs are used.
+   *
+   * Backward compat: `LITEAI_ENABLE_CLAUDE_CODE=true` is treated as
+   * `LITEAI_PLATFORM=claude` when PLATFORM is not explicitly set.
+   */
+  export declare const LITEAI_PLATFORM: string | undefined
+  export const LITEAI_DISABLE_EXTERNAL_SKILLS = truthy("DISABLE_EXTERNAL_SKILLS")
   export declare const LITEAI_DISABLE_EXTERNAL_AGENTS: boolean
   export declare const LITEAI_DISABLE_PROJECT_CONFIG: boolean
   export declare const LITEAI_CLIENT: string
@@ -86,7 +92,21 @@ export namespace Flag {
 
 Object.defineProperty(Flag, "LITEAI_DISABLE_EXTERNAL_AGENTS", {
   get() {
-    return !truthy("ENABLE_CLAUDE_CODE") || truthy("DISABLE_EXTERNAL_AGENTS")
+    return truthy("DISABLE_EXTERNAL_AGENTS")
+  },
+  enumerable: true,
+  configurable: false,
+})
+
+// Dynamic getter for LITEAI_PLATFORM
+// Supports backward compat: ENABLE_CLAUDE_CODE=true → "claude"
+Object.defineProperty(Flag, "LITEAI_PLATFORM", {
+  get() {
+    const explicit = env("PLATFORM")
+    if (explicit) return explicit
+    // Backward compat shim
+    if (truthy("ENABLE_CLAUDE_CODE")) return "claude"
+    return undefined
   },
   enumerable: true,
   configurable: false,
