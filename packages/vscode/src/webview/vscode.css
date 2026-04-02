@@ -608,18 +608,7 @@ body.vscode-high-contrast {
   font-size: 11px;
 }
 
-/* Run command output code */
-[data-density="compact"] [data-component="run_command-output"] {
-  background: transparent;
-}
-
-[data-density="compact"] [data-component="run_command-output"] pre,
-[data-density="compact"] [data-component="run_command-output"] code {
-  background: transparent;
-  color: inherit;
-  box-shadow: none;
-}
-
+/* Run command output font size — compact density */
 [data-density="compact"] [data-slot="run_command-pre"] code {
   font-size: 11px;
 }

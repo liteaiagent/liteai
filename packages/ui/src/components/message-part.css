@@ -462,6 +462,8 @@
     line-height: var(--line-height-large);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+    background: transparent;
+    box-shadow: none;
   }
 }
 

@@ -6,6 +6,7 @@ import { Dynamic } from "solid-js/web"
 import { useFileComponent } from "../../context/file"
 import { useI18n } from "../../context/i18n"
 import { BasicTool } from "../basic-tool"
+import { DiffChanges } from "../diff-changes"
 import { getDirectory } from "../message-utils"
 import { TextShimmer } from "../text-shimmer"
 import { type ToolProps, ToolRegistry } from "../tool-registry"
@@ -16,15 +17,25 @@ ToolRegistry.register({
   render(
     props: ToolProps & {
       input: { filePath?: string; content?: string }
-      metadata: { diagnostics?: Record<string, Diagnostic[]> }
+      metadata: {
+        diagnostics?: Record<string, Diagnostic[]>
+        filediff?: {
+          file?: string
+          before?: string
+          after?: string
+          additions?: number
+          deletions?: number
+        }
+      }
     },
   ) {
     const i18n = useI18n()
     const fileComponent = useFileComponent()
     const diagnostics = createMemo(() => getDiagnostics(props.metadata.diagnostics, props.input.filePath))
-    const path = createMemo(() => props.input.filePath || "")
+    const path = createMemo(() => props.metadata?.filediff?.file || props.input.filePath || "")
     const filename = () => getFilename(props.input.filePath ?? "")
     const pending = () => props.status === "pending" || props.status === "running"
+    const hasDiff = createMemo(() => !pending() && props.metadata.filediff?.before != null && props.metadata.filediff?.after != null)
     return (
       <div data-component="write-tool">
         <BasicTool
@@ -48,24 +59,70 @@ ToolRegistry.register({
                   </div>
                 </Show>
               </div>
-              <div data-slot="message-part-actions">{/* <DiffChanges diff={diff} /> */}</div>
+              <div data-slot="message-part-actions">
+                <Show when={!pending() && props.metadata.filediff}>
+                  <DiffChanges
+                    changes={
+                      props.metadata.filediff as {
+                        additions: number
+                        deletions: number
+                      }
+                    }
+                  />
+                </Show>
+              </div>
             </div>
           }
         >
-          <Show when={props.input.content && path()}>
-            <ToolFileAccordion path={path()}>
-              <div data-component="write-content">
-                <Dynamic
-                  component={fileComponent}
-                  mode="text"
-                  file={{
-                    name: props.input.filePath,
-                    contents: props.input.content,
-                    cacheKey: checksum(props.input.content || ""),
-                  }}
-                  overflow="scroll"
-                />
-              </div>
+          <Show when={path()}>
+            <ToolFileAccordion
+              path={path()}
+              actions={
+                <Show when={!pending() && props.metadata.filediff}>
+                  <DiffChanges
+                    changes={
+                      props.metadata.filediff as {
+                        additions: number
+                        deletions: number
+                      }
+                    }
+                  />
+                </Show>
+              }
+            >
+              <Show
+                when={hasDiff()}
+                fallback={
+                  <Show when={props.input.content}>
+                    <div data-component="write-content">
+                      <Dynamic
+                        component={fileComponent}
+                        mode="text"
+                        file={{
+                          name: props.input.filePath,
+                          contents: props.input.content,
+                          cacheKey: checksum(props.input.content || ""),
+                        }}
+                      />
+                    </div>
+                  </Show>
+                }
+              >
+                <div data-component="edit-content">
+                  <Dynamic
+                    component={fileComponent}
+                    mode="diff"
+                    before={{
+                      name: props.metadata?.filediff?.file || props.input.filePath,
+                      contents: props.metadata?.filediff?.before,
+                    }}
+                    after={{
+                      name: props.metadata?.filediff?.file || props.input.filePath,
+                      contents: props.metadata?.filediff?.after,
+                    }}
+                  />
+                </div>
+              </Show>
             </ToolFileAccordion>
           </Show>
           <DiagnosticsDisplay diagnostics={diagnostics()} />
