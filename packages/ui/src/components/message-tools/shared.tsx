@@ -1,6 +1,6 @@
 import { getFilename } from "@liteai/util/path"
 import { animate } from "motion"
-import { createMemo, For, type JSX, onMount, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, For, type JSX, onMount, Show } from "solid-js"
 
 import { useI18n } from "../../context/i18n"
 import { Accordion } from "../accordion"
@@ -109,13 +109,24 @@ export function ExaOutput(props: { output?: string }) {
 
 export function ToolFileAccordion(props: { path: string; actions?: JSX.Element; children: JSX.Element }) {
   const value = createMemo(() => props.path || "tool-file")
+  const [expanded, setExpanded] = createSignal<string[]>([])
+
+  // Seed initial expansion
+  let seeded = false
+  createEffect(() => {
+    const v = value()
+    if (!v || seeded) return
+    seeded = true
+    setExpanded([v])
+  })
 
   return (
     <Accordion
       multiple
       data-scope="apply-patch"
       style={{ "--sticky-accordion-offset": "40px" }}
-      defaultValue={[value()]}
+      value={expanded()}
+      onChange={(val) => setExpanded(Array.isArray(val) ? val : val ? [val] : [])}
     >
       <Accordion.Item value={value()}>
         <StickyAccordionHeader>
@@ -137,7 +148,9 @@ export function ToolFileAccordion(props: { path: string; actions?: JSX.Element; 
             </div>
           </Accordion.Trigger>
         </StickyAccordionHeader>
-        <Accordion.Content>{props.children}</Accordion.Content>
+        <Accordion.Content>
+          {props.children}
+        </Accordion.Content>
       </Accordion.Item>
     </Accordion>
   )

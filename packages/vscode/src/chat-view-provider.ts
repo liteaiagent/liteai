@@ -84,6 +84,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       `font-src ${webview.cspSource} data:`,
       `img-src ${webview.cspSource} data: blob:`,
       `script-src ${webview.cspSource} 'unsafe-inline' 'wasm-unsafe-eval'`,
+      // worker-src needed for pierre/diffs syntax highlighting workers
+      `worker-src ${webview.cspSource} blob:`,
       `connect-src ${cspServerUrl} http://127.0.0.1:* http://localhost:*`,
     ].join("; ")
 

@@ -14,10 +14,6 @@ export interface StatusPopoverLayoutProps {
   triggerAriaLabel?: string
   tabsAriaLabel?: string
 
-  serversCount: number
-  serversLabel: string
-  serversContent: JSXElement
-
   mcpCount: number
   mcpLabel: string
   mcpContent: JSXElement
@@ -48,8 +44,7 @@ export function StatusPopoverLayout(props: StatusPopoverLayoutProps) {
             classList={{
               "absolute -top-px -right-px size-1.5 rounded-full": true,
               "bg-icon-success-base": props.overallHealthy,
-              "bg-icon-critical-base": !props.overallHealthy && props.serverHealthy !== undefined,
-              "bg-border-weak-base": props.serverHealthy === undefined,
+              "bg-icon-critical-base": !props.overallHealthy,
             }}
           />
         </div>
@@ -64,15 +59,12 @@ export function StatusPopoverLayout(props: StatusPopoverLayoutProps) {
           aria-label={props.tabsAriaLabel ?? "Status"}
           class="tabs bg-background-strong rounded-xl overflow-hidden"
           data-component="tabs"
-          data-active="servers"
-          defaultValue="servers"
+          data-active="mcp"
+          defaultValue="mcp"
           variant="alt"
         >
           <Tabs.List data-slot="tablist" class="bg-transparent border-b-0 px-4 pt-2 pb-0 gap-4 h-10">
-            <Tabs.Trigger value="servers" data-slot="tab" class="text-12-regular">
-              {props.serversCount > 0 ? `${props.serversCount} ` : ""}
-              {props.serversLabel}
-            </Tabs.Trigger>
+
             <Tabs.Trigger value="mcp" data-slot="tab" class="text-12-regular">
               {props.mcpCount > 0 ? `${props.mcpCount} ` : ""}
               {props.mcpLabel}
@@ -83,11 +75,6 @@ export function StatusPopoverLayout(props: StatusPopoverLayoutProps) {
             </Tabs.Trigger>
           </Tabs.List>
 
-          <Tabs.Content value="servers">
-            <div class="flex flex-col px-2 pb-2">
-              <div class="flex flex-col p-3 bg-background-base rounded-sm min-h-14">{props.serversContent}</div>
-            </div>
-          </Tabs.Content>
 
           <Tabs.Content value="mcp">
             <div class="flex flex-col px-2 pb-2">
