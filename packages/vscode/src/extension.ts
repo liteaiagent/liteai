@@ -102,6 +102,71 @@ export function activate(context: vscode.ExtensionContext) {
     }
   })
 
+  const showPastSessionsDisposable = vscode.commands.registerCommand("liteai.showPastSessions", async () => {
+    if (!serverManager.url || !serverManager.csrf) {
+      vscode.window.showErrorMessage("LiteAI server not connected")
+      return
+    }
+
+    try {
+      const hdrs = { Authorization: `Bearer ${serverManager.csrf}` }
+      // Get project ID
+      const pRes = await fetch(new URL("/project", serverManager.url).toString(), { headers: hdrs })
+      if (!pRes.ok) {
+        const text = await pRes.text()
+        throw new Error(`Failed to list projects. Status: ${pRes.status}. Body: ${text}`)
+      }
+      const projects: any[] = await pRes.json()
+      
+      const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+      let projectID = ""
+      if (workspaceDir && Array.isArray(projects)) {
+        const normalize = (p: string) => p.replace(/\\/g, "/").toLowerCase()
+        const match = projects.find((p: any) => normalize(p.worktree) === normalize(workspaceDir))
+        if (match) projectID = match.id
+      }
+      if (!projectID && projects?.length > 0) projectID = projects[0].id
+      
+      if (!projectID) {
+        vscode.window.showInformationMessage("No active project found.")
+        return
+      }
+
+      // Get sessions
+      const sRes = await fetch(new URL(`/project/${projectID}/session`, serverManager.url).toString(), { headers: hdrs })
+      if (!sRes.ok) {
+        const text = await sRes.text()
+        throw new Error(`Failed to list sessions. Status: ${sRes.status}. Body: ${text}`)
+      }
+      const sessions: any[] = await sRes.json()
+      
+      const items: (vscode.QuickPickItem & { sessionID?: string })[] = (sessions || [])
+        .filter((s: any) => !!s.id && !s.time?.archived)
+        .sort((a: any, b: any) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
+        .map((s: any) => ({
+          label: s.title || "New Session",
+          description: s.time?.created ? new Date(s.time.created).toLocaleString() : "",
+          sessionID: s.id
+        }))
+
+      if (items.length === 0) {
+        vscode.window.showInformationMessage("No past sessions found.")
+        return
+      }
+
+      const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: "Select a past session to open...",
+        matchOnDescription: true
+      })
+
+      if (selected && selected.sessionID) {
+        provider.view?.webview.postMessage({ type: "load-session", sessionID: selected.sessionID })
+      }
+    } catch (e: any) {
+      vscode.window.showErrorMessage(`Error loading sessions: ${e.message}`)
+    }
+  })
+
   const newSessionDisposable = vscode.commands.registerCommand("liteai.newSession", () => {
     provider.view?.webview.postMessage({ type: "new-session" })
   })
@@ -139,6 +204,7 @@ export function activate(context: vscode.ExtensionContext) {
     openTerminalDisposable,
     addFilepathDisposable,
     showStatusDisposable,
+    showPastSessionsDisposable,
     newSessionDisposable,
     workspaceFolderWatcher,
   )

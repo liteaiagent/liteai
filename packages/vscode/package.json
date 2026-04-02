@@ -81,6 +81,11 @@
         "icon": "$(radio-tower)"
       },
       {
+        "command": "liteai.showPastSessions",
+        "title": "LiteAI: Past Sessions",
+        "icon": "$(history)"
+      },
+      {
         "command": "liteai.newSession",
         "title": "LiteAI: New Session",
         "icon": {
@@ -92,14 +97,19 @@
     "menus": {
       "view/title": [
         {
-          "command": "liteai.newSession",
+          "command": "liteai.showPastSessions",
           "when": "view == 'liteai.chatView'",
           "group": "navigation@0"
         },
         {
-          "command": "liteai.showStatus",
+          "command": "liteai.newSession",
           "when": "view == 'liteai.chatView'",
           "group": "navigation@1"
+        },
+        {
+          "command": "liteai.showStatus",
+          "when": "view == 'liteai.chatView'",
+          "group": "navigation@2"
         }
       ]
     },

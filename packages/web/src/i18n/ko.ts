@@ -1,7 +1,5 @@
 import type { dict as en } from "./en"
-
 type Keys = keyof typeof en
-
 export const dict = {
   "command.category.suggested": "추천",
   "command.category.view": "보기",
@@ -40,7 +38,6 @@ export const dict = {
   "command.theme.scheme.set": "색상 테마 사용: {{scheme}}",
   "command.language.cycle": "언어 순환",
   "command.language.set": "언어 사용: {{language}}",
-  "command.session.new": "새 세션",
   "command.file.open": "파일 열기",
   "command.tab.close": "탭 닫기",
   "command.context.addSelection": "선택 영역을 컨텍스트에 추가",
@@ -200,7 +197,6 @@ export const dict = {
   "model.tooltip.reasoning.none": "추론 없음",
   "model.tooltip.context": "컨텍스트 제한 {{limit}}",
   "common.search.placeholder": "검색",
-  "common.goBack": "뒤로 가기",
   "common.goForward": "앞으로 가기",
   "common.loading": "로딩 중",
   "common.loading.ellipsis": "...",
@@ -499,16 +495,6 @@ export const dict = {
   "status.popover.tab.lsp": "LSP",
   "status.popover.tab.plugins": "플러그인",
   "status.popover.action.manageServers": "서버 관리",
-  "session.share.popover.title": "웹에 게시",
-  "session.share.popover.description.shared": "이 세션은 웹에 공개되었습니다. 링크가 있는 누구나 액세스할 수 있습니다.",
-  "session.share.popover.description.unshared":
-    "세션을 웹에 공개적으로 공유합니다. 링크가 있는 누구나 액세스할 수 있습니다.",
-  "session.share.action.share": "공유",
-  "session.share.action.publish": "게시",
-  "session.share.action.publishing": "게시 중...",
-  "session.share.action.unpublish": "게시 취소",
-  "session.share.action.unpublishing": "게시 취소 중...",
-  "session.share.action.view": "보기",
   "session.share.copy.copied": "복사됨",
   "session.share.copy.copyLink": "링크 복사",
   "lsp.tooltip.none": "LSP 서버 없음",
@@ -524,12 +510,8 @@ export const dict = {
   "common.closeTab": "탭 닫기",
   "common.dismiss": "닫기",
   "common.requestFailed": "요청 실패",
-  "common.moreOptions": "더 많은 옵션",
   "common.learnMore": "더 알아보기",
-  "common.rename": "이름 바꾸기",
   "common.reset": "초기화",
-  "common.archive": "보관",
-  "common.delete": "삭제",
   "common.close": "닫기",
   "common.edit": "편집",
   "common.loadMore": "더 불러오기",
@@ -739,10 +721,6 @@ export const dict = {
   "settings.permissions.tool.external_directory.description": "프로젝트 디렉터리 외부의 파일에 액세스",
   "settings.permissions.tool.doom_loop.title": "무한 반복",
   "settings.permissions.tool.doom_loop.description": "동일한 입력으로 반복되는 도구 호출 감지",
-  "session.delete.failed.title": "세션 삭제 실패",
-  "session.delete.title": "세션 삭제",
-  "session.delete.confirm": '"{{name}}" 세션을 삭제하시겠습니까?',
-  "session.delete.button": "세션 삭제",
   "workspace.new": "새 작업 공간",
   "workspace.type.local": "로컬",
   "workspace.type.sandbox": "샌드박스",
@@ -782,7 +760,6 @@ export const dict = {
   "common.time.daysAgo.short": "{{count}}일 전",
   "settings.providers.connected.environmentDescription": "환경 변수에서 연결됨",
   "settings.providers.custom.description": "기본 URL로 OpenAI 호환 공급자를 추가합니다.",
-
   "app.server.unreachable": "{{server}}에 연결할 수 없습니다",
   "app.server.retrying": "자동으로 재시도 중...",
   "app.server.otherServers": "다른 서버",

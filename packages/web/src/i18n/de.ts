@@ -1,7 +1,5 @@
 import type { dict as en } from "./en"
-
 type Keys = keyof typeof en
-
 export const dict = {
   "command.category.suggested": "Vorgeschlagen",
   "command.category.view": "Ansicht",
@@ -40,7 +38,6 @@ export const dict = {
   "command.theme.scheme.set": "Farbschema verwenden: {{scheme}}",
   "command.language.cycle": "Sprache wechseln",
   "command.language.set": "Sprache verwenden: {{language}}",
-  "command.session.new": "Neue Sitzung",
   "command.file.open": "Datei öffnen",
   "command.tab.close": "Tab schließen",
   "command.context.addSelection": "Auswahl zum Kontext hinzufügen",
@@ -202,7 +199,6 @@ export const dict = {
   "model.tooltip.reasoning.none": "Kein Reasoning",
   "model.tooltip.context": "Kontextlimit {{limit}}",
   "common.search.placeholder": "Suchen",
-  "common.goBack": "Zurück",
   "common.goForward": "Vorwärts navigieren",
   "common.loading": "Laden",
   "common.loading.ellipsis": "...",
@@ -508,17 +504,6 @@ export const dict = {
   "status.popover.tab.lsp": "LSP",
   "status.popover.tab.plugins": "Plugins",
   "status.popover.action.manageServers": "Server verwalten",
-  "session.share.popover.title": "Im Web veröffentlichen",
-  "session.share.popover.description.shared":
-    "Diese Sitzung ist öffentlich im Web. Sie ist für jeden mit dem Link zugänglich.",
-  "session.share.popover.description.unshared":
-    "Sitzung öffentlich im Web teilen. Sie wird für jeden mit dem Link zugänglich sein.",
-  "session.share.action.share": "Teilen",
-  "session.share.action.publish": "Veröffentlichen",
-  "session.share.action.publishing": "Veröffentliche...",
-  "session.share.action.unpublish": "Veröffentlichung aufheben",
-  "session.share.action.unpublishing": "Hebe Veröffentlichung auf...",
-  "session.share.action.view": "Ansehen",
   "session.share.copy.copied": "Kopiert",
   "session.share.copy.copyLink": "Link kopieren",
   "lsp.tooltip.none": "Keine LSP-Server",
@@ -534,12 +519,8 @@ export const dict = {
   "common.closeTab": "Tab schließen",
   "common.dismiss": "Verwerfen",
   "common.requestFailed": "Anfrage fehlgeschlagen",
-  "common.moreOptions": "Weitere Optionen",
   "common.learnMore": "Mehr erfahren",
-  "common.rename": "Umbenennen",
   "common.reset": "Zurücksetzen",
-  "common.archive": "Archivieren",
-  "common.delete": "Löschen",
   "common.close": "Schließen",
   "common.edit": "Bearbeiten",
   "common.loadMore": "Mehr laden",
@@ -755,10 +736,6 @@ export const dict = {
   "settings.permissions.tool.external_directory.description": "Zugriff auf Dateien außerhalb des Projektverzeichnisses",
   "settings.permissions.tool.doom_loop.title": "Doom Loop",
   "settings.permissions.tool.doom_loop.description": "Wiederholte Tool-Aufrufe mit identischer Eingabe erkennen",
-  "session.delete.failed.title": "Sitzung konnte nicht gelöscht werden",
-  "session.delete.title": "Sitzung löschen",
-  "session.delete.confirm": 'Sitzung "{{name}}" löschen?',
-  "session.delete.button": "Sitzung löschen",
   "workspace.new": "Neuer Arbeitsbereich",
   "workspace.type.local": "lokal",
   "workspace.type.sandbox": "Sandbox",
@@ -798,7 +775,6 @@ export const dict = {
   "common.time.daysAgo.short": "vor {{count}} Tg",
   "settings.providers.connected.environmentDescription": "Verbunden aus Ihren Umgebungsvariablen",
   "settings.providers.custom.description": "Fügen Sie einen OpenAI-kompatiblen Anbieter per Basis-URL hinzu.",
-
   "app.server.unreachable": "Konnte {{server}} nicht erreichen",
   "app.server.retrying": "Automatische erneute Verbindung...",
   "app.server.otherServers": "Andere Server",

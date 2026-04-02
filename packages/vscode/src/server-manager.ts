@@ -125,7 +125,7 @@ export class ServerManager {
     if (context.extensionMode !== vscode.ExtensionMode.Production) {
       outputChannel.appendLine(`[dev-hosted] Overriding binPath to run 'bun dev' from packages/core`)
       spawnCmd = "bun"
-      spawnArgs = ["--watch", "run", "--conditions=browser", "./src/main.ts", ...spawnArgs]
+      spawnArgs = ["run", "--conditions=browser", "./src/main.ts", ...spawnArgs]
       spawnOpts.cwd = path.join(context.extensionPath, "../core")
     } else {
       outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
@@ -174,19 +174,27 @@ export class ServerManager {
       this._process?.stderr?.on("data", onStderr)
 
       this._process?.on("error", (err) => {
+        clearTimeout(timeoutId)
         outputChannel.appendLine(`Error spawning server: ${err.message}`)
         reject(err)
       })
 
       this._process?.on("exit", (code) => {
+        clearTimeout(timeoutId)
         outputChannel.appendLine(`Server exited with code ${code}`)
         this._process = null
         this._isReady = false
+        
+        // If it exited before we ever saw the 'listening on' message,
+        // reject so the user isn't forced to wait for a 30s timeout.
+        if (!this._url) {
+          reject(new Error(`Server exited prematurely with code ${code}. Check the "LiteAI Server" output channel for details.`))
+        }
       })
 
       timeoutId = setTimeout(() => {
         reject(new Error("Timeout waiting for LiteAI server to start"))
-      }, 10000)
+      }, 30000)
     })
   }
 

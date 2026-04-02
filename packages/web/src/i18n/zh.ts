@@ -1,7 +1,5 @@
 import type { dict as en } from "./en"
-
 type Keys = keyof typeof en
-
 export const dict = {
   "command.category.suggested": "建议",
   "command.category.view": "视图",
@@ -20,88 +18,58 @@ export const dict = {
   "command.category.permissions": "权限",
   "command.category.workspace": "工作区",
   "command.category.settings": "设置",
-
   "theme.scheme.system": "系统",
   "theme.scheme.light": "浅色",
   "theme.scheme.dark": "深色",
-
   "command.sidebar.toggle": "切换侧边栏",
-
   "command.project.open": "打开项目",
-
   "command.provider.connect": "连接提供商",
-
   "command.server.switch": "切换服务器",
-
   "command.settings.open": "打开设置",
-
   "command.session.previous": "上一个会话",
   "command.session.next": "下一个会话",
   "command.session.previous.unseen": "上一个未读会话",
   "command.session.next.unseen": "下一个未读会话",
   "command.session.archive": "归档会话",
-
   "command.palette": "命令面板",
-
   "command.theme.cycle": "切换主题",
   "command.theme.set": "使用主题：{{theme}}",
   "command.theme.scheme.cycle": "切换配色方案",
   "command.theme.scheme.set": "使用配色方案：{{scheme}}",
-
   "command.language.cycle": "切换语言",
   "command.language.set": "使用语言：{{language}}",
-
-  "command.session.new": "新建会话",
-
   "command.file.open": "打开文件",
-
   "command.tab.close": "关闭标签页",
-
   "command.context.addSelection": "将所选内容添加到上下文",
   "command.context.addSelection.description": "添加当前文件中选中的行",
-
   "command.input.focus": "聚焦输入框",
-
   "command.terminal.toggle": "切换终端",
-
   "command.fileTree.toggle": "切换文件树",
-
   "command.review.toggle": "切换审查",
-
   "command.terminal.new": "新建终端",
   "command.terminal.new.description": "创建新的终端标签页",
-
   "command.steps.toggle": "切换步骤",
   "command.steps.toggle.description": "显示或隐藏当前消息的步骤",
-
   "command.message.previous": "上一条消息",
   "command.message.previous.description": "跳转到上一条用户消息",
   "command.message.next": "下一条消息",
   "command.message.next.description": "跳转到下一条用户消息",
-
   "command.model.choose": "选择模型",
   "command.model.choose.description": "选择不同的模型",
-
   "command.mcp.toggle": "切换 MCPs",
   "command.mcp.toggle.description": "切换 MCPs",
-
   "command.agent.cycle": "切换智能体",
   "command.agent.cycle.description": "切换到下一个智能体",
   "command.agent.cycle.reverse": "反向切换智能体",
   "command.agent.cycle.reverse.description": "切换到上一个智能体",
-
   "command.model.variant.cycle": "切换思考强度",
   "command.model.variant.cycle.description": "切换到下一个强度等级",
-
   "command.prompt.mode.shell": "Shell",
   "command.prompt.mode.normal": "Prompt",
-
   "command.permissions.autoaccept.enable": "自动接受权限",
   "command.permissions.autoaccept.disable": "停止自动接受权限",
-
   "command.workspace.toggle": "切换工作区",
   "command.workspace.toggle.description": "在侧边栏启用或禁用多个工作区",
-
   "command.session.undo": "撤销",
   "command.session.undo.description": "撤销上一条消息",
   "command.session.redo": "重做",
@@ -114,12 +82,10 @@ export const dict = {
   "command.session.share.description": "分享此会话并将链接复制到剪贴板",
   "command.session.unshare": "取消分享会话",
   "command.session.unshare.description": "停止分享此会话",
-
   "palette.search.placeholder": "搜索文件、命令和会话",
   "palette.empty": "未找到结果",
   "palette.group.commands": "命令",
   "palette.group.files": "文件",
-
   "dialog.provider.search.placeholder": "搜索提供商",
   "dialog.provider.empty": "未找到提供商",
   "dialog.provider.group.popular": "热门",
@@ -134,7 +100,6 @@ export const dict = {
   "dialog.provider.google.note": "使用 Google 账号或 API 密钥连接",
   "dialog.provider.openrouter.note": "使用 OpenRouter 账号或 API 密钥连接",
   "dialog.provider.vercel.note": "使用 Vercel 账号或 API 密钥连接",
-
   "dialog.model.select.title": "选择模型",
   "dialog.model.search.placeholder": "搜索模型",
   "dialog.model.empty": "未找到模型",
@@ -143,9 +108,7 @@ export const dict = {
   "dialog.model.manage.provider.toggle": "切换所有 {{provider}} 模型",
   "dialog.model.unpaid.freeModels.title": "LiteAI 提供的免费模型",
   "dialog.model.unpaid.addMore.title": "从热门提供商添加更多模型",
-
   "dialog.provider.viewAll": "查看更多提供商",
-
   "provider.connect.title": "连接 {{provider}}",
   "provider.connect.title.anthropicProMax": "使用 Claude Pro/Max 登录",
   "provider.connect.selectMethod": "选择 {{provider}} 的登录方式。",
@@ -176,7 +139,6 @@ export const dict = {
   "provider.connect.oauth.auto.confirmationCode": "确认码",
   "provider.connect.toast.connected.title": "{{provider}} 已连接",
   "provider.connect.toast.connected.description": "现在可以使用 {{provider}} 模型了。",
-
   "provider.custom.title": "自定义提供商",
   "provider.custom.description.prefix": "配置与 OpenAI 兼容的提供商。请查看",
   "provider.custom.description.link": "提供商配置文档",
@@ -213,10 +175,8 @@ export const dict = {
   "provider.custom.error.baseURL.format": "必须以 http:// 或 https:// 开头",
   "provider.custom.error.required": "必填",
   "provider.custom.error.duplicate": "重复",
-
   "provider.disconnect.toast.disconnected.title": "{{provider}} 已断开连接",
   "provider.disconnect.toast.disconnected.description": "{{provider}} 模型已不再可用。",
-
   "model.tag.free": "免费",
   "model.tag.latest": "最新",
   "model.provider.anthropic": "Anthropic",
@@ -233,9 +193,7 @@ export const dict = {
   "model.tooltip.reasoning.allowed": "支持推理",
   "model.tooltip.reasoning.none": "不支持推理",
   "model.tooltip.context": "上下文上限 {{limit}}",
-
   "common.search.placeholder": "搜索",
-  "common.goBack": "返回",
   "common.goForward": "前进",
   "common.loading": "加载中",
   "common.loading.ellipsis": "...",
@@ -247,7 +205,6 @@ export const dict = {
   "common.saving": "保存中...",
   "common.default": "默认",
   "common.attachment": "附件",
-
   "prompt.placeholder.shell": "输入 shell 命令...",
   "prompt.placeholder.normal": '随便问点什么... "{{example}}"',
   "prompt.placeholder.simple": "随便问点什么...",
@@ -306,25 +263,18 @@ export const dict = {
   "prompt.toast.commandSendFailed.title": "发送命令失败",
   "prompt.toast.promptSendFailed.title": "发送提示失败",
   "prompt.toast.promptSendFailed.description": "无法获取会话",
-
   "dialog.mcp.title": "MCPs",
   "dialog.mcp.description": "已启用 {{enabled}} / {{total}}",
   "dialog.mcp.empty": "未配置 MCPs",
-
   "dialog.lsp.empty": "已从文件类型自动检测到 LSPs",
-
   "dialog.plugins.empty": "在 liteai.json 中配置的插件",
-
   "mcp.status.connected": "已连接",
   "mcp.status.failed": "失败",
   "mcp.status.needs_auth": "需要授权",
   "mcp.status.disabled": "已禁用",
-
   "dialog.fork.empty": "没有可用于分叉的消息",
-
   "dialog.directory.search.placeholder": "搜索文件夹",
   "dialog.directory.empty": "未找到文件夹",
-
   "dialog.server.title": "服务器",
   "dialog.server.description": "切换此应用连接的 LiteAI 服务器。",
   "dialog.server.search.placeholder": "搜索服务器",
@@ -352,7 +302,6 @@ export const dict = {
   "dialog.server.menu.delete": "删除",
   "dialog.server.current": "当前服务器",
   "dialog.server.status.default": "默认",
-
   "dialog.project.edit.title": "编辑项目",
   "dialog.project.edit.name": "名称",
   "dialog.project.edit.icon": "图标",
@@ -364,7 +313,6 @@ export const dict = {
   "dialog.project.edit.worktree.startup": "工作区启动脚本",
   "dialog.project.edit.worktree.startup.description": "在创建新的工作区 (worktree) 后运行。",
   "dialog.project.edit.worktree.startup.placeholder": "例如 bun install",
-
   "context.breakdown.title": "上下文拆分",
   "context.breakdown.note": "输入 token 的大致拆分。“其他”包含工具定义和开销。",
   "context.breakdown.system": "系统",
@@ -395,7 +343,6 @@ export const dict = {
   "context.usage.cost": "成本",
   "context.usage.clickToView": "点击查看上下文",
   "context.usage.view": "查看上下文用量",
-
   "language.en": "English",
   "language.zh": "简体中文",
   "language.zht": "繁體中文",
@@ -413,7 +360,6 @@ export const dict = {
   "language.bs": "Bosanski",
   "language.th": "ไทย",
   "language.tr": "Türkçe",
-
   "toast.language.title": "语言",
   "toast.language.description": "已切换到{{language}}",
   "toast.theme.title": "主题已切换",
@@ -446,7 +392,6 @@ export const dict = {
   "toast.update.description": "LiteAI 有新版本 ({{version}}) 可安装。",
   "toast.update.action.installRestart": "安装并重启",
   "toast.update.action.notYet": "稍后",
-
   "error.page.title": "出了点问题",
   "error.page.description": "加载应用程序时发生错误。",
   "error.page.details.label": "错误详情",
@@ -459,9 +404,7 @@ export const dict = {
   "error.page.version": "版本：{{version}}",
   "error.dev.rootNotFound": "未找到根元素。你是不是忘了把它添加到 index.html？或者 id 属性拼写错了？",
   "error.globalSync.connectFailed": "无法连接到服务器。是否有服务器正在 `{{url}}` 运行？",
-
   "directory.error.invalidUrl": "URL 中的目录无效。",
-
   "error.chain.unknown": "未知错误",
   "error.chain.causedBy": "原因：",
   "error.chain.apiError": "API 错误",
@@ -481,7 +424,6 @@ export const dict = {
   "error.chain.configFrontmatterError": "无法解析 {{path}} 中的 frontmatter：\n{{message}}",
   "error.chain.configInvalid": "配置文件 {{path}} 无效",
   "error.chain.configInvalidWithMessage": "配置文件 {{path}} 无效：{{message}}",
-
   "notification.permission.title": "需要权限",
   "notification.permission.description": "{{sessionTitle}}（{{projectName}}）需要权限",
   "notification.question.title": "问题",
@@ -490,11 +432,9 @@ export const dict = {
   "notification.session.responseReady.title": "回复已就绪",
   "notification.session.error.title": "会话错误",
   "notification.session.error.fallbackDescription": "发生错误",
-
   "home.recentProjects": "最近项目",
   "home.empty.title": "没有最近项目",
   "home.empty.description": "通过打开本地项目开始使用",
-
   "session.tab.session": "会话",
   "session.tab.review": "审查",
   "session.tab.context": "上下文",
@@ -543,7 +483,6 @@ export const dict = {
   "session.header.open.ariaLabel": "在 {{app}} 中打开",
   "session.header.open.menu": "打开选项",
   "session.header.open.copyPath": "复制路径",
-
   "status.popover.trigger": "状态",
   "status.popover.ariaLabel": "服务器配置",
   "status.popover.tab.servers": "服务器",
@@ -551,45 +490,26 @@ export const dict = {
   "status.popover.tab.lsp": "LSP",
   "status.popover.tab.plugins": "插件",
   "status.popover.action.manageServers": "管理服务器",
-
-  "session.share.popover.title": "发布到网页",
-  "session.share.popover.description.shared": "此会话已在网页上公开。任何拥有链接的人都可以访问。",
-  "session.share.popover.description.unshared": "在网页上公开分享此会话。任何拥有链接的人都可以访问。",
-  "session.share.action.share": "分享",
-  "session.share.action.publish": "发布",
-  "session.share.action.publishing": "正在发布...",
-  "session.share.action.unpublish": "取消发布",
-  "session.share.action.unpublishing": "正在取消发布...",
-  "session.share.action.view": "查看",
   "session.share.copy.copied": "已复制",
   "session.share.copy.copyLink": "复制链接",
-
   "lsp.tooltip.none": "没有 LSP 服务器",
   "lsp.label.connected": "{{count}} LSP",
-
   "prompt.loading": "正在加载提示...",
-
   "terminal.loading": "正在加载终端...",
   "terminal.title": "终端",
   "terminal.title.numbered": "终端 {{number}}",
   "terminal.close": "关闭终端",
   "terminal.connectionLost.title": "连接已丢失",
   "terminal.connectionLost.description": "终端连接已中断。这可能发生在服务器重启时。",
-
   "common.closeTab": "关闭标签页",
   "common.dismiss": "忽略",
   "common.requestFailed": "请求失败",
-  "common.moreOptions": "更多选项",
   "common.learnMore": "了解更多",
-  "common.rename": "重命名",
   "common.reset": "重置",
-  "common.archive": "归档",
-  "common.delete": "删除",
   "common.close": "关闭",
   "common.edit": "编辑",
   "common.loadMore": "加载更多",
   "common.key.esc": "ESC",
-
   "sidebar.menu.toggle": "切换菜单",
   "sidebar.nav.projectsAndSessions": "项目和会话",
   "sidebar.settings": "设置",
@@ -602,19 +522,14 @@ export const dict = {
   "sidebar.project.recentSessions": "最近会话",
   "sidebar.project.viewAllSessions": "查看全部会话",
   "sidebar.project.clearNotifications": "清除通知",
-
   "app.name.desktop": "LiteAI Web",
-
   "settings.section.desktop": "桌面",
   "settings.section.server": "服务器",
-
   "settings.tab.general": "通用",
   "settings.tab.shortcuts": "快捷键",
-
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "WSL 集成",
   "settings.desktop.wsl.description": "在 Windows 的 WSL 环境中运行 LiteAI 服务器。",
-
   "settings.general.section.appearance": "外观",
   "settings.general.section.notifications": "系统通知",
   "settings.general.section.updates": "更新",
@@ -646,7 +561,6 @@ export const dict = {
   "settings.general.row.wayland.tooltip": "在混合刷新率显示器的 Linux 系统上，原生 Wayland 可能更稳定。",
   "settings.general.row.releaseNotes.title": "发行说明",
   "settings.general.row.releaseNotes.description": "更新后显示“新功能”弹窗",
-
   "settings.updates.row.startup.title": "启动时检查更新",
   "settings.updates.row.startup.description": "在 LiteAI 启动时自动检查更新",
   "settings.updates.row.check.title": "检查更新",
@@ -655,7 +569,6 @@ export const dict = {
   "settings.updates.action.checking": "正在检查...",
   "settings.updates.toast.latest.title": "已是最新版本",
   "settings.updates.toast.latest.description": "你正在使用最新版本的 LiteAI。",
-
   "font.option.ibmPlexMono": "IBM Plex Mono",
   "font.option.cascadiaCode": "Cascadia Code",
   "font.option.firaCode": "Fira Code",
@@ -669,7 +582,6 @@ export const dict = {
   "font.option.sourceCodePro": "Source Code Pro",
   "font.option.ubuntuMono": "Ubuntu Mono",
   "font.option.geistMono": "Geist Mono",
-
   "sound.option.none": "无",
   "sound.option.alert01": "警报 01",
   "sound.option.alert02": "警报 02",
@@ -716,7 +628,6 @@ export const dict = {
   "sound.option.yup04": "是 04",
   "sound.option.yup05": "是 05",
   "sound.option.yup06": "是 06",
-
   "settings.general.notifications.agent.title": "智能体",
   "settings.general.notifications.agent.description": "当智能体完成或需要注意时显示系统通知",
   "settings.general.notifications.permissions.title": "权限",
@@ -729,7 +640,6 @@ export const dict = {
   "settings.general.sounds.permissions.description": "当需要权限时播放声音",
   "settings.general.sounds.errors.title": "错误",
   "settings.general.sounds.errors.description": "发生错误时播放声音",
-
   "settings.shortcuts.title": "键盘快捷键",
   "settings.shortcuts.reset.button": "重置为默认值",
   "settings.shortcuts.reset.toast.title": "快捷键已重置",
@@ -746,7 +656,6 @@ export const dict = {
   "settings.shortcuts.group.modelAndAgent": "模型与智能体",
   "settings.shortcuts.group.terminal": "终端",
   "settings.shortcuts.group.prompt": "提示",
-
   "settings.providers.title": "提供商",
   "settings.providers.description": "提供商设置将在此处可配置。",
   "settings.providers.section.connected": "已连接的提供商",
@@ -756,19 +665,14 @@ export const dict = {
   "settings.providers.tag.config": "配置",
   "settings.providers.tag.custom": "自定义",
   "settings.providers.tag.other": "其他",
-
   "settings.models.title": "模型",
   "settings.models.description": "模型设置将在此处可配置。",
-
   "settings.agents.title": "智能体",
   "settings.agents.description": "智能体设置将在此处可配置。",
-
   "settings.commands.title": "命令",
   "settings.commands.description": "命令设置将在此处可配置。",
-
   "settings.mcp.title": "MCP",
   "settings.mcp.description": "MCP 设置将在此处可配置。",
-
   "settings.permissions.title": "权限",
   "settings.permissions.description": "控制服务器默认可以使用哪些工具。",
   "settings.permissions.section.tools": "工具",
@@ -808,12 +712,6 @@ export const dict = {
   "settings.permissions.tool.external_directory.description": "访问项目目录之外的文件",
   "settings.permissions.tool.doom_loop.title": "死循环",
   "settings.permissions.tool.doom_loop.description": "检测具有相同输入的重复工具调用",
-
-  "session.delete.failed.title": "删除会话失败",
-  "session.delete.title": "删除会话",
-  "session.delete.confirm": '删除会话 "{{name}}"？',
-  "session.delete.button": "删除会话",
-
   "workspace.new": "新建工作区",
   "workspace.type.local": "本地",
   "workspace.type.sandbox": "沙盒",
@@ -853,7 +751,6 @@ export const dict = {
   "common.time.daysAgo.short": "{{count}}天前",
   "settings.providers.connected.environmentDescription": "已通过环境变量连接",
   "settings.providers.custom.description": "通过基础 URL 添加与 OpenAI 兼容的提供商。",
-
   "app.server.unreachable": "无法连接到 {{server}}",
   "app.server.retrying": "正在自动重试...",
   "app.server.otherServers": "其他服务器",

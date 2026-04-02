@@ -239,6 +239,8 @@ function App() {
       setRecentFiles(msg.files as string[])
     } else if (msg?.type === "new-session") {
       setRoute({ projectID: store.store.projectID })
+    } else if (msg?.type === "load-session" && msg.sessionID) {
+      setRoute({ projectID: store.store.projectID, sessionID: msg.sessionID as string })
     }
   }
   window.addEventListener("message", handleWindowMessage)

@@ -16,11 +16,9 @@ export const dict = {
   "command.category.permissions": "สิทธิ์",
   "command.category.workspace": "พื้นที่ทำงาน",
   "command.category.settings": "การตั้งค่า",
-
   "theme.scheme.system": "ระบบ",
   "theme.scheme.light": "สว่าง",
   "theme.scheme.dark": "มืด",
-
   "command.sidebar.toggle": "สลับแถบข้าง",
   "command.project.open": "เปิดโปรเจกต์",
   "command.provider.connect": "เชื่อมต่อผู้ให้บริการ",
@@ -31,18 +29,13 @@ export const dict = {
   "command.session.previous.unseen": "เซสชันที่ยังไม่ได้อ่านก่อนหน้า",
   "command.session.next.unseen": "เซสชันที่ยังไม่ได้อ่านถัดไป",
   "command.session.archive": "จัดเก็บเซสชัน",
-
   "command.palette": "คำสั่งค้นหา",
-
   "command.theme.cycle": "เปลี่ยนธีม",
   "command.theme.set": "ใช้ธีม: {{theme}}",
   "command.theme.scheme.cycle": "เปลี่ยนโทนสี",
   "command.theme.scheme.set": "ใช้โทนสี: {{scheme}}",
-
   "command.language.cycle": "เปลี่ยนภาษา",
   "command.language.set": "ใช้ภาษา: {{language}}",
-
-  "command.session.new": "เซสชันใหม่",
   "command.file.open": "เปิดไฟล์",
   "command.tab.close": "ปิดแท็บ",
   "command.context.addSelection": "เพิ่มส่วนที่เลือกไปยังบริบท",
@@ -87,12 +80,10 @@ export const dict = {
   "command.session.share.description": "แชร์เซสชันนี้และคัดลอก URL ไปยังคลิปบอร์ด",
   "command.session.unshare": "ยกเลิกการแชร์เซสชัน",
   "command.session.unshare.description": "หยุดการแชร์เซสชันนี้",
-
   "palette.search.placeholder": "ค้นหาไฟล์ คำสั่ง และเซสชัน",
   "palette.empty": "ไม่พบผลลัพธ์",
   "palette.group.commands": "คำสั่ง",
   "palette.group.files": "ไฟล์",
-
   "dialog.provider.search.placeholder": "ค้นหาผู้ให้บริการ",
   "dialog.provider.empty": "ไม่พบผู้ให้บริการ",
   "dialog.provider.group.popular": "ยอดนิยม",
@@ -107,19 +98,15 @@ export const dict = {
   "dialog.provider.google.note": "โมเดล Gemini สำหรับการตอบสนองที่รวดเร็วและมีโครงสร้าง",
   "dialog.provider.openrouter.note": "เข้าถึงโมเดลที่รองรับทั้งหมดจากผู้ให้บริการเดียว",
   "dialog.provider.vercel.note": "การเข้าถึงโมเดล AI แบบรวมด้วยการกำหนดเส้นทางอัจฉริยะ",
-
   "dialog.model.select.title": "เลือกโมเดล",
   "dialog.model.search.placeholder": "ค้นหาโมเดล",
   "dialog.model.empty": "ไม่พบผลลัพธ์โมเดล",
   "dialog.model.manage": "จัดการโมเดล",
   "dialog.model.manage.description": "ปรับแต่งโมเดลที่จะปรากฏในตัวเลือกโมเดล",
   "dialog.model.manage.provider.toggle": "สลับโมเดลทั้งหมดของ {{provider}}",
-
   "dialog.model.unpaid.freeModels.title": "โมเดลฟรีที่จัดหาให้โดย LiteAI",
   "dialog.model.unpaid.addMore.title": "เพิ่มโมเดลเพิ่มเติมจากผู้ให้บริการยอดนิยม",
-
   "dialog.provider.viewAll": "แสดงผู้ให้บริการเพิ่มเติม",
-
   "provider.connect.title": "เชื่อมต่อ {{provider}}",
   "provider.connect.title.anthropicProMax": "เข้าสู่ระบบด้วย Claude Pro/Max",
   "provider.connect.selectMethod": "เลือกวิธีการเข้าสู่ระบบสำหรับ {{provider}}",
@@ -149,7 +136,6 @@ export const dict = {
   "provider.connect.oauth.auto.confirmationCode": "รหัสยืนยัน",
   "provider.connect.toast.connected.title": "{{provider}} ที่เชื่อมต่อแล้ว",
   "provider.connect.toast.connected.description": "โมเดล {{provider}} พร้อมใช้งานแล้ว",
-
   "provider.custom.title": "ผู้ให้บริการที่กำหนดเอง",
   "provider.custom.description.prefix": "กำหนดค่าผู้ให้บริการที่เข้ากันได้กับ OpenAI ดู ",
   "provider.custom.description.link": "เอกสารการกำหนดค่าผู้ให้บริการ",
@@ -186,10 +172,8 @@ export const dict = {
   "provider.custom.error.baseURL.format": "ต้องขึ้นต้นด้วย http:// หรือ https://",
   "provider.custom.error.required": "จำเป็น",
   "provider.custom.error.duplicate": "ซ้ำ",
-
   "provider.disconnect.toast.disconnected.title": "{{provider}} ที่ยกเลิกการเชื่อมต่อแล้ว",
   "provider.disconnect.toast.disconnected.description": "โมเดล {{provider}} ไม่พร้อมใช้งานอีกต่อไป",
-
   "model.tag.free": "ฟรี",
   "model.tag.latest": "ล่าสุด",
   "model.provider.anthropic": "Anthropic",
@@ -206,9 +190,7 @@ export const dict = {
   "model.tooltip.reasoning.allowed": "อนุญาตการใช้เหตุผล",
   "model.tooltip.reasoning.none": "ไม่มีการใช้เหตุผล",
   "model.tooltip.context": "ขีดจำกัดบริบท {{limit}}",
-
   "common.search.placeholder": "ค้นหา",
-  "common.goBack": "ย้อนกลับ",
   "common.goForward": "นำทางไปข้างหน้า",
   "common.loading": "กำลังโหลด",
   "common.loading.ellipsis": "...",
@@ -220,7 +202,6 @@ export const dict = {
   "common.saving": "กำลังบันทึก...",
   "common.default": "ค่าเริ่มต้น",
   "common.attachment": "ไฟล์แนบ",
-
   "prompt.placeholder.shell": "ป้อนคำสั่งเชลล์...",
   "prompt.placeholder.normal": 'ถามอะไรก็ได้... "{{example}}"',
   "prompt.placeholder.simple": "ถามอะไรก็ได้...",
@@ -229,7 +210,6 @@ export const dict = {
   "prompt.mode.shell": "เชลล์",
   "prompt.mode.normal": "พรอมต์",
   "prompt.mode.shell.exit": "กด esc เพื่อออก",
-
   "prompt.example.1": "แก้ไข TODO ในโค้ดเบส",
   "prompt.example.2": "เทคโนโลยีของโปรเจกต์นี้คืออะไร?",
   "prompt.example.3": "แก้ไขการทดสอบที่เสีย",
@@ -255,7 +235,6 @@ export const dict = {
   "prompt.example.23": "เพิ่มการแบ่งหน้าในรายการนี้",
   "prompt.example.24": "สร้างคำสั่ง CLI สำหรับ...",
   "prompt.example.25": "ตัวแปรสภาพแวดล้อมทำงานอย่างไรที่นี่?",
-
   "prompt.popover.emptyResults": "ไม่พบผลลัพธ์ที่ตรงกัน",
   "prompt.popover.emptyCommands": "ไม่พบคำสั่งที่ตรงกัน",
   "prompt.dropzone.label": "ลากรูปภาพ, PDF หรือไฟล์ข้อความมาวางที่นี่",
@@ -271,7 +250,6 @@ export const dict = {
   "prompt.attachment.remove": "เอาไฟล์แนบออก",
   "prompt.action.send": "ส่ง",
   "prompt.action.stop": "หยุด",
-
   "prompt.toast.pasteUnsupported.title": "ไฟล์แนบที่ไม่รองรับ",
   "prompt.toast.pasteUnsupported.description": "แนบได้เฉพาะรูปภาพ, PDF หรือไฟล์ข้อความเท่านั้น",
   "prompt.toast.modelAgentRequired.title": "เลือกเอเจนต์และโมเดล",
@@ -282,24 +260,18 @@ export const dict = {
   "prompt.toast.commandSendFailed.title": "ไม่สามารถส่งคำสั่ง",
   "prompt.toast.promptSendFailed.title": "ไม่สามารถส่งพร้อมท์",
   "prompt.toast.promptSendFailed.description": "ไม่สามารถดึงเซสชันได้",
-
   "dialog.mcp.title": "MCPs",
   "dialog.mcp.description": "{{enabled}} จาก {{total}} ที่เปิดใช้งาน",
   "dialog.mcp.empty": "ไม่มี MCP ที่กำหนดค่า",
-
   "dialog.lsp.empty": "LSPs ตรวจจับอัตโนมัติจากประเภทไฟล์",
   "dialog.plugins.empty": "ปลั๊กอินที่กำหนดค่าใน liteai.json",
-
   "mcp.status.connected": "เชื่อมต่อแล้ว",
   "mcp.status.failed": "ล้มเหลว",
   "mcp.status.needs_auth": "ต้องการการตรวจสอบสิทธิ์",
   "mcp.status.disabled": "ปิดใช้งาน",
-
   "dialog.fork.empty": "ไม่มีข้อความให้แตกแขนง",
-
   "dialog.directory.search.placeholder": "ค้นหาโฟลเดอร์",
   "dialog.directory.empty": "ไม่พบโฟลเดอร์",
-
   "dialog.server.title": "เซิร์ฟเวอร์",
   "dialog.server.description": "สลับเซิร์ฟเวอร์ LiteAI ที่แอปนี้เชื่อมต่อด้วย",
   "dialog.server.search.placeholder": "ค้นหาเซิร์ฟเวอร์",
@@ -321,14 +293,12 @@ export const dict = {
   "dialog.server.default.set": "ตั้งเซิร์ฟเวอร์ปัจจุบันเป็นค่าเริ่มต้น",
   "dialog.server.default.clear": "ล้าง",
   "dialog.server.action.remove": "เอาเซิร์ฟเวอร์ออก",
-
   "dialog.server.menu.edit": "แก้ไข",
   "dialog.server.menu.default": "ตั้งเป็นค่าเริ่มต้น",
   "dialog.server.menu.defaultRemove": "เอาค่าเริ่มต้นออก",
   "dialog.server.menu.delete": "ลบ",
   "dialog.server.current": "เซิร์ฟเวอร์ปัจจุบัน",
   "dialog.server.status.default": "ค่าเริ่มต้น",
-
   "dialog.project.edit.title": "แก้ไขโปรเจกต์",
   "dialog.project.edit.name": "ชื่อ",
   "dialog.project.edit.icon": "ไอคอน",
@@ -340,7 +310,6 @@ export const dict = {
   "dialog.project.edit.worktree.startup": "สคริปต์เริ่มต้นพื้นที่ทำงาน",
   "dialog.project.edit.worktree.startup.description": "ทำงานหลังจากสร้างพื้นที่ทำงานใหม่ (worktree)",
   "dialog.project.edit.worktree.startup.placeholder": "เช่น bun install",
-
   "context.breakdown.title": "การแบ่งบริบท",
   "context.breakdown.note": 'การแบ่งโดยประมาณของโทเค็นนำเข้า "อื่น ๆ" รวมถึงคำนิยามเครื่องมือและโอเวอร์เฮด',
   "context.breakdown.system": "ระบบ",
@@ -348,10 +317,8 @@ export const dict = {
   "context.breakdown.assistant": "ผู้ช่วย",
   "context.breakdown.tool": "การเรียกเครื่องมือ",
   "context.breakdown.other": "อื่น ๆ",
-
   "context.systemPrompt.title": "พร้อมท์ระบบ",
   "context.rawMessages.title": "ข้อความดิบ",
-
   "context.stats.session": "เซสชัน",
   "context.stats.messages": "ข้อความ",
   "context.stats.provider": "ผู้ให้บริการ",
@@ -368,13 +335,11 @@ export const dict = {
   "context.stats.totalCost": "ต้นทุนทั้งหมด",
   "context.stats.sessionCreated": "สร้างเซสชันเมื่อ",
   "context.stats.lastActivity": "กิจกรรมล่าสุด",
-
   "context.usage.tokens": "โทเค็น",
   "context.usage.usage": "การใช้งาน",
   "context.usage.cost": "ต้นทุน",
   "context.usage.clickToView": "คลิกเพื่อดูบริบท",
   "context.usage.view": "ดูการใช้บริบท",
-
   "language.en": "English",
   "language.zh": "简体中文",
   "language.zht": "繁體中文",
@@ -392,50 +357,38 @@ export const dict = {
   "language.bs": "Bosanski",
   "language.th": "ไทย",
   "language.tr": "Türkçe",
-
   "toast.language.title": "ภาษา",
   "toast.language.description": "สลับไปที่ {{language}}",
-
   "toast.theme.title": "สลับธีมแล้ว",
   "toast.scheme.title": "โทนสี",
-
   "toast.workspace.enabled.title": "เปิดใช้งานพื้นที่ทำงานแล้ว",
   "toast.workspace.enabled.description": "ตอนนี้จะแสดง worktree หลายรายการในแถบด้านข้าง",
   "toast.workspace.disabled.title": "ปิดใช้งานพื้นที่ทำงานแล้ว",
   "toast.workspace.disabled.description": "จะแสดงเฉพาะ worktree หลักในแถบด้านข้าง",
-
   "toast.permissions.autoaccept.on.title": "กำลังยอมรับสิทธิ์โดยอัตโนมัติ",
   "toast.permissions.autoaccept.on.description": "คำขอสิทธิ์จะได้รับการอนุมัติโดยอัตโนมัติ",
   "toast.permissions.autoaccept.off.title": "หยุดยอมรับสิทธิ์โดยอัตโนมัติแล้ว",
   "toast.permissions.autoaccept.off.description": "คำขอสิทธิ์จะต้องได้รับการอนุมัติ",
-
   "toast.model.none.title": "ไม่ได้เลือกโมเดล",
   "toast.model.none.description": "เชื่อมต่อผู้ให้บริการเพื่อสรุปเซสชันนี้",
-
   "toast.file.loadFailed.title": "ไม่สามารถโหลดไฟล์",
   "toast.file.listFailed.title": "ไม่สามารถแสดงรายการไฟล์",
-
   "toast.context.noLineSelection.title": "ไม่มีการเลือกบรรทัด",
   "toast.context.noLineSelection.description": "เลือกช่วงบรรทัดในแท็บไฟล์ก่อน",
-
   "toast.session.share.copyFailed.title": "ไม่สามารถคัดลอก URL ไปยังคลิปบอร์ด",
   "toast.session.share.success.title": "แชร์เซสชันแล้ว",
   "toast.session.share.success.description": "คัดลอก URL แชร์ไปยังคลิปบอร์ดแล้ว!",
   "toast.session.share.failed.title": "ไม่สามารถแชร์เซสชัน",
   "toast.session.share.failed.description": "เกิดข้อผิดพลาดระหว่างการแชร์เซสชัน",
-
   "toast.session.unshare.success.title": "ยกเลิกการแชร์เซสชันแล้ว",
   "toast.session.unshare.success.description": "ยกเลิกการแชร์เซสชันสำเร็จ!",
   "toast.session.unshare.failed.title": "ไม่สามารถยกเลิกการแชร์เซสชัน",
   "toast.session.unshare.failed.description": "เกิดข้อผิดพลาดระหว่างการยกเลิกการแชร์เซสชัน",
-
   "toast.session.listFailed.title": "ไม่สามารถโหลดเซสชันสำหรับ {{project}}",
-
   "toast.update.title": "มีการอัปเดต",
   "toast.update.description": "เวอร์ชันใหม่ของ LiteAI ({{version}}) พร้อมใช้งานสำหรับติดตั้ง",
   "toast.update.action.installRestart": "ติดตั้งและรีสตาร์ท",
   "toast.update.action.notYet": "ยังไม่",
-
   "error.page.title": "เกิดข้อผิดพลาด",
   "error.page.description": "เกิดข้อผิดพลาดระหว่างการโหลดแอปพลิเคชัน",
   "error.page.details.label": "รายละเอียดข้อผิดพลาด",
@@ -446,12 +399,9 @@ export const dict = {
   "error.page.report.prefix": "โปรดรายงานข้อผิดพลาดนี้ให้ทีม LiteAI",
   "error.page.report.discord": "บน Discord",
   "error.page.version": "เวอร์ชัน: {{version}}",
-
   "error.dev.rootNotFound": "ไม่พบองค์ประกอบรูท คุณลืมเพิ่มใน index.html หรือบางทีแอตทริบิวต์ id อาจสะกดผิด?",
-
   "error.globalSync.connectFailed": "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ มีเซิร์ฟเวอร์ทำงานอยู่ที่ `{{url}}` หรือไม่?",
   "directory.error.invalidUrl": "ไดเรกทอรีใน URL ไม่ถูกต้อง",
-
   "error.chain.unknown": "ข้อผิดพลาดที่ไม่รู้จัก",
   "error.chain.causedBy": "สาเหตุ:",
   "error.chain.apiError": "ข้อผิดพลาด API",
@@ -471,21 +421,17 @@ export const dict = {
   "error.chain.configFrontmatterError": "ไม่สามารถแยกวิเคราะห์ frontmatter ใน {{path}}:\n{{message}}",
   "error.chain.configInvalid": "ไฟล์กำหนดค่าที่ {{path}} ไม่ถูกต้อง",
   "error.chain.configInvalidWithMessage": "ไฟล์กำหนดค่าที่ {{path}} ไม่ถูกต้อง: {{message}}",
-
   "notification.permission.title": "ต้องการสิทธิ์",
   "notification.permission.description": "{{sessionTitle}} ใน {{projectName}} ต้องการสิทธิ์",
   "notification.question.title": "คำถาม",
   "notification.question.description": "{{sessionTitle}} ใน {{projectName}} มีคำถาม",
   "notification.action.goToSession": "ไปที่เซสชัน",
-
   "notification.session.responseReady.title": "การตอบสนองพร้อม",
   "notification.session.error.title": "ข้อผิดพลาดเซสชัน",
   "notification.session.error.fallbackDescription": "เกิดข้อผิดพลาด",
-
   "home.recentProjects": "โปรเจกต์ล่าสุด",
   "home.empty.title": "ไม่มีโปรเจกต์ล่าสุด",
   "home.empty.description": "เริ่มต้นโดยเปิดโปรเจกต์ในเครื่อง",
-
   "session.tab.session": "เซสชัน",
   "session.tab.review": "ตรวจสอบ",
   "session.tab.context": "บริบท",
@@ -498,18 +444,15 @@ export const dict = {
   "session.review.noVcs": "ไม่ตรวจพบระบบควบคุมเวอร์ชัน Git การเปลี่ยนแปลงจะไม่แสดง",
   "session.review.noSnapshot": "การติดตามสแนปชอตถูกปิดใช้งานในการกำหนดค่า ดังนั้นการเปลี่ยนแปลงเซสชันจึงไม่พร้อมใช้งาน",
   "session.review.noChanges": "ไม่มีการเปลี่ยนแปลง",
-
   "session.files.selectToOpen": "เลือกไฟล์เพื่อเปิด",
   "session.files.empty": "ไม่มีไฟล์",
   "session.files.all": "ไฟล์ทั้งหมด",
   "session.files.binaryContent": "ไฟล์ไบนารี (ไม่สามารถแสดงเนื้อหาได้)",
-
   "session.messages.renderEarlier": "แสดงข้อความก่อนหน้า",
   "session.messages.loadingEarlier": "กำลังโหลดข้อความก่อนหน้า...",
   "session.messages.loadEarlier": "โหลดข้อความก่อนหน้า",
   "session.messages.loading": "กำลังโหลดข้อความ...",
   "session.messages.jumpToLatest": "ไปที่ล่าสุด",
-
   "session.context.addToContext": "เพิ่ม {{selection}} ไปยังบริบท",
   "session.todo.title": "สิ่งที่ต้องทำ",
   "session.todo.collapse": "ย่อ",
@@ -525,13 +468,11 @@ export const dict = {
   "session.revertDock.collapse": "ย่อข้อความที่ถูกย้อนกลับ",
   "session.revertDock.expand": "ขยายข้อความที่ถูกย้อนกลับ",
   "session.revertDock.restore": "กู้คืนข้อความ",
-
   "session.new.title": "สร้างอะไรก็ได้",
   "session.new.worktree.main": "สาขาหลัก",
   "session.new.worktree.mainWithBranch": "สาขาหลัก ({{branch}})",
   "session.new.worktree.create": "สร้าง worktree ใหม่",
   "session.new.lastModified": "แก้ไขล่าสุด",
-
   "session.header.search.placeholder": "ค้นหา {{project}}",
   "session.header.searchFiles": "ค้นหาไฟล์",
   "session.header.openIn": "เปิดใน",
@@ -539,7 +480,6 @@ export const dict = {
   "session.header.open.ariaLabel": "เปิดใน {{app}}",
   "session.header.open.menu": "ตัวเลือกการเปิด",
   "session.header.open.copyPath": "คัดลอกเส้นทาง",
-
   "status.popover.trigger": "สถานะ",
   "status.popover.ariaLabel": "การกำหนดค่าเซิร์ฟเวอร์",
   "status.popover.tab.servers": "เซิร์ฟเวอร์",
@@ -547,22 +487,10 @@ export const dict = {
   "status.popover.tab.lsp": "LSP",
   "status.popover.tab.plugins": "ปลั๊กอิน",
   "status.popover.action.manageServers": "จัดการเซิร์ฟเวอร์",
-
-  "session.share.popover.title": "เผยแพร่บนเว็บ",
-  "session.share.popover.description.shared": "เซสชันนี้เป็นสาธารณะบนเว็บ สามารถเข้าถึงได้โดยผู้ที่มีลิงก์",
-  "session.share.popover.description.unshared": "แชร์เซสชันสาธารณะบนเว็บ จะเข้าถึงได้โดยผู้ที่มีลิงก์",
-  "session.share.action.share": "แชร์",
-  "session.share.action.publish": "เผยแพร่",
-  "session.share.action.publishing": "กำลังเผยแพร่...",
-  "session.share.action.unpublish": "ยกเลิกการเผยแพร่",
-  "session.share.action.unpublishing": "กำลังยกเลิกการเผยแพร่...",
-  "session.share.action.view": "ดู",
   "session.share.copy.copied": "คัดลอกแล้ว",
   "session.share.copy.copyLink": "คัดลอกลิงก์",
-
   "lsp.tooltip.none": "ไม่มีเซิร์ฟเวอร์ LSP",
   "lsp.label.connected": "{{count}} LSP",
-
   "prompt.loading": "กำลังโหลดพร้อมท์...",
   "terminal.loading": "กำลังโหลดเทอร์มินัล...",
   "terminal.title": "เทอร์มินัล",
@@ -570,21 +498,15 @@ export const dict = {
   "terminal.close": "ปิดเทอร์มินัล",
   "terminal.connectionLost.title": "การเชื่อมต่อขาดหาย",
   "terminal.connectionLost.description": "การเชื่อมต่อเทอร์มินัลถูกขัดจังหวะ อาจเกิดขึ้นเมื่อเซิร์ฟเวอร์รีสตาร์ท",
-
   "common.closeTab": "ปิดแท็บ",
   "common.dismiss": "ปิด",
   "common.requestFailed": "คำขอล้มเหลว",
-  "common.moreOptions": "ตัวเลือกเพิ่มเติม",
   "common.learnMore": "เรียนรู้เพิ่มเติม",
-  "common.rename": "เปลี่ยนชื่อ",
   "common.reset": "รีเซ็ต",
-  "common.archive": "จัดเก็บ",
-  "common.delete": "ลบ",
   "common.close": "ปิด",
   "common.edit": "แก้ไข",
   "common.loadMore": "โหลดเพิ่มเติม",
   "common.key.esc": "ESC",
-
   "sidebar.menu.toggle": "สลับเมนู",
   "sidebar.nav.projectsAndSessions": "โปรเจกต์และเซสชัน",
   "sidebar.settings": "การตั้งค่า",
@@ -597,9 +519,7 @@ export const dict = {
   "sidebar.project.recentSessions": "เซสชันล่าสุด",
   "sidebar.project.viewAllSessions": "ดูเซสชันทั้งหมด",
   "sidebar.project.clearNotifications": "ล้างการแจ้งเตือน",
-
   "app.name.desktop": "LiteAI Web",
-
   "settings.section.desktop": "เดสก์ท็อป",
   "settings.section.server": "เซิร์ฟเวอร์",
   "settings.tab.general": "ทั่วไป",
@@ -607,14 +527,12 @@ export const dict = {
   "settings.desktop.section.wsl": "WSL",
   "settings.desktop.wsl.title": "การรวม WSL",
   "settings.desktop.wsl.description": "เรียกใช้เซิร์ฟเวอร์ LiteAI ภายใน WSL บน Windows",
-
   "settings.general.section.appearance": "รูปลักษณ์",
   "settings.general.section.notifications": "การแจ้งเตือนระบบ",
   "settings.general.section.updates": "การอัปเดต",
   "settings.general.section.sounds": "เสียงเอฟเฟกต์",
   "settings.general.section.feed": "ฟีด",
   "settings.general.section.display": "การแสดงผล",
-
   "settings.general.row.language.title": "ภาษา",
   "settings.general.row.language.description": "เปลี่ยนภาษาที่แสดงสำหรับ LiteAI",
   "settings.general.row.appearance.title": "รูปลักษณ์",
@@ -639,10 +557,8 @@ export const dict = {
   "settings.general.row.wayland.title": "ใช้ Wayland แบบเนทีฟ",
   "settings.general.row.wayland.description": "ปิดใช้งาน X11 fallback บน Wayland ต้องรีสตาร์ท",
   "settings.general.row.wayland.tooltip": "บน Linux ที่มีจอภาพรีเฟรชเรตแบบผสม Wayland แบบเนทีฟอาจเสถียรกว่า",
-
   "settings.general.row.releaseNotes.title": "บันทึกการอัปเดต",
   "settings.general.row.releaseNotes.description": "แสดงป๊อปอัพ What's New หลังจากอัปเดต",
-
   "settings.updates.row.startup.title": "ตรวจสอบการอัปเดตเมื่อเริ่มต้น",
   "settings.updates.row.startup.description": "ตรวจสอบการอัปเดตโดยอัตโนมัติเมื่อ LiteAI เปิดใช้งาน",
   "settings.updates.row.check.title": "ตรวจสอบการอัปเดต",
@@ -651,7 +567,6 @@ export const dict = {
   "settings.updates.action.checking": "กำลังตรวจสอบ...",
   "settings.updates.toast.latest.title": "คุณเป็นเวอร์ชันล่าสุดแล้ว",
   "settings.updates.toast.latest.description": "คุณกำลังใช้งาน LiteAI เวอร์ชันล่าสุด",
-
   "font.option.ibmPlexMono": "IBM Plex Mono",
   "font.option.cascadiaCode": "Cascadia Code",
   "font.option.firaCode": "Fira Code",
@@ -711,21 +626,18 @@ export const dict = {
   "sound.option.yup04": "Yup 04",
   "sound.option.yup05": "Yup 05",
   "sound.option.yup06": "Yup 06",
-
   "settings.general.notifications.agent.title": "เอเจนต์",
   "settings.general.notifications.agent.description": "แสดงการแจ้งเตือนระบบเมื่อเอเจนต์เสร็จสิ้นหรือต้องการความสนใจ",
   "settings.general.notifications.permissions.title": "สิทธิ์",
   "settings.general.notifications.permissions.description": "แสดงการแจ้งเตือนระบบเมื่อต้องการสิทธิ์",
   "settings.general.notifications.errors.title": "ข้อผิดพลาด",
   "settings.general.notifications.errors.description": "แสดงการแจ้งเตือนระบบเมื่อเกิดข้อผิดพลาด",
-
   "settings.general.sounds.agent.title": "เอเจนต์",
   "settings.general.sounds.agent.description": "เล่นเสียงเมื่อเอเจนต์เสร็จสิ้นหรือต้องการความสนใจ",
   "settings.general.sounds.permissions.title": "สิทธิ์",
   "settings.general.sounds.permissions.description": "เล่นเสียงเมื่อต้องการสิทธิ์",
   "settings.general.sounds.errors.title": "ข้อผิดพลาด",
   "settings.general.sounds.errors.description": "เล่นเสียงเมื่อเกิดข้อผิดพลาด",
-
   "settings.shortcuts.title": "ทางลัดแป้นพิมพ์",
   "settings.shortcuts.reset.button": "รีเซ็ตเป็นค่าเริ่มต้น",
   "settings.shortcuts.reset.toast.title": "รีเซ็ตทางลัดแล้ว",
@@ -736,14 +648,12 @@ export const dict = {
   "settings.shortcuts.pressKeys": "กดปุ่ม",
   "settings.shortcuts.search.placeholder": "ค้นหาทางลัด",
   "settings.shortcuts.search.empty": "ไม่พบทางลัด",
-
   "settings.shortcuts.group.general": "ทั่วไป",
   "settings.shortcuts.group.session": "เซสชัน",
   "settings.shortcuts.group.navigation": "การนำทาง",
   "settings.shortcuts.group.modelAndAgent": "โมเดลและเอเจนต์",
   "settings.shortcuts.group.terminal": "เทอร์มินัล",
   "settings.shortcuts.group.prompt": "พร้อมท์",
-
   "settings.providers.title": "ผู้ให้บริการ",
   "settings.providers.description": "การตั้งค่าผู้ให้บริการจะสามารถกำหนดค่าได้ที่นี่",
   "settings.providers.section.connected": "ผู้ให้บริการที่เชื่อมต่อ",
@@ -761,16 +671,13 @@ export const dict = {
   "settings.commands.description": "การตั้งค่าคำสั่งจะสามารถกำหนดค่าได้ที่นี่",
   "settings.mcp.title": "MCP",
   "settings.mcp.description": "การตั้งค่า MCP จะสามารถกำหนดค่าได้ที่นี่",
-
   "settings.permissions.title": "สิทธิ์",
   "settings.permissions.description": "ควบคุมเครื่องมือที่เซิร์ฟเวอร์สามารถใช้โดยค่าเริ่มต้น",
   "settings.permissions.section.tools": "เครื่องมือ",
   "settings.permissions.toast.updateFailed.title": "ไม่สามารถอัปเดตสิทธิ์",
-
   "settings.permissions.action.allow": "อนุญาต",
   "settings.permissions.action.ask": "ถาม",
   "settings.permissions.action.deny": "ปฏิเสธ",
-
   "settings.permissions.tool.read.title": "อ่าน",
   "settings.permissions.tool.read.description": "อ่านไฟล์ (ตรงกับเส้นทางไฟล์)",
   "settings.permissions.tool.edit.title": "แก้ไข",
@@ -803,12 +710,6 @@ export const dict = {
   "settings.permissions.tool.external_directory.description": "เข้าถึงไฟล์นอกไดเรกทอรีโปรเจกต์",
   "settings.permissions.tool.doom_loop.title": "Doom Loop",
   "settings.permissions.tool.doom_loop.description": "ตรวจจับการเรียกเครื่องมือซ้ำด้วยข้อมูลนำเข้าเหมือนกัน",
-
-  "session.delete.failed.title": "ไม่สามารถลบเซสชัน",
-  "session.delete.title": "ลบเซสชัน",
-  "session.delete.confirm": 'ลบเซสชัน "{{name}}" หรือไม่?',
-  "session.delete.button": "ลบเซสชัน",
-
   "workspace.new": "พื้นที่ทำงานใหม่",
   "workspace.type.local": "ในเครื่อง",
   "workspace.type.sandbox": "แซนด์บ็อกซ์",
@@ -848,7 +749,6 @@ export const dict = {
   "common.time.daysAgo.short": "{{count}} วันที่แล้ว",
   "settings.providers.connected.environmentDescription": "เชื่อมต่อจากตัวแปรสภาพแวดล้อมของคุณ",
   "settings.providers.custom.description": "เพิ่มผู้ให้บริการที่รองรับ OpenAI ด้วย URL หลัก",
-
   "app.server.unreachable": "ไม่สามารถติดต่อ {{server}}",
   "app.server.retrying": "กำลังลองใหม่โดยอัตโนมัติ...",
   "app.server.otherServers": "เซิร์ฟเวอร์อื่น ๆ",
