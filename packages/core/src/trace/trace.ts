@@ -17,7 +17,7 @@ function contentHash(content: string): string {
   return createHash("sha256").update(content).digest("hex")
 }
 
-function upsertContent(hash: string, type: "system" | "tools", content: string) {
+function upsertContent(hash: string, type: "system" | "tools" | "results", content: string) {
   Database.use((db) => db.insert(TraceContentTable).values({ hash, type, content }).onConflictDoNothing().run())
 }
 
@@ -47,6 +47,7 @@ export namespace Trace {
       params: z.record(z.string(), z.unknown()).nullable(),
       hasSystem: z.boolean(),
       hasTools: z.boolean(),
+      hasResults: z.boolean(),
       contextSize: z.number(),
       timeStart: z.number(),
       timeEnd: z.number().nullable(),
@@ -64,9 +65,21 @@ export namespace Trace {
     context: z.string().optional(),
   })
 
+  export const ToolResult = z.object({
+    tool: z.string(),
+    callID: z.string(),
+    status: z.enum(["completed", "error"]),
+    input: z.record(z.string(), z.unknown()).optional(),
+    output: z.string().optional(),
+    error: z.string().optional(),
+    duration: z.number().optional(),
+  })
+  export type ToolResult = z.infer<typeof ToolResult>
+
   export const Detail = Info.extend({
     system: z.string().nullable(),
     tools: z.array(z.record(z.string(), z.unknown())).nullable(),
+    results: z.array(ToolResult).nullable(),
     hooks: z.array(HookInvocation).nullable(),
     contextIDs: z.array(z.string()),
   }).meta({ ref: "TraceDetail" })
@@ -114,6 +127,7 @@ export namespace Trace {
     params?: { temperature?: number; maxTokens?: number; topP?: number } | null
     system?: string // full resolved system prompt (omit for subtasks)
     tools?: { name: string; description?: string; parameters?: unknown }[]
+    results?: ToolResult[]
     contextIDs: string[]
     hooks?: z.infer<typeof HookInvocation>[] | null
     timeStart: number
@@ -140,6 +154,13 @@ export namespace Trace {
       upsertContent(toolsHash, "tools", json)
     }
 
+    let resultsHash: string | null = null
+    if (input.results && input.results.length > 0) {
+      const json = JSON.stringify(input.results)
+      resultsHash = contentHash(json)
+      upsertContent(resultsHash, "results", json)
+    }
+
     log.info("record", { step, session: input.sessionID })
     Database.use((db) =>
       db
@@ -156,6 +177,7 @@ export namespace Trace {
           params: input.params ?? null,
           system_hash: systemHash,
           tools_hash: toolsHash,
+          results_hash: resultsHash,
           hooks_json: input.hooks?.length ? input.hooks : null,
           context_ids: input.contextIDs,
           time_start: input.timeStart,
@@ -182,6 +204,7 @@ export namespace Trace {
       params: r.params,
       hasSystem: r.system_hash !== null,
       hasTools: r.tools_hash !== null,
+      hasResults: r.results_hash !== null,
       contextSize: r.context_ids.length,
       timeStart: r.time_start,
       timeEnd: r.time_end ?? null,
@@ -237,6 +260,11 @@ export namespace Trace {
                 WHERE tc.hash = ${TraceTable.tools_hash}
                 AND tc.content LIKE ${pattern}
               )`,
+              sql`EXISTS (
+                SELECT 1 FROM trace_content tc
+                WHERE tc.hash = ${TraceTable.results_hash}
+                AND tc.content LIKE ${pattern}
+              )`,
             ),
           ),
         )
@@ -263,10 +291,15 @@ export namespace Trace {
       ? (JSON.parse(getContent(row.tools_hash) ?? "null") as Record<string, unknown>[] | null)
       : null
 
+    const results = row.results_hash
+      ? (JSON.parse(getContent(row.results_hash) ?? "null") as ToolResult[] | null)
+      : null
+
     return {
       ...rowToInfo(row),
       system,
       tools,
+      results,
       hooks: (row.hooks_json ?? null) as z.infer<typeof HookInvocation>[] | null,
       contextIDs: row.context_ids,
     }
@@ -287,10 +320,15 @@ export namespace Trace {
         ? (JSON.parse(getContent(row.tools_hash) ?? "null") as Record<string, unknown>[] | null)
         : null
 
+      const results = row.results_hash
+        ? (JSON.parse(getContent(row.results_hash) ?? "null") as ToolResult[] | null)
+        : null
+
       result.push({
         ...rowToInfo(row),
         system,
         tools,
+        results,
         hooks: (row.hooks_json ?? null) as z.infer<typeof HookInvocation>[] | null,
         contextIDs: row.context_ids,
       })
@@ -334,6 +372,34 @@ export namespace Trace {
         lines.push(JSON.stringify(t.tools, null, 2))
         lines.push("```")
         lines.push("")
+      }
+
+      if (t.results && t.results.length > 0) {
+        lines.push(`### Tool Results (${t.results.length})`)
+        lines.push("")
+        for (const r of t.results) {
+          lines.push(`#### ${r.tool} (${r.status})${r.duration ? ` — ${r.duration}ms` : ""}`)
+          lines.push("")
+          if (r.input) {
+            lines.push("**Input:**")
+            lines.push("```json")
+            lines.push(JSON.stringify(r.input, null, 2))
+            lines.push("```")
+          }
+          if (r.output) {
+            lines.push("**Output:**")
+            lines.push("```")
+            lines.push(r.output.slice(0, 2000))
+            lines.push("```")
+          }
+          if (r.error) {
+            lines.push("**Error:**")
+            lines.push("```")
+            lines.push(r.error)
+            lines.push("```")
+          }
+          lines.push("")
+        }
       }
 
       if (t.hooks && t.hooks.length > 0) {

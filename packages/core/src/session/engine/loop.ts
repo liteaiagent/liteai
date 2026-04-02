@@ -479,6 +479,32 @@ export const loop = fn(LoopInput, async (input) => {
     })
     const traceEnd = Date.now()
 
+    // Collect tool call results from this step for trace recording
+    const stepParts = await Message.parts(processor.message.id)
+    const traceResults: Trace.ToolResult[] = []
+    for (const part of stepParts) {
+      if (part.type !== "tool") continue
+      if (part.state.status === "completed") {
+        traceResults.push({
+          tool: part.tool,
+          callID: part.callID,
+          status: "completed",
+          input: part.state.input,
+          output: part.state.output,
+          duration: part.state.time.end - part.state.time.start,
+        })
+      } else if (part.state.status === "error") {
+        traceResults.push({
+          tool: part.tool,
+          callID: part.callID,
+          status: "error",
+          input: part.state.input,
+          error: part.state.error,
+          duration: part.state.time.end - part.state.time.start,
+        })
+      }
+    }
+
     // Trace capture (after LLM call) — always record traces
     Trace.record({
       sessionID,
@@ -494,6 +520,7 @@ export const loop = fn(LoopInput, async (input) => {
           description: (t as { description?: string }).description,
           parameters: (t as { parameters?: unknown }).parameters,
         })),
+      results: traceResults.length > 0 ? traceResults : undefined,
       contextIDs: msgs.map((m) => m.info.id),
       hooks: Trace.flushHooks(sessionID) ?? undefined,
       timeStart: traceStart,
@@ -729,12 +756,34 @@ async function processSubtask(input: {
     } satisfies Message.ToolPart)
   }
 
+  // Collect tool results for subtask trace recording
+  const subtaskResults: Trace.ToolResult[] = []
+  if (result && part.state.status !== "running") {
+    // part was already updated to completed above
+    subtaskResults.push({
+      tool: TaskTool.id,
+      callID: part.callID,
+      status: "completed",
+      input: taskArgs,
+      output: result.output,
+    })
+  } else if (!result) {
+    subtaskResults.push({
+      tool: TaskTool.id,
+      callID: part.callID,
+      status: "error",
+      input: taskArgs,
+      error: executionError ? `Tool execution failed: ${executionError.message}` : "Tool execution failed",
+    })
+  }
+
   // Record trace span for sub-agent invocation
   Trace.record({
     sessionID,
     messageID: assistantMessage.id,
     agent: task.agent,
     model: { id: taskModel.id, providerID: taskModel.providerID },
+    results: subtaskResults.length > 0 ? subtaskResults : undefined,
     contextIDs: msgs.map((m) => m.info.id),
     hooks: Trace.flushHooks(sessionID) ?? undefined,
     timeStart: traceStart,
