@@ -13,7 +13,6 @@ import { useLayout } from "@/context/layout"
 import { useTerminal } from "@/context/terminal"
 import { focusTerminalById } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
-import { StatusPopover } from "../status-popover"
 
 const showRequestError = (language: ReturnType<typeof useLanguage>, err: unknown) => {
   showToast({
@@ -127,9 +126,6 @@ export function SessionHeader() {
                 </div>
               </Show>
               <div class="flex items-center gap-1">
-                <Tooltip placement="bottom" value={language.t("status.popover.trigger")}>
-                  <StatusPopover />
-                </Tooltip>
                 <TooltipKeybind
                   title={language.t("command.terminal.toggle")}
                   keybind={command.keybind("terminal.toggle")}

@@ -94,6 +94,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       Persist.global("server", ["server.v3"]),
       createStore({
         list: [] as StoredServer[],
+        active: undefined as ServerConnection.Key | undefined,
       }),
     )
 
@@ -123,11 +124,11 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
     })
 
     const [state, setState] = createStore({
-      active: props.defaultServer,
       healthy: undefined as boolean | undefined,
     })
 
     const healthy = () => state.healthy
+    const activeKey = () => store.active ?? props.defaultServer
 
     function startHealthPolling(conn: ServerConnection.Any) {
       let alive = true
@@ -155,7 +156,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
     }
 
     function setActive(input: ServerConnection.Key) {
-      if (state.active !== input) setState("active", input)
+      if (activeKey() !== input) setStore("active", input)
     }
 
     function add(input: ServerConnection.Http) {
@@ -169,7 +170,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
         } else {
           setStore("list", store.list.length, conn)
         }
-        setState("active", ServerConnection.key(conn))
+        setStore("active", ServerConnection.key(conn))
         return conn
       })
     }
@@ -178,14 +179,14 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       const list = store.list.filter((x) => url(x) !== key)
       batch(() => {
         setStore("list", list)
-        if (state.active === key) {
+        if (activeKey() === key) {
           const next = list[0]
-          setState("active", next ? ServerConnection.Key.make(url(next)) : props.defaultServer)
+          setStore("active", next ? ServerConnection.Key.make(url(next)) : undefined)
         }
       })
     }
 
-    const isReady = createMemo(() => ready() && !!state.active)
+    const isReady = createMemo(() => ready() && !!activeKey())
 
     const check = (conn: ServerConnection.Any) => checkServerHealth(conn.http).then((x) => x.healthy)
 
@@ -198,7 +199,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
     })
 
     const current: Accessor<ServerConnection.Any | undefined> = createMemo(
-      () => allServers().find((s) => ServerConnection.key(s) === state.active) ?? allServers()[0],
+      () => allServers().find((s) => ServerConnection.key(s) === activeKey()) ?? allServers()[0],
     )
     const isLocal = createMemo(() => {
       const c = current()
@@ -210,7 +211,7 @@ export const { use: useServer, provider: ServerProvider } = createSimpleContext(
       healthy,
       isLocal,
       get key() {
-        return state.active
+        return activeKey()
       },
       get name() {
         return serverName(current())

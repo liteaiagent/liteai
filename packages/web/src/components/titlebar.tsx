@@ -8,6 +8,7 @@ import { createStore } from "solid-js/store"
 import { useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
+import { StatusPopover } from "./status-popover"
 import { applyPath, backPath, forwardPath } from "./titlebar-history"
 
 export function Titlebar() {
@@ -186,6 +187,11 @@ export function Titlebar() {
       </div>
 
       <div class="flex items-center min-w-0 justify-end pr-2">
+        <div class="flex items-center gap-1 pr-1">
+          <Tooltip placement="bottom" value={language.t("status.popover.trigger")}>
+            <StatusPopover />
+          </Tooltip>
+        </div>
         <div id="liteai-titlebar-right" class="flex items-center gap-1 shrink-0 justify-end" />
       </div>
     </header>
