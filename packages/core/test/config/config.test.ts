@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
-import { AccessToken, Account, AccountID, OrgID } from "../../src/account"
+import { type AccessToken, Account, type AccountID, type OrgID } from "../../src/account"
 import { Auth } from "../../src/auth"
 import { Config } from "../../src/config/config"
 import { Global } from "../../src/global"
@@ -87,7 +87,7 @@ test("loads JSON config file", async () => {
 test("loads project config from Git Bash and MSYS2 paths on Windows", async () => {
   // Git Bash and MSYS2 both use /<drive>/... paths on Windows.
   await check((dir) => {
-    const drive = dir[0]!.toLowerCase()
+    const drive = dir[0]?.toLowerCase()
     const rest = dir.slice(2).replaceAll("\\", "/")
     return `/${drive}${rest}`
   })
@@ -95,7 +95,7 @@ test("loads project config from Git Bash and MSYS2 paths on Windows", async () =
 
 test("loads project config from Cygwin paths on Windows", async () => {
   await check((dir) => {
-    const drive = dir[0]!.toLowerCase()
+    const drive = dir[0]?.toLowerCase()
     const rest = dir.slice(2).replaceAll("\\", "/")
     return `/cygdrive/${drive}${rest}`
   })
@@ -123,8 +123,6 @@ test("ignores legacy tui keys in liteai config", async () => {
   })
 })
 
-
-
 test("merges multiple config files with correct precedence", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
@@ -135,7 +133,7 @@ test("merges multiple config files with correct precedence", async () => {
           model: "base",
           username: "base",
         },
-        "settings.json"
+        "settings.json",
       )
       await writeConfig(
         path.join(dir, ".liteai"),
@@ -143,7 +141,7 @@ test("merges multiple config files with correct precedence", async () => {
           $schema: "https://liteai.com/config.json",
           model: "override",
         },
-        "settings.json"
+        "settings.json",
       )
     },
   })

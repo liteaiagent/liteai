@@ -184,11 +184,15 @@ export class ServerManager {
         outputChannel.appendLine(`Server exited with code ${code}`)
         this._process = null
         this._isReady = false
-        
+
         // If it exited before we ever saw the 'listening on' message,
         // reject so the user isn't forced to wait for a 30s timeout.
         if (!this._url) {
-          reject(new Error(`Server exited prematurely with code ${code}. Check the "LiteAI Server" output channel for details.`))
+          reject(
+            new Error(
+              `Server exited prematurely with code ${code}. Check the "LiteAI Server" output channel for details.`,
+            ),
+          )
         }
       })
 

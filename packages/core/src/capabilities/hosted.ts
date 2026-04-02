@@ -72,7 +72,9 @@ class HostedFilesystem implements FilesystemCapability {
     })
     if (!res.ok) {
       const text = await res.text()
-      const error = new Error(`HostedCapabilities: readFileBytes failed (${res.status}): ${text}`) as NodeJS.ErrnoException
+      const error = new Error(
+        `HostedCapabilities: readFileBytes failed (${res.status}): ${text}`,
+      ) as NodeJS.ErrnoException
       if (text.includes("ENOENT") || text.includes("FileNotFound") || res.status === 404) {
         error.code = "ENOENT"
       }

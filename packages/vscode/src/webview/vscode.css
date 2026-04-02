@@ -610,14 +610,14 @@ body.vscode-high-contrast {
 
 /* Run command output code */
 [data-density="compact"] [data-component="run_command-output"] {
-  background: transparent !important;
+  background: transparent;
 }
 
 [data-density="compact"] [data-component="run_command-output"] pre,
 [data-density="compact"] [data-component="run_command-output"] code {
-  background: transparent !important;
+  background: transparent;
   color: inherit;
-  box-shadow: none !important;
+  box-shadow: none;
 }
 
 [data-density="compact"] [data-slot="run_command-pre"] code {

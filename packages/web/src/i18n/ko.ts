@@ -1,4 +1,5 @@
 import type { dict as en } from "./en"
+
 type Keys = keyof typeof en
 export const dict = {
   "command.category.suggested": "추천",
