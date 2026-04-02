@@ -60,17 +60,20 @@ export default function Layout(props: ParentProps) {
       .catch((err: unknown) => {
         if (projectID() !== currentID) return
 
-        // If it's explicitly our backend rejecting the path, kick the user out
+        setState("invalid", currentID)
         const e = err as Record<string, unknown> | undefined
+        
+        // If it's explicitly our backend rejecting the path, show an invalid project toast
         if (e?.status === 404 || e?.status === 400 || e?.name === "NotFoundError") {
-          setState("invalid", currentID)
           showToast({
             variant: "error",
             title: language.t("common.requestFailed"),
             description: "Project does not exist or is invalid.",
           })
-          navigate("/", { replace: true })
         }
+        
+        // If it failed to connect (or any other error), fallback to home
+        navigate("/", { replace: true })
       })
   })
 

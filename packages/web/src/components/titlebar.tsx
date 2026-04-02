@@ -8,7 +8,9 @@ import { createStore } from "solid-js/store"
 import { useCommand } from "@/context/command"
 import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
-import { StatusPopover } from "./status-popover"
+import { useServer } from "@/context/server"
+import { DialogSelectServer } from "./dialog-select-server"
+import { useDialog } from "@liteai/ui/context/dialog"
 import { applyPath, backPath, forwardPath } from "./titlebar-history"
 
 export function Titlebar() {
@@ -18,6 +20,15 @@ export function Titlebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams()
+  const server = useServer()
+  const dialog = useDialog()
+
+  const serverDotClass = createMemo(() => {
+    const healthy = server.healthy()
+    if (healthy === true) return "bg-icon-success-base"
+    if (healthy === false) return "bg-icon-critical-base"
+    return "bg-border-weak-base"
+  })
 
   const [history, setHistory] = createStore({
     stack: [] as string[],
@@ -189,7 +200,20 @@ export function Titlebar() {
       <div class="flex items-center min-w-0 justify-end pr-2">
         <div class="flex items-center gap-1 pr-1">
           <Tooltip placement="bottom" value={language.t("status.popover.trigger")}>
-            <StatusPopover />
+            <Button
+              variant="ghost"
+              class="titlebar-icon h-6 px-2 gap-1.5 box-border"
+              onClick={() => dialog.show(() => <DialogSelectServer />)}
+              aria-label={language.t("status.popover.trigger")}
+            >
+              <div
+                classList={{
+                  "size-2 rounded-full": true,
+                  [serverDotClass()]: true,
+                }}
+              />
+              <span class="text-12-regular text-text-weak max-w-[120px] truncate">{server.name}</span>
+            </Button>
           </Tooltip>
         </div>
         <div id="liteai-titlebar-right" class="flex items-center gap-1 shrink-0 justify-end" />

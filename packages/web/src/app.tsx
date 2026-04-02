@@ -13,6 +13,7 @@ import { type BaseRouterProps, Navigate, Route, Router, useParams } from "@solid
 import { type Duration, Effect } from "effect"
 import {
   type Component,
+  createEffect,
   createMemo,
   createResource,
   createSignal,
@@ -20,6 +21,7 @@ import {
   For,
   type JSX,
   lazy,
+  on,
   onCleanup,
   type ParentProps,
   Show,
@@ -279,6 +281,19 @@ function ConnectionError(props: { onRetry?: () => void; onServerSelected?: (key:
 
 function ServerKeyed(props: ParentProps) {
   const server = useServer()
+  // Navigate to home before re-keying so project-scoped components
+  // (which depend on GlobalSyncProvider) are unmounted first.
+  createEffect(
+    on(
+      () => server.key,
+      () => {
+        if (window.location.pathname !== "/") {
+          window.history.replaceState(null, "", "/")
+        }
+      },
+      { defer: true },
+    ),
+  )
   return (
     <Show when={server.key} keyed>
       {(_key) => (

@@ -7,116 +7,14 @@ import { showToast } from "@liteai/ui/toast"
 import { useNavigate } from "@solidjs/router"
 import { type Accessor, createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
-import { ServerHealthIndicator, ServerRow } from "@/components/server/server-row"
 import { useLanguage } from "@/context/language"
-import { usePlatform } from "@/context/platform"
 import { useSDK } from "@/context/sdk"
-import { normalizeServerUrl, ServerConnection, useServer } from "@/context/server"
 import { useSync } from "@/context/sync"
 import { toProjectID } from "@/utils/project-id"
-import { type ServerHealth, useCheckServerHealth } from "@/utils/server-health"
-import { DialogSelectServer } from "./dialog-select-server"
 
 const pollMs = 10_000
 
-const listServersByHealth = (
-  list: ServerConnection.Any[],
-  active: ServerConnection.Key | undefined,
-  status: Record<ServerConnection.Key, ServerHealth | undefined>,
-) => {
-  if (!list.length) return list
-  const order = new Map(list.map((url, index) => [url, index] as const))
-  const rank = (value?: ServerHealth) => {
-    if (value?.healthy === true) return 0
-    if (value?.healthy === false) return 2
-    return 1
-  }
 
-  return list.slice().sort((a, b) => {
-    if (ServerConnection.key(a) === active) return -1
-    if (ServerConnection.key(b) === active) return 1
-    const diff = rank(status[ServerConnection.key(a)]) - rank(status[ServerConnection.key(b)])
-    if (diff !== 0) return diff
-    return (order.get(a) ?? 0) - (order.get(b) ?? 0)
-  })
-}
-
-const useServerHealth = (servers: Accessor<ServerConnection.Any[]>) => {
-  const checkServerHealth = useCheckServerHealth()
-  const [status, setStatus] = createStore({} as Record<ServerConnection.Key, ServerHealth | undefined>)
-
-  createEffect(() => {
-    const list = servers()
-    let dead = false
-
-    const refresh = async () => {
-      const results: Record<string, ServerHealth> = {}
-      await Promise.all(
-        list.map(async (conn) => {
-          results[ServerConnection.key(conn)] = await checkServerHealth(conn.http)
-        }),
-      )
-      if (dead) return
-      setStatus(reconcile(results))
-    }
-
-    void refresh()
-    const id = setInterval(() => void refresh(), pollMs)
-    onCleanup(() => {
-      dead = true
-      clearInterval(id)
-    })
-  })
-
-  return status
-}
-
-const useDefaultServerKey = (
-  get: (() => string | Promise<string | null | undefined> | null | undefined) | undefined,
-) => {
-  const [state, setState] = createStore({
-    url: undefined as string | undefined,
-    tick: 0,
-  })
-
-  createEffect(() => {
-    state.tick
-    let dead = false
-    const result = get?.()
-    if (!result) {
-      setState("url", undefined)
-      onCleanup(() => {
-        dead = true
-      })
-      return
-    }
-
-    if (result instanceof Promise) {
-      void result.then((next) => {
-        if (dead) return
-        setState("url", next ? normalizeServerUrl(next) : undefined)
-      })
-      onCleanup(() => {
-        dead = true
-      })
-      return
-    }
-
-    setState("url", normalizeServerUrl(result))
-    onCleanup(() => {
-      dead = true
-    })
-  })
-
-  return {
-    key: () => {
-      const u = state.url
-      if (!u) return
-      return ServerConnection.key({ type: "http", http: { url: u } })
-    },
-    refresh: () => setState("tick", (value) => value + 1),
-  }
-}
 
 const useMcpToggle = (input: {
   sync: ReturnType<typeof useSync>
@@ -153,24 +51,10 @@ const useMcpToggle = (input: {
 export function StatusPopover() {
   const sync = useSync()
   const sdk = useSDK()
-  const server = useServer()
-  const platform = usePlatform()
-  const dialog = useDialog()
   const language = useLanguage()
-  const navigate = useNavigate()
 
   const [shown, setShown] = createSignal(false)
-  const servers = createMemo(() => {
-    const current = server.current
-    const list = server.list
-    if (!current) return list
-    if (list.every((item) => ServerConnection.key(item) !== ServerConnection.key(current))) return [current, ...list]
-    return [current, ...list.filter((item) => ServerConnection.key(item) !== ServerConnection.key(current))]
-  })
-  const health = useServerHealth(servers)
-  const sortedServers = createMemo(() => listServersByHealth(servers(), server.key, health))
   const mcp = useMcpToggle({ sync, sdk, language })
-  const defaultServer = useDefaultServerKey(platform.getDefaultServer)
   const mcpNames = createMemo(() => Object.keys(sync.data.mcp ?? {}).sort((a, b) => a.localeCompare(b)))
   const mcpStatus = (name: string) => sync.data.mcp?.[name]?.status
   const mcpConnected = createMemo(() => mcpNames().filter((name) => mcpStatus(name) === "connected").length)
@@ -178,12 +62,11 @@ export function StatusPopover() {
   const lspCount = createMemo(() => lspItems().length)
 
   const overallHealthy = createMemo(() => {
-    const serverHealthy = server.healthy() === true
     const anyMcpIssue = mcpNames().some((name) => {
       const status = mcpStatus(name)
       return status !== "connected" && status !== "disabled"
     })
-    return serverHealthy && !anyMcpIssue
+    return !anyMcpIssue
   })
 
   return (
@@ -191,70 +74,10 @@ export function StatusPopover() {
       open={shown()}
       onOpenChange={setShown}
       overallHealthy={overallHealthy()}
-      serverHealthy={server.healthy()}
-      triggerAriaLabel={language.t("status.popover.trigger")}
-      tabsAriaLabel={language.t("status.popover.ariaLabel")}
-      serversCount={sortedServers().length}
-      serversLabel={language.t("status.popover.tab.servers")}
       mcpCount={mcpConnected()}
       mcpLabel={language.t("status.popover.tab.mcp")}
       lspCount={lspCount()}
       lspLabel={language.t("status.popover.tab.lsp")}
-      serversContent={
-        <>
-          <For each={sortedServers()}>
-            {(s) => {
-              const key = ServerConnection.key(s)
-              const isBlocked = () => health[key]?.healthy === false
-              return (
-                <button
-                  type="button"
-                  class="flex items-center gap-2 w-full h-8 pl-3 pr-1.5 py-1.5 rounded-md transition-colors text-left"
-                  classList={{
-                    "hover:bg-surface-raised-base-hover": !isBlocked(),
-                    "cursor-not-allowed": isBlocked(),
-                  }}
-                  aria-disabled={isBlocked()}
-                  onClick={() => {
-                    if (isBlocked()) return
-                    server.setActive(key)
-                    navigate("/")
-                  }}
-                >
-                  <ServerHealthIndicator health={health[key]} />
-                  <ServerRow
-                    conn={s}
-                    dimmed={isBlocked()}
-                    status={health[key]}
-                    class="flex items-center gap-2 w-full min-w-0"
-                    nameClass="text-14-regular text-text-base truncate"
-                    versionClass="text-12-regular text-text-weak truncate"
-                    badge={
-                      <Show when={key === defaultServer.key()}>
-                        <span class="text-11-regular text-text-base bg-surface-base px-1.5 py-0.5 rounded-md">
-                          {language.t("common.default")}
-                        </span>
-                      </Show>
-                    }
-                  >
-                    <div class="flex-1" />
-                    <Show when={server.current && key === ServerConnection.key(server.current)}>
-                      <Icon name="check" size="small" class="text-icon-weak shrink-0" />
-                    </Show>
-                  </ServerRow>
-                </button>
-              )
-            }}
-          </For>
-          <Button
-            variant="secondary"
-            class="mt-3 self-start h-8 px-3 py-1.5"
-            onClick={() => dialog.show(() => <DialogSelectServer />, defaultServer.refresh)}
-          >
-            {language.t("status.popover.action.manageServers")}
-          </Button>
-        </>
-      }
       mcpContent={
         <Show
           when={mcpNames().length > 0}

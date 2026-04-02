@@ -2,13 +2,10 @@ import { Button } from "@liteai/ui/button"
 import { useDialog } from "@liteai/ui/context/dialog"
 import { Icon } from "@liteai/ui/icon"
 import { Logo } from "@liteai/ui/logo"
-import { Tooltip } from "@liteai/ui/tooltip"
 import { useNavigate } from "@solidjs/router"
 import { DateTime } from "luxon"
-import { createMemo, For, Match, Show, Switch } from "solid-js"
-import { Portal } from "solid-js/web"
+import { createMemo, For, Match, Switch } from "solid-js"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
-import { DialogSelectServer } from "@/components/dialog-select-server"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
@@ -33,12 +30,7 @@ export default function Home() {
       .slice(0, 5)
   })
 
-  const serverDotClass = createMemo(() => {
-    const healthy = server.healthy()
-    if (healthy === true) return "bg-icon-success-base"
-    if (healthy === false) return "bg-icon-critical-base"
-    return "bg-border-weak-base"
-  })
+
 
   async function openProject(directory: string) {
     let projectID = ""
@@ -89,52 +81,12 @@ export default function Home() {
     }
   }
 
-  const rightMount = createMemo(() => document.getElementById("liteai-titlebar-right"))
-
   return (
     <>
-      <Show when={rightMount()}>
-        {(mount) => (
-          <Portal mount={mount()}>
-            <Tooltip placement="bottom" value={language.t("status.popover.trigger")}>
-              <Button
-                variant="ghost"
-                class="titlebar-icon h-6 px-2 gap-1.5 box-border"
-                onClick={() => dialog.show(() => <DialogSelectServer />)}
-                aria-label={language.t("status.popover.trigger")}
-              >
-                <div
-                  classList={{
-                    "size-2 rounded-full": true,
-                    [serverDotClass()]: true,
-                  }}
-                />
-                <span class="text-12-regular text-text-weak max-w-[120px] truncate">{server.name}</span>
-              </Button>
-            </Tooltip>
-          </Portal>
-        )}
-      </Show>
       <div class="mx-auto mt-55 w-full md:w-auto px-4">
         <Logo class="md:w-xl opacity-12" />
-        <div class="flex justify-center mt-4">
-          <Button
-            size="large"
-            variant="ghost"
-            class="text-14-regular text-text-weak"
-            onClick={() => dialog.show(() => <DialogSelectServer />)}
-          >
-            <div
-              classList={{
-                "size-2 rounded-full": true,
-                [serverDotClass()]: true,
-              }}
-            />
-            {server.name}
-          </Button>
-        </div>
         <Switch>
-          <Match when={sync.data.project.length > 0}>
+          <Match when={sync.ready && sync.data.project.length > 0}>
             <div class="mt-20 w-full flex flex-col gap-4">
               <div class="flex gap-2 items-center justify-between pl-3">
                 <div class="text-14-medium text-text-strong">{language.t("home.recentProjects")}</div>

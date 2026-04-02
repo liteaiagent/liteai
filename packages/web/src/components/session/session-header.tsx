@@ -2,7 +2,7 @@ import { Button } from "@liteai/ui/button"
 import { Icon } from "@liteai/ui/icon"
 import { Keybind } from "@liteai/ui/keybind"
 import { showToast } from "@liteai/ui/toast"
-import { TooltipKeybind } from "@liteai/ui/tooltip"
+import { Tooltip, TooltipKeybind } from "@liteai/ui/tooltip"
 import { getFilename } from "@liteai/util/path"
 import { createMemo, Show } from "solid-js"
 import { Portal } from "solid-js/web"
@@ -13,6 +13,7 @@ import { useLayout } from "@/context/layout"
 import { useTerminal } from "@/context/terminal"
 import { focusTerminalById } from "@/pages/session/helpers"
 import { useSessionLayout } from "@/pages/session/session-layout"
+import { StatusPopover } from "../status-popover"
 
 const showRequestError = (language: ReturnType<typeof useLanguage>, err: unknown) => {
   showToast({
@@ -126,6 +127,10 @@ export function SessionHeader() {
                 </div>
               </Show>
               <div class="flex items-center gap-1">
+                <Tooltip placement="bottom" value={language.t("status.popover.trigger")}>
+                  <StatusPopover />
+                </Tooltip>
+                
                 <TooltipKeybind
                   title={language.t("command.terminal.toggle")}
                   keybind={command.keybind("terminal.toggle")}
