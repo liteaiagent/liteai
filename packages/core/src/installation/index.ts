@@ -128,7 +128,7 @@ export namespace Installation {
       stdout: result.stdout.toString(),
       stderr: result.stderr.toString(),
     })
-    
+
     await Process.text([process.execPath, "--version"], { nothrow: true })
   }
 
@@ -136,7 +136,7 @@ export namespace Installation {
   export const CHANNEL = typeof LITEAI_CHANNEL === "string" ? LITEAI_CHANNEL : "local"
   export const USER_AGENT = `liteai/${CHANNEL}/${VERSION}/${Flag.LITEAI_CLIENT}`
 
-  export async function latest(installMethod?: Method) {
+  export async function latest() {
     return fetch("https://api.github.com/repos/liteaiagent/liteai/releases/latest")
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText)

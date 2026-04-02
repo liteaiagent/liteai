@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
-import { load } from "../../src/config/mcp-json"
+import { load } from "../../src/mcp/loader"
 import { tmpdir } from "../fixture/fixture"
 
 describe("mcp-json", () => {

@@ -2,7 +2,9 @@ import { afterEach, describe, expect, mock, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { type AccessToken, Account, type AccountID, type OrgID } from "../../src/account"
+import { Agent } from "../../src/agent/agent"
 import { Auth } from "../../src/auth"
+import { Command } from "../../src/command"
 import { Config } from "../../src/config/config"
 import { Global } from "../../src/global"
 import { Instance } from "../../src/project/instance"
@@ -447,14 +449,12 @@ Test agent prompt`,
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      const config = await Config.get()
-      expect(config.agent?.test).toEqual(
-        expect.objectContaining({
-          name: "test",
-          model: "test/model",
-          prompt: "Test agent prompt",
-        }),
-      )
+      const agent = await Agent.get("test")
+      expect(agent).toMatchObject({
+        name: "test",
+        model: { providerID: "test", modelID: "model" },
+        prompt: "Test agent prompt",
+      })
     },
   })
 })
@@ -491,18 +491,16 @@ Nested agent prompt`,
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      const config = await Config.get()
-
-      expect(config.agent?.helper).toMatchObject({
+      expect(await Agent.get("helper")).toMatchObject({
         name: "helper",
-        model: "test/model",
+        model: { providerID: "test", modelID: "model" },
         mode: "subagent",
         prompt: "Helper agent prompt",
       })
 
-      expect(config.agent?.["nested/child"]).toMatchObject({
+      expect(await Agent.get("nested/child")).toMatchObject({
         name: "nested/child",
-        model: "test/model",
+        model: { providerID: "test", modelID: "model" },
         mode: "subagent",
         prompt: "Nested agent prompt",
       })
@@ -540,14 +538,12 @@ Nested command template`,
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      const config = await Config.get()
-
-      expect(config.command?.hello).toEqual({
+      expect(await Command.get("hello")).toMatchObject({
         description: "Test command",
         template: "Hello from singular command",
       })
 
-      expect(config.command?.["nested/child"]).toEqual({
+      expect(await Command.get("nested/child")).toMatchObject({
         description: "Nested command",
         template: "Nested command template",
       })
@@ -585,14 +581,12 @@ Nested command template`,
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      const config = await Config.get()
-
-      expect(config.command?.hello).toEqual({
+      expect(await Command.get("hello")).toMatchObject({
         description: "Test command",
         template: "Hello from plural commands",
       })
 
-      expect(config.command?.["nested/child"]).toEqual({
+      expect(await Command.get("nested/child")).toMatchObject({
         description: "Nested command",
         template: "Nested command template",
       })
@@ -646,10 +640,9 @@ Helper subagent prompt`,
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      const config = await Config.get()
-      expect(config.agent?.helper).toMatchObject({
+      expect(await Agent.get("helper")).toMatchObject({
         name: "helper",
-        model: "test/model",
+        model: { providerID: "test", modelID: "model" },
         mode: "subagent",
         prompt: "Helper subagent prompt",
       })
@@ -866,9 +859,9 @@ test("permission config preserves key order", async () => {
 test("project config can override MCP server enabled status", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      // Simulates a base config (like from remote .well-known) with disabled MCP
+      // Base config with disabled MCP servers
       await Filesystem.write(
-        path.join(dir, "settings.jsonc"),
+        path.join(dir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           mcp: {
@@ -885,9 +878,11 @@ test("project config can override MCP server enabled status", async () => {
           },
         }),
       )
-      // Project config enables just jira
+      // .liteai/settings.json enables just jira (higher precedence)
+      const liteaiDir = path.join(dir, ".liteai")
+      await fs.mkdir(liteaiDir, { recursive: true })
       await Filesystem.write(
-        path.join(dir, "settings.json"),
+        path.join(liteaiDir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           mcp: {
@@ -905,7 +900,7 @@ test("project config can override MCP server enabled status", async () => {
     directory: tmp.path,
     fn: async () => {
       const config = await Config.get()
-      // jira should be enabled (overridden by project config)
+      // jira should be enabled (overridden by .liteai config)
       expect(config.mcp?.jira).toEqual({
         type: "remote",
         url: "https://jira.example.com/mcp",
@@ -926,7 +921,7 @@ test("MCP config deep merges preserving base config properties", async () => {
     init: async (dir) => {
       // Base config with full MCP definition
       await Filesystem.write(
-        path.join(dir, "settings.jsonc"),
+        path.join(dir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           mcp: {
@@ -941,9 +936,11 @@ test("MCP config deep merges preserving base config properties", async () => {
           },
         }),
       )
-      // Override just enables it, should preserve other properties
+      // .liteai/settings.json override just enables it, should preserve other properties
+      const liteaiDir = path.join(dir, ".liteai")
+      await fs.mkdir(liteaiDir, { recursive: true })
       await Filesystem.write(
-        path.join(dir, "settings.json"),
+        path.join(liteaiDir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           mcp: {

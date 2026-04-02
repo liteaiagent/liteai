@@ -132,7 +132,7 @@ export namespace Skill {
 
     // Scan external skill directories (platform-specific + .agents/skills/)
     // Load global (home) first, then project-level (so project-level overwrites)
-    if (!Flag.LITEAI_DISABLE_EXTERNAL_SKILLS) {
+    if (!Flag.LITEAI_DISABLE_SKILLS) {
       for (const dir of Platform.externalDirs()) {
         const root = path.join(Global.Path.home, dir)
         if (!(await Filesystem.isDir(root))) continue

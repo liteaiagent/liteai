@@ -350,7 +350,17 @@ export namespace Command {
       } as Info,
     }
 
-    for (const [name, command] of Object.entries(cfg.command ?? {})) {
+    const dirs = await Config.directories()
+    const { CommandLoader } = await import("./loader")
+    const { mergeDeep } = await import("remeda")
+    let projectCommands: Record<string, Config.Command> = {}
+    for (const dir of dirs) {
+      projectCommands = mergeDeep(projectCommands, await CommandLoader.loadCommand(dir))
+    }
+
+    const baseCommands = mergeDeep(cfg.command ?? {}, projectCommands)
+
+    for (const [name, command] of Object.entries(baseCommands)) {
       result[name] = {
         name,
         agent: command.agent,

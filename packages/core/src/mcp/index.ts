@@ -14,11 +14,13 @@ import { dynamicTool, type JSONSchema7, jsonSchema, type Tool } from "ai"
 import open from "open"
 import z from "zod/v4"
 import { Bus } from "@/bus"
+import * as Platform from "@/platform"
 import { withTimeout } from "@/util/timeout"
 import { BusEvent } from "../bus/bus-event"
 import { Config } from "../config/config"
 import { Global } from "../global"
 import { Installation } from "../installation"
+import { Instance } from "../project/instance"
 import { expandDeep } from "../util/env-expand"
 import { Log } from "../util/log"
 import { McpAuth } from "./auth"
@@ -199,7 +201,18 @@ export namespace MCP {
 
   async function init(): Promise<McpState> {
     const cfg = await Config.getGlobal()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const profile = Platform.active()
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const names = Object.keys(config)
     log.info("scanning for mcp servers", { count: names.length, servers: names })
     const clients: Record<string, MCPClient> = {}
@@ -249,7 +262,17 @@ export namespace MCP {
   export async function sync() {
     const s = await state()
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
 
     await Promise.all(
       Object.entries(config).map(async ([key, mcp]) => {
@@ -601,7 +624,26 @@ export namespace MCP {
   export async function status() {
     const s = await state()
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const result: Record<string, Status> = {}
 
     // Include all configured MCPs from config, not just connected ones
@@ -619,7 +661,26 @@ export namespace MCP {
 
   export async function connect(name: string) {
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const mcp = config[name]
     if (!mcp) {
       log.error("MCP config not found", { name })
@@ -672,7 +733,26 @@ export namespace MCP {
     const result: Record<string, Tool> = {}
     const s = await state()
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const clientsSnapshot = await clients()
     const defaultTimeout = cfg.experimental?.mcp_timeout
 
@@ -714,7 +794,26 @@ export namespace MCP {
     const result: Record<string, string[]> = {}
     const s = await state()
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const clientsSnapshot = await clients()
 
     const connected = Object.entries(clientsSnapshot).filter(
@@ -737,7 +836,26 @@ export namespace MCP {
   export async function prompts() {
     const s = await state()
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const clientsSnapshot = await clients()
 
     const prompts = Object.fromEntries<PromptInfo & { client: string }>(
@@ -760,7 +878,26 @@ export namespace MCP {
   export async function resources() {
     const s = await state()
     const cfg = await Config.get()
-    const config = cfg.mcp ?? {}
+    const config = { ...(cfg.mcp ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
     const clientsSnapshot = await clients()
 
     const result = Object.fromEntries<ResourceInfo & { client: string }>(

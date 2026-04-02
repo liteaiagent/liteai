@@ -10,16 +10,16 @@ let prevExternalSkills: boolean
 let prevPlatform: string | undefined
 
 beforeAll(() => {
-  prevExternalSkills = Flag.LITEAI_DISABLE_EXTERNAL_SKILLS
+  prevExternalSkills = Flag.LITEAI_DISABLE_SKILLS
   // @ts-expect-error - Mutating namespace property for testing external skills
-  Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = false
+  Flag.LITEAI_DISABLE_SKILLS = false
   prevPlatform = process.env.LITEAI_PLATFORM
   process.env.LITEAI_PLATFORM = "claude"
 })
 
 afterAll(() => {
   // @ts-expect-error - Restore original state
-  Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = prevExternalSkills
+  Flag.LITEAI_DISABLE_SKILLS = prevExternalSkills
   if (prevPlatform !== undefined) process.env.LITEAI_PLATFORM = prevPlatform
   else delete process.env.LITEAI_PLATFORM
 })

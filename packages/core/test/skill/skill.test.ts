@@ -9,14 +9,14 @@ import { tmpdir } from "../fixture/fixture"
 let prevExternalSkills: boolean
 
 beforeAll(() => {
-  prevExternalSkills = Flag.LITEAI_DISABLE_EXTERNAL_SKILLS
+  prevExternalSkills = Flag.LITEAI_DISABLE_SKILLS
   // @ts-expect-error - Mutating namespace property for testing external skills
-  Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = false
+  Flag.LITEAI_DISABLE_SKILLS = false
 })
 
 afterAll(() => {
   // @ts-expect-error - Restore original state
-  Flag.LITEAI_DISABLE_EXTERNAL_SKILLS = prevExternalSkills
+  Flag.LITEAI_DISABLE_SKILLS = prevExternalSkills
 })
 
 test("discovers skills from .liteai/skill/ directory", async () => {

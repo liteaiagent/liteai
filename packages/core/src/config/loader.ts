@@ -2,7 +2,6 @@ import { existsSync } from "node:fs"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import { NamedError } from "@liteai/util/error"
 import {
   applyEdits,
   type ParseError as JsoncParseError,
@@ -11,13 +10,9 @@ import {
   printParseErrorCode,
 } from "jsonc-parser"
 import { mergeDeep, unique } from "remeda"
-import type z from "zod"
 import { Account } from "@/account"
 import { Brand } from "@/brand"
-
-import { Bus } from "@/bus"
 import { GlobalBus } from "@/bus/global"
-import * as Platform from "@/platform"
 import { Filesystem } from "@/util/filesystem"
 import { Auth } from "../auth"
 import { Env } from "../env"
@@ -25,13 +20,10 @@ import { Flag } from "../flag/flag"
 import { Global } from "../global"
 import { Instance } from "../project/instance"
 import { Event } from "../server/event"
-import { Glob } from "../util/glob"
 import { lazy } from "../util/lazy"
 import { Log } from "../util/log"
-import { ConfigMarkdown } from "./markdown"
-import { load as loadMcpJson, loadFile as loadMcpJsonFile } from "./mcp-json"
 import { ConfigPaths } from "./paths"
-import { Agent, Command, defaultConfig, Info, schema } from "./schema"
+import { defaultConfig, Info, schema } from "./schema"
 
 const log = Log.create({ service: "config" })
 
@@ -111,17 +103,6 @@ export const state = Instance.state(async () => {
     }
   }
 
-  // ~/.liteai/.mcp.json user-scope file (Claude Code compatible).
-  // Loaded before global config so settings.json entries take precedence.
-  // Only when the active platform supports .mcp.json format.
-  const profile = Platform.active()
-  if (profile?.mcpJson) {
-    const globalMcpJson = await globalMcpJsonCache()
-    if (Object.keys(globalMcpJson).length > 0) {
-      result.mcp = { ...globalMcpJson, ...result.mcp }
-    }
-  }
-
   // Global user config overrides remote config.
   result = mergeConfigConcatArrays(result, await global())
 
@@ -136,18 +117,6 @@ export const state = Instance.state(async () => {
     for (const file of await ConfigPaths.projectFiles(Brand.config, Instance.directory, Instance.worktree)) {
       log.info("loading project config", { path: file })
       result = mergeConfigConcatArrays(result, await loadFile(file))
-    }
-  }
-
-  // .mcp.json project-scope file (Claude Code compatible).
-  // Loaded after project config so settings.json entries take precedence.
-  // Only when the active platform supports .mcp.json format.
-  if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-    log.info("scanning for .mcp.json", { start: Instance.directory, stop: Instance.worktree })
-    const mcpJson = await loadMcpJson(Instance.directory, Instance.worktree)
-    if (Object.keys(mcpJson).length > 0) {
-      // Merge: .mcp.json first, then existing result.mcp overrides
-      result.mcp = { ...mcpJson, ...result.mcp }
     }
   }
 
@@ -168,17 +137,7 @@ export const state = Instance.state(async () => {
         result.agent ??= {}
       }
     }
-
-    log.info("scanning for commands", { dir })
-    result.command = mergeDeep(result.command ?? {}, await loadCommand(dir))
-    log.info("scanning for agents", { dir })
-    result.agent = mergeDeep(result.agent, await loadAgent(dir))
   }
-
-  // External agent directories (.claude/agents/, .agents/agents/) — project wins over global
-  // Global agents cached at module level; project-scoped agents still per-instance.
-  log.info("scanning for external agents")
-  result.agent = mergeDeep(await loadExternalAgents(), result.agent)
 
   // Load plugins from --plugin-dir (LITEAI_PLUGIN_DIR env var)
   const pluginSkills: PluginSkill[] = []
@@ -295,170 +254,6 @@ export const state = Instance.state(async () => {
     directories,
     pluginSkills,
   }
-})
-
-function rel(item: string, patterns: string[]) {
-  const normalizedItem = item.replaceAll("\\", "/")
-  for (const pattern of patterns) {
-    const index = normalizedItem.indexOf(pattern)
-    if (index === -1) continue
-    return normalizedItem.slice(index + pattern.length)
-  }
-}
-
-function trim(file: string) {
-  const ext = path.extname(file)
-  return ext.length ? file.slice(0, -ext.length) : file
-}
-
-async function loadCommand(dir: string) {
-  const result: Record<string, z.infer<typeof Command>> = {}
-  for (const item of await Glob.scan("{command,commands}/**/*.md", {
-    cwd: dir,
-    absolute: true,
-    dot: true,
-    symlink: true,
-  })) {
-    const md = await ConfigMarkdown.parse(item).catch(async (err) => {
-      const message = ConfigMarkdown.FrontmatterError.isInstance(err)
-        ? err.data.message
-        : `Failed to parse command ${item}`
-      const { Session } = await import("@/session")
-      Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
-      log.error("failed to load command", { command: item, err })
-      return undefined
-    })
-    if (!md) continue
-
-    const patterns = [`/${Brand.dir}/command/`, `/${Brand.dir}/commands/`, "/command/", "/commands/"]
-    const file = rel(item, patterns) ?? path.basename(item)
-    const name = trim(file)
-
-    const config = {
-      name,
-      ...md.data,
-      template: md.content.trim(),
-    }
-    const parsed = Command.safeParse(config)
-    if (parsed.success) {
-      log.info("loaded command", { name: config.name, path: item })
-      result[config.name] = parsed.data
-      continue
-    }
-    throw new ConfigPaths.InvalidError({ path: item, issues: parsed.error.issues }, { cause: parsed.error })
-  }
-  return result
-}
-
-// External agent directories to search for (project-level and global).
-// Driven by the active platform profile (e.g., ".claude" for Claude Code)
-// plus the neutral ".agents" convention.
-const EXTERNAL_AGENT_PATTERN = "agents/*.md"
-
-async function parseAgent(item: string): Promise<[string, z.infer<typeof Agent>] | undefined> {
-  log.info("parsing agent", { path: item })
-  const md = await ConfigMarkdown.parse(item).catch(async (err) => {
-    const message = ConfigMarkdown.FrontmatterError.isInstance(err) ? err.data.message : `Failed to parse agent ${item}`
-    const { Session } = await import("@/session")
-    Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
-    log.error("failed to load agent", { agent: item, err })
-    return undefined
-  })
-  if (!md) return undefined
-
-  const patterns = [`/${Brand.dir}/agents/`, "/agents/"]
-  const name = trim(rel(item, patterns) ?? path.basename(item))
-
-  const config = {
-    name,
-    ...md.data,
-    prompt: md.content.trim(),
-  }
-  const parsed = Agent.safeParse(config)
-  if (parsed.success) return [config.name, parsed.data]
-  log.error("invalid agent config, skipping", { path: item, issues: parsed.error.issues })
-  const { Session } = await import("@/session")
-  Bus.publish(Session.Event.Error, {
-    error: new NamedError.Unknown({
-      message: `Invalid agent config ${item}: ${parsed.error.issues.map((i) => i.message).join(", ")}`,
-    }).toObject(),
-  })
-  return undefined
-}
-
-async function loadAgent(dir: string) {
-  const result: Record<string, z.infer<typeof Agent>> = {}
-  for (const item of await Glob.scan("agents/**/*.md", {
-    cwd: dir,
-    absolute: true,
-    dot: true,
-    symlink: true,
-  })) {
-    const entry = await parseAgent(item)
-    if (entry) {
-      log.info("loaded agent", { name: entry[0], path: item })
-      result[entry[0]] = entry[1]
-    }
-  }
-  return result
-}
-
-async function scanAgents(root: string, scope: "global" | "project") {
-  log.info("scanning for external agents", { scope, dir: root })
-  const result: Record<string, z.infer<typeof Agent>> = {}
-  const items = await Glob.scan(EXTERNAL_AGENT_PATTERN, {
-    cwd: root,
-    absolute: true,
-    include: "file",
-    dot: true,
-    symlink: true,
-  }).catch((error) => {
-    log.error(`failed to scan ${scope} agents`, { dir: root, error })
-    return [] as string[]
-  })
-  for (const item of items) {
-    const entry = await parseAgent(item)
-    if (entry) {
-      log.info("loaded external agent", { scope, name: entry[0], path: item })
-      result[entry[0]] = entry[1]
-    }
-  }
-  return result
-}
-
-// Module-level cache: global external agents (~/.claude, ~/.agents) don't change per instance
-const globalExternalAgentsCache = lazy(async () => {
-  if (Flag.LITEAI_DISABLE_EXTERNAL_AGENTS) return {}
-  const result: Record<string, z.infer<typeof Agent>> = {}
-  for (const dir of Platform.externalDirs()) {
-    const root = path.join(Global.Path.home, dir)
-    if (!(await Filesystem.isDir(root))) continue
-    Object.assign(result, await scanAgents(root, "global"))
-  }
-  return result
-})
-
-async function loadExternalAgents() {
-  if (Flag.LITEAI_DISABLE_EXTERNAL_AGENTS) return {}
-  // Start with cached global agents, then overlay project-scoped agents
-  const result: Record<string, z.infer<typeof Agent>> = { ...(await globalExternalAgentsCache()) }
-
-  for await (const root of Filesystem.up({
-    targets: Platform.externalDirs(),
-    start: Instance.directory,
-    stop: Instance.worktree,
-  })) {
-    Object.assign(result, await scanAgents(root, "project"))
-  }
-
-  return result
-}
-
-// Module-level cache: global .mcp.json doesn't change per instance
-const globalMcpJsonCache = lazy(async () => {
-  const p = path.join(Global.Path.config, ".mcp.json")
-  log.info("scanning for mcp servers", { path: p })
-  return loadMcpJsonFile(p)
 })
 
 export const global = lazy(async () => {
@@ -628,8 +423,6 @@ export async function updateGlobal(config: Info) {
   })()
 
   global.reset()
-  globalMcpJsonCache.reset()
-  globalExternalAgentsCache.reset()
 
   void Instance.disposeAll()
     .catch((e) => {

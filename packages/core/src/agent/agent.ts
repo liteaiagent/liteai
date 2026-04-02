@@ -24,6 +24,7 @@ import AGENT_GENERAL from "./agents/general.md?raw"
 import AGENT_PLAN from "./agents/plan.md?raw"
 import AGENT_SUMMARY from "./agents/summary.md?raw"
 import AGENT_TITLE from "./agents/title.md?raw"
+import { AgentLoader } from "./loader"
 import PROMPT_GENERATE from "./prompt/generate.md?raw"
 
 /**
@@ -123,7 +124,17 @@ export namespace Agent {
       }
     }
 
-    for (const [key, value] of Object.entries(cfg.agent ?? {})) {
+    const dirs = await Config.directories()
+    const externalAgents = await AgentLoader.loadExternalAgents()
+    let projectAgents: Record<string, z.infer<typeof AgentSchema>> = {}
+    for (const dir of dirs) {
+      projectAgents = mergeDeep(projectAgents, await AgentLoader.loadAgent(dir))
+    }
+
+    // Merge order: external -> settings -> project directory agents
+    const cfgAgent = mergeDeep(mergeDeep(externalAgents, cfg.agent ?? {}), projectAgents)
+
+    for (const [key, value] of Object.entries(cfgAgent)) {
       log.info("processing agent config", { name: key })
       // Hidden built-in agents (compaction, title, summary) are protected system agents.
       // Skip user config entries for them to prevent accidental breakage.

@@ -3,6 +3,7 @@ import { Agent } from "@/agent/agent"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Config } from "@/config/config"
+import { Flag } from "@/flag/flag"
 import { Hook } from "@/hook"
 import { Plugin } from "@/plugin"
 import { ModelID, ProviderID } from "@/provider/schema"
@@ -29,7 +30,7 @@ export namespace SessionCompaction {
     ),
   }
 
-  const COMPACTION_BUFFER = 20_000
+  const COMPACTION_BUFFER = Flag.LITEAI_COMPACTION_BUFFER_TOKENS ?? 20_000
 
   export async function isOverflow(input: { tokens: Message.Assistant["tokens"]; model: Provider.Model }) {
     const config = await Config.get()
@@ -49,8 +50,8 @@ export namespace SessionCompaction {
     return count >= usable
   }
 
-  export const PRUNE_MINIMUM = 20_000
-  export const PRUNE_PROTECT = 40_000
+  export const PRUNE_MINIMUM = Flag.LITEAI_PRUNE_MINIMUM_TOKENS ?? 20_000
+  export const PRUNE_PROTECT = Flag.LITEAI_PRUNE_PROTECT_TOKENS ?? 40_000
 
   const PRUNE_PROTECTED_TOOLS = ["skill"]
 

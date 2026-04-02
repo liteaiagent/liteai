@@ -31,10 +31,12 @@ export namespace Flag {
   export const LITEAI_DISABLE_PRUNE = truthy("DISABLE_PRUNE")
   export const LITEAI_DISABLE_TERMINAL_TITLE = truthy("DISABLE_TERMINAL_TITLE")
   export const LITEAI_PERMISSION = env("PERMISSION")
-  export const LITEAI_DISABLE_DEFAULT_PLUGINS = truthy("DISABLE_DEFAULT_PLUGINS")
   export const LITEAI_DISABLE_LSP_DOWNLOAD = truthy("DISABLE_LSP_DOWNLOAD")
   export const LITEAI_ENABLE_EXPERIMENTAL_MODELS = truthy("ENABLE_EXPERIMENTAL_MODELS")
   export const LITEAI_DISABLE_AUTOCOMPACT = truthy("DISABLE_AUTOCOMPACT")
+  export const LITEAI_COMPACTION_BUFFER_TOKENS = number("COMPACTION_BUFFER_TOKENS")
+  export const LITEAI_PRUNE_MINIMUM_TOKENS = number("PRUNE_MINIMUM_TOKENS")
+  export const LITEAI_PRUNE_PROTECT_TOKENS = number("PRUNE_PROTECT_TOKENS")
   export const LITEAI_DISABLE_MODELS_FETCH = truthy("DISABLE_MODELS_FETCH")
   /**
    * Active external coding-agent platform whose directory conventions
@@ -45,8 +47,8 @@ export namespace Flag {
    * `LITEAI_PLATFORM=claude` when PLATFORM is not explicitly set.
    */
   export declare const LITEAI_PLATFORM: string | undefined
-  export const LITEAI_DISABLE_EXTERNAL_SKILLS = truthy("DISABLE_EXTERNAL_SKILLS")
-  export declare const LITEAI_DISABLE_EXTERNAL_AGENTS: boolean
+  export const LITEAI_DISABLE_SKILLS = truthy("DISABLE_SKILLS")
+  export declare const LITEAI_DISABLE_AGENTS: boolean
   export declare const LITEAI_DISABLE_PROJECT_CONFIG: boolean
   export declare const LITEAI_CLIENT: string
   export const LITEAI_SERVER_PASSWORD = env("SERVER_PASSWORD")
@@ -89,9 +91,9 @@ export namespace Flag {
   export const LITEAI_MODELS_PATH = env("MODELS_PATH")
 }
 
-Object.defineProperty(Flag, "LITEAI_DISABLE_EXTERNAL_AGENTS", {
+Object.defineProperty(Flag, "LITEAI_DISABLE_AGENTS", {
   get() {
-    return truthy("DISABLE_EXTERNAL_AGENTS")
+    return truthy("DISABLE_AGENTS")
   },
   enumerable: true,
   configurable: false,

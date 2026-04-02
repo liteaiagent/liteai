@@ -66,7 +66,8 @@ You can pass these environment flags cleanly by prefixing them with `LITEAI_` (e
 | `LITEAI_DISABLE_AUTOCOMPACT` | `false` | Disables the automatic compaction of your conversational history when the AI context window gets full. |
 | `LITEAI_DISABLE_PRUNE` | `false` | Disables pruning of old tool outputs. |
 | `LITEAI_DISABLE_AUTOUPDATE` | `false` | Prevents the CLI from checking for and executing automated terminal updates. |
-| `LITEAI_DISABLE_DEFAULT_PLUGINS`| `false` | Disables LiteAI's default bundled plugins from mounting. |
+| `LITEAI_DISABLE_AGENTS` | `false` | Set to `true` to ignore global external agent folders. |
+| `LITEAI_DISABLE_SKILLS` | `false` | Set to `true` to ignore global external skill folders. |
 
 ### Compatibility Toggles
 *(Platform compatibility defaults to neutral only. Set `LITEAI_PLATFORM` to scan provider-specific folders.)*
@@ -74,8 +75,6 @@ You can pass these environment flags cleanly by prefixing them with `LITEAI_` (e
 | Flag | Description |
 |------|-------------|
 | `LITEAI_PLATFORM` | **Master Toggle**. Set to `claude`, `gemini`, or `codex` to enable platform-specific discovery. |
-| `LITEAI_DISABLE_EXTERNAL_AGENTS`| Set to `true` to ignore global external agent folders. |
-| `LITEAI_DISABLE_EXTERNAL_SKILLS`| Set to `true` to ignore global external skill folders. |
 
 ### Advanced Customization
 | Flag | Description |
