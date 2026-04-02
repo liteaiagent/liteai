@@ -34,22 +34,24 @@ These act as local extensions to LiteAI that are bound directly to your reposito
 
 ---
 
-## 🤝 Compatibility with Claude Code
+## 🤝 Compatibility with External Platforms
 
-LiteAI natively understands the directory structures built for "Claude Code" (e.g., `~/.claude/` or `~/.agents/` global folders) to allow you to port your existing external agents and skills.
+LiteAI natively understands the directory structures built for external coding agents (like Claude Code, Gemini CLI, or Codex) to allow you to port your existing external agents, skills, and configuration files.
 
-**By default, these compatibility features are DISABLED.** 
-LiteAI will strictly ignore your `.claude` folders to ensure pure, isolated operations.
+**By default, LiteAI operates in pure isolation**, relying only on its native `AGENTS.md` and the neutral `.agents/` directory convention.
 
-To opt-in and merge your global Claude Code resources into LiteAI, you must set the following environment variable:
+To opt-in and merge a specific platform's resources into LiteAI, you must set the following environment variable:
 ```bash
-LITEAI_ENABLE_CLAUDE_CODE=true
+LITEAI_PLATFORM=claude # Supported: claude, gemini, codex
 ```
 
-When enabled, LiteAI will additionally discover and load:
-* Global Agents from `~/.claude/agents/*.md`
-* Global Skills from `~/.claude/skills/**/SKILL.md`
-* Global Instructions from `~/.claude/CLAUDE.md`
+When enabled (for example, with `claude`), LiteAI will additionally discover and load:
+* Agents from platform-specific folders (e.g., `~/.claude/agents/*.md`)
+* Global Instructions (e.g., `~/.claude/CLAUDE.md`)
+* Project instructions matching the platform (e.g., `CLAUDE.md`)
+* Platform-specific configurations (e.g., `.mcp.json`)
+
+*(Note: `LITEAI_ENABLE_CLAUDE_CODE=true` is still supported as a backward-compatible alias for `LITEAI_PLATFORM=claude`)*
 
 ---
 
@@ -67,14 +69,13 @@ You can pass these environment flags cleanly by prefixing them with `LITEAI_` (e
 | `LITEAI_DISABLE_DEFAULT_PLUGINS`| `false` | Disables LiteAI's default bundled plugins from mounting. |
 
 ### Compatibility Toggles
-*(All Claude features default to DISABLED. Enable the master toggle first to use these sub-toggles.)*
+*(Platform compatibility defaults to neutral only. Set `LITEAI_PLATFORM` to scan provider-specific folders.)*
 
 | Flag | Description |
 |------|-------------|
-| `LITEAI_ENABLE_CLAUDE_CODE` | **Master Toggle**. Set to `true` to enable Claude directory scans. |
-| `LITEAI_DISABLE_EXTERNAL_AGENTS`| *(Requires Master)* Set to `true` to ignore global external agent folders. |
-| `LITEAI_DISABLE_EXTERNAL_SKILLS`| *(Requires Master)* Set to `true` to ignore global external skill folders. |
-| `LITEAI_DISABLE_CLAUDE_CODE_PROMPT`| *(Requires Master)* Set to `true` to skip injecting the global `~/.claude/CLAUDE.md`. |
+| `LITEAI_PLATFORM` | **Master Toggle**. Set to `claude`, `gemini`, or `codex` to enable platform-specific discovery. |
+| `LITEAI_DISABLE_EXTERNAL_AGENTS`| Set to `true` to ignore global external agent folders. |
+| `LITEAI_DISABLE_EXTERNAL_SKILLS`| Set to `true` to ignore global external skill folders. |
 
 ### Advanced Customization
 | Flag | Description |

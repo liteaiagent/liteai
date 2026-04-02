@@ -28,7 +28,6 @@ export namespace Flag {
   export declare const LITEAI_TUI_CONFIG: string | undefined
   export declare const LITEAI_CONFIG_DIR: string | undefined
   export const LITEAI_CONFIG_CONTENT = env("CONFIG_CONTENT")
-  export const LITEAI_DISABLE_AUTOUPDATE = truthy("DISABLE_AUTOUPDATE")
   export const LITEAI_DISABLE_PRUNE = truthy("DISABLE_PRUNE")
   export const LITEAI_DISABLE_TERMINAL_TITLE = truthy("DISABLE_TERMINAL_TITLE")
   export const LITEAI_PERMISSION = env("PERMISSION")

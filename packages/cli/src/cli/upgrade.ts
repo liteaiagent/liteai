@@ -1,6 +1,5 @@
 import { Bus } from "@liteai/core/bus/index"
 import { Config } from "@liteai/core/config/config"
-import { Flag } from "@liteai/core/flag/flag"
 import { Installation } from "@liteai/core/installation/index"
 
 export async function upgrade() {
@@ -10,7 +9,12 @@ export async function upgrade() {
   if (!latest) return
   if (Installation.VERSION === latest) return
 
-  if (config.autoupdate === false || Flag.LITEAI_DISABLE_AUTOUPDATE) {
+  const disabledByFlag = (() => {
+    const value = process.env.LITEAI_DISABLE_AUTOUPDATE?.toLowerCase()
+    return value === "true" || value === "1"
+  })()
+
+  if (config.autoupdate === false || disabledByFlag) {
     return
   }
   if (config.autoupdate === "notify") {

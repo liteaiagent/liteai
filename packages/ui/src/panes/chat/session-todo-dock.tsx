@@ -13,6 +13,8 @@ import { useLanguage } from "../shared/language"
 const doneToken = "done"
 const totalToken = "total"
 
+const cache = new Map<string, { collapsed: boolean }>()
+
 function dot(status: Todo["status"]) {
   if (status !== "in_progress") return undefined
   return (
@@ -49,11 +51,39 @@ export function SessionTodoDock(props: {
 }) {
   const language = useLanguage()
   const [store, setStore] = createStore({
-    collapsed: false,
+    collapsed: props.sessionID ? (cache.get(props.sessionID)?.collapsed ?? false) : false,
     height: 320,
   })
 
-  const toggle = () => setStore("collapsed", (value) => !value)
+  let prevSessionID = props.sessionID
+  let prevTodosLength = props.todos.length
+
+  createEffect(() => {
+    const sid = props.sessionID
+    const currentLength = props.todos.length
+
+    if (sid !== prevSessionID) {
+      if (sid) {
+        setStore("collapsed", cache.get(sid)?.collapsed ?? false)
+      }
+    } else if (sid) {
+      if (currentLength > prevTodosLength) {
+        setStore("collapsed", false)
+        cache.set(sid, { collapsed: false })
+      }
+    }
+
+    prevSessionID = sid
+    prevTodosLength = currentLength
+  })
+
+  const toggle = () => setStore("collapsed", (value) => {
+    const next = !value
+    if (props.sessionID) {
+      cache.set(props.sessionID, { collapsed: next })
+    }
+    return next
+  })
 
   const total = createMemo(() => props.todos.length)
   const done = createMemo(() => props.todos.filter((todo) => todo.status === "completed").length)
