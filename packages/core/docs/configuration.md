@@ -20,9 +20,8 @@ To provide the AI with persistent context or instructions about your codebase, L
 
 It looks for these files in the following strict priority:
 1. `AGENTS.md`
-2. `CLAUDE.md`
 
-If LiteAI finds an `AGENTS.md` anywhere in your path, it stops looking and uses all `AGENTS.md` files it collected on its way up to the project root. If it doesn't find any `AGENTS.md`, it falls back to looking for `CLAUDE.md`.
+If LiteAI finds an `AGENTS.md` anywhere in your path, it stops looking and uses all `AGENTS.md` files it collected on its way up to the project root.
 
 ### 3. Custom Agents & Skills
 You can define custom personas (Agents) and capabilities (Skills) directly in your project! 
@@ -38,20 +37,20 @@ These act as local extensions to LiteAI that are bound directly to your reposito
 
 LiteAI natively understands the directory structures built for external coding agents (like Claude Code, Gemini CLI, or Codex) to allow you to port your existing external agents, skills, and configuration files.
 
-**By default, LiteAI operates in pure isolation**, relying only on its native `AGENTS.md` and the neutral `.agents/` directory convention.
+**By default, LiteAI operates in pure isolation**, relying exclusively on its native `AGENTS.md` and the `.liteai/` directory convention. It does not scan provider-specific folders or cross-compatible neutral folders like `.agents/`.
 
-To opt-in and merge a specific platform's resources into LiteAI, you must set the following environment variable:
+To run in a specific platform mode and use its conventions instead, you must set the following environment variable:
 ```bash
-LITEAI_PLATFORM=claude # Supported: claude, gemini, codex
+LITEAI_PLATFORM=standard # Supported: standard, claude, gemini, codex
 ```
 
-When enabled (for example, with `claude`), LiteAI will additionally discover and load:
-* Agents from platform-specific folders (e.g., `~/.claude/agents/*.md`)
-* Global Instructions (e.g., `~/.claude/CLAUDE.md`)
-* Project instructions matching the platform (e.g., `CLAUDE.md`)
-* Platform-specific configurations (e.g., `.mcp.json`)
+When enabled (for example, with `standard`), LiteAI switches to a **mutually exclusive** discovery mode and will ONLY load:
+* Agents from platform-specific folders (e.g., `~/.agents/agents/*.md`)
+* Global Instructions (e.g., `~/.agents/AGENTS.md`)
+* Project instructions matching the platform (e.g., `AGENTS.md` for standard, `CLAUDE.md` for claude)
+* Platform-specific configurations (e.g., `.mcp.json` if supported by the platform)
 
-*(Note: `LITEAI_ENABLE_CLAUDE_CODE=true` is still supported as a backward-compatible alias for `LITEAI_PLATFORM=claude`)*
+*(Note: While in a platform mode, standard LiteAI directories like `.liteai/` are also still loaded for your project configurations, but agent/skill loading expands to include your chosen platform).*
 
 ---
 
@@ -70,11 +69,11 @@ You can pass these environment flags cleanly by prefixing them with `LITEAI_` (e
 | `LITEAI_DISABLE_SKILLS` | `false` | Set to `true` to ignore global external skill folders. |
 
 ### Compatibility Toggles
-*(Platform compatibility defaults to neutral only. Set `LITEAI_PLATFORM` to scan provider-specific folders.)*
+*(Platform compatibility determines the active ecosystem. Set `LITEAI_PLATFORM` to scan provider-specific folders.)*
 
 | Flag | Description |
 |------|-------------|
-| `LITEAI_PLATFORM` | **Master Toggle**. Set to `claude`, `gemini`, or `codex` to enable platform-specific discovery. |
+| `LITEAI_PLATFORM` | **Master Toggle**. Set to `standard`, `claude`, `gemini`, or `codex` to enable platform-specific discovery. |
 
 ### Advanced Customization
 | Flag | Description |

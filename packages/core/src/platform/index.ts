@@ -4,6 +4,7 @@ import type { PlatformProfile } from "./profile"
 import { claude } from "./profiles/claude"
 import { codex } from "./profiles/codex"
 import { gemini } from "./profiles/gemini"
+import { standard } from "./profiles/standard"
 
 export type { PlatformProfile } from "./profile"
 
@@ -14,13 +15,8 @@ const PROFILES: Record<string, PlatformProfile> = {
   claude: claude,
   gemini: gemini,
   codex: codex,
+  standard: standard,
 }
-
-/**
- * Neutral directories that are always scanned regardless of which
- * platform is active. `.agents/` is the provider-agnostic convention.
- */
-const NEUTRAL_DIRS = [".agents"]
 
 /**
  * Return the currently active platform profile, or `undefined` if no
@@ -38,25 +34,27 @@ export function active(): PlatformProfile | undefined {
 }
 
 /**
- * Directories to scan for external agents and skills.
+ * Directories to scan for platform agents and skills.
  *
- * Always includes the neutral `.agents/` convention.
- * When a platform is active, its directories are appended.
+ * When a platform is active, ONLY its directories are returned.
+ * When no platform is active (LiteAI mode), an empty list is returned.
  */
-export function externalDirs(): string[] {
+export function dirs(): string[] {
   const profile = active()
-  return [...NEUTRAL_DIRS, ...(profile?.dirs ?? [])]
+  if (profile) return profile.dirs
+  return []
 }
 
 /**
  * Instruction file basenames to search for in project directories.
  *
- * Always includes `"AGENTS.md"` (LiteAI native convention).
- * When a platform is active, its instruction files are appended.
+ * When a platform is active, ONLY its instruction files are returned.
+ * When no platform is active, LiteAI defaults are returned.
  */
 export function instructionFiles(): string[] {
   const profile = active()
-  return ["AGENTS.md", ...(profile?.instructionFiles ?? [])]
+  if (profile) return profile.instructionFiles
+  return ["AGENTS.md"]
 }
 
 /**
@@ -72,4 +70,12 @@ export function globalInstructionPaths(home: string): string[] {
 /** List all registered platform profile IDs. */
 export function available(): string[] {
   return Object.keys(PROFILES)
+}
+
+/**
+ * Valid environment variable prefixes for all known platforms.
+ * Always includes "LITEAI", followed by the uppercase ID of each registered platform.
+ */
+export function envPrefixes(): string[] {
+  return ["LITEAI", ...available().map((id) => id.toUpperCase())]
 }

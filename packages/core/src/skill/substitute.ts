@@ -1,7 +1,8 @@
 import { $ } from "bun"
 import { ConfigMarkdown } from "../config/markdown"
+import * as Platform from "../platform"
 
-const VARS_REGEX = /\$\{(LITEAI_SESSION_ID|CLAUDE_SESSION_ID|LITEAI_SKILL_DIR|CLAUDE_SKILL_DIR)\}/g
+const VARS_REGEX = /\$\{([A-Z0-9_]+)_(SESSION_ID|SKILL_DIR)\}/g
 const ARGS_REGEX = /\$ARGUMENTS/g
 const POSITIONAL_REGEX = /\$(\d+)/g
 
@@ -13,10 +14,12 @@ export namespace Substitute {
   }
 
   export function apply(content: string, ctx: Context) {
-    let result = content.replace(VARS_REGEX, (_, name) => {
-      if (name === "LITEAI_SESSION_ID" || name === "CLAUDE_SESSION_ID") return ctx.sessionID ?? ""
-      if (name === "LITEAI_SKILL_DIR" || name === "CLAUDE_SKILL_DIR") return ctx.dir ?? ""
-      return ""
+    const prefixes = Platform.envPrefixes()
+    let result = content.replace(VARS_REGEX, (match, prefix, suffix) => {
+      if (!prefixes.includes(prefix)) return match
+      if (suffix === "SESSION_ID") return ctx.sessionID ?? ""
+      if (suffix === "SKILL_DIR") return ctx.dir ?? ""
+      return match
     })
     if (ctx.arguments !== undefined) {
       const raw = ctx.arguments.match(/(?:"[^"]*"|'[^']*'|[^\s"']+)/gi) ?? []

@@ -42,9 +42,6 @@ export namespace Flag {
    * Active external coding-agent platform whose directory conventions
    * should be scanned (e.g., "claude", "gemini", "codex").
    * When unset / "none", only the neutral `.agents/` dirs are used.
-   *
-   * Backward compat: `LITEAI_ENABLE_CLAUDE_CODE=true` is treated as
-   * `LITEAI_PLATFORM=claude` when PLATFORM is not explicitly set.
    */
   export declare const LITEAI_PLATFORM: string | undefined
   export const LITEAI_DISABLE_SKILLS = truthy("DISABLE_SKILLS")
@@ -100,14 +97,9 @@ Object.defineProperty(Flag, "LITEAI_DISABLE_AGENTS", {
 })
 
 // Dynamic getter for LITEAI_PLATFORM
-// Supports backward compat: ENABLE_CLAUDE_CODE=true → "claude"
 Object.defineProperty(Flag, "LITEAI_PLATFORM", {
   get() {
-    const explicit = env("PLATFORM")
-    if (explicit) return explicit
-    // Backward compat shim
-    if (truthy("ENABLE_CLAUDE_CODE")) return "claude"
-    return undefined
+    return env("PLATFORM")
   },
   enumerable: true,
   configurable: false,

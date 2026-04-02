@@ -125,14 +125,14 @@ export namespace Agent {
     }
 
     const dirs = await Config.directories()
-    const externalAgents = await AgentLoader.loadExternalAgents()
+    const platformAgents = await AgentLoader.loadPlatformAgents()
     let projectAgents: Record<string, z.infer<typeof AgentSchema>> = {}
     for (const dir of dirs) {
       projectAgents = mergeDeep(projectAgents, await AgentLoader.loadAgent(dir))
     }
 
-    // Merge order: external -> settings -> project directory agents
-    const cfgAgent = mergeDeep(mergeDeep(externalAgents, cfg.agent ?? {}), projectAgents)
+    // Merge order: platform -> settings -> project directory agents
+    const cfgAgent = mergeDeep(mergeDeep(platformAgents, cfg.agent ?? {}), projectAgents)
 
     for (const [key, value] of Object.entries(cfgAgent)) {
       log.info("processing agent config", { name: key })

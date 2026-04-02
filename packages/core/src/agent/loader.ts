@@ -87,7 +87,7 @@ export namespace AgentLoader {
     root: string,
     scope: "global" | "project",
   ): Promise<Record<string, z.infer<typeof Agent>>> {
-    log.info("scanning for external agents", { scope, dir: root })
+    log.info("scanning for platform agents", { scope, dir: root })
     const result: Record<string, z.infer<typeof Agent>> = {}
     const items = await Glob.scan(EXTERNAL_AGENT_PATTERN, {
       cwd: root,
@@ -102,18 +102,18 @@ export namespace AgentLoader {
     for (const item of items) {
       const entry = await parseAgent(item)
       if (entry) {
-        log.info("loaded external agent", { scope, name: entry[0], path: item })
+        log.info("loaded platform agent", { scope, name: entry[0], path: item })
         result[entry[0]] = entry[1]
       }
     }
     return result
   }
 
-  // Module-level cache: global external agents don't change per instance
-  const globalExternalAgentsCache = lazy(async () => {
+  // Module-level cache: global platform agents don't change per instance
+  const globalPlatformAgentsCache = lazy(async () => {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
     const result: Record<string, z.infer<typeof Agent>> = {}
-    for (const dir of Platform.externalDirs()) {
+    for (const dir of Platform.dirs()) {
       const root = path.join(Global.Path.home, dir)
       if (!(await Filesystem.isDir(root))) continue
       Object.assign(result, await scanAgents(root, "global"))
@@ -121,12 +121,12 @@ export namespace AgentLoader {
     return result
   })
 
-  export async function loadExternalAgents(): Promise<Record<string, z.infer<typeof Agent>>> {
+  export async function loadPlatformAgents(): Promise<Record<string, z.infer<typeof Agent>>> {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<string, z.infer<typeof Agent>> = { ...(await globalExternalAgentsCache()) }
+    const result: Record<string, z.infer<typeof Agent>> = { ...(await globalPlatformAgentsCache()) }
 
     for await (const root of Filesystem.up({
-      targets: Platform.externalDirs(),
+      targets: Platform.dirs(),
       start: Instance.directory,
       stop: Instance.worktree,
     })) {
@@ -137,6 +137,6 @@ export namespace AgentLoader {
   }
 
   export function resetCache() {
-    globalExternalAgentsCache.reset()
+    globalPlatformAgentsCache.reset()
   }
 }

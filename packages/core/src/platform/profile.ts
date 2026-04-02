@@ -19,14 +19,14 @@ export interface PlatformProfile {
   /**
    * Directories to scan for agents, skills, etc.
    * These are platform-specific (e.g., `.claude` for Claude Code).
-   * Added on top of the always-scanned neutral directories.
+   * Replaces the default neutral directories when the platform is active.
    */
   readonly dirs: string[]
 
   /**
    * Instruction file basenames to search for in project and global scopes.
    * e.g., `["CLAUDE.md"]` for Claude Code.
-   * These are added on top of the always-present `"AGENTS.md"`.
+   * Replaces the default `"AGENTS.md"` when the platform is active.
    */
   readonly instructionFiles: string[]
 

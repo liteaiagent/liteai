@@ -115,8 +115,8 @@ export namespace Skill {
       }
     }
 
-    const scanExternal = async (root: string, scope: "global" | "project") => {
-      log.info("scanning for external skills", { scope, dir: root })
+    const scanPlatform = async (root: string, scope: "global" | "project") => {
+      log.info("scanning for platform skills", { scope, dir: root })
       return Glob.scan(EXTERNAL_SKILL_PATTERN, {
         cwd: root,
         absolute: true,
@@ -130,21 +130,21 @@ export namespace Skill {
         })
     }
 
-    // Scan external skill directories (platform-specific + .agents/skills/)
+    // Scan platform skill directories
     // Load global (home) first, then project-level (so project-level overwrites)
     if (!Flag.LITEAI_DISABLE_SKILLS) {
-      for (const dir of Platform.externalDirs()) {
+      for (const dir of Platform.dirs()) {
         const root = path.join(Global.Path.home, dir)
         if (!(await Filesystem.isDir(root))) continue
-        await scanExternal(root, "global")
+        await scanPlatform(root, "global")
       }
 
       for await (const root of Filesystem.up({
-        targets: Platform.externalDirs(),
+        targets: Platform.dirs(),
         start: Instance.directory,
         stop: Instance.worktree,
       })) {
-        await scanExternal(root, "project")
+        await scanPlatform(root, "project")
       }
     }
 
