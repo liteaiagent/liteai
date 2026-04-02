@@ -6,7 +6,6 @@ import { Brand } from "@liteai/core/brand"
 import { Global } from "@liteai/core/global/index"
 import { Installation } from "@liteai/core/installation/index"
 import { Filesystem } from "@liteai/core/util/filesystem"
-import { Process } from "@liteai/core/util/process"
 import type { Argv } from "yargs"
 import { UI } from "../ui"
 
@@ -59,7 +58,6 @@ export const UninstallCommand = {
     prompts.intro("Uninstall LiteAI")
 
     const method = await Installation.method()
-    prompts.log.info(`Installation method: ${method}`)
 
     const targets = await collectRemovalTargets(args, method)
 
@@ -96,8 +94,8 @@ async function collectRemovalTargets(args: UninstallArgs, method: Installation.M
     { path: Global.Path.state, label: "State", keep: false },
   ]
 
-  const shellConfig = method === "curl" ? await getShellConfigFile() : null
-  const binary = method === "curl" ? process.execPath : null
+  const shellConfig = await getShellConfigFile()
+  const binary = process.execPath
 
   return { directories, shellConfig, binary }
 }
@@ -120,25 +118,12 @@ async function showRemovalSummary(targets: RemovalTargets, method: Installation.
     prompts.log.info(`  ${prefix} ${dir.label}: ${shortenPath(dir.path)} ${UI.Style.TEXT_DIM}(${sizeStr})${status}`)
   }
 
-  if (targets.binary) {
+  if (targets.binary && method !== "unknown") {
     prompts.log.info(`  ✓ Binary: ${shortenPath(targets.binary)}`)
   }
 
   if (targets.shellConfig) {
     prompts.log.info(`  ✓ Shell PATH in ${shortenPath(targets.shellConfig)}`)
-  }
-
-  if (method !== "curl" && method !== "unknown") {
-    const cmds: Record<string, string> = {
-      npm: "npm uninstall -g liteai",
-      pnpm: "pnpm uninstall -g liteai",
-      bun: "bun remove -g liteai",
-      yarn: "yarn global remove liteai",
-      brew: "brew uninstall liteai",
-      choco: "choco uninstall liteai",
-      scoop: "scoop uninstall liteai",
-    }
-    prompts.log.info(`  ✓ Package: ${cmds[method] || method}`)
   }
 }
 
@@ -179,38 +164,7 @@ async function executeUninstall(method: Installation.Method, targets: RemovalTar
     }
   }
 
-  if (method !== "curl" && method !== "unknown") {
-    const cmds: Record<string, string[]> = {
-      npm: ["npm", "uninstall", "-g", "liteai"],
-      pnpm: ["pnpm", "uninstall", "-g", "liteai"],
-      bun: ["bun", "remove", "-g", "liteai"],
-      yarn: ["yarn", "global", "remove", "liteai"],
-      brew: ["brew", "uninstall", "liteai"],
-      choco: ["choco", "uninstall", "liteai"],
-      scoop: ["scoop", "uninstall", "liteai"],
-    }
-
-    const cmd = cmds[method]
-    if (cmd) {
-      spinner.start(`Running ${cmd.join(" ")}...`)
-      const result = await Process.run(method === "choco" ? ["choco", "uninstall", "liteai", "-y", "-r"] : cmd, {
-        nothrow: true,
-      })
-      if (result.code !== 0) {
-        spinner.stop(`Package manager uninstall failed: exit code ${result.code}`, 1)
-        const text = `${result.stdout.toString("utf8")}\n${result.stderr.toString("utf8")}`
-        if (method === "choco" && text.includes("not running from an elevated command shell")) {
-          prompts.log.warn(`You may need to run '${cmd.join(" ")}' from an elevated command shell`)
-        } else {
-          prompts.log.warn(`You may need to run manually: ${cmd.join(" ")}`)
-        }
-      } else {
-        spinner.stop("Package removed")
-      }
-    }
-  }
-
-  if (method === "curl" && targets.binary) {
+  if (targets.binary && method !== "unknown") {
     UI.empty()
     prompts.log.message("To finish removing the binary, run:")
     prompts.log.info(`  rm "${targets.binary}"`)
