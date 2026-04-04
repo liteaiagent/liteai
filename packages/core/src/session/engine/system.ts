@@ -1,33 +1,27 @@
 import path from "node:path"
 import type { Agent } from "@/agent/agent"
+import { Bundled } from "@/bundled"
 import { PermissionNext } from "@/permission/next"
 import type { Provider } from "@/provider/provider"
 import { Shell } from "@/shell/shell"
 import { Skill } from "@/skill"
 
 import { Instance } from "../../project/instance"
-import PROMPT_ANTHROPIC from "../templates/anthropic.md"
-import PROMPT_BEAST from "../templates/beast.md"
-import PROMPT_CODEX from "../templates/codex_header.md"
-import PROMPT_DEFAULT from "../templates/default.md"
-import PROMPT_GEMINI from "../templates/gemini.md"
-import PROMPT_CODE_ASSIST from "../templates/google-code-assist.md"
-import PROMPT_TRINITY from "../templates/trinity.md"
 
 export namespace SystemPrompt {
-  export function instructions() {
-    return PROMPT_CODEX.trim()
+  export async function instructions() {
+    return (await Bundled.systemPrompt("codex_header")).trim()
   }
 
-  export function provider(model: Provider.Model) {
-    if (model.api.id.includes("gpt-5")) return [PROMPT_CODEX]
+  export async function provider(model: Provider.Model) {
+    if (model.api.id.includes("gpt-5")) return [await Bundled.systemPrompt("codex_header")]
     if (model.api.id.includes("gpt-") || model.api.id.includes("o1") || model.api.id.includes("o3"))
-      return [PROMPT_BEAST]
-    if (model.providerID === "google-code-assist") return [PROMPT_CODE_ASSIST]
-    if (model.api.id.includes("gemini-")) return [PROMPT_GEMINI]
-    if (model.api.id.includes("claude")) return [PROMPT_ANTHROPIC]
-    if (model.api.id.toLowerCase().includes("trinity")) return [PROMPT_TRINITY]
-    return [PROMPT_DEFAULT]
+      return [await Bundled.systemPrompt("beast")]
+    if (model.providerID === "google-code-assist") return [await Bundled.systemPrompt("google-code-assist")]
+    if (model.api.id.includes("gemini-")) return [await Bundled.systemPrompt("gemini")]
+    if (model.api.id.includes("claude")) return [await Bundled.systemPrompt("anthropic")]
+    if (model.api.id.toLowerCase().includes("trinity")) return [await Bundled.systemPrompt("trinity")]
+    return [await Bundled.systemPrompt("default")]
   }
 
   export async function environment(model: Provider.Model) {

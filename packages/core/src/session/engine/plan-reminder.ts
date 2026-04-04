@@ -1,11 +1,11 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import type { Agent } from "../../agent/agent"
+import { Bundled } from "../../bundled"
 import { Filesystem } from "../../util/filesystem"
 import { Session } from ".."
 import type { Message } from "../message"
 import { PartID } from "../schema"
-import BUILD_SWITCH from "../templates/build-switch.md"
 
 export async function insertPlanReminder(input: {
   messages: Message.WithParts[]
@@ -21,12 +21,13 @@ export async function insertPlanReminder(input: {
     const plan = Session.plan(input.session)
     const exists = await Filesystem.exists(plan)
     if (exists) {
+      const buildSwitch = await Bundled.miscPrompt("build-switch")
       const part = await Session.updatePart({
         id: PartID.ascending(),
         messageID: userMessage.info.id,
         sessionID: userMessage.info.sessionID,
         type: "text",
-        text: `${BUILD_SWITCH}\n\nA plan file exists at ${plan}. You should execute on the plan defined within it`,
+        text: `${buildSwitch}\n\nA plan file exists at ${plan}. You should execute on the plan defined within it`,
         synthetic: true,
       })
       userMessage.parts.push(part)

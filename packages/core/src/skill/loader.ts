@@ -1,6 +1,7 @@
 import os from "node:os"
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Bundled } from "@/bundled"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"
 import { ConfigMarkdown } from "@/config/markdown"
@@ -177,7 +178,7 @@ export namespace SkillLoader {
     }
 
     // Load bundled skills (lowest priority — user/project skills override)
-    const bundled = path.join(import.meta.dir, "bundled")
+    const bundled = Bundled.skillsDir()
     if (await Filesystem.isDir(bundled)) {
       log.info("scanning for bundled skills", { dir: bundled })
       const matches = await Glob.scan(SKILL_PATTERN, {

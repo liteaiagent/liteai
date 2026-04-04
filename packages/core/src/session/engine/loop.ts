@@ -24,7 +24,7 @@ import { SessionStatus } from "../status"
 import { SessionCompaction } from "../tasks/compaction"
 import { SessionSummary } from "../tasks/summary"
 import { ensureTitle } from "../tasks/title"
-import MAX_STEPS from "../templates/max-steps.md"
+import { Bundled } from "../../bundled"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
 import { insertPlanReminder } from "./plan-reminder"
@@ -468,7 +468,7 @@ export const loop = fn(LoopInput, async (input) => {
           ? [
               {
                 role: "assistant" as const,
-                content: MAX_STEPS,
+                content: await Bundled.miscPrompt("max-steps"),
               },
             ]
           : []),

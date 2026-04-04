@@ -1,4 +1,5 @@
 import z from "zod"
+import { Bundled } from "@/bundled"
 import { BusEvent } from "@/bus/bus-event"
 import { MessageID, SessionID } from "@/session/schema"
 import { Config } from "../config/config"
@@ -6,8 +7,6 @@ import { Hook } from "../hook"
 import { MCP } from "../mcp"
 import { Instance } from "../project/instance"
 import { Skill } from "../skill"
-import PROMPT_INITIALIZE from "./template/initialize.txt"
-import PROMPT_REVIEW from "./template/review.txt"
 
 // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional literal used as .replace() target
 const PATH_PLACEHOLDER = "${path}"
@@ -286,25 +285,32 @@ export namespace Command {
   const state = Instance.state(async () => {
     const cfg = await Config.get()
 
+    // Eagerly read command templates once during state initialization.
+    // This avoids sync/async issues with the hints() function.
+    const [templateInit, templateReview] = await Promise.all([
+      Bundled.command("initialize"),
+      Bundled.command("review"),
+    ])
+
     const result: Record<string, Info> = {
       [Default.INIT]: {
         name: Default.INIT,
         description: "create/update AGENTS.md",
         source: "command",
         get template() {
-          return PROMPT_INITIALIZE.replace(PATH_PLACEHOLDER, Instance.worktree)
+          return templateInit.replace(PATH_PLACEHOLDER, Instance.worktree)
         },
-        hints: hints(PROMPT_INITIALIZE),
+        hints: hints(templateInit),
       },
       [Default.REVIEW]: {
         name: Default.REVIEW,
         description: "review changes [commit|branch|pr], defaults to uncommitted",
         source: "command",
         get template() {
-          return PROMPT_REVIEW.replace(PATH_PLACEHOLDER, Instance.worktree)
+          return templateReview.replace(PATH_PLACEHOLDER, Instance.worktree)
         },
         subtask: true,
-        hints: hints(PROMPT_REVIEW),
+        hints: hints(templateReview),
       },
       [Default.HOOKS]: {
         name: Default.HOOKS,

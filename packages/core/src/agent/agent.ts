@@ -3,6 +3,7 @@ import { generateObject, type ModelMessage, streamObject } from "ai"
 import matter from "gray-matter"
 import { mergeDeep, pipe, sortBy, values } from "remeda"
 import z from "zod"
+import { Bundled } from "@/bundled"
 import { PermissionNext } from "@/permission/next"
 import * as Platform from "@/platform"
 import { Plugin } from "@/plugin"
@@ -17,19 +18,11 @@ import { ProviderTransform } from "../provider/transform"
 import { SystemPrompt } from "../session/engine/system"
 import { Skill } from "../skill"
 import { Truncate } from "../tool/truncation"
-import AGENT_BUILD from "./agents/build.md?raw"
-import AGENT_COMPACTION from "./agents/compaction.md?raw"
-import AGENT_EXPLORE from "./agents/explore.md?raw"
-import AGENT_GENERAL from "./agents/general.md?raw"
-import AGENT_PLAN from "./agents/plan.md?raw"
-import AGENT_SUMMARY from "./agents/summary.md?raw"
-import AGENT_TITLE from "./agents/title.md?raw"
 import { AgentLoader } from "./loader"
-import PROMPT_GENERATE from "./prompt/generate.md?raw"
 
 /**
- * Built-in declarative agents defined as .md files with YAML frontmatter.
- * Parsed once at module load using gray-matter — the same mechanism as user-defined
+ * Parse a bundled agent .md file (raw string with YAML frontmatter) into a
+ * Config.Agent object. Uses gray-matter — the same mechanism as user-defined
  * agent .md files — so the schema, merge path, and override behaviour are identical.
  */
 function parseBuiltinAgent(raw: string): Config.Agent {
@@ -38,14 +31,16 @@ function parseBuiltinAgent(raw: string): Config.Agent {
   return AgentSchema.parse(config)
 }
 
-const builtinAgents: Record<string, Config.Agent> = {
-  plan: parseBuiltinAgent(AGENT_PLAN),
-  build: parseBuiltinAgent(AGENT_BUILD),
-  general: parseBuiltinAgent(AGENT_GENERAL),
-  explore: parseBuiltinAgent(AGENT_EXPLORE),
-  compaction: parseBuiltinAgent(AGENT_COMPACTION),
-  title: parseBuiltinAgent(AGENT_TITLE),
-  summary: parseBuiltinAgent(AGENT_SUMMARY),
+const BUILTIN_AGENT_NAMES = ["plan", "build", "general", "explore", "compaction", "title", "summary"] as const
+
+/** Load all built-in agents from the unified bundled directory. */
+async function loadBuiltinAgents(): Promise<Record<string, Config.Agent>> {
+  const agents: Record<string, Config.Agent> = {}
+  for (const name of BUILTIN_AGENT_NAMES) {
+    const raw = await Bundled.agent(name)
+    agents[name] = parseBuiltinAgent(raw)
+  }
+  return agents
 }
 
 export namespace Agent {
@@ -108,8 +103,8 @@ export namespace Agent {
 
     // Populate built-in declarative agents via the same merge path as user config.
     // This allows user config to override or disable any built-in agent.
-    const builtinEntries = Object.entries(builtinAgents)
-    for (const [key, value] of builtinEntries) {
+    const builtinAgents = await loadBuiltinAgents()
+    for (const [key, value] of Object.entries(builtinAgents)) {
       result[key] = {
         name: key,
         mode: value.mode ?? "all",
@@ -235,7 +230,7 @@ export namespace Agent {
     const model = await Provider.getModel(defaultModel.providerID, defaultModel.modelID)
     const language = await Provider.getLanguage(model)
 
-    const system = [PROMPT_GENERATE]
+    const system = [await Bundled.agentPrompt("generate")]
     await Plugin.trigger("experimental.chat.system.transform", { model }, { system })
     const existing = await list()
 
@@ -271,7 +266,7 @@ export namespace Agent {
       const result = streamObject({
         ...params,
         providerOptions: ProviderTransform.providerOptions(model, {
-          instructions: SystemPrompt.instructions(),
+          instructions: await SystemPrompt.instructions(),
           store: false,
         }),
         onError: () => {},
