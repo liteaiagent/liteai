@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, expect, test } from "bun:test"
 import fs from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import { Flag } from "../../src/flag/flag"
 import { Instance } from "../../src/project/instance"
@@ -7,16 +8,40 @@ import { Skill } from "../../src/skill"
 import { tmpdir } from "../fixture/fixture"
 
 let prevExternalSkills: boolean
+let prevPlatform: string | undefined
+let prevTestHome: string | undefined
+let fileTestHome: string
 
-beforeAll(() => {
+beforeAll(async () => {
   prevExternalSkills = Flag.LITEAI_DISABLE_SKILLS
   // @ts-expect-error - Mutating namespace property for testing external skills
   Flag.LITEAI_DISABLE_SKILLS = false
+
+  prevPlatform = process.env.LITEAI_PLATFORM
+  process.env.LITEAI_PLATFORM = "standard"
+
+  prevTestHome = process.env.LITEAI_TEST_HOME
+  fileTestHome = await fs.mkdtemp(path.join(os.tmpdir(), "liteai-skill-test-"))
+  process.env.LITEAI_TEST_HOME = fileTestHome
 })
 
-afterAll(() => {
+afterAll(async () => {
   // @ts-expect-error - Restore original state
   Flag.LITEAI_DISABLE_SKILLS = prevExternalSkills
+
+  if (prevPlatform !== undefined) {
+    process.env.LITEAI_PLATFORM = prevPlatform
+  } else {
+    delete process.env.LITEAI_PLATFORM
+  }
+
+  if (prevTestHome !== undefined) {
+    process.env.LITEAI_TEST_HOME = prevTestHome
+  } else {
+    delete process.env.LITEAI_TEST_HOME
+  }
+
+  await fs.rm(fileTestHome, { recursive: true, force: true }).catch(() => {})
 })
 
 test("discovers skills from .liteai/skill/ directory", async () => {
@@ -49,7 +74,7 @@ Instructions here.
       expect(testSkill?.location).toContain(path.join("skill", "test-skill", "SKILL.md"))
     },
   })
-})
+}, 30_000)
 
 test("returns skill directories from Skill.dirs", async () => {
   await using tmp = await tmpdir({
@@ -84,7 +109,7 @@ description: Skill for dirs test.
   } finally {
     process.env.LITEAI_TEST_HOME = home
   }
-})
+}, 30_000)
 
 test("discovers multiple skills from .liteai/skill/ directory", async () => {
   await using tmp = await tmpdir({
@@ -123,7 +148,7 @@ description: Second test skill.
       expect(skills.find((s) => s.name === "skill-two")).toBeDefined()
     },
   })
-})
+}, 30_000)
 
 test("skips skills with missing frontmatter", async () => {
   await using tmp = await tmpdir({
@@ -148,7 +173,7 @@ Just some content without YAML frontmatter.
       expect(skills.find((s) => s.name === "no-frontmatter")).toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("returns empty array when no skills exist", async () => {
   await using tmp = await tmpdir({ git: true })

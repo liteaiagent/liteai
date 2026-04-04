@@ -395,7 +395,7 @@ export const CodeAssistAuth: AuthProvider = {
         apiKey: OAUTH_DUMMY_KEY,
         project: cached.project,
         client: oauthClient,
-        userAgentPrefix: `GeminiCLI/${Installation.VERSION}`,
+        userAgentPrefix: `GeminiCLI/0.36.0`,
       }
     },
     methods: [

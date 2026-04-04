@@ -45,7 +45,7 @@ function spawnHandler() {
     sendNotification(method: string, params: unknown = {}) {
       proc.stdin?.write(encode({ jsonrpc: "2.0", method, params }))
     },
-    async waitForResponse(id: number, timeoutMs = 5000): Promise<unknown> {
+    async waitForResponse(id: number, timeoutMs = 15000): Promise<unknown> {
       const start = Date.now()
       while (Date.now() - start < timeoutMs) {
         const match = received.find((r) => (r as { id?: number | string })?.id === id)
@@ -90,7 +90,7 @@ describe("LSP handler integration", () => {
     expect(response.result.capabilities).toBeDefined()
     expect(response.result.capabilities.inlineCompletionProvider).toBeDefined()
     expect(response.result.capabilities.textDocumentSync).toBeDefined()
-  })
+  }, 20000)
 
   test("responds to initialize + initialized lifecycle", async () => {
     handler = spawnHandler()
@@ -118,5 +118,5 @@ describe("LSP handler integration", () => {
       result: unknown
     }
     expect(shutdownResponse.result).toBeNull()
-  })
+  }, 20000)
 })

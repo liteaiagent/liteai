@@ -70,31 +70,31 @@ try {
 }
 
 const projectId = "zen-sunlight-z87wj"
-client.projectId = projectId
 
-const cfg = {
-  client,
-  // httpOptions: {
-  //   headers: {
-  //     "x-goog-user-project": projectId
-  //   }
-  // }
-}
-
-console.log(`Testing fetchAvailableModels via gaxios with project ${projectId}...`)
+console.log(`\nTesting fetchAvailableModels via raw fetch (matching Cockpit)...`)
 try {
-  const res = await fetchAvailableModels(cfg)
-  console.log("\n✅ Success! Available Models:")
-  console.log(JSON.stringify(res, null, 2))
-} catch (error: unknown) {
-  const e = error as { response?: { status: number; statusText: string; data: unknown } }
-  console.error("\n❌ Request Failed for fetchAvailableModels!")
-  if (e?.response) {
-    console.error("Status:", e.response.status, e.response.statusText)
-    console.error("Body:", JSON.stringify(e.response.data, null, 2))
-  } else {
-    console.error(error)
+  // Get access token directly from client since we are sending manual fetch
+  const tokenUrl = "https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels"
+  const fetchRes = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${auth.access}`,
+      "User-Agent": "antigravity/1.0.0 windows/amd64",
+      "Content-Type": "application/json",
+      "Accept-Encoding": "gzip",
+    },
+    body: JSON.stringify({}) // Cockpit sends `{}` when projectId is undefined
+  })
+
+  const text = await fetchRes.text()
+  console.log(`Status: ${fetchRes.status}`)
+  try {
+    console.log("Body:", JSON.stringify(JSON.parse(text), null, 2))
+  } catch {
+    console.log("Raw Body:", text)
   }
+} catch (error) {
+  console.error("Raw fetch failed:", error)
 }
 
 process.exit(0)

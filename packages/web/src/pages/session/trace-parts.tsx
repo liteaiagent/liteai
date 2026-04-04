@@ -1,11 +1,10 @@
 import { IconButton } from "@liteai/ui/icon-button"
 import { Markdown } from "@liteai/ui/markdown"
+import { RadioGroup } from "@liteai/ui/radio-group"
 import { createMemo, createSignal, For, Show } from "solid-js"
 import { useSync } from "@/context/sync"
 import { Section } from "./trace-section"
 import type { TraceMessageData, TracePartData } from "./trace-types"
-
-import { RadioGroup } from "@liteai/ui/radio-group"
 
 export function SyntheticContent(props: { text: string }) {
   const [expanded, setExpanded] = createSignal(false)
@@ -58,9 +57,7 @@ export function SyntheticContent(props: { text: string }) {
           <Show
             when={mode() === "preview"}
             fallback={
-              <div style={{ "font-family": "var(--font-family-mono)", "white-space": "pre-wrap" }}>
-                {cleanText()}
-              </div>
+              <div style={{ "font-family": "var(--font-family-mono)", "white-space": "pre-wrap" }}>{cleanText()}</div>
             }
           >
             <Markdown text={cleanText()} />

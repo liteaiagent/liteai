@@ -47,7 +47,7 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
 
     // Construct User-Agent matching gemini-cli format exactly:
     // GeminiCLI/<version>/<model> (<platform>; <arch>; <surface>)
-    const prefix = config.userAgentPrefix ?? "GeminiCLI/1.0.0"
+    const prefix = config.userAgentPrefix ?? "GeminiCLI/0.36.0"
     const surface = "terminal"
     const userAgent = `${prefix}/${config.model} (${process.platform}; ${process.arch}; ${surface})`
 
