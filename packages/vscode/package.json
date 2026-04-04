@@ -88,21 +88,18 @@
       {
         "command": "liteai.newSession",
         "title": "LiteAI: New Session",
-        "icon": {
-          "light": "images/activity-bar-dark.svg",
-          "dark": "images/activity-bar-light.svg"
-        }
+        "icon": "$(add)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "liteai.showPastSessions",
+          "command": "liteai.newSession",
           "when": "view == 'liteai.chatView'",
           "group": "navigation@0"
         },
         {
-          "command": "liteai.newSession",
+          "command": "liteai.showPastSessions",
           "when": "view == 'liteai.chatView'",
           "group": "navigation@1"
         },

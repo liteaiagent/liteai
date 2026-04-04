@@ -64,7 +64,6 @@ export function StatusPopoverLayout(props: StatusPopoverLayoutProps) {
           variant="alt"
         >
           <Tabs.List data-slot="tablist" class="bg-transparent border-b-0 px-4 pt-2 pb-0 gap-4 h-10">
-
             <Tabs.Trigger value="mcp" data-slot="tab" class="text-12-regular">
               {props.mcpCount > 0 ? `${props.mcpCount} ` : ""}
               {props.mcpLabel}
@@ -74,7 +73,6 @@ export function StatusPopoverLayout(props: StatusPopoverLayoutProps) {
               {props.lspLabel}
             </Tabs.Trigger>
           </Tabs.List>
-
 
           <Tabs.Content value="mcp">
             <div class="flex flex-col px-2 pb-2">

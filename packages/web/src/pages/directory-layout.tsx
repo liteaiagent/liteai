@@ -62,7 +62,7 @@ export default function Layout(props: ParentProps) {
 
         setState("invalid", currentID)
         const e = err as Record<string, unknown> | undefined
-        
+
         // If it's explicitly our backend rejecting the path, show an invalid project toast
         if (e?.status === 404 || e?.status === 400 || e?.name === "NotFoundError") {
           showToast({
@@ -71,7 +71,7 @@ export default function Layout(props: ParentProps) {
             description: "Project does not exist or is invalid.",
           })
         }
-        
+
         // If it failed to connect (or any other error), fallback to home
         navigate("/", { replace: true })
       })

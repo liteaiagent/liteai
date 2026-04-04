@@ -1,6 +1,6 @@
 import type { LiteaiClient, QuestionAnswer } from "@liteai/sdk/client"
-import { SessionPermissionDock, SessionQuestionDock, SessionTodoDock, useLanguage } from "@liteai/ui/panes"
 import { useSpring } from "@liteai/ui/motion-spring"
+import { SessionPermissionDock, SessionQuestionDock, SessionTodoDock, useLanguage } from "@liteai/ui/panes"
 import { showToast } from "@liteai/ui/toast"
 import { type Component, createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js"
 import type { VscodeStore } from "./vscode-store"
@@ -150,7 +150,7 @@ export const VscodeComposerDocks: Component<{
           class="pointer-events-auto z-20 grid overflow-hidden transition-all duration-300"
           style={{
             "grid-template-rows": todoDock() ? "1fr" : "0fr",
-            "opacity": dockValue() > 0.98 ? "1" : dockValue(),
+            opacity: dockValue() > 0.98 ? "1" : dockValue(),
           }}
         >
           <div class="min-h-0">

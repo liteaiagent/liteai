@@ -30,8 +30,6 @@ export default function Home() {
       .slice(0, 5)
   })
 
-
-
   async function openProject(directory: string) {
     let projectID = ""
     try {
@@ -82,51 +80,49 @@ export default function Home() {
   }
 
   return (
-    <>
-      <div class="mx-auto mt-55 w-full md:w-auto px-4">
-        <Logo class="md:w-xl opacity-12" />
-        <Switch>
-          <Match when={sync.ready && sync.data.project.length > 0}>
-            <div class="mt-20 w-full flex flex-col gap-4">
-              <div class="flex gap-2 items-center justify-between pl-3">
-                <div class="text-14-medium text-text-strong">{language.t("home.recentProjects")}</div>
-                <Button icon="folder-add-left" size="normal" class="pl-2 pr-3" onClick={chooseProject}>
-                  {language.t("command.project.open")}
-                </Button>
-              </div>
-              <ul class="flex flex-col gap-2">
-                <For each={recent()}>
-                  {(project) => (
-                    <Button
-                      size="large"
-                      variant="ghost"
-                      class="text-14-mono text-left justify-between px-3"
-                      onClick={() => openProject(project.worktree)}
-                    >
-                      {project.worktree.replace(homedir(), "~")}
-                      <div class="text-14-regular text-text-weak">
-                        {DateTime.fromMillis(project.time.updated ?? project.time.created).toRelative()}
-                      </div>
-                    </Button>
-                  )}
-                </For>
-              </ul>
-            </div>
-          </Match>
-          <Match when={true}>
-            <div class="mt-30 mx-auto flex flex-col items-center gap-3">
-              <Icon name="folder-add-left" size="large" />
-              <div class="flex flex-col gap-1 items-center justify-center">
-                <div class="text-14-medium text-text-strong">{language.t("home.empty.title")}</div>
-                <div class="text-12-regular text-text-weak">{language.t("home.empty.description")}</div>
-              </div>
-              <Button class="px-3 mt-1" onClick={chooseProject}>
+    <div class="mx-auto mt-55 w-full md:w-auto px-4">
+      <Logo class="md:w-xl opacity-12" />
+      <Switch>
+        <Match when={sync.ready && sync.data.project.length > 0}>
+          <div class="mt-20 w-full flex flex-col gap-4">
+            <div class="flex gap-2 items-center justify-between pl-3">
+              <div class="text-14-medium text-text-strong">{language.t("home.recentProjects")}</div>
+              <Button icon="folder-add-left" size="normal" class="pl-2 pr-3" onClick={chooseProject}>
                 {language.t("command.project.open")}
               </Button>
             </div>
-          </Match>
-        </Switch>
-      </div>
-    </>
+            <ul class="flex flex-col gap-2">
+              <For each={recent()}>
+                {(project) => (
+                  <Button
+                    size="large"
+                    variant="ghost"
+                    class="text-14-mono text-left justify-between px-3"
+                    onClick={() => openProject(project.worktree)}
+                  >
+                    {project.worktree.replace(homedir(), "~")}
+                    <div class="text-14-regular text-text-weak">
+                      {DateTime.fromMillis(project.time.updated ?? project.time.created).toRelative()}
+                    </div>
+                  </Button>
+                )}
+              </For>
+            </ul>
+          </div>
+        </Match>
+        <Match when={true}>
+          <div class="mt-30 mx-auto flex flex-col items-center gap-3">
+            <Icon name="folder-add-left" size="large" />
+            <div class="flex flex-col gap-1 items-center justify-center">
+              <div class="text-14-medium text-text-strong">{language.t("home.empty.title")}</div>
+              <div class="text-12-regular text-text-weak">{language.t("home.empty.description")}</div>
+            </div>
+            <Button class="px-3 mt-1" onClick={chooseProject}>
+              {language.t("command.project.open")}
+            </Button>
+          </div>
+        </Match>
+      </Switch>
+    </div>
   )
 }

@@ -35,7 +35,9 @@ ToolRegistry.register({
     const path = createMemo(() => props.metadata?.filediff?.file || props.input.filePath || "")
     const filename = () => getFilename(props.input.filePath ?? "")
     const pending = () => props.status === "pending" || props.status === "running"
-    const hasDiff = createMemo(() => !pending() && props.metadata.filediff?.before != null && props.metadata.filediff?.after != null)
+    const hasDiff = createMemo(
+      () => !pending() && props.metadata.filediff?.before != null && props.metadata.filediff?.after != null,
+    )
     return (
       <div data-component="write-tool">
         <BasicTool

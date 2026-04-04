@@ -1,4 +1,5 @@
 import { Button } from "@liteai/ui/button"
+import { useDialog } from "@liteai/ui/context/dialog"
 import { Icon } from "@liteai/ui/icon"
 import { IconButton } from "@liteai/ui/icon-button"
 import { Tooltip, TooltipKeybind } from "@liteai/ui/tooltip"
@@ -10,7 +11,6 @@ import { useLanguage } from "@/context/language"
 import { useLayout } from "@/context/layout"
 import { useServer } from "@/context/server"
 import { DialogSelectServer } from "./dialog-select-server"
-import { useDialog } from "@liteai/ui/context/dialog"
 import { applyPath, backPath, forwardPath } from "./titlebar-history"
 
 export function Titlebar() {

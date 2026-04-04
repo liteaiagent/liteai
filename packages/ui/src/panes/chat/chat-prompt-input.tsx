@@ -1262,7 +1262,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                   disabled={store.mode !== "normal" || (!prompt.dirty() && !working() && commentCount() === 0)}
                   tabIndex={store.mode === "normal" ? undefined : -1}
                   icon={working() ? "stop" : "arrow-up"}
-                  variant="primary"
+                  variant={working() ? "secondary" : "primary"}
                   class="size-7"
                   style={buttons()}
                   aria-label={working() ? language.t("prompt.action.stop") : language.t("prompt.action.send")}

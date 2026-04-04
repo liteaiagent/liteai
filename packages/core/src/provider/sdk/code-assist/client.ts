@@ -13,7 +13,7 @@ import type {
 } from "./types"
 import { UserTierId } from "./types"
 
-export const CA_ENDPOINT = "https://cloudcode-pa.googleapis.com"
+export const CA_ENDPOINT = "https://daily-cloudcode-pa.googleapis.com"
 export const CA_VERSION = "v1internal"
 
 // Retry config matching gemini-cli/packages/core/src/code_assist/server.ts

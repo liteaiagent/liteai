@@ -5,7 +5,7 @@ import { Installation } from "@liteai/core/installation/index"
 export async function upgrade() {
   const config = await Config.global()
   const method = await Installation.method()
-  const latest = await Installation.latest(method).catch(() => {})
+  const latest = await Installation.latest().catch(() => {})
   if (!latest) return
   if (Installation.VERSION === latest) return
 

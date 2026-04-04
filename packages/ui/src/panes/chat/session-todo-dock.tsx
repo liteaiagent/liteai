@@ -77,13 +77,14 @@ export function SessionTodoDock(props: {
     prevTodosLength = currentLength
   })
 
-  const toggle = () => setStore("collapsed", (value) => {
-    const next = !value
-    if (props.sessionID) {
-      cache.set(props.sessionID, { collapsed: next })
-    }
-    return next
-  })
+  const toggle = () =>
+    setStore("collapsed", (value) => {
+      const next = !value
+      if (props.sessionID) {
+        cache.set(props.sessionID, { collapsed: next })
+      }
+      return next
+    })
 
   const total = createMemo(() => props.todos.length)
   const done = createMemo(() => props.todos.filter((todo) => todo.status === "completed").length)

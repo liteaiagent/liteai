@@ -148,9 +148,7 @@ export function ToolFileAccordion(props: { path: string; actions?: JSX.Element; 
             </div>
           </Accordion.Trigger>
         </StickyAccordionHeader>
-        <Accordion.Content>
-          {props.children}
-        </Accordion.Content>
+        <Accordion.Content>{props.children}</Accordion.Content>
       </Accordion.Item>
     </Accordion>
   )

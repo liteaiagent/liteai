@@ -59,7 +59,7 @@ export const UninstallCommand = {
 
     const method = await Installation.method()
 
-    const targets = await collectRemovalTargets(args, method)
+    const targets = await collectRemovalTargets(args)
 
     await showRemovalSummary(targets, method)
 
@@ -86,7 +86,7 @@ export const UninstallCommand = {
   },
 }
 
-async function collectRemovalTargets(args: UninstallArgs, method: Installation.Method): Promise<RemovalTargets> {
+async function collectRemovalTargets(args: UninstallArgs): Promise<RemovalTargets> {
   const directories: RemovalTargets["directories"] = [
     { path: Global.Path.root, label: "Config", keep: args.keepConfig },
     { path: Global.Path.data, label: "Data", keep: args.keepData },

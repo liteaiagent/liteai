@@ -7,8 +7,7 @@ export type WorkerPoolStyle = "unified" | "split"
 // The error is async (worker `error` event, not a thrown exception),
 // so try-catch can't detect it. Instead, detect the environment upfront.
 const isRestrictedEnv =
-  typeof window !== "undefined" &&
-  (window.location.protocol === "vscode-webview:" || "acquireVsCodeApi" in window)
+  typeof window !== "undefined" && (window.location.protocol === "vscode-webview:" || "acquireVsCodeApi" in window)
 
 export function workerFactory(): Worker {
   return new Worker(ShikiWorkerUrl, { type: "module" })

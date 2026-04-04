@@ -1,20 +1,11 @@
-import { Button } from "@liteai/ui/button"
-import { useDialog } from "@liteai/ui/context/dialog"
-import { Icon } from "@liteai/ui/icon"
 import { StatusPopoverLayout } from "@liteai/ui/status-popover-layout"
 import { Switch } from "@liteai/ui/switch"
 import { showToast } from "@liteai/ui/toast"
-import { useNavigate } from "@solidjs/router"
-import { type Accessor, createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js"
-import { createStore, reconcile } from "solid-js/store"
+import { createMemo, createSignal, For, Show } from "solid-js"
 import { useLanguage } from "@/context/language"
 import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 import { toProjectID } from "@/utils/project-id"
-
-const pollMs = 10_000
-
-
 
 const useMcpToggle = (input: {
   sync: ReturnType<typeof useSync>

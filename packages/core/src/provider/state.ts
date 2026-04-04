@@ -14,6 +14,7 @@ import { ModelsDev } from "./models"
 import type { Provider } from "./provider"
 import { ModelID, ProviderID } from "./schema"
 import { ProviderTransform } from "./transform"
+import { CA_ENDPOINT } from "./sdk/code-assist/client"
 
 const log = Log.create({ service: "provider" })
 
@@ -148,7 +149,7 @@ function registerCodeAssist(database: Record<string, Provider.Info>) {
       api: {
         id,
         npm: "@ai-sdk/google-code-assist",
-        url: "https://cloudcode-pa.googleapis.com",
+        url: CA_ENDPOINT,
       },
       capabilities: ref?.capabilities ?? fallback.capabilities,
       limit: ref?.limit ?? fallback.limit,
