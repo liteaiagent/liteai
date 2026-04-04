@@ -19,7 +19,7 @@ export interface SlashCommand {
 
 type PromptPopoverProps = {
   popover: "at" | "slash" | null
-  setSlashPopoverRef: (el: HTMLDivElement) => void
+  setPopoverRef: (el: HTMLDivElement) => void
   atFlat: AtOption[]
   atActive?: string
   atKey: (item: AtOption) => string
@@ -38,11 +38,9 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
     <Show when={props.popover}>
       {/* biome-ignore lint/a11y/noStaticElementInteractions: popover */}
       <div
-        ref={(el) => {
-          if (props.popover === "slash") props.setSlashPopoverRef(el)
-        }}
+        ref={props.setPopoverRef}
         class="absolute inset-x-0 -top-2 -translate-y-full origin-bottom-left max-h-80 min-h-10
-                 overflow-auto no-scrollbar flex flex-col p-2 rounded-[12px]
+                 overflow-y-auto flex flex-col p-2 rounded-[12px]
                  bg-surface-raised-stronger-non-alpha shadow-[var(--shadow-lg-border-base)]"
         onMouseDown={(e) => e.preventDefault()}
       >
@@ -52,7 +50,7 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
               when={props.atFlat.length > 0}
               fallback={<div class="text-text-weak px-2 py-1">{props.t("prompt.popover.emptyResults")}</div>}
             >
-              <For each={props.atFlat.slice(0, 10)}>
+              <For each={props.atFlat.slice(0, 100)}>
                 {(item) => {
                   const key = props.atKey(item)
 
@@ -60,6 +58,7 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
                     return (
                       <button
                         type="button"
+                        data-at-id={key}
                         class="w-full flex items-center gap-x-2 rounded-md px-2 py-0.5"
                         classList={{ "bg-surface-raised-base-hover": props.atActive === key }}
                         onClick={() => props.onAtSelect(item)}
@@ -78,6 +77,7 @@ export const PromptPopover: Component<PromptPopoverProps> = (props) => {
                   return (
                     <button
                       type="button"
+                      data-at-id={key}
                       class="w-full flex items-center gap-x-2 rounded-md px-2 py-0.5"
                       classList={{ "bg-surface-raised-base-hover": props.atActive === key }}
                       onClick={() => props.onAtSelect(item)}

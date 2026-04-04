@@ -52,7 +52,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const webview = this._view.webview
 
     // Show loading state initially
-    webview.html = this._getLoadingHtml()
+    webview.html = this._getHtmlForWebview(webview)
 
     this._serverManager.start(this._context).then(
       (url) => {
@@ -73,57 +73,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
       },
     )
-  }
-
-  private _getLoadingHtml() {
-    return `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiteAI</title>
-    <style>
-      .initial-loader {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        width: 100vw;
-        background-color: var(--vscode-sideBar-background, #101010);
-        font-family: var(--vscode-font-family, "Inter", sans-serif);
-        font-size: 13px;
-        user-select: none;
-      }
-      .shimmer-text {
-        color: rgba(255, 255, 255, 0.2);
-        background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.2) 100%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: shimmer 1.5s linear infinite;
-      }
-      body.vscode-light .shimmer-text {
-        color: rgba(0, 0, 0, 0.2);
-        background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 50%, rgba(0,0,0,0.2) 100%);
-        background-size: 200% auto;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-      @keyframes shimmer {
-        to { background-position: 200% center; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="root">
-      <div class="initial-loader">
-        <span class="shimmer-text">Connecting to Server...</span>
-      </div>
-    </div>
-  </body>
-</html>`
   }
 
   private _getErrorHtml(errorMsg: string) {
@@ -203,7 +152,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 </html>`
   }
 
-  private _getHtmlForWebview(webview: vscode.Webview, serverUrl: string) {
+  private _getHtmlForWebview(webview: vscode.Webview, serverUrl?: string) {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._context.extensionUri, "dist", "webview", "assets", "index.js"),
     )
@@ -225,17 +174,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       `connect-src ${cspServerUrl} http://127.0.0.1:* http://localhost:*`,
     ].join("; ")
 
-    // Inject the server URL. If empty, the webview entry.tsx will fall back to
-    // the default dev URL (http://127.0.0.1:9000).
-    // Also inject the workspace directory so the webview can derive the project ID
-    // from it immediately.
-    const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ""
-    const urlScript = [
-      `<script>`,
-      `  window.LITEAI_SERVER_URL = "${serverUrl}";`,
-      `  window.LITEAI_WORKSPACE_DIR = ${JSON.stringify(workspaceDir)};`,
-      `</script>`,
-    ].join("\n")
+    let customScripts = ""
+    if (serverUrl) {
+      // Inject the server URL. If empty, the webview entry.tsx will fall back to
+      // the default dev URL (http://127.0.0.1:9000).
+      // Also inject the workspace directory so the webview can derive the project ID
+      // from it immediately.
+      const workspaceDir = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? ""
+      const urlScript = [
+        `<script>`,
+        `  window.LITEAI_SERVER_URL = "${serverUrl}";`,
+        `  window.LITEAI_WORKSPACE_DIR = ${JSON.stringify(workspaceDir)};`,
+        `</script>`,
+      ].join("\n")
+      customScripts = `${urlScript}\n    <script type="module" src="${scriptUri}"></script>`
+    }
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -246,6 +199,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     <title>LiteAI</title>
     <link href="${styleUri}" rel="stylesheet">
     <style>
+      body { margin: 0; padding: 0; overflow: hidden; }
       .initial-loader {
         display: flex;
         align-items: center;
@@ -285,8 +239,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         <span class="shimmer-text">Loading...</span>
       </div>
     </div>
-    ${urlScript}
-    <script type="module" src="${scriptUri}"></script>
+    ${customScripts}
   </body>
 </html>`
   }

@@ -223,7 +223,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   let editorRef!: HTMLDivElement
   let fileInputRef: HTMLInputElement | undefined
   let scrollRef!: HTMLDivElement
-  let slashPopoverRef!: HTMLDivElement
+  let popoverRef!: HTMLDivElement
 
   const mirror = { input: false }
   const inset = 44
@@ -714,15 +714,27 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
     onSelect: handleSlashSelect,
   })
 
+  // Auto-scroll active popover element into view
+  const scrollActivePopoverElement = (activeId: string, attr: string) => {
+    if (!popoverRef) return
+    requestAnimationFrame(() => {
+      const element = Array.from(popoverRef.querySelectorAll(`[${attr}]`)).find(
+        (el) => el.getAttribute(attr) === activeId,
+      ) as HTMLElement | undefined
+      element?.scrollIntoView({ block: "nearest" })
+    })
+  }
+
   // Auto-scroll active slash command into view
   createEffect(() => {
     const activeId = slashActive()
-    if (!activeId || !slashPopoverRef) return
+    if (activeId) scrollActivePopoverElement(activeId, "data-slash-id")
+  })
 
-    requestAnimationFrame(() => {
-      const element = slashPopoverRef.querySelector(`[data-slash-id="${activeId}"]`)
-      element?.scrollIntoView({ block: "nearest", behavior: "smooth" })
-    })
+  // Auto-scroll active @ mention into view
+  createEffect(() => {
+    const activeId = atActive()
+    if (activeId) scrollActivePopoverElement(activeId, "data-at-id")
   })
 
   const selectPopoverActive = () => {
@@ -1096,7 +1108,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
     <div class="relative size-full _max-h-[320px] flex flex-col gap-0">
       <PromptPopover
         popover={store.popover}
-        setSlashPopoverRef={(el) => (slashPopoverRef = el)}
+        setPopoverRef={(el) => (popoverRef = el)}
         atFlat={atFlat()}
         atActive={atActive() ?? undefined}
         atKey={atKey}
