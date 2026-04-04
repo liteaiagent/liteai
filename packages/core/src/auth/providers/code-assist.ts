@@ -10,8 +10,8 @@ const log = Log.create({ service: "auth.code-assist" })
 
 // OAuth Client ID for Google Code Assist (installed application — public per Google policy)
 // https://developers.google.com/identity/protocols/oauth2#installed
-const CLIENT_ID = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
-const CLIENT_SECRET = "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"
+export const CA_CLIENT_ID = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
+export const CA_CLIENT_SECRET = "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"
 
 const SCOPES = [
   "https://www.googleapis.com/auth/cloud-platform",
@@ -77,7 +77,7 @@ function getAvailablePort(): Promise<number> {
 function buildAuthUrl(redirect: string, pkce: PkceCodes, state: string): string {
   const params = new URLSearchParams({
     response_type: "code",
-    client_id: CLIENT_ID,
+    client_id: CA_CLIENT_ID,
     redirect_uri: redirect,
     scope: SCOPES.join(" "),
     code_challenge: pkce.challenge,
@@ -97,8 +97,8 @@ async function exchangeCode(code: string, redirect: string, pkce: PkceCodes): Pr
       grant_type: "authorization_code",
       code,
       redirect_uri: redirect,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
+      client_id: CA_CLIENT_ID,
+      client_secret: CA_CLIENT_SECRET,
       code_verifier: pkce.verifier,
     }).toString(),
   })
@@ -340,8 +340,8 @@ export const CodeAssistAuth: AuthProvider = {
       // This uses google-auth-library's gaxios transport for all HTTP requests
       // to the Code Assist server, ensuring identical wire behavior.
       const oauthClient = new OAuth2Client({
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET,
+        clientId: CA_CLIENT_ID,
+        clientSecret: CA_CLIENT_SECRET,
       })
 
       // Set credentials from stored auth state

@@ -8,21 +8,37 @@ export namespace Env {
   })
 
   export function get(key: string) {
-    const env = state()
-    return env[key]
+    try {
+      const env = state()
+      return env[key]
+    } catch {
+      return process.env[key]
+    }
   }
 
   export function all() {
-    return state()
+    try {
+      return state()
+    } catch {
+      return { ...process.env } as Record<string, string | undefined>
+    }
   }
 
   export function set(key: string, value: string) {
-    const env = state()
-    env[key] = value
+    try {
+      const env = state()
+      env[key] = value
+    } catch {
+      process.env[key] = value
+    }
   }
 
   export function remove(key: string) {
-    const env = state()
-    delete env[key]
+    try {
+      const env = state()
+      delete env[key]
+    } catch {
+      delete process.env[key]
+    }
   }
 }

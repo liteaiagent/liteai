@@ -202,6 +202,20 @@ export async function onboardUser(cfg: ClientConfig, req: OnboardUserRequest): P
   )
 }
 
+export interface FetchAvailableModelsResponse {
+  models?: Array<{ model?: string }>
+}
+
+export async function fetchAvailableModels(cfg: ClientConfig): Promise<FetchAvailableModelsResponse> {
+  return requestPost<FetchAvailableModelsResponse>(
+    cfg,
+    methodUrl(cfg, "fetchAvailableModels"),
+    {},
+    undefined,
+    DEFAULT_RETRY_DELAY,
+  )
+}
+
 export async function getOperation(cfg: ClientConfig, name: string): Promise<LongRunningOperationResponse> {
   const res = await cfg.client.request<LongRunningOperationResponse>({
     url: operationUrl(cfg, name),

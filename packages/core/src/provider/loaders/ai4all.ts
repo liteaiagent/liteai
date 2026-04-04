@@ -2,13 +2,30 @@ import { Auth } from "@/auth"
 import { Env } from "@/env"
 import { Installation } from "@/installation"
 import { Log } from "@/util/log"
+import type { Provider } from "../provider"
+import { ModelID, ProviderID } from "../schema"
 import type { LoaderInput, LoaderResult } from "./types"
 
-const log = Log.create({ service: "provider.ai4all" })
+const log = Log.create({ service: "loader.ai4all" })
 
 const APIGEE_HOST = "api-dev.valeo.com"
 const REFRESH_URL = `https://${APIGEE_HOST}/rsd/ai4all/auth/token`
+const MODELS_URL = `https://${APIGEE_HOST}/rsd/ai4all/llm/models`
 const HEADER = `liteai/${Installation.VERSION}`
+
+/** Fallback model IDs used when the models endpoint is unreachable. */
+const FALLBACK_MODEL_IDS = [
+  "gemini-3-pro-preview",
+  "gemini-3-flash-preview",
+  "gemini-3.1-pro-preview",
+  "claude-sonnet-4",
+  "claude-sonnet-4-5",
+  "claude-sonnet-4-6",
+  "mistral-large-2411",
+  "deepseek-r1-0528-maas",
+  "imagen-4.0-generate-001",
+  "imagen-3.0-generate-002",
+]
 
 /**
  * Parse the `exp` claim from a JWT access token.
@@ -120,11 +137,65 @@ async function token(input: LoaderInput): Promise<string | undefined> {
   return refresh(input)
 }
 
-export async function ai4all(input: LoaderInput): Promise<LoaderResult> {
+/**
+ * Fetch available model IDs from the AI4ALL models endpoint.
+ */
+async function fetchAvailableModels(accessToken: string): Promise<string[] | undefined> {
+  try {
+    const res = await fetch(MODELS_URL, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "x-ai4all-client": HEADER,
+      },
+      signal: AbortSignal.timeout(10_000),
+    })
+
+    if (!res.ok) {
+      log.warn("fetchAvailableModels failed", { status: res.status })
+      return undefined
+    }
+
+    const data = (await res.json()) as { data?: Array<{ id?: string }> } | Array<{ id?: string }>
+
+    // Handle both { data: [...] } and [...] response shapes
+    const items = Array.isArray(data) ? data : data?.data
+    if (!items || !Array.isArray(items)) {
+      log.warn("fetchAvailableModels returned unexpected shape", { data })
+      return undefined
+    }
+
+    const ids = items.map((m) => m.id ?? "").filter(Boolean)
+    log.info("fetched available models from AI4ALL API", { count: ids.length, models: ids })
+    return ids.length > 0 ? ids : undefined
+  } catch (err) {
+    log.warn("failed to fetch available models from AI4ALL API, using fallback", { error: err })
+    return undefined
+  }
+}
+
+export async function ai4all(
+  input: LoaderInput,
+  database: Record<string, Provider.Info>,
+): Promise<LoaderResult> {
   const key = await token(input)
+
+  // Fetch model IDs from the API if we have auth, falling back to hardcoded list
+  let modelIds = FALLBACK_MODEL_IDS
+  if (key) {
+    const fetched = await fetchAvailableModels(key)
+    if (fetched) modelIds = fetched
+  }
+
+  // Build Provider.Model entries using models.dev data for capabilities
+  const models: Record<string, Provider.Model> = {}
+  for (const id of modelIds) {
+    models[id] = buildAi4allModel(id, database)
+  }
 
   return {
     autoload: !!key,
+    models,
     options: {
       ...(key && { apiKey: key }),
       headers: {
@@ -163,5 +234,73 @@ export async function ai4all(input: LoaderInput): Promise<LoaderResult> {
         return res
       },
     },
+  }
+}
+
+/** Build an AI4ALL model entry, looking up capabilities from the original provider in models.dev. */
+function buildAi4allModel(id: string, database: Record<string, Provider.Info>): Provider.Model {
+  const pid = ProviderID.make("ai4all")
+  const fallback: Pick<Provider.Model, "limit" | "capabilities" | "cost" | "release_date"> = {
+    limit: { context: 200000, output: 8192 },
+    capabilities: {
+      temperature: true,
+      reasoning: false,
+      attachment: false,
+      toolcall: true,
+      input: { text: true, audio: false, image: false, video: false, pdf: false },
+      output: { text: true, audio: false, image: false, video: false, pdf: false },
+      interleaved: false,
+    },
+    cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+    release_date: "",
+  }
+
+  function ref(modelId: string) {
+    const lookup = (db: typeof database[string] | undefined) =>
+      db?.models[modelId] ?? db?.models[modelId.replace(/-maas$/, "")]
+
+    if (modelId.startsWith("gemini")) return lookup(database.google)
+    if (modelId.startsWith("claude")) return lookup(database.anthropic)
+    if (modelId.startsWith("mistral")) return lookup(database.mistral)
+    if (modelId.startsWith("deepseek")) return lookup(database.deepseek)
+    if (modelId.startsWith("imagen")) return lookup(database.google)
+    if (modelId.startsWith("glm")) return lookup(database.zhipuai)
+    return undefined
+  }
+
+  function family(modelId: string) {
+    if (modelId.startsWith("gemini")) return "gemini"
+    if (modelId.startsWith("claude")) return "claude"
+    if (modelId.startsWith("mistral")) return "mistral"
+    if (modelId.startsWith("deepseek")) return "deepseek"
+    if (modelId.startsWith("imagen")) return "imagen"
+    if (modelId.startsWith("glm")) return "glm"
+    return "unknown"
+  }
+
+  const r = ref(id)
+  // DeepSeek-R1 models are always reasoning models, even without a ref match
+  const capabilities = r?.capabilities ?? {
+    ...fallback.capabilities,
+    reasoning: id.includes("-r1-") || fallback.capabilities.reasoning,
+  }
+  return {
+    id: ModelID.make(id),
+    providerID: pid,
+    name: r?.name ?? id,
+    family: r?.family ?? family(id),
+    status: r?.status ?? "active",
+    headers: {},
+    options: {},
+    api: {
+      id,
+      npm: "@ai-sdk/openai-compatible",
+      url: "https://api-dev.valeo.com/rsd/ai4all/llm/v1",
+    },
+    capabilities,
+    limit: r?.limit ?? fallback.limit,
+    cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+    release_date: r?.release_date ?? fallback.release_date,
+    variants: {},
   }
 }

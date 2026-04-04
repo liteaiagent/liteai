@@ -13,7 +13,6 @@ import { CUSTOM_LOADERS, type ModelLoader, type VarsLoader } from "./loaders"
 import { ModelsDev } from "./models"
 import type { Provider } from "./provider"
 import { ModelID, ProviderID } from "./schema"
-import { CA_ENDPOINT } from "./sdk/code-assist/client"
 import { ProviderTransform } from "./transform"
 
 const log = Log.create({ service: "provider" })
@@ -111,146 +110,26 @@ function registerCopilotEnterprise(database: Record<string, Provider.Info>) {
 }
 
 function registerCodeAssist(database: Record<string, Provider.Info>) {
-  const ids = [
-    "gemini-3.1-pro-preview",
-    "gemini-3-flash-preview",
-    "gemini-2.5-pro",
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-  ] as const
   const pid = ProviderID.make("google-code-assist")
-  const google = database.google
-  const fallback: Pick<Provider.Model, "limit" | "capabilities" | "cost" | "release_date"> = {
-    limit: { context: 1048576, output: 65536 },
-    capabilities: {
-      temperature: true,
-      reasoning: true,
-      attachment: true,
-      toolcall: true,
-      input: { text: true, audio: false, image: true, video: false, pdf: false },
-      output: { text: true, audio: false, image: false, video: false, pdf: false },
-      interleaved: false,
-    },
-    cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
-    release_date: "",
-  }
-  const model = (id: string): Provider.Model => {
-    // Strip suffixes like "-customtools" to find the base model in google's data
-    const base = id.replace(/-customtools$/, "")
-    const ref = google?.models[base]
-    return {
-      id: ModelID.make(id),
-      providerID: pid,
-      name: ref?.name ?? id,
-      family: ref?.family ?? "gemini",
-      status: ref?.status ?? "active",
-      headers: {},
-      options: {},
-      api: {
-        id,
-        npm: "@ai-sdk/google-code-assist",
-        url: CA_ENDPOINT,
-      },
-      capabilities: ref?.capabilities ?? fallback.capabilities,
-      limit: ref?.limit ?? fallback.limit,
-      cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
-      release_date: ref?.release_date ?? fallback.release_date,
-      variants: {},
-    }
-  }
   database["google-code-assist"] = {
     id: pid,
     name: "Google Code Assist",
     env: [],
     options: {},
     source: "api",
-    models: Object.fromEntries(ids.map((id) => [id, model(id)])),
+    models: {},
   }
 }
 
 function registerAi4all(database: Record<string, Provider.Info>) {
-  const ids = [
-    "gemini-3-pro-preview",
-    "gemini-3-flash-preview",
-    "gemini-3.1-pro-preview",
-    "claude-sonnet-4",
-    "claude-sonnet-4-5",
-    "claude-sonnet-4-6",
-    "mistral-large-2411",
-    "deepseek-r1-0528-maas",
-    "imagen-4.0-generate-001",
-    "imagen-3.0-generate-002",
-  ] as const
   const pid = ProviderID.make("ai4all")
-  const fallback: Pick<Provider.Model, "limit" | "capabilities" | "cost" | "release_date"> = {
-    limit: { context: 200000, output: 8192 },
-    capabilities: {
-      temperature: true,
-      reasoning: false,
-      attachment: false,
-      toolcall: true,
-      input: { text: true, audio: false, image: false, video: false, pdf: false },
-      output: { text: true, audio: false, image: false, video: false, pdf: false },
-      interleaved: false,
-    },
-    cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
-    release_date: "",
-  }
-
-  function ref(id: string) {
-    // Try to find the model in its original provider for capabilities/limits
-    if (id.startsWith("gemini")) return database.google?.models[id]
-    if (id.startsWith("claude")) return database.anthropic?.models[id]
-    if (id.startsWith("mistral")) return database.mistral?.models[id]
-    if (id.startsWith("deepseek")) {
-      // Strip -maas suffix (AI4ALL-specific) to match models.dev entries
-      return database.deepseek?.models[id] ?? database.deepseek?.models[id.replace(/-maas$/, "")]
-    }
-    return undefined
-  }
-
-  function family(id: string) {
-    if (id.startsWith("gemini")) return "gemini"
-    if (id.startsWith("claude")) return "claude"
-    if (id.startsWith("mistral")) return "mistral"
-    if (id.startsWith("deepseek")) return "deepseek"
-    return "unknown"
-  }
-
-  const model = (id: string): Provider.Model => {
-    const r = ref(id)
-    // DeepSeek-R1 models are always reasoning models, even without a ref match
-    const capabilities = r?.capabilities ?? {
-      ...fallback.capabilities,
-      reasoning: id.includes("-r1-") || fallback.capabilities.reasoning,
-    }
-    return {
-      id: ModelID.make(id),
-      providerID: pid,
-      name: r?.name ?? id,
-      family: r?.family ?? family(id),
-      status: r?.status ?? "active",
-      headers: {},
-      options: {},
-      api: {
-        id,
-        npm: "@ai-sdk/openai-compatible",
-        url: "https://api-dev.valeo.com/rsd/ai4all/llm/v1",
-      },
-      capabilities,
-      limit: r?.limit ?? fallback.limit,
-      cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
-      release_date: r?.release_date ?? fallback.release_date,
-      variants: {},
-    }
-  }
   database.ai4all = {
     id: pid,
     name: "AI4ALL",
     env: ["AI4ALL_API_KEY"],
     options: {},
     source: "env",
-    models: Object.fromEntries(ids.map((id) => [id, model(id)])),
+    models: {},
   }
 }
 
@@ -456,7 +335,7 @@ async function loadCustom(
       log.error(`Provider does not exist in model list ${providerID}`)
       continue
     }
-    const result = await fn(data).catch((_err) => {
+    const result = await fn(data, database).catch((_err) => {
       // Custom loaders may call Env.get / Config.get which require Instance context.
       // When resolving the global provider list (no project selected), skip them gracefully.
       log.debug("custom loader skipped (no instance context)", { providerID })
@@ -465,9 +344,21 @@ async function loadCustom(
     if (result && (result.autoload || providers[providerID])) {
       if (result.getModel) modelLoaders[providerID] = result.getModel
       if (result.vars) varsLoaders[providerID] = result.vars
+      // If the loader provides a model list, merge into the database entry.
+      // Loader models are set first; any config-defined models override for same IDs.
+      let mergedModels: Record<string, Provider.Model> | undefined
+      if (result.models && Object.keys(result.models).length > 0) {
+        const existingModels = database[providerID].models
+        mergedModels = { ...result.models, ...existingModels }
+        database[providerID] = {
+          ...database[providerID],
+          models: mergedModels,
+        }
+        log.info("loader provided models", { providerID, count: Object.keys(result.models).length })
+      }
       const opts = result.options ?? {}
       const patch: Partial<Provider.Info> = providers[providerID]
-        ? { options: opts }
+        ? { options: opts, ...(mergedModels && { models: mergedModels }) }
         : { source: data.source ?? "custom", options: opts }
       merge(providerID, patch)
     }

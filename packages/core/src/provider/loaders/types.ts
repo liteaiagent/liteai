@@ -1,4 +1,5 @@
 import type { LanguageModelV2 } from "@ai-sdk/provider"
+import type { Provider } from "../provider"
 
 export type SDK = {
   languageModel(id: string): LanguageModelV2
@@ -24,6 +25,8 @@ export interface LoaderResult {
   vars?: VarsLoader
   // biome-ignore lint/suspicious/noExplicitAny: options bags are untyped provider config
   options?: Record<string, any>
+  /** Provider-supplied model list — overrides models.dev entries for this provider */
+  models?: Record<string, Provider.Model>
 }
 
 export interface LoaderInput {
@@ -35,7 +38,7 @@ export interface LoaderInput {
   options: Record<string, any>
 }
 
-export type CustomLoader = (input: LoaderInput) => Promise<LoaderResult>
+export type CustomLoader = (input: LoaderInput, database: Record<string, Provider.Info>) => Promise<LoaderResult>
 
 export function useLanguageModel(sdk: SDK) {
   return sdk.responses === undefined && sdk.chat === undefined

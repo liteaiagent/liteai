@@ -162,6 +162,10 @@ export const ProviderRoutes = lazy(() =>
           method,
           code,
         })
+        const { globalState } = await import("../../provider/state")
+        const { Instance } = await import("../../project/instance")
+        globalState.reset()
+        await Instance.disposeAll()
         return c.json(true)
       },
     ),

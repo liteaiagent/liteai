@@ -4,6 +4,7 @@ import { DialogProvider } from "@liteai/ui/context/dialog"
 import { FileComponentProvider } from "@liteai/ui/context/file"
 import { MarkedProvider } from "@liteai/ui/context/marked"
 import { File } from "@liteai/ui/file"
+import { FileIconSprite } from "@liteai/ui/file-icon"
 import { Font } from "@liteai/ui/font"
 import { Splash } from "@liteai/ui/logo"
 import { PaneRouteProvider } from "@liteai/ui/panes"
@@ -148,6 +149,7 @@ export function AppBaseProviders(props: ParentProps) {
   return (
     <MetaProvider>
       <Font />
+      <FileIconSprite />
       <ThemeProvider
         onThemeApplied={(_, mode) => {
           void window.api?.setTitlebar?.({ mode })
