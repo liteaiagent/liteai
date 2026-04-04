@@ -1,8 +1,9 @@
 // HTTP client for the Code Assist API (cloudcode-pa.googleapis.com).
-// Ported from gemini-cli/packages/core/src/code_assist/server.ts.
+// Uses google-auth-library's AuthClient (gaxios) to match gemini-cli exactly.
 
-import os from "node:os"
-import type { FetchFunction } from "@ai-sdk/provider-utils"
+import * as readline from "node:readline"
+import { Readable } from "node:stream"
+import type { AuthClient } from "google-auth-library"
 import type {
   CAGenerateContentRequest,
   CAGenerateContentResponse,
@@ -13,35 +14,30 @@ import type {
 } from "./types"
 import { UserTierId } from "./types"
 
-export const CA_ENDPOINT = "https://daily-cloudcode-pa.googleapis.com"
+export const CA_ENDPOINT = "https://cloudcode-pa.googleapis.com"
 export const CA_VERSION = "v1internal"
 
-// Retry config matching gemini-cli/packages/core/src/code_assist/server.ts
-const RETRY_COUNT = 3
-const RETRY_DEFAULT_DELAY = 100
-const RETRY_GENERATE_DELAY = 1000
-const RETRYABLE_STATUSES = new Set([429, 499, 500, 502, 503, 504])
+const GENERATE_CONTENT_RETRY_DELAY = 1000
+const DEFAULT_RETRY_DELAY = 100
 
-export interface ClientConfig {
-  endpoint?: string
-  version?: string
-  fetch?: FetchFunction
-  headers?: () => Record<string, string | undefined>
-  /** User-Agent string. If not set, a default is used. */
-  ua?: string
+export interface HttpOptions {
+  headers?: Record<string, string>
 }
 
-function ua(cfg: ClientConfig): string {
-  return cfg.ua ?? `GeminiCLI/1.0.0/liteai (${os.platform()}; ${os.arch()}; terminal)`
+export interface ClientConfig {
+  client: AuthClient
+  endpoint?: string
+  version?: string
+  httpOptions?: HttpOptions
 }
 
 function base(cfg: ClientConfig): string {
-  const ep = cfg.endpoint ?? CA_ENDPOINT
-  const ver = cfg.version ?? CA_VERSION
+  const ep = cfg.endpoint ?? process.env.CODE_ASSIST_ENDPOINT ?? CA_ENDPOINT
+  const ver = cfg.version ?? process.env.CODE_ASSIST_API_VERSION ?? CA_VERSION
   return `${ep}/${ver}`
 }
 
-function url(cfg: ClientConfig, method: string): string {
+function methodUrl(cfg: ClientConfig, method: string): string {
   return `${base(cfg)}:${method}`
 }
 
@@ -49,34 +45,36 @@ function operationUrl(cfg: ClientConfig, name: string): string {
   return `${base(cfg)}/${name}`
 }
 
-// Retry helper matching gemini-cli behaviour:
-// retries on 429, 499, 500-599 with configurable delay.
-async function retryPost<T>(
+// POST with gaxios retry — matches gemini-cli/server.ts requestPost exactly.
+async function requestPost<T>(
   cfg: ClientConfig,
-  endpoint: string,
-  body: string,
+  url: string,
+  body: object,
   signal: AbortSignal | undefined,
-  delay: number,
+  retryDelay: number,
 ): Promise<T> {
-  const fn = cfg.fetch ?? fetch
-  let last: Response | undefined
-  for (let i = 0; i <= RETRY_COUNT; i++) {
-    if (i > 0) await new Promise((r) => setTimeout(r, delay))
-    last = await fn(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": ua(cfg),
-        ...cfg.headers?.(),
-      },
-      body,
-      signal,
-    })
-    if (last.ok) return last.json() as T
-    if (!RETRYABLE_STATUSES.has(last.status)) break
-  }
-  const text = await last?.text().catch(() => "")
-  throw new Error(`Code Assist request failed: ${last?.status} ${text}`)
+  const res = await cfg.client.request<T>({
+    url,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...cfg.httpOptions?.headers,
+    },
+    responseType: "json",
+    body: JSON.stringify(body),
+    signal,
+    retryConfig: {
+      retryDelay,
+      retry: 3,
+      noResponseRetries: 3,
+      statusCodesToRetry: [
+        [429, 429],
+        [499, 499],
+        [500, 599],
+      ],
+    },
+  })
+  return res.data
 }
 
 export async function generate(
@@ -84,12 +82,12 @@ export async function generate(
   req: CAGenerateContentRequest,
   signal?: AbortSignal,
 ): Promise<CAGenerateContentResponse> {
-  return retryPost<CAGenerateContentResponse>(
+  return requestPost<CAGenerateContentResponse>(
     cfg,
-    url(cfg, "generateContent"),
-    JSON.stringify(req),
+    methodUrl(cfg, "generateContent"),
+    req,
     signal,
-    RETRY_GENERATE_DELAY,
+    GENERATE_CONTENT_RETRY_DELAY,
   )
 }
 
@@ -99,91 +97,95 @@ export async function* stream(
   signal?: AbortSignal,
 ): AsyncGenerator<CAGenerateContentResponse> {
   // Streaming: no retry (matches gemini-cli's retry: false)
-  const fn = cfg.fetch ?? fetch
-  const res = await fn(`${url(cfg, "streamGenerateContent")}?alt=sse`, {
+  const res = await cfg.client.request<AsyncIterable<unknown>>({
+    url: methodUrl(cfg, "streamGenerateContent"),
     method: "POST",
+    params: { alt: "sse" },
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": ua(cfg),
-      ...cfg.headers?.(),
+      ...cfg.httpOptions?.headers,
     },
+    responseType: "stream",
     body: JSON.stringify(req),
     signal,
+    retry: false,
   })
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    throw new Error(`Code Assist streamGenerateContent failed: ${res.status} ${text}`)
-  }
+  // Parse SSE stream using readline — matches gemini-cli exactly
+  const rl = readline.createInterface({
+    input: Readable.from(res.data),
+    crlfDelay: Number.POSITIVE_INFINITY,
+  })
 
-  if (!res.body) {
-    throw new Error("Code Assist streamGenerateContent returned no body")
-  }
-
-  // Parse SSE stream line-by-line
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buf = ""
-  let data: string[] = []
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buf += decoder.decode(value, { stream: true })
-
-    // Process complete lines
-    for (let idx = buf.indexOf("\n"); idx !== -1; idx = buf.indexOf("\n")) {
-      const raw = buf.slice(0, idx).replace(/\r$/, "")
-      buf = buf.slice(idx + 1)
-
-      if (raw.startsWith("data: ")) {
-        data.push(raw.slice(6))
-      } else if (raw === "") {
-        // Empty line = event boundary
-        if (data.length > 0) {
-          const json = data.join("\n")
-          data = []
-          try {
-            yield JSON.parse(json)
-          } catch {
-            // Skip unparseable chunks (e.g. [DONE])
-          }
-        }
+  let bufferedLines: string[] = []
+  for await (const line of rl) {
+    if (line.startsWith("data: ")) {
+      bufferedLines.push(line.slice(6).trim())
+    } else if (line === "") {
+      if (bufferedLines.length === 0) continue
+      const chunk = bufferedLines.join("\n")
+      try {
+        yield JSON.parse(chunk)
+      } catch {
+        // Skip unparseable chunks (e.g. [DONE])
       }
-    }
-  }
-
-  // Flush remaining buffered data
-  if (data.length > 0) {
-    const json = data.join("\n")
-    try {
-      yield JSON.parse(json)
-    } catch {
-      // Skip unparseable
+      bufferedLines = []
     }
   }
 }
 
-// VPC-SC detection matching gemini-cli/packages/core/src/code_assist/server.ts
-function isVpcSc(e: unknown): boolean {
-  if (!e || typeof e !== "object") return false
-  const msg = "message" in e ? String((e as Record<string, unknown>).message) : ""
-  return msg.includes("SECURITY_POLICY_VIOLATED")
+// VPC-SC detection — matches gemini-cli/server.ts isVpcScAffectedUser exactly.
+interface VpcScErrorResponse {
+  response?: {
+    data?: {
+      error?: {
+        details?: unknown[]
+      }
+    }
+  }
+}
+
+function isVpcScErrorResponse(error: unknown): error is VpcScErrorResponse & {
+  response: { data: { error: { details: unknown[] } } }
+} {
+  return (
+    !!error &&
+    typeof error === "object" &&
+    "response" in error &&
+    !!error.response &&
+    typeof error.response === "object" &&
+    "data" in error.response &&
+    !!error.response.data &&
+    typeof error.response.data === "object" &&
+    "error" in error.response.data &&
+    !!error.response.data.error &&
+    typeof error.response.data.error === "object" &&
+    "details" in error.response.data.error &&
+    Array.isArray(error.response.data.error.details)
+  )
+}
+
+function isVpcScAffectedUser(error: unknown): boolean {
+  if (isVpcScErrorResponse(error)) {
+    return error.response.data.error.details.some(
+      (detail: unknown) =>
+        detail && typeof detail === "object" && "reason" in detail && detail.reason === "SECURITY_POLICY_VIOLATED",
+    )
+  }
+  return false
 }
 
 export async function loadCodeAssist(cfg: ClientConfig, req: LoadCodeAssistRequest): Promise<LoadCodeAssistResponse> {
   try {
-    return await retryPost<LoadCodeAssistResponse>(
+    return await requestPost<LoadCodeAssistResponse>(
       cfg,
-      url(cfg, "loadCodeAssist"),
-      JSON.stringify(req),
+      methodUrl(cfg, "loadCodeAssist"),
+      req,
       undefined,
-      RETRY_DEFAULT_DELAY,
+      DEFAULT_RETRY_DELAY,
     )
   } catch (e) {
-    // VPC-SC affected users — degrade gracefully (matches gemini-cli)
-    if (isVpcSc(e)) {
+    if (isVpcScAffectedUser(e)) {
       return { currentTier: { id: UserTierId.STANDARD } }
     }
     throw e
@@ -191,30 +193,26 @@ export async function loadCodeAssist(cfg: ClientConfig, req: LoadCodeAssistReque
 }
 
 export async function onboardUser(cfg: ClientConfig, req: OnboardUserRequest): Promise<LongRunningOperationResponse> {
-  return retryPost<LongRunningOperationResponse>(
+  return requestPost<LongRunningOperationResponse>(
     cfg,
-    url(cfg, "onboardUser"),
-    JSON.stringify(req),
+    methodUrl(cfg, "onboardUser"),
+    req,
     undefined,
-    RETRY_DEFAULT_DELAY,
+    DEFAULT_RETRY_DELAY,
   )
 }
 
 export async function getOperation(cfg: ClientConfig, name: string): Promise<LongRunningOperationResponse> {
-  const fn = cfg.fetch ?? fetch
-  const res = await fn(operationUrl(cfg, name), {
+  const res = await cfg.client.request<LongRunningOperationResponse>({
+    url: operationUrl(cfg, name),
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      "User-Agent": ua(cfg),
-      ...cfg.headers?.(),
+      ...cfg.httpOptions?.headers,
     },
+    responseType: "json",
   })
-  if (!res.ok) {
-    const text = await res.text().catch(() => "")
-    throw new Error(`Code Assist getOperation failed: ${res.status} ${text}`)
-  }
-  return res.json()
+  return res.data
 }
 
 /** Side-call for web search grounding via the CA API. */
@@ -247,7 +245,6 @@ export async function search(
     return [{ uri, title: c.web?.title ?? "Untitled" }]
   })
 
-  // Format with sources list (matching gemini-cli output)
   const lines = sources.map((s, i) => `[${i + 1}] ${s.title} (${s.uri})`)
   const output = lines.length > 0 ? `${text}\n\nSources:\n${lines.join("\n")}` : text
 

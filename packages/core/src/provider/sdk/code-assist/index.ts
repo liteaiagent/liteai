@@ -1,5 +1,5 @@
-export type { ClientConfig as CodeAssistClientConfig } from "./client"
-export { search as codeAssistSearch } from "./client"
+export type { ClientConfig as CodeAssistClientConfig, HttpOptions as CodeAssistHttpOptions } from "./client"
+export { CA_ENDPOINT, CA_VERSION, search as codeAssistSearch } from "./client"
 export { CodeAssistLanguageModel } from "./language-model"
 export type { CodeAssistProvider, CodeAssistSettings } from "./provider"
 export { createCodeAssist } from "./provider"

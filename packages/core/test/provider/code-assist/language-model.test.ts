@@ -1,11 +1,38 @@
 import { describe, expect, test } from "bun:test"
 import type { LanguageModelV2CallOptions, LanguageModelV2StreamPart } from "@ai-sdk/provider"
-import type { FetchFunction } from "@ai-sdk/provider-utils"
+import type { AuthClient } from "google-auth-library"
 import { CodeAssistLanguageModel } from "../../../src/provider/sdk/code-assist/language-model"
 import type { CAGenerateContentResponse } from "../../../src/provider/sdk/code-assist/types"
 
-function ok(body: unknown): Response {
-  return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } })
+/** Creates a mock AuthClient that returns the given body (as gaxios `res.data`). */
+function mockOk(body: unknown): AuthClient {
+  return {
+    request: async () => ({ data: body }),
+  } as unknown as AuthClient
+}
+
+/** Creates a mock AuthClient that captures request opts and returns the body. */
+function mockCapture(body: unknown, capture: (opts: Record<string, unknown>) => void): AuthClient {
+  return {
+    request: async (opts: Record<string, unknown>) => {
+      capture(opts)
+      return { data: body }
+    },
+  } as unknown as AuthClient
+}
+
+/** Creates a mock streaming AuthClient from SSE chunks. */
+function mockStreamClient(...chunks: CAGenerateContentResponse[]): AuthClient {
+  const sse = chunks.map((c) => `data: ${JSON.stringify(c)}\n\n`).join("")
+  return {
+    request: async () => {
+      async function* gen() {
+        const encoder = new TextEncoder()
+        yield encoder.encode(sse)
+      }
+      return { data: gen() }
+    },
+  } as unknown as AuthClient
 }
 
 function opts(overrides: Partial<LanguageModelV2CallOptions> = {}): LanguageModelV2CallOptions {
@@ -19,7 +46,11 @@ function opts(overrides: Partial<LanguageModelV2CallOptions> = {}): LanguageMode
 
 describe("CodeAssistLanguageModel", () => {
   test("has correct spec and metadata", () => {
-    const model = new CodeAssistLanguageModel({ provider: "ca.chat", model: "gemini-2.5-pro" })
+    const model = new CodeAssistLanguageModel({
+      provider: "ca.chat",
+      model: "gemini-2.5-pro",
+      client: mockOk({}),
+    })
     expect(model.specificationVersion).toBe("v2")
     expect(model.modelId).toBe("gemini-2.5-pro")
     expect(model.provider).toBe("ca.chat")
@@ -40,7 +71,7 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () => ok(body)) as unknown as FetchFunction,
+        client: mockOk(body),
       })
       const result = await model.doGenerate(opts())
       expect(result.content).toHaveLength(1)
@@ -59,7 +90,7 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () => ok(body)) as unknown as FetchFunction,
+        client: mockOk(body),
       })
       const result = await model.doGenerate(opts())
       expect(typeof result.request?.body).toBe("string")
@@ -83,31 +114,30 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () => ok(body)) as unknown as FetchFunction,
+        client: mockOk(body),
       })
       const result = await model.doGenerate(opts())
       expect(result.usage.reasoningTokens).toBe(10)
     })
 
     test("passes tools through", async () => {
-      let captured = ""
+      let capturedBody = ""
       const body: CAGenerateContentResponse = {
         response: { candidates: [{ content: { parts: [] }, finishReason: "STOP" }] },
       }
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async (_url: string, init: RequestInit) => {
-          captured = init.body as string
-          return ok(body)
-        }) as unknown as FetchFunction,
+        client: mockCapture(body, (opts) => {
+          capturedBody = opts.body as string
+        }),
       })
       await model.doGenerate(
         opts({
           tools: [{ type: "function", name: "search", description: "search", inputSchema: { type: "object" } }],
         }),
       )
-      const parsed = JSON.parse(captured)
+      const parsed = JSON.parse(capturedBody)
       expect(parsed.request.tools[0].functionDeclarations[0].name).toBe("search")
     })
   })
@@ -115,11 +145,6 @@ describe("CodeAssistLanguageModel", () => {
   // ── doStream ────────────────────────────────────────────────────
 
   describe("doStream", () => {
-    function sse(...chunks: CAGenerateContentResponse[]): Response {
-      const body = chunks.map((c) => `data: ${JSON.stringify(c)}\n\n`).join("")
-      return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } })
-    }
-
     async function drain(model: CodeAssistLanguageModel, options = opts()) {
       const { stream } = await model.doStream(options)
       const parts: LanguageModelV2StreamPart[] = []
@@ -136,14 +161,13 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () =>
-          sse({
-            response: {
-              candidates: [{ content: { parts: [{ text: "hi" }] }, finishReason: "STOP" }],
-              usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-            },
-            traceId: "t",
-          })) as unknown as FetchFunction,
+        client: mockStreamClient({
+          response: {
+            candidates: [{ content: { parts: [{ text: "hi" }] }, finishReason: "STOP" }],
+            usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+          },
+          traceId: "t",
+        }),
       })
       const parts = await drain(model)
       const types = parts.map((p) => p.type)
@@ -158,21 +182,20 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () =>
-          sse(
-            {
-              response: {
-                candidates: [{ content: { parts: [{ text: "thinking", thought: true }] } }],
-              },
-              traceId: "t",
+        client: mockStreamClient(
+          {
+            response: {
+              candidates: [{ content: { parts: [{ text: "thinking", thought: true }] } }],
             },
-            {
-              response: {
-                candidates: [{ content: { parts: [{ text: "answer" }] }, finishReason: "STOP" }],
-                usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-              },
+            traceId: "t",
+          },
+          {
+            response: {
+              candidates: [{ content: { parts: [{ text: "answer" }] }, finishReason: "STOP" }],
+              usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
             },
-          )) as unknown as FetchFunction,
+          },
+        ),
       })
       const parts = await drain(model)
       const types = parts.map((p) => p.type)
@@ -188,21 +211,20 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () =>
-          sse({
-            response: {
-              candidates: [
-                {
-                  content: {
-                    parts: [{ functionCall: { name: "search", args: { q: "test" } } }],
-                  },
-                  finishReason: "FUNCTION_CALL",
+        client: mockStreamClient({
+          response: {
+            candidates: [
+              {
+                content: {
+                  parts: [{ functionCall: { name: "search", args: { q: "test" } } }],
                 },
-              ],
-              usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-            },
-            traceId: "t",
-          })) as unknown as FetchFunction,
+                finishReason: "FUNCTION_CALL",
+              },
+            ],
+            usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+          },
+          traceId: "t",
+        }),
       })
       const parts = await drain(model)
       const types = parts.map((p) => p.type)
@@ -219,15 +241,14 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () =>
-          sse({
-            response: {
-              candidates: [{ content: { parts: [{ text: "x" }] }, finishReason: "STOP" }],
-              usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-              modelVersion: "gemini-2.5-pro-exp-03-25",
-            },
-            traceId: "trace-abc",
-          })) as unknown as FetchFunction,
+        client: mockStreamClient({
+          response: {
+            candidates: [{ content: { parts: [{ text: "x" }] }, finishReason: "STOP" }],
+            usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+            modelVersion: "gemini-2.5-pro-exp-03-25",
+          },
+          traceId: "trace-abc",
+        }),
       })
       const parts = await drain(model)
       const meta = parts.find((p) => p.type === "response-metadata") as unknown as Record<string, unknown>
@@ -240,20 +261,19 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () =>
-          sse({
-            response: {
-              candidates: [
-                {
-                  content: {
-                    parts: [{ text: "think", thought: true, thoughtSignature: "sig123" }, { text: "answer" }],
-                  },
-                  finishReason: "STOP",
+        client: mockStreamClient({
+          response: {
+            candidates: [
+              {
+                content: {
+                  parts: [{ text: "think", thought: true, thoughtSignature: "sig123" }, { text: "answer" }],
                 },
-              ],
-              usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-            },
-          })) as unknown as FetchFunction,
+                finishReason: "STOP",
+              },
+            ],
+            usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+          },
+        }),
       })
       const parts = await drain(model)
       const end = parts.find((p) => p.type === "reasoning-end") as unknown as Record<string, unknown>
@@ -264,11 +284,7 @@ describe("CodeAssistLanguageModel", () => {
       const model = new CodeAssistLanguageModel({
         provider: "ca.chat",
         model: "m",
-        fetch: (async () =>
-          new Response("", {
-            status: 200,
-            headers: { "Content-Type": "text/event-stream" },
-          })) as unknown as FetchFunction,
+        client: mockStreamClient(),
       })
       const result = await model.doStream(opts())
       expect(typeof result.request?.body).toBe("string")

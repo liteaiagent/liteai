@@ -2,7 +2,8 @@
 // Converts AI SDK calls to CA API requests, handles streaming with thought/reasoning parts.
 
 import type { LanguageModelV2, LanguageModelV2CallOptions, LanguageModelV2StreamPart } from "@ai-sdk/provider"
-import { type FetchFunction, generateId } from "@ai-sdk/provider-utils"
+import { generateId } from "@ai-sdk/provider-utils"
+import type { AuthClient } from "google-auth-library"
 import { type ClientConfig, generate, stream } from "./client"
 import { fromResponse, mapFinish, toRequest } from "./converter"
 import type { CAGroundingChunk, CAPart } from "./types"
@@ -11,9 +12,11 @@ export interface CodeAssistModelConfig {
   provider: string
   model: string
   project?: string
-  fetch?: FetchFunction
-  headers?: () => Record<string, string | undefined>
+  client: AuthClient
   endpoint?: string
+  headers?: Record<string, string>
+  /** User-Agent prefix, e.g. "GeminiCLI/1.0.0". Model name is appended automatically. */
+  userAgentPrefix?: string
 }
 
 function functionTools(tools?: LanguageModelV2CallOptions["tools"]) {
@@ -41,10 +44,22 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
     this.modelId = config.model
     this.provider = config.provider
     this.project = config.project
+
+    // Construct User-Agent matching gemini-cli format exactly:
+    // GeminiCLI/<version>/<model> (<platform>; <arch>; <surface>)
+    const prefix = config.userAgentPrefix ?? "GeminiCLI/1.0.0"
+    const surface = "terminal"
+    const userAgent = `${prefix}/${config.model} (${process.platform}; ${process.arch}; ${surface})`
+
     this.cfg = {
+      client: config.client,
       endpoint: config.endpoint,
-      fetch: config.fetch,
-      headers: config.headers,
+      httpOptions: {
+        headers: {
+          "User-Agent": userAgent,
+          ...config.headers,
+        },
+      },
     }
   }
 

@@ -1,9 +1,9 @@
+import type { AuthClient } from "google-auth-library"
 import z from "zod"
 import { Provider } from "../provider/provider"
 import { ProviderID } from "../provider/schema"
 import type { CodeAssistClientConfig } from "../provider/sdk/code-assist"
 import { codeAssistSearch } from "../provider/sdk/code-assist"
-import { CA_ENDPOINT } from "../provider/sdk/code-assist/client"
 import { abortAfterAny } from "../util/abort"
 import { Tool } from "./tool"
 import DESCRIPTION from "./websearch.txt"
@@ -93,13 +93,16 @@ export const WebSearchTool = Tool.define("websearch", async () => {
 
 async function searchViaCodeAssist(query: string, model: Provider.Model, abort: AbortSignal) {
   const provider = await Provider.getProvider(model.providerID)
+  const client = provider?.options?.client as AuthClient | undefined
+  if (!client) throw new Error("Code Assist search requires an authenticated client")
   const cfg: CodeAssistClientConfig = {
-    endpoint: (provider?.options?.baseURL as string) ?? CA_ENDPOINT,
-    fetch: provider?.options?.fetch as typeof fetch | undefined,
-    headers: () => ({
-      ...(provider?.options?.headers as Record<string, string> | undefined),
-      ...(provider?.options?.apiKey ? { Authorization: `Bearer ${provider.options.apiKey}` } : {}),
-    }),
+    client,
+    endpoint: provider?.options?.baseURL as string | undefined,
+    httpOptions: {
+      headers: {
+        ...(provider?.options?.headers as Record<string, string> | undefined),
+      },
+    },
   }
   const result = await codeAssistSearch(
     cfg,

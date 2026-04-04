@@ -13,8 +13,8 @@ import { CUSTOM_LOADERS, type ModelLoader, type VarsLoader } from "./loaders"
 import { ModelsDev } from "./models"
 import type { Provider } from "./provider"
 import { ModelID, ProviderID } from "./schema"
-import { ProviderTransform } from "./transform"
 import { CA_ENDPOINT } from "./sdk/code-assist/client"
+import { ProviderTransform } from "./transform"
 
 const log = Log.create({ service: "provider" })
 

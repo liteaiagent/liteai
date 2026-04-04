@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import type { FetchFunction } from "@ai-sdk/provider-utils"
+import type { AuthClient } from "google-auth-library"
 import {
   IneligibleTierError,
   ProjectIdRequiredError,
@@ -9,8 +9,19 @@ import {
 import type { LoadCodeAssistResponse, LongRunningOperationResponse } from "../../../src/provider/sdk/code-assist/types"
 import { IneligibleTierReasonCode, UserTierId } from "../../../src/provider/sdk/code-assist/types"
 
-function ok(body: unknown): Response {
-  return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } })
+/** Creates a mock AuthClient that routes by URL to return different responses. */
+function mockRouter(handler: (url: string, method: string) => unknown): AuthClient {
+  return {
+    request: async (opts: Record<string, unknown>) => {
+      const result = await handler(opts.url as string, opts.method as string)
+      return { data: result }
+    },
+  } as unknown as AuthClient
+}
+
+/** Creates a mock AuthClient that always returns the same body. */
+function mockOk(body: unknown): AuthClient {
+  return mockRouter(() => body)
 }
 
 // ── Error classes ──────────────────────────────────────────────────────
@@ -48,9 +59,7 @@ describe("setup", () => {
       currentTier: { id: UserTierId.STANDARD, name: "Standard" },
       cloudaicompanionProject: "proj-123",
     }
-    const cfg = {
-      fetch: (async (_url: string) => ok(load)) as unknown as FetchFunction,
-    }
+    const cfg = { client: mockOk(load) }
     const result = await setup(cfg)
     expect(result.project).toBe("proj-123")
     expect(result.tier).toBe(UserTierId.STANDARD)
@@ -63,9 +72,7 @@ describe("setup", () => {
       paidTier: { id: UserTierId.PRO, name: "Pro" },
       cloudaicompanionProject: "proj",
     }
-    const cfg = {
-      fetch: (async () => ok(load)) as unknown as FetchFunction,
-    }
+    const cfg = { client: mockOk(load) }
     const result = await setup(cfg)
     expect(result.tier).toBe(UserTierId.PRO)
     expect(result.tierName).toBe("Pro")
@@ -77,9 +84,7 @@ describe("setup", () => {
       currentTier: { id: UserTierId.STANDARD, name: "Standard" },
       cloudaicompanionProject: null,
     }
-    const cfg = {
-      fetch: (async () => ok(load)) as unknown as FetchFunction,
-    }
+    const cfg = { client: mockOk(load) }
     const result = await setup(cfg, "env-proj")
     expect(result.project).toBe("env-proj")
   })
@@ -89,9 +94,7 @@ describe("setup", () => {
       currentTier: { id: UserTierId.STANDARD },
       cloudaicompanionProject: null,
     }
-    const cfg = {
-      fetch: (async () => ok(load)) as unknown as FetchFunction,
-    }
+    const cfg = { client: mockOk(load) }
     expect(setup(cfg)).rejects.toThrow(ProjectIdRequiredError)
   })
 
@@ -101,9 +104,7 @@ describe("setup", () => {
       cloudaicompanionProject: null,
       ineligibleTiers: [{ reasonMessage: "restricted", tierId: UserTierId.PRO }],
     }
-    const cfg = {
-      fetch: (async () => ok(load)) as unknown as FetchFunction,
-    }
+    const cfg = { client: mockOk(load) }
     expect(setup(cfg)).rejects.toThrow(IneligibleTierError)
   })
 
@@ -117,15 +118,13 @@ describe("setup", () => {
       response: { cloudaicompanionProject: { id: "new-proj", name: "New Project" } },
     }
     let calls = 0
-    const cfg = {
-      fetch: (async (url: string) => {
-        calls++
-        if (url.includes("loadCodeAssist")) return ok(load)
-        if (url.includes("onboardUser")) return ok(lro)
-        return ok({})
-      }) as unknown as FetchFunction,
-    }
-    const result = await setup(cfg)
+    const client = mockRouter((url) => {
+      calls++
+      if (url.includes("loadCodeAssist")) return load
+      if (url.includes("onboardUser")) return lro
+      return {}
+    })
+    const result = await setup({ client })
     expect(result.project).toBe("new-proj")
     expect(result.tier).toBe(UserTierId.FREE)
     expect(calls).toBe(2) // loadCodeAssist + onboardUser
@@ -143,17 +142,15 @@ describe("setup", () => {
       response: { cloudaicompanionProject: { id: "polled-proj" } },
     }
     let polls = 0
-    const cfg = {
-      fetch: (async (url: string) => {
-        if (url.includes("loadCodeAssist")) return ok(load)
-        if (url.includes("onboardUser")) return ok(pending)
-        // getOperation polls
-        polls++
-        if (polls >= 1) return ok(done)
-        return ok(pending)
-      }) as unknown as FetchFunction,
-    }
-    const result = await setup(cfg)
+    const client = mockRouter((url) => {
+      if (url.includes("loadCodeAssist")) return load
+      if (url.includes("onboardUser")) return pending
+      // getOperation polls
+      polls++
+      if (polls >= 1) return done
+      return pending
+    })
+    const result = await setup({ client })
     expect(result.project).toBe("polled-proj")
   }, 30_000)
 
@@ -163,14 +160,12 @@ describe("setup", () => {
       allowedTiers: [{ id: UserTierId.STANDARD, isDefault: true, name: "Standard" }],
     }
     const lro: LongRunningOperationResponse = { done: true }
-    const cfg = {
-      fetch: (async (url: string) => {
-        if (url.includes("loadCodeAssist")) return ok(load)
-        if (url.includes("onboardUser")) return ok(lro)
-        return ok({})
-      }) as unknown as FetchFunction,
-    }
-    const result = await setup(cfg, "fallback-proj")
+    const client = mockRouter((url) => {
+      if (url.includes("loadCodeAssist")) return load
+      if (url.includes("onboardUser")) return lro
+      return {}
+    })
+    const result = await setup({ client }, "fallback-proj")
     expect(result.project).toBe("fallback-proj")
   })
 
@@ -180,14 +175,12 @@ describe("setup", () => {
       allowedTiers: [{ id: UserTierId.STANDARD, isDefault: true, name: "Standard" }],
     }
     const lro: LongRunningOperationResponse = { done: true }
-    const cfg = {
-      fetch: (async (url: string) => {
-        if (url.includes("loadCodeAssist")) return ok(load)
-        if (url.includes("onboardUser")) return ok(lro)
-        return ok({})
-      }) as unknown as FetchFunction,
-    }
-    expect(setup(cfg)).rejects.toThrow(ProjectIdRequiredError)
+    const client = mockRouter((url) => {
+      if (url.includes("loadCodeAssist")) return load
+      if (url.includes("onboardUser")) return lro
+      return {}
+    })
+    expect(setup({ client })).rejects.toThrow(ProjectIdRequiredError)
   })
 
   test("validation required throws ValidationRequiredError", async () => {
@@ -201,9 +194,7 @@ describe("setup", () => {
         },
       ],
     }
-    const cfg = {
-      fetch: (async () => ok(load)) as unknown as FetchFunction,
-    }
+    const cfg = { client: mockOk(load) }
     expect(setup(cfg)).rejects.toThrow(ValidationRequiredError)
   })
 
@@ -216,15 +207,12 @@ describe("setup", () => {
       done: true,
       response: { cloudaicompanionProject: { id: "proj" } },
     }
-    const cfg = {
-      fetch: (async (url: string) => {
-        if (url.includes("loadCodeAssist")) return ok(load)
-        if (url.includes("onboardUser")) return ok(lro)
-        return ok({})
-      }) as unknown as FetchFunction,
-    }
-    const result = await setup(cfg)
-    // Falls back to legacy tier
+    const client = mockRouter((url) => {
+      if (url.includes("loadCodeAssist")) return load
+      if (url.includes("onboardUser")) return lro
+      return {}
+    })
+    const result = await setup({ client })
     expect(result.tier).toBe(UserTierId.LEGACY)
   })
 })

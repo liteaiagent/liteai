@@ -57,7 +57,7 @@ const META: ClientMetadata = {
  * Discovers the user's GCP project and tier by calling loadCodeAssist + onboardUser.
  * Returns a `UserData` with the project ID, tier, and optional paid tier info.
  *
- * @param cfg - HTTP client config (with auth fetch)
+ * @param cfg - HTTP client config (with AuthClient)
  * @param envProject - Optional project ID from env vars (GOOGLE_CLOUD_PROJECT / GOOGLE_CLOUD_PROJECT_ID)
  */
 export async function setup(cfg: ClientConfig, envProject?: string): Promise<UserData> {

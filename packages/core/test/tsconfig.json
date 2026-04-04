@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "types": ["bun"]
+  },
+  "exclude": [],
+  "include": ["**/*.ts", "**/*.tsx"]
+}

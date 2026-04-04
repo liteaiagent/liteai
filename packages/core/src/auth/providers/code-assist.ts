@@ -1,5 +1,5 @@
 import * as net from "node:net"
-import os from "node:os"
+import { type Credentials, OAuth2Client } from "google-auth-library"
 import { Installation } from "@/installation"
 import { Log } from "@/util/log"
 import { Auth } from "../index"
@@ -105,23 +105,6 @@ async function exchangeCode(code: string, redirect: string, pkce: PkceCodes): Pr
   if (!response.ok) {
     const text = await response.text().catch(() => "")
     throw new Error(`Token exchange failed: ${response.status} ${text}`)
-  }
-  return response.json()
-}
-
-async function refreshToken(refresh: string): Promise<TokenResponse> {
-  const response = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refresh,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-    }).toString(),
-  })
-  if (!response.ok) {
-    throw new Error(`Token refresh failed: ${response.status}`)
   }
   return response.json()
 }
@@ -343,73 +326,39 @@ export const CodeAssistAuth: AuthProvider = {
       const auth = await getAuth()
       if (auth.type !== "oauth") return {}
 
-      // Build auth-aware fetch for both setup() and SDK requests
-      const authFetch = async (request: RequestInfo | URL, init?: RequestInit) => {
-        // Remove dummy API key authorization header
-        if (init?.headers) {
-          if (init.headers instanceof Headers) {
-            init.headers.delete("authorization")
-            init.headers.delete("Authorization")
-          } else if (Array.isArray(init.headers)) {
-            init.headers = init.headers.filter(([key]) => key.toLowerCase() !== "authorization")
-          } else {
-            delete init.headers.authorization
-            delete init.headers.Authorization
-          }
-        }
+      // Create OAuth2Client matching gemini-cli's exact approach.
+      // This uses google-auth-library's gaxios transport for all HTTP requests
+      // to the Code Assist server, ensuring identical wire behavior.
+      const oauthClient = new OAuth2Client({
+        clientId: CLIENT_ID,
+        clientSecret: CLIENT_SECRET,
+      })
 
+      // Set credentials from stored auth state
+      oauthClient.setCredentials({
+        access_token: auth.access,
+        refresh_token: auth.refresh,
+        expiry_date: auth.expires,
+      })
+
+      // Persist refreshed tokens — mirrors gemini-cli's oauth2.ts token event handler
+      oauthClient.on("tokens", async (tokens: Credentials) => {
         const current = await getAuth()
-        if (current.type !== "oauth") return fetch(request, init)
-
-        // Refresh if expired or about to expire (30s buffer)
-        if (!current.access || current.expires < Date.now() + 30_000) {
-          log.info("refreshing code-assist access token")
-          let tokens: TokenResponse
-          try {
-            tokens = await refreshToken(current.refresh)
-          } catch (e) {
-            log.error("code-assist token refresh failed", { error: e })
-            throw e
-          }
-          await Auth.set("google-code-assist", {
-            type: "oauth",
-            refresh: tokens.refresh_token || current.refresh,
-            access: tokens.access_token,
-            expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-          })
-          current.access = tokens.access_token
-        }
-
-        // Build headers with Bearer token
-        const headers = new Headers()
-        if (init?.headers) {
-          if (init.headers instanceof Headers) {
-            init.headers.forEach((value, key) => {
-              headers.set(key, value)
-            })
-          } else if (Array.isArray(init.headers)) {
-            for (const [key, value] of init.headers) {
-              if (value !== undefined) headers.set(key, String(value))
-            }
-          } else {
-            for (const [key, value] of Object.entries(init.headers)) {
-              if (value !== undefined) headers.set(key, String(value))
-            }
-          }
-        }
-
-        headers.set("Authorization", `Bearer ${current.access}`)
-
-        return fetch(request, { ...init, headers }) as Promise<Response>
-      }
+        if (current.type !== "oauth") return
+        await Auth.set("google-code-assist", {
+          type: "oauth",
+          refresh: tokens.refresh_token || current.refresh,
+          access: tokens.access_token || current.access,
+          expires: tokens.expiry_date ?? Date.now() + 3600 * 1000,
+        })
+      })
 
       // Run setup to discover project + tier (cached per provider lifecycle)
       if (!cached) {
         try {
           const { setup } = await import("@/provider/sdk/code-assist/setup")
           const env = process.env.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT_ID
-          // biome-ignore lint/suspicious/noExplicitAny: generic sdk param
-          const data = await setup({ fetch: authFetch as any }, env)
+          const data = await setup({ client: oauthClient }, env)
           cached = { project: data.project }
           log.info("code-assist setup complete", { project: data.project, tier: data.tier })
         } catch (err) {
@@ -421,7 +370,8 @@ export const CodeAssistAuth: AuthProvider = {
       return {
         apiKey: OAUTH_DUMMY_KEY,
         project: cached.project,
-        fetch: authFetch,
+        client: oauthClient,
+        userAgentPrefix: `GeminiCLI/${Installation.VERSION}`,
       }
     },
     methods: [
@@ -478,11 +428,5 @@ export const CodeAssistAuth: AuthProvider = {
         },
       },
     ],
-  },
-  hooks: {
-    "chat.headers": async (incoming, output) => {
-      if (incoming.model.providerID !== "google-code-assist") return
-      output.headers["User-Agent"] = `liteai/${Installation.VERSION} (${os.platform()} ${os.release()}; ${os.arch()})`
-    },
   },
 }
