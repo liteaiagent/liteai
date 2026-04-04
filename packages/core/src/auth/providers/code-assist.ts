@@ -202,6 +202,7 @@ const HTML_ERROR = (error: string) => `<!doctype html>
 interface PendingOAuth {
   pkce: PkceCodes
   state: string
+  project?: string
   resolve: (tokens: TokenResponse) => void
   reject: (error: Error) => void
 }
@@ -289,7 +290,7 @@ function stopOAuthServer() {
   }
 }
 
-function waitForCallback(pkce: PkceCodes, state: string): Promise<TokenResponse> {
+function waitForCallback(pkce: PkceCodes, state: string, project?: string): Promise<TokenResponse> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(
       () => {
@@ -304,6 +305,7 @@ function waitForCallback(pkce: PkceCodes, state: string): Promise<TokenResponse>
     pendingOAuth = {
       pkce,
       state,
+      project,
       resolve: (tokens) => {
         clearTimeout(timeout)
         resolve(tokens)
@@ -318,6 +320,14 @@ function waitForCallback(pkce: PkceCodes, state: string): Promise<TokenResponse>
 
 // Module-scoped cache so the expensive setup() API call runs once across all instances
 let cached: { project?: string } | undefined
+
+/** Project prompt shown during auth — optional, only needed for accounts that require it. */
+const PROJECT_PROMPT = {
+  type: "text" as const,
+  key: "project",
+  message: "Google Cloud Project ID (optional — only needed for some accounts)",
+  placeholder: "my-gcp-project",
+}
 
 export const CodeAssistAuth: AuthProvider = {
   provider: "google-code-assist",
@@ -350,17 +360,31 @@ export const CodeAssistAuth: AuthProvider = {
           refresh: tokens.refresh_token || current.refresh,
           access: tokens.access_token || current.access,
           expires: tokens.expiry_date ?? Date.now() + 3600 * 1000,
+          // Preserve stored project across token refreshes
+          ...(current.project ? { project: current.project } : {}),
         })
       })
 
-      // Run setup to discover project + tier (cached per provider lifecycle)
+      // Run setup to discover project + tier (cached per provider lifecycle).
+      // Uses the project stored in auth.json — NOT env vars — so user can
+      // freely modify GOOGLE_CLOUD_PROJECT without breaking the connection.
       if (!cached) {
+        const storedProject = auth.project
         try {
           const { setup } = await import("@/provider/sdk/code-assist/setup")
-          const env = process.env.GOOGLE_CLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT_ID
-          const data = await setup({ client: oauthClient }, env)
+          const data = await setup({ client: oauthClient }, storedProject)
           cached = { project: data.project }
           log.info("code-assist setup complete", { project: data.project, tier: data.tier })
+
+          // If the server discovered a project and we didn't have one stored,
+          // persist it so future loads don't depend on env vars.
+          if (data.project && !storedProject) {
+            const current = await getAuth()
+            if (current.type === "oauth") {
+              await Auth.set("google-code-assist", { ...current, project: data.project })
+              log.info("persisted discovered project to auth", { project: data.project })
+            }
+          }
         } catch (err) {
           log.warn("code-assist setup failed, continuing without project", { error: err })
           cached = {}
@@ -378,13 +402,15 @@ export const CodeAssistAuth: AuthProvider = {
       {
         label: "Google Sign-In (browser)",
         type: "oauth",
-        authorize: async () => {
+        prompts: [PROJECT_PROMPT],
+        authorize: async (inputs) => {
+          const project = inputs?.project?.trim() || undefined
           const { redirect } = await startOAuthServer()
           const pkce = await generatePKCE()
           const state = generateState()
           const url = buildAuthUrl(redirect, pkce, state)
 
-          const promise = waitForCallback(pkce, state)
+          const promise = waitForCallback(pkce, state, project)
 
           return {
             url,
@@ -398,6 +424,7 @@ export const CodeAssistAuth: AuthProvider = {
                 refresh: tokens.refresh_token || "",
                 access: tokens.access_token,
                 expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+                ...(project ? { project } : {}),
               }
             },
           }
@@ -406,7 +433,9 @@ export const CodeAssistAuth: AuthProvider = {
       {
         label: "Google Sign-In (headless)",
         type: "oauth",
-        authorize: async () => {
+        prompts: [PROJECT_PROMPT],
+        authorize: async (inputs) => {
+          const project = inputs?.project?.trim() || undefined
           const pkce = await generatePKCE()
           const state = generateState()
           const url = buildAuthUrl(HEADLESS_REDIRECT, pkce, state)
@@ -422,6 +451,7 @@ export const CodeAssistAuth: AuthProvider = {
                 refresh: tokens.refresh_token || "",
                 access: tokens.access_token,
                 expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+                ...(project ? { project } : {}),
               }
             },
           }

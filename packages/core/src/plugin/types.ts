@@ -105,6 +105,7 @@ export type AuthOauthResult = { url: string; instructions: string } & (
                 accountId?: string
                 clientId?: string
                 clientSecret?: string
+                project?: string
               }
             | { key: string }
           ))
@@ -127,6 +128,7 @@ export type AuthOauthResult = { url: string; instructions: string } & (
                 accountId?: string
                 clientId?: string
                 clientSecret?: string
+                project?: string
               }
             | { key: string }
           ))

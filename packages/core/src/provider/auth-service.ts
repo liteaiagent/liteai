@@ -172,6 +172,7 @@ export class ProviderAuthService extends ServiceMap.Service<ProviderAuthService,
             ...(result.accountId ? { accountId: result.accountId } : {}),
             ...(result.clientId ? { clientId: result.clientId } : {}),
             ...(result.clientSecret ? { clientSecret: result.clientSecret } : {}),
+            ...(result.project ? { project: result.project } : {}),
           })
         }
       })
