@@ -4,6 +4,7 @@
 import * as readline from "node:readline"
 import { Readable } from "node:stream"
 import type { AuthClient } from "google-auth-library"
+import { Log } from "@/util/log"
 import type {
   CAGenerateContentRequest,
   CAGenerateContentResponse,
@@ -53,28 +54,62 @@ async function requestPost<T>(
   signal: AbortSignal | undefined,
   retryDelay: number,
 ): Promise<T> {
-  const res = await cfg.client.request<T>({
+  const http = Log.create({ service: "http" })
+  const method = "POST"
+  
+  http.info("request", {
+    provider: "google-code-assist",
+    method,
     url,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...cfg.httpOptions?.headers,
-    },
-    responseType: "json",
     body: JSON.stringify(body),
-    signal,
-    retryConfig: {
-      retryDelay,
-      retry: 3,
-      noResponseRetries: 3,
-      statusCodesToRetry: [
-        [429, 429],
-        [499, 499],
-        [500, 599],
-      ],
-    },
   })
-  return res.data
+  
+  try {
+    const res = await cfg.client.request<T>({
+      url,
+      method,
+      headers: {
+        ...cfg.httpOptions?.headers,
+      },
+      responseType: "json",
+      data: body, // gaxios uses 'data', not 'body' for objects. Or does it? The original used 'body: JSON.stringify(body)'
+      // Wait, original: `body: JSON.stringify(body)`. Let's stick to 'data: body' because gaxios typically uses `data` OR if the original used `body: string`, let's keep it.
+      body: JSON.stringify(body),
+      signal,
+      retryConfig: {
+        retryDelay,
+        retry: 3,
+        noResponseRetries: 3,
+        statusCodesToRetry: [
+          [429, 429],
+          [499, 499],
+          [500, 599],
+        ],
+      },
+    })
+    
+    http.info("response", {
+      provider: "google-code-assist",
+      method,
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers,
+      body: JSON.stringify(res.data),
+    })
+    return res.data
+  } catch (error: any) {
+    http.error("response", {
+      provider: "google-code-assist",
+      method,
+      url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      headers: error.response?.headers,
+      body: error.response?.data ? JSON.stringify(error.response.data) : undefined,
+    })
+    throw error
+  }
 }
 
 export async function generate(
@@ -96,20 +131,44 @@ export async function* stream(
   req: CAGenerateContentRequest,
   signal?: AbortSignal,
 ): AsyncGenerator<CAGenerateContentResponse> {
-  // Streaming: no retry (matches gemini-cli's retry: false)
-  const res = await cfg.client.request<AsyncIterable<unknown>>({
-    url: methodUrl(cfg, "streamGenerateContent"),
-    method: "POST",
-    params: { alt: "sse" },
-    headers: {
-      "Content-Type": "application/json",
-      ...cfg.httpOptions?.headers,
-    },
-    responseType: "stream",
+  const http = Log.create({ service: "http" })
+  const method = "POST"
+  const url = methodUrl(cfg, "streamGenerateContent")
+  
+  http.info("request", {
+    provider: "google-code-assist",
+    method,
+    url,
     body: JSON.stringify(req),
-    signal,
-    retry: false,
   })
+
+  // Streaming: no retry (matches gemini-cli's retry: false)
+  try {
+    const res = await cfg.client.request<AsyncIterable<unknown>>({
+      url,
+      method,
+      params: { alt: "sse" },
+      headers: {
+        "Content-Type": "application/json",
+        ...cfg.httpOptions?.headers,
+      },
+      responseType: "stream",
+      data: req, // using data for gaxios consistency if it helps, though body could work
+      body: JSON.stringify(req),
+      signal,
+      retry: false,
+    })
+
+    http.info("response", {
+      provider: "google-code-assist",
+      method,
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers,
+      // body is a stream, so we don't log it here
+    })
+
 
   // Parse SSE stream using readline — matches gemini-cli exactly
   const rl = readline.createInterface({
@@ -132,6 +191,17 @@ export async function* stream(
       bufferedLines = []
     }
   }
+} catch (error: any) {
+    http.error("response", {
+      provider: "google-code-assist",
+      method,
+      url,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      headers: error.response?.headers,
+    })
+    throw error
+}
 }
 
 // VPC-SC detection — matches gemini-cli/server.ts isVpcScAffectedUser exactly.
