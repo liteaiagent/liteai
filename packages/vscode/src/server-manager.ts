@@ -1,5 +1,6 @@
 import { type ChildProcess, type SpawnOptions, spawn } from "node:child_process"
 import * as crypto from "node:crypto"
+import * as fs from "node:fs"
 import * as path from "node:path"
 import * as vscode from "vscode"
 import { ExtensionServer } from "./extension-server"
@@ -128,6 +129,9 @@ export class ServerManager {
       spawnArgs = ["run", "--conditions=browser", "./src/main.ts", ...spawnArgs]
       spawnOpts.cwd = path.join(context.extensionPath, "../core")
     } else {
+      if (!fs.existsSync(binPath)) {
+        throw new Error("CORE_MISSING")
+      }
       outputChannel.appendLine(`[production] Spawning local server: ${binPath}`)
     }
 

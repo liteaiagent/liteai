@@ -32,39 +32,175 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._context.extensionUri],
     }
 
-    // Render the webview immediately — the SolidJS app defaults to
-    // http://127.0.0.1:9000 if no URL is injected, so the panel always
-    // mounts and shows the connection status indicator.
-    // If we already know the URL from config, inject it now.
-    const configUrl = vscode.workspace.getConfiguration("liteai.server").get<string>("url")
-    const knownUrl = configUrl || ""
-
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, knownUrl)
     this._bridge = new WebviewBridge(webviewView, this._serverManager)
 
     webviewView.onDidDispose(() => {
       this._bridge = undefined
     })
 
-    // Always start the server manager — even in dev/remote mode, this sets
-    // serverManager.url which the WebviewBridge needs to proxy fetch requests.
+    webviewView.webview.onDidReceiveMessage((message) => {
+      if (message.type === "retry-core-launch") {
+        this._startServerAndLoad()
+      }
+    })
+
+    this._startServerAndLoad()
+  }
+
+  private _startServerAndLoad() {
+    if (!this._view) return
+    const webview = this._view.webview
+
+    // Show loading state initially
+    webview.html = this._getLoadingHtml()
+
     this._serverManager.start(this._context).then(
       (url) => {
         if (this._serverManager.mode === "remote") {
           vscode.window.setStatusBarMessage(`LiteAI: Remote → ${url}`, 5000)
         } else {
           vscode.window.setStatusBarMessage(`LiteAI: Server started → ${url}`, 5000)
-          // For production, reload with the actual URL since we didn't know it upfront
-          if (this._view && !knownUrl) {
-            this._view.webview.html = this._getHtmlForWebview(this._view.webview, url)
-          }
+        }
+        if (this._view) {
+          this._view.webview.html = this._getHtmlForWebview(this._view.webview, url)
         }
       },
       (err: unknown) => {
         const message = err instanceof Error ? err.message : String(err)
         vscode.window.showErrorMessage(`LiteAI: Failed to start server — ${message}`)
+        if (this._view) {
+          this._view.webview.html = this._getErrorHtml(message)
+        }
       },
     )
+  }
+
+  private _getLoadingHtml() {
+    return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiteAI</title>
+    <style>
+      .initial-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background-color: var(--vscode-sideBar-background, #101010);
+        font-family: var(--vscode-font-family, "Inter", sans-serif);
+        font-size: 13px;
+        user-select: none;
+      }
+      .shimmer-text {
+        color: rgba(255, 255, 255, 0.2);
+        background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.2) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shimmer 1.5s linear infinite;
+      }
+      body.vscode-light .shimmer-text {
+        color: rgba(0, 0, 0, 0.2);
+        background: linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 50%, rgba(0,0,0,0.2) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      @keyframes shimmer {
+        to { background-position: 200% center; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="initial-loader">
+        <span class="shimmer-text">Connecting to Server...</span>
+      </div>
+    </div>
+  </body>
+</html>`
+  }
+
+  private _getErrorHtml(errorMsg: string) {
+    const isMissing = errorMsg.includes("CORE_MISSING")
+    
+    const title = isMissing ? "Installation Error" : "Connection Error"
+    const message = isMissing 
+      ? "LiteAI core server is missing. Please uninstall and reinstall the extension."
+      : "Failed to connect to the LiteAI server."
+      
+    // Provide a button to retry except for missing core
+    const buttonHtml = isMissing 
+       ? `` 
+       : `<button onclick="retry()">Refresh & Retry</button>`
+
+    return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiteAI Error</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background-color: var(--vscode-sideBar-background, #101010);
+        color: var(--vscode-foreground, #cccccc);
+        font-family: var(--vscode-font-family, "Inter", sans-serif);
+        font-size: 13px;
+        text-align: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 { margin-bottom: 8px; font-weight: 500; }
+      p { margin-bottom: 16px; opacity: 0.8; }
+      .details {
+        background: var(--vscode-textCodeBlock-background, rgba(0,0,0,0.1));
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-family: var(--vscode-editor-font-family, monospace);
+        font-size: 12px;
+        margin-bottom: 24px;
+        max-width: 100%;
+        overflow-x: auto;
+        opacity: 0.7;
+      }
+      button {
+        background: var(--vscode-button-background, #007acc);
+        color: var(--vscode-button-foreground, #ffffff);
+        border: none;
+        padding: 8px 16px;
+        border-radius: 2px;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: inherit;
+      }
+      button:hover { background: var(--vscode-button-hoverBackground, #005f9e); }
+    </style>
+  </head>
+  <body>
+    <h2>${title}</h2>
+    <p>${message}</p>
+    ${!isMissing ? `<div class="details">${errorMsg}</div>` : ''}
+    ${buttonHtml}
+    
+    <script>
+      const vscode = acquireVsCodeApi();
+      function retry() {
+        vscode.postMessage({ type: "retry-core-launch" });
+      }
+    </script>
+  </body>
+</html>`
   }
 
   private _getHtmlForWebview(webview: vscode.Webview, serverUrl: string) {

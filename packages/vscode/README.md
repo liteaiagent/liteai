@@ -103,24 +103,19 @@ When the AI agent edits a file:
 
 ### Permission System
 
-The store tracks `permission.asked` and `permission.replied` SSE events, which means the Core's permission system (e.g., asking the user to approve tool calls) propagates to the webview. However, **the permission approval UI is currently web-only** — it lives in `packages/web`, not in the shared `packages/ui/panes`. The VSCode extension receives and stores these events but does not yet render a UI for the user to approve/deny permission requests.
-
-> **Impact:** If the agent's permission config is set to `ask` for certain operations, the agent will block waiting for approval that the VSCode user cannot currently grant via the webview UI. **Recommendation:** Set permission rules to `allow` in the project config when using the VSCode extension, or use the web UI alongside VSCode for permission-sensitive workflows.
+The VSCode extension fully supports the Core's permission system. Tool calls requiring permission (e.g., `bash` commands with `ask` configuration) will stream a `permission.asked` event. A permission approval gate renders directly in the VSCode chat panel, allowing you to approve or deny the action seamlessly within your workflow.
 
 ### Question Tool
 
-The question tool (`question.asked` / `question.replied` / `question.rejected` events) follows the same pattern as permissions — the SSE events are received and stored in the reactive store, but **the question interaction UI is web-only**. The agent can ask questions, but the VSCode user cannot answer them through the chat panel yet.
+The VSCode extension fully supports agent-initiated questions. When an agent needs more information or user clarification, a question form will render directly in the VSCode chat panel, allowing users to answer the question through multiple choice or text inputs.
 
 ## Future Features
 
 | Feature | Priority | Description |
 |---------|:--------:|-------------|
-| **Permission approval UI** | High | Render permission gate in the VSCode chat panel so users can approve/deny tool-call permissions inline |
-| **Question tool UI** | High | Render question dialogs in the VSCode chat panel so users can answer agent questions |
 | **Terminal integration** | Medium | Route agent terminal commands (`bash`, `npm run`, etc.) through VSCode's terminal panel instead of Core's built-in PTY. This would make terminal output visible in the IDE and support VSCode's shell integration API |
 | **Inline diff decorations** | Medium | Show agent file edits as inline editor decorations (similar to git gutter) with accept/reject controls, rather than applying changes directly |
 | **Edit approval gate** | Medium | Require user confirmation before the agent applies file edits, with a diff preview |
-| **@ file reference click-to-open** | Low | Make `@file` mentions in chat messages clickable to open the referenced file in the editor |
 | **Persistent server** | Low | Option to keep the Core server running after VSCode closes, so sessions persist across IDE restarts |
 | **TracePane extraction** | Low | Extract the trace/debugging view from `packages/web` to `packages/ui/panes` so it can render in the VSCode panel |
 | **SettingsPane extraction** | Low | Extract the settings UI to shared panes so users can configure LiteAI from within VSCode |
