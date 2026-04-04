@@ -5,9 +5,12 @@ import { useSync } from "@/context/sync"
 import { Section } from "./trace-section"
 import type { TraceMessageData, TracePartData } from "./trace-types"
 
+import { RadioGroup } from "@liteai/ui/radio-group"
+
 export function SyntheticContent(props: { text: string }) {
   const [expanded, setExpanded] = createSignal(false)
   const [copied, setCopied] = createSignal(false)
+  const [mode, setMode] = createSignal<"preview" | "code">("preview")
 
   const cleanText = createMemo(() => {
     let t = props.text.trim()
@@ -35,12 +38,33 @@ export function SyntheticContent(props: { text: string }) {
           {expanded() ? "▼" : "▶"} SYSTEM INJECTED
         </button>
         <Show when={expanded()}>
-          <IconButton icon={copied() ? "check" : "copy"} size="small" variant="ghost" title="Copy" onClick={copy} />
+          <div style={{ "margin-left": "auto", display: "flex", "align-items": "center", gap: "8px" }}>
+            <RadioGroup
+              options={["preview", "code"] as const}
+              current={mode()}
+              size="small"
+              value={(v) => v}
+              label={(v) => (v === "preview" ? "Preview" : "Code")}
+              onSelect={(v) => {
+                if (v) setMode(v)
+              }}
+            />
+            <IconButton icon={copied() ? "check" : "copy"} size="small" variant="ghost" title="Copy" onClick={copy} />
+          </div>
         </Show>
       </div>
       <Show when={expanded()}>
         <div class="trace-sys-box">
-          <Markdown text={cleanText()} />
+          <Show
+            when={mode() === "preview"}
+            fallback={
+              <div style={{ "font-family": "var(--font-family-mono)", "white-space": "pre-wrap" }}>
+                {cleanText()}
+              </div>
+            }
+          >
+            <Markdown text={cleanText()} />
+          </Show>
         </div>
       </Show>
     </>
