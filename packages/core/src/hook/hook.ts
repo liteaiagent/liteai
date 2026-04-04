@@ -1,9 +1,9 @@
 import z from "zod"
-import { Config } from "@/config/config"
 import { Trace } from "@/trace/trace"
 import { Log } from "@/util/log"
 import { command as exec } from "./command"
 import { http } from "./http"
+import { HookLoader } from "./loader"
 
 const log = Log.create({ service: "hook" })
 
@@ -95,33 +95,8 @@ export type Result = {
   invocations?: { event: string; type: string; handler: Handler; context?: string }[]
 }
 
-/** Load hooks from merged config + registry-installed plugins. */
-async function load(): Promise<Schema> {
-  const cfg = await Config.get()
-  if (cfg.disableAllHooks) return {}
-  const merged: Schema = { ...((cfg.hooks as Schema) ?? {}) }
-  const events = Object.keys(merged)
-  if (events.length) {
-    log.info("loaded hooks from config", { events, groups: events.map((e) => merged[e].length) })
-  }
-
-  return merged
-}
-
 /** Load hooks for a specific agent (from agent frontmatter). */
-export async function agentHooks(agent: string): Promise<Schema> {
-  const cfg = await Config.get()
-  const entry = cfg.agent?.[agent]
-  if (!entry?.hooks) return {}
-  // Agent hooks field is z.record(z.string(), z.any()) — parse it as our Schema
-  const parsed = Schema.safeParse(entry.hooks)
-  if (!parsed.success) return {}
-  const events = Object.keys(parsed.data)
-  if (events.length) {
-    log.info("loaded hooks from agent", { agent, events })
-  }
-  return parsed.data
-}
+export const agentHooks = HookLoader.agentHooks
 
 /** Check if a matcher regex matches the given value. */
 function matches(matcher: string | undefined, value: string | undefined): boolean {
@@ -146,7 +121,7 @@ function matches(matcher: string | undefined, value: string | undefined): boolea
  * @param opts - Optional extra hooks to merge (e.g. from agent/skill frontmatter)
  */
 export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schema }): Promise<Result> {
-  const hooks = await load()
+  const hooks = await HookLoader.load()
   const groups = [...(hooks[event] ?? []), ...(opts?.extra?.[event] ?? [])]
 
   log.info("dispatch", {
@@ -309,48 +284,6 @@ async function run(handler: Handler, input: Input): Promise<Result | undefined> 
 /**
  * Get all configured hooks grouped by event and source for the /hooks command.
  */
-export async function list(): Promise<
-  {
-    event: string
-    source: string
-    matcher?: string
-    handlers: Handler[]
-  }[]
-> {
-  const result: { event: string; source: string; matcher?: string; handlers: Handler[] }[] = []
-  const cfg = await Config.get()
-
-  // Config hooks
-  const hooks = (cfg.hooks as Schema) ?? {}
-  for (const [event, groups] of Object.entries(hooks)) {
-    for (const group of groups) {
-      result.push({
-        event,
-        source: "config",
-        matcher: group.matcher,
-        handlers: group.hooks,
-      })
-    }
-  }
-
-  // Agent hooks
-  for (const [name, agent] of Object.entries(cfg.agent ?? {})) {
-    if (!agent.hooks) continue
-    const parsed = Schema.safeParse(agent.hooks)
-    if (!parsed.success) continue
-    for (const [event, groups] of Object.entries(parsed.data)) {
-      for (const group of groups) {
-        result.push({
-          event,
-          source: `agent:${name}`,
-          matcher: group.matcher,
-          handlers: group.hooks,
-        })
-      }
-    }
-  }
-
-  return result
-}
+export const list = HookLoader.list
 
 export { dispatch as trigger }
