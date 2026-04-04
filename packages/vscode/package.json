@@ -59,6 +59,11 @@
           "type": "string",
           "default": "",
           "description": "Basic Auth password for remote server connection."
+        },
+        "liteai.editApproval": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline diff decorations for agent file edits with accept/reject controls. When enabled, edited files display green (added) and blue (modified) gutter markers with CodeLens buttons to accept or revert changes."
         }
       }
     },
@@ -89,6 +94,26 @@
         "command": "liteai.newSession",
         "title": "LiteAI: New Session",
         "icon": "$(add)"
+      },
+      {
+        "command": "liteai.acceptEdit",
+        "title": "LiteAI: Accept File Changes",
+        "icon": "$(check)"
+      },
+      {
+        "command": "liteai.rejectEdit",
+        "title": "LiteAI: Reject File Changes",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "liteai.acceptAllEdits",
+        "title": "LiteAI: Accept All Changes",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "liteai.rejectAllEdits",
+        "title": "LiteAI: Reject All Changes",
+        "icon": "$(close-all)"
       }
     ],
     "menus": {
@@ -126,6 +151,20 @@
         "mac": "cmd+alt+k",
         "win": "ctrl+alt+K",
         "linux": "ctrl+alt+K"
+      },
+      {
+        "command": "liteai.acceptEdit",
+        "title": "LiteAI: Accept File Changes",
+        "key": "ctrl+shift+y",
+        "mac": "cmd+shift+y",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "liteai.rejectEdit",
+        "title": "LiteAI: Reject File Changes",
+        "key": "ctrl+shift+backspace",
+        "mac": "cmd+shift+backspace",
+        "when": "editorTextFocus"
       }
     ]
   },

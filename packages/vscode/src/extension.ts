@@ -1,11 +1,13 @@
 import * as vscode from "vscode"
 import { ChatViewProvider } from "./chat-view-provider"
+import { DiffReviewManager } from "./diff-review-manager"
 import { createLanguageClient } from "./language-client"
 import { ServerManager } from "./server-manager"
 
 const TERMINAL_NAME = "liteai"
 let serverManager: ServerManager
 let languageClient: ReturnType<typeof createLanguageClient> | undefined
+let diffManager: DiffReviewManager | undefined
 
 export function deactivate() {
   if (languageClient) {
@@ -14,10 +16,26 @@ export function deactivate() {
   if (serverManager) {
     serverManager.dispose()
   }
+  if (diffManager) {
+    diffManager.dispose()
+  }
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  serverManager = new ServerManager()
+  // ─── Edit Approval / Inline Diff ──────────────────────────────────────────
+  const editApprovalEnabled = vscode.workspace.getConfiguration("liteai").get<boolean>("editApproval", true)
+  if (editApprovalEnabled) {
+    const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
+    diffManager = new DiffReviewManager(outputChannel)
+
+    // Register CodeLens provider for all file types
+    context.subscriptions.push(
+      vscode.languages.registerCodeLensProvider({ scheme: "file" }, diffManager.codeLensProvider),
+    )
+    context.subscriptions.push(diffManager)
+  }
+
+  serverManager = new ServerManager(diffManager)
 
   const provider = new ChatViewProvider(context, serverManager)
   context.subscriptions.push(
@@ -211,6 +229,28 @@ export function activate(context: vscode.ExtensionContext) {
     newSessionDisposable,
     workspaceFolderWatcher,
   )
+
+  // ─── Edit Approval Commands ─────────────────────────────────────────────
+  if (diffManager) {
+    const dm = diffManager
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand("liteai.acceptEdit", (filePath?: string) => {
+        const target = filePath || vscode.window.activeTextEditor?.document.uri.fsPath
+        if (target) dm.acceptFile(target)
+      }),
+      vscode.commands.registerCommand("liteai.rejectEdit", async (filePath?: string) => {
+        const target = filePath || vscode.window.activeTextEditor?.document.uri.fsPath
+        if (target) await dm.rejectFile(target)
+      }),
+      vscode.commands.registerCommand("liteai.acceptAllEdits", () => {
+        dm.acceptAll()
+      }),
+      vscode.commands.registerCommand("liteai.rejectAllEdits", async () => {
+        await dm.rejectAll()
+      }),
+    )
+  }
 
   async function openTerminal() {
     // Create a new terminal in split screen

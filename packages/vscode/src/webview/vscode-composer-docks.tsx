@@ -56,17 +56,29 @@ export const VscodeComposerDocks: Component<{
 
     if (list.length === 0 || q || p) {
       if (todoTimer) window.clearTimeout(todoTimer)
+      todoTimer = undefined
       setTodoDock(false)
       return
     }
 
     const isDone = list.length > 0 && list.every((t) => t.status === "completed" || t.status === "cancelled")
 
-    if (isDone && !isAlive) {
+    // When the session is no longer alive, clear stale todos so they don't
+    // reappear if a new turn starts without generating fresh ones.
+    if (!isAlive) {
+      if (todoTimer) window.clearTimeout(todoTimer)
+      todoTimer = undefined
+      setTodoDock(false)
+      return
+    }
+
+    if (isDone) {
+      // All todos completed while the session is still running — schedule close.
       if (!todoTimer) {
         todoTimer = window.setTimeout(() => setTodoDock(false), 400)
       }
     } else {
+      // Still in progress — keep dock open.
       if (todoTimer) {
         window.clearTimeout(todoTimer)
         todoTimer = undefined

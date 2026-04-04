@@ -96,10 +96,35 @@ When the AI agent edits a file:
 
 1. The agent's tool calls (e.g., `write_file`, `edit_file`) execute inside Core
 2. In **hosted mode**, Core delegates the file write back to the Extension Server's `/fs/writeFile` endpoint
-3. The Extension Server calls `vscode.workspace.fs.writeFile()`, which updates the file on disk (or on the remote host for SSH/WSL)
+3. The Extension Server snapshots the file's original content, then writes the new content via `vscode.workspace.fs.writeFile()`
 4. The file edit appears as a `tool` part in the chat message stream, showing the tool name, input, and output
+5. **Inline diff decorations** highlight what changed — green gutter for added lines, blue for modified lines
+6. **CodeLens controls** appear at the top of the file: `✓ Accept Changes` and `✗ Reject Changes`
+7. The agent continues running immediately — edits are not blocked
 
-> **Note:** Currently, file edits are applied directly without a confirmation dialog. The agent writes through Core's tool system, which applies the edit immediately. A future enhancement could show inline diff decorations and require user approval before applying changes (see Future Features).
+> **Accept** clears the decorations and keeps the changes. **Reject** reverts the file to its state before the agent's first edit and clears the decorations.
+
+### Inline Diff Decorations
+
+When `liteai.editApproval` is enabled (default: `true`), every agent file edit is tracked and displayed with inline editor decorations:
+
+- **Green left border** — lines that were added
+- **Blue left border** — lines that were modified
+- **Overview ruler markers** — colored marks in the scrollbar showing where changes are
+
+The decorations persist across tab switches. You can accept or reject changes at any time, even while the agent is still running.
+
+**Keybindings:**
+- `Ctrl+Shift+Y` / `⌘+Shift+Y` — Accept changes for the active file
+- `Ctrl+Shift+Backspace` / `⌘+Shift+Backspace` — Reject changes for the active file
+
+**Commands** (via Command Palette):
+- `LiteAI: Accept File Changes` — accept the active file
+- `LiteAI: Reject File Changes` — reject the active file
+- `LiteAI: Accept All Changes` — accept all pending file edits
+- `LiteAI: Reject All Changes` — reject all pending file edits
+
+To disable decorations entirely, set `liteai.editApproval` to `false` in VS Code settings.
 
 ### Permission System
 
@@ -114,8 +139,6 @@ The VSCode extension fully supports agent-initiated questions. When an agent nee
 | Feature | Priority | Description |
 |---------|:--------:|-------------|
 | **Terminal integration** | Medium | Route agent terminal commands (`bash`, `npm run`, etc.) through VSCode's terminal panel instead of Core's built-in PTY. This would make terminal output visible in the IDE and support VSCode's shell integration API |
-| **Inline diff decorations** | Medium | Show agent file edits as inline editor decorations (similar to git gutter) with accept/reject controls, rather than applying changes directly |
-| **Edit approval gate** | Medium | Require user confirmation before the agent applies file edits, with a diff preview |
 | **Persistent server** | Low | Option to keep the Core server running after VSCode closes, so sessions persist across IDE restarts |
 | **TracePane extraction** | Low | Extract the trace/debugging view from `packages/web` to `packages/ui/panes` so it can render in the VSCode panel |
 | **SettingsPane extraction** | Low | Extract the settings UI to shared panes so users can configure LiteAI from within VSCode |

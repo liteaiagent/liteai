@@ -3,6 +3,7 @@ import * as crypto from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as vscode from "vscode"
+import type { DiffReviewManager } from "./diff-review-manager"
 import { ExtensionServer } from "./extension-server"
 
 export type ServerMode = "production" | "remote"
@@ -16,6 +17,11 @@ export class ServerManager {
   private _mode: ServerMode = "production"
   private _extensionServer: ExtensionServer | null = null
   private _outputChannel: vscode.OutputChannel | null = null
+  private readonly _diffManager: DiffReviewManager | undefined
+
+  constructor(diffManager?: DiffReviewManager) {
+    this._diffManager = diffManager
+  }
 
   get url() {
     return this._url
@@ -91,6 +97,7 @@ export class ServerManager {
     this._extensionServer = new ExtensionServer({
       csrfToken: callbackCsrfToken,
       outputChannel,
+      diffManager: this._diffManager,
     })
     const callbackPort = await this._extensionServer.start()
     outputChannel.appendLine(`[production] Extension callback server listening on port ${callbackPort}`)

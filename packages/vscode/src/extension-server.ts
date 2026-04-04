@@ -1,6 +1,7 @@
 import * as child_process from "node:child_process"
 import * as http from "node:http"
 import * as vscode from "vscode"
+import type { DiffReviewManager } from "./diff-review-manager"
 
 /**
  * ExtensionServer — HTTP callback server running in the VSCode Extension Host.
@@ -23,6 +24,7 @@ export class ExtensionServer {
   private _port = 0
   private readonly _csrfToken: string
   private readonly _outputChannel: vscode.OutputChannel
+  private readonly _diffManager: DiffReviewManager | undefined
 
   get port() {
     return this._port
@@ -31,9 +33,10 @@ export class ExtensionServer {
     return this._csrfToken
   }
 
-  constructor(opts: { csrfToken: string; outputChannel: vscode.OutputChannel }) {
+  constructor(opts: { csrfToken: string; outputChannel: vscode.OutputChannel; diffManager?: DiffReviewManager }) {
     this._csrfToken = opts.csrfToken
     this._outputChannel = opts.outputChannel
+    this._diffManager = opts.diffManager
   }
 
   private log(msg: string) {
@@ -200,6 +203,23 @@ export class ExtensionServer {
     const encoding = (body.encoding as string) || "utf-8"
     const rawContent = body.content as string
 
+    // Capture pre-edit content for diff tracking (before writing)
+    let oldContent: string | undefined
+    if (this._diffManager && encoding !== "base64") {
+      try {
+        const uri = vscode.Uri.file(filePath)
+        const openDoc = vscode.workspace.textDocuments.find((doc) => doc.uri.fsPath === uri.fsPath)
+        if (openDoc) {
+          oldContent = openDoc.getText()
+        } else {
+          const existing = await vscode.workspace.fs.readFile(uri)
+          oldContent = new TextDecoder().decode(existing)
+        }
+      } catch {
+        // File doesn't exist yet (new file creation) — oldContent stays undefined
+      }
+    }
+
     let bytes: Uint8Array
     if (encoding === "base64") {
       bytes = Buffer.from(rawContent, "base64")
@@ -209,6 +229,11 @@ export class ExtensionServer {
 
     await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), bytes)
     this.sendJson(res, { ok: true })
+
+    // Track the edit for inline diff decorations (non-blocking, after response)
+    if (this._diffManager && oldContent !== undefined && encoding !== "base64") {
+      this._diffManager.trackEdit(filePath, oldContent, rawContent)
+    }
   }
 
   /** POST /fs/exists — check whether a path exists. */
