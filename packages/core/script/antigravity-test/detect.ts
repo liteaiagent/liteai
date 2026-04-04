@@ -30,23 +30,29 @@ const PS_COMMAND = [
   `if ($p) { @($p) | Select-Object ProcessId,ParentProcessId,CommandLine | ConvertTo-Json -Compress } else { '[]' }`,
 ].join(" ")
 
-function parseWindowsOutput(stdout: string): Array<{ pid: number; ppid: number | null; args: Record<string, string>; rawCmdLine: string }> {
+function parseWindowsOutput(
+  stdout: string,
+): Array<{ pid: number; ppid: number | null; args: Record<string, string>; rawCmdLine: string }> {
   const trimmed = stdout.trim()
   if (!trimmed || trimmed === "[]") return []
 
   try {
     const raw = JSON.parse(trimmed)
     const list = Array.isArray(raw) ? raw : [raw]
-    return list.flatMap((p: any) => {
-      const cmdline: string = p.CommandLine ?? ""
-      if (!cmdline) return []
-      return [{
-        pid: Number(p.ProcessId),
-        ppid: p.ParentProcessId != null ? Number(p.ParentProcessId) : null,
-        args: parseAllArgs(cmdline),
-        rawCmdLine: cmdline,
-      }]
-    })
+    return list.flatMap(
+      (p: { CommandLine?: string; ProcessId?: string | number; ParentProcessId?: string | number }) => {
+        const cmdline: string = p.CommandLine ?? ""
+        if (!cmdline) return []
+        return [
+          {
+            pid: Number(p.ProcessId),
+            ppid: p.ParentProcessId != null ? Number(p.ParentProcessId) : null,
+            args: parseAllArgs(cmdline),
+            rawCmdLine: cmdline,
+          },
+        ]
+      },
+    )
   } catch {
     return []
   }
@@ -62,19 +68,23 @@ function unixProcessName(): string {
   return `language_server_linux${arch === "arm64" ? "_arm" : "_x64"}`
 }
 
-function parseUnixOutput(stdout: string): Array<{ pid: number; ppid: number | null; args: Record<string, string>; rawCmdLine: string }> {
+function parseUnixOutput(
+  stdout: string,
+): Array<{ pid: number; ppid: number | null; args: Record<string, string>; rawCmdLine: string }> {
   return stdout
     .split("\n")
     .filter(Boolean)
     .flatMap((line) => {
       const m = line.trim().match(/^\s*(\d+)\s+(\d+)\s+(.+)$/)
       if (!m || !m[1] || !m[2] || !m[3]) return []
-      return [{
-        pid: Number(m[1]),
-        ppid: Number(m[2]),
-        args: parseAllArgs(m[3]),
-        rawCmdLine: m[3],
-      }]
+      return [
+        {
+          pid: Number(m[1]),
+          ppid: Number(m[2]),
+          args: parseAllArgs(m[3]),
+          rawCmdLine: m[3],
+        },
+      ]
     })
 }
 
@@ -84,18 +94,21 @@ function parseAllArgs(cmdline: string): Record<string, string> {
   const result: Record<string, string> = {}
   // Handle --key=value
   const eqRe = /--([\w]+)=([^\s]+)/g
-  let match: RegExpExecArray | null
-  while ((match = eqRe.exec(cmdline)) !== null) {
+  let match: RegExpExecArray | null = eqRe.exec(cmdline)
+  while (match !== null) {
     if (match[1] && match[2]) {
       result[match[1]] = match[2]
     }
+    match = eqRe.exec(cmdline)
   }
   // Handle --key value (space-separated)
   const spRe = /--([\w]+)\s+([^\s-][^\s]*)/g
-  while ((match = spRe.exec(cmdline)) !== null) {
+  match = spRe.exec(cmdline)
+  while (match !== null) {
     if (match[1] && match[2] && !(match[1] in result)) {
       result[match[1]] = match[2]
     }
+    match = spRe.exec(cmdline)
   }
   return result
 }
@@ -140,18 +153,14 @@ export async function detectServers(): Promise<DetectedServer[]> {
   let processes: Array<{ pid: number; ppid: number | null; args: Record<string, string>; rawCmdLine: string }>
 
   if (process.platform === "win32") {
-    const { stdout } = await execAsync(
-      `powershell -NoProfile -Command "${PS_COMMAND}"`,
-      { timeout: 10_000 },
-    )
+    const { stdout } = await execAsync(`powershell -NoProfile -Command "${PS_COMMAND}"`, { timeout: 10_000 })
     processes = parseWindowsOutput(stdout)
   } else {
     const name = unixProcessName()
     const first = name.charAt(0)
-    const { stdout } = await execAsync(
-      `ps -A -ww -o pid,ppid,args | grep "[${first}]${name.slice(1)}"`,
-      { timeout: 5_000 },
-    )
+    const { stdout } = await execAsync(`ps -A -ww -o pid,ppid,args | grep "[${first}]${name.slice(1)}"`, {
+      timeout: 5_000,
+    })
     processes = parseUnixOutput(stdout)
   }
 

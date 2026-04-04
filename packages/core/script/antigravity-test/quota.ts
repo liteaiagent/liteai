@@ -101,9 +101,7 @@ export async function fetchQuota(
     },
   }
 
-  const res = await rawRequest<ServerUserStatusResponse>(
-    protocol, hostname, port, ENDPOINT, csrfToken, body,
-  )
+  const res = await rawRequest<ServerUserStatusResponse>(protocol, hostname, port, ENDPOINT, csrfToken, body)
 
   if (res.statusCode !== 200) {
     throw new Error(`HTTP ${res.statusCode}: ${JSON.stringify(res.data)}`)
@@ -114,33 +112,37 @@ export async function fetchQuota(
 
   // Parse credits
   const plan = us.planStatus?.planInfo
-  const promptCredits = plan && us.planStatus?.availablePromptCredits != null
-    ? {
-        available: Number(us.planStatus.availablePromptCredits),
-        monthly: Number(plan.monthlyPromptCredits),
-        pct: plan.monthlyPromptCredits > 0
-          ? Math.round((Number(us.planStatus.availablePromptCredits) / Number(plan.monthlyPromptCredits)) * 100)
-          : 0,
-      }
-    : null
+  const promptCredits =
+    plan && us.planStatus?.availablePromptCredits != null
+      ? {
+          available: Number(us.planStatus.availablePromptCredits),
+          monthly: Number(plan.monthlyPromptCredits),
+          pct:
+            plan.monthlyPromptCredits > 0
+              ? Math.round((Number(us.planStatus.availablePromptCredits) / Number(plan.monthlyPromptCredits)) * 100)
+              : 0,
+        }
+      : null
 
-  const flowCredits = plan?.monthlyFlowCredits && us.planStatus?.availableFlowCredits != null
-    ? {
-        available: Number(us.planStatus.availableFlowCredits),
-        monthly: Number(plan.monthlyFlowCredits),
-        pct: plan.monthlyFlowCredits > 0
-          ? Math.round((Number(us.planStatus.availableFlowCredits) / Number(plan.monthlyFlowCredits)) * 100)
-          : 0,
-      }
-    : null
+  const flowCredits =
+    plan?.monthlyFlowCredits && us.planStatus?.availableFlowCredits != null
+      ? {
+          available: Number(us.planStatus.availableFlowCredits),
+          monthly: Number(plan.monthlyFlowCredits),
+          pct:
+            plan.monthlyFlowCredits > 0
+              ? Math.round((Number(us.planStatus.availableFlowCredits) / Number(plan.monthlyFlowCredits)) * 100)
+              : 0,
+        }
+      : null
 
   // Parse models
   const rawModels = us.cascadeModelConfigData?.clientModelConfigs ?? []
   const models = rawModels
     .filter((m) => m.quotaInfo)
     .map((m) => {
-      const frac = m.quotaInfo!.remainingFraction ?? 0
-      const reset = new Date(m.quotaInfo!.resetTime)
+      const frac = m.quotaInfo?.remainingFraction ?? 0
+      const reset = new Date(m.quotaInfo?.resetTime)
       const diff = reset.getTime() - Date.now()
       return {
         label: m.label,

@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
-import { Database } from "../src/storage/db"
 import { Auth } from "../src/auth"
 import { CA_CLIENT_ID, CA_CLIENT_SECRET } from "../src/auth/providers/code-assist"
 import { fetchAvailableModels, loadCodeAssist } from "../src/provider/sdk/code-assist/client"
+import { Database } from "../src/storage/db"
 import { Log } from "../src/util/log"
 
 await Log.init({
@@ -53,18 +53,19 @@ try {
       ideType: "ANTIGRAVITY",
       ideVersion: "1.0.0",
       pluginVersion: "1.0.0",
-    }
+    },
   }
   const caRes = await loadCodeAssist({ client }, req)
   console.log("\n✅ Success! loadCodeAssist Response:")
   console.log(JSON.stringify(caRes, null, 2))
-} catch (e: any) {
+} catch (error: unknown) {
+  const e = error as { response?: { status: number; statusText: string; data: unknown } }
   console.error("\n❌ Request Failed for loadCodeAssist!")
-  if (e.response) {
+  if (e?.response) {
     console.error("Status:", e.response.status, e.response.statusText)
     console.error("Body:", JSON.stringify(e.response.data, null, 2))
   } else {
-    console.error(e)
+    console.error(error)
   }
 }
 
@@ -85,15 +86,15 @@ try {
   const res = await fetchAvailableModels(cfg)
   console.log("\n✅ Success! Available Models:")
   console.log(JSON.stringify(res, null, 2))
-} catch (e: any) {
+} catch (error: unknown) {
+  const e = error as { response?: { status: number; statusText: string; data: unknown } }
   console.error("\n❌ Request Failed for fetchAvailableModels!")
-  if (e.response) {
+  if (e?.response) {
     console.error("Status:", e.response.status, e.response.statusText)
     console.error("Body:", JSON.stringify(e.response.data, null, 2))
   } else {
-    console.error(e)
+    console.error(error)
   }
 }
 
 process.exit(0)
-

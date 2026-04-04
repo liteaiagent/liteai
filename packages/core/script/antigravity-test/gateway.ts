@@ -8,8 +8,8 @@
  * Tries HTTPS first, then falls back to HTTP if HTTPS fails.
  */
 
-import * as https from "node:https"
 import * as http from "node:http"
+import * as https from "node:https"
 
 export type Protocol = "https" | "http"
 
@@ -73,7 +73,10 @@ function doRequest(
     })
 
     req.on("error", (err) => reject(new Error(`${protocol.toUpperCase()} error: ${err.message}`)))
-    req.on("timeout", () => { req.destroy(); reject(new Error(`${protocol.toUpperCase()} timeout`)) })
+    req.on("timeout", () => {
+      req.destroy()
+      reject(new Error(`${protocol.toUpperCase()} timeout`))
+    })
     req.write(body)
     req.end()
   })

@@ -56,14 +56,14 @@ async function requestPost<T>(
 ): Promise<T> {
   const http = Log.create({ service: "http" })
   const method = "POST"
-  
+
   http.info("request", {
     provider: "google-code-assist",
     method,
     url,
     body: JSON.stringify(body),
   })
-  
+
   try {
     const res = await cfg.client.request<T>({
       url,
@@ -87,7 +87,7 @@ async function requestPost<T>(
         ],
       },
     })
-    
+
     http.info("response", {
       provider: "google-code-assist",
       method,
@@ -98,15 +98,16 @@ async function requestPost<T>(
       body: JSON.stringify(res.data),
     })
     return res.data
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as { response?: { status?: number; statusText?: string; headers?: unknown; data?: unknown } }
     http.error("response", {
       provider: "google-code-assist",
       method,
       url,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      headers: error.response?.headers,
-      body: error.response?.data ? JSON.stringify(error.response.data) : undefined,
+      status: err?.response?.status,
+      statusText: err?.response?.statusText,
+      headers: err?.response?.headers,
+      body: err?.response?.data ? JSON.stringify(err.response.data) : undefined,
     })
     throw error
   }
@@ -134,7 +135,7 @@ export async function* stream(
   const http = Log.create({ service: "http" })
   const method = "POST"
   const url = methodUrl(cfg, "streamGenerateContent")
-  
+
   http.info("request", {
     provider: "google-code-assist",
     method,
@@ -169,39 +170,39 @@ export async function* stream(
       // body is a stream, so we don't log it here
     })
 
+    // Parse SSE stream using readline — matches gemini-cli exactly
+    const rl = readline.createInterface({
+      input: Readable.from(res.data),
+      crlfDelay: Number.POSITIVE_INFINITY,
+    })
 
-  // Parse SSE stream using readline — matches gemini-cli exactly
-  const rl = readline.createInterface({
-    input: Readable.from(res.data),
-    crlfDelay: Number.POSITIVE_INFINITY,
-  })
-
-  let bufferedLines: string[] = []
-  for await (const line of rl) {
-    if (line.startsWith("data: ")) {
-      bufferedLines.push(line.slice(6).trim())
-    } else if (line === "") {
-      if (bufferedLines.length === 0) continue
-      const chunk = bufferedLines.join("\n")
-      try {
-        yield JSON.parse(chunk)
-      } catch {
-        // Skip unparseable chunks (e.g. [DONE])
+    let bufferedLines: string[] = []
+    for await (const line of rl) {
+      if (line.startsWith("data: ")) {
+        bufferedLines.push(line.slice(6).trim())
+      } else if (line === "") {
+        if (bufferedLines.length === 0) continue
+        const chunk = bufferedLines.join("\n")
+        try {
+          yield JSON.parse(chunk)
+        } catch {
+          // Skip unparseable chunks (e.g. [DONE])
+        }
+        bufferedLines = []
       }
-      bufferedLines = []
     }
-  }
-} catch (error: any) {
+  } catch (error) {
+    const err = error as { response?: { status?: number; statusText?: string; headers?: unknown } }
     http.error("response", {
       provider: "google-code-assist",
       method,
       url,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      headers: error.response?.headers,
+      status: err?.response?.status,
+      statusText: err?.response?.statusText,
+      headers: err?.response?.headers,
     })
     throw error
-}
+  }
 }
 
 // VPC-SC detection — matches gemini-cli/server.ts isVpcScAffectedUser exactly.

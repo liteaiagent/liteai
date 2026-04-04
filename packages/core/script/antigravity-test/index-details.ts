@@ -61,14 +61,14 @@ let workingToken = ""
 let workingProtocol: "https" | "http" = "http"
 
 for (const s of servers) {
-  const csrfToken = s.args["csrf_token"]
+  const csrfToken = s.args.csrf_token
   if (!csrfToken) {
     console.log(`   PID ${s.pid}: no --csrf_token found, skipping.`)
     continue
   }
 
   // Collect all candidate ports: OS-discovered + extension_server_port
-  const extPort = Number(s.args["extension_server_port"]) || 0
+  const extPort = Number(s.args.extension_server_port) || 0
   const allPorts = [...s.listeningPorts]
   if (extPort > 0 && !allPorts.includes(extPort)) {
     allPorts.unshift(extPort) // try cmdline port first
@@ -149,7 +149,6 @@ try {
   console.log("  Raw Server Response")
   console.log(DIVIDER)
   console.log(JSON.stringify(quota.raw, null, 2))
-
 } catch (e) {
   console.error("   ❌ Quota fetch failed:", e)
   process.exit(1)

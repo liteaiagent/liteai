@@ -287,10 +287,7 @@ export namespace Command {
 
     // Eagerly read command templates once during state initialization.
     // This avoids sync/async issues with the hints() function.
-    const [templateInit, templateReview] = await Promise.all([
-      Bundled.command("initialize"),
-      Bundled.command("review"),
-    ])
+    const [templateInit, templateReview] = await Promise.all([Bundled.command("initialize"), Bundled.command("review")])
 
     const result: Record<string, Info> = {
       [Default.INIT]: {

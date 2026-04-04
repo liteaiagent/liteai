@@ -174,10 +174,7 @@ async function fetchAvailableModels(accessToken: string): Promise<string[] | und
   }
 }
 
-export async function ai4all(
-  input: LoaderInput,
-  database: Record<string, Provider.Info>,
-): Promise<LoaderResult> {
+export async function ai4all(input: LoaderInput, database: Record<string, Provider.Info>): Promise<LoaderResult> {
   const key = await token(input)
 
   // Fetch model IDs from the API if we have auth, falling back to hardcoded list
@@ -256,7 +253,7 @@ function buildAi4allModel(id: string, database: Record<string, Provider.Info>): 
   }
 
   function ref(modelId: string) {
-    const lookup = (db: typeof database[string] | undefined) =>
+    const lookup = (db: (typeof database)[string] | undefined) =>
       db?.models[modelId] ?? db?.models[modelId.replace(/-maas$/, "")]
 
     if (modelId.startsWith("gemini")) return lookup(database.google)
