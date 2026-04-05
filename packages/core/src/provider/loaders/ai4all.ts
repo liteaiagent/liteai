@@ -277,9 +277,18 @@ function buildAi4allModel(id: string, database: Record<string, Provider.Info>): 
 
   const r = ref(id)
   // DeepSeek-R1 models are always reasoning models, even without a ref match
-  const capabilities = r?.capabilities ?? {
-    ...fallback.capabilities,
-    reasoning: id.includes("-r1-") || fallback.capabilities.reasoning,
+  const isReasoning = r?.capabilities?.reasoning ?? id.includes("-r1-") ?? fallback.capabilities.reasoning
+  const capabilities: Provider.Model["capabilities"] = {
+    ...(r?.capabilities ?? {
+      ...fallback.capabilities,
+      reasoning: isReasoning,
+    }),
+    reasoning: isReasoning,
+    // LiteLLM proxy returns reasoning tokens as `reasoning_content` in its OpenAI-compatible
+    // SSE stream (same format as DeepSeek-compatible APIs). Setting `interleaved` causes
+    // (1) the message transform to re-inject prior-turn reasoning as `reasoning_content`
+    // on assistant messages, and (2) the SDK to surface thinking tokens from the stream.
+    interleaved: isReasoning ? { field: "reasoning_content" } : (r?.capabilities?.interleaved ?? false),
   }
   return {
     id: ModelID.make(id),

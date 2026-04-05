@@ -178,8 +178,7 @@ export async function* stream(
     })
 
     const onAbort = () => {
-      console.log("onAbort called!")
-      sourceStream.destroy(new DOMException("The user aborted a request.", "AbortError"))
+      sourceStream.destroy()
       rl.close()
     }
     if (signal) {

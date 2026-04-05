@@ -6,7 +6,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "bun --watch run --conditions=browser ./src/main.ts --print-logs --port 9000",
+    "dev": "bun run --conditions=browser ./src/main.ts --print-logs --port 9000",
     "build": "tsc -b",
     "build:exe": "bun run script/build.ts",
     "db": "bun drizzle-kit",
