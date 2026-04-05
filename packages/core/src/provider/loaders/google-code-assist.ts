@@ -69,7 +69,7 @@ async function fetchAvailableModels(): Promise<string[] | undefined> {
 }
 
 export async function googleCodeAssist(
-  _input: unknown,
+  _input: unknown /* unused: required by CustomLoader interface */,
   database: Record<string, Provider.Info>,
 ): Promise<LoaderResult> {
   // Fetch model IDs from the API, falling back to hardcoded list

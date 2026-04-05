@@ -177,7 +177,7 @@ export const PtyRoutes = lazy(() =>
         }
 
         return {
-          onOpen(_event, ws) {
+          onOpen(/* unused: required by websocket interface */ _event, ws) {
             const socket = ws.raw
             if (!isSocket(socket)) {
               ws.close()

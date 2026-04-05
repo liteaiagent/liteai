@@ -335,10 +335,10 @@ async function loadCustom(
       log.error(`Provider does not exist in model list ${providerID}`)
       continue
     }
-    const result = await fn(data, database).catch((_err) => {
+    const result = await fn(data, database).catch((err) => {
       // Custom loaders may call Env.get / Config.get which require Instance context.
       // When resolving the global provider list (no project selected), skip them gracefully.
-      log.debug("custom loader skipped (no instance context)", { providerID })
+      log.debug("custom loader skipped (no instance context)", { providerID, err })
       return undefined
     })
     if (result && (result.autoload || providers[providerID])) {

@@ -39,11 +39,7 @@ export function sdkKey(npm: string): string | undefined {
   return undefined
 }
 
-function normalizeMessages(
-  msgs: ModelMessage[],
-  model: Provider.Model,
-  _options: Record<string, unknown>,
-): ModelMessage[] {
+function normalizeMessages(msgs: ModelMessage[], model: Provider.Model): ModelMessage[] {
   // Anthropic rejects messages with empty content - filter out empty string messages
   // and remove empty text/reasoning parts from array content
   if (model.api.npm === "@ai-sdk/anthropic" || model.api.npm === "@ai-sdk/amazon-bedrock") {
@@ -244,9 +240,9 @@ function unsupportedParts(msgs: ModelMessage[], model: Provider.Model): ModelMes
   })
 }
 
-export function message(msgs: ModelMessage[], model: Provider.Model, options: Record<string, unknown>) {
+export function message(msgs: ModelMessage[], model: Provider.Model) {
   msgs = unsupportedParts(msgs, model)
-  msgs = normalizeMessages(msgs, model, options)
+  msgs = normalizeMessages(msgs, model)
   if (
     (model.providerID === "anthropic" ||
       model.api.id.includes("anthropic") ||

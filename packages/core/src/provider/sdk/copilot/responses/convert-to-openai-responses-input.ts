@@ -57,8 +57,8 @@ export async function convertToOpenAIResponsesInput({
             break
           }
           default: {
-            const _exhaustiveCheck: never = systemMessageMode
-            throw new Error(`Unsupported system message mode: ${_exhaustiveCheck}`)
+            const exhaustiveCheck: never = systemMessageMode
+            throw new Error(`Unsupported system message mode: ${exhaustiveCheck}`)
           }
         }
         break
@@ -110,8 +110,8 @@ export async function convertToOpenAIResponsesInput({
                 })
               }
               default: {
-                const _exhaustive: never = part
-                throw new Error(`Unsupported part type: ${(_exhaustive as { type: string }).type}`)
+                const exhaustive: never = part
+                throw new Error(`Unsupported part type: ${(exhaustive as { type: string }).type}`)
               }
             }
           }),
@@ -290,8 +290,8 @@ export async function convertToOpenAIResponsesInput({
       }
 
       default: {
-        const _exhaustiveCheck: never = role
-        throw new Error(`Unsupported role: ${_exhaustiveCheck}`)
+        const exhaustiveCheck: never = role
+        throw new Error(`Unsupported role: ${exhaustiveCheck}`)
       }
     }
   }

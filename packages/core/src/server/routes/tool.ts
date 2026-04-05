@@ -83,7 +83,7 @@ export const ToolRoutes: () => Hono<any, any, any> = lazy(
               id: t.id,
               description: t.description,
               // Handle both Zod schemas and plain JSON schemas
-              parameters: (t.parameters as z.ZodType)?._def ? zodToJsonSchema(t.parameters as z.ZodType) : t.parameters,
+              parameters: (t.parameters as z.ZodType)?.def ? zodToJsonSchema(t.parameters as z.ZodType) : t.parameters,
             })),
           )
         },

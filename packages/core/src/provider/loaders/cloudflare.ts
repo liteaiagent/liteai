@@ -76,7 +76,7 @@ export async function cloudflareAiGateway(input: LoaderInput): Promise<LoaderRes
 
   return {
     autoload: true,
-    async getModel(_sdk: SDK, modelID: string) {
+    async getModel(/* unused: required by LoaderResult interface */ _sdk: SDK, modelID: string) {
       return aigateway(unified(modelID))
     },
     options: {},

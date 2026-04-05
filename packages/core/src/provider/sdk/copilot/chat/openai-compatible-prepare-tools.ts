@@ -78,9 +78,9 @@ export function prepareTools({
         toolWarnings,
       }
     default: {
-      const _exhaustiveCheck: never = type
+      const exhaustiveCheck: never = type
       throw new UnsupportedFunctionalityError({
-        functionality: `tool choice type: ${_exhaustiveCheck}`,
+        functionality: `tool choice type: ${exhaustiveCheck}`,
       })
     }
   }

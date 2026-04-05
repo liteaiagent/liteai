@@ -41,8 +41,8 @@ export namespace ProviderError {
     return /^4(00|13)\s*(status code)?\s*\(no body\)/i.test(message)
   }
 
-  function message(_providerID: ProviderID, e: APICallError) {
-    return iife(() => {
+  function message(providerID: ProviderID, e: APICallError) {
+    const text = iife(() => {
       const msg = e.message
       if (msg === "") {
         if (e.responseBody) return e.responseBody
@@ -80,6 +80,8 @@ export namespace ProviderError {
 
       return `${msg}: ${e.responseBody}`
     }).trim()
+
+    return `[${providerID}] ${text}`
   }
 
   function json(input: unknown) {

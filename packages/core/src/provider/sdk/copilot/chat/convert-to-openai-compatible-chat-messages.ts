@@ -62,8 +62,8 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV2Pro
                 })
               }
               default: {
-                const _exhaustive: never = part
-                throw new Error(`Unsupported part type: ${(_exhaustive as { type: string }).type}`)
+                const exhaustive: never = part
+                throw new Error(`Unsupported part type: ${(exhaustive as { type: string }).type}`)
               }
             }
           }),
@@ -157,8 +157,8 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV2Pro
       }
 
       default: {
-        const _exhaustiveCheck: never = role
-        throw new Error(`Unsupported role: ${_exhaustiveCheck}`)
+        const exhaustiveCheck: never = role
+        throw new Error(`Unsupported role: ${exhaustiveCheck}`)
       }
     }
   }
