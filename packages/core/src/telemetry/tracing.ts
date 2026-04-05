@@ -31,7 +31,7 @@ export interface LLMResponseMetadata {
 
 export interface HookResult {
   type: string
-  context?: any
+  context?: unknown
 }
 
 interface SpanContext {
@@ -218,7 +218,7 @@ export function endLLMRequestSpan(span?: Span, metadata?: LLMResponseMetadata): 
     llmSpanContext = Array.from(activeSpans.values())
       .findLast((r) => {
         const ctx = r.deref()
-        return ctx?.attributes["span.type"] === "llm_request" || ctx?.attributes["model"]
+        return ctx?.attributes["span.type"] === "llm_request" || ctx?.attributes.model
       })
       ?.deref()
   }
@@ -252,15 +252,14 @@ export function endLLMRequestSpan(span?: Span, metadata?: LLMResponseMetadata): 
   }
 
   if (metadata) {
-    if (metadata.inputTokens !== undefined) endAttributes["input_tokens"] = metadata.inputTokens
-    if (metadata.outputTokens !== undefined) endAttributes["output_tokens"] = metadata.outputTokens
-    if (metadata.cacheReadTokens !== undefined) endAttributes["cache_read_tokens"] = metadata.cacheReadTokens
-    if (metadata.cacheCreationTokens !== undefined)
-      endAttributes["cache_creation_tokens"] = metadata.cacheCreationTokens
-    if (metadata.success !== undefined) endAttributes["success"] = metadata.success
-    if (metadata.statusCode !== undefined) endAttributes["status_code"] = metadata.statusCode
-    if (metadata.error !== undefined) endAttributes["error"] = metadata.error
-    if (metadata.ttftMs !== undefined) endAttributes["ttft_ms"] = metadata.ttftMs
+    if (metadata.inputTokens !== undefined) endAttributes.input_tokens = metadata.inputTokens
+    if (metadata.outputTokens !== undefined) endAttributes.output_tokens = metadata.outputTokens
+    if (metadata.cacheReadTokens !== undefined) endAttributes.cache_read_tokens = metadata.cacheReadTokens
+    if (metadata.cacheCreationTokens !== undefined) endAttributes.cache_creation_tokens = metadata.cacheCreationTokens
+    if (metadata.success !== undefined) endAttributes.success = metadata.success
+    if (metadata.statusCode !== undefined) endAttributes.status_code = metadata.statusCode
+    if (metadata.error !== undefined) endAttributes.error = metadata.error
+    if (metadata.ttftMs !== undefined) endAttributes.ttft_ms = metadata.ttftMs
   }
 
   llmSpanContext.span.setAttributes(endAttributes)
@@ -315,7 +314,7 @@ export function startToolSpan(toolName: string, input?: string): Span {
   return span
 }
 
-export function endToolSpan(toolResult?: string, resultTokens?: number): void {
+export function endToolSpan(resultTokens?: number): void {
   const toolSpanContext = toolContext.getStore()
   if (!toolSpanContext) return
 
@@ -339,7 +338,7 @@ export function endToolSpan(toolResult?: string, resultTokens?: number): void {
   }
 
   if (resultTokens !== undefined) {
-    endAttributes["result_tokens"] = resultTokens
+    endAttributes.result_tokens = resultTokens
   }
 
   toolSpanContext.span.setAttributes(endAttributes)

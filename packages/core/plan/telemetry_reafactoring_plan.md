@@ -152,7 +152,7 @@ export function endInteractionSpan(): void
 export function startLLMRequestSpan(model: string, context?: LLMRequestNewContext): Span
 export function endLLMRequestSpan(span?: Span, metadata?: LLMResponseMetadata): void
 export function startToolSpan(toolName: string, input?: string): Span
-export function endToolSpan(toolResult?: string, resultTokens?: number): void
+export function endToolSpan(resultTokens?: number): void
 export function startHookSpan(hookEvent: string): Span
 export function endHookSpan(span: Span, result?: HookResult): void
 ```
@@ -230,7 +230,7 @@ case "tool-call": {
   // ... existing processing ...
 }
 case "tool-result": {
-  endToolSpan(value.output.output, resultTokens)
+  endToolSpan(resultTokens)
   // ... existing processing ...
 }
 ```
@@ -378,7 +378,7 @@ Completely destroy the legacy footprint.
 3. **API Deletion**: Deleted `src/server/routes/trace.ts` and removed its registration from `server.ts`.
 4. **Schema Deletion**: Removed `TraceTable` and `TraceContentTable` constructs from Drizzle schema setups.
 
-### Phase 5: Validating & Expanding Test Suite
+### Phase 5: Validating & Expanding Test Suite (COMPLETED)
 Since legacy `src/trace/` tests were reliant on SQLite trace tracking (which has been sunset), we have entirely removed `test/trace/`. Before we refactor the loop engine, we must adequately test the new telemetry architecture:
 1. **Mock End-to-End Traces (`test/telemetry/tracing.test.ts`)**: 
    - Guarantee `AsyncLocalStorage` hierarchy safely tracks parents across asynchronous yields.
@@ -387,6 +387,10 @@ Since legacy `src/trace/` tests were reliant on SQLite trace tracking (which has
    - Validate that dummy sessions dump Chrome Trace correctly without failing out or missing timestamps.
 
 ### Phase 6: The Agentic (ReAct) Loop Rewrite
+
+> [!NOTE]
+> This phase has been expanded into its own detailed implementation plan: [agentic_loop_implementation_plan.md](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/plan/agentic_loop_implementation_plan.md).
+
 Once test coverage is adequately established on the telemetry pipeline, we pivot to structurally overhauling how LiteAI routes state logic (currently heavily recursive via `loop.ts`).
 1. **Goal**: Rip out the rigid inner `processSubtask(...)` inside `loop.ts` and restructure it mathematically to resemble the pure event-driven finite-state engine found in `liteai2`.
 2. **Context Fragmentation**: The new ReAct loop will drastically improve sub-agent transitions, leveraging OTel explicitly to trace internal thoughts without disjointing them into random UI message ids.

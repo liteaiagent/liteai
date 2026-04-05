@@ -222,9 +222,6 @@ export async function initializeTelemetry() {
       logs.setGlobalLoggerProvider(loggerProvider)
       globalLoggerProvider = loggerProvider
 
-      const eventLogger = logs.getLogger("com.liteai.events", "1.0.0")
-      // Set a global reference somewhere if needed, but we can just use `logs.getLogger` in our events module
-
       process.on("beforeExit", async () => {
         await loggerProvider.forceFlush()
         await globalTracerProvider?.forceFlush()
