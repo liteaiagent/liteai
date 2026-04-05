@@ -2,6 +2,7 @@ services:
   # Tempo is the backend database that stores the traces
   tempo:
     image: grafana/tempo:2.10.3
+    container_name: tempo
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
@@ -23,6 +24,7 @@ services:
   # Grafana is the UI dashboard
   grafana:
     image: grafana/grafana:latest
+    container_name: grafana
     environment:
       # Bypass login screen for local dev convenience
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -48,6 +50,7 @@ services:
 # Prometheus is the backend database for Metrics
   prometheus:
     image: prom/prometheus:latest
+    container_name: prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       # This flag allows Prometheus to directly accept OTLP metric pushes
@@ -61,6 +64,7 @@ services:
   # Loki is the backend database for Logs
   loki:
     image: grafana/loki:latest
+    container_name: loki
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml

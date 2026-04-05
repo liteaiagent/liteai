@@ -30,7 +30,7 @@ These files represent the master architecture we are porting from:
 
 ## 3. Execution Phases (LiteAI Core)
 
-### Phase 1: Decoupling the Stream Processor (Pure Event Source)
+### Phase 1: Decoupling the Stream Processor (Pure Event Source) - [COMPLETED]
 We must first detach SQLite logic from `processor.ts` so it acts as an agnostic yield mechanism.
 
 **Target Files:**
@@ -40,6 +40,12 @@ We must first detach SQLite logic from `processor.ts` so it acts as an agnostic 
 
 - `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\index.ts` (or consumer layer)
   - *Refactor Goal*: Introduce an `EventPersister` that listens to the `processor.ts` async generator and executes the SQLite updates synchronously to mimic the old behavior for backwards compatibility during the migration.
+
+**What was done:**
+- Created `events.ts` emitting purely modeled `EngineEvent.Any` (`DeltaEvent` and `BlockEvent`).
+- Built `streamGenerator` in `processor.ts` that acts purely as an `async function*` processing stream parts.
+- Implemented `EventPersister` inside `session/engine/persister.ts` that safely envelopes all previous SQLite behaviors, acting as a backward-compatibility layer so things like `loop.ts` didn't break.
+- Confirmed `processor.ts` cleanly decoupled via Zero SQLite imports and checked strict types using `tsc -b`.
 
 ### Phase 2: Implementing the Pre-Processing Context Pipeline
 Before invoking the model in each turn, applying constraints aggressively.

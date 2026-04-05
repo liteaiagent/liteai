@@ -5,6 +5,7 @@ import { xdgCache, xdgData, xdgState } from "xdg-basedir"
 import { Brand } from "../brand"
 import { Flag } from "../flag/flag"
 import { Filesystem } from "../util/filesystem"
+
 // NOTE: Do NOT import Log at the top level — it creates a circular dependency
 // (Log imports Global, Global imports Log). Use lazy import where needed.
 
