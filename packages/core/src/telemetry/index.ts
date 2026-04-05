@@ -4,35 +4,32 @@
  * Re-exports the four sub-modules so consumers can import from
  * `@/telemetry` instead of reaching into individual files.
  */
+
 export {
-  isTelemetryEnabled,
-  initializeTelemetry,
-  shutdownTelemetry,
+  clearEventTrackingState,
+  logOTelEvent,
+  logSystemPromptIfNeeded,
+  logToolSchemaIfNeeded,
+} from "./events"
+export {
   flushTelemetry,
+  initializeTelemetry,
+  isTelemetryEnabled,
   registerTelemetryCleanup,
+  shutdownTelemetry,
 } from "./instrumentation"
-
-export {
-  startInteractionSpan,
-  endInteractionSpan,
-  startLLMRequestSpan,
-  endLLMRequestSpan,
-  startToolSpan,
-  endToolSpan,
-  startHookSpan,
-  endHookSpan,
-} from "./tracing"
-
-export type { Span, LLMRequestNewContext, LLMResponseMetadata, HookResult } from "./tracing"
-
 export {
   initializePerfettoTracing,
   isPerfettoTracingEnabled,
 } from "./perfetto"
-
+export type { HookResult, LLMRequestNewContext, LLMResponseMetadata, Span } from "./tracing"
 export {
-  logOTelEvent,
-  logSystemPromptIfNeeded,
-  logToolSchemaIfNeeded,
-  clearEventTrackingState,
-} from "./events"
+  endHookSpan,
+  endInteractionSpan,
+  endLLMRequestSpan,
+  endToolSpan,
+  startHookSpan,
+  startInteractionSpan,
+  startLLMRequestSpan,
+  startToolSpan,
+} from "./tracing"

@@ -1,6 +1,10 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import { INVALID_SPAN_CONTEXT, context as otelContext, type Span, trace } from "@opentelemetry/api"
+import { Log } from "../util/log"
 import { isTelemetryEnabled } from "./instrumentation"
+
+const log = Log.create({ service: "telemetry.tracing" })
+
 import {
   endInteractionPerfettoSpan,
   endLLMRequestPerfettoSpan,
@@ -12,10 +16,26 @@ import {
 
 export type { Span }
 
+export function truncateForTelemetry(value: unknown, maxLength: number = 10000): string | undefined {
+  if (value === undefined || value === null) return undefined
+  try {
+    const str = typeof value === "string" ? value : JSON.stringify(value)
+    if (typeof str !== "string") return undefined
+    if (str.length > maxLength) {
+      return `${str.substring(0, maxLength)}\n...[TRUNCATED: original length ${str.length}]`
+    }
+    return str
+  } catch (e) {
+    log.error("Error stringifying telemetry value", { error: e })
+    return "[Error stringifying telemetry value]"
+  }
+}
+
 export interface LLMRequestNewContext {
   systemPrompt?: string
   querySource?: string
   tools?: string
+  messages?: unknown
 }
 
 export interface LLMResponseMetadata {
@@ -27,6 +47,7 @@ export interface LLMResponseMetadata {
   statusCode?: number
   error?: string
   ttftMs?: number
+  output?: unknown
 }
 
 export interface HookResult {
@@ -202,6 +223,14 @@ export function startLLMRequestSpan(model: string, newContext?: LLMRequestNewCon
   if (newContext?.querySource) {
     span.setAttribute("query_source", newContext.querySource)
   }
+  if (newContext?.systemPrompt) {
+    const truncated = truncateForTelemetry(newContext.systemPrompt)
+    if (truncated) span.setAttribute("llm_request.system_prompt", truncated)
+  }
+  if (newContext?.messages) {
+    const truncated = truncateForTelemetry(newContext.messages)
+    if (truncated) span.setAttribute("llm_request.messages", truncated)
+  }
 
   const spanId = getSpanId(span)
   const spanContextObj: SpanContext = {
@@ -269,6 +298,10 @@ export function endLLMRequestSpan(span?: Span, metadata?: LLMResponseMetadata): 
     if (metadata.statusCode !== undefined) endAttributes.status_code = metadata.statusCode
     if (metadata.error !== undefined) endAttributes.error = metadata.error
     if (metadata.ttftMs !== undefined) endAttributes.ttft_ms = metadata.ttftMs
+    if (metadata.output !== undefined) {
+      const truncated = truncateForTelemetry(metadata.output)
+      if (truncated) endAttributes["llm_request.output"] = truncated
+    }
   }
 
   llmSpanContext.span.setAttributes(endAttributes)

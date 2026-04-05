@@ -15,10 +15,11 @@ $env:OTEL_EXPORTER_OTLP_ENDPOINT = "https://otel.smartnest.info"
 # ─── Metrics / Logs ──────────────────────────────────────────────────────────
 # Prometheus and Loki are NOT exposed via Traefik currently.
 # To enable, add Traefik labels in docker-compose.yml and uncomment:
-# $env:OTEL_METRICS_EXPORTER = "otlp"
-# $env:OTEL_EXPORTER_OTLP_METRICS_ENDPOINT = "https://metrics.smartnest.info"
-# $env:OTEL_LOGS_EXPORTER = "otlp"
-# $env:OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "https://logs.smartnest.info"
+$env:OTEL_METRICS_EXPORTER = "otlp"
+$env:OTEL_EXPORTER_OTLP_METRICS_ENDPOINT = "https://metrics.smartnest.info/api/v1/otlp/v1/metrics"
+$env:OTEL_METRIC_EXPORT_INTERVAL = "5000"
+$env:OTEL_LOGS_EXPORTER = "otlp"
+$env:OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "https://logs.smartnest.info/otlp/v1/logs"
 
 # ─── Perfetto (optional, independent local trace file) ───────────────────────
 # Uncomment to also write a Chrome Trace Event file for Perfetto UI analysis:

@@ -91,3 +91,18 @@ export function logToolSchemaIfNeeded(toolName: string, toolSchemaJson: string):
     })
   }
 }
+
+export function logLLMMessages(messages: unknown, model: string): void {
+  if (!isTelemetryEnabled()) return
+
+  const eventLogger = logs.getLogger("com.liteai.events", "1.0.0")
+
+  eventLogger.emit({
+    body: JSON.stringify(messages),
+    attributes: {
+      "log.type": "llm.messages",
+      model: model,
+      "event.timestamp": new Date().toISOString(),
+    },
+  })
+}

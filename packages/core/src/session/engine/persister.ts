@@ -7,6 +7,7 @@ import type { Provider } from "@/provider/provider"
 import { Question } from "@/question"
 import { Snapshot } from "@/snapshot"
 import { Log } from "@/util/log"
+import { Metrics } from "../../telemetry/metrics"
 import { endToolSpan, startToolSpan } from "../../telemetry/tracing"
 import type { EngineEvent } from "../events"
 import { Session } from "../index"
@@ -205,6 +206,22 @@ export class EventPersister {
             assistantMessage.finish = event.finishReason
             assistantMessage.cost += usage.cost
             assistantMessage.tokens = usage.tokens
+
+            Metrics.costTotal.add(usage.cost, { model: model.id, agent: assistantMessage.agent })
+            if (usage.tokens) {
+              if (usage.tokens.input)
+                Metrics.tokensInput.add(usage.tokens.input, { model: model.id, agent: assistantMessage.agent })
+              if (usage.tokens.output)
+                Metrics.tokensOutput.add(usage.tokens.output, { model: model.id, agent: assistantMessage.agent })
+              if (usage.tokens.cache?.read)
+                Metrics.tokensCacheRead.add(usage.tokens.cache.read, { model: model.id, agent: assistantMessage.agent })
+              if (usage.tokens.cache?.write)
+                Metrics.tokensCacheWrite.add(usage.tokens.cache.write, {
+                  model: model.id,
+                  agent: assistantMessage.agent,
+                })
+            }
+
             const stepFinishPart = await Session.updatePart({
               id: PartID.ascending(),
               reason: event.finishReason,
@@ -244,6 +261,8 @@ export class EventPersister {
           if (event.kind === "tool" && event.id) {
             const match = this.toolcalls[event.id]
             if (match) {
+              Metrics.toolsTotal.add(1, { tool_name: event.toolName, agent: assistantMessage.agent })
+
               log.info("tool call", {
                 tool: event.toolName,
                 // biome-ignore lint/suspicious/noExplicitAny: input is generic
@@ -291,7 +310,10 @@ export class EventPersister {
             const match = this.toolcalls[event.id]
             if (match && match.state.status === "running") {
               const duration = Date.now() - match.state.time.start
+
+              Metrics.toolsDuration.record(duration, { tool_name: match.tool, agent: assistantMessage.agent })
               log.info("tool result", { tool: match.tool, duration, sessionID })
+
               endToolSpan()
               const completedPart = await Session.updatePart({
                 ...match,
@@ -317,6 +339,8 @@ export class EventPersister {
           if (event.kind === "tool" && event.id) {
             const match = this.toolcalls[event.id]
             if (match && match.state.status === "running") {
+              Metrics.toolsErrors.add(1, { tool_name: match.tool, agent: assistantMessage.agent })
+
               log.info("tool error", { tool: match.tool, error: String(event.error).slice(0, 200), sessionID })
               endToolSpan()
               const erroredPart = await Session.updatePart({
@@ -359,6 +383,8 @@ export class EventPersister {
       } else {
         const retry = SessionRetry.retryable(error)
         if (retry !== undefined) {
+          Metrics.retriesTotal.add(1, { agent: assistantMessage.agent })
+
           this.attempt++
           const delay = SessionRetry.delay(this.attempt, error.name === "APIError" ? error : undefined)
           SessionStatus.set(sessionID, {

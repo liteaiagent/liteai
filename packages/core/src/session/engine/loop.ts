@@ -10,6 +10,7 @@ import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import { ModelID, ProviderID } from "../../provider/schema"
+import { Metrics } from "../../telemetry/metrics"
 import {
   endInteractionSpan,
   endLLMRequestSpan,
@@ -141,6 +142,8 @@ export const prompt = fn(PromptInput, async (input) => {
 
   const textPart = input.parts.find((p) => p.type === "text")
   const userText = textPart && "text" in textPart ? textPart.text : "Input"
+
+  Metrics.interactions.add(1, { agent: input.agent ?? "default" })
   startInteractionSpan(userText)
 
   try {
@@ -157,6 +160,8 @@ export function start(sessionID: SessionID) {
     return
   }
   log.info("start", { sessionID })
+  Metrics.sessionsActive.add(1)
+
   const controller = new AbortController()
   s[sessionID] = {
     abort: controller,
@@ -189,6 +194,8 @@ export function cancel(sessionID: SessionID) {
  */
 function cleanup(sessionID: SessionID) {
   log.info("cleanup", { sessionID })
+  Metrics.sessionsActive.add(-1)
+
   const s = state()
   delete s[sessionID]
   SessionStatus.set(sessionID, { type: "idle" })
@@ -385,6 +392,8 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
           }
           case "compaction-task": {
             const { task, lastUser, msgs } = event.payload
+            Metrics.compactionsTotal.add(1, { agent: lastUser.agent })
+
             const { result, summaryWithParts } = await SessionCompaction.process({
               messages: msgs,
               parentID: lastUser.id,

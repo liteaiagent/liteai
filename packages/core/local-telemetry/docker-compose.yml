@@ -54,9 +54,16 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       # This flag allows Prometheus to directly accept OTLP metric pushes
-      - "--enable-feature=otlp-write-receiver" 
+      - "--web.enable-otlp-receiver"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`metrics.${DOMAIN}`)"
+      - "traefik.http.routers.prometheus.entrypoints=https"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.service=prometheus"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
     networks:
       traefik-net:
         ipv4_address: 172.20.0.42
@@ -68,6 +75,13 @@ services:
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.loki.rule=Host(`logs.${DOMAIN}`)"
+      - "traefik.http.routers.loki.entrypoints=https"
+      - "traefik.http.routers.loki.tls=true"
+      - "traefik.http.routers.loki.service=loki"
+      - "traefik.http.services.loki.loadbalancer.server.port=3100"
     networks:
       traefik-net:
         ipv4_address: 172.20.0.43

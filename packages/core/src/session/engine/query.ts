@@ -7,6 +7,8 @@ import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import type { ModelID, ProviderID } from "../../provider/schema"
+import { logLLMMessages, logSystemPromptIfNeeded, logToolSchemaIfNeeded } from "../../telemetry/events"
+import { Metrics } from "../../telemetry/metrics"
 import { endLLMRequestSpan, startLLMRequestSpan } from "../../telemetry/tracing"
 import { Log } from "../../util/log"
 import { Session } from ".."
@@ -270,6 +272,18 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       messages: msgs,
     })
 
+    for (const [toolName, toolObj] of Object.entries(tools)) {
+      const schema = (toolObj as any).parameters || (toolObj as any).inputSchema
+      if (schema) {
+        try {
+          // We stringify the JSON schema or zod parameters definition for logging
+          logToolSchemaIfNeeded(toolName, JSON.stringify(schema))
+        } catch {
+          // ignore serialization errors
+        }
+      }
+    }
+
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
     const format: Message.OutputFormat = lastUser.format ?? { type: "text" }
     if (format.type === "json_schema") {
@@ -317,6 +331,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
     }
 
+    logSystemPromptIfNeeded(system.join("\n\n"))
+
     // ── Construct LLM stream input ──
     const streamInput = {
       user: lastUser,
@@ -356,7 +372,16 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     } satisfies EngineEvent.TurnStartEvent
 
     // ── Stream LLM via the decoupled processor generator ──
-    startLLMRequestSpan(`${model.providerID}/${model.id}`, { systemPrompt: system.join("\n\n") })
+    startLLMRequestSpan(`${model.providerID}/${model.id}`, {
+      systemPrompt: system.join("\n\n"),
+      messages: streamInput.messages,
+    })
+
+    logLLMMessages(streamInput.messages, `${model.providerID}/${model.id}`)
+
+    Metrics.llmRequests.add(1, { model: model.id, provider: model.providerID, agent: agent.name })
+    const llmStartTime = Date.now()
+    let firstTokenTime: number | null = null
 
     let streamResult: unknown
     try {
@@ -365,6 +390,14 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       })
 
       for await (const event of generator) {
+        if (!firstTokenTime && event.type === "delta") {
+          firstTokenTime = Date.now()
+          Metrics.llmTtft.record(firstTokenTime - llmStartTime, {
+            model: model.id,
+            provider: model.providerID,
+            agent: agent.name,
+          })
+        }
         // Feed every event through the executor for lifecycle tracking.
         // The executor monitors tool start/delta/call/result/error events
         // and maintains concurrency state without intercepting the event flow.
@@ -393,6 +426,12 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         siblingError: toolExecutor.hasSiblingError(),
       })
     }
+
+    Metrics.llmDuration.record(Date.now() - llmStartTime, {
+      model: model.id,
+      provider: model.providerID,
+      agent: agent.name,
+    })
 
     endLLMRequestSpan(undefined, {
       inputTokens: assistantMessage.tokens.input,

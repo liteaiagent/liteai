@@ -1,8 +1,8 @@
 import { DiagConsoleLogger, DiagLogLevel, diag, metrics, trace } from "@opentelemetry/api"
 import { logs } from "@opentelemetry/api-logs"
 import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
-import { BatchLogRecordProcessor, ConsoleLogRecordExporter, LoggerProvider } from "@opentelemetry/sdk-logs"
-import { ConsoleMetricExporter, MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics"
+import { BatchLogRecordProcessor, ConsoleLogRecordExporter, LoggerProvider, type LogRecordExporter, type ReadableLogRecord } from "@opentelemetry/sdk-logs"
+import { ConsoleMetricExporter, MeterProvider, PeriodicExportingMetricReader, type PushMetricExporter, type ResourceMetrics, type AggregationTemporality } from "@opentelemetry/sdk-metrics"
 import {
   BasicTracerProvider,
   BatchSpanProcessor,
@@ -63,12 +63,12 @@ async function getOtlpReaders() {
       switch (protocol) {
         case "http/json": {
           const { OTLPMetricExporter } = await import("@opentelemetry/exporter-metrics-otlp-http")
-          exporters.push(new OTLPMetricExporter())
+          exporters.push(new DiagnosticMetricExporter(new OTLPMetricExporter(), "otlp-metrics"))
           break
         }
         case "http/protobuf": {
           const { OTLPMetricExporter } = await import("@opentelemetry/exporter-metrics-otlp-proto")
-          exporters.push(new OTLPMetricExporter())
+          exporters.push(new DiagnosticMetricExporter(new OTLPMetricExporter(), "otlp-metrics"))
           break
         }
         default:
@@ -101,12 +101,12 @@ async function getOtlpLogExporters() {
       switch (protocol) {
         case "http/json": {
           const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-http")
-          exporters.push(new OTLPLogExporter())
+          exporters.push(new DiagnosticLogExporter(new OTLPLogExporter(), "otlp-logs"))
           break
         }
         case "http/protobuf": {
           const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-proto")
-          exporters.push(new OTLPLogExporter())
+          exporters.push(new DiagnosticLogExporter(new OTLPLogExporter(), "otlp-logs"))
           break
         }
         default:
@@ -116,6 +116,114 @@ async function getOtlpLogExporters() {
   }
   return exporters
 }
+
+class DiagnosticMetricExporter implements PushMetricExporter {
+  private exportCount = 0
+  private successCount = 0
+  private failureCount = 0
+
+  constructor(
+    private readonly inner: PushMetricExporter,
+    private readonly label: string,
+  ) {}
+
+
+  async forceFlush(): Promise<void> {
+    return this.inner.forceFlush?.()
+  }
+
+  export(metrics: ResourceMetrics, resultCallback: (result: { code: number; error?: Error }) => void): void {
+    this.exportCount++
+    const batchNum = this.exportCount
+    
+    const dataPointsCount = metrics.scopeMetrics.reduce((acc, sm) => 
+      acc + sm.metrics.length, 0)
+
+    log.info("metric export attempt", { exporter: this.label, batch: batchNum, scopes: metrics.scopeMetrics.length, dataPointsCount })
+
+    this.inner.export(metrics, (result) => {
+      if (result.code === 0) {
+        this.successCount++
+        log.info("metric export success", {
+          exporter: this.label,
+          batch: batchNum,
+          totalSuccess: this.successCount,
+        })
+      } else {
+        this.failureCount++
+        log.error("metric export failed", {
+          exporter: this.label,
+          batch: batchNum,
+          code: result.code,
+          error: result.error?.message,
+          totalFailures: this.failureCount,
+        })
+      }
+      resultCallback(result)
+    })
+  }
+
+  async shutdown(): Promise<void> {
+    log.info("metric exporter shutdown", {
+      exporter: this.label,
+      totalExports: this.exportCount,
+      totalSuccess: this.successCount,
+      totalFailures: this.failureCount,
+    })
+    return this.inner.shutdown()
+  }
+}
+
+class DiagnosticLogExporter implements LogRecordExporter {
+  private exportCount = 0
+  private successCount = 0
+  private failureCount = 0
+
+  constructor(
+    private readonly inner: LogRecordExporter,
+    private readonly label: string,
+  ) {}
+
+  export(logsBatch: ReadableLogRecord[], resultCallback: (result: { code: number; error?: Error }) => void): void {
+    this.exportCount++
+    const batchNum = this.exportCount
+    log.info("log export attempt", { exporter: this.label, batch: batchNum, logs: logsBatch.length })
+
+    this.inner.export(logsBatch, (result) => {
+      if (result.code === 0) {
+        this.successCount++
+        log.info("log export success", {
+          exporter: this.label,
+          batch: batchNum,
+          logs: logsBatch.length,
+          totalSuccess: this.successCount,
+        })
+      } else {
+        this.failureCount++
+        log.error("log export failed", {
+          exporter: this.label,
+          batch: batchNum,
+          logs: logsBatch.length,
+          code: result.code,
+          error: result.error?.message,
+          totalFailures: this.failureCount,
+        })
+      }
+      resultCallback(result)
+    })
+  }
+
+  async shutdown(): Promise<void> {
+    log.info("log exporter shutdown", {
+      exporter: this.label,
+      totalExports: this.exportCount,
+      totalSuccess: this.successCount,
+      totalFailures: this.failureCount,
+    })
+    return this.inner.shutdown()
+  }
+}
+
 
 /**
  * Wraps a SpanExporter to log export success/failure to telemetry.log.
@@ -181,7 +289,8 @@ async function getOtlpTraceExporters() {
   const exporterTypes = parseExporterTypes(process.env.OTEL_TRACES_EXPORTER)
   const protocol =
     process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL?.trim() || process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
-  const endpoint = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.trim() || process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim()
+  const endpoint =
+    process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.trim() || process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim()
 
   const exporters: SpanExporter[] = []
   for (const exporterType of exporterTypes) {
@@ -305,11 +414,13 @@ export async function initializeTelemetry() {
       process.on("beforeExit", async () => {
         await loggerProvider.forceFlush()
         await globalTracerProvider?.forceFlush()
+        await globalMeterProvider?.forceFlush()
       })
 
       process.on("exit", () => {
         void loggerProvider.forceFlush()
         void globalTracerProvider?.forceFlush()
+        void globalMeterProvider?.forceFlush()
       })
     }
 

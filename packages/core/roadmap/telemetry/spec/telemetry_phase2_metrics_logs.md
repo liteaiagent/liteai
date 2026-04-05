@@ -1,7 +1,7 @@
 # Telemetry Phase 2: OTel Metrics & Logs Integration
 
-## Status: Planned
-## Priority: Low
+## Status: ✅ Data Pipelines Complete (Pending 2e: Dashboards)
+## Priority: High
 ## Depends On: Telemetry refactoring (✅ complete), Agentic loop rewrite (✅ complete)
 
 ---
@@ -10,11 +10,24 @@
 
 The telemetry subsystem currently has full **trace** instrumentation (interaction → llm_request → tool span hierarchy) and a working remote stack (Tempo + Grafana). However, the **metrics** and **logs** pipelines are scaffolding-only:
 
-- `MeterProvider` is created but zero counters/histograms/gauges exist
-- `LoggerProvider` is created but `logOTelEvent()`, `logSystemPromptIfNeeded()`, and `logToolSchemaIfNeeded()` have **zero call sites** in the agentic loop
-- Prometheus and Loki are deployed but receive no data
+- `MeterProvider` is created but zero counters/histograms/gauges exist.
+- `LoggerProvider` is created but `logOTelEvent()`, `logSystemPromptIfNeeded()`, and `logToolSchemaIfNeeded()` have **zero call sites** in the agentic loop.
+- Prometheus and Loki are deployed but receive no data.
+- Massive LLM conversational payloads are currently 10k-character truncated in Tempo due to span attribute limits. Full, untruncated payloads must be routed to Loki.
 
-This roadmap item covers wiring these pipelines into production code.
+This roadmap item covers wiring these pipelines into production code, specifically referencing the mature Node.js implementation from the `liteai2` workspace.
+
+---
+
+## Reference Implementation: `liteai2`
+
+We will strictly follow the `liteai2` production NodeSDK telemetry configuration as the blueprint for Phase 2. The `liteai2` workspace demonstrates proper Three-Pillar observability with dynamic exporter bridging.
+
+**Key Reference Files:**
+- **Exporter Setup:** `C:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\instrumentation.ts`
+  *Provides the exact logic for dynamically invoking `@opentelemetry/exporter-logs-otlp-http` and `@opentelemetry/exporter-metrics-otlp-http`, and applying them to `LoggerProvider` and `MeterProvider` with proper compression schemas.*
+- **Provider Initialization:** `C:\Users\aghassan\Documents\workspace\liteai2\src\bootstrap\state.ts`
+  *Demonstrates how to correctly initialize the core OTel SDK `api-logs` and `sdk-metrics` providers at application boot time.*
 
 ---
 
@@ -50,7 +63,7 @@ All metrics should carry these attributes for slicing:
 - `tool_name` (for tool-specific metrics)
 
 ### Implementation Approach
-Create a `src/telemetry/metrics.ts` module:
+Create a `src/telemetry/metrics.ts` module, modeled entirely after `liteai2/src/utils/telemetry/instrumentation.ts`:
 ```typescript
 import { metrics } from "@opentelemetry/api"
 
@@ -60,21 +73,16 @@ export const Metrics = {
   interactions: meter.createCounter("liteai.interactions.total"),
   llmRequests: meter.createCounter("liteai.llm_requests.total"),
   llmDuration: meter.createHistogram("liteai.llm_request.duration_ms"),
-  ttft: meter.createHistogram("liteai.llm_request.ttft_ms"),
-  inputTokens: meter.createCounter("liteai.tokens.input"),
-  outputTokens: meter.createCounter("liteai.tokens.output"),
   // ...
 }
 ```
-
-Then call `Metrics.interactions.add(1, { model, agent })` at the appropriate call sites.
 
 ---
 
 ## 2. OTel Logs (Structured Events)
 
 ### What They Provide (vs `log.info`)
-`log.info` is app-level debug output → stdout/file. OTel Logs are **structured telemetry events** → Loki/Datadog/etc, with correlation to traces via `trace_id`.
+Standard `log.info` sends local stdout output for debugging. By connecting to Loki via `@opentelemetry/sdk-logs`, any large, unstructured block of text (like a massive 150k token LLM context window) is routed explicitly to a high-capacity time-series database. Because it is routed with an active `traceId`, Grafana perfectly pairs the massive Log payload with your Tracing Graph timelines automatically.
 
 ### What's Already Built (Just Needs Call Sites)
 
@@ -84,18 +92,20 @@ Then call `Metrics.interactions.add(1, { model, agent })` at the appropriate cal
 | `logToolSchemaIfNeeded(name, schema)` | Tool JSON schema (deduplicated) | `query.ts` after resolving tools |
 | `logOTelEvent(name, metadata)` | Generic structured event | Various (see below) |
 
-### Additional Events to Add
-
-| Event | Metadata | Where |
-|---|---|---|
-| `liteai.interaction_start` | `session_id`, `agent`, `model`, `prompt_length` | `loop.ts` prompt() |
-| `liteai.interaction_end` | `session_id`, `steps`, `total_tokens`, `total_cost`, `duration_ms` | `loop.ts` after runSession |
-| `liteai.compaction` | `session_id`, `type` (auto/overflow), `before_tokens`, `after_tokens` | `loop.ts` compaction-task handler |
-| `liteai.error` | `session_id`, `error_type`, `error_message`, `model` | `persister.ts` error paths |
-| `liteai.retry` | `session_id`, `attempt`, `delay_ms`, `error_type` | `persister.ts` retry path |
+### LLM Payload Persistence
+Instead of cramming stringified prompts into span attributes (which violates OTel strict length limits leading exactly to 10k character truncation), we will use OTel Appender Logs inside `query.ts`:
+```typescript
+logger.emit({
+  body: JSON.stringify(payload.messages),
+  attributes: { 
+    "log.type": "llm.messages", 
+    model: payload.model 
+  }
+})
+```
 
 ### Loki Stack Requirement
-Loki needs OTLP ingestion enabled — add to `loki-config.yaml`:
+Loki needs OTLP ingestion enabled. In `loki-config.yaml`:
 ```yaml
 limits_config:
   otlp_config:
@@ -111,7 +121,7 @@ limits_config:
 
 ## 3. Grafana Dashboards
 
-Once metrics and logs are flowing, create pre-built dashboards:
+Once metrics and logs are flowing, create pre-built dashboards using Prometheus and Loki as datasources:
 
 ### Operational Dashboard
 - Interactions/min, LLM requests/min, active sessions
@@ -119,23 +129,15 @@ Once metrics and logs are flowing, create pre-built dashboards:
 - Cost per hour/day
 - Error rate, retry rate
 
-### Performance Dashboard
-- LLM latency percentiles (p50, p95, p99)
-- TTFT distribution
-- Tool execution latency by tool name
-- Compaction frequency
-
-### Cost Dashboard
-- Cost by model
-- Cost by agent
-- Token efficiency (cache hit ratio)
-- Cost per interaction
+### Context & Prompts View
+- A dedicated TraceQL/PromQL linked dashboard that automatically presents untruncated system prompts and multi-turn message arrays directly from Loki via Trace ID correlations.
 
 ---
 
 ## Implementation Order
 
-1. **Phase 2a: Metrics** — Create `metrics.ts`, wire into persister/loop/query (~2h)
-2. **Phase 2b: Log Call Sites** — Wire existing `logSystemPromptIfNeeded`/`logToolSchemaIfNeeded` into query.ts, add interaction events (~1h)
-3. **Phase 2c: Loki Config** — Enable OTLP in Loki, expose via Traefik (~30min)
-4. **Phase 2d: Dashboards** — Export Grafana dashboard JSON for provisioning (~2h)
+1. **~~Phase 2a: Metrics SDK Bridge~~** ✅ Complete — Ported `MeterProvider` configuration to `liteai`.
+2. **~~Phase 2b: Metrics Definitions~~** ✅ Complete — Created `metrics.ts` (using lazy getters) and wired into persister/loop/query.
+3. **~~Phase 2c: Loki Log Bridges~~** ✅ Complete — Adapted `LoggerProvider` using `@opentelemetry/exporter-logs-otlp-http` and routed raw unwrapped LLM arrays straight to Loki.
+4. **~~Phase 2d: Infrastructure Readiness~~** ✅ Complete — Traefik routing mapped internally, Prometheus 3.x modernized, and OpenTelemetry drops resolved.
+5. **Phase 2e: Dashboards** 🚧 Pending — Export Grafana dashboard JSON for provisioning.

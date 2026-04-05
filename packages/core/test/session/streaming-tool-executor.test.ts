@@ -86,7 +86,7 @@ describe("StreamingToolExecutor", () => {
 
     // Tool should be in accumulating status
     const summary = executor.getToolSummary()
-    expect(summary[0]!.status).toBe("accumulating")
+    expect(summary[0]?.status).toBe("accumulating")
   })
 
   test("tracks tool lifecycle: pending → accumulating → executing → completed", () => {
@@ -94,16 +94,16 @@ describe("StreamingToolExecutor", () => {
     const executor = new StreamingToolExecutor(ctrl.signal)
 
     executor.processEvent(toolStart("t1", "read"))
-    expect(executor.getToolSummary()[0]!.status).toBe("pending")
+    expect(executor.getToolSummary()[0]?.status).toBe("pending")
 
     executor.processEvent(toolDelta("t1", '{"file":"test.ts"}'))
-    expect(executor.getToolSummary()[0]!.status).toBe("accumulating")
+    expect(executor.getToolSummary()[0]?.status).toBe("accumulating")
 
     executor.processEvent(toolCall("t1", "read", { file: "test.ts" }))
-    expect(executor.getToolSummary()[0]!.status).toBe("executing")
+    expect(executor.getToolSummary()[0]?.status).toBe("executing")
 
     executor.processEvent(toolResult("t1", "read", { file: "test.ts" }, "file contents"))
-    expect(executor.getToolSummary()[0]!.status).toBe("completed")
+    expect(executor.getToolSummary()[0]?.status).toBe("completed")
   })
 
   test("tracks error status", () => {
@@ -114,7 +114,7 @@ describe("StreamingToolExecutor", () => {
     executor.processEvent(toolCall("t1", "run_command", { command: "fail" }))
     executor.processEvent(toolError("t1", "run_command", { command: "fail" }, "command failed"))
 
-    expect(executor.getToolSummary()[0]!.status).toBe("error")
+    expect(executor.getToolSummary()[0]?.status).toBe("error")
   })
 
   test("sibling abort fires when a mutating tool errors", () => {
@@ -217,9 +217,9 @@ describe("StreamingToolExecutor", () => {
     executor.processEvent(toolError("t3", "edit", { file: "b.ts" }, "permission denied"))
 
     const summary = executor.getToolSummary()
-    expect(summary[0]!.status).toBe("completed")
-    expect(summary[1]!.status).toBe("pending") // never called
-    expect(summary[2]!.status).toBe("error")
+    expect(summary[0]?.status).toBe("completed")
+    expect(summary[1]?.status).toBe("pending") // never called
+    expect(summary[2]?.status).toBe("error")
   })
 
   test("parent abort propagates to sibling abort signal", () => {
