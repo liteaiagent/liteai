@@ -299,8 +299,8 @@ export class EventPersister {
                   status: "completed",
                   input: event.input ?? match.state.input,
                   output: event.output,
-                  metadata: event.metadata,
-                  ...(event.title ? { title: event.title } : {}),
+                  title: event.title ?? match.tool,
+                  metadata: event.metadata ?? {},
                   time: { start: match.state.time.start, end: Date.now() },
                   attachments: event.attachments,
                   // biome-ignore lint/suspicious/noExplicitAny: generic state merge

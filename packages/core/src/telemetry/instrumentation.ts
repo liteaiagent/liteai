@@ -3,12 +3,21 @@ import { logs } from "@opentelemetry/api-logs"
 import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
 import { BatchLogRecordProcessor, ConsoleLogRecordExporter, LoggerProvider } from "@opentelemetry/sdk-logs"
 import { ConsoleMetricExporter, MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics"
-import { BasicTracerProvider, BatchSpanProcessor, ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base"
+import {
+  BasicTracerProvider,
+  BatchSpanProcessor,
+  ConsoleSpanExporter,
+  type ReadableSpan,
+  type SpanExporter,
+} from "@opentelemetry/sdk-trace-base"
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
 
 import { Installation } from "../installation"
+import { Log } from "../util/log"
 import { initializePerfettoTracing } from "./perfetto"
 import { endInteractionSpan } from "./tracing"
+
+const log = Log.create({ service: "telemetry" })
 
 const DEFAULT_METRICS_EXPORT_INTERVAL_MS = 60000
 const DEFAULT_LOGS_EXPORT_INTERVAL_MS = 5000
@@ -108,25 +117,88 @@ async function getOtlpLogExporters() {
   return exporters
 }
 
+/**
+ * Wraps a SpanExporter to log export success/failure to telemetry.log.
+ * This lets you verify OTLP connectivity without checking OTel internal diagnostics.
+ */
+class DiagnosticSpanExporter implements SpanExporter {
+  private exportCount = 0
+  private successCount = 0
+  private failureCount = 0
+
+  constructor(
+    private readonly inner: SpanExporter,
+    private readonly label: string,
+  ) {}
+
+  export(spans: ReadableSpan[], resultCallback: (result: { code: number; error?: Error }) => void): void {
+    this.exportCount++
+    const batchNum = this.exportCount
+    const spanNames = spans.map((s) => s.name).join(", ")
+    log.info("export attempt", { exporter: this.label, batch: batchNum, spans: spans.length, names: spanNames })
+
+    this.inner.export(spans, (result) => {
+      if (result.code === 0) {
+        this.successCount++
+        log.info("export success", {
+          exporter: this.label,
+          batch: batchNum,
+          spans: spans.length,
+          totalSuccess: this.successCount,
+        })
+      } else {
+        this.failureCount++
+        log.error("export failed", {
+          exporter: this.label,
+          batch: batchNum,
+          spans: spans.length,
+          code: result.code,
+          error: result.error?.message,
+          totalFailures: this.failureCount,
+        })
+      }
+      resultCallback(result)
+    })
+  }
+
+  async shutdown(): Promise<void> {
+    log.info("exporter shutdown", {
+      exporter: this.label,
+      totalExports: this.exportCount,
+      totalSuccess: this.successCount,
+      totalFailures: this.failureCount,
+    })
+    return this.inner.shutdown()
+  }
+
+  async forceFlush(): Promise<void> {
+    log.info("exporter flush", { exporter: this.label })
+    return this.inner.forceFlush?.()
+  }
+}
+
 async function getOtlpTraceExporters() {
   const exporterTypes = parseExporterTypes(process.env.OTEL_TRACES_EXPORTER)
   const protocol =
     process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL?.trim() || process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
+  const endpoint = process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.trim() || process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim()
 
-  const exporters = []
+  const exporters: SpanExporter[] = []
   for (const exporterType of exporterTypes) {
     if (exporterType === "console") {
       exporters.push(new ConsoleSpanExporter())
+      log.info("trace exporter configured", { type: "console" })
     } else if (exporterType === "otlp") {
+      log.info("trace exporter configured", { type: "otlp", protocol, endpoint })
       switch (protocol) {
         case "http/json": {
           const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http")
-          exporters.push(new OTLPTraceExporter())
+          exporters.push(new DiagnosticSpanExporter(new OTLPTraceExporter(), `otlp-http-json→${endpoint}`))
           break
         }
         case "http/protobuf": {
           const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-proto")
-          exporters.push(new OTLPTraceExporter())
+          exporters.push(new DiagnosticSpanExporter(new OTLPTraceExporter(), `otlp-http-proto→${endpoint}`))
           break
         }
         default:
@@ -162,6 +234,16 @@ export async function initializeTelemetry() {
   }
 
   diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR)
+
+  log.info("initializing telemetry", {
+    enabled: isTelemetryEnabled(),
+    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    protocol: process.env.OTEL_EXPORTER_OTLP_PROTOCOL,
+    tracesExporter: process.env.OTEL_TRACES_EXPORTER,
+    metricsExporter: process.env.OTEL_METRICS_EXPORTER,
+    logsExporter: process.env.OTEL_LOGS_EXPORTER,
+    perfetto: process.env.LITEAI_PERFETTO_TRACE,
+  })
 
   // Initialize Perfetto tracing (independent of OTEL)
   initializePerfettoTracing()
@@ -256,6 +338,7 @@ export async function initializeTelemetry() {
 
 export async function shutdownTelemetry() {
   const timeoutMs = parseInt(process.env.LITEAI_OTEL_SHUTDOWN_TIMEOUT_MS || "2000", 10)
+  log.info("shutting down telemetry", { timeoutMs })
 
   try {
     // End any active interaction span before shutdown
@@ -270,9 +353,10 @@ export async function shutdownTelemetry() {
     }
 
     await Promise.race([Promise.all(shutdownPromises), telemetryTimeout(timeoutMs, "OpenTelemetry shutdown timeout")])
+    log.info("telemetry shutdown complete")
   } catch (error) {
     if (error instanceof Error && error.message.includes("timeout")) {
-      console.error(`Telemetry flush timed out after ${timeoutMs}ms.`)
+      log.error("telemetry shutdown timed out", { timeoutMs })
     }
     throw error
   }
@@ -280,6 +364,7 @@ export async function shutdownTelemetry() {
 
 export async function flushTelemetry(): Promise<void> {
   const timeoutMs = parseInt(process.env.LITEAI_OTEL_FLUSH_TIMEOUT_MS || "5000", 10)
+  log.info("flushing telemetry", { timeoutMs })
 
   try {
     const flushPromises: Promise<void>[] = []
@@ -288,7 +373,8 @@ export async function flushTelemetry(): Promise<void> {
     if (globalTracerProvider) flushPromises.push(globalTracerProvider.forceFlush())
 
     await Promise.race([Promise.all(flushPromises), telemetryTimeout(timeoutMs, "OpenTelemetry flush timeout")])
+    log.info("telemetry flush complete")
   } catch (error) {
-    console.warn(`Telemetry flush failed: ${error}`)
+    log.error("telemetry flush failed", { error })
   }
 }

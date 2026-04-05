@@ -75,7 +75,7 @@ export namespace Log {
     "session",
     "skill",
     "snapshot",
-    "trace",
+    "telemetry",
     "vcs",
   ] as const
 
