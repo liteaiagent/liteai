@@ -258,9 +258,15 @@ export const InstanceRoutes = lazy(() =>
             }),
           })
           const unsub = Bus.subscribeAll(async (event) => {
-            await stream.writeSSE({
-              data: JSON.stringify(event),
-            })
+            try {
+              await stream.writeSSE({
+                data: JSON.stringify(event),
+              })
+            } catch {
+              // Client disconnected (EPIPE) — clean up
+              unsub()
+              return
+            }
             if (event.type === Bus.InstanceDisposed.type) {
               stream.close()
             }
@@ -268,12 +274,17 @@ export const InstanceRoutes = lazy(() =>
 
           // Send heartbeat to prevent stalled proxy streams.
           const heartbeat = setInterval(() => {
-            stream.writeSSE({
-              data: JSON.stringify({
-                type: Event.Heartbeat.type,
-                properties: {},
-              }),
-            })
+            try {
+              stream.writeSSE({
+                data: JSON.stringify({
+                  type: Event.Heartbeat.type,
+                  properties: {},
+                }),
+              })
+            } catch {
+              // Client disconnected — heartbeat can stop silently
+              clearInterval(heartbeat)
+            }
           }, HEARTBEAT_INTERVAL_MS)
 
           await new Promise<void>((resolve) => {

@@ -174,9 +174,17 @@ export function cancel(sessionID: SessionID) {
     return
   }
   match.abort.abort()
+}
+
+/**
+ * Cleans up session state after the processor has finished flushing.
+ * Called by the deferred cleanup in loop(), NOT by the cancel API.
+ */
+function cleanup(sessionID: SessionID) {
+  log.info("cleanup", { sessionID })
+  const s = state()
   delete s[sessionID]
   SessionStatus.set(sessionID, { type: "idle" })
-  return
 }
 
 export async function lastModel(sessionID: SessionID) {
@@ -215,7 +223,7 @@ export const loop = fn(LoopInput, async (input) => {
     })
   }
 
-  using _ = defer(() => cancel(sessionID))
+  using _ = defer(() => cleanup(sessionID))
 
   // Structured output state
   // Note: On session resumption, state is reset but outputFormat is preserved

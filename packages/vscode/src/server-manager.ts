@@ -16,10 +16,11 @@ export class ServerManager {
   private _isReady = false
   private _mode: ServerMode = "production"
   private _extensionServer: ExtensionServer | null = null
-  private _outputChannel: vscode.OutputChannel | null = null
+  private readonly _outputChannel: vscode.OutputChannel
   private readonly _diffManager: DiffReviewManager | undefined
 
-  constructor(diffManager?: DiffReviewManager) {
+  constructor(outputChannel: vscode.OutputChannel, diffManager?: DiffReviewManager) {
+    this._outputChannel = outputChannel
     this._diffManager = diffManager
   }
 
@@ -49,9 +50,6 @@ export class ServerManager {
   }
 
   private getOutputChannel(): vscode.OutputChannel {
-    if (!this._outputChannel) {
-      this._outputChannel = vscode.window.createOutputChannel("LiteAI Server")
-    }
     return this._outputChannel
   }
 

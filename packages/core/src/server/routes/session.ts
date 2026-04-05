@@ -814,8 +814,14 @@ export const SessionRoutes = lazy(() =>
         return stream(c, async (stream) => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          const msg = await SessionPrompt.prompt({ ...body, sessionID })
-          stream.write(JSON.stringify(msg))
+          try {
+            const msg = await SessionPrompt.prompt({ ...body, sessionID })
+            stream.write(JSON.stringify(msg))
+          } catch (e) {
+            // AbortError is expected when the client disconnects mid-stream
+            if (e instanceof DOMException && e.name === "AbortError") return
+            throw e
+          }
         })
       },
     )
@@ -846,7 +852,11 @@ export const SessionRoutes = lazy(() =>
         return stream(c, async () => {
           const sessionID = c.req.valid("param").sessionID
           const body = c.req.valid("json")
-          SessionPrompt.prompt({ ...body, sessionID })
+          SessionPrompt.prompt({ ...body, sessionID }).catch((e) => {
+            // AbortError is expected when session is cancelled
+            if (e instanceof DOMException && e.name === "AbortError") return
+            log.error("prompt_async failed", { error: e })
+          })
         })
       },
     )

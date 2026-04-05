@@ -424,7 +424,8 @@ export namespace SessionProcessor {
                 sessionID: input.assistantMessage.sessionID,
                 error: input.assistantMessage.error,
               })
-              SessionStatus.set(input.sessionID, { type: "idle" })
+              // Note: SessionStatus idle is set by cleanup() in loop.ts
+              // AFTER all flush logic below completes.
             }
           }
           if (snapshot) {

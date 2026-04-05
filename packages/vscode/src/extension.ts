@@ -22,10 +22,12 @@ export function deactivate() {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  // Single shared output channel for all server/extension logging
+  const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
+
   // ─── Edit Approval / Inline Diff ──────────────────────────────────────────
   const editApprovalEnabled = vscode.workspace.getConfiguration("liteai").get<boolean>("editApproval", true)
   if (editApprovalEnabled) {
-    const outputChannel = vscode.window.createOutputChannel("LiteAI Server")
     diffManager = new DiffReviewManager(outputChannel)
 
     // Register CodeLens provider for all file types
@@ -35,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(diffManager)
   }
 
-  serverManager = new ServerManager(diffManager)
+  serverManager = new ServerManager(outputChannel, diffManager)
 
   const provider = new ChatViewProvider(context, serverManager)
   context.subscriptions.push(

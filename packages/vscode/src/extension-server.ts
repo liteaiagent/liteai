@@ -182,8 +182,17 @@ export class ExtensionServer {
     }
 
     // Fall back to filesystem
-    const content = await vscode.workspace.fs.readFile(uri)
-    return this.sendText(res, new TextDecoder().decode(content))
+    try {
+      const content = await vscode.workspace.fs.readFile(uri)
+      return this.sendText(res, new TextDecoder().decode(content))
+    } catch (err) {
+      // Return 404 for file-not-found (ENOENT / FileNotFound)
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes("ENOENT") || msg.includes("FileNotFound") || (err instanceof vscode.FileSystemError && err.code === "FileNotFound")) {
+        return this.sendJson(res, { error: msg }, 404)
+      }
+      throw err
+    }
   }
 
   /** POST /fs/readFileBytes — binary file read. */
@@ -203,9 +212,11 @@ export class ExtensionServer {
     const encoding = (body.encoding as string) || "utf-8"
     const rawContent = body.content as string
 
-    // Capture pre-edit content for diff tracking (before writing)
+    // Capture pre-edit content for diff tracking (before writing).
+    // Only capture for workspace files — internal files don't need diff tracking.
+    const isWorkspaceFile = this.isInsideWorkspace(filePath)
     let oldContent: string | undefined
-    if (this._diffManager && encoding !== "base64") {
+    if (this._diffManager && encoding !== "base64" && isWorkspaceFile) {
       try {
         const uri = vscode.Uri.file(filePath)
         const openDoc = vscode.workspace.textDocuments.find((doc) => doc.uri.fsPath === uri.fsPath)
@@ -230,8 +241,10 @@ export class ExtensionServer {
     await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), bytes)
     this.sendJson(res, { ok: true })
 
-    // Open the edited file in the editor so the user can see changes (non-blocking)
-    if (encoding !== "base64") {
+    // Open the edited file in the editor only if it's inside a workspace folder.
+    // This prevents internal files (config.schema.json, snapshots, session_diff,
+    // storage data, etc.) from being opened as editor tabs.
+    if (encoding !== "base64" && isWorkspaceFile) {
       vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then(
         (doc) => vscode.window.showTextDocument(doc, { preserveFocus: true, preview: true }),
         () => {}, // ignore errors (e.g. binary files)
@@ -335,6 +348,25 @@ export class ExtensionServer {
       res,
       folders.map((f) => ({ path: f.uri.fsPath, name: f.name })),
     )
+  }
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+
+  /**
+   * Check if a file path is inside any of the current VS Code workspace folders.
+   * Used to decide whether a written file should be opened in the editor.
+   */
+  private isInsideWorkspace(filePath: string): boolean {
+    const folders = vscode.workspace.workspaceFolders
+    if (!folders || folders.length === 0) return false
+
+    const normalize = (p: string) => p.replace(/\\/g, "/").toLowerCase()
+    const normalizedFile = normalize(filePath)
+
+    return folders.some((folder) => {
+      const normalizedFolder = normalize(folder.uri.fsPath)
+      return normalizedFile.startsWith(normalizedFolder + "/") || normalizedFile === normalizedFolder
+    })
   }
 
   // ─── Lifecycle ─────────────────────────────────────────────────────────────

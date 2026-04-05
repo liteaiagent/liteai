@@ -198,22 +198,33 @@ export const GlobalRoutes = lazy(() =>
             }),
           })
           async function handler(event: { directory?: string; payload: unknown }) {
-            await stream.writeSSE({
-              data: JSON.stringify(event),
-            })
+            try {
+              await stream.writeSSE({
+                data: JSON.stringify(event),
+              })
+            } catch {
+              // Client disconnected (EPIPE) — clean up
+              GlobalBus.off("event", handler)
+              return
+            }
           }
           GlobalBus.on("event", handler)
 
           // Send heartbeat every 10s to prevent stalled proxy streams.
           const heartbeat = setInterval(() => {
-            stream.writeSSE({
-              data: JSON.stringify({
-                payload: {
-                  type: Event.Heartbeat.type,
-                  properties: {},
-                },
-              }),
-            })
+            try {
+              stream.writeSSE({
+                data: JSON.stringify({
+                  payload: {
+                    type: Event.Heartbeat.type,
+                    properties: {},
+                  },
+                }),
+              })
+            } catch {
+              // Client disconnected — heartbeat can stop silently
+              clearInterval(heartbeat)
+            }
           }, HEARTBEAT_INTERVAL_MS)
 
           await new Promise<void>((resolve) => {
