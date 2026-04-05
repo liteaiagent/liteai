@@ -1,4 +1,3 @@
-import { NamedError } from "@liteai/util/error"
 import { ulid } from "ulid"
 import z from "zod"
 import { PermissionNext } from "@/permission/next"
@@ -7,9 +6,6 @@ import type { Tool } from "@/tool/tool"
 
 import { fn } from "@/util/fn"
 import { Agent } from "../../agent/agent"
-import { Bundled } from "../../bundled"
-import { Bus } from "../../bus"
-import { Hook } from "../../hook"
 import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
@@ -23,23 +19,16 @@ import {
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
-import type { EngineEvent } from "../events"
 import { Message } from "../message"
-import { SessionProcessor } from "../processor"
 import { SessionRevert } from "../revert"
 import { MessageID, PartID, SessionID } from "../schema"
 import { SessionStatus } from "../status"
 import { SessionCompaction } from "../tasks/compaction"
 import { SessionSummary } from "../tasks/summary"
-import { ensureTitle } from "../tasks/title"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
 import { EventPersister } from "./persister"
-import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
-import { insertPlanReminder } from "./plan-reminder"
 import { queryLoop } from "./query"
-import { SystemPrompt } from "./system"
-import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
 globalThis.AI_SDK_LOG_WARNINGS = false
 
@@ -244,23 +233,23 @@ export const LoopInput = z.object({
 //   control     → trigger compaction, process subtasks, handle overflow
 //   tombstone   → flush persister to clean up orphaned message
 
-async function runSession(input: {
-  sessionID: SessionID
-  session: Session.Info
-  abort: AbortSignal
-}) {
+async function runSession(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
   const { sessionID, session, abort } = input
 
   let persister: EventPersister | undefined
-  let currentModel: Provider.Model | undefined
   let currentAssistantMessage: Message.Assistant | undefined
   let currentStreamResult: unknown
-  let turnAction: string | undefined
+
+  // Single one-time DB read — after this the buffer is the live message view (FR-1)
+  const msgsBuffer: { current: Message.WithParts[] } = {
+    current: await Message.filterCompacted(Message.stream(sessionID)),
+  }
 
   const generator = queryLoop({
     sessionID,
     session,
     abort,
+    msgsBuffer,
   })
 
   for await (const event of generator) {
@@ -268,19 +257,10 @@ async function runSession(input: {
       // ── Turn Start: persist assistant message, create persister ──
       case "turn-start": {
         // Persist the assistant message to DB
-        currentAssistantMessage = (await Session.updateMessage(
-          event.assistantMessage,
-        )) as Message.Assistant
-        currentModel = event.model
-        turnAction = undefined
+        currentAssistantMessage = (await Session.updateMessage(event.assistantMessage)) as Message.Assistant
 
         // Create fresh persister for this turn
-        persister = new EventPersister(
-          currentAssistantMessage,
-          sessionID,
-          event.model,
-          abort,
-        )
+        persister = new EventPersister(currentAssistantMessage, sessionID, event.model, abort)
 
         // Set up instruction prompt cleanup
         // Note: InstructionPrompt.clear will be called in turn-end
@@ -301,9 +281,15 @@ async function runSession(input: {
       case "turn-end": {
         if (!persister || !currentAssistantMessage) break
 
+        // Capture raw SDK stream result for partial token recovery on error
+        currentStreamResult = event.streamResult
+
         // Flush the persister
         const flushResult = await persister.flush(currentStreamResult)
         currentStreamResult = undefined
+
+        // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
+        msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
 
         // Handle structured output
         if (event.structuredOutput !== undefined) {
@@ -317,10 +303,9 @@ async function runSession(input: {
 
         // Handle structured output error (model finished without calling tool)
         const modelFinished =
-          currentAssistantMessage.finish &&
-          !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
+          currentAssistantMessage.finish && !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
         if (modelFinished && !currentAssistantMessage.error) {
-          const lastUser = await findLastUser(sessionID)
+          const lastUser = findLastUserFromBuffer(msgsBuffer.current)
           const format = lastUser?.format ?? { type: "text" }
           if (format.type === "json_schema") {
             currentAssistantMessage.error = new Message.StructuredOutputError({
@@ -333,7 +318,6 @@ async function runSession(input: {
         }
 
         // Process the flush result
-        turnAction = flushResult
         if (flushResult === "stop") {
           log.info("runSession: persister returned stop", {
             sessionID,
@@ -345,15 +329,19 @@ async function runSession(input: {
           break
         }
         if (flushResult === "compact") {
-          const lastUser = await findLastUser(sessionID)
+          const lastUser = findLastUserFromBuffer(msgsBuffer.current)
           if (lastUser) {
-            await SessionCompaction.create({
+            const { markerWithParts } = await SessionCompaction.create({
               sessionID,
               agent: lastUser.agent,
               model: lastUser.model,
               auto: true,
               overflow: !currentAssistantMessage.finish,
             })
+            // Buffer remains as-is after create() — process() will reset it via compaction-task
+            // The query loop will re-scan the buffer and emit a compaction-task control event
+            // for the marker, so buffer will be reset there.
+            log.info("runSession: compaction marker created", { markerID: markerWithParts.info.id, sessionID })
           }
           break
         }
@@ -382,13 +370,22 @@ async function runSession(input: {
         switch (event.action) {
           case "subtask": {
             const { task, model, lastUser, msgs } = event.payload
-            await processSubtask({ task, model, lastUser, sessionID, session, abort, msgs })
+            const { subtaskAssistant, syntheticUser } = await processSubtask({
+              task,
+              model,
+              lastUser,
+              sessionID,
+              session,
+              abort,
+              msgs,
+            })
+            // Append subtask messages to buffer (FR-8) — no DB read
+            msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
             break
           }
           case "compaction-task": {
             const { task, lastUser, msgs } = event.payload
-            const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID)
-            const result = await SessionCompaction.process({
+            const { result, summaryWithParts } = await SessionCompaction.process({
               messages: msgs,
               parentID: lastUser.id,
               abort,
@@ -398,29 +395,45 @@ async function runSession(input: {
             })
             if (result === "stop") {
               // Signal the generator to close by returning early
-              // The generator detects this via the abort signal or re-scans messages
               return
+            }
+            // Reset buffer to [compaction_marker, summary_assistant] — no DB re-read (FR-7)
+            // task comes from msgs which already contains the marker; find it in buffer
+            const markerMsg = msgs.findLast(
+              (m: Message.WithParts) =>
+                m.info.role === "user" && m.parts.some((p: Message.Part) => p.type === "compaction"),
+            )
+            if (markerMsg && summaryWithParts) {
+              msgsBuffer.current = [markerMsg, summaryWithParts]
+              log.info("runSession: buffer reset after compaction-task", {
+                sessionID,
+                bufferLen: msgsBuffer.current.length,
+              })
             }
             break
           }
           case "overflow": {
             const { lastUser } = event.payload
-            await SessionCompaction.create({
+            const { markerWithParts } = await SessionCompaction.create({
               sessionID,
               agent: lastUser.agent,
               model: lastUser.model,
               auto: true,
             })
+            // Append marker to buffer so the next iteration's compaction-task scan finds it
+            msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
             break
           }
           case "compact": {
             const { lastUser } = event.payload
-            await SessionCompaction.create({
+            const { markerWithParts } = await SessionCompaction.create({
               sessionID,
               agent: lastUser.agent,
               model: lastUser.model,
               auto: true,
             })
+            // Append marker to buffer so the next iteration's compaction-task scan finds it
+            msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
             break
           }
           case "stop": {
@@ -437,10 +450,7 @@ async function runSession(input: {
       // ── Stream events: route to persister ──
       default: {
         if (persister) {
-          const action = await persister.handleEvent(event)
-          if (action === "compact" || action === "stop") {
-            turnAction = action
-          }
+          await persister.handleEvent(event)
 
           // Capture stream result if available via the streaming events
           // (the persister tracks this internally)
@@ -455,10 +465,9 @@ async function runSession(input: {
 }
 
 /**
- * Helper: find the last user message for a session.
+ * Helper: find the last user message from the in-memory buffer (no DB read).
  */
-async function findLastUser(sessionID: SessionID): Promise<Message.User | undefined> {
-  const msgs = await Message.filterCompacted(Message.stream(sessionID))
+function findLastUserFromBuffer(msgs: Message.WithParts[]): Message.User | undefined {
   for (let i = msgs.length - 1; i >= 0; i--) {
     if (msgs[i].info.role === "user") return msgs[i].info as Message.User
   }
@@ -502,7 +511,7 @@ async function processSubtask(input: {
   session: Session.Info
   abort: AbortSignal
   msgs: Message.WithParts[]
-}) {
+}): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
   const { task, lastUser, sessionID, session, abort, msgs } = input
   const taskTool = await TaskTool.init()
   const taskModel = task.model
@@ -628,7 +637,7 @@ async function processSubtask(input: {
   assistantMessage.time.completed = Date.now()
   await Session.updateMessage(assistantMessage)
   if (result && part.state.status === "running") {
-    await Session.updatePart({
+    part = (await Session.updatePart({
       ...part,
       state: {
         status: "completed",
@@ -642,10 +651,10 @@ async function processSubtask(input: {
           end: Date.now(),
         },
       },
-    } satisfies Message.ToolPart)
+    } satisfies Message.ToolPart)) as Message.ToolPart
   }
   if (!result) {
-    await Session.updatePart({
+    part = (await Session.updatePart({
       ...part,
       state: {
         status: "error",
@@ -657,13 +666,19 @@ async function processSubtask(input: {
         metadata: "metadata" in part.state ? part.state.metadata : undefined,
         input: part.state.input,
       },
-    } satisfies Message.ToolPart)
+    } satisfies Message.ToolPart)) as Message.ToolPart
   }
 
   endLLMRequestSpan(undefined, {
     success: !executionError,
     error: executionError?.message,
   })
+
+  // Build the in-memory WithParts for the subtask assistant message (FR-8)
+  const subtaskAssistant: Message.WithParts = {
+    info: assistantMessage,
+    parts: [part as Message.Part],
+  }
 
   if (task.command) {
     // Add synthetic user message to prevent certain reasoning models from erroring
@@ -680,13 +695,20 @@ async function processSubtask(input: {
       model: lastUser.model,
     }
     await Session.updateMessage(summaryUserMsg)
-    await Session.updatePart({
+    const summaryTextPart = (await Session.updatePart({
       id: PartID.ascending(),
       messageID: summaryUserMsg.id,
       sessionID,
       type: "text",
       text: "Summarize the task tool output above and continue with your task.",
       synthetic: true,
-    } satisfies Message.TextPart)
+    } satisfies Message.TextPart)) as Message.Part
+    const syntheticUser: Message.WithParts = {
+      info: summaryUserMsg,
+      parts: [summaryTextPart],
+    }
+    return { subtaskAssistant, syntheticUser }
   }
+
+  return { subtaskAssistant }
 }

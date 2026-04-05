@@ -108,7 +108,7 @@ export namespace SessionCompaction {
     abort: AbortSignal
     auto: boolean
     overflow?: boolean
-  }) {
+  }): Promise<{ result: "continue" | "stop"; summaryWithParts?: Message.WithParts }> {
     const userMessage = input.messages.findLast((m) => m.info.id === input.parentID)?.info as Message.User
 
     let messages = input.messages
@@ -242,7 +242,7 @@ When constructing the summary, try to stick to this template:
       }).toObject()
       processor.message.finish = "error"
       await Session.updateMessage(processor.message)
-      return "stop"
+      return { result: "stop" }
     }
 
     if (result === "continue" && input.auto) {
@@ -300,9 +300,14 @@ When constructing the summary, try to stick to this template:
         })
       }
     }
-    if (processor.message.error) return "stop"
+    if (processor.message.error) return { result: "stop" }
+    // Assemble the summary WithParts from the processor's in-memory state for buffer reset (FR-7)
+    const summaryWithParts: Message.WithParts = {
+      info: processor.message,
+      parts: await Message.parts(processor.message.id),
+    }
     Bus.publish(Event.Compacted, { sessionID: input.sessionID })
-    return "continue"
+    return { result: "continue", summaryWithParts }
   }
 
   export const create = fn(
@@ -327,7 +332,7 @@ When constructing the summary, try to stick to this template:
           created: Date.now(),
         },
       })
-      await Session.updatePart({
+      const compactionPart = await Session.updatePart({
         id: PartID.ascending(),
         messageID: msg.id,
         sessionID: msg.sessionID,
@@ -335,6 +340,14 @@ When constructing the summary, try to stick to this template:
         auto: input.auto,
         overflow: input.overflow,
       })
+      // Return the marker message + its compaction part for in-memory buffer reset (FR-7)
+      return {
+        markerMessage: msg as Message.User,
+        markerWithParts: {
+          info: msg as Message.User,
+          parts: [compactionPart as Message.Part],
+        } satisfies Message.WithParts,
+      }
     },
   )
 }

@@ -76,6 +76,8 @@ export namespace EngineEvent {
     type: "turn-end"
     /** Captured structured output, if any */
     structuredOutput?: unknown
+    /** Raw SDK stream result — passed to persister.flush() for partial token recovery on error */
+    streamResult?: unknown
   }
 
   /**

@@ -66,20 +66,34 @@ Before invoking the model in each turn, applying constraints aggressively.
 - Integrated the entire pipeline synchronously into `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\loop.ts` right before `Message.toModelMessages()`.
 - Authored robust, edge-case unit tests in `pipeline.test.ts` achieving full pass rates across 9 distinct testing suites and successfully validating codebase typechecks (`bun typecheck`).
 
-### Phase 3: The Async Generator `queryLoop` (The New Brain)
+### Phase 3: The Async Generator `queryLoop` (The New Brain) - [COMPLETED]
 Replacing `loop.ts` with the new structure.
 
 **Target Files:**
-- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\loop.ts` -> rename to `query.ts` or rebuild in parallel.
-  - *Refactor Goal*: Destroy the standard `while(true)` synchronous promise loop and rebuild it strictly as `export async function* queryLoop(params)`.
-  - *Detailed Flow & Mechanics*:
-    1. **Initialization**: Accepts `QueryParams` (raw unbudgeted messages, model, tool context configs, and abort signals).
-    2. **Pre-Processing Pipeline (Phase 2)**: Runs `messages = executePipeline(messages)` immediately at the top of the iteration.
-    3. **Proactive Limits**: Validates `shouldAutocompact()` and triggers the recursive or separate generator fallback if true.
-    4. **LLM Delegation**: Enters the model streaming loop API, listening to the deeply decoupled `SessionProcessor` generator (from Phase 1).
-    5. **Pure Event Yielding**: `yield` standard `EngineEvent.Any` events (`delta`, `block-start`, `block-end`) upwards. Crucially, *this generator must not write directly to SQLite*.
-    6. **Consumer Delegation**: The actual `EventPersister` handles the SQLite writing. We will need an orchestrator (a `runSession()` wrapper) that instantiates `const loop = queryLoop()`, routes the events to the persister, and streams them simultaneously to the frontend bus.
-    7. **Tombstone Semantics**: Handle graceful `StreamingFallback` mechanics (catching parsing / `AbortedError` failures mid-stream and explicitly yielding `Tombstone` cleanup events so the persister scrubs orphaned/partial parts from the database).
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\query.ts` (NEW)
+  - Pure `async function* queryLoop(params)` — zero SQLite imports
+  - Full multi-turn `while(true)` loop as an async generator
+  - Yields `TurnStartEvent`, `TurnEndEvent`, `TombstoneEvent` lifecycle events
+  - Yields `EngineEvent.Any` stream events for all LLM output
+  - Yields `GeneratorResultEvent` for control flow (compact, subtask, overflow, continue, stop)
+  - Handles tombstone semantics: stream errors yield `TombstoneEvent` instead of crashing
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\loop.ts`
+  - Replaced the monolithic `while(true)` body with the new `runSession()` orchestrator
+  - `runSession()` consumes `queryLoop`, routes all events to `EventPersister`
+  - `turn-start`: persists assistant message to DB, creates `EventPersister` per turn
+  - `turn-end`: flushes persister, handles structured output, compaction result
+  - `control` events: triggers `SessionCompaction.create()`, processes subtasks, handles overflow
+  - `tombstone`: flushes persister to clean up orphaned messages gracefully
+  - Public API unchanged: `prompt()`, `loop()`, `cancel()`, `state()`, `assertNotBusy()`
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\events.ts`
+  - Added `TurnStartEvent`, `TurnEndEvent`, `TombstoneEvent` lifecycle event types
+  - Extended `GeneratorResultEvent.action` with `subtask | compaction-task | overflow` variants
+
+**What was done:**
+- Created `query.ts` with `queryLoop` satisfying the **State Independence Constraint**: zero imports from `@/storage/db`, zero `Session.update*` calls — verified by grep.
+- Expanded `events.ts` with three new lifecycle events enabling bidirectional communication between the generator and the orchestrator without coupling.
+- Refactored `loop.ts` with `runSession()` consuming the generator; all DB writes stay in the orchestrator layer.
+- Confirmed `bun typecheck` passes with zero errors end-to-end.
 
 ### Phase 4: Streaming Tool Execution Integrations
 Implement the streaming capability to parse JSON tool arguments actively.

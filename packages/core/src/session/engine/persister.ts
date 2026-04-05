@@ -30,6 +30,7 @@ export class EventPersister {
 
   private currentText?: Message.TextPart
   private reasoningMap: Record<string, Message.ReasoningPart> = {}
+  private allParts: Message.Part[] = []
 
   constructor(
     public readonly assistantMessage: Message.Assistant,
@@ -37,6 +38,19 @@ export class EventPersister {
     public readonly model: Provider.Model,
     private readonly abort: AbortSignal,
   ) {}
+
+  private upsertPart(part: Message.Part) {
+    const idx = this.allParts.findIndex((p) => p.id === part.id)
+    if (idx >= 0) this.allParts[idx] = part
+    else this.allParts.push(part)
+  }
+
+  public getCompletedMessage(): Message.WithParts {
+    return {
+      info: this.assistantMessage,
+      parts: [...this.allParts],
+    }
+  }
 
   public partFromToolCall(toolCallID: string) {
     return this.toolcalls[toolCallID]
@@ -70,6 +84,7 @@ export class EventPersister {
             }
             this.reasoningMap[event.id] = reasoningPart
             await Session.updatePart(reasoningPart)
+            this.upsertPart(reasoningPart)
           } else if (event.kind === "tool" && event.id) {
             const part = await Session.updatePart({
               id: this.toolcalls[event.id]?.id ?? PartID.ascending(),
@@ -85,15 +100,17 @@ export class EventPersister {
               },
             })
             this.toolcalls[event.id] = part as Message.ToolPart
+            this.upsertPart(part as Message.Part)
           } else if (event.kind === "step") {
             this.snapshot = await Snapshot.track()
-            await Session.updatePart({
+            const stepStartPart = await Session.updatePart({
               id: PartID.ascending(),
               messageID: assistantMessage.id,
               sessionID,
               snapshot: this.snapshot,
               type: "step-start",
             })
+            this.upsertPart(stepStartPart as Message.Part)
           } else if (event.kind === "text" && event.id) {
             this.currentText = {
               id: PartID.ascending(),
@@ -105,6 +122,7 @@ export class EventPersister {
               metadata: event.metadata,
             }
             await Session.updatePart(this.currentText)
+            this.upsertPart(this.currentText as Message.Part)
           }
           break
         }
@@ -149,6 +167,7 @@ export class EventPersister {
               part.time = { ...part.time, end: Date.now() }
               if (event.metadata) part.metadata = event.metadata
               await Session.updatePart(part)
+              this.upsertPart(part as Message.Part)
               delete this.reasoningMap[event.id]
             }
           } else if (event.kind === "text" && event.id) {
@@ -165,6 +184,7 @@ export class EventPersister {
               t.time = { start: Date.now(), end: Date.now() }
               if (event.metadata) t.metadata = event.metadata
               await Session.updatePart(t)
+              this.upsertPart(t as Message.Part)
             }
             this.currentText = undefined
           } else if (event.kind === "step") {
@@ -173,7 +193,7 @@ export class EventPersister {
             assistantMessage.finish = event.finishReason
             assistantMessage.cost += usage.cost
             assistantMessage.tokens = usage.tokens
-            await Session.updatePart({
+            const stepFinishPart = await Session.updatePart({
               id: PartID.ascending(),
               reason: event.finishReason,
               snapshot: await Snapshot.track(),
@@ -183,11 +203,12 @@ export class EventPersister {
               tokens: usage.tokens,
               cost: usage.cost,
             })
+            this.upsertPart(stepFinishPart as Message.Part)
             await Session.updateMessage(assistantMessage)
             if (this.snapshot) {
               const patch = await Snapshot.patch(this.snapshot)
               if (patch.files.length) {
-                await Session.updatePart({
+                const patchPart = await Session.updatePart({
                   id: PartID.ascending(),
                   messageID: assistantMessage.id,
                   sessionID,
@@ -195,6 +216,7 @@ export class EventPersister {
                   hash: patch.hash,
                   files: patch.files,
                 })
+                this.upsertPart(patchPart as Message.Part)
               }
               this.snapshot = undefined
             }
@@ -224,9 +246,9 @@ export class EventPersister {
                 metadata: event.metadata,
               })
               this.toolcalls[event.id] = part as Message.ToolPart
+              this.upsertPart(part as Message.Part)
 
-              const parts = await Message.parts(assistantMessage.id)
-              const lastThree = parts.slice(-DOOM_LOOP_THRESHOLD)
+              const lastThree = this.allParts.slice(-DOOM_LOOP_THRESHOLD)
               if (
                 lastThree.length === DOOM_LOOP_THRESHOLD &&
                 lastThree.every(
@@ -259,7 +281,7 @@ export class EventPersister {
               const duration = Date.now() - match.state.time.start
               log.info("tool result", { tool: match.tool, duration, sessionID })
               endToolSpan()
-              await Session.updatePart({
+              const completedPart = await Session.updatePart({
                 ...match,
                 state: {
                   status: "completed",
@@ -272,7 +294,8 @@ export class EventPersister {
                   // biome-ignore lint/suspicious/noExplicitAny: generic state merge
                 } as any,
               })
-              delete this.toolcalls[event.id]
+              this.upsertPart(completedPart as Message.Part)
+              // Note: do NOT delete from toolcalls — entry is still needed for doom-loop detection
             }
           }
           break
@@ -284,7 +307,7 @@ export class EventPersister {
             if (match && match.state.status === "running") {
               log.info("tool error", { tool: match.tool, error: String(event.error).slice(0, 200), sessionID })
               endToolSpan()
-              await Session.updatePart({
+              const erroredPart = await Session.updatePart({
                 ...match,
                 state: {
                   status: "error",
@@ -293,6 +316,7 @@ export class EventPersister {
                   time: { start: match.state.time.start, end: Date.now() },
                 },
               })
+              this.upsertPart(erroredPart as Message.Part)
               const shouldBreak = (await Config.get()).experimental?.continue_loop_on_deny !== true
               if (
                 event.error instanceof PermissionNext.RejectedError ||
@@ -300,7 +324,7 @@ export class EventPersister {
               ) {
                 this.blocked = shouldBreak
               }
-              delete this.toolcalls[event.id]
+              // Note: do NOT delete from toolcalls — keep for doom-loop detection via allParts
             }
           } else if (event.kind === "stream") {
             throw event.error
@@ -373,7 +397,7 @@ export class EventPersister {
       await Session.updatePart(part)
     }
 
-    const p = await Message.parts(assistantMessage.id)
+    const p = this.allParts
     log.info("process flush message parts", { partCount: p.length, sessionID })
     for (const part of p) {
       if (part.type === "tool" && part.state.status !== "completed" && part.state.status !== "error") {

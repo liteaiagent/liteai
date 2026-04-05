@@ -1,4 +1,3 @@
-import type { Tool as AITool } from "ai"
 import { NamedError } from "@liteai/util/error"
 import { Agent } from "../../agent/agent"
 import { Bundled } from "../../bundled"
@@ -7,11 +6,8 @@ import { Hook } from "../../hook"
 import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
-import { ModelID, ProviderID } from "../../provider/schema"
-import {
-  endLLMRequestSpan,
-  startLLMRequestSpan,
-} from "../../telemetry/tracing"
+import type { ModelID, ProviderID } from "../../provider/schema"
+import { endLLMRequestSpan, startLLMRequestSpan } from "../../telemetry/tracing"
 import { Log } from "../../util/log"
 import { Session } from ".."
 import type { EngineEvent } from "../events"
@@ -20,11 +16,11 @@ import { SessionProcessor } from "../processor"
 import { MessageID, type SessionID } from "../schema"
 import { SessionCompaction } from "../tasks/compaction"
 import { ensureTitle } from "../tasks/title"
+import { InstructionPrompt } from "./instruction"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { insertPlanReminder } from "./plan-reminder"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
-import { InstructionPrompt } from "./instruction"
 
 const log = Log.create({ service: "session.query" })
 
@@ -34,6 +30,9 @@ export type QueryLoopParams = {
   sessionID: SessionID
   session: Session.Info
   abort: AbortSignal
+  /** Shared in-memory message buffer owned by the orchestrator (loop.ts).
+   * Eliminates per-turn DB reads — loop.ts reads DB once and keeps this live. */
+  msgsBuffer: { current: Message.WithParts[] }
   /** Whether this is a resume of an existing session (skip start() call) */
   resumeExisting?: boolean
 }
@@ -59,10 +58,8 @@ export type QueryLoopParams = {
  * 4. On `control`: trigger compaction, process subtasks, etc.
  * 5. On `tombstone`: clean up orphaned messages
  */
-export async function* queryLoop(
-  params: QueryLoopParams,
-): AsyncGenerator<EngineEvent.Any, void, unknown> {
-  const { sessionID, session, abort } = params
+export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<EngineEvent.Any, void, unknown> {
+  const { sessionID, session, abort, msgsBuffer } = params
 
   let structuredOutput: unknown | undefined
   let step = 0
@@ -74,7 +71,8 @@ export async function* queryLoop(
       break
     }
 
-    let msgs = await Message.filterCompacted(Message.stream(sessionID))
+    // Use the shared in-memory buffer — no DB read on every turn (FR-2, FR-3)
+    let msgs = msgsBuffer.current
 
     // ── Scan for last user/assistant messages ──
     let lastUser: Message.User | undefined
@@ -357,13 +355,9 @@ export async function* queryLoop(
 
     let streamResult: unknown
     try {
-      const generator = SessionProcessor.streamGenerator(
-        streamInput,
-        undefined,
-        (r) => {
-          streamResult = r
-        },
-      )
+      const generator = SessionProcessor.streamGenerator(streamInput, undefined, (r) => {
+        streamResult = r
+      })
 
       for await (const event of generator) {
         yield event
@@ -391,6 +385,7 @@ export async function* queryLoop(
     yield {
       type: "turn-end",
       structuredOutput,
+      streamResult,
     } satisfies EngineEvent.TurnEndEvent
 
     // ── Reset structured output for next turn ──
