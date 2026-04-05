@@ -169,7 +169,10 @@ export namespace ProviderError {
 
   export function parseAPICallError(input: { providerID: ProviderID; error: APICallError }): ParsedAPICallError {
     const m = message(input.providerID, input.error)
-    if (isOverflow(m) || input.error.statusCode === 413) {
+    // Check overflow against both raw and decorated messages.
+    // The `^` anchor in the 400/413 no-body regex requires matching at
+    // the start of the string, which fails after message() prepends `[providerID]`.
+    if (isOverflow(input.error.message) || isOverflow(m) || input.error.statusCode === 413) {
       return {
         type: "context_overflow",
         message: m,

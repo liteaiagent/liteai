@@ -19,6 +19,7 @@ import { ensureTitle } from "../tasks/title"
 import { InstructionPrompt } from "./instruction"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { insertPlanReminder } from "./plan-reminder"
+import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
@@ -339,6 +340,9 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       toolChoice: format.type === "json_schema" ? ("required" as const) : undefined,
     }
 
+    // ── Create streaming tool executor for this turn ──
+    const toolExecutor = new StreamingToolExecutor(abort)
+
     // ── Yield turn-start: orchestrator creates DB record + persister ──
     yield {
       type: "turn-start",
@@ -348,6 +352,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       model,
       isLastStep,
       format,
+      toolExecutor,
     } satisfies EngineEvent.TurnStartEvent
 
     // ── Stream LLM via the decoupled processor generator ──
@@ -360,9 +365,15 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       })
 
       for await (const event of generator) {
+        // Feed every event through the executor for lifecycle tracking.
+        // The executor monitors tool start/delta/call/result/error events
+        // and maintains concurrency state without intercepting the event flow.
+        toolExecutor.processEvent(event)
         yield event
       }
     } catch (streamError: unknown) {
+      // Discard any pending tools on stream error
+      toolExecutor.discard()
       // Yield tombstone so the orchestrator can clean up
       log.error("queryLoop: stream error", { error: streamError, sessionID })
       yield {
@@ -370,6 +381,17 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         messageID: assistantMessage.id,
         reason: streamError instanceof Error ? streamError.message : String(streamError),
       } satisfies EngineEvent.TombstoneEvent
+    }
+
+    // ── Log streaming tool execution stats ──
+    const toolStats = toolExecutor.getConcurrencyState()
+    if (toolStats.total > 0) {
+      log.info("queryLoop: tool execution stats", {
+        sessionID,
+        step,
+        ...toolStats,
+        siblingError: toolExecutor.hasSiblingError(),
+      })
     }
 
     endLLMRequestSpan(undefined, {

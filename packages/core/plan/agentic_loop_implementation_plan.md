@@ -123,12 +123,39 @@ Replacing per-turn SQLite re-reads with a shared in-memory buffer, decoupling th
 - Verified: `grep -n "Message.stream\|filterCompacted\|Message.parts" query.ts` → zero results. `grep -n "Message.parts" persister.ts` → zero results.
 - Confirmed `bun typecheck` passes with zero errors.
 
-### Phase 4: Streaming Tool Execution Integrations
-Implement the streaming capability to parse JSON tool arguments actively.
+### Phase 4: Streaming Tool Execution Integration - [COMPLETED]
+Implement streaming tool execution with concurrency control and abort propagation.
 
 **Target Files:**
-- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\tools.ts`
-  - *Refactor Goal*: Port over the `StreamingToolExecutor` class. Hook it into the new `queryLoop` so that as `tool-input-delta` events stream, the executor parses and natively evaluates whether the tool can trigger early execution.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\streaming-tool-executor.ts` (NEW)
+  - *Refactor Goal*: Port the `StreamingToolExecutor` class adapted for the AI SDK event model, providing concurrency classification, abort propagation, and execution lifecycle tracking.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\processor.ts`
+  - *Refactor Goal*: Forward `tool-input-delta` events from the AI SDK's `fullStream` that were previously silently dropped.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\persister.ts`
+  - *Refactor Goal*: Handle `tool-input-delta` events by accumulating raw JSON into the pending tool part's `raw` field via `updatePartDelta`.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\query.ts`
+  - *Refactor Goal*: Create a `StreamingToolExecutor` per turn, feed all stream events through it, and log concurrency stats.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\events.ts`
+  - *Refactor Goal*: Extend `TurnStartEvent` with the `toolExecutor` field for orchestrator access.
+
+**What was done:**
+- Created `StreamingToolExecutor` in `streaming-tool-executor.ts` — zero SQLite imports, pure event-monitoring class. Adapted from LiteAI2's `StreamingToolExecutor` for the AI SDK's event model:
+  - **Concurrency classification**: Read-only tools (`glob`, `grep`, `read`, `ls`, `websearch`, `webfetch`, `codesearch`, `lsp`) classified as concurrent-safe; all others treated as exclusive.
+  - **Tool lifecycle tracking**: Monitors `start/tool` → `delta/tool` → `call/tool` → `result/tool` → `error/tool` events through `processEvent()`.
+  - **Input delta accumulation**: Captures streaming JSON argument deltas as they arrive, enabling future early-execution optimizations.
+  - **Sibling abort propagation**: When a non-concurrent-safe tool errors (e.g., `run_command`), a child `AbortController` fires to signal sibling cancellation without aborting the parent query.
+  - **Discard on fallback**: `discard()` marks all pending/in-progress tools as abandoned for clean streaming-fallback recovery.
+  - **Concurrency metrics**: `getConcurrencyState()` and `getToolSummary()` provide telemetry-ready tool execution statistics.
+- Added `tool-input-delta` event forwarding in `processor.ts`: mapped `value.type === "tool-input-delta"` → `{ type: "delta", part: "tool", id, text: value.delta }`.
+- Added `tool-input-delta` handling in `persister.ts`: accumulates raw text into the `pending` tool part's `raw` field via `Session.updatePartDelta()` for live UI streaming.
+- Integrated executor into `queryLoop`:
+  - Per-turn `new StreamingToolExecutor(abort)` created before `turn-start` yield.
+  - Every stream event piped through `toolExecutor.processEvent(event)` for lifecycle monitoring.
+  - On stream error: `toolExecutor.discard()` called before tombstone yield.
+  - Concurrency stats logged after stream completes when tools were used.
+  - `toolExecutor` exposed on `TurnStartEvent` for orchestrator access.
+- Verified: `grep "Session\.\|Message\.\|@/storage" streaming-tool-executor.ts` → only `Log` import. State independence preserved.
+- Confirmed `bun typecheck` passes with zero errors.
 
 ---
 

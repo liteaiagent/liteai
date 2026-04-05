@@ -154,6 +154,18 @@ export class EventPersister {
                 delta: event.text,
               })
             }
+          } else if (event.part === "tool") {
+            const match = this.toolcalls[event.id]
+            if (match && match.state.status === "pending" && "raw" in match.state) {
+              match.state.raw += event.text
+              await Session.updatePartDelta({
+                sessionID: match.sessionID,
+                messageID: match.messageID,
+                partID: match.id,
+                field: "raw",
+                delta: event.text,
+              })
+            }
           }
           break
         }

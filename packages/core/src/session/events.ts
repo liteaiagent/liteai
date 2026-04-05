@@ -1,5 +1,6 @@
 import type { Tool as AITool } from "ai"
 import type { Provider } from "../provider/provider"
+import type { StreamingToolExecutor } from "./engine/streaming-tool-executor"
 import type { LLM } from "./llm"
 import type { Message } from "./message"
 
@@ -66,6 +67,8 @@ export namespace EngineEvent {
     isLastStep: boolean
     /** The output format requested (text or json_schema) */
     format: Message.OutputFormat
+    /** Streaming tool executor for this turn — provides concurrency tracking and abort propagation */
+    toolExecutor: StreamingToolExecutor
   }
 
   /**

@@ -42,6 +42,9 @@ export namespace SessionProcessor {
           case "tool-input-start":
             yield { type: "start", kind: "tool", id: value.id, toolName: value.toolName }
             break
+          case "tool-input-delta":
+            yield { type: "delta", part: "tool", id: value.id, toolName: "", text: value.delta }
+            break
           case "tool-call":
             yield {
               type: "call",
