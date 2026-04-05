@@ -45,6 +45,7 @@ export namespace Flag {
    */
   export declare const LITEAI_PLATFORM: string | undefined
   export const LITEAI_DISABLE_SKILLS = truthy("DISABLE_SKILLS")
+  export const LITEAI_INJECT_SKILLS_IN_SYSTEM_PROMPT = truthy("INJECT_SKILLS_IN_SYSTEM_PROMPT")
   export declare const LITEAI_DISABLE_AGENTS: boolean
   export declare const LITEAI_DISABLE_PROJECT_CONFIG: boolean
   export declare const LITEAI_CLIENT: string

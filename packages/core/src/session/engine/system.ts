@@ -6,6 +6,7 @@ import type { Provider } from "@/provider/provider"
 import { Shell } from "@/shell/shell"
 import { Skill } from "@/skill"
 
+import { Flag } from "../../flag/flag"
 import { Instance } from "../../project/instance"
 
 export namespace SystemPrompt {
@@ -54,12 +55,19 @@ export namespace SystemPrompt {
 
     const list = await Skill.available(agent, "model")
 
-    return [
+    const lines = [
       "Skills provide specialized instructions and workflows for specific tasks.",
       "Use the skill tool to load a skill when a task matches its description.",
-      // the agents seem to ingest the information about skills a bit better if we present a more verbose
-      // version of them here and a less verbose version in tool description, rather than vice versa.
-      Skill.fmt(list, { verbose: true }),
-    ].join("\n")
+    ]
+
+    if (Flag.LITEAI_INJECT_SKILLS_IN_SYSTEM_PROMPT) {
+      lines.push(
+        // the agents seem to ingest the information about skills a bit better if we present a more verbose
+        // version of them here and a less verbose version in tool description, rather than vice versa.
+        Skill.fmt(list, { verbose: true }),
+      )
+    }
+
+    return lines.join("\n")
   }
 }

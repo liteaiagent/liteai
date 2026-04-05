@@ -9,7 +9,9 @@ import { EditTool } from "./edit"
 import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
 import { InvalidTool } from "./invalid"
+import { ListTool } from "./ls"
 import { LspTool } from "./lsp"
+import { MultiEditTool } from "./multiedit"
 import { PlanExitTool } from "./plan"
 import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
@@ -32,9 +34,11 @@ export namespace ToolRegistry {
       ...(question ? [QuestionTool] : []),
       RunCommandTool,
       ReadTool,
+      ListTool,
       GlobTool,
       GrepTool,
       EditTool,
+      MultiEditTool,
       WriteTool,
       TaskTool,
       WebFetchTool,
@@ -44,10 +48,10 @@ export namespace ToolRegistry {
       // and can cause the agent to get stuck in "idle read" loops when it should be taking action.
       // TodoReadTool,
       WebSearchTool,
-      CodeSearchTool,
+      // CodeSearchTool,
       SkillTool,
       ApplyPatchTool,
-      LspTool,
+      // LspTool,
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       PlanExitTool,
     ]
@@ -72,7 +76,7 @@ export namespace ToolRegistry {
           const usePatch =
             model.modelID.includes("gpt-") && !model.modelID.includes("oss") && !model.modelID.includes("gpt-4")
           if (t.id === "apply_patch") return usePatch
-          if (t.id === "edit" || t.id === "write") return !usePatch
+          if (t.id === "edit" || t.id === "write" || t.id === "multiedit") return !usePatch
 
           return true
         })
