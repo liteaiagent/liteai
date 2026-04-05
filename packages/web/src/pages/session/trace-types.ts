@@ -30,11 +30,12 @@ export type TracePartData = Record<string, unknown> & {
   args?: unknown
   result?: unknown
   tool?: string
-  state?: { title?: string; input?: unknown; output?: unknown }
+  state?: { title?: string; input?: unknown; output?: unknown; status?: string; error?: unknown }
   reason?: string
   tokens?: { input: number; output: number; reasoning: number }
   name?: string
   synthetic?: boolean
+  error?: unknown
 }
 
 export type TraceMessageData = Record<string, unknown> & {

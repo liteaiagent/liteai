@@ -89,15 +89,17 @@ function toVertexRequest(opts: ConvertOptions): VertexGenerateContentRequest {
     }
 
     if (msg.role === "assistant") {
-      const parts: CAPart[] = []
+      const thoughtParts: CAPart[] = []
+      const regularParts: CAPart[] = []
+
       for (const p of msg.content) {
         if (p.type === "text") {
-          parts.push({ text: p.text })
+          regularParts.push({ text: p.text })
         } else if (p.type === "reasoning") {
           // Convert AI SDK reasoning back to CA thought parts.
           // thoughtSignature carried via providerOptions
           const sig = p.providerOptions?.["code-assist"]?.thoughtSignature as string | undefined
-          parts.push({
+          thoughtParts.push({
             text: p.text,
             thought: true,
             ...(sig ? { thoughtSignature: sig } : {}),
@@ -106,13 +108,18 @@ function toVertexRequest(opts: ConvertOptions): VertexGenerateContentRequest {
           // Inject synthetic thoughtSignature for function calls that follow reasoning
           const sig = p.providerOptions?.["code-assist"]?.thoughtSignature as string | undefined
           const args = typeof p.input === "string" ? JSON.parse(p.input) : (p.input ?? {})
-          parts.push({
+          const part: CAPart = {
             functionCall: {
               name: p.toolName,
               args,
             },
             ...(sig ? { thought: true, thoughtSignature: sig } : {}),
-          })
+          }
+          if (sig) {
+            thoughtParts.push(part)
+          } else {
+            regularParts.push(part)
+          }
         } else if (p.type === "tool-result") {
           // Tool results in assistant messages — convert output to functionResponse
           const response: Record<string, unknown> = {}
@@ -127,11 +134,13 @@ function toVertexRequest(opts: ConvertOptions): VertexGenerateContentRequest {
               .join("\n")
             response.result = text || JSON.stringify(p.output.value)
           }
-          parts.push({
+          regularParts.push({
             functionResponse: { name: p.toolName, response },
           })
         }
       }
+
+      const parts = [...thoughtParts, ...regularParts]
       if (parts.length > 0) result.contents.push({ role: "model", parts })
     }
 

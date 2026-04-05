@@ -5,9 +5,9 @@ import {
   ProjectIdRequiredError,
   setup,
   ValidationRequiredError,
-} from "../../../src/provider/sdk/code-assist/setup"
-import type { LoadCodeAssistResponse, LongRunningOperationResponse } from "../../../src/provider/sdk/code-assist/types"
-import { IneligibleTierReasonCode, UserTierId } from "../../../src/provider/sdk/code-assist/types"
+} from "../../../../src/provider/sdk/code-assist/setup"
+import type { LoadCodeAssistResponse, LongRunningOperationResponse } from "../../../../src/provider/sdk/code-assist/types"
+import { IneligibleTierReasonCode, UserTierId } from "../../../../src/provider/sdk/code-assist/types"
 
 /** Creates a mock AuthClient that routes by URL to return different responses. */
 function mockRouter(handler: (url: string, method: string) => unknown): AuthClient {

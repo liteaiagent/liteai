@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { AuthClient } from "google-auth-library"
-import { createCodeAssist } from "../../../src/provider/sdk/code-assist/provider"
+import { createCodeAssist } from "../../../../src/provider/sdk/code-assist/provider"
 
 /** Minimal mock AuthClient for provider factory tests. */
 const mockClient: AuthClient = {

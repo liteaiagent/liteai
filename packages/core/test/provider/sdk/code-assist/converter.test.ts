@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import type { LanguageModelV2Prompt } from "@ai-sdk/provider"
-import { fromCandidate, fromResponse, mapFinish, toRequest } from "../../../src/provider/sdk/code-assist/converter"
-import type { CACandidate, CAGenerateContentResponse } from "../../../src/provider/sdk/code-assist/types"
+import { fromCandidate, fromResponse, mapFinish, toRequest } from "../../../../src/provider/sdk/code-assist/converter"
+import type { CACandidate, CAGenerateContentResponse } from "../../../../src/provider/sdk/code-assist/types"
 
 // ── toRequest ──────────────────────────────────────────────────────────
 
@@ -58,6 +58,39 @@ describe("toRequest", () => {
     if (!model) throw new Error("expected model")
     expect(model.parts[0]).toEqual({ text: "thinking...", thought: true, thoughtSignature: "sig1" })
     expect(model.parts[1]).toEqual({ text: "answer" })
+  })
+
+  test("assistant text and reasoning interleaving is sorted correctly", () => {
+    const prompt: LanguageModelV2Prompt = [
+      { role: "user", content: [{ type: "text", text: "q" }] },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "reasoning",
+            text: "thinking 1...",
+            providerOptions: { "code-assist": { thoughtSignature: "sig1" } },
+          },
+          { type: "text", text: "text break" },
+          {
+            type: "reasoning",
+            text: "thinking 2...",
+            providerOptions: { "code-assist": { thoughtSignature: "sig2" } },
+          },
+          { type: "text", text: "final answer" },
+        ],
+      },
+    ]
+    const req = toRequest({ model: "m", prompt })
+    const model = req.request.contents.find((c) => c.role === "model")
+    if (!model) throw new Error("expected model")
+    
+    // Thoughts should all be pulled to the front
+    expect(model.parts[0]).toEqual({ text: "thinking 1...", thought: true, thoughtSignature: "sig1" })
+    expect(model.parts[1]).toEqual({ text: "thinking 2...", thought: true, thoughtSignature: "sig2" })
+    // Regular text follows
+    expect(model.parts[2]).toEqual({ text: "text break" })
+    expect(model.parts[3]).toEqual({ text: "final answer" })
   })
 
   test("assistant tool-call part", () => {

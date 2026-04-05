@@ -230,6 +230,14 @@ export class ExtensionServer {
     await vscode.workspace.fs.writeFile(vscode.Uri.file(filePath), bytes)
     this.sendJson(res, { ok: true })
 
+    // Open the edited file in the editor so the user can see changes (non-blocking)
+    if (encoding !== "base64") {
+      vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then(
+        (doc) => vscode.window.showTextDocument(doc, { preserveFocus: true, preview: true }),
+        () => {}, // ignore errors (e.g. binary files)
+      )
+    }
+
     // Track the edit for inline diff decorations (non-blocking, after response)
     if (this._diffManager && oldContent !== undefined && encoding !== "base64") {
       this._diffManager.trackEdit(filePath, oldContent, rawContent)

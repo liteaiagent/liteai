@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import type { LanguageModelV2CallOptions, LanguageModelV2StreamPart } from "@ai-sdk/provider"
 import type { AuthClient } from "google-auth-library"
-import { CodeAssistLanguageModel } from "../../../src/provider/sdk/code-assist/language-model"
-import type { CAGenerateContentResponse } from "../../../src/provider/sdk/code-assist/types"
+import { CodeAssistLanguageModel } from "../../../../src/provider/sdk/code-assist/language-model"
+import type { CAGenerateContentResponse } from "../../../../src/provider/sdk/code-assist/types"
 
 /** Creates a mock AuthClient that returns the given body (as gaxios `res.data`). */
 function mockOk(body: unknown): AuthClient {

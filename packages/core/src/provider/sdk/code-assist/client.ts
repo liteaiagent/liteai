@@ -171,25 +171,51 @@ export async function* stream(
     })
 
     // Parse SSE stream using readline — matches gemini-cli exactly
+    const sourceStream = Readable.from(res.data)
     const rl = readline.createInterface({
-      input: Readable.from(res.data),
+      input: sourceStream,
       crlfDelay: Number.POSITIVE_INFINITY,
     })
 
-    let bufferedLines: string[] = []
-    for await (const line of rl) {
+    const onAbort = () => {
+      console.log("onAbort called!")
+      sourceStream.destroy(new DOMException("The user aborted a request.", "AbortError"))
+      rl.close()
+    }
+    if (signal) {
+      if (signal.aborted) onAbort()
+      else signal.addEventListener("abort", onAbort)
+    }
+
+    try {
+      let bufferedLines: string[] = []
+      for await (const line of rl) {
       if (line.startsWith("data: ")) {
         bufferedLines.push(line.slice(6).trim())
       } else if (line === "") {
         if (bufferedLines.length === 0) continue
         const chunk = bufferedLines.join("\n")
         try {
-          yield JSON.parse(chunk)
-        } catch {
-          // Skip unparseable chunks (e.g. [DONE])
+          const parsed = JSON.parse(chunk)
+          http.info("sse", {
+            provider: "google-code-assist",
+            url,
+            chunk: parsed,
+          })
+          yield parsed
+        } catch (e: unknown) {
+          http.error("sse parse error", {
+            provider: "google-code-assist",
+            url,
+            chunk,
+            error: e instanceof Error ? e.message : String(e),
+          })
         }
         bufferedLines = []
       }
+    }
+    } finally {
+      if (signal) signal.removeEventListener("abort", onAbort)
     }
   } catch (error) {
     const err = error as { response?: { status?: number; statusText?: string; headers?: unknown } }

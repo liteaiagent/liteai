@@ -55,16 +55,20 @@ export namespace SessionProcessor {
         })
         needsCompaction = false
         const shouldBreak = (await Config.get()).experimental?.continue_loop_on_deny !== true
+        let currentText: Message.TextPart | undefined
+        const reasoningMap: Record<string, Message.ReasoningPart> = {}
+        let streamResult: LLM.StreamOutput | undefined
         while (true) {
           try {
-            let currentText: Message.TextPart | undefined
-            const reasoningMap: Record<string, Message.ReasoningPart> = {}
+            currentText = undefined
+            for (const key of Object.keys(reasoningMap)) delete reasoningMap[key]
             const stream = await LLM.stream({
               ...streamInput,
               onSystem: (s) => {
                 resolved = s
               },
             })
+            streamResult = stream
 
             for await (const value of stream.fullStream) {
               input.abort.throwIfAborted()
@@ -393,7 +397,7 @@ export namespace SessionProcessor {
               if (needsCompaction) break
             }
           } catch (e: unknown) {
-            log.error("process", { error: e })
+            log.error("process", { error: e, isAbortError: e instanceof DOMException && e.name === "AbortError" })
             const error = Message.fromError(e, { providerID: input.model.providerID })
             if (Message.ContextOverflowError.isInstance(error)) {
               needsCompaction = true
@@ -437,7 +441,28 @@ export namespace SessionProcessor {
             }
             snapshot = undefined
           }
+          // Flush any in-flight text part that never received text-end.
+          if (currentText && currentText.text) {
+            currentText.text = currentText.text.trimEnd()
+            currentText.time = { start: currentText.time?.start ?? Date.now(), end: Date.now() }
+            await Session.updatePart(currentText)
+            currentText = undefined
+          }
+
+          // Flush any in-flight reasoning parts that never received reasoning-end.
+          // The reasoningMap holds the accumulated text from deltas (which are never
+          // written to the DB individually), so we must persist them here before they
+          // are lost.
+          log.info("process flush reasoning", { keys: Object.keys(reasoningMap), sessionID: input.sessionID })
+          for (const part of Object.values(reasoningMap)) {
+            part.text = part.text.trimEnd()
+            part.time = { ...part.time, end: Date.now() }
+            log.info("process flush updatePart", { partID: part.id, textLength: part.text.length })
+            await Session.updatePart(part)
+          }
+
           const p = await Message.parts(input.assistantMessage.id)
+          log.info("process flush message parts", { partCount: p.length, sessionID: input.sessionID })
           for (const part of p) {
             if (part.type === "tool" && part.state.status !== "completed" && part.state.status !== "error") {
               await Session.updatePart({
@@ -454,10 +479,54 @@ export namespace SessionProcessor {
               })
             }
             if (part.type === "reasoning" && !part.time.end) {
-              part.time = { ...part.time, end: Date.now() }
-              await Session.updatePart(part)
+              // Only update if not already flushed from reasoningMap above
+              if (!Object.values(reasoningMap).some((r) => r.id === part.id)) {
+                part.time = { ...part.time, end: Date.now() }
+                await Session.updatePart(part)
+              }
             }
           }
+
+          // Attempt to capture partial token usage and write step-finish on abort.
+          // Wrapped in try/catch so failures here never prevent Trace.record()
+          // from running in loop.ts (which calls process()).
+          if (input.assistantMessage.error && streamResult) {
+            try {
+              const usage = await Promise.race([
+                streamResult.usage.catch(() => null),
+                new Promise<null>((resolve) => setTimeout(() => resolve(null), 200)),
+              ])
+              if (usage) {
+                const computed = Session.getUsage({
+                  model: input.model,
+                  usage,
+                  metadata: undefined,
+                })
+                input.assistantMessage.tokens = computed.tokens
+                input.assistantMessage.cost = computed.cost
+              }
+            } catch (e) {
+              log.info("partial usage capture failed", { error: e, sessionID: input.sessionID })
+            }
+          }
+
+          if (input.assistantMessage.error) {
+            try {
+              await Session.updatePart({
+                id: PartID.ascending(),
+                messageID: input.assistantMessage.id,
+                sessionID: input.sessionID,
+                type: "step-finish",
+                reason: "error",
+                snapshot: snapshot ? await Snapshot.track() : undefined,
+                cost: input.assistantMessage.cost,
+                tokens: input.assistantMessage.tokens,
+              })
+            } catch (e) {
+              log.error("step-finish write failed on abort", { error: e, sessionID: input.sessionID })
+            }
+          }
+
           input.assistantMessage.time.completed = Date.now()
           await Session.updateMessage(input.assistantMessage)
           if (needsCompaction) {

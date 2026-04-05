@@ -23,7 +23,7 @@ import "./trace-panel.css"
 import { CompareView } from "./trace-compare"
 import { TraceDetailView } from "./trace-detail"
 import { fmt, SPAN_COLORS, spanType } from "./trace-helpers"
-import type { TraceDetail, TraceInfo } from "./trace-types"
+import type { TraceDetail, TraceInfo, TracePartData } from "./trace-types"
 
 const BREAKDOWN_COLOR: Record<SessionContextBreakdownKey, string> = {
   system: "var(--syntax-info)",
@@ -506,6 +506,87 @@ export function TracePanel(props: { size: Sizing }) {
                   const a = document.createElement("a")
                   a.href = url
                   a.download = `traces-${id}.json`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                }}
+              />
+              <IconButton
+                icon="prompt"
+                variant="ghost"
+                title="Export Readable"
+                onClick={async () => {
+                  const id = params.id
+                  if (!id) return
+                  const sids = [...new Set(traces().map((t) => t.sessionID || id))]
+                  await Promise.all(sids.filter((s) => s !== id).map((s) => sync.session.sync(s)))
+                  const all = sids.flatMap((s) => sync.data.message[s] ?? [])
+                  const seenId = new Set<string>()
+                  const msgs = all.filter((m) => {
+                    if (seenId.has(m.id)) return false
+                    seenId.add(m.id)
+                    return true
+                  })
+                  
+                  let md = `# Session: ${info()?.title ?? id}\n\n`
+                  
+                  const sys = systemPrompt()
+                  if (sys) {
+                    md += `## System Prompt\n\n${sys}\n\n---\n\n`
+                  }
+
+                  const seenText = new Set<string>()
+
+                  for (const msg of msgs) {
+                    const parts = (sync.data.part[msg.id] ?? []) as TracePartData[]
+                    if (parts.length === 0) continue
+
+                    md += `## ${msg.role?.toUpperCase() || "UNKNOWN"}\n\n`
+                    for (const part of parts) {
+                      if (part.type === "text" && part.text) {
+                         const trimText = part.text.trim();
+                         if (seenText.has(trimText)) continue;
+                         if (part.synthetic) {
+                            seenText.add(trimText);
+                            md += `**[System Message]**\n\n${part.text}\n\n`
+                         } else {
+                            md += `${part.text}\n\n`
+                         }
+                      } else if (part.type === "reasoning" && part.text) {
+                        md += `*Reasoning:*\n> ${part.text.split("\n").join("\n> ")}\n\n`
+                      } else if (part.type === "tool") {
+                        const input = typeof part.state?.input === "string" ? part.state?.input : JSON.stringify(part.state?.input, null, 2)
+                        md += `**Tool Call:** \`${part.tool || "tool"}\`\n\`\`\`json\n${input}\n\`\`\`\n\n`
+                        
+                        if (part.state?.status === "error") {
+                            const err = typeof part.state?.error === "string" ? part.state.error : JSON.stringify(part.state?.error, null, 2)
+                            md += `**Tool Error:**\n\`\`\`\n${err || "Unknown error"}\n\`\`\`\n\n`
+                        } else if (part.state?.output !== undefined) {
+                            const output = typeof part.state.output === "string" ? part.state.output : JSON.stringify(part.state.output, null, 2)
+                            md += `**Tool Result:**\n\`\`\`\n${output || "(Empty output)"}\n\`\`\`\n\n`
+                        }
+                      } else if (part.type === "tool-call") {
+                         const args = typeof part.args === "string" ? part.args : JSON.stringify(part.args, null, 2)
+                         md += `**Tool Call:** \`${part.toolName || "tool"}\`\n\`\`\`json\n${args}\n\`\`\`\n\n`
+                      } else if (part.type === "tool-result") {
+                         if (part.error) {
+                            const err = typeof part.error === "string" ? part.error : JSON.stringify(part.error, null, 2)
+                            md += `**Tool Error:** \`${part.toolName || "tool"}\`\n\`\`\`\n${err || "Unknown error"}\n\`\`\`\n\n`
+                         } else if (part.result !== undefined) {
+                            const result = typeof part.result === "string" ? part.result : JSON.stringify(part.result, null, 2)
+                            md += `**Tool Result:** \`${part.toolName || "tool"}\`\n\`\`\`\n${result || "(Empty result)"}\n\`\`\`\n\n`
+                         }
+                      }
+                    }
+                    md += `---\n\n`
+                  }
+
+                  const blob = new Blob([md], { type: "text/markdown" })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement("a")
+                  a.href = url
+                  a.download = `readable-session-${id}.md`
                   document.body.appendChild(a)
                   a.click()
                   document.body.removeChild(a)
