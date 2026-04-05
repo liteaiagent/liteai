@@ -1,0 +1,74 @@
+services:
+  # Tempo is the backend database that stores the traces
+  tempo:
+    image: grafana/tempo:2.10.3
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+    # Traefik configuration for Tempo Receivers
+    labels:
+      - "traefik.enable=true"
+      # Router Definition
+      - "traefik.http.routers.tempo-http.rule=Host(`otel.${DOMAIN}`)"
+      - "traefik.http.routers.tempo-http.entrypoints=https"
+      - "traefik.http.routers.tempo-http.tls=true"
+      - "traefik.http.routers.tempo-http.service=tempo-http"
+      # Service Definition
+      - "traefik.http.services.tempo-http.loadbalancer.server.port=4318"
+      # (Optional) If you use gRPC, you'd configure a TCP router for Port 4317 here
+    networks:
+      traefik-net:
+        ipv4_address: 172.20.0.40
+
+  # Grafana is the UI dashboard
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      # Bypass login screen for local dev convenience
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      # Automatically configure Grafana to read from Tempo
+      - ./datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    # Traefik configuration for Grafana UI
+    labels:
+      - "traefik.enable=true"
+      # Router Definition
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=https"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.service=grafana"
+      # Service Definition
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    networks:
+      traefik-net:
+        ipv4_address: 172.20.0.41
+
+# Prometheus is the backend database for Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      # This flag allows Prometheus to directly accept OTLP metric pushes
+      - "--enable-feature=otlp-write-receiver" 
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      traefik-net:
+        ipv4_address: 172.20.0.42
+
+  # Loki is the backend database for Logs
+  loki:
+    image: grafana/loki:latest
+    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+    networks:
+      traefik-net:
+        ipv4_address: 172.20.0.43
+
+# External Network: $ docker network create --driver=bridge --subnet=172.20.0.0/16 --gateway=172.20.0.1 traefik-net
+networks:
+  traefik-net:
+    external: true

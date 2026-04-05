@@ -5,9 +5,8 @@ import { xdgCache, xdgData, xdgState } from "xdg-basedir"
 import { Brand } from "../brand"
 import { Flag } from "../flag/flag"
 import { Filesystem } from "../util/filesystem"
-import { Log } from "../util/log"
-
-const log = Log.create({ service: "global" })
+// NOTE: Do NOT import Log at the top level — it creates a circular dependency
+// (Log imports Global, Global imports Log). Use lazy import where needed.
 
 const app = Brand.app
 
@@ -57,7 +56,8 @@ if (version !== CACHE_VERSION) {
       ),
     )
   } catch (error) {
-    log.warn("Failed to clear cache:", { error })
+    const { Log } = await import("../util/log")
+    Log.create({ service: "global" }).warn("Failed to clear cache:", { error })
   }
   await Filesystem.write(path.join(Global.Path.cache, "version"), CACHE_VERSION)
 }
