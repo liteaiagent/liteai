@@ -651,12 +651,6 @@ export const Info = z
       .object({
         disable_paste_summary: z.boolean().optional(),
         batch_tool: z.boolean().optional().describe("Enable the batch tool"),
-        openTelemetry: z
-          .boolean()
-          .optional()
-          .describe(
-            "@deprecated OpenTelemetry is now controlled strictly via LITEAI_ENABLE_TELEMETRY and standard OTEL_* environment variables",
-          ),
         primary_tools: z
           .array(z.string())
           .optional()
@@ -668,7 +662,6 @@ export const Info = z
           .positive()
           .optional()
           .describe("Timeout in milliseconds for model context protocol (MCP) requests"),
-        trace: z.boolean().optional().describe("Enable LLM call tracing"),
       })
       .optional(),
     hooks: z

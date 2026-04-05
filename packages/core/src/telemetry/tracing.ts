@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks"
-import { context as otelContext, type Span, trace } from "@opentelemetry/api"
+import { INVALID_SPAN_CONTEXT, context as otelContext, type Span, trace } from "@opentelemetry/api"
 import { isTelemetryEnabled } from "./instrumentation"
 import {
   endInteractionPerfettoSpan,
@@ -45,14 +45,25 @@ interface SpanContext {
 const interactionContext = new AsyncLocalStorage<SpanContext | undefined>()
 const toolContext = new AsyncLocalStorage<SpanContext | undefined>()
 const activeSpans = new Map<string, WeakRef<SpanContext>>()
+// strongSpans holds strong references to SpanContext objects to prevent premature GC
+// while a span is still active. Without this, the WeakRef in activeSpans could be
+// collected before endSpan is called, losing the span context.
 const strongSpans = new Map<string, SpanContext>()
 
 let interactionSequence = 0
 let _cleanupIntervalStarted = false
 const SPAN_TTL_MS = 30 * 60 * 1000 // 30 mins
 
+/** A non-recording span used when telemetry is disabled.
+ * Unlike `getTracer().startSpan("dummy")`, this never emits to exporters. */
+const NOOP_SPAN = trace.wrapSpanContext(INVALID_SPAN_CONTEXT)
+let noopSpanIdCounter = 0
+
 function getSpanId(span: Span): string {
-  return span.spanContext().spanId || ""
+  // NOOP_SPAN always returns all-zeros; generate a unique ID for map keying
+  const id = span.spanContext().spanId
+  if (id && id !== "0000000000000000") return id
+  return `noop_${++noopSpanIdCounter}`
 }
 
 function getTracer() {
@@ -97,17 +108,16 @@ export function startInteractionSpan(userPrompt: string): Span {
   const perfettoSpanId = startInteractionPerfettoSpan(userPrompt)
 
   if (!isTelemetryEnabled()) {
-    const dummySpan = trace.getActiveSpan() || getTracer().startSpan("dummy")
-    const spanId = getSpanId(dummySpan)
+    const spanId = getSpanId(NOOP_SPAN)
     const spanContextObj: SpanContext = {
-      span: dummySpan,
+      span: NOOP_SPAN,
       startTime: Date.now(),
       attributes: {},
       perfettoSpanId,
     }
     activeSpans.set(spanId, new WeakRef(spanContextObj))
     interactionContext.enterWith(spanContextObj)
-    return dummySpan
+    return NOOP_SPAN
   }
 
   const tracer = getTracer()
@@ -165,17 +175,16 @@ export function startLLMRequestSpan(model: string, newContext?: LLMRequestNewCon
   })
 
   if (!isTelemetryEnabled()) {
-    const dummySpan = trace.getActiveSpan() || getTracer().startSpan("dummy")
-    const spanId = getSpanId(dummySpan)
+    const spanId = getSpanId(NOOP_SPAN)
     const spanContextObj: SpanContext = {
-      span: dummySpan,
+      span: NOOP_SPAN,
       startTime: Date.now(),
       attributes: { model },
       perfettoSpanId,
     }
     activeSpans.set(spanId, new WeakRef(spanContextObj))
     strongSpans.set(spanId, spanContextObj)
-    return dummySpan
+    return NOOP_SPAN
   }
 
   const tracer = getTracer()
@@ -274,17 +283,16 @@ export function startToolSpan(toolName: string, input?: string): Span {
   const perfettoSpanId = startToolPerfettoSpan(toolName)
 
   if (!isTelemetryEnabled()) {
-    const dummySpan = trace.getActiveSpan() || getTracer().startSpan("dummy")
-    const spanId = getSpanId(dummySpan)
+    const spanId = getSpanId(NOOP_SPAN)
     const spanContextObj: SpanContext = {
-      span: dummySpan,
+      span: NOOP_SPAN,
       startTime: Date.now(),
       attributes: { "span.type": "tool", tool_name: toolName },
       perfettoSpanId,
     }
     activeSpans.set(spanId, new WeakRef(spanContextObj))
     toolContext.enterWith(spanContextObj)
-    return dummySpan
+    return NOOP_SPAN
   }
 
   const tracer = getTracer()
@@ -351,16 +359,15 @@ export function endToolSpan(resultTokens?: number): void {
 
 export function startHookSpan(hookEvent: string): Span {
   if (!isTelemetryEnabled()) {
-    const dummySpan = trace.getActiveSpan() || getTracer().startSpan("dummy")
-    const spanId = getSpanId(dummySpan)
+    const spanId = getSpanId(NOOP_SPAN)
     const spanContextObj: SpanContext = {
-      span: dummySpan,
+      span: NOOP_SPAN,
       startTime: Date.now(),
       attributes: { "span.type": "hook", hook_event: hookEvent },
     }
     activeSpans.set(spanId, new WeakRef(spanContextObj))
     strongSpans.set(spanId, spanContextObj)
-    return dummySpan
+    return NOOP_SPAN
   }
 
   const tracer = getTracer()

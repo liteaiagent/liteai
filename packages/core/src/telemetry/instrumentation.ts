@@ -6,6 +6,7 @@ import { ConsoleMetricExporter, MeterProvider, PeriodicExportingMetricReader } f
 import { BasicTracerProvider, BatchSpanProcessor, ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base"
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
 
+import { Installation } from "../installation"
 import { initializePerfettoTracing } from "./perfetto"
 import { endInteractionSpan } from "./tracing"
 
@@ -95,9 +96,7 @@ async function getOtlpLogExporters() {
           break
         }
         case "http/protobuf": {
-          // Note: you may need to add @opentelemetry/exporter-logs-otlp-proto to dependencies if used
-          const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-http")
-          // For protobuf, SDK often treats http/protobuf natively, or we fallback to http here
+          const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-proto")
           exporters.push(new OTLPLogExporter())
           break
         }
@@ -126,8 +125,7 @@ async function getOtlpTraceExporters() {
           break
         }
         case "http/protobuf": {
-          // If proto is needed, make sure @opentelemetry/exporter-trace-otlp-proto is installed.
-          const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http")
+          const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-proto")
           exporters.push(new OTLPTraceExporter())
           break
         }
@@ -177,7 +175,7 @@ export async function initializeTelemetry() {
 
   const baseAttributes: Record<string, string> = {
     [ATTR_SERVICE_NAME]: "liteai",
-    [ATTR_SERVICE_VERSION]: "1.0.0", // Could be dynamic from package.json
+    [ATTR_SERVICE_VERSION]: Installation.VERSION,
   }
 
   const baseResource = resourceFromAttributes(baseAttributes)

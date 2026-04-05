@@ -216,10 +216,6 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
     hasFeedback: !!feedback,
   })
 
-  if (ctx.session_id && invocations.length > 0) {
-    // Legacy Trace.addHooks removed in favor of OpenTelemetry spans
-  }
-
   return { proceed, feedback, context, decision, hookOutput, invocations }
 }
 

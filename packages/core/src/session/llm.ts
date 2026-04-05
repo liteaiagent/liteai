@@ -100,7 +100,7 @@ export namespace LLM {
       system.push(header, rest.join("\n"))
     }
 
-    // Report resolved system prompt to caller (for trace recording)
+    // Report resolved system prompt to caller (for telemetry span recording)
     input.onSystem?.(system)
 
     const variant =

@@ -28,6 +28,16 @@ const events: TraceEvent[] = []
 const metadataEvents: TraceEvent[] = []
 const pendingSpans = new Map<string, PendingSpan>()
 
+const MAX_EVENTS = 100_000
+
+/** Evict the oldest half of events when buffer exceeds MAX_EVENTS. */
+function evictIfNeeded(): void {
+  if (events.length > MAX_EVENTS) {
+    const half = Math.floor(events.length / 2)
+    events.splice(0, half)
+  }
+}
+
 let startTimeMs = 0
 let spanIdCounter = 0
 
@@ -60,6 +70,8 @@ export function initializePerfettoTracing(): void {
     process.on("beforeExit", () => {
       void writePerfettoTrace()
     })
+
+    console.log(`[perfetto] Trace file: ${tracePath}`)
   }
 }
 
@@ -111,6 +123,7 @@ export function startInteractionPerfettoSpan(userPrompt: string): string {
     tid: 1,
     args: pendingSpans.get(spanId)?.args,
   })
+  evictIfNeeded()
 
   return spanId
 }
@@ -135,6 +148,7 @@ export function endInteractionPerfettoSpan(spanId: string): void {
       duration_ms: (endTime - pending.startTime) / 1000,
     },
   })
+  evictIfNeeded()
 
   pendingSpans.delete(spanId)
 }
@@ -159,6 +173,7 @@ export function startLLMRequestPerfettoSpan(args: { model: string; querySource?:
     tid: 1,
     args: pendingSpans.get(spanId)?.args,
   })
+  evictIfNeeded()
 
   return spanId
 }
@@ -196,6 +211,7 @@ export function endLLMRequestPerfettoSpan(
       duration_ms: (endTime - pending.startTime) / 1000,
     },
   })
+  evictIfNeeded()
 
   pendingSpans.delete(spanId)
 }
@@ -220,6 +236,7 @@ export function startToolPerfettoSpan(toolName: string): string {
     tid: 1,
     args: pendingSpans.get(spanId)?.args,
   })
+  evictIfNeeded()
 
   return spanId
 }
@@ -245,6 +262,7 @@ export function endToolPerfettoSpan(spanId: string, metadata?: { success?: boole
       duration_ms: (endTime - pending.startTime) / 1000,
     },
   })
+  evictIfNeeded()
 
   pendingSpans.delete(spanId)
 }
