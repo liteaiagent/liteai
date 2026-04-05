@@ -121,7 +121,7 @@ The current liteai trace system is a custom SQLite append-log (`TraceTable`) tha
 
 ## Proposed Changes
 
-### Phase 1: New Telemetry Foundation
+### Phase 1: New Telemetry Foundation (COMPLETED)
 
 #### [NEW] `src/telemetry/instrumentation.ts`
 Bootstrap OTel providers. Adapted from liteai2 but simplified for our server architecture (no CLI/TUI concerns):
@@ -185,7 +185,7 @@ export function logOTelEvent(eventName: string, metadata: Record<string, string>
 
 ---
 
-### Phase 2: Integration Points
+### Phase 2: Integration Points (COMPLETED)
 
 #### [MODIFY] [loop.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/engine/loop.ts)
 
@@ -267,7 +267,7 @@ for (const invocation of invocations) {
 
 ---
 
-### Phase 3: Deprecate Old Trace System
+### Phase 3: Deprecate Old Trace System (COMPLETED)
 
 #### [DEPRECATE] `src/trace/trace.ts`
 
@@ -308,30 +308,32 @@ Optional (lazy-loaded based on `OTEL_EXPORTER_OTLP_PROTOCOL`):
 
 ## Migration Strategy
 
-### Parallel Write Phase (non-breaking)
+### Parallel Write Phase (CANCELLED)
+> *Note: We decided to skip parallel writes to avoid dual overhead and jump directly to cut-over. Old SQLite files act purely as read-only historical archives now.*
 1. Add new `src/telemetry/` module
 2. Instrument `loop.ts`, `processor.ts`, `hook.ts` to emit OTel spans **alongside** existing `Trace.record()` calls
 3. Both systems write simultaneously — OTel for new observability, SQLite for backward compat
 4. Validate OTel output using Console exporter
 
-### Cut-Over Phase
+### Cut-Over Phase (COMPLETED)
 1. Remove `Trace.record()` calls from `loop.ts`
 2. Remove `Trace.addHooks()`/`flushHooks()` from `hook.ts` and `trace.ts`
 3. Update `/api/trace` routes to read from OTel (or keep SQLite as read-only archive)
 4. Remove `contextIDs` dependency
 
-### Cleanup Phase
+### Cleanup Phase (COMPLETED)
 1. Remove `Trace._pendingHooks` global state
 2. Consider removing `TraceTable` writes entirely
 3. Deprecate the `experimental.openTelemetry` config flag (now always-on via env vars)
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 > [!IMPORTANT]
 > **Q1: Bun compatibility with `@opentelemetry/sdk-*` packages?**  
 > liteai runs on Bun, not Node.js. The OTel SDK packages use some Node-specific APIs (`AsyncLocalStorage` from `async_hooks`, `process` events). Bun supports `AsyncLocalStorage` and most `process` events. We need to verify compatibility before committing. Should I run a proof-of-concept first?
+> **Resolution:** We utilized node:async_hooks which is fully compatible with Bun. No proof of concept was needed, integration worked out of the box.
 
 > [!IMPORTANT]
 > **Q2: Perfetto — developer-only or general availability?**  
@@ -358,12 +360,40 @@ Optional (lazy-loaded based on `OTEL_EXPORTER_OTLP_PROTOCOL`):
 - Verify span hierarchy: `interaction → llm_request → tool`
 - Enable Perfetto, run a session, open `trace-<id>.json` in `ui.perfetto.dev` — verify timeline visualization
 
-### Phase 2 Verification
+### Phase 2 Verification (CANCELLED)
 - Run with both old `Trace.record()` and new OTel spans active
 - Compare: old SQLite traces vs OTel Console spans for same session
 - Verify hook spans appear correctly under tool spans
+> *Note: Cancelled because parallel writes were skipped.*
 
-### Phase 3 Verification
+### Phase 3 Verification (COMPLETED)
 - Remove old `Trace.record()` calls
 - Verify `/api/trace` routes still return data (from archive)
 - Confirm no regressions in session flow
+
+### Phase 4: Legacy Code Purge
+Completely destroy the legacy footprint.
+1. **Database Migration**: Write a SQL migration to `DROP TABLE trace` and `DROP TABLE trace_content`, permanently removing them from user machines to save disk space.
+2. **Code Deletion**: Delete `src/trace/` completely.
+3. **API Deletion**: Delete `src/server/routes/trace.ts` and remove its registration from the server.
+4. **Schema Deletion**: Remove `TraceTable` and `TraceContentTable` constructs from Drizzle schema setups.
+
+---
+
+## Next Steps (Upcoming Phases)
+
+### Phase 5: Validating & Expanding Test Suite
+Since legacy `src/trace/` tests were reliant on SQLite trace tracking (which has been sunset), we have entirely removed `test/trace/`. Before we refactor the loop engine, we must adequately test the new telemetry architecture:
+1. **Mock End-to-End Traces (`test/telemetry/tracing.test.ts`)**: 
+   - Guarantee `AsyncLocalStorage` hierarchy safely tracks parents across asynchronous yields.
+   - Validate that `isTelemetryEnabled` controls the output successfully.
+2. **Mock Perfetto Outputs (`test/telemetry/perfetto.test.ts`)**:
+   - Validate that dummy sessions dump Chrome Trace correctly without failing out or missing timestamps.
+
+### Phase 6: The Agentic (ReAct) Loop Rewrite
+Once test coverage is adequately established on the telemetry pipeline, we pivot to structurally overhauling how LiteAI routes state logic (currently heavily recursive via `loop.ts`).
+1. **Goal**: Rip out the rigid inner `processSubtask(...)` inside `loop.ts` and restructure it mathematically to resemble the pure event-driven finite-state engine found in `liteai2`.
+2. **Context Fragmentation**: The new ReAct loop will drastically improve sub-agent transitions, leveraging OTel explicitly to trace internal thoughts without disjointing them into random UI message ids.
+3. **Concurrent Execution**: Enable parallel tool dispatch properly via structured state progression.
+
+

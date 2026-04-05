@@ -7,6 +7,7 @@ import type { Provider } from "@/provider/provider"
 import { Question } from "@/question"
 import { Snapshot } from "@/snapshot"
 import { Log } from "@/util/log"
+import { endToolSpan, startToolSpan } from "../telemetry/tracing"
 import { Session } from "."
 import { LLM } from "./llm"
 import { Message } from "./message"
@@ -16,7 +17,6 @@ import { PartID } from "./schema"
 import { SessionStatus } from "./status"
 import { SessionCompaction } from "./tasks/compaction"
 import { SessionSummary } from "./tasks/summary"
-
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
   const log = Log.create({ service: "session.processor" })
@@ -163,6 +163,7 @@ export namespace SessionProcessor {
                       input: Object.keys(value.input as Record<string, unknown>).join(","),
                       sessionID: input.sessionID,
                     })
+                    startToolSpan(value.toolName, JSON.stringify(value.input))
                     const part = await Session.updatePart({
                       ...match,
                       tool: value.toolName,
@@ -215,6 +216,7 @@ export namespace SessionProcessor {
                       duration,
                       sessionID: input.sessionID,
                     })
+                    endToolSpan()
                     await Session.updatePart({
                       ...match,
                       state: {
@@ -244,6 +246,7 @@ export namespace SessionProcessor {
                       error: String(value.error).slice(0, 200),
                       sessionID: input.sessionID,
                     })
+                    endToolSpan()
                     await Session.updatePart({
                       ...match,
                       state: {

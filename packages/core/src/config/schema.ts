@@ -654,7 +654,9 @@ export const Info = z
         openTelemetry: z
           .boolean()
           .optional()
-          .describe("Enable OpenTelemetry spans for AI SDK calls (using the 'experimental_telemetry' flag)"),
+          .describe(
+            "@deprecated OpenTelemetry is now controlled strictly via LITEAI_ENABLE_TELEMETRY and standard OTEL_* environment variables",
+          ),
         primary_tools: z
           .array(z.string())
           .optional()

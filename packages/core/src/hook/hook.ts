@@ -1,6 +1,7 @@
 import z from "zod"
-import { Trace } from "@/trace/trace"
+
 import { Log } from "@/util/log"
+import { endHookSpan, startHookSpan } from "../telemetry/tracing"
 import { command as exec } from "./command"
 import { http } from "./http"
 import { HookLoader } from "./loader"
@@ -156,8 +157,10 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
     for (const [hi, handler] of group.hooks.entries()) {
       log.info("handler start", { event, gi, hi, type: handler.type, command: handler.command, url: handler.url })
       const input = { ...ctx, hook_event_name: event }
+      const hookSpan = startHookSpan(event)
       try {
         const result = await run(handler, input)
+        endHookSpan(hookSpan, { type: handler.type, context: result?.context })
         if (!result) {
           log.info("handler skip — no result", { event, gi, hi, type: handler.type })
           continue
@@ -199,6 +202,7 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
         }
       } catch (err) {
         log.error("handler error", { event, gi, hi, type: handler.type, error: err })
+        endHookSpan(hookSpan, { type: handler.type })
       }
     }
   }
@@ -213,15 +217,7 @@ export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schem
   })
 
   if (ctx.session_id && invocations.length > 0) {
-    Trace.addHooks(
-      ctx.session_id as import("@/session/schema").SessionID,
-      invocations.map((i) => ({
-        event: i.event,
-        type: i.type,
-        config: i.handler,
-        context: i.context,
-      })),
-    )
+    // Legacy Trace.addHooks removed in favor of OpenTelemetry spans
   }
 
   return { proceed, feedback, context, decision, hookOutput, invocations }

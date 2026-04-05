@@ -4,7 +4,7 @@ import z from "zod"
 import { PermissionNext } from "@/permission/next"
 import { TaskTool } from "@/tool/task"
 import type { Tool } from "@/tool/tool"
-import { Trace } from "@/trace/trace"
+
 import { fn } from "@/util/fn"
 import { Agent } from "../../agent/agent"
 import { Bundled } from "../../bundled"
@@ -14,6 +14,12 @@ import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import { ModelID, ProviderID } from "../../provider/schema"
+import {
+  endInteractionSpan,
+  endLLMRequestSpan,
+  startInteractionSpan,
+  startLLMRequestSpan,
+} from "../../telemetry/tracing"
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
@@ -140,7 +146,15 @@ export const prompt = fn(PromptInput, async (input) => {
     return message
   }
 
-  return loop({ sessionID: input.sessionID })
+  const textPart = input.parts.find((p) => p.type === "text")
+  const userText = textPart && "text" in textPart ? textPart.text : "Input"
+  startInteractionSpan(userText)
+
+  try {
+    return await loop({ sessionID: input.sessionID })
+  } finally {
+    endInteractionSpan()
+  }
 })
 
 export function start(sessionID: SessionID) {
@@ -463,7 +477,7 @@ export const loop = fn(LoopInput, async (input) => {
       system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
     }
 
-    const traceStart = Date.now()
+    startLLMRequestSpan(`${model.providerID}/${model.id}`, { systemPrompt: system.join("\n\n") })
     const result = await processor.process({
       user: lastUser,
       agent,
@@ -485,54 +499,12 @@ export const loop = fn(LoopInput, async (input) => {
       model,
       toolChoice: format.type === "json_schema" ? "required" : undefined,
     })
-    const traceEnd = Date.now()
-
-    // Collect tool call results from this step for trace recording
-    const stepParts = await Message.parts(processor.message.id)
-    const traceResults: Trace.ToolResult[] = []
-    for (const part of stepParts) {
-      if (part.type !== "tool") continue
-      if (part.state.status === "completed") {
-        traceResults.push({
-          tool: part.tool,
-          callID: part.callID,
-          status: "completed",
-          input: part.state.input,
-          output: part.state.output,
-          duration: part.state.time.end - part.state.time.start,
-        })
-      } else if (part.state.status === "error") {
-        traceResults.push({
-          tool: part.tool,
-          callID: part.callID,
-          status: "error",
-          input: part.state.input,
-          error: part.state.error,
-          duration: part.state.time.end - part.state.time.start,
-        })
-      }
-    }
-
-    // Trace capture (after LLM call) — always record traces
-    Trace.record({
-      sessionID,
-      messageID: processor.message.id,
-      agent: agent.name,
-      model: { id: model.id, providerID: model.providerID },
-      params: agent.temperature !== undefined ? { temperature: agent.temperature } : undefined,
-      system: (processor.resolvedSystem ?? system).join("\n\n"),
-      tools: Object.entries(tools)
-        .filter(([name]) => name !== "invalid")
-        .map(([name, t]) => ({
-          name,
-          description: (t as { description?: string }).description,
-          parameters: (t as { parameters?: unknown }).parameters,
-        })),
-      results: traceResults.length > 0 ? traceResults : undefined,
-      contextIDs: msgs.map((m) => m.info.id),
-      hooks: Trace.flushHooks(sessionID) ?? undefined,
-      timeStart: traceStart,
-      timeEnd: traceEnd,
+    endLLMRequestSpan(undefined, {
+      inputTokens: processor.message.tokens.input,
+      outputTokens: processor.message.tokens.output,
+      cacheReadTokens: processor.message.tokens.cache.read,
+      cacheCreationTokens: processor.message.tokens.cache.write,
+      success: !processor.message.error,
       error: processor.message.error ? JSON.stringify(processor.message.error) : undefined,
     })
 
@@ -608,7 +580,6 @@ async function processSubtask(input: {
   msgs: Message.WithParts[]
 }) {
   const { task, lastUser, sessionID, session, abort, msgs } = input
-  const traceStart = Date.now()
   const taskTool = await TaskTool.init()
   const taskModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {
@@ -670,6 +641,7 @@ async function processSubtask(input: {
     subagent_type: task.agent,
     command: task.command,
   }
+  startLLMRequestSpan(`${taskModel.providerID}/${taskModel.id}`, { systemPrompt: task.prompt })
   await Plugin.trigger(
     "tool.execute.before",
     {
@@ -764,38 +736,8 @@ async function processSubtask(input: {
     } satisfies Message.ToolPart)
   }
 
-  // Collect tool results for subtask trace recording
-  const subtaskResults: Trace.ToolResult[] = []
-  if (result && part.state.status !== "running") {
-    // part was already updated to completed above
-    subtaskResults.push({
-      tool: TaskTool.id,
-      callID: part.callID,
-      status: "completed",
-      input: taskArgs,
-      output: result.output,
-    })
-  } else if (!result) {
-    subtaskResults.push({
-      tool: TaskTool.id,
-      callID: part.callID,
-      status: "error",
-      input: taskArgs,
-      error: executionError ? `Tool execution failed: ${executionError.message}` : "Tool execution failed",
-    })
-  }
-
-  // Record trace span for sub-agent invocation
-  Trace.record({
-    sessionID,
-    messageID: assistantMessage.id,
-    agent: task.agent,
-    model: { id: taskModel.id, providerID: taskModel.providerID },
-    results: subtaskResults.length > 0 ? subtaskResults : undefined,
-    contextIDs: msgs.map((m) => m.info.id),
-    hooks: Trace.flushHooks(sessionID) ?? undefined,
-    timeStart: traceStart,
-    timeEnd: Date.now(),
+  endLLMRequestSpan(undefined, {
+    success: !executionError,
     error: executionError?.message,
   })
 

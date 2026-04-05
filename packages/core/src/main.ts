@@ -10,6 +10,7 @@ import { Installation } from "./installation"
 import { Instance } from "./project/instance"
 import { Server } from "./server/server"
 import { Database } from "./storage/db"
+import { initializeTelemetry, shutdownTelemetry } from "./telemetry/instrumentation"
 import { Log } from "./util/log"
 
 const args = await yargs(hideBin(process.argv))
@@ -86,6 +87,8 @@ await Log.init({
 
 const log = Log.create({ service: "main" })
 
+await initializeTelemetry()
+
 // ─── Initialize capabilities ────────────────────────────────────────────────
 
 if (args.hosted) {
@@ -134,6 +137,7 @@ if (args.lsp) {
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.on(signal, async () => {
     log.info("received signal, shutting down", { signal })
+    await shutdownTelemetry().catch((e) => log.error("telemetry shutdown failed", { error: e }))
     Server.shutdown()
     await Instance.disposeAll().catch(() => {})
     process.exit(0)

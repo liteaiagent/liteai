@@ -12,7 +12,6 @@ import {
 import { mergeDeep, pipe } from "remeda"
 import type { Agent } from "@/agent/agent"
 import { Auth } from "@/auth"
-import { Config } from "@/config/config"
 import { Hook } from "@/hook"
 import { Installation } from "@/installation"
 import { PermissionNext } from "@/permission/next"
@@ -57,9 +56,8 @@ export namespace LLM {
       modelID: input.model.id,
       providerID: input.model.providerID,
     })
-    const [language, cfg, provider, auth] = await Promise.all([
+    const [language, provider, auth] = await Promise.all([
       Provider.getLanguage(input.model),
-      Config.get(),
       Provider.getProvider(input.model.providerID),
       Auth.get(input.model.providerID),
     ]).catch((e) => {
@@ -247,13 +245,6 @@ export namespace LLM {
           },
         ],
       }),
-      experimental_telemetry: {
-        isEnabled: cfg.experimental?.openTelemetry,
-        metadata: {
-          userId: cfg.username ?? "unknown",
-          sessionId: input.sessionID,
-        },
-      },
     })
   }
 

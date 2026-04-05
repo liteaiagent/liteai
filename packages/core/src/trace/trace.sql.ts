@@ -3,7 +3,10 @@ import type { MessageID, SessionID } from "../session/schema"
 import { MessageTable, SessionTable } from "../session/session.sql"
 import { Timestamps } from "../storage/schema.sql"
 import type { TraceID } from "./schema"
-
+/**
+ * @deprecated Legacy sqlite trace table. Tracing is now handled via OpenTelemetry.
+ * Do not query or insert. Kept only for migration purposes.
+ */
 export const TraceTable = sqliteTable(
   "trace",
   {

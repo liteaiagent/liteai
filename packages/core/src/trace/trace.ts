@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto"
 import z from "zod"
 import type { MessageID, SessionID } from "../session/schema"
 import { SessionTable } from "../session/session.sql"
@@ -12,14 +11,6 @@ import { TraceContentTable } from "./trace-content.sql"
 const log = Log.create({ service: "trace" })
 
 // ── Content-addressable helpers ──────────────────────────────────────────────
-
-function contentHash(content: string): string {
-  return createHash("sha256").update(content).digest("hex")
-}
-
-function upsertContent(hash: string, type: "system" | "tools" | "results", content: string) {
-  Database.use((db) => db.insert(TraceContentTable).values({ hash, type, content }).onConflictDoNothing().run())
-}
 
 function getContent(hash: string): string | null {
   const row = Database.use((db) =>
@@ -137,57 +128,13 @@ export namespace Trace {
 
   // ── Unified write API ────────────────────────────────────────────────────
 
+  /**
+   * @deprecated Legacy SQLite trace recording is deprecated in favor of OpenTelemetry.
+   * This function is now a no-op that returns a dummy ID to satisfy existing types.
+   */
   export function record(input: RecordInput): { id: TraceID; step: number } {
-    const step = next(input.sessionID)
-    const id = TraceIDSchema.ascending()
-
-    let systemHash: string | null = null
-    if (input.system) {
-      systemHash = contentHash(input.system)
-      upsertContent(systemHash, "system", input.system)
-    }
-
-    let toolsHash: string | null = null
-    if (input.tools && input.tools.length > 0) {
-      const json = JSON.stringify(input.tools)
-      toolsHash = contentHash(json)
-      upsertContent(toolsHash, "tools", json)
-    }
-
-    let resultsHash: string | null = null
-    if (input.results && input.results.length > 0) {
-      const json = JSON.stringify(input.results)
-      resultsHash = contentHash(json)
-      upsertContent(resultsHash, "results", json)
-    }
-
-    log.info("record", { step, session: input.sessionID })
-    Database.use((db) =>
-      db
-        .insert(TraceTable)
-        .values({
-          id,
-          session_id: input.sessionID,
-          message_id: input.messageID,
-          parent_id: input.parentID ?? null,
-          step,
-          agent: input.agent,
-          model_id: input.model.id,
-          provider_id: input.model.providerID,
-          params: input.params ?? null,
-          system_hash: systemHash,
-          tools_hash: toolsHash,
-          results_hash: resultsHash,
-          hooks_json: input.hooks?.length ? input.hooks : null,
-          context_ids: input.contextIDs,
-          time_start: input.timeStart,
-          time_end: input.timeEnd,
-          error: input.error ?? null,
-        })
-        .run(),
-    )
-
-    return { id, step }
+    log.info("record (legacy stub)", { session: input.sessionID })
+    return { id: TraceIDSchema.ascending(), step: 0 }
   }
 
   // ── Row → Info mapper ────────────────────────────────────────────────────

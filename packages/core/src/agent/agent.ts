@@ -224,7 +224,6 @@ export namespace Agent {
   }
 
   export async function generate(input: { description: string; model?: { providerID: ProviderID; modelID: ModelID } }) {
-    const cfg = await Config.get()
     const defaultModel = input.model ?? (await Provider.defaultModel())
     if (!defaultModel) throw new Error("no model available: connect a provider first")
     const model = await Provider.getModel(defaultModel.providerID, defaultModel.modelID)
@@ -235,12 +234,6 @@ export namespace Agent {
     const existing = await list()
 
     const params = {
-      experimental_telemetry: {
-        isEnabled: cfg.experimental?.openTelemetry,
-        metadata: {
-          userId: cfg.username ?? "unknown",
-        },
-      },
       temperature: 0.3,
       messages: [
         ...system.map(
