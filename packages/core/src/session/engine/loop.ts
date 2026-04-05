@@ -23,6 +23,7 @@ import {
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
+import type { EngineEvent } from "../events"
 import { Message } from "../message"
 import { SessionProcessor } from "../processor"
 import { SessionRevert } from "../revert"
@@ -33,8 +34,10 @@ import { SessionSummary } from "../tasks/summary"
 import { ensureTitle } from "../tasks/title"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
+import { EventPersister } from "./persister"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { insertPlanReminder } from "./plan-reminder"
+import { queryLoop } from "./query"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
@@ -227,6 +230,241 @@ export const LoopInput = z.object({
   sessionID: SessionID.zod,
   resume_existing: z.boolean().optional(),
 })
+
+// ─── runSession: The Event-Sourced Orchestrator ─────────────────────────────
+//
+// Consumes the queryLoop async generator and routes events to the appropriate
+// handlers. All SQLite writes flow through EventPersister or direct Session.*
+// calls here — the generator never writes to the database.
+//
+// Event routing:
+//   turn-start  → persist assistant message, create EventPersister
+//   stream events → persister.handleEvent()
+//   turn-end    → persister.flush(), handle structured output/compaction
+//   control     → trigger compaction, process subtasks, handle overflow
+//   tombstone   → flush persister to clean up orphaned message
+
+async function runSession(input: {
+  sessionID: SessionID
+  session: Session.Info
+  abort: AbortSignal
+}) {
+  const { sessionID, session, abort } = input
+
+  let persister: EventPersister | undefined
+  let currentModel: Provider.Model | undefined
+  let currentAssistantMessage: Message.Assistant | undefined
+  let currentStreamResult: unknown
+  let turnAction: string | undefined
+
+  const generator = queryLoop({
+    sessionID,
+    session,
+    abort,
+  })
+
+  for await (const event of generator) {
+    switch (event.type) {
+      // ── Turn Start: persist assistant message, create persister ──
+      case "turn-start": {
+        // Persist the assistant message to DB
+        currentAssistantMessage = (await Session.updateMessage(
+          event.assistantMessage,
+        )) as Message.Assistant
+        currentModel = event.model
+        turnAction = undefined
+
+        // Create fresh persister for this turn
+        persister = new EventPersister(
+          currentAssistantMessage,
+          sessionID,
+          event.model,
+          abort,
+        )
+
+        // Set up instruction prompt cleanup
+        // Note: InstructionPrompt.clear will be called in turn-end
+        SessionStatus.set(sessionID, { type: "busy" })
+
+        // Fire-and-forget summary on first turn
+        const lastUser = event.streamInput.user
+        if (lastUser) {
+          SessionSummary.summarize({
+            sessionID,
+            messageID: lastUser.id,
+          })
+        }
+        break
+      }
+
+      // ── Turn End: flush persister, handle result ──
+      case "turn-end": {
+        if (!persister || !currentAssistantMessage) break
+
+        // Flush the persister
+        const flushResult = await persister.flush(currentStreamResult)
+        currentStreamResult = undefined
+
+        // Handle structured output
+        if (event.structuredOutput !== undefined) {
+          currentAssistantMessage.structured = event.structuredOutput
+          currentAssistantMessage.finish = currentAssistantMessage.finish ?? "stop"
+          await Session.updateMessage(currentAssistantMessage)
+          log.info("runSession: structured output captured", { sessionID })
+          // Don't call .next() — let the generator break naturally
+          break
+        }
+
+        // Handle structured output error (model finished without calling tool)
+        const modelFinished =
+          currentAssistantMessage.finish &&
+          !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
+        if (modelFinished && !currentAssistantMessage.error) {
+          const lastUser = await findLastUser(sessionID)
+          const format = lastUser?.format ?? { type: "text" }
+          if (format.type === "json_schema") {
+            currentAssistantMessage.error = new Message.StructuredOutputError({
+              message: "Model did not produce structured output",
+              retries: 0,
+            }).toObject()
+            await Session.updateMessage(currentAssistantMessage)
+            log.info("runSession: structured output error", { sessionID })
+          }
+        }
+
+        // Process the flush result
+        turnAction = flushResult
+        if (flushResult === "stop") {
+          log.info("runSession: persister returned stop", {
+            sessionID,
+            error: currentAssistantMessage.error,
+            finish: currentAssistantMessage.finish,
+          })
+          // Generator will break on the next iteration
+          // (model finished check kicks in)
+          break
+        }
+        if (flushResult === "compact") {
+          const lastUser = await findLastUser(sessionID)
+          if (lastUser) {
+            await SessionCompaction.create({
+              sessionID,
+              agent: lastUser.agent,
+              model: lastUser.model,
+              auto: true,
+              overflow: !currentAssistantMessage.finish,
+            })
+          }
+          break
+        }
+
+        // Clean up instruction prompt
+        await InstructionPrompt.clear(currentAssistantMessage.id)
+        break
+      }
+
+      // ── Tombstone: clean up orphaned message ──
+      case "tombstone": {
+        log.warn("runSession: tombstone received", {
+          sessionID,
+          messageID: event.messageID,
+          reason: event.reason,
+        })
+        if (persister) {
+          await persister.flush(currentStreamResult)
+          currentStreamResult = undefined
+        }
+        break
+      }
+
+      // ── Control: compaction, subtask, overflow ──
+      case "control": {
+        switch (event.action) {
+          case "subtask": {
+            const { task, model, lastUser, msgs } = event.payload
+            await processSubtask({ task, model, lastUser, sessionID, session, abort, msgs })
+            break
+          }
+          case "compaction-task": {
+            const { task, lastUser, msgs } = event.payload
+            const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID)
+            const result = await SessionCompaction.process({
+              messages: msgs,
+              parentID: lastUser.id,
+              abort,
+              sessionID,
+              auto: task.auto,
+              overflow: task.overflow,
+            })
+            if (result === "stop") {
+              // Signal the generator to close by returning early
+              // The generator detects this via the abort signal or re-scans messages
+              return
+            }
+            break
+          }
+          case "overflow": {
+            const { lastUser } = event.payload
+            await SessionCompaction.create({
+              sessionID,
+              agent: lastUser.agent,
+              model: lastUser.model,
+              auto: true,
+            })
+            break
+          }
+          case "compact": {
+            const { lastUser } = event.payload
+            await SessionCompaction.create({
+              sessionID,
+              agent: lastUser.agent,
+              model: lastUser.model,
+              auto: true,
+            })
+            break
+          }
+          case "stop": {
+            return
+          }
+          case "continue": {
+            // Normal continuation — no-op, generator resumes
+            break
+          }
+        }
+        break
+      }
+
+      // ── Stream events: route to persister ──
+      default: {
+        if (persister) {
+          const action = await persister.handleEvent(event)
+          if (action === "compact" || action === "stop") {
+            turnAction = action
+          }
+
+          // Capture stream result if available via the streaming events
+          // (the persister tracks this internally)
+        }
+        break
+      }
+    }
+  }
+
+  // Post-loop cleanup
+  SessionCompaction.prune({ sessionID })
+}
+
+/**
+ * Helper: find the last user message for a session.
+ */
+async function findLastUser(sessionID: SessionID): Promise<Message.User | undefined> {
+  const msgs = await Message.filterCompacted(Message.stream(sessionID))
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].info.role === "user") return msgs[i].info as Message.User
+  }
+  return undefined
+}
+
 export const loop = fn(LoopInput, async (input) => {
   const { sessionID, resume_existing } = input
 
@@ -240,342 +478,11 @@ export const loop = fn(LoopInput, async (input) => {
 
   using _ = defer(() => cleanup(sessionID))
 
-  // Structured output state
-  // Note: On session resumption, state is reset but outputFormat is preserved
-  // on the user message and will be retrieved from lastUser below
-  let structuredOutput: unknown | undefined
-
-  let step = 0
-  const autocompactState: AutocompactState = createAutocompactState()
   const session = await Session.get(sessionID)
-  while (true) {
-    SessionStatus.set(sessionID, { type: "busy" })
-    log.info("loop", { step, sessionID })
-    if (abort.aborted) {
-      log.info("loop exiting: abort signal already set", { sessionID, step })
-      break
-    }
-    let msgs = await Message.filterCompacted(Message.stream(sessionID))
 
-    let lastUser: Message.User | undefined
-    let lastAssistant: Message.Assistant | undefined
-    let lastFinished: Message.Assistant | undefined
-    const tasks: (Message.CompactionPart | Message.SubtaskPart)[] = []
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      const msg = msgs[i]
-      if (!lastUser && msg.info.role === "user") lastUser = msg.info as Message.User
-      if (!lastAssistant && msg.info.role === "assistant") lastAssistant = msg.info as Message.Assistant
-      if (!lastFinished && msg.info.role === "assistant" && msg.info.finish)
-        lastFinished = msg.info as Message.Assistant
-      if (lastUser && lastFinished) break
-      const task = msg.parts.filter((part) => part.type === "compaction" || part.type === "subtask")
-      if (task && !lastFinished) {
-        tasks.push(...task)
-      }
-    }
+  // Delegate to the event-sourced orchestrator
+  await runSession({ sessionID, session, abort })
 
-    if (!lastUser) throw new Error("No user message found in stream. This should never happen.")
-    if (
-      lastAssistant?.finish &&
-      !["tool-calls", "unknown"].includes(lastAssistant.finish) &&
-      lastUser.id < lastAssistant.id
-    ) {
-      log.info("loop exiting: model finished", { sessionID, finish: lastAssistant.finish })
-      break
-    }
-
-    step++
-    if (step === 1)
-      ensureTitle({
-        session,
-        modelID: lastUser.model.modelID,
-        providerID: lastUser.model.providerID,
-        history: msgs,
-      }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
-
-    if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
-      log.warn("loop: lastUser message has unknown model identifier — this will fail getModel", {
-        sessionID,
-        step,
-        messageID: lastUser.id,
-        providerID: lastUser.model.providerID,
-        modelID: lastUser.model.modelID,
-      })
-    }
-
-    const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID).catch((e) => {
-      log.error("model resolution failed", {
-        providerID: lastUser.model.providerID,
-        modelID: lastUser.model.modelID,
-        error: e,
-      })
-      if (Provider.ModelNotFoundError.isInstance(e)) {
-        const hint = e.data.suggestions?.length ? ` Did you mean: ${e.data.suggestions.join(", ")}?` : ""
-        Bus.publish(Session.Event.Error, {
-          sessionID,
-          error: new NamedError.Unknown({
-            message: `Model not found: ${e.data.providerID}/${e.data.modelID}.${hint}`,
-          }).toObject(),
-        })
-      }
-      throw e
-    })
-    const task = tasks.pop()
-
-    // pending subtask
-    // TODO: centralize "invoke tool" logic
-    if (task?.type === "subtask") {
-      await processSubtask({ task, model, lastUser, sessionID, session, abort, msgs })
-      continue
-    }
-
-    // pending compaction
-    if (task?.type === "compaction") {
-      const result = await SessionCompaction.process({
-        messages: msgs,
-        parentID: lastUser.id,
-        abort,
-        sessionID,
-        auto: task.auto,
-        overflow: task.overflow,
-      })
-      if (result === "stop") break
-      continue
-    }
-
-    // context overflow, needs compaction
-    if (
-      lastFinished &&
-      lastFinished.summary !== true &&
-      (await SessionCompaction.isOverflow({ tokens: lastFinished.tokens, model }))
-    ) {
-      await SessionCompaction.create({
-        sessionID,
-        agent: lastUser.agent,
-        model: lastUser.model,
-        auto: true,
-      })
-      continue
-    }
-
-    // normal processing
-    const agent = await Agent.get(lastUser.agent)
-    const maxSteps = agent.steps ?? Infinity
-    const isLastStep = step >= maxSteps
-    if (step === 1) {
-      const text = msgs
-        .findLast((m) => m.info.role === "user")
-        ?.parts.filter((p) => p.type === "text")
-        .map((p) => p.text)
-        .join(" ")
-      log.info("user", {
-        sessionID,
-        agent: agent.name,
-        model: `${lastUser.model.providerID}/${lastUser.model.modelID}`,
-        temperature: agent.temperature,
-        text: text?.slice(0, 200),
-      })
-    }
-    msgs = await insertPlanReminder({
-      messages: msgs,
-      agent,
-      session,
-    })
-
-    // Pre-processing context pipeline: budget enforcement + dead branch cleanup
-    msgs = executePipeline(msgs)
-
-    // Proactive autocompact: check token estimate before making the LLM call
-    if (shouldAutocompact(msgs, model, autocompactState)) {
-      log.info("loop: proactive autocompact triggered", { sessionID, step })
-      await SessionCompaction.create({
-        sessionID,
-        agent: lastUser.agent,
-        model: lastUser.model,
-        auto: true,
-      })
-      continue
-    }
-
-    const processor = SessionProcessor.create({
-      assistantMessage: (await Session.updateMessage({
-        id: MessageID.ascending(),
-        parentID: lastUser.id,
-        role: "assistant",
-        mode: agent.name,
-        agent: agent.name,
-        variant: lastUser.variant,
-        path: {
-          cwd: Instance.directory,
-          root: Instance.worktree,
-        },
-        cost: 0,
-        tokens: {
-          input: 0,
-          output: 0,
-          reasoning: 0,
-          cache: { read: 0, write: 0 },
-        },
-        modelID: model.id,
-        providerID: model.providerID,
-        time: {
-          created: Date.now(),
-        },
-        sessionID,
-      })) as Message.Assistant,
-      sessionID: sessionID,
-      model,
-      abort,
-    })
-    await using __ = defer(() => InstructionPrompt.clear(processor.message.id))
-
-    // Check if user explicitly invoked an agent via @ in this turn
-    const lastUserMsg = msgs.findLast((m) => m.info.role === "user")
-    const bypassAgentCheck = lastUserMsg?.parts.some((p) => p.type === "agent") ?? false
-
-    const tools = await resolveTools({
-      agent,
-      session,
-      model,
-      processor,
-      bypassAgentCheck,
-      messages: msgs,
-    })
-
-    // Inject StructuredOutput tool if JSON schema mode enabled
-    if (lastUser.format?.type === "json_schema") {
-      tools.StructuredOutput = createStructuredOutputTool({
-        schema: lastUser.format.schema,
-        onSuccess(output) {
-          structuredOutput = output
-        },
-      })
-    }
-
-    if (step === 1) {
-      SessionSummary.summarize({
-        sessionID: sessionID,
-        messageID: lastUser.id,
-      })
-    }
-
-    // Ephemerally wrap queued user messages with a reminder to stay on track
-    if (step > 1 && lastFinished) {
-      for (const msg of msgs) {
-        if (msg.info.role !== "user" || msg.info.id <= lastFinished.id) continue
-        for (const part of msg.parts) {
-          if (part.type !== "text" || part.ignored || part.synthetic) continue
-          if (!part.text.trim()) continue
-          part.text = [
-            "<system-reminder>",
-            "The user sent the following message:",
-            part.text,
-            "",
-            "Please address this message and continue with your tasks.",
-            "</system-reminder>",
-          ].join("\n")
-        }
-      }
-    }
-
-    await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
-
-    // Build system prompt, adding structured output instruction if needed
-    // Note: the provider/agent prompt is prepended by LLM.stream() and captured
-    // in resolvedSystem for trace recording
-    const skills = await SystemPrompt.skills(agent)
-    const system = [
-      ...(await SystemPrompt.environment(model)),
-      ...(skills ? [skills] : []),
-      ...(await InstructionPrompt.system()),
-    ]
-    const format = lastUser.format ?? { type: "text" }
-    if (format.type === "json_schema") {
-      system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
-    }
-
-    startLLMRequestSpan(`${model.providerID}/${model.id}`, { systemPrompt: system.join("\n\n") })
-    const result = await processor.process({
-      user: lastUser,
-      agent,
-      abort,
-      sessionID,
-      system,
-      messages: [
-        ...Message.toModelMessages(msgs, model),
-        ...(isLastStep
-          ? [
-              {
-                role: "assistant" as const,
-                content: await Bundled.miscPrompt("max-steps"),
-              },
-            ]
-          : []),
-      ],
-      tools,
-      model,
-      toolChoice: format.type === "json_schema" ? "required" : undefined,
-    })
-    endLLMRequestSpan(undefined, {
-      inputTokens: processor.message.tokens.input,
-      outputTokens: processor.message.tokens.output,
-      cacheReadTokens: processor.message.tokens.cache.read,
-      cacheCreationTokens: processor.message.tokens.cache.write,
-      success: !processor.message.error,
-      error: processor.message.error ? JSON.stringify(processor.message.error) : undefined,
-    })
-
-    // If structured output was captured, save it and exit immediately
-    // This takes priority because the StructuredOutput tool was called successfully
-    if (structuredOutput !== undefined) {
-      processor.message.structured = structuredOutput
-      processor.message.finish = processor.message.finish ?? "stop"
-      await Session.updateMessage(processor.message)
-      log.info("loop exiting: structured output captured", { sessionID })
-      break
-    }
-
-    // Check if model finished (finish reason is not "tool-calls" or "unknown")
-    const modelFinished = processor.message.finish && !["tool-calls", "unknown"].includes(processor.message.finish)
-
-    if (modelFinished && !processor.message.error) {
-      if (format.type === "json_schema") {
-        // Model stopped without calling StructuredOutput tool
-        processor.message.error = new Message.StructuredOutputError({
-          message: "Model did not produce structured output",
-          retries: 0,
-        }).toObject()
-        await Session.updateMessage(processor.message)
-        log.info("loop exiting: structured output error", { sessionID })
-        break
-      }
-    }
-
-    if (result === "stop") {
-      log.info("loop exiting: processor returned stop", {
-        sessionID,
-        error: processor.message.error,
-        finish: processor.message.finish,
-      })
-      break
-    }
-    if (result === "compact") {
-      await SessionCompaction.create({
-        sessionID,
-        agent: lastUser.agent,
-        model: lastUser.model,
-        auto: true,
-        overflow: !processor.message.finish,
-      })
-    }
-  }
-  // Dispatch Stop hook after the loop finishes
-  await Hook.dispatch("Stop", {
-    session_id: sessionID,
-    cwd: Instance.directory,
-    hook_event_name: "Stop",
-  })
-  SessionCompaction.prune({ sessionID })
   for await (const item of Message.stream(sessionID)) {
     if (item.info.role === "user") continue
     const queued = state()[sessionID]?.callbacks ?? []

@@ -1,0 +1,424 @@
+import type { Tool as AITool } from "ai"
+import { NamedError } from "@liteai/util/error"
+import { Agent } from "../../agent/agent"
+import { Bundled } from "../../bundled"
+import { Bus } from "../../bus"
+import { Hook } from "../../hook"
+import { Plugin } from "../../plugin"
+import { Instance } from "../../project/instance"
+import { Provider } from "../../provider/provider"
+import { ModelID, ProviderID } from "../../provider/schema"
+import {
+  endLLMRequestSpan,
+  startLLMRequestSpan,
+} from "../../telemetry/tracing"
+import { Log } from "../../util/log"
+import { Session } from ".."
+import type { EngineEvent } from "../events"
+import { Message } from "../message"
+import { SessionProcessor } from "../processor"
+import { MessageID, type SessionID } from "../schema"
+import { SessionCompaction } from "../tasks/compaction"
+import { ensureTitle } from "../tasks/title"
+import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
+import { insertPlanReminder } from "./plan-reminder"
+import { SystemPrompt } from "./system"
+import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
+import { InstructionPrompt } from "./instruction"
+
+const log = Log.create({ service: "session.query" })
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type QueryLoopParams = {
+  sessionID: SessionID
+  session: Session.Info
+  abort: AbortSignal
+  /** Whether this is a resume of an existing session (skip start() call) */
+  resumeExisting?: boolean
+}
+
+// ─── queryLoop ───────────────────────────────────────────────────────────────
+
+/**
+ * The core multi-turn async generator. Replaces the old `while(true)` loop
+ * in `loop.ts` with a pure event-sourced architecture.
+ *
+ * **Contract:**
+ * - Yields `EngineEvent.Any` events for every state change
+ * - Zero SQLite writes — all DB mutations are delegated to the consumer
+ *   via `TurnStartEvent` (create assistant message) and event routing
+ *   to `EventPersister`
+ * - Yields `GeneratorResultEvent` for flow control (compact, subtask, etc.)
+ * - Yields `TombstoneEvent` for error cleanup of partial messages
+ *
+ * The consumer (`runSession` in loop.ts) should:
+ * 1. On `turn-start`: persist the assistant message, create EventPersister
+ * 2. On stream events: route to persister.handleEvent()
+ * 3. On `turn-end`: flush persister, handle result
+ * 4. On `control`: trigger compaction, process subtasks, etc.
+ * 5. On `tombstone`: clean up orphaned messages
+ */
+export async function* queryLoop(
+  params: QueryLoopParams,
+): AsyncGenerator<EngineEvent.Any, void, unknown> {
+  const { sessionID, session, abort } = params
+
+  let structuredOutput: unknown | undefined
+  let step = 0
+  const autocompactState: AutocompactState = createAutocompactState()
+
+  while (true) {
+    if (abort.aborted) {
+      log.info("queryLoop exiting: abort signal already set", { sessionID, step })
+      break
+    }
+
+    let msgs = await Message.filterCompacted(Message.stream(sessionID))
+
+    // ── Scan for last user/assistant messages ──
+    let lastUser: Message.User | undefined
+    let lastAssistant: Message.Assistant | undefined
+    let lastFinished: Message.Assistant | undefined
+    const tasks: (Message.CompactionPart | Message.SubtaskPart)[] = []
+
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const msg = msgs[i]
+      if (!lastUser && msg.info.role === "user") lastUser = msg.info as Message.User
+      if (!lastAssistant && msg.info.role === "assistant") lastAssistant = msg.info as Message.Assistant
+      if (!lastFinished && msg.info.role === "assistant" && msg.info.finish)
+        lastFinished = msg.info as Message.Assistant
+      if (lastUser && lastFinished) break
+      const task = msg.parts.filter((part) => part.type === "compaction" || part.type === "subtask")
+      if (task && !lastFinished) {
+        tasks.push(...task)
+      }
+    }
+
+    if (!lastUser) throw new Error("No user message found in stream. This should never happen.")
+
+    // ── Check if model already finished ──
+    if (
+      lastAssistant?.finish &&
+      !["tool-calls", "unknown"].includes(lastAssistant.finish) &&
+      lastUser.id < lastAssistant.id
+    ) {
+      log.info("queryLoop exiting: model finished", { sessionID, finish: lastAssistant.finish })
+      break
+    }
+
+    step++
+
+    // ── Title generation (fire-and-forget on first step) ──
+    if (step === 1) {
+      ensureTitle({
+        session,
+        modelID: lastUser.model.modelID,
+        providerID: lastUser.model.providerID,
+        history: msgs,
+      }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
+    }
+
+    // ── Model resolution ──
+    if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
+      log.warn("queryLoop: lastUser message has unknown model identifier", {
+        sessionID,
+        step,
+        messageID: lastUser.id,
+        providerID: lastUser.model.providerID,
+        modelID: lastUser.model.modelID,
+      })
+    }
+
+    const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID).catch((e) => {
+      log.error("model resolution failed", {
+        providerID: lastUser.model.providerID,
+        modelID: lastUser.model.modelID,
+        error: e,
+      })
+      if (Provider.ModelNotFoundError.isInstance(e)) {
+        const hint = e.data.suggestions?.length ? ` Did you mean: ${e.data.suggestions.join(", ")}?` : ""
+        Bus.publish(Session.Event.Error, {
+          sessionID,
+          error: new NamedError.Unknown({
+            message: `Model not found: ${e.data.providerID}/${e.data.modelID}.${hint}`,
+          }).toObject(),
+        })
+      }
+      throw e
+    })
+
+    const task = tasks.pop()
+
+    // ── Pending subtask: delegate to orchestrator ──
+    if (task?.type === "subtask") {
+      yield {
+        type: "control",
+        action: "subtask",
+        payload: { task, model, lastUser, msgs },
+      } satisfies EngineEvent.GeneratorResultEvent
+      continue
+    }
+
+    // ── Pending compaction task: delegate to orchestrator ──
+    if (task?.type === "compaction") {
+      yield {
+        type: "control",
+        action: "compaction-task",
+        payload: { task, lastUser, msgs },
+      } satisfies EngineEvent.GeneratorResultEvent
+      // If orchestrator signals "stop", it won't call .next() and the generator closes
+      continue
+    }
+
+    // ── Context overflow: needs compaction ──
+    if (
+      lastFinished &&
+      lastFinished.summary !== true &&
+      (await SessionCompaction.isOverflow({ tokens: lastFinished.tokens, model }))
+    ) {
+      yield {
+        type: "control",
+        action: "overflow",
+        payload: { lastUser },
+      } satisfies EngineEvent.GeneratorResultEvent
+      continue
+    }
+
+    // ── Normal processing ──
+    const agent = await Agent.get(lastUser.agent)
+    const maxSteps = agent.steps ?? Infinity
+    const isLastStep = step >= maxSteps
+
+    if (step === 1) {
+      const text = msgs
+        .findLast((m) => m.info.role === "user")
+        ?.parts.filter((p) => p.type === "text")
+        .map((p) => p.text)
+        .join(" ")
+      log.info("user", {
+        sessionID,
+        agent: agent.name,
+        model: `${lastUser.model.providerID}/${lastUser.model.modelID}`,
+        temperature: agent.temperature,
+        text: text?.slice(0, 200),
+      })
+    }
+
+    // ── Plan reminder injection ──
+    msgs = await insertPlanReminder({
+      messages: msgs,
+      agent,
+      session,
+    })
+
+    // ── Pre-processing context pipeline: budget + snip ──
+    msgs = executePipeline(msgs)
+
+    // ── Proactive autocompact check ──
+    if (shouldAutocompact(msgs, model, autocompactState)) {
+      log.info("queryLoop: proactive autocompact triggered", { sessionID, step })
+      yield {
+        type: "control",
+        action: "compact",
+        payload: { lastUser },
+      } satisfies EngineEvent.GeneratorResultEvent
+      continue
+    }
+
+    // ── Check if user explicitly invoked an agent via @ ──
+    const lastUserMsg = msgs.findLast((m) => m.info.role === "user")
+    const bypassAgentCheck = lastUserMsg?.parts.some((p) => p.type === "agent") ?? false
+
+    // ── Build the assistant message object (in-memory only) ──
+    const assistantMessage: Message.Assistant = {
+      id: MessageID.ascending(),
+      parentID: lastUser.id,
+      role: "assistant",
+      mode: agent.name,
+      agent: agent.name,
+      variant: lastUser.variant,
+      path: {
+        cwd: Instance.directory,
+        root: Instance.worktree,
+      },
+      cost: 0,
+      tokens: {
+        input: 0,
+        output: 0,
+        reasoning: 0,
+        cache: { read: 0, write: 0 },
+      },
+      modelID: model.id as ModelID,
+      providerID: model.providerID as ProviderID,
+      time: {
+        created: Date.now(),
+      },
+      sessionID,
+    }
+
+    // ── Resolve tools ──
+    // We need a mock processor-like interface for tool context
+    // The actual processor is created by the orchestrator after turn-start
+    // Tools are resolved here using a temporary processor reference
+    const toolProcessorRef = { message: assistantMessage, partFromToolCall: (_id: string) => undefined }
+    const tools = await resolveTools({
+      agent,
+      session,
+      model,
+      processor: toolProcessorRef as unknown as SessionProcessor.Info,
+      bypassAgentCheck,
+      messages: msgs,
+    })
+
+    // ── Inject StructuredOutput tool if JSON schema mode enabled ──
+    const format: Message.OutputFormat = lastUser.format ?? { type: "text" }
+    if (format.type === "json_schema") {
+      tools.StructuredOutput = createStructuredOutputTool({
+        schema: format.schema,
+        onSuccess(output) {
+          structuredOutput = output
+        },
+      })
+    }
+
+    // ── Summary generation (fire-and-forget on first step) ──
+    // Note: moved to orchestrator since it needs sessionID/messageID
+
+    // ── Ephemeral user message reminder wrapping ──
+    if (step > 1 && lastFinished) {
+      for (const msg of msgs) {
+        if (msg.info.role !== "user" || msg.info.id <= lastFinished.id) continue
+        for (const part of msg.parts) {
+          if (part.type !== "text" || part.ignored || part.synthetic) continue
+          if (!part.text.trim()) continue
+          part.text = [
+            "<system-reminder>",
+            "The user sent the following message:",
+            part.text,
+            "",
+            "Please address this message and continue with your tasks.",
+            "</system-reminder>",
+          ].join("\n")
+        }
+      }
+    }
+
+    // ── Plugin transform ──
+    await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
+
+    // ── Build system prompt ──
+    const skills = await SystemPrompt.skills(agent)
+    const system = [
+      ...(await SystemPrompt.environment(model)),
+      ...(skills ? [skills] : []),
+      ...(await InstructionPrompt.system()),
+    ]
+    if (format.type === "json_schema") {
+      system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
+    }
+
+    // ── Construct LLM stream input ──
+    const streamInput = {
+      user: lastUser,
+      agent,
+      abort,
+      sessionID,
+      system,
+      messages: [
+        ...Message.toModelMessages(msgs, model),
+        ...(isLastStep
+          ? [
+              {
+                role: "assistant" as const,
+                content: await Bundled.miscPrompt("max-steps"),
+              },
+            ]
+          : []),
+      ],
+      tools,
+      model,
+      toolChoice: format.type === "json_schema" ? ("required" as const) : undefined,
+    }
+
+    // ── Yield turn-start: orchestrator creates DB record + persister ──
+    yield {
+      type: "turn-start",
+      assistantMessage,
+      streamInput,
+      tools,
+      model,
+      isLastStep,
+      format,
+    } satisfies EngineEvent.TurnStartEvent
+
+    // ── Stream LLM via the decoupled processor generator ──
+    startLLMRequestSpan(`${model.providerID}/${model.id}`, { systemPrompt: system.join("\n\n") })
+
+    let streamResult: unknown
+    try {
+      const generator = SessionProcessor.streamGenerator(
+        streamInput,
+        undefined,
+        (r) => {
+          streamResult = r
+        },
+      )
+
+      for await (const event of generator) {
+        yield event
+      }
+    } catch (streamError: unknown) {
+      // Yield tombstone so the orchestrator can clean up
+      log.error("queryLoop: stream error", { error: streamError, sessionID })
+      yield {
+        type: "tombstone",
+        messageID: assistantMessage.id,
+        reason: streamError instanceof Error ? streamError.message : String(streamError),
+      } satisfies EngineEvent.TombstoneEvent
+    }
+
+    endLLMRequestSpan(undefined, {
+      inputTokens: assistantMessage.tokens.input,
+      outputTokens: assistantMessage.tokens.output,
+      cacheReadTokens: assistantMessage.tokens.cache.read,
+      cacheCreationTokens: assistantMessage.tokens.cache.write,
+      success: !assistantMessage.error,
+      error: assistantMessage.error ? JSON.stringify(assistantMessage.error) : undefined,
+    })
+
+    // ── Yield turn-end: orchestrator flushes persister ──
+    yield {
+      type: "turn-end",
+      structuredOutput,
+    } satisfies EngineEvent.TurnEndEvent
+
+    // ── Reset structured output for next turn ──
+    if (structuredOutput !== undefined) {
+      log.info("queryLoop: structured output captured, ending", { sessionID })
+      break
+    }
+
+    // ── Check if model finished ──
+    const modelFinished = assistantMessage.finish && !["tool-calls", "unknown"].includes(assistantMessage.finish)
+    if (modelFinished && !assistantMessage.error) {
+      if (format.type === "json_schema") {
+        // Model stopped without calling StructuredOutput tool — error is set by orchestrator
+        log.info("queryLoop: structured output missing, ending", { sessionID })
+      }
+      break
+    }
+
+    // The orchestrator's turn-end handling determines whether to stop or continue:
+    // - If persister reports "stop" (error, blocked), orchestrator stops calling .next()
+    // - If persister reports "compact", orchestrator creates compaction and calls .next()
+    // - If persister reports "continue", orchestrator calls .next() to continue the while loop
+  }
+
+  // ── Dispatch Stop hook ──
+  await Hook.dispatch("Stop", {
+    session_id: sessionID,
+    cwd: Instance.directory,
+    hook_event_name: "Stop",
+  })
+}
