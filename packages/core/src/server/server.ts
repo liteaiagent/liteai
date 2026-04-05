@@ -33,7 +33,6 @@ import { QuestionRoutes } from "./routes/question"
 import { SessionRoutes } from "./routes/session"
 import { SystemRoutes } from "./routes/system"
 import { ToolRoutes } from "./routes/tool"
-import { TraceRoutes } from "./routes/trace"
 
 // ---------------------------------------------------------------------------
 // Suppress verbose AI SDK warnings at import time.
@@ -68,7 +67,6 @@ export namespace Server {
       .route("/config", ConfigRoutes())
       .route("/experimental", ExperimentalRoutes())
       .route("/session", SessionRoutes())
-      .route("/session", TraceRoutes())
       .route("/permission", PermissionRoutes())
       .route("/question", QuestionRoutes())
       .route("/", FileRoutes())

@@ -371,16 +371,12 @@ Optional (lazy-loaded based on `OTEL_EXPORTER_OTLP_PROTOCOL`):
 - Verify `/api/trace` routes still return data (from archive)
 - Confirm no regressions in session flow
 
-### Phase 4: Legacy Code Purge
+### Phase 4: Legacy Code Purge (COMPLETED)
 Completely destroy the legacy footprint.
-1. **Database Migration**: Write a SQL migration to `DROP TABLE trace` and `DROP TABLE trace_content`, permanently removing them from user machines to save disk space.
-2. **Code Deletion**: Delete `src/trace/` completely.
-3. **API Deletion**: Delete `src/server/routes/trace.ts` and remove its registration from the server.
-4. **Schema Deletion**: Remove `TraceTable` and `TraceContentTable` constructs from Drizzle schema setups.
-
----
-
-## Next Steps (Upcoming Phases)
+1. **Database Migration**: (OVERRIDDEN) User opted to clear all old migrations and generate a new clean `init` migration instead of dropping legacy tables individually.
+2. **Code Deletion**: Deleted `src/trace/` completely.
+3. **API Deletion**: Deleted `src/server/routes/trace.ts` and removed its registration from `server.ts`.
+4. **Schema Deletion**: Removed `TraceTable` and `TraceContentTable` constructs from Drizzle schema setups.
 
 ### Phase 5: Validating & Expanding Test Suite
 Since legacy `src/trace/` tests were reliant on SQLite trace tracking (which has been sunset), we have entirely removed `test/trace/`. Before we refactor the loop engine, we must adequately test the new telemetry architecture:
@@ -395,5 +391,3 @@ Once test coverage is adequately established on the telemetry pipeline, we pivot
 1. **Goal**: Rip out the rigid inner `processSubtask(...)` inside `loop.ts` and restructure it mathematically to resemble the pure event-driven finite-state engine found in `liteai2`.
 2. **Context Fragmentation**: The new ReAct loop will drastically improve sub-agent transitions, leveraging OTel explicitly to trace internal thoughts without disjointing them into random UI message ids.
 3. **Concurrent Execution**: Enable parallel tool dispatch properly via structured state progression.
-
-

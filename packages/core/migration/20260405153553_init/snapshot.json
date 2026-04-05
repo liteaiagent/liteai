@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "32014d5a-5f97-41cc-9230-f2c1bce68159",
+  "id": "84bee6c1-82ce-4a57-919d-35749848353a",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -48,14 +48,6 @@
     },
     {
       "name": "session_share",
-      "entityType": "tables"
-    },
-    {
-      "name": "trace_content",
-      "entityType": "tables"
-    },
-    {
-      "name": "trace",
       "entityType": "tables"
     },
     {
@@ -909,226 +901,6 @@
       "table": "session_share"
     },
     {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "hash",
-      "entityType": "columns",
-      "table": "trace_content"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "type",
-      "entityType": "columns",
-      "table": "trace_content"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "content",
-      "entityType": "columns",
-      "table": "trace_content"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_created",
-      "entityType": "columns",
-      "table": "trace_content"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "id",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "session_id",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "message_id",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "parent_id",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "step",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "agent",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "model_id",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "provider_id",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "params",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "system_hash",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "tools_hash",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "context_ids",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "hooks_json",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_start",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "integer",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_end",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "error",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_created",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_updated",
-      "entityType": "columns",
-      "table": "trace"
-    },
-    {
       "columns": [
         "active_account_id"
       ],
@@ -1250,36 +1022,6 @@
     },
     {
       "columns": [
-        "session_id"
-      ],
-      "tableTo": "session",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_trace_session_id_session_id_fk",
-      "entityType": "fks",
-      "table": "trace"
-    },
-    {
-      "columns": [
-        "message_id"
-      ],
-      "tableTo": "message",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_trace_message_id_message_id_fk",
-      "entityType": "fks",
-      "table": "trace"
-    },
-    {
-      "columns": [
         "email",
         "url"
       ],
@@ -1377,24 +1119,6 @@
       "nameExplicit": false,
       "name": "session_share_pk",
       "table": "session_share",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "hash"
-      ],
-      "nameExplicit": false,
-      "name": "trace_content_pk",
-      "table": "trace_content",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "trace_pk",
-      "table": "trace",
       "entityType": "pks"
     },
     {
@@ -1506,34 +1230,6 @@
       "name": "todo_session_idx",
       "entityType": "indexes",
       "table": "todo"
-    },
-    {
-      "columns": [
-        {
-          "value": "session_id",
-          "isExpression": false
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "origin": "manual",
-      "name": "trace_session_idx",
-      "entityType": "indexes",
-      "table": "trace"
-    },
-    {
-      "columns": [
-        {
-          "value": "message_id",
-          "isExpression": false
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "origin": "manual",
-      "name": "trace_message_idx",
-      "entityType": "indexes",
-      "table": "trace"
     }
   ],
   "renames": []

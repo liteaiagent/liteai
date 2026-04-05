@@ -126,42 +126,10 @@ CREATE TABLE `session_share` (
 	CONSTRAINT `fk_session_share_session_id_session_id_fk` FOREIGN KEY (`session_id`) REFERENCES `session`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
-CREATE TABLE `trace_content` (
-	`hash` text PRIMARY KEY,
-	`type` text NOT NULL,
-	`content` text NOT NULL,
-	`time_created` integer NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE `trace` (
-	`id` text PRIMARY KEY,
-	`session_id` text NOT NULL,
-	`message_id` text NOT NULL,
-	`parent_id` text,
-	`step` integer NOT NULL,
-	`agent` text NOT NULL,
-	`model_id` text NOT NULL,
-	`provider_id` text NOT NULL,
-	`params` text,
-	`system_hash` text,
-	`tools_hash` text,
-	`context_ids` text NOT NULL,
-	`hooks_json` text,
-	`time_start` integer NOT NULL,
-	`time_end` integer,
-	`error` text,
-	`time_created` integer NOT NULL,
-	`time_updated` integer NOT NULL,
-	CONSTRAINT `fk_trace_session_id_session_id_fk` FOREIGN KEY (`session_id`) REFERENCES `session`(`id`) ON DELETE CASCADE,
-	CONSTRAINT `fk_trace_message_id_message_id_fk` FOREIGN KEY (`message_id`) REFERENCES `message`(`id`) ON DELETE CASCADE
-);
---> statement-breakpoint
 CREATE INDEX `message_session_time_created_id_idx` ON `message` (`session_id`,`time_created`,`id`);--> statement-breakpoint
 CREATE INDEX `part_message_id_id_idx` ON `part` (`message_id`,`id`);--> statement-breakpoint
 CREATE INDEX `part_session_idx` ON `part` (`session_id`);--> statement-breakpoint
 CREATE INDEX `session_project_idx` ON `session` (`project_id`);--> statement-breakpoint
 CREATE INDEX `session_workspace_idx` ON `session` (`workspace_id`);--> statement-breakpoint
 CREATE INDEX `session_parent_idx` ON `session` (`parent_id`);--> statement-breakpoint
-CREATE INDEX `todo_session_idx` ON `todo` (`session_id`);--> statement-breakpoint
-CREATE INDEX `trace_session_idx` ON `trace` (`session_id`);--> statement-breakpoint
-CREATE INDEX `trace_message_idx` ON `trace` (`message_id`);
+CREATE INDEX `todo_session_idx` ON `todo` (`session_id`);
