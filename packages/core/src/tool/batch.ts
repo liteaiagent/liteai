@@ -77,15 +77,15 @@ export const BatchTool = Tool.define("batch", async () => {
             },
           })
 
-          let currentTitle: string | undefined = undefined
-          let currentMetadata: any = undefined
+          let currentTitle: string | undefined
+          let currentMetadata: Record<string, unknown> | undefined
 
           const result = await tool.execute(validatedParams, {
             ...ctx,
             callID: partID,
             metadata: async (val) => {
               if (val.title !== undefined) currentTitle = val.title
-              if (val.metadata !== undefined) currentMetadata = val.metadata
+              if (val.metadata !== undefined) currentMetadata = val.metadata as Record<string, unknown>
               await Session.updatePart({
                 id: partID,
                 messageID: ctx.messageID,
@@ -97,7 +97,7 @@ export const BatchTool = Tool.define("batch", async () => {
                   status: "running",
                   input: call.parameters,
                   title: currentTitle,
-                  metadata: currentMetadata,
+                  metadata: currentMetadata as never,
                   time: {
                     start: callStartTime,
                   },

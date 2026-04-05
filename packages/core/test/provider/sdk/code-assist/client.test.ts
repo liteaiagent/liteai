@@ -9,7 +9,10 @@ import {
   onboardUser,
   stream,
 } from "../../../../src/provider/sdk/code-assist/client"
-import type { CAGenerateContentRequest, CAGenerateContentResponse } from "../../../../src/provider/sdk/code-assist/types"
+import type {
+  CAGenerateContentRequest,
+  CAGenerateContentResponse,
+} from "../../../../src/provider/sdk/code-assist/types"
 
 /** Creates a mock AuthClient whose `.request()` calls `handler` with the gaxios options. */
 function mockClient(handler: (opts: Record<string, unknown>) => unknown): AuthClient {

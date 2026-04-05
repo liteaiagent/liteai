@@ -306,11 +306,13 @@ body.vscode-high-contrast {
 }
 
 /* Smaller text in selector triggers */
-[data-density="disabled"] /* commented out */
+[data-density="disabled"]
+  /* commented out */
   [data-component="prompt-agent-control"]
   [data-component="select"]
   [data-slot="select-select-trigger"],
-[data-density="disabled"] /* commented out */
+[data-density="disabled"]
+  /* commented out */
   [data-component="prompt-variant-control"]
   [data-component="select"]
   [data-slot="select-select-trigger"] {
@@ -355,7 +357,9 @@ body.vscode-high-contrast {
 }
 
 /* Placeholder text */
-[data-density="disabled"] /* commented out */ [data-dock-surface="shell"] .text-14-regular.text-text-weak.pointer-events-none {
+[data-density="disabled"]
+  /* commented out */ [data-dock-surface="shell"]
+  .text-14-regular.text-text-weak.pointer-events-none {
   font-size: var(--font-size-base);
 }
 
@@ -385,55 +389,77 @@ body.vscode-high-contrast {
   max-height: min(var(--question-prompt-max-height, 100dvh), 300px);
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-body"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-body"] {
   padding: 6px 6px 0;
   gap: 8px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-header"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-header"] {
   padding: 0 6px;
   gap: 8px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-header-title"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-header-title"] {
   font-size: 12px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-text"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-text"] {
   font-size: 12px;
   padding: 0 6px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-hint"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-hint"] {
   font-size: 11px;
   padding: 0 6px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-options"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-options"] {
   gap: 4px;
   margin-top: 6px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-option"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-option"] {
   padding: 5px 6px 5px 8px;
   gap: 8px;
   border-radius: 4px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="option-label"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="option-label"] {
   font-size: 12px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="option-description"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="option-description"] {
   font-size: 11px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-footer"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-footer"] {
   padding: 16px 6px 6px;
   margin-top: -10px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="question"] [data-slot="question-progress-segment"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="question"]
+  [data-slot="question-progress-segment"] {
   width: 12px;
   height: 12px;
 }
@@ -453,14 +479,20 @@ body.vscode-high-contrast {
 }
 
 /* Todo list */
-[data-density="disabled"] /* commented out */ [data-component="session-todo-dock"] [data-slot="session-todo-list"] .px-3 {
+[data-density="disabled"]
+  /* commented out */ [data-component="session-todo-dock"]
+  [data-slot="session-todo-list"]
+  .px-3 {
   padding-left: 8px;
   padding-right: 8px;
   padding-bottom: 2rem;
   max-height: 120px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="session-todo-dock"] [data-slot="session-todo-list"] .gap-1\.5 {
+[data-density="disabled"]
+  /* commented out */ [data-component="session-todo-dock"]
+  [data-slot="session-todo-list"]
+  .gap-1\.5 {
   gap: 4px;
 }
 
@@ -477,30 +509,43 @@ body.vscode-high-contrast {
  * 13. Permission Dock — Compact
  * ═══════════════════════════════════════════════════════════════════════════════ */
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-body"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="permission"]
+  [data-slot="permission-body"] {
   padding: 8px 8px 0;
   gap: 8px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-header-title"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="permission"]
+  [data-slot="permission-header-title"] {
   font-size: 12px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-hint"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="permission"]
+  [data-slot="permission-hint"] {
   font-size: 12px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-patterns"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="permission"]
+  [data-slot="permission-patterns"] {
   gap: 4px;
   margin-top: 4px;
   margin-bottom: 8px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-patterns"] code {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="permission"]
+  [data-slot="permission-patterns"]
+  code {
   font-size: 12px;
 }
 
-[data-density="disabled"] /* commented out */ [data-component="dock-prompt"][data-kind="permission"] [data-slot="permission-footer"] {
+[data-density="disabled"]
+  /* commented out */ [data-component="dock-prompt"][data-kind="permission"]
+  [data-slot="permission-footer"] {
   padding: 16px 6px 6px;
   margin-top: -10px;
 }

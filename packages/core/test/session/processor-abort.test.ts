@@ -1,17 +1,16 @@
 import { afterAll, describe, expect, test } from "bun:test"
 import path from "node:path"
 import { Instance } from "../../src/project/instance"
+import { ProjectTable } from "../../src/project/project.sql"
+import { Provider } from "../../src/provider/provider"
+import { ModelID, ProviderID } from "../../src/provider/schema"
 import { LLM } from "../../src/session/llm"
 import { Message } from "../../src/session/message"
 import { SessionProcessor } from "../../src/session/processor"
 import { MessageID, SessionID } from "../../src/session/schema"
-import { ProviderID, ModelID } from "../../src/provider/schema"
-import { tmpdir } from "../fixture/fixture"
-import { Session } from "../../src/session/index"
-import { Provider } from "../../src/provider/provider"
+import { MessageTable, SessionTable } from "../../src/session/session.sql"
 import { Database } from "../../src/storage/db"
-import { MessageTable, SessionTable, PartTable } from "../../src/session/session.sql"
-import { ProjectTable } from "../../src/project/project.sql"
+import { tmpdir } from "../fixture/fixture"
 
 describe("SessionProcessor Abort Reasoning Flush", () => {
   const originalStream = LLM.stream
@@ -52,32 +51,36 @@ describe("SessionProcessor Abort Reasoning Flush", () => {
         const abortController = new AbortController()
 
         const assistantMessage: Message.Assistant = {
-            id: assistantMessageID,
-            sessionID: sessionID,
-            role: "assistant",
-            time: { created: Date.now() },
-            parentID: userMessageID,
-            modelID: "gpt-4" as any,
-            providerID: "openai" as any,
-            mode: "primary",
-            agent: "test",
-            path: { cwd: "/", root: "/" },
-            cost: 0,
-            tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+          id: assistantMessageID,
+          sessionID: sessionID,
+          role: "assistant",
+          time: { created: Date.now() },
+          parentID: userMessageID,
+          modelID: "gpt-4" as ModelID,
+          providerID: "openai" as ProviderID,
+          mode: "primary",
+          agent: "test",
+          path: { cwd: "/", root: "/" },
+          cost: 0,
+          tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
         }
 
         // Setup db
         await Database.use((db) => {
-          db.insert(ProjectTable).values({ id: "prj_test" as any, worktree: "", sandboxes: [], time_created: Date.now() }).run()
-          db.insert(SessionTable).values({ 
-            id: sessionID, 
-            project_id: "prj_test" as any, 
-            slug: "test-slug", 
-            directory: "/", 
-            title: "Test", 
-            version: "1.0",
-            time_created: Date.now() 
-          }).run()
+          db.insert(ProjectTable)
+            .values({ id: "prj_test" as never, worktree: "", sandboxes: [], time_created: Date.now() })
+            .run()
+          db.insert(SessionTable)
+            .values({
+              id: sessionID,
+              project_id: "prj_test" as never,
+              slug: "test-slug",
+              directory: "/",
+              title: "Test",
+              version: "1.0",
+              time_created: Date.now(),
+            })
+            .run()
           db.insert(MessageTable)
             .values({
               id: assistantMessageID,
@@ -97,27 +100,27 @@ describe("SessionProcessor Abort Reasoning Flush", () => {
 
           const iter = async function* () {
             // Emulate receiving the start
-            yield { type: "reasoning-start", id: "reasoning-0" } as any
-            
+            yield { type: "reasoning-start", id: "reasoning-0" } as never
+
             // Wait slightly to let SQLite update write
             await new Promise((r) => setTimeout(r, 50))
-            
+
             // Emulate chunks
-            yield { type: "reasoning-delta", id: "reasoning-0", text: "I am " } as any
-            yield { type: "reasoning-delta", id: "reasoning-0", text: "thinking" } as any
+            yield { type: "reasoning-delta", id: "reasoning-0", text: "I am " } as never
+            yield { type: "reasoning-delta", id: "reasoning-0", text: "thinking" } as never
 
             // Stay yielded forever until aborted, then throw AbortError
             while (!aborted) {
               await new Promise((r) => setTimeout(r, 10))
             }
-            
+
             const e = new DOMException("The user aborted a request.", "AbortError")
             throw e
           }
 
           return {
             fullStream: iter(),
-          } as any
+          } as never
         }
 
         const resolved = await Provider.getModel(ProviderID.openai, ModelID.make("gpt-4"))
@@ -126,13 +129,25 @@ describe("SessionProcessor Abort Reasoning Flush", () => {
           assistantMessage,
           sessionID,
           model: resolved,
-          abort: abortController.signal
+          abort: abortController.signal,
         })
-        
+
         // Let it run in background
         const processPromise = processor.process({
-          user: { role: "user", id: userMessageID, sessionID, time: { created: Date.now() }, agent: "test", model: { providerID: ProviderID.openai, modelID: ModelID.make("gpt-4") } },
-          agent: { name: "test", mode: "primary", options: {}, permission: [{ permission: "*", action: "allow", pattern: "*" }] },
+          user: {
+            role: "user",
+            id: userMessageID,
+            sessionID,
+            time: { created: Date.now() },
+            agent: "test",
+            model: { providerID: ProviderID.openai, modelID: ModelID.make("gpt-4") },
+          },
+          agent: {
+            name: "test",
+            mode: "primary",
+            options: {},
+            permission: [{ permission: "*", action: "allow", pattern: "*" }],
+          },
           model: resolved,
           abort: abortController.signal,
           sessionID,
@@ -153,19 +168,19 @@ describe("SessionProcessor Abort Reasoning Flush", () => {
 
         // Load the parts from the database to see what got saved
         const parts = await Message.parts(assistantMessageID)
-        
+
         // Should have reasoning + step-finish
         expect(parts.length).toBe(2)
 
         // Reasoning part persisted correctly
-        const reasoningPart = parts.find(p => p.type === "reasoning") as Message.ReasoningPart
+        const reasoningPart = parts.find((p) => p.type === "reasoning") as Message.ReasoningPart
         expect(reasoningPart).toBeDefined()
         expect(reasoningPart.text).toBe("I am thinking")
         expect(reasoningPart.time.end).toBeDefined()
         expect(reasoningPart.time.start).toBeDefined()
 
         // Step-finish part written on abort
-        const stepFinish = parts.find(p => p.type === "step-finish") as Message.StepFinishPart
+        const stepFinish = parts.find((p) => p.type === "step-finish") as Message.StepFinishPart
         expect(stepFinish).toBeDefined()
         expect(stepFinish.reason).toBe("error")
         expect(stepFinish.tokens).toEqual({

@@ -84,7 +84,7 @@ describe("toRequest", () => {
     const req = toRequest({ model: "m", prompt })
     const model = req.request.contents.find((c) => c.role === "model")
     if (!model) throw new Error("expected model")
-    
+
     // Thoughts should all be pulled to the front
     expect(model.parts[0]).toEqual({ text: "thinking 1...", thought: true, thoughtSignature: "sig1" })
     expect(model.parts[1]).toEqual({ text: "thinking 2...", thought: true, thoughtSignature: "sig2" })

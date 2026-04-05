@@ -2,7 +2,7 @@
 
 import { Auth } from "../src/auth"
 import { CA_CLIENT_ID, CA_CLIENT_SECRET } from "../src/auth/providers/code-assist"
-import { fetchAvailableModels, loadCodeAssist } from "../src/provider/sdk/code-assist/client"
+import { loadCodeAssist } from "../src/provider/sdk/code-assist/client"
 import { Database } from "../src/storage/db"
 import { Log } from "../src/util/log"
 
@@ -69,7 +69,7 @@ try {
   }
 }
 
-const projectId = "zen-sunlight-z87wj"
+const _projectId = "zen-sunlight-z87wj"
 
 console.log(`\nTesting fetchAvailableModels via raw fetch (matching Cockpit)...`)
 try {
@@ -78,12 +78,12 @@ try {
   const fetchRes = await fetch(tokenUrl, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${auth.access}`,
+      Authorization: `Bearer ${auth.access}`,
       "User-Agent": "antigravity/1.0.0 windows/amd64",
       "Content-Type": "application/json",
       "Accept-Encoding": "gzip",
     },
-    body: JSON.stringify({}) // Cockpit sends `{}` when projectId is undefined
+    body: JSON.stringify({}), // Cockpit sends `{}` when projectId is undefined
   })
 
   const text = await fetchRes.text()

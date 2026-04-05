@@ -528,9 +528,9 @@ export function TracePanel(props: { size: Sizing }) {
                     seenId.add(m.id)
                     return true
                   })
-                  
+
                   let md = `# Session: ${info()?.title ?? id}\n\n`
-                  
+
                   const sys = systemPrompt()
                   if (sys) {
                     md += `## System Prompt\n\n${sys}\n\n---\n\n`
@@ -545,38 +545,48 @@ export function TracePanel(props: { size: Sizing }) {
                     md += `## ${msg.role?.toUpperCase() || "UNKNOWN"}\n\n`
                     for (const part of parts) {
                       if (part.type === "text" && part.text) {
-                         const trimText = part.text.trim();
-                         if (seenText.has(trimText)) continue;
-                         if (part.synthetic) {
-                            seenText.add(trimText);
-                            md += `**[System Message]**\n\n${part.text}\n\n`
-                         } else {
-                            md += `${part.text}\n\n`
-                         }
+                        const trimText = part.text.trim()
+                        if (seenText.has(trimText)) continue
+                        if (part.synthetic) {
+                          seenText.add(trimText)
+                          md += `**[System Message]**\n\n${part.text}\n\n`
+                        } else {
+                          md += `${part.text}\n\n`
+                        }
                       } else if (part.type === "reasoning" && part.text) {
                         md += `*Reasoning:*\n> ${part.text.split("\n").join("\n> ")}\n\n`
                       } else if (part.type === "tool") {
-                        const input = typeof part.state?.input === "string" ? part.state?.input : JSON.stringify(part.state?.input, null, 2)
+                        const input =
+                          typeof part.state?.input === "string"
+                            ? part.state?.input
+                            : JSON.stringify(part.state?.input, null, 2)
                         md += `**Tool Call:** \`${part.tool || "tool"}\`\n\`\`\`json\n${input}\n\`\`\`\n\n`
-                        
+
                         if (part.state?.status === "error") {
-                            const err = typeof part.state?.error === "string" ? part.state.error : JSON.stringify(part.state?.error, null, 2)
-                            md += `**Tool Error:**\n\`\`\`\n${err || "Unknown error"}\n\`\`\`\n\n`
+                          const err =
+                            typeof part.state?.error === "string"
+                              ? part.state.error
+                              : JSON.stringify(part.state?.error, null, 2)
+                          md += `**Tool Error:**\n\`\`\`\n${err || "Unknown error"}\n\`\`\`\n\n`
                         } else if (part.state?.output !== undefined) {
-                            const output = typeof part.state.output === "string" ? part.state.output : JSON.stringify(part.state.output, null, 2)
-                            md += `**Tool Result:**\n\`\`\`\n${output || "(Empty output)"}\n\`\`\`\n\n`
+                          const output =
+                            typeof part.state.output === "string"
+                              ? part.state.output
+                              : JSON.stringify(part.state.output, null, 2)
+                          md += `**Tool Result:**\n\`\`\`\n${output || "(Empty output)"}\n\`\`\`\n\n`
                         }
                       } else if (part.type === "tool-call") {
-                         const args = typeof part.args === "string" ? part.args : JSON.stringify(part.args, null, 2)
-                         md += `**Tool Call:** \`${part.toolName || "tool"}\`\n\`\`\`json\n${args}\n\`\`\`\n\n`
+                        const args = typeof part.args === "string" ? part.args : JSON.stringify(part.args, null, 2)
+                        md += `**Tool Call:** \`${part.toolName || "tool"}\`\n\`\`\`json\n${args}\n\`\`\`\n\n`
                       } else if (part.type === "tool-result") {
-                         if (part.error) {
-                            const err = typeof part.error === "string" ? part.error : JSON.stringify(part.error, null, 2)
-                            md += `**Tool Error:** \`${part.toolName || "tool"}\`\n\`\`\`\n${err || "Unknown error"}\n\`\`\`\n\n`
-                         } else if (part.result !== undefined) {
-                            const result = typeof part.result === "string" ? part.result : JSON.stringify(part.result, null, 2)
-                            md += `**Tool Result:** \`${part.toolName || "tool"}\`\n\`\`\`\n${result || "(Empty result)"}\n\`\`\`\n\n`
-                         }
+                        if (part.error) {
+                          const err = typeof part.error === "string" ? part.error : JSON.stringify(part.error, null, 2)
+                          md += `**Tool Error:** \`${part.toolName || "tool"}\`\n\`\`\`\n${err || "Unknown error"}\n\`\`\`\n\n`
+                        } else if (part.result !== undefined) {
+                          const result =
+                            typeof part.result === "string" ? part.result : JSON.stringify(part.result, null, 2)
+                          md += `**Tool Result:** \`${part.toolName || "tool"}\`\n\`\`\`\n${result || "(Empty result)"}\n\`\`\`\n\n`
+                        }
                       }
                     }
                     md += `---\n\n`

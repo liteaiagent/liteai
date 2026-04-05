@@ -77,16 +77,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private _getErrorHtml(errorMsg: string) {
     const isMissing = errorMsg.includes("CORE_MISSING")
-    
+
     const title = isMissing ? "Installation Error" : "Connection Error"
-    const message = isMissing 
+    const message = isMissing
       ? "LiteAI core server is missing. Please uninstall and reinstall the extension."
       : "Failed to connect to the LiteAI server."
-      
+
     // Provide a button to retry except for missing core
-    const buttonHtml = isMissing 
-       ? `` 
-       : `<button onclick="retry()">Refresh & Retry</button>`
+    const buttonHtml = isMissing ? `` : `<button onclick="retry()">Refresh & Retry</button>`
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -139,7 +137,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   <body>
     <h2>${title}</h2>
     <p>${message}</p>
-    ${!isMissing ? `<div class="details">${errorMsg}</div>` : ''}
+    ${!isMissing ? `<div class="details">${errorMsg}</div>` : ""}
     ${buttonHtml}
     
     <script>

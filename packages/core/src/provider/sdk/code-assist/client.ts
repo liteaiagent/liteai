@@ -189,30 +189,30 @@ export async function* stream(
     try {
       let bufferedLines: string[] = []
       for await (const line of rl) {
-      if (line.startsWith("data: ")) {
-        bufferedLines.push(line.slice(6).trim())
-      } else if (line === "") {
-        if (bufferedLines.length === 0) continue
-        const chunk = bufferedLines.join("\n")
-        try {
-          const parsed = JSON.parse(chunk)
-          http.info("sse", {
-            provider: "google-code-assist",
-            url,
-            chunk: parsed,
-          })
-          yield parsed
-        } catch (e: unknown) {
-          http.error("sse parse error", {
-            provider: "google-code-assist",
-            url,
-            chunk,
-            error: e instanceof Error ? e.message : String(e),
-          })
+        if (line.startsWith("data: ")) {
+          bufferedLines.push(line.slice(6).trim())
+        } else if (line === "") {
+          if (bufferedLines.length === 0) continue
+          const chunk = bufferedLines.join("\n")
+          try {
+            const parsed = JSON.parse(chunk)
+            http.info("sse", {
+              provider: "google-code-assist",
+              url,
+              chunk: parsed,
+            })
+            yield parsed
+          } catch (e: unknown) {
+            http.error("sse parse error", {
+              provider: "google-code-assist",
+              url,
+              chunk,
+              error: e instanceof Error ? e.message : String(e),
+            })
+          }
+          bufferedLines = []
         }
-        bufferedLines = []
       }
-    }
     } finally {
       if (signal) signal.removeEventListener("abort", onAbort)
     }

@@ -443,7 +443,7 @@ export namespace SessionProcessor {
             snapshot = undefined
           }
           // Flush any in-flight text part that never received text-end.
-          if (currentText && currentText.text) {
+          if (currentText?.text) {
             currentText.text = currentText.text.trimEnd()
             currentText.time = { start: currentText.time?.start ?? Date.now(), end: Date.now() }
             await Session.updatePart(currentText)

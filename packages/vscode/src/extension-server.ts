@@ -188,7 +188,11 @@ export class ExtensionServer {
     } catch (err) {
       // Return 404 for file-not-found (ENOENT / FileNotFound)
       const msg = err instanceof Error ? err.message : String(err)
-      if (msg.includes("ENOENT") || msg.includes("FileNotFound") || (err instanceof vscode.FileSystemError && err.code === "FileNotFound")) {
+      if (
+        msg.includes("ENOENT") ||
+        msg.includes("FileNotFound") ||
+        (err instanceof vscode.FileSystemError && err.code === "FileNotFound")
+      ) {
         return this.sendJson(res, { error: msg }, 404)
       }
       throw err
@@ -365,7 +369,7 @@ export class ExtensionServer {
 
     return folders.some((folder) => {
       const normalizedFolder = normalize(folder.uri.fsPath)
-      return normalizedFile.startsWith(normalizedFolder + "/") || normalizedFile === normalizedFolder
+      return normalizedFile.startsWith(`${normalizedFolder}/`) || normalizedFile === normalizedFolder
     })
   }
 

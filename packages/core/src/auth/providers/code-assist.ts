@@ -1,6 +1,5 @@
 import * as net from "node:net"
 import { type Credentials, OAuth2Client } from "google-auth-library"
-import { Installation } from "@/installation"
 import { Log } from "@/util/log"
 import { Auth } from "../index"
 import type { AuthProvider } from "../provider"

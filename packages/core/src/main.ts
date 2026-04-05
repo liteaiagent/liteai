@@ -125,7 +125,7 @@ if (Capabilities.isHosted()) {
 
 // Start LSP server on stdio (runs alongside HTTP — purely additive, no changes to HTTP behavior)
 if (args.lsp) {
-  const { startLSPHandler } = await import("./lsp/lsp-handler")
+  //const { startLSPHandler } = await import("./lsp/lsp-handler")
   // TODO: enable lsp
   //startLSPHandler()
   log.info("LSP handler started on stdio")
