@@ -1,6 +1,7 @@
 - [ ] Persistent server option (keep running after VSCode closes)
 - [ ] TracePane extraction
 - [ ] SettingsPane extraction
+- [ ] LSP proxy via Extension Server — proxy core's LSP queries (diagnostics, references, definitions, hover, symbols) through `vscode.languages.*` API instead of spawning duplicate language servers. Core's LSP client engine is currently disabled in hosted mode; this would re-enable code intelligence for the LLM by forwarding to VSCode's built-in servers.
 ---
 Implemented Features (Phase 1)
 Currently, a very minimal set of LSP capabilities is implemented. The focus is strictly on enabling AI-driven inline completions over standard stdio:

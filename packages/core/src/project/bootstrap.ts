@@ -2,6 +2,7 @@ import { initializeAuthProviders } from "@/auth/registry"
 import { ShareNext } from "@/share/share-next"
 import { Log } from "@/util/log"
 import { Bus } from "../bus"
+import { Capabilities } from "../capabilities"
 import { Command } from "../command"
 import { File } from "../file"
 import { FileWatcher } from "../file/watcher"
@@ -21,7 +22,13 @@ export async function InstanceBootstrap() {
   await Plugin.init()
   ShareNext.init()
   Format.init()
-  await LSP.init()
+  // In hosted mode (VSCode), the IDE already runs its own language servers
+  // (TypeScript, Pyright/Pylance, etc.) — spawning duplicates wastes resources.
+  if (!Capabilities.isHosted()) {
+    await LSP.init()
+  } else {
+    Log.Default.info("hosted mode — skipping LSP client engine (IDE provides language servers)")
+  }
   FileWatcher.init()
   File.init()
   Vcs.init()
