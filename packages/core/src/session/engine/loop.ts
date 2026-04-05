@@ -33,6 +33,7 @@ import { SessionSummary } from "../tasks/summary"
 import { ensureTitle } from "../tasks/title"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
+import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { insertPlanReminder } from "./plan-reminder"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
@@ -245,6 +246,7 @@ export const loop = fn(LoopInput, async (input) => {
   let structuredOutput: unknown | undefined
 
   let step = 0
+  const autocompactState: AutocompactState = createAutocompactState()
   const session = await Session.get(sessionID)
   while (true) {
     SessionStatus.set(sessionID, { type: "busy" })
@@ -379,6 +381,21 @@ export const loop = fn(LoopInput, async (input) => {
       agent,
       session,
     })
+
+    // Pre-processing context pipeline: budget enforcement + dead branch cleanup
+    msgs = executePipeline(msgs)
+
+    // Proactive autocompact: check token estimate before making the LLM call
+    if (shouldAutocompact(msgs, model, autocompactState)) {
+      log.info("loop: proactive autocompact triggered", { sessionID, step })
+      await SessionCompaction.create({
+        sessionID,
+        agent: lastUser.agent,
+        model: lastUser.model,
+        auto: true,
+      })
+      continue
+    }
 
     const processor = SessionProcessor.create({
       assistantMessage: (await Session.updateMessage({

@@ -57,8 +57,10 @@ if (version !== CACHE_VERSION) {
       ),
     )
   } catch (error) {
-    const { Log } = await import("../util/log")
-    Log.create({ service: "global" }).warn("Failed to clear cache:", { error })
+    const logModule = await import("../util/log")
+    if (logModule?.Log) {
+      logModule.Log.create({ service: "global" }).warn("Failed to clear cache:", { error })
+    }
   }
   await Filesystem.write(path.join(Global.Path.cache, "version"), CACHE_VERSION)
 }

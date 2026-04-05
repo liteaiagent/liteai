@@ -47,7 +47,7 @@ We must first detach SQLite logic from `processor.ts` so it acts as an agnostic 
 - Implemented `EventPersister` inside `session/engine/persister.ts` that safely envelopes all previous SQLite behaviors, acting as a backward-compatibility layer so things like `loop.ts` didn't break.
 - Confirmed `processor.ts` cleanly decoupled via Zero SQLite imports and checked strict types using `tsc -b`.
 
-### Phase 2: Implementing the Pre-Processing Context Pipeline
+### Phase 2: Implementing the Pre-Processing Context Pipeline - [COMPLETED]
 Before invoking the model in each turn, applying constraints aggressively.
 
 **Target Files (NEW):**
@@ -58,18 +58,28 @@ Before invoking the model in each turn, applying constraints aggressively.
     2. **`snipCompact`**: Checks for and trims useless/aborted historical branches.
     3. **`autocompact`**: Hook into our current `TaskTool` compaction, but trigger it proactively based on predicted inputs rather than retroactively.
 
+**What was done:**
+- Created `pipeline.ts` with no SQLite/DB imports. Everything operates cleanly on `Message.WithParts[]` memory objects.
+- **Stage 1 (`applyToolResultBudget`)**: Implemented aggregate budgeting. If parallel tool outputs in a single user turn exceed 200,000 characters, it dynamically clears the largest outputs and replaces them with a `[Old tool result content cleared]` sentinel, protecting `time.compacted` state to ensure prompt cache stability across generation turns.
+- **Stage 2 (`snipCompact`)**: Slices off aborted assistant `AbortedError` branches that yielded zero functional text or valid tools, freeing up token window blocks before LLM submission.
+- **Stage 3 (`shouldAutocompact`)**: Completely shifted compaction from a *reactive* fail-state to a *proactive* mathematical estimate check: `Model Context Size - 20,000 Reserved - 13,000 Early Warning Buffer`. Also integrated a 3-strike Circuit Breaker to prevent infinite compaction retry loops.
+- Integrated the entire pipeline synchronously into `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\loop.ts` right before `Message.toModelMessages()`.
+- Authored robust, edge-case unit tests in `pipeline.test.ts` achieving full pass rates across 9 distinct testing suites and successfully validating codebase typechecks (`bun typecheck`).
+
 ### Phase 3: The Async Generator `queryLoop` (The New Brain)
 Replacing `loop.ts` with the new structure.
 
 **Target Files:**
 - `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\loop.ts` -> rename to `query.ts` or rebuild in parallel.
-  - *Refactor Goal*: Build `async function* queryLoop` based on LiteAI2.
-  - *Flow*:
-    1. Accepts `QueryParams` (messages, tool context, tracking vars).
-    2. Runs `messages = executePipeline(messages)`.
-    3. Handles token blocking limits check.
-    4. Enters the model streaming loop API, listening to the decoupled `processor` generator.
-    5. Exposes the graceful `StreamingFallback` mechanics (Tombstoning orphaned UI blocks).
+  - *Refactor Goal*: Destroy the standard `while(true)` synchronous promise loop and rebuild it strictly as `export async function* queryLoop(params)`.
+  - *Detailed Flow & Mechanics*:
+    1. **Initialization**: Accepts `QueryParams` (raw unbudgeted messages, model, tool context configs, and abort signals).
+    2. **Pre-Processing Pipeline (Phase 2)**: Runs `messages = executePipeline(messages)` immediately at the top of the iteration.
+    3. **Proactive Limits**: Validates `shouldAutocompact()` and triggers the recursive or separate generator fallback if true.
+    4. **LLM Delegation**: Enters the model streaming loop API, listening to the deeply decoupled `SessionProcessor` generator (from Phase 1).
+    5. **Pure Event Yielding**: `yield` standard `EngineEvent.Any` events (`delta`, `block-start`, `block-end`) upwards. Crucially, *this generator must not write directly to SQLite*.
+    6. **Consumer Delegation**: The actual `EventPersister` handles the SQLite writing. We will need an orchestrator (a `runSession()` wrapper) that instantiates `const loop = queryLoop()`, routes the events to the persister, and streams them simultaneously to the frontend bus.
+    7. **Tombstone Semantics**: Handle graceful `StreamingFallback` mechanics (catching parsing / `AbortedError` failures mid-stream and explicitly yielding `Tombstone` cleanup events so the persister scrubs orphaned/partial parts from the database).
 
 ### Phase 4: Streaming Tool Execution Integrations
 Implement the streaming capability to parse JSON tool arguments actively.
