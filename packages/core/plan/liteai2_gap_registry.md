@@ -1,6 +1,6 @@
 # LiteAI ↔ LiteAI2 Gap Registry
 
-**Status:** Post Phase 3 (queryLoop async generator complete)  
+**Status:** Post Phase 3.5 (queryLoop + in-memory message buffer complete)  
 **Last updated:** 2026-04-05
 
 ---
@@ -93,28 +93,22 @@ on `turn-end`. Useful for testing + telemetry, low urgency vs. G1-G3.
 
 ### MEDIUM IMPACT — Performance
 
-#### G5: Write-Through In-Memory Message Cache
+#### G5: Write-Through In-Memory Message Cache — ✅ CLOSED (Phase 3.5)
 **What LiteAI2 does:** Messages accumulate in `state.messages` — never re-read from
 disk. The loop grows its own state.
 
-**What we do:** Re-read all messages from SQLite at the top of every iteration via
-`Message.filterCompacted(Message.stream(...))`. On a 200-turn session this is a linear
-scan per turn.
+**What we implemented:** `msgsBuffer: { current: Message.WithParts[] }` in `loop.ts`.
+Single DB read on session start via `Message.filterCompacted(Message.stream(...))`.
+Buffer updated incrementally after every turn-end, subtask, and compaction — zero
+per-turn DB reads. `query.ts` reads `msgsBuffer.current` directly.
 
-**How to close (without removing the server model):**
-Add a `SessionMessageCache` — a `Map<SessionID, Message.WithParts[]>` singleton that:
-- Is populated on first read per session (cache miss -> SQLite -> warm cache)
-- Is updated on every `Session.updateMessage` / `Session.updatePart` call (write-through)
-- Is invalidated when a session is loaded from cold (old session open)
+This is functionally equivalent to LiteAI2's approach, adapted for the server/daemon
+model: the buffer lives for the lifetime of `runSession()` (one `loop()` call),
+not the process.
 
-The `queryLoop` reads from the cache instead of SQLite. The orchestrator writes to
-both SQLite and the cache atomically. Old session loading is just a cache miss —
-same as a new session on first iteration.
-
-**Estimated gain:** ~5-15ms per turn on long sessions. Low priority until sessions
-regularly exceed 50+ turns.
-
-**Files:** New `src/session/cache.ts`, modify `index.ts` write paths, `query.ts`.
+**Implemented in:** Phase 3.5 of [`agentic_loop_implementation_plan.md`](./agentic_loop_implementation_plan.md)  
+**Detailed plan:** [`in_memory_buffer_implementation_plan.md`](./in_memory_buffer_implementation_plan.md)  
+**Files:** `persister.ts` (`allParts` + `getCompletedMessage()`), `loop.ts` (`msgsBuffer`), `query.ts` (reads buffer).
 
 ---
 
@@ -176,7 +170,7 @@ G1  Streaming tool execution     <- biggest latency win, Phase 4
 G2  Reactive compaction          <- user-visible: removes "context too long" errors
 G3  Micro-compact                <- extends sessions that hit token limits
 G6  Transaction batching         <- quick win, low risk
-G5  Message cache                <- performance, defer until sessions are long
+G5  Message cache                <- ✅ CLOSED (Phase 3.5 msgsBuffer)
 G4  Named transitions            <- testing quality, low urgency
 G7  maxOutputTokens retry        <- polish
 G8  Sleep tool                   <- minor

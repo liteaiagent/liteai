@@ -95,6 +95,34 @@ Replacing `loop.ts` with the new structure.
 - Refactored `loop.ts` with `runSession()` consuming the generator; all DB writes stay in the orchestrator layer.
 - Confirmed `bun typecheck` passes with zero errors end-to-end.
 
+### Phase 3.5: In-Memory Message Buffer (Eliminating Per-Turn DB Reads) - [COMPLETED]
+Replacing per-turn SQLite re-reads with a shared in-memory buffer, decoupling the hot-loop from database I/O.
+
+> **Detailed plan:** [`in_memory_buffer_implementation_plan.md`](./in_memory_buffer_implementation_plan.md)
+
+**Target Files:**
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\persister.ts`
+  - *Refactor Goal*: Retain all parts in memory throughout the turn via `allParts` accumulator and `upsertPart()`, exposing `getCompletedMessage()` so `loop.ts` can build the buffer update without a DB read.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\loop.ts`
+  - *Refactor Goal*: Own and maintain the `msgsBuffer` — single initial DB read, incremental updates after turn-end, subtask, compaction, and overflow.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\engine\query.ts`
+  - *Refactor Goal*: Read from `msgsBuffer.current` instead of `Message.filterCompacted(Message.stream(...))` — zero DB reads in the hot loop.
+- `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\session\tasks\compaction.ts`
+  - *Refactor Goal*: `create()` returns `{ markerMessage, markerWithParts }` and `process()` returns `{ result, summaryWithParts }` for in-memory buffer reset.
+
+**What was done:**
+- Added `allParts: Message.Part[]` accumulator and `upsertPart()` to `EventPersister`; every `Session.updatePart()` call now upserts into `allParts`, and `flush()` uses `this.allParts` instead of `Message.parts()` DB read.
+- Added `getCompletedMessage()` returning `{ info: assistantMessage, parts: [...allParts] }` — the complete in-memory `WithParts` for buffer append.
+- Wired `msgsBuffer: { current: Message.WithParts[] }` into `QueryLoopParams` — `query.ts` reads `msgsBuffer.current` (zero DB reads). `loop.ts` initializes with a single `Message.filterCompacted(Message.stream(...))` call.
+- Buffer updated incrementally at every lifecycle boundary:
+  - **turn-end** → `msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]`
+  - **subtask** → appends `subtaskAssistant` + optional `syntheticUser`
+  - **compaction-task** → resets to `[markerMsg, summaryWithParts]`
+  - **overflow / compact** → appends `markerWithParts`
+- Refactored `SessionCompaction.create()` to return `markerWithParts` and `process()` to return `summaryWithParts` (using a targeted `Message.parts()` read inside the compaction path only — not the hot loop).
+- Verified: `grep -n "Message.stream\|filterCompacted\|Message.parts" query.ts` → zero results. `grep -n "Message.parts" persister.ts` → zero results.
+- Confirmed `bun typecheck` passes with zero errors.
+
 ### Phase 4: Streaming Tool Execution Integrations
 Implement the streaming capability to parse JSON tool arguments actively.
 
