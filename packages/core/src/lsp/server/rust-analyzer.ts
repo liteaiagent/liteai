@@ -21,8 +21,9 @@ export const RustAnalyzer: Info = {
         if (cargoTomlContent.includes("[workspace]")) {
           return currentDir
         }
-      } catch (_err) {
+      } catch (error) {
         // File doesn't exist or can't be read, continue searching up
+        log.warn(`Failed to read Cargo.toml at ${cargoTomlPath}:`, { error })
       }
 
       const parentDir = path.dirname(currentDir)

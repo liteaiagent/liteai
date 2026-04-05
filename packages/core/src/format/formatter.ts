@@ -3,8 +3,11 @@ import { Flag } from "@/flag/flag"
 import { BunProc } from "../bun"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
+import { Log } from "../util/log"
 import { Process } from "../util/process"
 import { which } from "../util/which"
+
+const log = Log.create({ service: "formatter" })
 
 export interface Info {
   name: string
@@ -228,7 +231,8 @@ export const rlang: Info = {
       const hasR = firstLine.includes("R language")
       const hasFormatter = firstLine.includes("formatter")
       return hasR && hasFormatter
-    } catch (_error) {
+    } catch (error) {
+      log.warn("Failed to check if Air formatter is available", { error })
       return false
     }
   },

@@ -4,7 +4,10 @@ import { setTimeout as sleep } from "node:timers/promises"
 import { Flag } from "@/flag/flag"
 import { Filesystem } from "@/util/filesystem"
 import { lazy } from "@/util/lazy"
+import { Log } from "@/util/log"
 import { which } from "@/util/which"
+
+const log = Log.create({ service: "shell" })
 
 const SIGKILL_TIMEOUT_MS = 200
 
@@ -31,7 +34,8 @@ export namespace Shell {
       if (!opts?.exited?.()) {
         process.kill(-pid, "SIGKILL")
       }
-    } catch (_e) {
+    } catch (error) {
+      log.warn(`Failed to kill process group for pid ${pid}:`, { error })
       proc.kill("SIGTERM")
       await sleep(SIGKILL_TIMEOUT_MS)
       if (!opts?.exited?.()) {

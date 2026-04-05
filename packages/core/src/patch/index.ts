@@ -596,7 +596,8 @@ export namespace Patch {
           type: MaybeApplyPatchVerified.CorrectnessError,
           error: new Error(ApplyPatchError.ImplicitInvocation),
         }
-      } catch {
+      } catch (error) {
+        log.warn("Error parsing implicit patch:", { error })
         // Not a patch, continue
       }
     }
@@ -632,7 +633,8 @@ export namespace Patch {
                   type: "delete",
                   content,
                 })
-              } catch (_error) {
+              } catch (error) {
+                log.error(`Failed to read file for deletion: ${deletePath}`, { error })
                 return {
                   type: MaybeApplyPatchVerified.CorrectnessError,
                   error: new Error(`Failed to read file for deletion: ${deletePath}`),

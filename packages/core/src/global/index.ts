@@ -5,6 +5,9 @@ import { xdgCache, xdgData, xdgState } from "xdg-basedir"
 import { Brand } from "../brand"
 import { Flag } from "../flag/flag"
 import { Filesystem } from "../util/filesystem"
+import { Log } from "../util/log"
+
+const log = Log.create({ service: "global" })
 
 const app = Brand.app
 
@@ -53,6 +56,8 @@ if (version !== CACHE_VERSION) {
         }),
       ),
     )
-  } catch (_e) {}
+  } catch (error) {
+    log.warn("Failed to clear cache:", { error })
+  }
   await Filesystem.write(path.join(Global.Path.cache, "version"), CACHE_VERSION)
 }

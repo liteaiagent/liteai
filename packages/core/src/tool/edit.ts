@@ -14,9 +14,12 @@ import { FileWatcher } from "../file/watcher"
 import { LSP } from "../lsp"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
+import { Log } from "../util/log"
 import DESCRIPTION from "./edit.txt"
 import { assertExternalDirectory } from "./external-directory"
 import { Tool } from "./tool"
+
+const log = Log.create({ service: "edit" })
 
 const MAX_DIAGNOSTICS_PER_FILE = 20
 
@@ -397,7 +400,8 @@ export const WhitespaceNormalizedReplacer: Replacer = function* (content, find) 
             if (match) {
               yield match[0]
             }
-          } catch (_e) {
+          } catch (error) {
+            log.warn("ContextReplacer invalid regex:", { error })
             // Invalid regex pattern, skip
           }
         }
