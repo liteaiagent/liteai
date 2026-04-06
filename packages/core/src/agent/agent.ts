@@ -235,6 +235,7 @@ export namespace Agent {
 
     const params = {
       temperature: 0.3,
+      experimental_telemetry: { isEnabled: true },
       messages: [
         ...system.map(
           (item): ModelMessage => ({

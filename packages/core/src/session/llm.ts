@@ -216,6 +216,13 @@ export namespace LLM {
       toolChoice: input.toolChoice,
       maxOutputTokens,
       abortSignal: input.abort,
+      experimental_telemetry: {
+        isEnabled: true,
+        metadata: {
+          langfuseTraceId: input.sessionID,
+          sessionID: input.sessionID,
+        },
+      },
       headers: {
         ...(input.model.providerID !== "anthropic" ? { "User-Agent": `liteai/${Installation.VERSION}` } : undefined),
         ...input.model.headers,

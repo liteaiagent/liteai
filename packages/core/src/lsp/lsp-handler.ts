@@ -164,6 +164,7 @@ export function startLSPHandler() {
         maxOutputTokens: 256,
         temperature: 0,
         abortSignal: AbortSignal.timeout(8_000),
+        experimental_telemetry: { isEnabled: true },
       })
 
       const text = result.text.trim()

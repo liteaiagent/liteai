@@ -9,7 +9,6 @@ import {
   type ReadableLogRecord,
 } from "@opentelemetry/sdk-logs"
 import {
-  type AggregationTemporality,
   ConsoleMetricExporter,
   MeterProvider,
   PeriodicExportingMetricReader,
@@ -28,7 +27,6 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "
 import { Installation } from "../installation"
 import { Log } from "../util/log"
 import { initializePerfettoTracing } from "./perfetto"
-import { endInteractionSpan } from "./tracing"
 
 const log = Log.create({ service: "telemetry" })
 
@@ -467,9 +465,6 @@ export async function shutdownTelemetry() {
   log.info("shutting down telemetry", { timeoutMs })
 
   try {
-    // End any active interaction span before shutdown
-    endInteractionSpan()
-
     const shutdownPromises: Promise<void>[] = []
     if (globalMeterProvider) shutdownPromises.push(globalMeterProvider.shutdown())
     if (globalLoggerProvider) shutdownPromises.push(globalLoggerProvider.shutdown())

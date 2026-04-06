@@ -10,8 +10,7 @@ import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import { ModelID, ProviderID } from "../../provider/schema"
-import { Metrics } from "../../telemetry/metrics"
-import { endLLMRequestSpan, startLLMRequestSpan, withInteractionSpan } from "../../telemetry/tracing"
+
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
@@ -139,13 +138,7 @@ export const prompt = fn(PromptInput, async (input) => {
     return message
   }
 
-  const textPart = input.parts.find((p) => p.type === "text")
-  const userText = textPart && "text" in textPart ? textPart.text : "Input"
-
-  Metrics.interactions.add(1, { agent: input.agent ?? "default" })
-  return await withInteractionSpan(userText, async () => {
-    return await loop({ sessionID: input.sessionID })
-  })
+  return await loop({ sessionID: input.sessionID })
 })
 
 export function start(sessionID: SessionID) {
@@ -155,7 +148,6 @@ export function start(sessionID: SessionID) {
     return
   }
   log.info("start", { sessionID })
-  Metrics.sessionsActive.add(1)
 
   const controller = new AbortController()
   s[sessionID] = {
@@ -262,7 +254,6 @@ function safeAbort(controller: AbortController, sessionID: string) {
  */
 function cleanup(sessionID: SessionID) {
   log.info("cleanup", { sessionID })
-  Metrics.sessionsActive.add(-1)
 
   const s = state()
   delete s[sessionID]
@@ -309,8 +300,7 @@ export const LoopInput = z.object({
 //   tombstone   → flush persister to clean up orphaned message
 
 async function runSession(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
-  const isAbortError = (e: unknown): e is DOMException =>
-    e instanceof DOMException && e.name === "AbortError"
+  const isAbortError = (e: unknown): e is DOMException => e instanceof DOMException && e.name === "AbortError"
   const { sessionID, session, abort } = input
 
   let persister: EventPersister | undefined
@@ -330,218 +320,217 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
   })
 
   try {
-  for await (const event of generator) {
-    switch (event.type) {
-      // ── Turn Start: persist assistant message, create persister ──
-      case "turn-start": {
-        // Persist the assistant message to DB
-        currentAssistantMessage = (await Session.updateMessage(event.assistantMessage)) as Message.Assistant
+    for await (const event of generator) {
+      switch (event.type) {
+        // ── Turn Start: persist assistant message, create persister ──
+        case "turn-start": {
+          // Persist the assistant message to DB
+          currentAssistantMessage = (await Session.updateMessage(event.assistantMessage)) as Message.Assistant
 
-        // Create fresh persister for this turn
-        persister = new EventPersister(currentAssistantMessage, sessionID, event.model, abort)
+          // Create fresh persister for this turn
+          persister = new EventPersister(currentAssistantMessage, sessionID, event.model, abort)
 
-        // Set up instruction prompt cleanup
-        // Note: InstructionPrompt.clear will be called in turn-end
-        SessionStatus.set(sessionID, { type: "busy" })
+          // Set up instruction prompt cleanup
+          // Note: InstructionPrompt.clear will be called in turn-end
+          SessionStatus.set(sessionID, { type: "busy" })
 
-        // Fire-and-forget summary on first turn
-        const lastUser = event.streamInput.user
-        if (lastUser) {
-          SessionSummary.summarize({
-            sessionID,
-            messageID: lastUser.id,
-          })
-        }
-        break
-      }
-
-      // ── Turn End: flush persister, handle result ──
-      case "turn-end": {
-        if (!persister || !currentAssistantMessage) break
-
-        // Capture raw SDK stream result for partial token recovery on error
-        currentStreamResult = event.streamResult
-
-        // Flush the persister
-        const flushResult = await persister.flush(currentStreamResult)
-        currentStreamResult = undefined
-
-        // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
-        msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
-
-        // Handle structured output
-        if (event.structuredOutput !== undefined) {
-          currentAssistantMessage.structured = event.structuredOutput
-          currentAssistantMessage.finish = currentAssistantMessage.finish ?? "stop"
-          await Session.updateMessage(currentAssistantMessage)
-          log.info("runSession: structured output captured", { sessionID })
-          // Don't call .next() — let the generator break naturally
-          break
-        }
-
-        // Handle structured output error (model finished without calling tool)
-        const modelFinished =
-          currentAssistantMessage.finish && !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
-        if (modelFinished && !currentAssistantMessage.error) {
-          const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-          const format = lastUser?.format ?? { type: "text" }
-          if (format.type === "json_schema") {
-            currentAssistantMessage.error = new Message.StructuredOutputError({
-              message: "Model did not produce structured output",
-              retries: 0,
-            }).toObject()
-            await Session.updateMessage(currentAssistantMessage)
-            log.info("runSession: structured output error", { sessionID })
-          }
-        }
-
-        // Process the flush result
-        if (flushResult === "stop") {
-          log.info("runSession: persister returned stop", {
-            sessionID,
-            error: currentAssistantMessage.error,
-            finish: currentAssistantMessage.finish,
-          })
-          // Generator will break on the next iteration
-          // (model finished check kicks in)
-          break
-        }
-        if (flushResult === "compact") {
-          const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+          // Fire-and-forget summary on first turn
+          const lastUser = event.streamInput.user
           if (lastUser) {
-            const { markerWithParts } = await SessionCompaction.create({
+            SessionSummary.summarize({
               sessionID,
-              agent: lastUser.agent,
-              model: lastUser.model,
-              auto: true,
-              overflow: !currentAssistantMessage.finish,
+              messageID: lastUser.id,
             })
-            // Buffer remains as-is after create() — process() will reset it via compaction-task
-            // The query loop will re-scan the buffer and emit a compaction-task control event
-            // for the marker, so buffer will be reset there.
-            log.info("runSession: compaction marker created", { markerID: markerWithParts.info.id, sessionID })
           }
           break
         }
 
-        // Clean up instruction prompt
-        await InstructionPrompt.clear(currentAssistantMessage.id)
-        break
-      }
+        // ── Turn End: flush persister, handle result ──
+        case "turn-end": {
+          if (!persister || !currentAssistantMessage) break
 
-      // ── Tombstone: clean up orphaned message ──
-      case "tombstone": {
-        log.warn("runSession: tombstone received", {
-          sessionID,
-          messageID: event.messageID,
-          reason: event.reason,
-        })
-        if (persister) {
-          await persister.flush(currentStreamResult)
+          // Capture raw SDK stream result for partial token recovery on error
+          currentStreamResult = event.streamResult
+
+          // Flush the persister
+          const flushResult = await persister.flush(currentStreamResult)
           currentStreamResult = undefined
-        }
-        break
-      }
 
-      // ── Control: compaction, subtask, overflow ──
-      case "control": {
-        switch (event.action) {
-          case "subtask": {
-            const { task, model, lastUser, msgs } = event.payload
-            const { subtaskAssistant, syntheticUser } = await processSubtask({
-              task,
-              model,
-              lastUser,
-              sessionID,
-              session,
-              abort,
-              msgs,
-            })
-            // Append subtask messages to buffer (FR-8) — no DB read
-            msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
+          // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
+          msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
+
+          // Handle structured output
+          if (event.structuredOutput !== undefined) {
+            currentAssistantMessage.structured = event.structuredOutput
+            currentAssistantMessage.finish = currentAssistantMessage.finish ?? "stop"
+            await Session.updateMessage(currentAssistantMessage)
+            log.info("runSession: structured output captured", { sessionID })
+            // Don't call .next() — let the generator break naturally
             break
           }
-          case "compaction-task": {
-            const { task, lastUser, msgs } = event.payload
-            Metrics.compactionsTotal.add(1, { agent: lastUser.agent })
 
-            const { result, summaryWithParts } = await SessionCompaction.process({
-              messages: msgs,
-              parentID: lastUser.id,
-              abort,
+          // Handle structured output error (model finished without calling tool)
+          const modelFinished =
+            currentAssistantMessage.finish && !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
+          if (modelFinished && !currentAssistantMessage.error) {
+            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+            const format = lastUser?.format ?? { type: "text" }
+            if (format.type === "json_schema") {
+              currentAssistantMessage.error = new Message.StructuredOutputError({
+                message: "Model did not produce structured output",
+                retries: 0,
+              }).toObject()
+              await Session.updateMessage(currentAssistantMessage)
+              log.info("runSession: structured output error", { sessionID })
+            }
+          }
+
+          // Process the flush result
+          if (flushResult === "stop") {
+            log.info("runSession: persister returned stop", {
               sessionID,
-              auto: task.auto,
-              overflow: task.overflow,
+              error: currentAssistantMessage.error,
+              finish: currentAssistantMessage.finish,
             })
-            if (result === "stop") {
-              // Signal the generator to close by returning early
+            // Generator will break on the next iteration
+            // (model finished check kicks in)
+            break
+          }
+          if (flushResult === "compact") {
+            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+            if (lastUser) {
+              const { markerWithParts } = await SessionCompaction.create({
+                sessionID,
+                agent: lastUser.agent,
+                model: lastUser.model,
+                auto: true,
+                overflow: !currentAssistantMessage.finish,
+              })
+              // Buffer remains as-is after create() — process() will reset it via compaction-task
+              // The query loop will re-scan the buffer and emit a compaction-task control event
+              // for the marker, so buffer will be reset there.
+              log.info("runSession: compaction marker created", { markerID: markerWithParts.info.id, sessionID })
+            }
+            break
+          }
+
+          // Clean up instruction prompt
+          await InstructionPrompt.clear(currentAssistantMessage.id)
+          break
+        }
+
+        // ── Tombstone: clean up orphaned message ──
+        case "tombstone": {
+          log.warn("runSession: tombstone received", {
+            sessionID,
+            messageID: event.messageID,
+            reason: event.reason,
+          })
+          if (persister) {
+            await persister.flush(currentStreamResult)
+            currentStreamResult = undefined
+          }
+          break
+        }
+
+        // ── Control: compaction, subtask, overflow ──
+        case "control": {
+          switch (event.action) {
+            case "subtask": {
+              const { task, model, lastUser, msgs } = event.payload
+              const { subtaskAssistant, syntheticUser } = await processSubtask({
+                task,
+                model,
+                lastUser,
+                sessionID,
+                session,
+                abort,
+                msgs,
+              })
+              // Append subtask messages to buffer (FR-8) — no DB read
+              msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
+              break
+            }
+            case "compaction-task": {
+              const { task, lastUser, msgs } = event.payload
+
+              const { result, summaryWithParts } = await SessionCompaction.process({
+                messages: msgs,
+                parentID: lastUser.id,
+                abort,
+                sessionID,
+                auto: task.auto,
+                overflow: task.overflow,
+              })
+              if (result === "stop") {
+                // Signal the generator to close by returning early
+                return
+              }
+              // Reset buffer to [compaction_marker, summary_assistant] — no DB re-read (FR-7)
+              // task comes from msgs which already contains the marker; find it in buffer
+              const markerMsg = msgs.findLast(
+                (m: Message.WithParts) =>
+                  m.info.role === "user" && m.parts.some((p: Message.Part) => p.type === "compaction"),
+              )
+              if (markerMsg && summaryWithParts) {
+                msgsBuffer.current = [markerMsg, summaryWithParts]
+                log.info("runSession: buffer reset after compaction-task", {
+                  sessionID,
+                  bufferLen: msgsBuffer.current.length,
+                })
+              }
+              break
+            }
+            case "overflow": {
+              const { lastUser } = event.payload
+              const { markerWithParts } = await SessionCompaction.create({
+                sessionID,
+                agent: lastUser.agent,
+                model: lastUser.model,
+                auto: true,
+              })
+              // Append marker to buffer so the next iteration's compaction-task scan finds it
+              msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
+              break
+            }
+            case "compact": {
+              const { lastUser } = event.payload
+              const { markerWithParts } = await SessionCompaction.create({
+                sessionID,
+                agent: lastUser.agent,
+                model: lastUser.model,
+                auto: true,
+              })
+              // Append marker to buffer so the next iteration's compaction-task scan finds it
+              msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
+              break
+            }
+            case "stop": {
               return
             }
-            // Reset buffer to [compaction_marker, summary_assistant] — no DB re-read (FR-7)
-            // task comes from msgs which already contains the marker; find it in buffer
-            const markerMsg = msgs.findLast(
-              (m: Message.WithParts) =>
-                m.info.role === "user" && m.parts.some((p: Message.Part) => p.type === "compaction"),
-            )
-            if (markerMsg && summaryWithParts) {
-              msgsBuffer.current = [markerMsg, summaryWithParts]
-              log.info("runSession: buffer reset after compaction-task", {
-                sessionID,
-                bufferLen: msgsBuffer.current.length,
-              })
+            case "continue": {
+              // Normal continuation — no-op, generator resumes
+              break
             }
-            break
           }
-          case "overflow": {
-            const { lastUser } = event.payload
-            const { markerWithParts } = await SessionCompaction.create({
-              sessionID,
-              agent: lastUser.agent,
-              model: lastUser.model,
-              auto: true,
-            })
-            // Append marker to buffer so the next iteration's compaction-task scan finds it
-            msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
-            break
-          }
-          case "compact": {
-            const { lastUser } = event.payload
-            const { markerWithParts } = await SessionCompaction.create({
-              sessionID,
-              agent: lastUser.agent,
-              model: lastUser.model,
-              auto: true,
-            })
-            // Append marker to buffer so the next iteration's compaction-task scan finds it
-            msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
-            break
-          }
-          case "stop": {
-            return
-          }
-          case "continue": {
-            // Normal continuation — no-op, generator resumes
-            break
-          }
+          break
         }
-        break
-      }
 
-      // ── Stream events: route to persister ──
-      default: {
-        if (persister) {
-          const action = await persister.handleEvent(event)
-          if (action === "stop") {
-            log.info("runSession: persister signalled stop during event handling", { sessionID })
-            // Break out of the for-await to stop pulling events from the generator
-            // This prevents repeated AbortError processing when abort fires mid-stream
-            return
+        // ── Stream events: route to persister ──
+        default: {
+          if (persister) {
+            const action = await persister.handleEvent(event)
+            if (action === "stop") {
+              log.info("runSession: persister signalled stop during event handling", { sessionID })
+              // Break out of the for-await to stop pulling events from the generator
+              // This prevents repeated AbortError processing when abort fires mid-stream
+              return
+            }
           }
+          break
         }
-        break
       }
     }
-  }
   } catch (e: unknown) {
     // AbortError is expected when the user cancels mid-stream.
     // Swallow it here so it doesn't propagate as an unhandled rejection.
@@ -670,7 +659,7 @@ async function processSubtask(input: {
     subagent_type: task.agent,
     command: task.command,
   }
-  startLLMRequestSpan(`${taskModel.providerID}/${taskModel.id}`, { systemPrompt: task.prompt })
+
   await Plugin.trigger(
     "tool.execute.before",
     {
@@ -764,11 +753,6 @@ async function processSubtask(input: {
       },
     } satisfies Message.ToolPart)) as Message.ToolPart
   }
-
-  endLLMRequestSpan(undefined, {
-    success: !executionError,
-    error: executionError?.message,
-  })
 
   // Build the in-memory WithParts for the subtask assistant message (FR-8)
   const subtaskAssistant: Message.WithParts = {

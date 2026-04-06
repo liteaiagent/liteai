@@ -6,12 +6,6 @@
  */
 
 export {
-  clearEventTrackingState,
-  logOTelEvent,
-  logSystemPromptIfNeeded,
-  logToolSchemaIfNeeded,
-} from "./events"
-export {
   flushTelemetry,
   initializeTelemetry,
   isTelemetryEnabled,
@@ -22,14 +16,3 @@ export {
   initializePerfettoTracing,
   isPerfettoTracingEnabled,
 } from "./perfetto"
-export type { HookResult, LLMRequestNewContext, LLMResponseMetadata, Span } from "./tracing"
-export {
-  endHookSpan,
-  endInteractionSpan,
-  endLLMRequestSpan,
-  endToolSpan,
-  startHookSpan,
-  startInteractionSpan,
-  startLLMRequestSpan,
-  startToolSpan,
-} from "./tracing"

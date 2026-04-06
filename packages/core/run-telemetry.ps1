@@ -4,22 +4,35 @@
 # Grafana UI: https://grafana.smartnest.info
 # ──────────────────────────────────────────────────────────────────────────────
 
+$LANGFUSE_SECRET_KEY="sk-lf-896ebbdb-d1b2-4741-87c7-cdfe1eb5e35d"
+$LANGFUSE_PUBLIC_KEY="pk-lf-808022c3-a0f6-43ab-b403-3a016942fe69"
+$LANGFUSE_BASE_URL="https://langfuse.smartnest.info"
+
+# Build Basic Auth header for OpenTelemetry
+$Bytes = [System.Text.Encoding]::UTF8.GetBytes("${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}")
+$LangfuseAuth = [Convert]::ToBase64String($Bytes)
+
 # Enable LiteAI telemetry subsystem
 $env:LITEAI_ENABLE_TELEMETRY = "1"
 
-# ─── Traces → Tempo (via Traefik) ────────────────────────────────────────────
+# ─── Traces → Langfuse ───────────────────────────────────────────────────────
 $env:OTEL_TRACES_EXPORTER = "otlp"
 $env:OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-$env:OTEL_EXPORTER_OTLP_ENDPOINT = "https://otel.smartnest.info"
+$env:OTEL_EXPORTER_OTLP_ENDPOINT = "$LANGFUSE_BASE_URL/api/public/otel"
+$env:OTEL_EXPORTER_OTLP_HEADERS = "Authorization=Basic $LangfuseAuth"
+
+# ─── Alternative: Traces → Tempo (via Traefik) ───────────────────────────────
+# $env:OTEL_EXPORTER_OTLP_ENDPOINT = "https://otel.smartnest.info"
+# Remove or comment out OTEL_EXPORTER_OTLP_HEADERS when using Tempo
 
 # ─── Metrics / Logs ──────────────────────────────────────────────────────────
 # Prometheus and Loki are NOT exposed via Traefik currently.
 # To enable, add Traefik labels in docker-compose.yml and uncomment:
-$env:OTEL_METRICS_EXPORTER = "otlp"
-$env:OTEL_EXPORTER_OTLP_METRICS_ENDPOINT = "https://metrics.smartnest.info/api/v1/otlp/v1/metrics"
-$env:OTEL_METRIC_EXPORT_INTERVAL = "5000"
-$env:OTEL_LOGS_EXPORTER = "otlp"
-$env:OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "https://logs.smartnest.info/otlp/v1/logs"
+# $env:OTEL_METRICS_EXPORTER = "otlp"
+# $env:OTEL_EXPORTER_OTLP_METRICS_ENDPOINT = "https://metrics.smartnest.info/api/v1/otlp/v1/metrics"
+# $env:OTEL_METRIC_EXPORT_INTERVAL = "5000"
+# $env:OTEL_LOGS_EXPORTER = "otlp"
+# $env:OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "https://logs.smartnest.info/otlp/v1/logs"
 
 # ─── Perfetto (optional, independent local trace file) ───────────────────────
 # Uncomment to also write a Chrome Trace Event file for Perfetto UI analysis:
