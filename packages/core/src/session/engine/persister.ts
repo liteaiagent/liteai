@@ -375,6 +375,10 @@ export class EventPersister {
 
       if (this.needsCompaction) return "compact"
     } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        log.info("process aborted", { sessionID })
+        return "stop"
+      }
       log.error("process", { error: e, isAbortError: e instanceof DOMException && e.name === "AbortError" })
       const error = Message.fromError(e, { providerID: model.providerID })
       if (Message.ContextOverflowError.isInstance(error)) {
