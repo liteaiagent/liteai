@@ -44,5 +44,5 @@ await createClient({
 })
 
 await $`bun biome format --write src/gen openapi.json`
-await $`rm -rf dist`
+await $`rm -rf dist tsconfig.tsbuildinfo`
 await $`bun tsc`
