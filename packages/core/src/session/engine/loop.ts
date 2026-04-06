@@ -446,9 +446,10 @@ async function runSessionInner(input: { sessionID: SessionID; session: Session.I
               error: currentAssistantMessage.error,
               finish: currentAssistantMessage.finish,
             })
-            // Generator will break on the next iteration
-            // (model finished check kicks in)
-            break
+            // Exit runSessionInner entirely — this stops the for-await loop
+            // and terminates the generator. Using `return` (not `break`) because
+            // `break` only exits the switch, not the for-await.
+            return
           }
           if (flushResult === "compact") {
             const lastUser = findLastUserFromBuffer(msgsBuffer.current)
