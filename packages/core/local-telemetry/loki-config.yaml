@@ -2,6 +2,8 @@ auth_enabled: false
 
 server:
   http_listen_port: 3100
+  grpc_server_max_recv_msg_size: 104857600
+  grpc_server_max_send_msg_size: 104857600
 
 common:
   ring:
@@ -23,6 +25,10 @@ schema_config:
 
 limits_config:
   allow_structured_metadata: true
+  max_line_size: 100MB
+  max_line_size_truncate: false
+  per_stream_rate_limit: 100MB
+  per_stream_rate_limit_burst: 200MB
   otlp_config:
     resource_attributes:
       attributes_config:

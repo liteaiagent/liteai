@@ -1,9 +1,9 @@
-import { metrics, type Counter, type Histogram, type UpDownCounter } from "@opentelemetry/api"
+import { type Counter, type Histogram, metrics, type UpDownCounter } from "@opentelemetry/api"
 
 /**
  * Lazy-initialized metrics object.
  * We must NOT create OpenTelemetry instruments immediately on import,
- * because if `initializeTelemetry()` hasn't been called yet, OTel returns 
+ * because if `initializeTelemetry()` hasn't been called yet, OTel returns
  * a silent NO-OP proxy that will intentionally drop all metrics!
  */
 

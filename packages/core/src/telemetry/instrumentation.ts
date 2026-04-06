@@ -1,8 +1,21 @@
 import { DiagConsoleLogger, DiagLogLevel, diag, metrics, trace } from "@opentelemetry/api"
 import { logs } from "@opentelemetry/api-logs"
 import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
-import { BatchLogRecordProcessor, ConsoleLogRecordExporter, LoggerProvider, type LogRecordExporter, type ReadableLogRecord } from "@opentelemetry/sdk-logs"
-import { ConsoleMetricExporter, MeterProvider, PeriodicExportingMetricReader, type PushMetricExporter, type ResourceMetrics, type AggregationTemporality } from "@opentelemetry/sdk-metrics"
+import {
+  BatchLogRecordProcessor,
+  ConsoleLogRecordExporter,
+  LoggerProvider,
+  type LogRecordExporter,
+  type ReadableLogRecord,
+} from "@opentelemetry/sdk-logs"
+import {
+  type AggregationTemporality,
+  ConsoleMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+  type PushMetricExporter,
+  type ResourceMetrics,
+} from "@opentelemetry/sdk-metrics"
 import {
   BasicTracerProvider,
   BatchSpanProcessor,
@@ -127,7 +140,6 @@ class DiagnosticMetricExporter implements PushMetricExporter {
     private readonly label: string,
   ) {}
 
-
   async forceFlush(): Promise<void> {
     return this.inner.forceFlush?.()
   }
@@ -135,11 +147,15 @@ class DiagnosticMetricExporter implements PushMetricExporter {
   export(metrics: ResourceMetrics, resultCallback: (result: { code: number; error?: Error }) => void): void {
     this.exportCount++
     const batchNum = this.exportCount
-    
-    const dataPointsCount = metrics.scopeMetrics.reduce((acc, sm) => 
-      acc + sm.metrics.length, 0)
 
-    log.info("metric export attempt", { exporter: this.label, batch: batchNum, scopes: metrics.scopeMetrics.length, dataPointsCount })
+    const dataPointsCount = metrics.scopeMetrics.reduce((acc, sm) => acc + sm.metrics.length, 0)
+
+    log.info("metric export attempt", {
+      exporter: this.label,
+      batch: batchNum,
+      scopes: metrics.scopeMetrics.length,
+      dataPointsCount,
+    })
 
     this.inner.export(metrics, (result) => {
       if (result.code === 0) {
@@ -223,7 +239,6 @@ class DiagnosticLogExporter implements LogRecordExporter {
     return this.inner.shutdown()
   }
 }
-
 
 /**
  * Wraps a SpanExporter to log export success/failure to telemetry.log.

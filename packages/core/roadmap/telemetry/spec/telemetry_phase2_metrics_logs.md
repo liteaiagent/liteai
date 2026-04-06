@@ -1,6 +1,6 @@
 # Telemetry Phase 2: OTel Metrics & Logs Integration
 
-## Status: ✅ Data Pipelines Complete (Pending 2e: Dashboards)
+## Status: ✅ Data Pipelines & Dashboards Complete
 ## Priority: High
 ## Depends On: Telemetry refactoring (✅ complete), Agentic loop rewrite (✅ complete)
 
@@ -140,4 +140,4 @@ Once metrics and logs are flowing, create pre-built dashboards using Prometheus 
 2. **~~Phase 2b: Metrics Definitions~~** ✅ Complete — Created `metrics.ts` (using lazy getters) and wired into persister/loop/query.
 3. **~~Phase 2c: Loki Log Bridges~~** ✅ Complete — Adapted `LoggerProvider` using `@opentelemetry/exporter-logs-otlp-http` and routed raw unwrapped LLM arrays straight to Loki.
 4. **~~Phase 2d: Infrastructure Readiness~~** ✅ Complete — Traefik routing mapped internally, Prometheus 3.x modernized, and OpenTelemetry drops resolved.
-5. **Phase 2e: Dashboards** 🚧 Pending — Export Grafana dashboard JSON for provisioning.
+5. **~~Phase 2e: Dashboards~~** ✅ Complete — Exported Grafana dashboard JSON for auto-provisioning.

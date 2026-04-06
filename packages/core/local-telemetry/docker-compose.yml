@@ -6,6 +6,7 @@ services:
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
+      - tempo_data:/tmp/tempo
     # Traefik configuration for Tempo Receivers
     labels:
       - "traefik.enable=true"
@@ -33,6 +34,9 @@ services:
     volumes:
       # Automatically configure Grafana to read from Tempo
       - ./datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./dashboards:/etc/grafana/provisioning/dashboards/json
+      - grafana_data:/var/lib/grafana
     # Traefik configuration for Grafana UI
     labels:
       - "traefik.enable=true"
@@ -57,6 +61,7 @@ services:
       - "--web.enable-otlp-receiver"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`metrics.${DOMAIN}`)"
@@ -75,6 +80,7 @@ services:
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/tmp/loki
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.loki.rule=Host(`logs.${DOMAIN}`)"
@@ -90,3 +96,9 @@ services:
 networks:
   traefik-net:
     external: true
+
+volumes:
+  tempo_data:
+  grafana_data:
+  prometheus_data:
+  loki_data:

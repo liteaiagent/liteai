@@ -137,6 +137,7 @@ export function startInteractionSpan(userPrompt: string): Span {
       perfettoSpanId,
     }
     activeSpans.set(spanId, new WeakRef(spanContextObj))
+    strongSpans.set(spanId, spanContextObj)
     interactionContext.enterWith(spanContextObj)
     return NOOP_SPAN
   }
@@ -160,9 +161,35 @@ export function startInteractionSpan(userPrompt: string): Span {
   }
 
   activeSpans.set(spanId, new WeakRef(spanContextObj))
+  strongSpans.set(spanId, spanContextObj)
   interactionContext.enterWith(spanContextObj)
 
   return span
+}
+
+export async function withInteractionSpan<T>(userPrompt: string, fn: () => Promise<T>): Promise<T> {
+  const span = startInteractionSpan(userPrompt)
+  const spanId =
+    span.spanContext().spanId && span.spanContext().spanId !== "0000000000000000"
+      ? span.spanContext().spanId
+      : `noop_${noopSpanIdCounter}`
+  const ctx = activeSpans.get(spanId)?.deref() || strongSpans.get(spanId)
+
+  if (!ctx) {
+    try {
+      return await fn()
+    } finally {
+      endInteractionSpan()
+    }
+  }
+
+  return interactionContext.run(ctx, async () => {
+    try {
+      return await fn()
+    } finally {
+      endInteractionSpan()
+    }
+  })
 }
 
 export function endInteractionSpan(): void {
@@ -175,7 +202,9 @@ export function endInteractionSpan(): void {
 
   if (!isTelemetryEnabled()) {
     spanContext.ended = true
-    activeSpans.delete(getSpanId(spanContext.span))
+    const spanId = getSpanId(spanContext.span)
+    activeSpans.delete(spanId)
+    strongSpans.delete(spanId)
     interactionContext.enterWith(undefined)
     return
   }
@@ -185,7 +214,9 @@ export function endInteractionSpan(): void {
   spanContext.span.end()
   spanContext.ended = true
 
-  activeSpans.delete(getSpanId(spanContext.span))
+  const spanId = getSpanId(spanContext.span)
+  activeSpans.delete(spanId)
+  strongSpans.delete(spanId)
   interactionContext.enterWith(undefined)
 }
 
@@ -324,6 +355,7 @@ export function startToolSpan(toolName: string, input?: string): Span {
       perfettoSpanId,
     }
     activeSpans.set(spanId, new WeakRef(spanContextObj))
+    strongSpans.set(spanId, spanContextObj)
     toolContext.enterWith(spanContextObj)
     return NOOP_SPAN
   }
@@ -350,6 +382,7 @@ export function startToolSpan(toolName: string, input?: string): Span {
   }
 
   activeSpans.set(spanId, new WeakRef(spanContextObj))
+  strongSpans.set(spanId, spanContextObj)
   toolContext.enterWith(spanContextObj)
 
   return span
@@ -369,6 +402,7 @@ export function endToolSpan(resultTokens?: number): void {
   if (!isTelemetryEnabled()) {
     const spanId = getSpanId(toolSpanContext.span)
     activeSpans.delete(spanId)
+    strongSpans.delete(spanId)
     toolContext.enterWith(undefined)
     return
   }
@@ -387,6 +421,7 @@ export function endToolSpan(resultTokens?: number): void {
 
   const spanId = getSpanId(toolSpanContext.span)
   activeSpans.delete(spanId)
+  strongSpans.delete(spanId)
   toolContext.enterWith(undefined)
 }
 

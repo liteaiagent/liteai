@@ -11,12 +11,7 @@ import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import { ModelID, ProviderID } from "../../provider/schema"
 import { Metrics } from "../../telemetry/metrics"
-import {
-  endInteractionSpan,
-  endLLMRequestSpan,
-  startInteractionSpan,
-  startLLMRequestSpan,
-} from "../../telemetry/tracing"
+import { endLLMRequestSpan, startLLMRequestSpan, withInteractionSpan } from "../../telemetry/tracing"
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
@@ -144,13 +139,9 @@ export const prompt = fn(PromptInput, async (input) => {
   const userText = textPart && "text" in textPart ? textPart.text : "Input"
 
   Metrics.interactions.add(1, { agent: input.agent ?? "default" })
-  startInteractionSpan(userText)
-
-  try {
+  return await withInteractionSpan(userText, async () => {
     return await loop({ sessionID: input.sessionID })
-  } finally {
-    endInteractionSpan()
-  }
+  })
 })
 
 export function start(sessionID: SessionID) {
