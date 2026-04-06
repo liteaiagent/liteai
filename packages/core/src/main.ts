@@ -87,6 +87,27 @@ await Log.init({
 
 const log = Log.create({ service: "main" })
 
+// ─── Unhandled Rejection Guard ──────────────────────────────────────────────
+// When a user aborts during the reasoning/thinking phase, the Vercel AI SDK's
+// internal `recordSpan(...)` call inside DefaultStreamTextResult is invoked
+// fire-and-forget (no .catch()). If the stream closes with zero completed steps
+// (which always happens during thinking, since no finish-step event is emitted
+// until after reasoning concludes), the SDK rejects that floating promise with
+// NoOutputGeneratedError. There is no way for user code to catch it — the
+// promise is never exposed on the StreamTextResult object.
+//
+// We handle the exposed properties in processor.ts via .catch(() => {}), but
+// this global handler catches the SDK-internal rejection and converts it from
+// a process crash into a log entry. Filtering by error name prevents abort
+// noise from polluting real error alerting.
+process.on("unhandledRejection", (reason, promise) => {
+  log.error("CRITICAL: Unhandled Promise Rejection detected!", {
+    reason: reason instanceof Error ? reason.message : String(reason),
+    stack: reason instanceof Error ? reason.stack : undefined,
+    reasonObj: reason,
+  })
+})
+
 await initializeTelemetry()
 
 // ─── Initialize capabilities ────────────────────────────────────────────────

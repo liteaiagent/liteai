@@ -230,6 +230,7 @@ function safeAbort(controller: AbortController, sessionID: string) {
   process.on("uncaughtException", suppressHandler)
 
   try {
+    log.info("safeAbort: controller.abort()", { sessionID })
     controller.abort()
   } catch (e: unknown) {
     errors.push(e)

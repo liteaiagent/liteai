@@ -92,6 +92,11 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
         totalTokens: parsed.usage.total,
         reasoningTokens: parsed.usage.reasoning,
       },
+      providerMetadata: parsed.usage.reasoning !== undefined ? {
+        "code-assist": {
+          thoughtsTokenCount: parsed.usage.reasoning,
+        },
+      } : undefined,
       request: { body },
       response: {
         id: parsed.id,
@@ -132,106 +137,115 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
         const usage = { input: 0, output: 0, total: 0, reasoning: 0 }
         const sources: CAGroundingChunk[] = []
 
-        for await (const chunk of iter) {
-          if (first && chunk.traceId) {
-            ctrl.enqueue({
-              type: "response-metadata",
-              id: chunk.traceId,
-              modelId: chunk.response?.modelVersion,
-            })
-            first = false
-          }
-
-          const candidate = chunk.response?.candidates?.[0]
-
-          // Update usage
-          const meta = chunk.response?.usageMetadata
-          if (meta) {
-            if (meta.promptTokenCount) usage.input = meta.promptTokenCount
-            if (meta.candidatesTokenCount) usage.output = meta.candidatesTokenCount
-            if (meta.totalTokenCount) usage.total = meta.totalTokenCount
-            if (meta.thoughtsTokenCount) usage.reasoning = meta.thoughtsTokenCount
-          }
-
-          if (candidate?.finishReason) finish = candidate.finishReason
-
-          // Collect grounding metadata (arrives in the last chunk)
-          const chunks = candidate?.groundingMetadata?.groundingChunks
-          if (chunks && chunks.length > 0) {
-            sources.length = 0
-            sources.push(...chunks)
-          }
-
-          if (!candidate?.content?.parts) continue
-
-          for (const part of candidate.content.parts) {
-            // ── Thought parts → reasoning events ──
-            if (part.thought && part.text !== undefined) {
-              if (!reasoning) {
-                ctrl.enqueue({ type: "reasoning-start", id: "reasoning-0" })
-                reasoning = true
-              }
+        try {
+          for await (const chunk of iter) {
+            if (first && chunk.traceId) {
               ctrl.enqueue({
-                type: "reasoning-delta",
-                id: "reasoning-0",
-                delta: part.text,
+                type: "response-metadata",
+                id: chunk.traceId,
+                modelId: chunk.response?.modelVersion,
               })
-              continue
+              first = false
             }
 
-            // ── Function call ──
-            if (part.functionCall) {
-              // End reasoning before tool calls
-              if (reasoning) {
-                const sig = findLastSignature(candidate.content.parts, part)
-                ctrl.enqueue({
-                  type: "reasoning-end",
-                  id: "reasoning-0",
-                  providerMetadata: sig ? { "code-assist": { thoughtSignature: sig } } : undefined,
-                })
-                reasoning = false
-              }
+            const candidate = chunk.response?.candidates?.[0]
 
-              const id = generateId()
-              const name = part.functionCall.name
-              const args = JSON.stringify(part.functionCall.args ?? {})
-
-              ctrl.enqueue({ type: "tool-input-start", id, toolName: name })
-              ctrl.enqueue({ type: "tool-input-delta", id, delta: args })
-              ctrl.enqueue({ type: "tool-input-end", id })
-              ctrl.enqueue({
-                type: "tool-call",
-                toolCallId: id,
-                toolName: name,
-                input: args,
-                providerMetadata: part.thoughtSignature
-                  ? { "code-assist": { thoughtSignature: part.thoughtSignature } }
-                  : undefined,
-              })
-              hasCalls = true
-              continue
+            // Update usage
+            const meta = chunk.response?.usageMetadata
+            if (meta) {
+              if (meta.promptTokenCount) usage.input = meta.promptTokenCount
+              if (meta.candidatesTokenCount) usage.output = meta.candidatesTokenCount
+              if (meta.totalTokenCount) usage.total = meta.totalTokenCount
+              if (meta.thoughtsTokenCount) usage.reasoning = meta.thoughtsTokenCount
             }
 
-            // ── Regular text ──
-            if (part.text !== undefined) {
-              // End reasoning before text
-              if (reasoning) {
-                const sig = findLastSignature(candidate.content.parts, part)
+            if (candidate?.finishReason) finish = candidate.finishReason
+
+            // Collect grounding metadata (arrives in the last chunk)
+            const chunks = candidate?.groundingMetadata?.groundingChunks
+            if (chunks && chunks.length > 0) {
+              sources.length = 0
+              sources.push(...chunks)
+            }
+
+            if (!candidate?.content?.parts) continue
+
+            for (const part of candidate.content.parts) {
+              // ── Thought parts → reasoning events ──
+              if (part.thought && part.text !== undefined) {
+                if (!reasoning) {
+                  ctrl.enqueue({ type: "reasoning-start", id: "reasoning-0" })
+                  reasoning = true
+                }
                 ctrl.enqueue({
-                  type: "reasoning-end",
+                  type: "reasoning-delta",
                   id: "reasoning-0",
-                  providerMetadata: sig ? { "code-assist": { thoughtSignature: sig } } : undefined,
+                  delta: part.text,
                 })
-                reasoning = false
+                continue
               }
 
-              if (!text) {
-                ctrl.enqueue({ type: "text-start", id: "txt-0" })
-                text = true
+              // ── Function call ──
+              if (part.functionCall) {
+                // End reasoning before tool calls
+                if (reasoning) {
+                  const sig = findLastSignature(candidate.content.parts, part)
+                  ctrl.enqueue({
+                    type: "reasoning-end",
+                    id: "reasoning-0",
+                    providerMetadata: sig ? { "code-assist": { thoughtSignature: sig } } : undefined,
+                  })
+                  reasoning = false
+                }
+
+                const id = generateId()
+                const name = part.functionCall.name
+                const args = JSON.stringify(part.functionCall.args ?? {})
+
+                ctrl.enqueue({ type: "tool-input-start", id, toolName: name })
+                ctrl.enqueue({ type: "tool-input-delta", id, delta: args })
+                ctrl.enqueue({ type: "tool-input-end", id })
+                ctrl.enqueue({
+                  type: "tool-call",
+                  toolCallId: id,
+                  toolName: name,
+                  input: args,
+                  providerMetadata: part.thoughtSignature
+                    ? { "code-assist": { thoughtSignature: part.thoughtSignature } }
+                    : undefined,
+                })
+                hasCalls = true
+                continue
               }
-              ctrl.enqueue({ type: "text-delta", id: "txt-0", delta: part.text })
+
+              // ── Regular text ──
+              if (part.text !== undefined) {
+                // End reasoning before text
+                if (reasoning) {
+                  const sig = findLastSignature(candidate.content.parts, part)
+                  ctrl.enqueue({
+                    type: "reasoning-end",
+                    id: "reasoning-0",
+                    providerMetadata: sig ? { "code-assist": { thoughtSignature: sig } } : undefined,
+                  })
+                  reasoning = false
+                }
+
+                if (!text) {
+                  ctrl.enqueue({ type: "text-start", id: "txt-0" })
+                  text = true
+                }
+                ctrl.enqueue({ type: "text-delta", id: "txt-0", delta: part.text })
+              }
             }
           }
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            // Expected: User aborted the request. Skip flush logic.
+            return
+          }
+          ctrl.error(error)
+          return
         }
 
         // Flush
@@ -266,6 +280,11 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
             totalTokens: usage.total || undefined,
             reasoningTokens: usage.reasoning || undefined,
           },
+          providerMetadata: usage.reasoning !== undefined ? {
+            "code-assist": {
+              thoughtsTokenCount: usage.reasoning,
+            },
+          } : undefined,
         })
         ctrl.close()
       },

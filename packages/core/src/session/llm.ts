@@ -182,8 +182,13 @@ export namespace LLM {
 
     return streamText({
       onError(error) {
+        const err = error.error
+        if (err instanceof DOMException && err.name === "AbortError") {
+          l.info("stream aborted", { error: err })
+          return
+        }
         l.error("stream error", {
-          error: error.error,
+          error: err,
         })
       },
       async experimental_repairToolCall(failed) {
@@ -220,7 +225,9 @@ export namespace LLM {
         isEnabled: true,
         metadata: {
           langfuseTraceId: input.sessionID,
-          sessionID: input.sessionID,
+          sessionId: input.sessionID,
+          agentName: input.agent.name,
+          agentMode: input.agent.mode,
         },
       },
       headers: {

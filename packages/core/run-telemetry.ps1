@@ -4,9 +4,13 @@
 # Grafana UI: https://grafana.smartnest.info
 # ──────────────────────────────────────────────────────────────────────────────
 
-$LANGFUSE_SECRET_KEY="sk-lf-896ebbdb-d1b2-4741-87c7-cdfe1eb5e35d"
-$LANGFUSE_PUBLIC_KEY="pk-lf-808022c3-a0f6-43ab-b403-3a016942fe69"
+$LANGFUSE_SECRET_KEY="sk-lf-b97c9296-e049-487d-a360-f5e83ca21afc"
+$LANGFUSE_PUBLIC_KEY="pk-lf-70be6b53-e130-4b5a-bafe-b4d4cf232215"
 $LANGFUSE_BASE_URL="https://langfuse.smartnest.info"
+
+# $LANGFUSE_SECRET_KEY="sk-lf-896ebbdb-d1b2-4741-87c7-cdfe1eb5e35d"
+# $LANGFUSE_PUBLIC_KEY="pk-lf-808022c3-a0f6-43ab-b403-3a016942fe69"
+# $LANGFUSE_BASE_URL="https://langfuse.smartnest.info"
 
 # Build Basic Auth header for OpenTelemetry
 $Bytes = [System.Text.Encoding]::UTF8.GetBytes("${LANGFUSE_PUBLIC_KEY}:${LANGFUSE_SECRET_KEY}")
@@ -51,4 +55,4 @@ Write-Host "  Perfetto: $(if ($env:LITEAI_PERFETTO_TRACE) { 'enabled' } else { '
 Write-Host ""
 
 # Run the dev script from package.json
-bun run dev
+bun --inspect-wait run dev

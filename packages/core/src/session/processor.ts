@@ -22,6 +22,13 @@ export namespace SessionProcessor {
         ...streamInput,
         onSystem,
       })
+      // Mute dangling promises to prevent UnhandledPromiseRejections on abort
+      stream.text?.catch(() => {})
+      stream.usage?.catch(() => {})
+      stream.finishReason?.catch(() => {})
+      stream.warnings?.catch(() => {})
+      stream.steps?.catch(() => {})
+
       onStreamResult?.(stream)
       yield { type: "start", kind: "session" }
       for await (const value of stream.fullStream) {

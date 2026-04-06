@@ -1,5 +1,6 @@
 import { describe, expect, mock, test } from "bun:test"
 import type { Provider } from "../../../src/provider/provider"
+import { ModelID, ProviderID } from "../../../src/provider/schema"
 import { EventPersister } from "../../../src/session/engine/persister"
 import type { Message } from "../../../src/session/message"
 import { MessageID, SessionID } from "../../../src/session/schema"
@@ -21,29 +22,29 @@ mock.module("../../bus", () => ({
 describe("EventPersister AbortError handling", () => {
   test("should catch AbortError without marking assistant message as errored", async () => {
     const sessionID = SessionID.make("test")
-    const model: Provider.Model = {
-      providerID: "test" as any,
-      modelID: "test" as any,
+    const model = {
+      providerID: ProviderID.make("test"),
+      modelID: ModelID.make("test"),
       id: "test",
       name: "test",
       inputTokens: 0,
       outputTokens: 0,
-    } as any
+    } as unknown as Provider.Model
     const abort = new AbortController()
 
-    const assistantMessage: Message.Assistant = {
+    const assistantMessage = {
       id: MessageID.ascending(),
       parentID: MessageID.ascending(),
       sessionID,
-      role: "assistant",
+      role: "assistant" as const,
       agent: "test",
       mode: "test",
-      providerID: "test" as any,
-      modelID: "test" as any,
+      providerID: ProviderID.make("test"),
+      modelID: ModelID.make("test"),
       time: { created: Date.now() },
       cost: 0,
       tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
-    } as any
+    } as unknown as Message.Assistant
 
     const persister = new EventPersister(assistantMessage, sessionID, model, abort.signal)
 

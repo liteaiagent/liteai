@@ -366,6 +366,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         // The executor monitors tool start/delta/call/result/error events
         // and maintains concurrency state without intercepting the event flow.
         toolExecutor.processEvent(event)
+
+        if (event.type === "error" && event.kind === "stream") {
+          throw event.error
+        }
+
         yield event
       }
     } catch (streamError: unknown) {
