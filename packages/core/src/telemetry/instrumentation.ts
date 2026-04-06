@@ -21,6 +21,7 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "
 import type { Info } from "../config/schema"
 import { Installation } from "../installation"
 import { Log } from "../util/log"
+import { getOtlpLogExporters, getOtlpReaders } from "./factories"
 import { initializePerfettoTracing } from "./perfetto"
 
 const log = Log.create({ service: "telemetry" })
@@ -42,205 +43,18 @@ function telemetryTimeout(ms: number, message: string): Promise<never> {
   })
 }
 
-function parseExporterTypes(value: string | undefined): string[] {
-  return (value || "")
-    .trim()
-    .split(",")
-    .filter(Boolean)
-    .map((t) => t.trim())
-    .filter((t) => t !== "none")
-}
 
-async function getOtlpReaders() {
-  const exporterTypes = parseExporterTypes(process.env.OTEL_METRICS_EXPORTER)
-  const exportInterval = parseInt(
-    process.env.OTEL_METRIC_EXPORT_INTERVAL || DEFAULT_METRICS_EXPORT_INTERVAL_MS.toString(),
-    10,
-  )
 
-  const exporters = []
-  for (const exporterType of exporterTypes) {
-    if (exporterType === "console") {
-      exporters.push(new ConsoleMetricExporter())
-    } else if (exporterType === "otlp") {
-      const protocol =
-        process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL?.trim() || process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
-
-      switch (protocol) {
-        case "http/json": {
-          const { OTLPMetricExporter } = await import("@opentelemetry/exporter-metrics-otlp-http")
-          exporters.push(new DiagnosticMetricExporter(new OTLPMetricExporter(), "otlp-metrics"))
-          break
-        }
-        case "http/protobuf": {
-          const { OTLPMetricExporter } = await import("@opentelemetry/exporter-metrics-otlp-proto")
-          exporters.push(new DiagnosticMetricExporter(new OTLPMetricExporter(), "otlp-metrics"))
-          break
-        }
-        default:
-          throw new Error(`Unknown metrics exporter protocol: ${protocol}`)
-      }
-    }
-  }
-
-  return exporters.map((exporter) => {
-    if ("export" in exporter) {
-      return new PeriodicExportingMetricReader({
-        exporter,
-        exportIntervalMillis: exportInterval,
-      })
-    }
-    return exporter as PeriodicExportingMetricReader
-  })
-}
-
-async function getOtlpLogExporters() {
-  const exporterTypes = parseExporterTypes(process.env.OTEL_LOGS_EXPORTER)
-  const protocol =
-    process.env.OTEL_EXPORTER_OTLP_LOGS_PROTOCOL?.trim() || process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
-
-  const exporters = []
-  for (const exporterType of exporterTypes) {
-    if (exporterType === "console") {
-      exporters.push(new ConsoleLogRecordExporter())
-    } else if (exporterType === "otlp") {
-      switch (protocol) {
-        case "http/json": {
-          const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-http")
-          exporters.push(new DiagnosticLogExporter(new OTLPLogExporter(), "otlp-logs"))
-          break
-        }
-        case "http/protobuf": {
-          const { OTLPLogExporter } = await import("@opentelemetry/exporter-logs-otlp-proto")
-          exporters.push(new DiagnosticLogExporter(new OTLPLogExporter(), "otlp-logs"))
-          break
-        }
-        default:
-          throw new Error(`Unknown logs exporter protocol: ${protocol}`)
-      }
-    }
-  }
-  return exporters
-}
-
-class DiagnosticMetricExporter implements PushMetricExporter {
-  private exportCount = 0
-  private successCount = 0
-  private failureCount = 0
-
-  constructor(
-    private readonly inner: PushMetricExporter,
-    private readonly label: string,
-  ) {}
-
-  async forceFlush(): Promise<void> {
-    return this.inner.forceFlush?.()
-  }
-
-  export(metrics: ResourceMetrics, resultCallback: (result: { code: number; error?: Error }) => void): void {
-    this.exportCount++
-    const batchNum = this.exportCount
-
-    const dataPointsCount = metrics.scopeMetrics.reduce((acc, sm) => acc + sm.metrics.length, 0)
-
-    log.info("metric export attempt", {
-      exporter: this.label,
-      batch: batchNum,
-      scopes: metrics.scopeMetrics.length,
-      dataPointsCount,
-    })
-
-    this.inner.export(metrics, (result) => {
-      if (result.code === 0) {
-        this.successCount++
-        log.info("metric export success", {
-          exporter: this.label,
-          batch: batchNum,
-          totalSuccess: this.successCount,
-        })
-      } else {
-        this.failureCount++
-        log.error("metric export failed", {
-          exporter: this.label,
-          batch: batchNum,
-          code: result.code,
-          error: result.error?.message,
-          totalFailures: this.failureCount,
-        })
-      }
-      resultCallback(result)
-    })
-  }
-
-  async shutdown(): Promise<void> {
-    log.info("metric exporter shutdown", {
-      exporter: this.label,
-      totalExports: this.exportCount,
-      totalSuccess: this.successCount,
-      totalFailures: this.failureCount,
-    })
-    return this.inner.shutdown()
-  }
-}
-
-class DiagnosticLogExporter implements LogRecordExporter {
-  private exportCount = 0
-  private successCount = 0
-  private failureCount = 0
-
-  constructor(
-    private readonly inner: LogRecordExporter,
-    private readonly label: string,
-  ) {}
-
-  export(logsBatch: ReadableLogRecord[], resultCallback: (result: { code: number; error?: Error }) => void): void {
-    this.exportCount++
-    const batchNum = this.exportCount
-    log.info("log export attempt", { exporter: this.label, batch: batchNum, logs: logsBatch.length })
-
-    this.inner.export(logsBatch, (result) => {
-      if (result.code === 0) {
-        this.successCount++
-        log.info("log export success", {
-          exporter: this.label,
-          batch: batchNum,
-          logs: logsBatch.length,
-          totalSuccess: this.successCount,
-        })
-      } else {
-        this.failureCount++
-        log.error("log export failed", {
-          exporter: this.label,
-          batch: batchNum,
-          logs: logsBatch.length,
-          code: result.code,
-          error: result.error?.message,
-          totalFailures: this.failureCount,
-        })
-      }
-      resultCallback(result)
-    })
-  }
-
-  async shutdown(): Promise<void> {
-    log.info("log exporter shutdown", {
-      exporter: this.label,
-      totalExports: this.exportCount,
-      totalSuccess: this.successCount,
-      totalFailures: this.failureCount,
-    })
-    return this.inner.shutdown()
-  }
-}
+let globalTelemetryConfig: Info["telemetry"] | undefined = undefined
 
 /**
  * Telemetry is ENABLED by default (opt-out model).
  * Set LITEAI_TELEMETRY_DISABLED=1 or LITEAI_TELEMETRY_DISABLED=true to opt out.
  */
 export function isTelemetryEnabled(): boolean {
-  // Explicit opt-out
-  const disabled = process.env.LITEAI_TELEMETRY_DISABLED
-  if (disabled === "1" || disabled === "true") return false
+  if (globalTelemetryConfig?.disabled !== undefined) {
+    return !globalTelemetryConfig.disabled
+  }
 
   // Enabled by default
   return true
@@ -253,66 +67,7 @@ export function registerTelemetryCleanup(handler: () => Promise<void>) {
 }
 
 export function applyConfigToEnv(config: Info) {
-  // Clear existing external process environments for LANGFUSE_/OTEL_
-  for (const key of Object.keys(process.env)) {
-    if (
-      key.startsWith("LANGFUSE_") ||
-      key.startsWith("OTEL_") ||
-      key === "LITEAI_PERFETTO_TRACE" ||
-      key === "LITEAI_TELEMETRY_DISABLED" ||
-      key === "LITEAI_ENABLE_TELEMETRY"
-    ) {
-      delete process.env[key]
-    }
-  }
-
-  // Set them from config
-  if (config.telemetry?.disabled) {
-    process.env.LITEAI_TELEMETRY_DISABLED = "1"
-  } else {
-    process.env.LITEAI_TELEMETRY_DISABLED = "0"
-  }
-
-  if (config.telemetry?.langfuse) {
-    if (config.telemetry.langfuse.publicKey) {
-      process.env.LANGFUSE_PUBLIC_KEY = config.telemetry.langfuse.publicKey
-    }
-    if (config.telemetry.langfuse.secretKey) {
-      process.env.LANGFUSE_SECRET_KEY = config.telemetry.langfuse.secretKey
-    }
-    if (config.telemetry.langfuse.baseUrl) {
-      process.env.LANGFUSE_BASEURL = config.telemetry.langfuse.baseUrl
-      process.env.LANGFUSE_HOST = config.telemetry.langfuse.baseUrl
-    }
-  }
-
-  if (config.telemetry?.otel) {
-    if (config.telemetry.otel.endpoint) {
-      process.env.OTEL_EXPORTER_OTLP_ENDPOINT = config.telemetry.otel.endpoint
-    }
-    if (config.telemetry.otel.protocol) {
-      process.env.OTEL_EXPORTER_OTLP_PROTOCOL = config.telemetry.otel.protocol
-    }
-    if (config.telemetry.otel.traceExporter) {
-      process.env.OTEL_TRACES_EXPORTER = config.telemetry.otel.traceExporter
-    }
-    if (config.telemetry.otel.metricExporter) {
-      process.env.OTEL_METRICS_EXPORTER = config.telemetry.otel.metricExporter
-    }
-    if (config.telemetry.otel.logExporter) {
-      process.env.OTEL_LOGS_EXPORTER = config.telemetry.otel.logExporter
-    }
-    if (config.telemetry.otel.exportIntervalMs !== undefined) {
-      const intervalStr = config.telemetry.otel.exportIntervalMs.toString()
-      process.env.OTEL_METRIC_EXPORT_INTERVAL = intervalStr
-      process.env.OTEL_LOGS_EXPORT_INTERVAL = intervalStr
-      process.env.OTEL_TRACES_EXPORT_INTERVAL = intervalStr
-    }
-  }
-
-  if (config.telemetry?.perfetto) {
-    process.env.LITEAI_PERFETTO_TRACE = "1"
-  }
+  globalTelemetryConfig = config.telemetry
 }
 
 // Keep explicit providers for shutdown
@@ -340,26 +95,27 @@ export async function initializeTelemetry() {
     log.error("Failed to load global config for telemetry bridge", { error })
   }
 
+  const telemetryEnabled = isTelemetryEnabled()
+
   log.info("initializing telemetry", {
-    enabled: isTelemetryEnabled(),
-    optOut: process.env.LITEAI_TELEMETRY_DISABLED,
-    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
-    protocol: process.env.OTEL_EXPORTER_OTLP_PROTOCOL,
-    tracesExporter: process.env.OTEL_TRACES_EXPORTER,
-    metricsExporter: process.env.OTEL_METRICS_EXPORTER,
-    logsExporter: process.env.OTEL_LOGS_EXPORTER,
-    langfuseBaseUrl: process.env.LANGFUSE_BASEURL ?? process.env.LANGFUSE_HOST,
-    perfetto: process.env.LITEAI_PERFETTO_TRACE,
+    enabled: telemetryEnabled,
+    optOut: globalTelemetryConfig?.disabled,
+    endpoint: globalTelemetryConfig?.otel?.endpoint,
+    protocol: globalTelemetryConfig?.otel?.protocol,
+    tracesExporter: globalTelemetryConfig?.otel?.traceExporter,
+    metricsExporter: globalTelemetryConfig?.otel?.metricExporter,
+    logsExporter: globalTelemetryConfig?.otel?.logExporter,
+    langfuseBaseUrl: globalTelemetryConfig?.langfuse?.baseUrl,
+    perfetto: globalTelemetryConfig?.perfetto,
   })
 
   // Initialize Perfetto tracing (independent of OTEL)
-  initializePerfettoTracing()
+  initializePerfettoTracing(globalTelemetryConfig?.perfetto)
 
   const readers = []
-  const telemetryEnabled = isTelemetryEnabled()
 
   if (telemetryEnabled) {
-    readers.push(...(await getOtlpReaders()))
+    readers.push(...(await getOtlpReaders(globalTelemetryConfig?.otel)))
   }
 
   const baseAttributes: Record<string, string> = {
@@ -390,7 +146,7 @@ export async function initializeTelemetry() {
   globalMeterProvider = meterProvider
 
   if (telemetryEnabled) {
-    const logExporters = await getOtlpLogExporters()
+    const logExporters = await getOtlpLogExporters(globalTelemetryConfig?.otel)
 
     if (logExporters.length > 0) {
       const loggerProvider = new LoggerProvider({
@@ -399,7 +155,8 @@ export async function initializeTelemetry() {
           (exporter) =>
             new BatchLogRecordProcessor(exporter, {
               scheduledDelayMillis: parseInt(
-                process.env.OTEL_LOGS_EXPORT_INTERVAL || DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),
+                globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ??
+                  DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),
                 10,
               ),
             }),
@@ -430,9 +187,9 @@ export async function initializeTelemetry() {
     // LangfuseSpanProcessor maps OTel spans to Langfuse's native data model
     // (Trace → Observation: Span / Generation / Event) using its own REST API
     // rather than the OTLP endpoint, giving us correct hierarchy out of the box.
-    const langfusePublicKey = process.env.LANGFUSE_PUBLIC_KEY
-    const langfuseSecretKey = process.env.LANGFUSE_SECRET_KEY
-    const langfuseBaseUrl = process.env.LANGFUSE_BASEURL ?? "https://langfuse.smartnest.info"
+    const langfusePublicKey = globalTelemetryConfig?.langfuse?.publicKey || process.env.LANGFUSE_PUBLIC_KEY
+    const langfuseSecretKey = globalTelemetryConfig?.langfuse?.secretKey || process.env.LANGFUSE_SECRET_KEY
+    const langfuseBaseUrl = globalTelemetryConfig?.langfuse?.baseUrl || "https://langfuse.smartnest.info"
 
     if (langfusePublicKey && langfuseSecretKey) {
       log.info("trace exporter configured", { type: "langfuse", baseUrl: langfuseBaseUrl })
@@ -443,12 +200,20 @@ export async function initializeTelemetry() {
         baseUrl: langfuseBaseUrl,
         flushAt: 10,
         flushInterval:
-          parseInt(process.env.OTEL_TRACES_EXPORT_INTERVAL ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(), 10) / 1000,
+          parseInt(
+            globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ??
+              DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
+            10,
+          ) / 1000,
       })
 
       const sdk = new NodeSDK({
         resource,
         spanProcessors: [langfuseProcessor],
+        // Prevent NodeSDK from trying to automatically register default metrics/logs providers
+        // which would collide with our explicit registrations above.
+        metricReaders: [],
+        logRecordProcessors: [],
       })
 
       sdk.start()
@@ -461,7 +226,7 @@ export async function initializeTelemetry() {
 
 export async function shutdownTelemetry() {
   const timeoutMs = parseInt(
-    process.env.LITEAI_TELEMETRY_SHUTDOWN_TIMEOUT_MS || process.env.LITEAI_OTEL_SHUTDOWN_TIMEOUT_MS || "2000",
+    globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "2000",
     10,
   )
   log.info("shutting down telemetry", { timeoutMs })
@@ -487,7 +252,7 @@ export async function shutdownTelemetry() {
 
 export async function flushTelemetry(): Promise<void> {
   const timeoutMs = parseInt(
-    process.env.LITEAI_TELEMETRY_FLUSH_TIMEOUT_MS || process.env.LITEAI_OTEL_FLUSH_TIMEOUT_MS || "5000",
+    globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "5000",
     10,
   )
   log.info("flushing telemetry", { timeoutMs })

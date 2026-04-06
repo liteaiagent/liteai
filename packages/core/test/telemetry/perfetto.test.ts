@@ -29,10 +29,9 @@ describe("perfetto", () => {
   })
 
   test("enable and track spans without missing timestamps or failing", () => {
-    process.env.LITEAI_PERFETTO_TRACE = "1"
-    initializePerfettoTracing()
+    initializePerfettoTracing(true, "test-session")
 
-    // We expect the tracing to be enabled due to the env var
+    // We expect the tracing to be enabled due to explicit argument
     expect(isPerfettoTracingEnabled()).toBe(true)
 
     // Interaction span validation

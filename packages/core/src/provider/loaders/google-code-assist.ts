@@ -23,6 +23,10 @@ const FALLBACK_MODEL_IDS = [
  * Uses the stored OAuth credentials to authenticate via the Code Assist client.
  */
 async function fetchAvailableModels(): Promise<string[] | undefined> {
+  // TODO: Uncomment and use the endpoint once the 403 permission issue is fixed.
+  return undefined
+
+  /*
   const auth = await Auth.get("google-code-assist")
   if (!auth || auth.type !== "oauth") return undefined
 
@@ -66,6 +70,7 @@ async function fetchAvailableModels(): Promise<string[] | undefined> {
     log.warn("failed to fetch available models from Code Assist API, using fallback", { error: err })
     return undefined
   }
+  */
 }
 
 export async function googleCodeAssist(

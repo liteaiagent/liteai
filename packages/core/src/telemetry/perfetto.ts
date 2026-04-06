@@ -49,23 +49,16 @@ function generateSpanId(): string {
   return `span_${++spanIdCounter}`
 }
 
-export function initializePerfettoTracing(): void {
-  const envValue = process.env.LITEAI_PERFETTO_TRACE
-
-  if (envValue && envValue !== "0" && envValue !== "false") {
+export function initializePerfettoTracing(configEnabled?: boolean, explicitSessionId?: string): void {
+  if (configEnabled) {
     isEnabled = true
     startTimeMs = Date.now()
 
     // In liteai, we output to ~/.liteai/traces
-    // Random ID for now to mock session id, in a real env we import sessionId
-    const sessionId = process.env.LITEAI_SESSION_ID || `session-${Date.now()}`
+    const sessionId = explicitSessionId || `session-${Date.now()}`
     const tracesDir = join(homedir(), ".liteai", "traces")
 
-    if (envValue === "1" || envValue.toLowerCase() === "true") {
-      tracePath = join(tracesDir, `trace-${sessionId}.json`)
-    } else {
-      tracePath = envValue
-    }
+    tracePath = join(tracesDir, `trace-${sessionId}.json`)
 
     process.on("beforeExit", () => {
       void writePerfettoTrace()
