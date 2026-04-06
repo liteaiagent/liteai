@@ -223,6 +223,14 @@ export namespace LLM {
       abortSignal: input.abort,
       experimental_telemetry: {
         isEnabled: true,
+        // Explicitly enable input/output recording so the AI SDK emits
+        // ai.prompt.messages and ai.response.text OTel attributes that the
+        // LangfuseSpanProcessor reads to populate Input and Output fields.
+        // NOTE: do NOT set functionId — it renames the span from the standard
+        // "ai.streamText" name to whatever you provide, which causes the
+        // LangfuseSpanProcessor to discard the span entirely (it filters by name).
+        recordInputs: true,
+        recordOutputs: true,
         metadata: {
           // Groups all Traces within this conversation into one Langfuse Session
           sessionId: input.sessionID,
