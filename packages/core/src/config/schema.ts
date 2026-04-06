@@ -719,11 +719,25 @@ export const Info = z
       .describe(
         "Team-shared plugin marketplaces (name → source). Added marketplaces become available for plugin install.",
       ),
+    telemetry: z
+      .object({
+        disabled: z
+          .boolean()
+          .optional()
+          .describe(
+            "Set to true to opt out of all telemetry (traces, metrics, logs). " +
+              "Telemetry is enabled by default. " +
+              "Can also be controlled via the LITEAI_TELEMETRY_DISABLED env var.",
+          ),
+      })
+      .optional()
+      .describe("Telemetry settings. Telemetry is enabled by default — set disabled:true to opt out."),
   })
   .strict()
   .meta({
     ref: "Config",
   })
+
 
 export type Info = z.output<typeof Info>
 

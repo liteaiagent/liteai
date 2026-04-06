@@ -110,6 +110,14 @@ process.on("unhandledRejection", (reason, promise) => {
 
 await initializeTelemetry()
 
+log.info("@liteai/core starting", {
+  telemetry: process.env.LITEAI_TELEMETRY_DISABLED === "1" ? "disabled (opt-out)" : "enabled (default)",
+  traces: `LangfuseSpanProcessor → ${process.env.LANGFUSE_BASEURL}`,
+  metrics: process.env.OTEL_METRICS_EXPORTER || "disabled",
+  logs: process.env.OTEL_LOGS_EXPORTER || "disabled",
+  perfetto: process.env.LITEAI_PERFETTO_TRACE ? "enabled" : "disabled",
+})
+
 // ─── Initialize capabilities ────────────────────────────────────────────────
 
 if (args.hosted) {

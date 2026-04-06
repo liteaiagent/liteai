@@ -15,6 +15,9 @@ describe("instrumentation", () => {
   beforeEach(() => {
     originalEnv = process.env
     process.env = { ...originalEnv }
+    // Clear all telemetry env vars for a clean slate each test
+    delete process.env.LITEAI_TELEMETRY_DISABLED
+    delete process.env.LITEAI_ENABLE_TELEMETRY
     spyOn(perfetto, "initializePerfettoTracing").mockImplementation(() => {})
   })
 
@@ -23,44 +26,69 @@ describe("instrumentation", () => {
     mock.restore()
   })
 
-  test("telemetry toggles correctly based on LITEAI_ENABLE_TELEMETRY", () => {
-    process.env.LITEAI_ENABLE_TELEMETRY = "1"
-    expect(isTelemetryEnabled()).toBe(true)
+  describe("isTelemetryEnabled (opt-out model)", () => {
+    test("is enabled by default (no env vars set)", () => {
+      expect(isTelemetryEnabled()).toBe(true)
+    })
 
-    process.env.LITEAI_ENABLE_TELEMETRY = "false"
-    expect(isTelemetryEnabled()).toBe(false)
+    test("LITEAI_TELEMETRY_DISABLED=1 disables telemetry", () => {
+      process.env.LITEAI_TELEMETRY_DISABLED = "1"
+      expect(isTelemetryEnabled()).toBe(false)
+    })
 
-    process.env.LITEAI_ENABLE_TELEMETRY = "0"
-    expect(isTelemetryEnabled()).toBe(false)
+    test("LITEAI_TELEMETRY_DISABLED=true disables telemetry", () => {
+      process.env.LITEAI_TELEMETRY_DISABLED = "true"
+      expect(isTelemetryEnabled()).toBe(false)
+    })
+
+    test("LITEAI_TELEMETRY_DISABLED=0 does not disable telemetry", () => {
+      process.env.LITEAI_TELEMETRY_DISABLED = "0"
+      expect(isTelemetryEnabled()).toBe(true)
+    })
+
+    test("legacy LITEAI_ENABLE_TELEMETRY=0 disables telemetry (backward compat)", () => {
+      process.env.LITEAI_ENABLE_TELEMETRY = "0"
+      expect(isTelemetryEnabled()).toBe(false)
+    })
+
+    test("legacy LITEAI_ENABLE_TELEMETRY=false disables telemetry (backward compat)", () => {
+      process.env.LITEAI_ENABLE_TELEMETRY = "false"
+      expect(isTelemetryEnabled()).toBe(false)
+    })
+
+    test("legacy LITEAI_ENABLE_TELEMETRY=1 does not override enabled default", () => {
+      process.env.LITEAI_ENABLE_TELEMETRY = "1"
+      expect(isTelemetryEnabled()).toBe(true)
+    })
+
+    test("LITEAI_TELEMETRY_DISABLED takes precedence over legacy opt-in var", () => {
+      process.env.LITEAI_TELEMETRY_DISABLED = "1"
+      process.env.LITEAI_ENABLE_TELEMETRY = "1"
+      expect(isTelemetryEnabled()).toBe(false)
+    })
   })
 
-  test("initializeTelemetry sets global providers when enabled", async () => {
-    process.env.LITEAI_ENABLE_TELEMETRY = "1"
+  test("initializeTelemetry initializes Perfetto and providers", async () => {
     process.env.OTEL_METRICS_EXPORTER = "none"
     process.env.OTEL_LOGS_EXPORTER = "none"
     process.env.OTEL_TRACES_EXPORTER = "none"
 
-    // Test initialization without exporters just to ensure providers are created without connecting to something real
     await initializeTelemetry()
 
-    // Not directly checking global providers internal state inside OTEL API in bun due to isolation,
-    // but we can check if it resolves properly and initializes Perfetto
     expect(perfetto.initializePerfettoTracing).toHaveBeenCalled()
     expect(isTelemetryEnabled()).toBe(true)
 
-    // We register a dummy cleanup
+    // Cleanup handler registration works
     let cleaned = false
     registerTelemetryCleanup(async () => {
       cleaned = true
     })
 
     await shutdownTelemetry()
-    // Test that the cleanup got executed
     expect(cleaned).toBe(true)
   })
 
   test("flush works safely", async () => {
-    // Just ensuring no unhandled promises
     await flushTelemetry()
     expect(true).toBe(true)
   })

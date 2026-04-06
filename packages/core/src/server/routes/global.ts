@@ -8,6 +8,7 @@ import { Installation } from "@/installation"
 import { Config } from "../../config/config"
 import { Global } from "../../global"
 import { Instance } from "../../project/instance"
+import { isTelemetryEnabled } from "../../telemetry/instrumentation"
 import { lazy } from "../../util/lazy"
 import { Log } from "../../util/log"
 import { HEARTBEAT_INTERVAL_MS } from "../constants"
@@ -475,6 +476,110 @@ export const GlobalRoutes = lazy(() =>
           state: Global.Path.state,
           config: Global.Path.config,
         })
+      },
+    )
+    // ── Telemetry settings ────────────────────────────────────────────────────
+    .get(
+      "/telemetry",
+      describeRoute({
+        summary: "Get telemetry settings",
+        description:
+          "Retrieve the current telemetry enabled/disabled status. " +
+          "Telemetry is enabled by default; clients can opt out via PATCH /telemetry.",
+        operationId: "telemetry.get",
+        responses: {
+          200: {
+            description: "Current telemetry status",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    enabled: z.boolean().describe("Whether telemetry is currently active"),
+                    source: z
+                      .enum(["env", "config", "default"])
+                      .describe("Where the setting was read from"),
+                  }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        const envDisabled =
+          process.env.LITEAI_TELEMETRY_DISABLED === "1" ||
+          process.env.LITEAI_TELEMETRY_DISABLED === "true" ||
+          process.env.LITEAI_ENABLE_TELEMETRY === "0" ||
+          process.env.LITEAI_ENABLE_TELEMETRY === "false"
+
+        const hasEnvOverride =
+          process.env.LITEAI_TELEMETRY_DISABLED !== undefined ||
+          process.env.LITEAI_ENABLE_TELEMETRY !== undefined
+
+        if (hasEnvOverride) {
+          return c.json({ enabled: !envDisabled, source: "env" as const })
+        }
+
+        const globalConfig = await Config.getGlobal()
+        if (globalConfig.telemetry?.disabled !== undefined) {
+          return c.json({ enabled: !globalConfig.telemetry.disabled, source: "config" as const })
+        }
+
+        return c.json({ enabled: isTelemetryEnabled(), source: "default" as const })
+      },
+    )
+    .patch(
+      "/telemetry",
+      describeRoute({
+        summary: "Update telemetry settings",
+        description:
+          "Enable or disable telemetry. The setting is persisted to the global config file " +
+          "and takes effect immediately. Note: if LITEAI_TELEMETRY_DISABLED is set as an " +
+          "environment variable, it takes precedence over this setting.",
+        operationId: "telemetry.update",
+        responses: {
+          200: {
+            description: "Updated telemetry status",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    enabled: z.boolean(),
+                    source: z.enum(["env", "config", "default"]),
+                  }),
+                ),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      validator(
+        "json",
+        z.object({
+          enabled: z.boolean().describe("Set to true to enable telemetry, false to disable (opt-out)"),
+        }),
+      ),
+      async (c) => {
+        const { enabled } = c.req.valid("json")
+
+        // Persist to global config so it survives restarts
+        await Config.updateGlobal({ telemetry: { disabled: !enabled } })
+
+        // Apply immediately for the current process lifetime
+        if (!enabled) {
+          process.env.LITEAI_TELEMETRY_DISABLED = "1"
+        } else {
+          delete process.env.LITEAI_TELEMETRY_DISABLED
+          // Also clear legacy opt-in var if it was blocking telemetry
+          if (process.env.LITEAI_ENABLE_TELEMETRY === "0" || process.env.LITEAI_ENABLE_TELEMETRY === "false") {
+            delete process.env.LITEAI_ENABLE_TELEMETRY
+          }
+        }
+
+        log.info("telemetry setting updated", { enabled })
+
+        return c.json({ enabled, source: "config" as const })
       },
     ),
 )

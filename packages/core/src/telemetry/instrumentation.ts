@@ -234,12 +234,22 @@ class DiagnosticLogExporter implements LogRecordExporter {
 }
 
 
-export function isTelemetryEnabled() {
-  return Boolean(
-    process.env.LITEAI_ENABLE_TELEMETRY &&
-      process.env.LITEAI_ENABLE_TELEMETRY !== "0" &&
-      process.env.LITEAI_ENABLE_TELEMETRY !== "false",
-  )
+/**
+ * Telemetry is ENABLED by default (opt-out model).
+ * Set LITEAI_TELEMETRY_DISABLED=1 or LITEAI_TELEMETRY_DISABLED=true to opt out.
+ * Legacy LITEAI_ENABLE_TELEMETRY=0/false also disables telemetry for backward compat.
+ */
+export function isTelemetryEnabled(): boolean {
+  // Explicit opt-out
+  const disabled = process.env.LITEAI_TELEMETRY_DISABLED
+  if (disabled === "1" || disabled === "true") return false
+
+  // Legacy backward-compat: if old var is explicitly set to false/0, respect it
+  const legacyEnable = process.env.LITEAI_ENABLE_TELEMETRY
+  if (legacyEnable === "0" || legacyEnable === "false") return false
+
+  // Enabled by default
+  return true
 }
 
 const cleanupHandlers: Array<() => Promise<void>> = []
@@ -262,13 +272,30 @@ export async function initializeTelemetry() {
 
   log.info("initializing telemetry", {
     enabled: isTelemetryEnabled(),
+    optOut: process.env.LITEAI_TELEMETRY_DISABLED,
     endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
     protocol: process.env.OTEL_EXPORTER_OTLP_PROTOCOL,
     tracesExporter: process.env.OTEL_TRACES_EXPORTER,
     metricsExporter: process.env.OTEL_METRICS_EXPORTER,
     logsExporter: process.env.OTEL_LOGS_EXPORTER,
+    langfuseBaseUrl: process.env.LANGFUSE_BASEURL ?? process.env.LANGFUSE_HOST,
     perfetto: process.env.LITEAI_PERFETTO_TRACE,
   })
+
+  // ── Apply persisted telemetry preference from global config ──────────────
+  // Do this before evaluating isTelemetryEnabled() so the setting persisted
+  // by the web/VS Code telemetry toggle is honoured at startup.
+  // We import lazily to avoid a hard circular dependency between telemetry
+  // and the config module — both are initialized very early in main.ts.
+  try {
+    const { getGlobal } = await import("../config/loader")
+    const globalConfig = await getGlobal()
+    if (globalConfig.telemetry?.disabled === true && !process.env.LITEAI_TELEMETRY_DISABLED) {
+      process.env.LITEAI_TELEMETRY_DISABLED = "1"
+    }
+  } catch {
+    // Config not yet available — fall back to env-only decision
+  }
 
   // Initialize Perfetto tracing (independent of OTEL)
   initializePerfettoTracing()
@@ -284,6 +311,7 @@ export async function initializeTelemetry() {
     [ATTR_SERVICE_NAME]: "liteai",
     [ATTR_SERVICE_VERSION]: Installation.VERSION,
   }
+
 
   const baseResource = resourceFromAttributes(baseAttributes)
   const osResource = resourceFromAttributes(osDetector.detect().attributes || {})
@@ -350,15 +378,15 @@ export async function initializeTelemetry() {
     // rather than the OTLP endpoint, giving us correct hierarchy out of the box.
     const langfusePublicKey = process.env.LANGFUSE_PUBLIC_KEY
     const langfuseSecretKey = process.env.LANGFUSE_SECRET_KEY
-    const langfuseBaseUrl = process.env.LANGFUSE_BASEURL ?? process.env.LANGFUSE_HOST
+    const langfuseBaseUrl = process.env.LANGFUSE_BASEURL ?? "https://langfuse.smartnest.info"
 
     if (langfusePublicKey && langfuseSecretKey) {
-      log.info("trace exporter configured", { type: "langfuse", baseUrl: langfuseBaseUrl ?? "cloud.langfuse.com" })
+      log.info("trace exporter configured", { type: "langfuse", baseUrl: langfuseBaseUrl })
 
       const langfuseProcessor = new LangfuseSpanProcessor({
         publicKey: langfusePublicKey,
         secretKey: langfuseSecretKey,
-        ...(langfuseBaseUrl ? { baseUrl: langfuseBaseUrl } : {}),
+        baseUrl: langfuseBaseUrl,
         flushAt: 10,
         flushInterval: parseInt(process.env.OTEL_TRACES_EXPORT_INTERVAL ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(), 10) / 1000,
       })
@@ -377,7 +405,7 @@ export async function initializeTelemetry() {
 }
 
 export async function shutdownTelemetry() {
-  const timeoutMs = parseInt(process.env.LITEAI_OTEL_SHUTDOWN_TIMEOUT_MS || "2000", 10)
+  const timeoutMs = parseInt(process.env.LITEAI_TELEMETRY_SHUTDOWN_TIMEOUT_MS || process.env.LITEAI_OTEL_SHUTDOWN_TIMEOUT_MS || "2000", 10)
   log.info("shutting down telemetry", { timeoutMs })
 
   try {
@@ -400,7 +428,7 @@ export async function shutdownTelemetry() {
 }
 
 export async function flushTelemetry(): Promise<void> {
-  const timeoutMs = parseInt(process.env.LITEAI_OTEL_FLUSH_TIMEOUT_MS || "5000", 10)
+  const timeoutMs = parseInt(process.env.LITEAI_TELEMETRY_FLUSH_TIMEOUT_MS || process.env.LITEAI_OTEL_FLUSH_TIMEOUT_MS || "5000", 10)
   log.info("flushing telemetry", { timeoutMs })
 
   try {
