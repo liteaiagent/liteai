@@ -1,3 +1,4 @@
+import { trace } from "@opentelemetry/api"
 import { ulid } from "ulid"
 import z from "zod"
 import { PermissionNext } from "@/permission/next"
@@ -301,6 +302,58 @@ export const LoopInput = z.object({
 //   tombstone   → flush persister to clean up orphaned message
 
 async function runSession(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
+  const tracer = trace.getTracer("liteai")
+
+  // Resolve the first user message text to use as the trace name/input in Langfuse
+  const msgs = await Message.filterCompacted(Message.stream(input.sessionID))
+  const firstUserText = msgs
+    .findLast((m) => m.info.role === "user")
+    ?.parts.filter((p) => p.type === "text")
+    .map((p) => (p as { text: string }).text)
+    .join(" ")
+    .slice(0, 200)
+
+  return tracer.startActiveSpan(
+    // Use the user message as the trace name so it's readable in the Langfuse dashboard
+    firstUserText ?? "liteai.session",
+    {
+      attributes: {
+        // ── Langfuse Session grouping ─────────────────────────────────────────
+        // This is the canonical OTel attribute Langfuse uses to group Traces into Sessions
+        "langfuse.session.id": input.sessionID,
+        // ── Standard trace-level I/O ─────────────────────────────────────────
+        // Langfuse renders input.value / output.value as the top-level I/O panels
+        "input.value": firstUserText ?? "",
+        // ── Auxiliary metadata ────────────────────────────────────────────────
+        "session.title": input.session.title ?? "",
+      },
+    },
+    async (sessionSpan) => {
+      try {
+        const result = await runSessionInner(input)
+        return result
+      } catch (e) {
+        sessionSpan.recordException(e as Error)
+        throw e
+      } finally {
+        // Capture the last assistant message as the trace output
+        const finalMsgs = await Message.filterCompacted(Message.stream(input.sessionID))
+        const lastAssistant = finalMsgs.findLast((m) => m.info.role === "assistant")
+        const outputText = lastAssistant?.parts
+          .filter((p) => p.type === "text")
+          .map((p) => (p as { text: string }).text)
+          .join(" ")
+          .slice(0, 500)
+        if (outputText) {
+          sessionSpan.setAttribute("output.value", outputText)
+        }
+        sessionSpan.end()
+      }
+    },
+  )
+}
+
+async function runSessionInner(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
   const isAbortError = (e: unknown): e is DOMException => e instanceof DOMException && e.name === "AbortError"
   const { sessionID, session, abort } = input
 

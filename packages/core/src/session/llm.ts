@@ -224,10 +224,12 @@ export namespace LLM {
       experimental_telemetry: {
         isEnabled: true,
         metadata: {
-          langfuseTraceId: input.sessionID,
+          // Groups all Traces within this conversation into one Langfuse Session
           sessionId: input.sessionID,
-          agentName: input.agent.name,
-          agentMode: input.agent.mode,
+          // Use the langfuse.observation.metadata.* prefix so these appear as
+          // filterable fields in the Langfuse UI (not buried in catch-all metadata)
+          "langfuse.observation.metadata.agentName": input.agent.name,
+          "langfuse.observation.metadata.agentMode": input.agent.mode,
         },
       },
       headers: {

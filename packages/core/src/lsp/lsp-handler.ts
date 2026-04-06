@@ -164,7 +164,7 @@ export function startLSPHandler() {
         maxOutputTokens: 256,
         temperature: 0,
         abortSignal: AbortSignal.timeout(8_000),
-        experimental_telemetry: { isEnabled: true },
+        experimental_telemetry: { isEnabled: true, functionId: "lsp.inline-completion" },
       })
 
       const text = result.text.trim()

@@ -1,5 +1,8 @@
 import { type Tool as AITool, asSchema, jsonSchema, type ToolCallOptions, tool } from "ai"
+import { trace } from "@opentelemetry/api"
 import z from "zod"
+
+const tracer = trace.getTracer("liteai")
 import { PermissionNext } from "@/permission/next"
 import type { Tool } from "@/tool/tool"
 import { Truncate } from "@/tool/truncation"
@@ -113,7 +116,17 @@ export async function resolveTools(input: {
             args,
           },
         )
-        const result = await item.execute(args, ctx)
+        const result = await tracer.startActiveSpan(item.id, async (toolSpan) => {
+          // Set I/O so Langfuse renders them in the observation detail panels
+          toolSpan.setAttribute("input.value", JSON.stringify(args))
+          try {
+            const r = await item.execute(args, ctx)
+            toolSpan.setAttribute("output.value", r.output ?? "")
+            return r
+          } finally {
+            toolSpan.end()
+          }
+        })
         const output = {
           ...result,
           attachments: result.attachments?.map((attachment) => ({
@@ -190,7 +203,21 @@ export async function resolveTools(input: {
         always: ["*"],
       })
 
-      const result = await execute(args, opts)
+      const result = await tracer.startActiveSpan(key, async (toolSpan) => {
+        // Set I/O so Langfuse renders them in the observation detail panels
+        toolSpan.setAttribute("input.value", JSON.stringify(args))
+        try {
+          const r = await execute(args, opts)
+          const text = r.content
+            .filter((c: { type: string }) => c.type === "text")
+            .map((c: { text?: string }) => c.text ?? "")
+            .join("\n")
+          toolSpan.setAttribute("output.value", text)
+          return r
+        } finally {
+          toolSpan.end()
+        }
+      })
 
       await Plugin.trigger(
         "tool.execute.after",

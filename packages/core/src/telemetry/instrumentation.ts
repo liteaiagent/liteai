@@ -1,4 +1,4 @@
-import { DiagConsoleLogger, DiagLogLevel, diag, metrics, trace } from "@opentelemetry/api"
+import { DiagConsoleLogger, DiagLogLevel, diag, metrics } from "@opentelemetry/api"
 import { logs } from "@opentelemetry/api-logs"
 import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
 import {
@@ -15,13 +15,8 @@ import {
   type PushMetricExporter,
   type ResourceMetrics,
 } from "@opentelemetry/sdk-metrics"
-import {
-  BasicTracerProvider,
-  BatchSpanProcessor,
-  ConsoleSpanExporter,
-  type ReadableSpan,
-  type SpanExporter,
-} from "@opentelemetry/sdk-trace-base"
+import { NodeSDK } from "@opentelemetry/sdk-node"
+import { LangfuseSpanProcessor } from "@langfuse/otel"
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
 
 import { Installation } from "../installation"
@@ -238,98 +233,6 @@ class DiagnosticLogExporter implements LogRecordExporter {
   }
 }
 
-/**
- * Wraps a SpanExporter to log export success/failure to telemetry.log.
- * This lets you verify OTLP connectivity without checking OTel internal diagnostics.
- */
-class DiagnosticSpanExporter implements SpanExporter {
-  private exportCount = 0
-  private successCount = 0
-  private failureCount = 0
-
-  constructor(
-    private readonly inner: SpanExporter,
-    private readonly label: string,
-  ) {}
-
-  export(spans: ReadableSpan[], resultCallback: (result: { code: number; error?: Error }) => void): void {
-    this.exportCount++
-    const batchNum = this.exportCount
-    const spanNames = spans.map((s) => s.name).join(", ")
-    log.info("export attempt", { exporter: this.label, batch: batchNum, spans: spans.length, names: spanNames })
-
-    this.inner.export(spans, (result) => {
-      if (result.code === 0) {
-        this.successCount++
-        log.info("export success", {
-          exporter: this.label,
-          batch: batchNum,
-          spans: spans.length,
-          totalSuccess: this.successCount,
-        })
-      } else {
-        this.failureCount++
-        log.error("export failed", {
-          exporter: this.label,
-          batch: batchNum,
-          spans: spans.length,
-          code: result.code,
-          error: result.error?.message,
-          totalFailures: this.failureCount,
-        })
-      }
-      resultCallback(result)
-    })
-  }
-
-  async shutdown(): Promise<void> {
-    log.info("exporter shutdown", {
-      exporter: this.label,
-      totalExports: this.exportCount,
-      totalSuccess: this.successCount,
-      totalFailures: this.failureCount,
-    })
-    return this.inner.shutdown()
-  }
-
-  async forceFlush(): Promise<void> {
-    log.info("exporter flush", { exporter: this.label })
-    return this.inner.forceFlush?.()
-  }
-}
-
-async function getOtlpTraceExporters() {
-  const exporterTypes = parseExporterTypes(process.env.OTEL_TRACES_EXPORTER)
-  const protocol =
-    process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL?.trim() || process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
-  const endpoint =
-    process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT?.trim() || process.env.OTEL_EXPORTER_OTLP_ENDPOINT?.trim()
-
-  const exporters: SpanExporter[] = []
-  for (const exporterType of exporterTypes) {
-    if (exporterType === "console") {
-      exporters.push(new ConsoleSpanExporter())
-      log.info("trace exporter configured", { type: "console" })
-    } else if (exporterType === "otlp") {
-      log.info("trace exporter configured", { type: "otlp", protocol, endpoint })
-      switch (protocol) {
-        case "http/json": {
-          const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http")
-          exporters.push(new DiagnosticSpanExporter(new OTLPTraceExporter(), `otlp-http-json→${endpoint}`))
-          break
-        }
-        case "http/protobuf": {
-          const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-proto")
-          exporters.push(new DiagnosticSpanExporter(new OTLPTraceExporter(), `otlp-http-proto→${endpoint}`))
-          break
-        }
-        default:
-          throw new Error(`Unknown trace exporter protocol: ${protocol}`)
-      }
-    }
-  }
-  return exporters
-}
 
 export function isTelemetryEnabled() {
   return Boolean(
@@ -348,7 +251,7 @@ export function registerTelemetryCleanup(handler: () => Promise<void>) {
 // Keep explicit providers for shutdown
 let globalMeterProvider: MeterProvider | undefined
 let globalLoggerProvider: LoggerProvider | undefined
-let globalTracerProvider: BasicTracerProvider | undefined
+let globalNodeSdk: NodeSDK | undefined
 
 export async function initializeTelemetry() {
   if (!process.env.OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE) {
@@ -426,36 +329,49 @@ export async function initializeTelemetry() {
 
       process.on("beforeExit", async () => {
         await loggerProvider.forceFlush()
-        await globalTracerProvider?.forceFlush()
+        await globalNodeSdk?.shutdown()
         await globalMeterProvider?.forceFlush()
       })
 
       process.on("exit", () => {
         void loggerProvider.forceFlush()
-        void globalTracerProvider?.forceFlush()
         void globalMeterProvider?.forceFlush()
       })
     }
 
-    const traceExporters = await getOtlpTraceExporters()
-    if (traceExporters.length > 0) {
-      const spanProcessors = traceExporters.map(
-        (exporter) =>
-          new BatchSpanProcessor(exporter, {
-            scheduledDelayMillis: parseInt(
-              process.env.OTEL_TRACES_EXPORT_INTERVAL || DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
-              10,
-            ),
-          }),
-      )
+    // ── Traces: NodeSDK + LangfuseSpanProcessor ──────────────────────────
+    // NodeSDK installs AsyncLocalStorageContextManager globally, which is
+    // required for OTel context to propagate across async/await boundaries.
+    // Without it, BasicTracerProvider loses parent context between ticks and
+    // every streamText / startSpan call becomes a disconnected root trace.
+    //
+    // LangfuseSpanProcessor maps OTel spans to Langfuse's native data model
+    // (Trace → Observation: Span / Generation / Event) using its own REST API
+    // rather than the OTLP endpoint, giving us correct hierarchy out of the box.
+    const langfusePublicKey = process.env.LANGFUSE_PUBLIC_KEY
+    const langfuseSecretKey = process.env.LANGFUSE_SECRET_KEY
+    const langfuseBaseUrl = process.env.LANGFUSE_BASEURL ?? process.env.LANGFUSE_HOST
 
-      const tracerProvider = new BasicTracerProvider({
-        resource,
-        spanProcessors,
+    if (langfusePublicKey && langfuseSecretKey) {
+      log.info("trace exporter configured", { type: "langfuse", baseUrl: langfuseBaseUrl ?? "cloud.langfuse.com" })
+
+      const langfuseProcessor = new LangfuseSpanProcessor({
+        publicKey: langfusePublicKey,
+        secretKey: langfuseSecretKey,
+        ...(langfuseBaseUrl ? { baseUrl: langfuseBaseUrl } : {}),
+        flushAt: 10,
+        flushInterval: parseInt(process.env.OTEL_TRACES_EXPORT_INTERVAL ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(), 10) / 1000,
       })
 
-      trace.setGlobalTracerProvider(tracerProvider)
-      globalTracerProvider = tracerProvider
+      const sdk = new NodeSDK({
+        resource,
+        spanProcessors: [langfuseProcessor],
+      })
+
+      sdk.start()
+      globalNodeSdk = sdk
+    } else {
+      log.warn("Langfuse trace exporter skipped: LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY not set")
     }
   }
 }
@@ -468,7 +384,7 @@ export async function shutdownTelemetry() {
     const shutdownPromises: Promise<void>[] = []
     if (globalMeterProvider) shutdownPromises.push(globalMeterProvider.shutdown())
     if (globalLoggerProvider) shutdownPromises.push(globalLoggerProvider.shutdown())
-    if (globalTracerProvider) shutdownPromises.push(globalTracerProvider.shutdown())
+    if (globalNodeSdk) shutdownPromises.push(globalNodeSdk.shutdown())
     for (const handler of cleanupHandlers) {
       shutdownPromises.push(handler())
     }
@@ -491,7 +407,7 @@ export async function flushTelemetry(): Promise<void> {
     const flushPromises: Promise<void>[] = []
     if (globalMeterProvider) flushPromises.push(globalMeterProvider.forceFlush())
     if (globalLoggerProvider) flushPromises.push(globalLoggerProvider.forceFlush())
-    if (globalTracerProvider) flushPromises.push(globalTracerProvider.forceFlush())
+    // NodeSDK does not expose forceFlush directly; shutdown handles final flush
 
     await Promise.race([Promise.all(flushPromises), telemetryTimeout(timeoutMs, "OpenTelemetry flush timeout")])
     log.info("telemetry flush complete")

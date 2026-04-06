@@ -22,6 +22,7 @@ import { insertPlanReminder } from "./plan-reminder"
 import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
+import { trace, context as otelContext } from "@opentelemetry/api"
 
 const log = Log.create({ service: "session.query" })
 
@@ -356,10 +357,15 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     } satisfies EngineEvent.TurnStartEvent
 
     let streamResult: unknown
+    // ── Wrap the LLM turn in a named agent span (mirrors LangGraph's agent node) ──
+    const turnSpan = trace.getTracer("liteai").startSpan(agent.name)
+    const turnCtx = trace.setSpan(otelContext.active(), turnSpan)
     try {
-      const generator = SessionProcessor.streamGenerator(streamInput, undefined, (r) => {
-        streamResult = r
-      })
+      const generator = otelContext.with(turnCtx, () =>
+        SessionProcessor.streamGenerator(streamInput, undefined, (r) => {
+          streamResult = r
+        }),
+      )
 
       for await (const event of generator) {
         // Feed every event through the executor for lifecycle tracking.
@@ -383,6 +389,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         messageID: assistantMessage.id,
         reason: streamError instanceof Error ? streamError.message : String(streamError),
       } satisfies EngineEvent.TombstoneEvent
+    } finally {
+      turnSpan.end()
     }
 
     // ── Log streaming tool execution stats ──
