@@ -92,11 +92,14 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
         totalTokens: parsed.usage.total,
         reasoningTokens: parsed.usage.reasoning,
       },
-      providerMetadata: parsed.usage.reasoning !== undefined ? {
-        "code-assist": {
-          thoughtsTokenCount: parsed.usage.reasoning,
-        },
-      } : undefined,
+      providerMetadata:
+        parsed.usage.reasoning !== undefined
+          ? {
+              "code-assist": {
+                thoughtsTokenCount: parsed.usage.reasoning,
+              },
+            }
+          : undefined,
       request: { body },
       response: {
         id: parsed.id,
@@ -280,11 +283,14 @@ export class CodeAssistLanguageModel implements LanguageModelV2 {
             totalTokens: usage.total || undefined,
             reasoningTokens: usage.reasoning || undefined,
           },
-          providerMetadata: usage.reasoning !== undefined ? {
-            "code-assist": {
-              thoughtsTokenCount: usage.reasoning,
-            },
-          } : undefined,
+          providerMetadata:
+            usage.reasoning !== undefined
+              ? {
+                  "code-assist": {
+                    thoughtsTokenCount: usage.reasoning,
+                  },
+                }
+              : undefined,
         })
         ctrl.close()
       },

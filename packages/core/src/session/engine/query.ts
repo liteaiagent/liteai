@@ -1,4 +1,5 @@
 import { NamedError } from "@liteai/util/error"
+import { context as otelContext, trace } from "@opentelemetry/api"
 import { Agent } from "../../agent/agent"
 import { Bundled } from "../../bundled"
 import { Bus } from "../../bus"
@@ -7,7 +8,6 @@ import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import type { ModelID, ProviderID } from "../../provider/schema"
-
 import { Log } from "../../util/log"
 import { Session } from ".."
 import type { EngineEvent } from "../events"
@@ -22,7 +22,6 @@ import { insertPlanReminder } from "./plan-reminder"
 import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
-import { trace, context as otelContext } from "@opentelemetry/api"
 
 const log = Log.create({ service: "session.query" })
 

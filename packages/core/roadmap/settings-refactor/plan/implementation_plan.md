@@ -2,7 +2,9 @@
 
 > **Goal**: Make `settings.json` and the `/config` endpoints the definitive source of truth for all non-volatile settings (telemetry, MCP connections, plugin state). Demote env vars to feature flags only.
 
-## Phase 1: Extend Schema & Harden Config Security
+CRITICAL INSTRUCTION: Use your tools, only use shell if you do not have a tool that can do the same job (e.g. running lint or typecheck). DO NOT use scripts to automate file edits
+
+## Phase 1: Extend Schema & Harden Config Security [COMPLETED]
 **Objective**: Build the foundational config fields and ensure secure API reading/writing.
 
 1. **Update `src/config/schema.ts`**:
@@ -17,9 +19,9 @@
    - Modify the `updateGlobal()` lifecycle: skip triggering `disposeAll()` if the *only* properties modified were within the `telemetry` block.
 
 **Success Criteria:**
-- [ ] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
-- [ ] **Typecheck**: `bun typecheck` passes without errors.
-- [ ] **Tests**: `bun test test/config/` passes. Add new focused tests for sensitive field redaction logic and global-only field stripping.
+- [x] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
+- [x] **Typecheck**: `bun typecheck` passes without errors.
+- [x] **Tests**: `bun test test/config/` passes. Add new focused tests for sensitive field redaction logic and global-only field stripping.
 
 ## Phase 2: Immediate Env Var Purge & Instrumentation Bootstrapping
 **Objective**: Hardcode telemetry's reliance on config rather than `.env` variables.
@@ -34,9 +36,9 @@
    - Delete usages or fallbacks of legacy env variables (like `LITEAI_ENABLE_TELEMETRY`).
 
 **Success Criteria:**
-- [ ] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
-- [ ] **Typecheck**: `bun typecheck` passes without errors.
-- [ ] **Tests**: `bun test test/telemetry/` passes. Add focused tests validating the configuration bridge (`applyConfigToEnv()`) correctly overwrites without any trace of prior environment config.
+- [x] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
+- [x] **Typecheck**: `bun typecheck` passes without errors.
+- [x] **Tests**: `bun test test/telemetry/` passes. Add focused tests validating the configuration bridge (`applyConfigToEnv()`) correctly overwrites without any trace of prior environment config.
 
 ## Phase 3: Route Refactoring & Persistence Overhaul
 **Objective**: Adopt the `/config/...` namespace inside projects and ensure transient settings turn persistent.
@@ -51,9 +53,9 @@
    - Ensure SDK or external clients are updated to direct calls to the new `/config/XYZ` URL prefixes.
 
 **Success Criteria:**
-- [ ] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
-- [ ] **Typecheck**: `bun typecheck` passes without errors.
-- [ ] **Tests**: `bun test test/mcp/ test/server/` passes. Ensure new tests directly invoke MCP operations to assert config persistence behaves properly. Update existing assertions for the newly-prefixed `/config/` REST URLs.
+- [x] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
+- [x] **Typecheck**: `bun typecheck` passes without errors.
+- [x] **Tests**: `bun test test/mcp/ test/server/` passes. Ensure new tests directly invoke MCP operations to assert config persistence behaves properly. Update existing assertions for the newly-prefixed `/config/` REST URLs.
 
 ## Phase 4: Deprecation and UI Integration
 **Objective**: Retain backward compatibility where required while lighting up the new feature set in the admin interface.
@@ -65,6 +67,6 @@
    - Render fields querying directly against `telemetry.langfuse.*` rather than legacy dedicated components.
 
 **Success Criteria:**
-- [ ] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
-- [ ] **Typecheck**: `bun typecheck` passes without errors.
-- [ ] **Tests**: `bun test test/server/` passes tracking deprecated routers correctly. (Optional: Check UI test packages if relevant settings tests exist).
+- [x] **Lint**: `bun lint:fix` passes. Unused variables in modified files must be analyzed; either used, explicitly removed, or prefixed with `_` with justification. Errors should be logged instead of swallowed.
+- [x] **Typecheck**: `bun typecheck` passes without errors.
+- [x] **Tests**: `bun test test/server/` passes tracking deprecated routers correctly. (Optional: Check UI test packages if relevant settings tests exist).

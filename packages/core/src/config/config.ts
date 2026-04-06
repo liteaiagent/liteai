@@ -48,11 +48,11 @@ export namespace Config {
   export const JsonError = Loader.JsonError
   export const InvalidError = Loader.InvalidError
 
-  export function get() {
-    return Loader.get()
+  export function get(options?: Parameters<typeof Loader.get>[0]) {
+    return Loader.get(options)
   }
-  export function getGlobal() {
-    return Loader.getGlobal()
+  export function getGlobal(options?: Parameters<typeof Loader.getGlobal>[0]) {
+    return Loader.getGlobal(options)
   }
   export function update(config: Schema.Info) {
     return Loader.update(config)

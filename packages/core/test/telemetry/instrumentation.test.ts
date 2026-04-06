@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test"
 
 import {
+  applyConfigToEnv,
   flushTelemetry,
   initializeTelemetry,
   isTelemetryEnabled,
@@ -45,26 +46,66 @@ describe("instrumentation", () => {
       process.env.LITEAI_TELEMETRY_DISABLED = "0"
       expect(isTelemetryEnabled()).toBe(true)
     })
+  })
 
-    test("legacy LITEAI_ENABLE_TELEMETRY=0 disables telemetry (backward compat)", () => {
-      process.env.LITEAI_ENABLE_TELEMETRY = "0"
-      expect(isTelemetryEnabled()).toBe(false)
-    })
-
-    test("legacy LITEAI_ENABLE_TELEMETRY=false disables telemetry (backward compat)", () => {
-      process.env.LITEAI_ENABLE_TELEMETRY = "false"
-      expect(isTelemetryEnabled()).toBe(false)
-    })
-
-    test("legacy LITEAI_ENABLE_TELEMETRY=1 does not override enabled default", () => {
+  describe("applyConfigToEnv", () => {
+    test("clears prior telemetry environment variables before applying config", () => {
+      process.env.LANGFUSE_SECRET_KEY = "old_secret_key"
+      process.env.OTEL_TRACES_EXPORTER = "old_traces_ex"
       process.env.LITEAI_ENABLE_TELEMETRY = "1"
-      expect(isTelemetryEnabled()).toBe(true)
+
+      // Apply empty config
+      applyConfigToEnv({} as Config.Info)
+
+      expect(process.env.LANGFUSE_SECRET_KEY).toBeUndefined()
+      expect(process.env.OTEL_TRACES_EXPORTER).toBeUndefined()
+      expect(process.env.LITEAI_ENABLE_TELEMETRY).toBeUndefined()
     })
 
-    test("LITEAI_TELEMETRY_DISABLED takes precedence over legacy opt-in var", () => {
-      process.env.LITEAI_TELEMETRY_DISABLED = "1"
-      process.env.LITEAI_ENABLE_TELEMETRY = "1"
-      expect(isTelemetryEnabled()).toBe(false)
+    test("sets Langfuse variables correctly", () => {
+      applyConfigToEnv({
+        telemetry: {
+          langfuse: {
+            publicKey: "pk",
+            secretKey: "sk",
+            baseUrl: "https://lf.tld",
+          },
+        },
+      } as Config.Info)
+
+      expect(process.env.LANGFUSE_PUBLIC_KEY).toBe("pk")
+      expect(process.env.LANGFUSE_SECRET_KEY).toBe("sk")
+      expect(process.env.LANGFUSE_BASEURL).toBe("https://lf.tld")
+      expect(process.env.LANGFUSE_HOST).toBe("https://lf.tld")
+      expect(process.env.LITEAI_TELEMETRY_DISABLED).toBe("0")
+    })
+
+    test("sets OTEL variables correctly", () => {
+      applyConfigToEnv({
+        telemetry: {
+          otel: {
+            endpoint: "http://otel",
+            protocol: "grpc",
+            traceExporter: "ok",
+            metricExporter: "ok2",
+            exportIntervalMs: 5000,
+          },
+        },
+      } as Config.Info)
+
+      expect(process.env.OTEL_EXPORTER_OTLP_ENDPOINT).toBe("http://otel")
+      expect(process.env.OTEL_EXPORTER_OTLP_PROTOCOL).toBe("grpc")
+      expect(process.env.OTEL_TRACES_EXPORTER).toBe("ok")
+      expect(process.env.OTEL_METRICS_EXPORTER).toBe("ok2")
+      expect(process.env.OTEL_METRIC_EXPORT_INTERVAL).toBe("5000")
+      expect(process.env.OTEL_LOGS_EXPORT_INTERVAL).toBe("5000")
+      expect(process.env.OTEL_TRACES_EXPORT_INTERVAL).toBe("5000")
+      expect(process.env.LITEAI_TELEMETRY_DISABLED).toBe("0")
+    })
+
+    test("sets LITEAI_TELEMETRY_DISABLED=1 if disabled in config", () => {
+      applyConfigToEnv({ telemetry: { disabled: true } } as Config.Info)
+      expect(process.env.LITEAI_TELEMETRY_DISABLED).toBe("1")
     })
   })
 

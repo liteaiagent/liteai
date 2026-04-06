@@ -1408,10 +1408,6 @@ export type Config = {
          */
         batch_tool?: boolean;
         /**
-         * Enable OpenTelemetry spans for AI SDK calls (using the 'experimental_telemetry' flag)
-         */
-        openTelemetry?: boolean;
-        /**
          * Tools that should only be available to primary agents.
          */
         primary_tools?: Array<string>;
@@ -1423,10 +1419,6 @@ export type Config = {
          * Timeout in milliseconds for model context protocol (MCP) requests
          */
         mcp_timeout?: number;
-        /**
-         * Enable LLM call tracing
-         */
-        trace?: boolean;
     };
     /**
      * Config-driven hooks that fire on lifecycle events (Claude Code compatible)
@@ -1465,6 +1457,29 @@ export type Config = {
                 ref?: string;
             } | string;
         };
+    };
+    /**
+     * Telemetry settings. Telemetry is enabled by default — set disabled:true to opt out.
+     */
+    telemetry?: {
+        /**
+         * Set to true to opt out of all telemetry (traces, metrics, logs). Telemetry is enabled by default. Can also be controlled via the LITEAI_TELEMETRY_DISABLED env var.
+         */
+        disabled?: boolean;
+        langfuse?: {
+            publicKey?: string;
+            secretKey?: string;
+            baseUrl?: string;
+        };
+        otel?: {
+            endpoint?: string;
+            protocol?: 'http/protobuf' | 'http/json' | 'grpc';
+            traceExporter?: string;
+            metricExporter?: string;
+            logExporter?: string;
+            exportIntervalMs?: number;
+        };
+        perfetto?: boolean;
     };
 };
 
@@ -1710,59 +1725,6 @@ export type SubtaskPartInput = {
         modelID: string;
     };
     command?: string;
-};
-
-export type Trace = {
-    id: string;
-    sessionID: string;
-    messageID: string;
-    step: number;
-    agent: string;
-    modelID: string;
-    providerID: string;
-    params: {
-        [key: string]: unknown;
-    } | null;
-    hasSystem: boolean;
-    hasTools: boolean;
-    contextSize: number;
-    timeStart: number;
-    timeEnd: number | null;
-    timeCreated: number;
-    error: string | null;
-};
-
-export type TraceDetail = {
-    id: string;
-    sessionID: string;
-    messageID: string;
-    step: number;
-    agent: string;
-    modelID: string;
-    providerID: string;
-    params: {
-        [key: string]: unknown;
-    } | null;
-    hasSystem: boolean;
-    hasTools: boolean;
-    contextSize: number;
-    timeStart: number;
-    timeEnd: number | null;
-    timeCreated: number;
-    error: string | null;
-    system: string | null;
-    tools: Array<{
-        [key: string]: unknown;
-    }> | null;
-    hooks: Array<{
-        event: string;
-        type: string;
-        config?: {
-            [key: string]: unknown;
-        };
-        context?: string;
-    }> | null;
-    contextIDs: Array<string>;
 };
 
 export type Symbol = {
@@ -2080,6 +2042,64 @@ export type PathResponses = {
 };
 
 export type PathResponse = PathResponses[keyof PathResponses];
+
+export type TelemetryGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/telemetry';
+};
+
+export type TelemetryGetResponses = {
+    /**
+     * Current telemetry status
+     */
+    200: {
+        /**
+         * Whether telemetry is currently active
+         */
+        enabled: boolean;
+        /**
+         * Where the setting was read from
+         */
+        source: 'env' | 'config' | 'default';
+    };
+};
+
+export type TelemetryGetResponse = TelemetryGetResponses[keyof TelemetryGetResponses];
+
+export type TelemetryUpdateData = {
+    body?: {
+        /**
+         * Set to true to enable telemetry, false to disable (opt-out)
+         */
+        enabled: boolean;
+    };
+    path?: never;
+    query?: never;
+    url: '/telemetry';
+};
+
+export type TelemetryUpdateErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+};
+
+export type TelemetryUpdateError = TelemetryUpdateErrors[keyof TelemetryUpdateErrors];
+
+export type TelemetryUpdateResponses = {
+    /**
+     * Updated telemetry status
+     */
+    200: {
+        enabled: boolean;
+        source: 'env' | 'config' | 'default';
+    };
+};
+
+export type TelemetryUpdateResponse = TelemetryUpdateResponses[keyof TelemetryUpdateResponses];
 
 export type SystemFileListData = {
     body?: never;
@@ -3948,101 +3968,6 @@ export type ProjectSessionUnrevertResponses = {
 
 export type ProjectSessionUnrevertResponse = ProjectSessionUnrevertResponses[keyof ProjectSessionUnrevertResponses];
 
-export type ProjectSessionTraceListData = {
-    body?: never;
-    path: {
-        sessionID: string;
-        projectID: string;
-    };
-    query?: {
-        workspace?: string;
-        deep?: boolean;
-    };
-    url: '/project/{projectID}/session/{sessionID}/trace';
-};
-
-export type ProjectSessionTraceListResponses = {
-    /**
-     * List of traces
-     */
-    200: Array<Trace>;
-};
-
-export type ProjectSessionTraceListResponse = ProjectSessionTraceListResponses[keyof ProjectSessionTraceListResponses];
-
-export type ProjectSessionTraceSearchData = {
-    body?: never;
-    path: {
-        sessionID: string;
-        projectID: string;
-    };
-    query: {
-        workspace?: string;
-        q: string;
-    };
-    url: '/project/{projectID}/session/{sessionID}/trace/search';
-};
-
-export type ProjectSessionTraceSearchResponses = {
-    /**
-     * Matching trace IDs
-     */
-    200: {
-        ids: Array<string>;
-    };
-};
-
-export type ProjectSessionTraceSearchResponse = ProjectSessionTraceSearchResponses[keyof ProjectSessionTraceSearchResponses];
-
-export type ProjectSessionTraceExportData = {
-    body?: never;
-    path: {
-        sessionID: string;
-        projectID: string;
-    };
-    query?: {
-        workspace?: string;
-        format?: 'json' | 'md';
-    };
-    url: '/project/{projectID}/session/{sessionID}/trace/export';
-};
-
-export type ProjectSessionTraceExportResponses = {
-    /**
-     * Exported trace data
-     */
-    200: unknown;
-};
-
-export type ProjectSessionTraceGetData = {
-    body?: never;
-    path: {
-        sessionID: string;
-        traceID: string;
-        projectID: string;
-    };
-    query?: {
-        workspace?: string;
-    };
-    url: '/project/{projectID}/session/{sessionID}/trace/{traceID}';
-};
-
-export type ProjectSessionTraceGetErrors = {
-    /**
-     * Trace not found
-     */
-    404: unknown;
-};
-
-export type ProjectSessionTraceGetResponses = {
-    /**
-     * Trace detail
-     */
-    200: TraceDetail;
-};
-
-export type ProjectSessionTraceGetResponse = ProjectSessionTraceGetResponses[keyof ProjectSessionTraceGetResponses];
-
 export type ProjectPermissionReplyData = {
     body?: {
         reply: 'once' | 'always' | 'reject';
@@ -4345,7 +4270,7 @@ export type ProjectMcpStatusData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp';
+    url: '/project/{projectID}/config/mcp';
 };
 
 export type ProjectMcpStatusResponses = {
@@ -4370,7 +4295,7 @@ export type ProjectMcpAddData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp';
+    url: '/project/{projectID}/config/mcp';
 };
 
 export type ProjectMcpAddErrors = {
@@ -4401,7 +4326,7 @@ export type ProjectMcpToolsData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/tools';
+    url: '/project/{projectID}/config/mcp/tools';
 };
 
 export type ProjectMcpToolsResponses = {
@@ -4424,7 +4349,7 @@ export type ProjectMcpAuthRemoveData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/{name}/auth';
+    url: '/project/{projectID}/config/mcp/{name}/auth';
 };
 
 export type ProjectMcpAuthRemoveErrors = {
@@ -4456,7 +4381,7 @@ export type ProjectMcpAuthStartData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/{name}/auth';
+    url: '/project/{projectID}/config/mcp/{name}/auth';
 };
 
 export type ProjectMcpAuthStartErrors = {
@@ -4500,7 +4425,7 @@ export type ProjectMcpAuthCallbackData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/{name}/auth/callback';
+    url: '/project/{projectID}/config/mcp/{name}/auth/callback';
 };
 
 export type ProjectMcpAuthCallbackErrors = {
@@ -4534,7 +4459,7 @@ export type ProjectMcpAuthAuthenticateData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/{name}/auth/authenticate';
+    url: '/project/{projectID}/config/mcp/{name}/auth/authenticate';
 };
 
 export type ProjectMcpAuthAuthenticateErrors = {
@@ -4568,7 +4493,7 @@ export type ProjectMcpConnectData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/{name}/connect';
+    url: '/project/{projectID}/config/mcp/{name}/connect';
 };
 
 export type ProjectMcpConnectResponses = {
@@ -4589,7 +4514,7 @@ export type ProjectMcpDisconnectData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/{name}/disconnect';
+    url: '/project/{projectID}/config/mcp/{name}/disconnect';
 };
 
 export type ProjectMcpDisconnectResponses = {
@@ -4609,7 +4534,7 @@ export type ProjectMcpResourceListData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/mcp/resource';
+    url: '/project/{projectID}/config/mcp/resource';
 };
 
 export type ProjectMcpResourceListResponses = {
@@ -4631,7 +4556,7 @@ export type ProjectPluginListData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin';
+    url: '/project/{projectID}/config/plugin';
 };
 
 export type ProjectPluginListResponses = {
@@ -4659,7 +4584,7 @@ export type ProjectPluginEnableData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/{id}/enable';
+    url: '/project/{projectID}/config/plugin/{id}/enable';
 };
 
 export type ProjectPluginEnableResponses = {
@@ -4680,7 +4605,7 @@ export type ProjectPluginDisableData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/{id}/disable';
+    url: '/project/{projectID}/config/plugin/{id}/disable';
 };
 
 export type ProjectPluginDisableResponses = {
@@ -4701,7 +4626,7 @@ export type ProjectPluginUninstallData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/{id}';
+    url: '/project/{projectID}/config/plugin/{id}';
 };
 
 export type ProjectPluginUninstallResponses = {
@@ -4721,7 +4646,7 @@ export type ProjectPluginMarketplaceListData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/marketplace';
+    url: '/project/{projectID}/config/plugin/marketplace';
 };
 
 export type ProjectPluginMarketplaceListResponses = {
@@ -4753,7 +4678,7 @@ export type ProjectPluginMarketplaceAddData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/marketplace';
+    url: '/project/{projectID}/config/plugin/marketplace';
 };
 
 export type ProjectPluginMarketplaceAddResponses = {
@@ -4777,7 +4702,7 @@ export type ProjectPluginMarketplaceRemoveData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/marketplace/{name}';
+    url: '/project/{projectID}/config/plugin/marketplace/{name}';
 };
 
 export type ProjectPluginMarketplaceRemoveResponses = {
@@ -4798,7 +4723,7 @@ export type ProjectPluginMarketplacePluginsData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/marketplace/{name}/plugins';
+    url: '/project/{projectID}/config/plugin/marketplace/{name}/plugins';
 };
 
 export type ProjectPluginMarketplacePluginsResponses = {
@@ -4826,7 +4751,7 @@ export type ProjectPluginMarketplaceInstallData = {
     query?: {
         workspace?: string;
     };
-    url: '/project/{projectID}/plugin/marketplace/{name}/install/{plugin}';
+    url: '/project/{projectID}/config/plugin/marketplace/{name}/install/{plugin}';
 };
 
 export type ProjectPluginMarketplaceInstallResponses = {

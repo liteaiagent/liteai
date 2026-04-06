@@ -317,6 +317,102 @@
         ]
       }
     },
+    "/telemetry": {
+      "get": {
+        "operationId": "telemetry.get",
+        "summary": "Get telemetry settings",
+        "description": "Retrieve the current telemetry enabled/disabled status. Telemetry is enabled by default; clients can opt out via PATCH /telemetry.",
+        "responses": {
+          "200": {
+            "description": "Current telemetry status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "description": "Whether telemetry is currently active",
+                      "type": "boolean"
+                    },
+                    "source": {
+                      "description": "Where the setting was read from",
+                      "type": "string",
+                      "enum": ["env", "config", "default"]
+                    }
+                  },
+                  "required": ["enabled", "source"]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.telemetry.get({\n  ...\n})"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "telemetry.update",
+        "summary": "Update telemetry settings",
+        "description": "Enable or disable telemetry. The setting is persisted to the global config file and takes effect immediately. Note: if LITEAI_TELEMETRY_DISABLED is set as an environment variable, it takes precedence over this setting.",
+        "responses": {
+          "200": {
+            "description": "Updated telemetry status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": ["env", "config", "default"]
+                    }
+                  },
+                  "required": ["enabled", "source"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "description": "Set to true to enable telemetry, false to disable (opt-out)",
+                    "type": "boolean"
+                  }
+                },
+                "required": ["enabled"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.telemetry.update({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/system/file": {
       "get": {
         "operationId": "system.file.list",
@@ -4531,252 +4627,6 @@
         ]
       }
     },
-    "/project/{projectID}/session/{sessionID}/trace": {
-      "get": {
-        "operationId": "project.session.trace.list",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "sessionID",
-            "schema": {
-              "type": "string",
-              "pattern": "^ses.*"
-            },
-            "required": true
-          },
-          {
-            "in": "query",
-            "name": "deep",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "List traces",
-        "description": "Get a list of all traces for a session.",
-        "responses": {
-          "200": {
-            "description": "List of traces",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Trace"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.list({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/project/{projectID}/session/{sessionID}/trace/search": {
-      "get": {
-        "operationId": "project.session.trace.search",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "sessionID",
-            "schema": {
-              "type": "string",
-              "pattern": "^ses.*"
-            },
-            "required": true
-          },
-          {
-            "in": "query",
-            "name": "q",
-            "schema": {
-              "type": "string",
-              "minLength": 1
-            },
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "Search traces",
-        "description": "Search traces by system prompt and tool content.",
-        "responses": {
-          "200": {
-            "description": "Matching trace IDs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ids": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "required": ["ids"]
-                }
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.search({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/project/{projectID}/session/{sessionID}/trace/export": {
-      "get": {
-        "operationId": "project.session.trace.export",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "sessionID",
-            "schema": {
-              "type": "string",
-              "pattern": "^ses.*"
-            },
-            "required": true
-          },
-          {
-            "in": "query",
-            "name": "format",
-            "schema": {
-              "default": "json",
-              "type": "string",
-              "enum": ["json", "md"]
-            }
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "Export traces",
-        "description": "Export all traces for a session in JSON or Markdown format.",
-        "responses": {
-          "200": {
-            "description": "Exported trace data"
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.export({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/project/{projectID}/session/{sessionID}/trace/{traceID}": {
-      "get": {
-        "operationId": "project.session.trace.get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "workspace",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "sessionID",
-            "schema": {
-              "type": "string",
-              "pattern": "^ses.*"
-            },
-            "required": true
-          },
-          {
-            "in": "path",
-            "name": "traceID",
-            "schema": {
-              "type": "string",
-              "pattern": "^trc.*"
-            },
-            "required": true
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "path",
-            "name": "projectID",
-            "required": true
-          }
-        ],
-        "summary": "Get trace detail",
-        "description": "Get full trace detail with resolved system prompt and tools.",
-        "responses": {
-          "200": {
-            "description": "Trace detail",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TraceDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Trace not found"
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.trace.get({\n  ...\n})"
-          }
-        ]
-      }
-    },
     "/project/{projectID}/permission/{requestID}/reply": {
       "post": {
         "operationId": "project.permission.reply",
@@ -5501,7 +5351,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp": {
+    "/project/{projectID}/config/mcp": {
       "get": {
         "operationId": "project.mcp.status",
         "parameters": [
@@ -5630,7 +5480,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/tools": {
+    "/project/{projectID}/config/mcp/tools": {
       "get": {
         "operationId": "project.mcp.tools",
         "parameters": [
@@ -5681,7 +5531,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/{name}/auth": {
+    "/project/{projectID}/config/mcp/{name}/auth": {
       "post": {
         "operationId": "project.mcp.auth.start",
         "parameters": [
@@ -5823,7 +5673,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/{name}/auth/callback": {
+    "/project/{projectID}/config/mcp/{name}/auth/callback": {
       "post": {
         "operationId": "project.mcp.auth.callback",
         "parameters": [
@@ -5909,7 +5759,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/{name}/auth/authenticate": {
+    "/project/{projectID}/config/mcp/{name}/auth/authenticate": {
       "post": {
         "operationId": "project.mcp.auth.authenticate",
         "parameters": [
@@ -5979,7 +5829,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/{name}/connect": {
+    "/project/{projectID}/config/mcp/{name}/connect": {
       "post": {
         "operationId": "project.mcp.connect",
         "parameters": [
@@ -6028,7 +5878,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/{name}/disconnect": {
+    "/project/{projectID}/config/mcp/{name}/disconnect": {
       "post": {
         "operationId": "project.mcp.disconnect",
         "parameters": [
@@ -6077,7 +5927,7 @@
         ]
       }
     },
-    "/project/{projectID}/mcp/resource": {
+    "/project/{projectID}/config/mcp/resource": {
       "get": {
         "operationId": "project.mcp.resource.list",
         "parameters": [
@@ -6125,7 +5975,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin": {
+    "/project/{projectID}/config/plugin": {
       "get": {
         "operationId": "project.plugin.list",
         "parameters": [
@@ -6191,7 +6041,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/{id}/enable": {
+    "/project/{projectID}/config/plugin/{id}/enable": {
       "post": {
         "operationId": "project.plugin.enable",
         "parameters": [
@@ -6240,7 +6090,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/{id}/disable": {
+    "/project/{projectID}/config/plugin/{id}/disable": {
       "post": {
         "operationId": "project.plugin.disable",
         "parameters": [
@@ -6289,7 +6139,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/{id}": {
+    "/project/{projectID}/config/plugin/{id}": {
       "delete": {
         "operationId": "project.plugin.uninstall",
         "parameters": [
@@ -6338,7 +6188,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/marketplace": {
+    "/project/{projectID}/config/plugin/marketplace": {
       "get": {
         "operationId": "project.plugin.marketplace.list",
         "parameters": [
@@ -6487,7 +6337,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/marketplace/{name}": {
+    "/project/{projectID}/config/plugin/marketplace/{name}": {
       "delete": {
         "operationId": "project.plugin.marketplace.remove",
         "parameters": [
@@ -6536,7 +6386,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/marketplace/{name}/plugins": {
+    "/project/{projectID}/config/plugin/marketplace/{name}/plugins": {
       "get": {
         "operationId": "project.plugin.marketplace.plugins",
         "parameters": [
@@ -6609,7 +6459,7 @@
         ]
       }
     },
-    "/project/{projectID}/plugin/marketplace/{name}/install/{plugin}": {
+    "/project/{projectID}/config/plugin/marketplace/{name}/install/{plugin}": {
       "post": {
         "operationId": "project.plugin.marketplace.install",
         "parameters": [
@@ -11060,10 +10910,6 @@
                 "description": "Enable the batch tool",
                 "type": "boolean"
               },
-              "openTelemetry": {
-                "description": "Enable OpenTelemetry spans for AI SDK calls (using the 'experimental_telemetry' flag)",
-                "type": "boolean"
-              },
               "primary_tools": {
                 "description": "Tools that should only be available to primary agents.",
                 "type": "array",
@@ -11080,10 +10926,6 @@
                 "type": "integer",
                 "exclusiveMinimum": 0,
                 "maximum": 9007199254740991
-              },
-              "trace": {
-                "description": "Enable LLM call tracing",
-                "type": "boolean"
               }
             }
           },
@@ -11177,6 +11019,58 @@
                 }
               },
               "required": ["source"]
+            }
+          },
+          "telemetry": {
+            "description": "Telemetry settings. Telemetry is enabled by default — set disabled:true to opt out.",
+            "type": "object",
+            "properties": {
+              "disabled": {
+                "description": "Set to true to opt out of all telemetry (traces, metrics, logs). Telemetry is enabled by default. Can also be controlled via the LITEAI_TELEMETRY_DISABLED env var.",
+                "type": "boolean"
+              },
+              "langfuse": {
+                "type": "object",
+                "properties": {
+                  "publicKey": {
+                    "type": "string"
+                  },
+                  "secretKey": {
+                    "sensitive": true,
+                    "type": "string"
+                  },
+                  "baseUrl": {
+                    "type": "string"
+                  }
+                }
+              },
+              "otel": {
+                "type": "object",
+                "properties": {
+                  "endpoint": {
+                    "type": "string"
+                  },
+                  "protocol": {
+                    "type": "string",
+                    "enum": ["http/protobuf", "http/json", "grpc"]
+                  },
+                  "traceExporter": {
+                    "type": "string"
+                  },
+                  "metricExporter": {
+                    "type": "string"
+                  },
+                  "logExporter": {
+                    "type": "string"
+                  },
+                  "exportIntervalMs": {
+                    "type": "number"
+                  }
+                }
+              },
+              "perfetto": {
+                "type": "boolean"
+              }
             }
           }
         },
@@ -11942,259 +11836,6 @@
           }
         },
         "required": ["type", "prompt", "description", "agent"]
-      },
-      "Trace": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "sessionID": {
-            "type": "string"
-          },
-          "messageID": {
-            "type": "string"
-          },
-          "step": {
-            "type": "number"
-          },
-          "agent": {
-            "type": "string"
-          },
-          "modelID": {
-            "type": "string"
-          },
-          "providerID": {
-            "type": "string"
-          },
-          "params": {
-            "anyOf": [
-              {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "hasSystem": {
-            "type": "boolean"
-          },
-          "hasTools": {
-            "type": "boolean"
-          },
-          "contextSize": {
-            "type": "number"
-          },
-          "timeStart": {
-            "type": "number"
-          },
-          "timeEnd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "timeCreated": {
-            "type": "number"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "step",
-          "agent",
-          "modelID",
-          "providerID",
-          "params",
-          "hasSystem",
-          "hasTools",
-          "contextSize",
-          "timeStart",
-          "timeEnd",
-          "timeCreated",
-          "error"
-        ]
-      },
-      "TraceDetail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "sessionID": {
-            "type": "string"
-          },
-          "messageID": {
-            "type": "string"
-          },
-          "step": {
-            "type": "number"
-          },
-          "agent": {
-            "type": "string"
-          },
-          "modelID": {
-            "type": "string"
-          },
-          "providerID": {
-            "type": "string"
-          },
-          "params": {
-            "anyOf": [
-              {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "hasSystem": {
-            "type": "boolean"
-          },
-          "hasTools": {
-            "type": "boolean"
-          },
-          "contextSize": {
-            "type": "number"
-          },
-          "timeStart": {
-            "type": "number"
-          },
-          "timeEnd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "timeCreated": {
-            "type": "number"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "system": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "tools": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                }
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "hooks": {
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "event": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "type": "string"
-                    },
-                    "config": {
-                      "type": "object",
-                      "propertyNames": {
-                        "type": "string"
-                      },
-                      "additionalProperties": {}
-                    },
-                    "context": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["event", "type"]
-                }
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "contextIDs": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "sessionID",
-          "messageID",
-          "step",
-          "agent",
-          "modelID",
-          "providerID",
-          "params",
-          "hasSystem",
-          "hasTools",
-          "contextSize",
-          "timeStart",
-          "timeEnd",
-          "timeCreated",
-          "error",
-          "system",
-          "tools",
-          "hooks",
-          "contextIDs"
-        ]
       },
       "Symbol": {
         "type": "object",

@@ -1,3 +1,4 @@
+import { LangfuseSpanProcessor } from "@langfuse/otel"
 import { DiagConsoleLogger, DiagLogLevel, diag, metrics } from "@opentelemetry/api"
 import { logs } from "@opentelemetry/api-logs"
 import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
@@ -16,9 +17,8 @@ import {
   type ResourceMetrics,
 } from "@opentelemetry/sdk-metrics"
 import { NodeSDK } from "@opentelemetry/sdk-node"
-import { LangfuseSpanProcessor } from "@langfuse/otel"
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
-
+import type { Info } from "../config/schema"
 import { Installation } from "../installation"
 import { Log } from "../util/log"
 import { initializePerfettoTracing } from "./perfetto"
@@ -233,20 +233,14 @@ class DiagnosticLogExporter implements LogRecordExporter {
   }
 }
 
-
 /**
  * Telemetry is ENABLED by default (opt-out model).
  * Set LITEAI_TELEMETRY_DISABLED=1 or LITEAI_TELEMETRY_DISABLED=true to opt out.
- * Legacy LITEAI_ENABLE_TELEMETRY=0/false also disables telemetry for backward compat.
  */
 export function isTelemetryEnabled(): boolean {
   // Explicit opt-out
   const disabled = process.env.LITEAI_TELEMETRY_DISABLED
   if (disabled === "1" || disabled === "true") return false
-
-  // Legacy backward-compat: if old var is explicitly set to false/0, respect it
-  const legacyEnable = process.env.LITEAI_ENABLE_TELEMETRY
-  if (legacyEnable === "0" || legacyEnable === "false") return false
 
   // Enabled by default
   return true
@@ -256,6 +250,69 @@ const cleanupHandlers: Array<() => Promise<void>> = []
 
 export function registerTelemetryCleanup(handler: () => Promise<void>) {
   cleanupHandlers.push(handler)
+}
+
+export function applyConfigToEnv(config: Info) {
+  // Clear existing external process environments for LANGFUSE_/OTEL_
+  for (const key of Object.keys(process.env)) {
+    if (
+      key.startsWith("LANGFUSE_") ||
+      key.startsWith("OTEL_") ||
+      key === "LITEAI_PERFETTO_TRACE" ||
+      key === "LITEAI_TELEMETRY_DISABLED" ||
+      key === "LITEAI_ENABLE_TELEMETRY"
+    ) {
+      delete process.env[key]
+    }
+  }
+
+  // Set them from config
+  if (config.telemetry?.disabled) {
+    process.env.LITEAI_TELEMETRY_DISABLED = "1"
+  } else {
+    process.env.LITEAI_TELEMETRY_DISABLED = "0"
+  }
+
+  if (config.telemetry?.langfuse) {
+    if (config.telemetry.langfuse.publicKey) {
+      process.env.LANGFUSE_PUBLIC_KEY = config.telemetry.langfuse.publicKey
+    }
+    if (config.telemetry.langfuse.secretKey) {
+      process.env.LANGFUSE_SECRET_KEY = config.telemetry.langfuse.secretKey
+    }
+    if (config.telemetry.langfuse.baseUrl) {
+      process.env.LANGFUSE_BASEURL = config.telemetry.langfuse.baseUrl
+      process.env.LANGFUSE_HOST = config.telemetry.langfuse.baseUrl
+    }
+  }
+
+  if (config.telemetry?.otel) {
+    if (config.telemetry.otel.endpoint) {
+      process.env.OTEL_EXPORTER_OTLP_ENDPOINT = config.telemetry.otel.endpoint
+    }
+    if (config.telemetry.otel.protocol) {
+      process.env.OTEL_EXPORTER_OTLP_PROTOCOL = config.telemetry.otel.protocol
+    }
+    if (config.telemetry.otel.traceExporter) {
+      process.env.OTEL_TRACES_EXPORTER = config.telemetry.otel.traceExporter
+    }
+    if (config.telemetry.otel.metricExporter) {
+      process.env.OTEL_METRICS_EXPORTER = config.telemetry.otel.metricExporter
+    }
+    if (config.telemetry.otel.logExporter) {
+      process.env.OTEL_LOGS_EXPORTER = config.telemetry.otel.logExporter
+    }
+    if (config.telemetry.otel.exportIntervalMs !== undefined) {
+      const intervalStr = config.telemetry.otel.exportIntervalMs.toString()
+      process.env.OTEL_METRIC_EXPORT_INTERVAL = intervalStr
+      process.env.OTEL_LOGS_EXPORT_INTERVAL = intervalStr
+      process.env.OTEL_TRACES_EXPORT_INTERVAL = intervalStr
+    }
+  }
+
+  if (config.telemetry?.perfetto) {
+    process.env.LITEAI_PERFETTO_TRACE = "1"
+  }
 }
 
 // Keep explicit providers for shutdown
@@ -270,6 +327,19 @@ export async function initializeTelemetry() {
 
   diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.ERROR)
 
+  // ── Apply persisted telemetry preference from global config ──────────────
+  // Do this before evaluating isTelemetryEnabled() so the setting persisted
+  // by the web/VS Code telemetry toggle is honoured at startup.
+  // We import lazily to avoid a hard circular dependency between telemetry
+  // and the config module — both are initialized very early in main.ts.
+  try {
+    const { getGlobal } = await import("../config/loader")
+    const globalConfig = await getGlobal()
+    applyConfigToEnv(globalConfig)
+  } catch (error) {
+    log.error("Failed to load global config for telemetry bridge", { error })
+  }
+
   log.info("initializing telemetry", {
     enabled: isTelemetryEnabled(),
     optOut: process.env.LITEAI_TELEMETRY_DISABLED,
@@ -281,21 +351,6 @@ export async function initializeTelemetry() {
     langfuseBaseUrl: process.env.LANGFUSE_BASEURL ?? process.env.LANGFUSE_HOST,
     perfetto: process.env.LITEAI_PERFETTO_TRACE,
   })
-
-  // ── Apply persisted telemetry preference from global config ──────────────
-  // Do this before evaluating isTelemetryEnabled() so the setting persisted
-  // by the web/VS Code telemetry toggle is honoured at startup.
-  // We import lazily to avoid a hard circular dependency between telemetry
-  // and the config module — both are initialized very early in main.ts.
-  try {
-    const { getGlobal } = await import("../config/loader")
-    const globalConfig = await getGlobal()
-    if (globalConfig.telemetry?.disabled === true && !process.env.LITEAI_TELEMETRY_DISABLED) {
-      process.env.LITEAI_TELEMETRY_DISABLED = "1"
-    }
-  } catch {
-    // Config not yet available — fall back to env-only decision
-  }
 
   // Initialize Perfetto tracing (independent of OTEL)
   initializePerfettoTracing()
@@ -311,7 +366,6 @@ export async function initializeTelemetry() {
     [ATTR_SERVICE_NAME]: "liteai",
     [ATTR_SERVICE_VERSION]: Installation.VERSION,
   }
-
 
   const baseResource = resourceFromAttributes(baseAttributes)
   const osResource = resourceFromAttributes(osDetector.detect().attributes || {})
@@ -388,7 +442,8 @@ export async function initializeTelemetry() {
         secretKey: langfuseSecretKey,
         baseUrl: langfuseBaseUrl,
         flushAt: 10,
-        flushInterval: parseInt(process.env.OTEL_TRACES_EXPORT_INTERVAL ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(), 10) / 1000,
+        flushInterval:
+          parseInt(process.env.OTEL_TRACES_EXPORT_INTERVAL ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(), 10) / 1000,
       })
 
       const sdk = new NodeSDK({
@@ -405,7 +460,10 @@ export async function initializeTelemetry() {
 }
 
 export async function shutdownTelemetry() {
-  const timeoutMs = parseInt(process.env.LITEAI_TELEMETRY_SHUTDOWN_TIMEOUT_MS || process.env.LITEAI_OTEL_SHUTDOWN_TIMEOUT_MS || "2000", 10)
+  const timeoutMs = parseInt(
+    process.env.LITEAI_TELEMETRY_SHUTDOWN_TIMEOUT_MS || process.env.LITEAI_OTEL_SHUTDOWN_TIMEOUT_MS || "2000",
+    10,
+  )
   log.info("shutting down telemetry", { timeoutMs })
 
   try {
@@ -428,7 +486,10 @@ export async function shutdownTelemetry() {
 }
 
 export async function flushTelemetry(): Promise<void> {
-  const timeoutMs = parseInt(process.env.LITEAI_TELEMETRY_FLUSH_TIMEOUT_MS || process.env.LITEAI_OTEL_FLUSH_TIMEOUT_MS || "5000", 10)
+  const timeoutMs = parseInt(
+    process.env.LITEAI_TELEMETRY_FLUSH_TIMEOUT_MS || process.env.LITEAI_OTEL_FLUSH_TIMEOUT_MS || "5000",
+    10,
+  )
   log.info("flushing telemetry", { timeoutMs })
 
   try {

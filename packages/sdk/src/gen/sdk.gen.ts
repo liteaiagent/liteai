@@ -2,7 +2,7 @@
 
 import { client } from './client.gen.js';
 import { buildClientParams, type Client, type Options as Options2, type TDataShape } from './client/index.js';
-import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentListResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionTraceExportResponses, ProjectSessionTraceGetErrors, ProjectSessionTraceGetResponses, ProjectSessionTraceListResponses, ProjectSessionTraceSearchResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen.js';
+import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentListResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TelemetryGetResponses, TelemetryUpdateErrors, TelemetryUpdateResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen.js';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -111,6 +111,38 @@ export class Log extends HeyApiClient {
                 ] }]);
         return (options?.client ?? this.client).post<LogWriteResponses, unknown, ThrowOnError>({
             url: '/log',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+}
+
+export class Telemetry extends HeyApiClient {
+    /**
+     * Get telemetry settings
+     *
+     * Retrieve the current telemetry enabled/disabled status. Telemetry is enabled by default; clients can opt out via PATCH /telemetry.
+     */
+    public get<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+        return (options?.client ?? this.client).get<TelemetryGetResponses, unknown, ThrowOnError>({ url: '/telemetry', ...options });
+    }
+    
+    /**
+     * Update telemetry settings
+     *
+     * Enable or disable telemetry. The setting is persisted to the global config file and takes effect immediately. Note: if LITEAI_TELEMETRY_DISABLED is set as an environment variable, it takes precedence over this setting.
+     */
+    public update<ThrowOnError extends boolean = false>(parameters?: {
+        enabled?: boolean;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [{ in: 'body', key: 'enabled' }] }]);
+        return (options?.client ?? this.client).patch<TelemetryUpdateResponses, TelemetryUpdateErrors, ThrowOnError>({
+            url: '/telemetry',
             ...options,
             ...params,
             headers: {
@@ -697,104 +729,6 @@ export class Worktree extends HeyApiClient {
                 ...options?.headers,
                 ...params.headers
             }
-        });
-    }
-}
-
-export class Trace extends HeyApiClient {
-    /**
-     * List traces
-     *
-     * Get a list of all traces for a session.
-     */
-    public list<ThrowOnError extends boolean = false>(parameters: {
-        sessionID: string;
-        projectID: string;
-        workspace?: string;
-        deep?: boolean;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'path', key: 'sessionID' },
-                    { in: 'path', key: 'projectID' },
-                    { in: 'query', key: 'workspace' },
-                    { in: 'query', key: 'deep' }
-                ] }]);
-        return (options?.client ?? this.client).get<ProjectSessionTraceListResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/session/{sessionID}/trace',
-            ...options,
-            ...params
-        });
-    }
-    
-    /**
-     * Search traces
-     *
-     * Search traces by system prompt and tool content.
-     */
-    public search<ThrowOnError extends boolean = false>(parameters: {
-        sessionID: string;
-        projectID: string;
-        workspace?: string;
-        q: string;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'path', key: 'sessionID' },
-                    { in: 'path', key: 'projectID' },
-                    { in: 'query', key: 'workspace' },
-                    { in: 'query', key: 'q' }
-                ] }]);
-        return (options?.client ?? this.client).get<ProjectSessionTraceSearchResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/session/{sessionID}/trace/search',
-            ...options,
-            ...params
-        });
-    }
-    
-    /**
-     * Export traces
-     *
-     * Export all traces for a session in JSON or Markdown format.
-     */
-    public export<ThrowOnError extends boolean = false>(parameters: {
-        sessionID: string;
-        projectID: string;
-        workspace?: string;
-        format?: 'json' | 'md';
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'path', key: 'sessionID' },
-                    { in: 'path', key: 'projectID' },
-                    { in: 'query', key: 'workspace' },
-                    { in: 'query', key: 'format' }
-                ] }]);
-        return (options?.client ?? this.client).get<ProjectSessionTraceExportResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/session/{sessionID}/trace/export',
-            ...options,
-            ...params
-        });
-    }
-    
-    /**
-     * Get trace detail
-     *
-     * Get full trace detail with resolved system prompt and tools.
-     */
-    public get<ThrowOnError extends boolean = false>(parameters: {
-        sessionID: string;
-        traceID: string;
-        projectID: string;
-        workspace?: string;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'path', key: 'sessionID' },
-                    { in: 'path', key: 'traceID' },
-                    { in: 'path', key: 'projectID' },
-                    { in: 'query', key: 'workspace' }
-                ] }]);
-        return (options?.client ?? this.client).get<ProjectSessionTraceGetResponses, ProjectSessionTraceGetErrors, ThrowOnError>({
-            url: '/project/{projectID}/session/{sessionID}/trace/{traceID}',
-            ...options,
-            ...params
         });
     }
 }
@@ -1490,11 +1424,6 @@ export class Session extends HeyApiClient {
             ...params
         });
     }
-    
-    private _trace?: Trace;
-    get trace(): Trace {
-        return this._trace ??= new Trace({ client: this.client });
-    }
 }
 
 export class Part extends HeyApiClient {
@@ -1828,7 +1757,7 @@ export class Auth2 extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).delete<ProjectMcpAuthRemoveResponses, ProjectMcpAuthRemoveErrors, ThrowOnError>({
-            url: '/project/{projectID}/mcp/{name}/auth',
+            url: '/project/{projectID}/config/mcp/{name}/auth',
             ...options,
             ...params
         });
@@ -1850,7 +1779,7 @@ export class Auth2 extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectMcpAuthStartResponses, ProjectMcpAuthStartErrors, ThrowOnError>({
-            url: '/project/{projectID}/mcp/{name}/auth',
+            url: '/project/{projectID}/config/mcp/{name}/auth',
             ...options,
             ...params
         });
@@ -1874,7 +1803,7 @@ export class Auth2 extends HeyApiClient {
                     { in: 'body', key: 'code' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectMcpAuthCallbackResponses, ProjectMcpAuthCallbackErrors, ThrowOnError>({
-            url: '/project/{projectID}/mcp/{name}/auth/callback',
+            url: '/project/{projectID}/config/mcp/{name}/auth/callback',
             ...options,
             ...params,
             headers: {
@@ -1901,7 +1830,7 @@ export class Auth2 extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthAuthenticateErrors, ThrowOnError>({
-            url: '/project/{projectID}/mcp/{name}/auth/authenticate',
+            url: '/project/{projectID}/config/mcp/{name}/auth/authenticate',
             ...options,
             ...params
         });
@@ -1920,7 +1849,7 @@ export class Resource extends HeyApiClient {
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'projectID' }, { in: 'query', key: 'workspace' }] }]);
         return (options?.client ?? this.client).get<ProjectMcpResourceListResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/mcp/resource',
+            url: '/project/{projectID}/config/mcp/resource',
             ...options,
             ...params
         });
@@ -1939,7 +1868,7 @@ export class Mcp extends HeyApiClient {
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'projectID' }, { in: 'query', key: 'workspace' }] }]);
         return (options?.client ?? this.client).get<ProjectMcpStatusResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/mcp',
+            url: '/project/{projectID}/config/mcp',
             ...options,
             ...params
         });
@@ -1963,7 +1892,7 @@ export class Mcp extends HeyApiClient {
                     { in: 'body', key: 'config' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectMcpAddResponses, ProjectMcpAddErrors, ThrowOnError>({
-            url: '/project/{projectID}/mcp',
+            url: '/project/{projectID}/config/mcp',
             ...options,
             ...params,
             headers: {
@@ -1985,7 +1914,7 @@ export class Mcp extends HeyApiClient {
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'projectID' }, { in: 'query', key: 'workspace' }] }]);
         return (options?.client ?? this.client).get<ProjectMcpToolsResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/mcp/tools',
+            url: '/project/{projectID}/config/mcp/tools',
             ...options,
             ...params
         });
@@ -2005,7 +1934,7 @@ export class Mcp extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectMcpConnectResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/mcp/{name}/connect',
+            url: '/project/{projectID}/config/mcp/{name}/connect',
             ...options,
             ...params
         });
@@ -2025,7 +1954,7 @@ export class Mcp extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectMcpDisconnectResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/mcp/{name}/disconnect',
+            url: '/project/{projectID}/config/mcp/{name}/disconnect',
             ...options,
             ...params
         });
@@ -2052,7 +1981,7 @@ export class Marketplace extends HeyApiClient {
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'projectID' }, { in: 'query', key: 'workspace' }] }]);
         return (options?.client ?? this.client).get<ProjectPluginMarketplaceListResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/marketplace',
+            url: '/project/{projectID}/config/plugin/marketplace',
             ...options,
             ...params
         });
@@ -2072,7 +2001,7 @@ export class Marketplace extends HeyApiClient {
                     { in: 'body', key: 'source' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectPluginMarketplaceAddResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/marketplace',
+            url: '/project/{projectID}/config/plugin/marketplace',
             ...options,
             ...params,
             headers: {
@@ -2097,7 +2026,7 @@ export class Marketplace extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).delete<ProjectPluginMarketplaceRemoveResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/marketplace/{name}',
+            url: '/project/{projectID}/config/plugin/marketplace/{name}',
             ...options,
             ...params
         });
@@ -2117,7 +2046,7 @@ export class Marketplace extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).get<ProjectPluginMarketplacePluginsResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/marketplace/{name}/plugins',
+            url: '/project/{projectID}/config/plugin/marketplace/{name}/plugins',
             ...options,
             ...params
         });
@@ -2139,7 +2068,7 @@ export class Marketplace extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectPluginMarketplaceInstallResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/marketplace/{name}/install/{plugin}',
+            url: '/project/{projectID}/config/plugin/marketplace/{name}/install/{plugin}',
             ...options,
             ...params
         });
@@ -2156,7 +2085,7 @@ export class Plugin extends HeyApiClient {
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'projectID' }, { in: 'query', key: 'workspace' }] }]);
         return (options?.client ?? this.client).get<ProjectPluginListResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin',
+            url: '/project/{projectID}/config/plugin',
             ...options,
             ...params
         });
@@ -2176,7 +2105,7 @@ export class Plugin extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectPluginEnableResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/{id}/enable',
+            url: '/project/{projectID}/config/plugin/{id}/enable',
             ...options,
             ...params
         });
@@ -2196,7 +2125,7 @@ export class Plugin extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectPluginDisableResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/{id}/disable',
+            url: '/project/{projectID}/config/plugin/{id}/disable',
             ...options,
             ...params
         });
@@ -2216,7 +2145,7 @@ export class Plugin extends HeyApiClient {
                     { in: 'query', key: 'workspace' }
                 ] }]);
         return (options?.client ?? this.client).delete<ProjectPluginUninstallResponses, unknown, ThrowOnError>({
-            url: '/project/{projectID}/plugin/{id}',
+            url: '/project/{projectID}/config/plugin/{id}',
             ...options,
             ...params
         });
@@ -2753,6 +2682,11 @@ export class LiteaiClient extends HeyApiClient {
     private _log?: Log;
     get log2(): Log {
         return this._log ??= new Log({ client: this.client });
+    }
+    
+    private _telemetry?: Telemetry;
+    get telemetry(): Telemetry {
+        return this._telemetry ??= new Telemetry({ client: this.client });
     }
     
     private _system?: System;

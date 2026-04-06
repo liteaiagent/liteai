@@ -1,8 +1,9 @@
-import { type Tool as AITool, asSchema, jsonSchema, type ToolCallOptions, tool } from "ai"
 import { trace } from "@opentelemetry/api"
+import { type Tool as AITool, asSchema, jsonSchema, type ToolCallOptions, tool } from "ai"
 import z from "zod"
 
 const tracer = trace.getTracer("liteai")
+
 import { PermissionNext } from "@/permission/next"
 import type { Tool } from "@/tool/tool"
 import { Truncate } from "@/tool/truncation"

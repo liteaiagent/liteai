@@ -70,8 +70,8 @@ export namespace Server {
       .route("/permission", PermissionRoutes())
       .route("/question", QuestionRoutes())
       .route("/", FileRoutes())
-      .route("/mcp", McpRoutes())
-      .route("/plugin", PluginRoutes())
+      .route("/config/mcp", McpRoutes())
+      .route("/config/plugin", PluginRoutes())
       .route("/tool", ToolRoutes())
       .route("/", InstanceRoutes())
   }

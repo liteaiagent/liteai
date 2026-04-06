@@ -328,15 +328,59 @@ async function load(text: string, options: { path: string } | { dir: string; sou
 
 export const { JsonError, InvalidError } = ConfigPaths
 
-export async function get() {
-  return state().then((x) => x.config)
+export function redactSensitiveFields(config: Info): Info {
+  if (!config) return config
+  // Shallow clone top level
+  const redacted = { ...config }
+
+  // Deep clone and redact mcp secret keys
+  if (redacted.mcp) {
+    redacted.mcp = { ...redacted.mcp }
+    for (const [key, value] of Object.entries(redacted.mcp)) {
+      const mcpVal = value as { type?: string; oauth?: { clientSecret?: string } }
+      if (mcpVal && mcpVal.type === "remote" && mcpVal.oauth && typeof mcpVal.oauth === "object") {
+        const clonedOauth = { ...mcpVal.oauth }
+        if (clonedOauth.clientSecret) {
+          clonedOauth.clientSecret = "*****"
+        }
+        redacted.mcp[key] = { ...mcpVal, oauth: clonedOauth } as typeof value
+      }
+    }
+  }
+
+  // Deep clone and redact telemetry langfuse secret keys
+  if (redacted.telemetry?.langfuse?.secretKey) {
+    redacted.telemetry = {
+      ...redacted.telemetry,
+      langfuse: {
+        ...redacted.telemetry.langfuse,
+        secretKey: "*****",
+      },
+    }
+  }
+
+  return redacted
 }
 
-export async function getGlobal() {
-  return global()
+export async function get(options?: { unredacted?: boolean }) {
+  const config = await state().then((x) => x.config)
+  return options?.unredacted ? config : redactSensitiveFields(config)
+}
+
+export async function getGlobal(options?: { unredacted?: boolean }) {
+  const config = await global()
+  return options?.unredacted ? config : redactSensitiveFields(config)
 }
 
 export async function update(config: Info) {
+  if (config.telemetry !== undefined || config.server !== undefined) {
+    log.warn("ignoring global-only fields in project config update", {
+      fields: ["telemetry", "server"].filter((f) => f in config),
+    })
+    delete config.telemetry
+    delete config.server
+  }
+
   const filepath = path.join(Instance.directory, `${Brand.config}.json`)
   const existing = await loadFile(filepath)
   await Filesystem.writeJson(filepath, mergeDeep(existing, config))
@@ -424,20 +468,25 @@ export async function updateGlobal(config: Info) {
 
   global.reset()
 
-  void Instance.disposeAll()
-    .catch((e) => {
-      log.debug("disposeAll failed after global config update", { error: e })
-      return undefined
-    })
-    .finally(() => {
-      GlobalBus.emit("event", {
-        directory: "global",
-        payload: {
-          type: Event.Disposed.type,
-          properties: {},
-        },
+  const keys = Object.keys(config)
+  const onlyTelemetry = keys.length > 0 && keys.every((k) => k === "telemetry")
+
+  if (!onlyTelemetry) {
+    void Instance.disposeAll()
+      .catch((e) => {
+        log.debug("disposeAll failed after global config update", { error: e })
+        return undefined
       })
-    })
+      .finally(() => {
+        GlobalBus.emit("event", {
+          directory: "global",
+          payload: {
+            type: Event.Disposed.type,
+            properties: {},
+          },
+        })
+      })
+  }
 
   return next
 }

@@ -6,6 +6,7 @@ import { hideBin } from "yargs/helpers"
  * Starts the LiteAI server without TUI or CLI chrome.
  */
 import { Capabilities, createHostedCapabilities, createLocalCapabilities } from "./capabilities"
+import { getGlobal } from "./config/loader"
 import { Installation } from "./installation"
 import { Instance } from "./project/instance"
 import { Server } from "./server/server"
@@ -100,7 +101,7 @@ const log = Log.create({ service: "main" })
 // this global handler catches the SDK-internal rejection and converts it from
 // a process crash into a log entry. Filtering by error name prevents abort
 // noise from polluting real error alerting.
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason) => {
   log.error("CRITICAL: Unhandled Promise Rejection detected!", {
     reason: reason instanceof Error ? reason.message : String(reason),
     stack: reason instanceof Error ? reason.stack : undefined,
@@ -108,14 +109,15 @@ process.on("unhandledRejection", (reason, promise) => {
   })
 })
 
+await getGlobal()
 await initializeTelemetry()
 
 log.info("@liteai/core starting", {
   telemetry: process.env.LITEAI_TELEMETRY_DISABLED === "1" ? "disabled (opt-out)" : "enabled (default)",
-  traces: `LangfuseSpanProcessor → ${process.env.LANGFUSE_BASEURL}`,
+  traces: `LangfuseSpanProcessor → ${process.env.LANGFUSE_BASEURL || "disabled"}`,
   metrics: process.env.OTEL_METRICS_EXPORTER || "disabled",
   logs: process.env.OTEL_LOGS_EXPORTER || "disabled",
-  perfetto: process.env.LITEAI_PERFETTO_TRACE ? "enabled" : "disabled",
+  perfetto: process.env.LITEAI_PERFETTO_TRACE === "1" ? "enabled" : "disabled",
 })
 
 // ─── Initialize capabilities ────────────────────────────────────────────────

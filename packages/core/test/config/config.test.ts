@@ -1415,3 +1415,87 @@ describe("LITEAI_CONFIG_CONTENT token substitution", () => {
     }
   })
 })
+
+describe("sensitive field redaction", () => {
+  test("redacts telemetry.langfuse.secretKey and mcp oauth clientSecret by default", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await writeConfig(dir, {
+          $schema: "https://liteai.com/config.json",
+          telemetry: {
+            langfuse: {
+              publicKey: "pk-123",
+              secretKey: "sk-123",
+            },
+          },
+          mcp: {
+            test_server: {
+              type: "remote",
+              url: "http://example.com/mcp",
+              oauth: {
+                clientId: "client-123",
+                clientSecret: "oauth-secret-123",
+              },
+            },
+          },
+        })
+      },
+    })
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.telemetry?.langfuse?.publicKey).toBe("pk-123")
+        expect(config.telemetry?.langfuse?.secretKey).toBe("*****")
+
+        const mcpServer = config.mcp?.test_server as
+          | { type?: string; oauth?: { clientId?: string; clientSecret?: string } }
+          | undefined
+        if (mcpServer && mcpServer.type === "remote" && mcpServer.oauth) {
+          expect(mcpServer.oauth.clientId).toBe("client-123")
+          expect(mcpServer.oauth.clientSecret).toBe("*****")
+        } else {
+          expect.unreachable("mcp server config was lost or malformed")
+        }
+
+        // test unredacted option
+        const unredactedConfig = await Config.get({ unredacted: true })
+        expect(unredactedConfig.telemetry?.langfuse?.secretKey).toBe("sk-123")
+        const unredactedMcp = unredactedConfig.mcp?.test_server as
+          | { type?: string; oauth?: { clientSecret?: string } }
+          | undefined
+        if (unredactedMcp && unredactedMcp.type === "remote" && unredactedMcp.oauth) {
+          expect(unredactedMcp.oauth.clientSecret).toBe("oauth-secret-123")
+        }
+      },
+    })
+  })
+})
+
+describe("project config updates", () => {
+  test("strips global-only fields like telemetry and server from project updates", async () => {
+    await using tmp = await tmpdir()
+
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        // update should strip telemetry and server
+        await Config.update({
+          username: "valid_update",
+          telemetry: {
+            disabled: true,
+          },
+          server: {
+            port: 8080,
+          },
+        } as Parameters<typeof Config.update>[0])
+
+        const rawFile = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, "settings.json"))
+        expect(rawFile.username).toBe("valid_update")
+        expect(rawFile.telemetry).toBeUndefined()
+        expect(rawFile.server).toBeUndefined()
+      },
+    })
+  })
+})

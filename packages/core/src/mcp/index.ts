@@ -371,6 +371,10 @@ export namespace MCP {
     s.clients[name] = result.mcpClient
     s.status[name] = result.status
 
+    await Config.update({ mcp: { [name]: mcp } }).catch((error) => {
+      log.error("Failed to persist MCP config", { name, error })
+    })
+
     return {
       status: s.status,
     }
@@ -715,6 +719,10 @@ export namespace MCP {
       }
       s.clients[name] = result.mcpClient
     }
+
+    await Config.update({ mcp: { [name]: { enabled: true } } }).catch((error) => {
+      log.error("Failed to persist MCP connect state", { name, error })
+    })
   }
 
   export async function disconnect(name: string) {
@@ -727,6 +735,10 @@ export namespace MCP {
       delete s.clients[name]
     }
     s.status[name] = { status: "disabled" }
+
+    await Config.update({ mcp: { [name]: { enabled: false } } }).catch((error) => {
+      log.error("Failed to persist MCP disconnect state", { name, error })
+    })
   }
 
   export async function tools() {

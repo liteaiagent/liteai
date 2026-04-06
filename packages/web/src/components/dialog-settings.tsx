@@ -10,6 +10,7 @@ import { SettingsMcp } from "./settings-mcp"
 import { SettingsModels } from "./settings-models"
 import { SettingsPlugins } from "./settings-plugins"
 import { SettingsProviders } from "./settings-providers"
+import { SettingsServer } from "./settings-server"
 import { SettingsSkills } from "./settings-skills"
 import { SettingsTools } from "./settings-tools"
 
@@ -45,6 +46,10 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
                 <div class="flex flex-col gap-1.5">
                   <Tabs.SectionTitle>{language.t("settings.section.server")}</Tabs.SectionTitle>
                   <div class="flex flex-col gap-1.5 w-full">
+                    <Tabs.Trigger value="server">
+                      <Icon name="status" />
+                      {language.t("settings.server.title") ?? "Server Config"}
+                    </Tabs.Trigger>
                     <Tabs.Trigger value="providers">
                       <Icon name="providers" />
                       {language.t("settings.providers.title")}
@@ -87,6 +92,9 @@ export const DialogSettings: Component<{ tab?: string }> = (props) => {
         </Tabs.Content>
         <Tabs.Content value="shortcuts" class="no-scrollbar">
           <SettingsKeybinds />
+        </Tabs.Content>
+        <Tabs.Content value="server" class="no-scrollbar">
+          <SettingsServer />
         </Tabs.Content>
         <Tabs.Content value="providers" class="no-scrollbar">
           <SettingsProviders />

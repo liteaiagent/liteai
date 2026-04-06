@@ -729,6 +729,24 @@ export const Info = z
               "Telemetry is enabled by default. " +
               "Can also be controlled via the LITEAI_TELEMETRY_DISABLED env var.",
           ),
+        langfuse: z
+          .object({
+            publicKey: z.string().optional(),
+            secretKey: z.string().meta({ sensitive: true }).optional(),
+            baseUrl: z.string().optional(),
+          })
+          .optional(),
+        otel: z
+          .object({
+            endpoint: z.string().optional(),
+            protocol: z.enum(["http/protobuf", "http/json", "grpc"]).optional(),
+            traceExporter: z.string().optional(),
+            metricExporter: z.string().optional(),
+            logExporter: z.string().optional(),
+            exportIntervalMs: z.number().optional(),
+          })
+          .optional(),
+        perfetto: z.boolean().optional(),
       })
       .optional()
       .describe("Telemetry settings. Telemetry is enabled by default — set disabled:true to opt out."),
@@ -737,7 +755,6 @@ export const Info = z
   .meta({
     ref: "Config",
   })
-
 
 export type Info = z.output<typeof Info>
 
