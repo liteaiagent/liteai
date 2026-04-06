@@ -24,7 +24,7 @@ import { RunCommand } from "./cli/cmd/run"
 import { ServeCommand } from "./cli/cmd/serve"
 import { SessionCommand } from "./cli/cmd/session"
 import { StatsCommand } from "./cli/cmd/stats"
-import { TraceCommand } from "./cli/cmd/trace"
+
 import { AttachCommand } from "./cli/cmd/tui/attach"
 import { TuiThreadCommand } from "./cli/cmd/tui/thread"
 import { UninstallCommand } from "./cli/cmd/uninstall"
@@ -125,7 +125,6 @@ let cli = yargs(hideBin(process.argv))
   .command(ModelsCommand)
   .command(StatsCommand)
   .command(ExportCommand)
-  .command(TraceCommand)
   .command(ImportCommand)
   .command(GithubCommand)
   .command(PrCommand)

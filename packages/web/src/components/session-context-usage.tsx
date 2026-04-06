@@ -15,7 +15,7 @@ interface SessionContextUsageProps {
 export function SessionContextUsage(props: SessionContextUsageProps) {
   const sync = useSync()
   const language = useLanguage()
-  const { params, view } = useSessionLayout()
+  const { params } = useSessionLayout()
   const variant = createMemo(() => props.variant ?? "button")
   const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
 
@@ -32,11 +32,6 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
   const cost = createMemo(() => {
     return usd().format(metrics().totalCost)
   })
-
-  const openContext = () => {
-    if (!params.id) return
-    view().trace.toggle()
-  }
 
   const circle = () => (
     <div class="flex items-center justify-center">
@@ -73,13 +68,7 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
         <Switch>
           <Match when={variant() === "indicator"}>{circle()}</Match>
           <Match when={true}>
-            <Button
-              type="button"
-              variant="ghost"
-              class="size-6"
-              onClick={openContext}
-              aria-label={language.t("context.usage.view")}
-            >
+            <Button type="button" variant="ghost" class="size-6" aria-label={language.t("context.usage.view")}>
               {circle()}
             </Button>
           </Match>

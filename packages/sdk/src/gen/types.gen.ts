@@ -2043,64 +2043,6 @@ export type PathResponses = {
 
 export type PathResponse = PathResponses[keyof PathResponses];
 
-export type TelemetryGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/telemetry';
-};
-
-export type TelemetryGetResponses = {
-    /**
-     * Current telemetry status
-     */
-    200: {
-        /**
-         * Whether telemetry is currently active
-         */
-        enabled: boolean;
-        /**
-         * Where the setting was read from
-         */
-        source: 'env' | 'config' | 'default';
-    };
-};
-
-export type TelemetryGetResponse = TelemetryGetResponses[keyof TelemetryGetResponses];
-
-export type TelemetryUpdateData = {
-    body?: {
-        /**
-         * Set to true to enable telemetry, false to disable (opt-out)
-         */
-        enabled: boolean;
-    };
-    path?: never;
-    query?: never;
-    url: '/telemetry';
-};
-
-export type TelemetryUpdateErrors = {
-    /**
-     * Bad request
-     */
-    400: BadRequestError;
-};
-
-export type TelemetryUpdateError = TelemetryUpdateErrors[keyof TelemetryUpdateErrors];
-
-export type TelemetryUpdateResponses = {
-    /**
-     * Updated telemetry status
-     */
-    200: {
-        enabled: boolean;
-        source: 'env' | 'config' | 'default';
-    };
-};
-
-export type TelemetryUpdateResponse = TelemetryUpdateResponses[keyof TelemetryUpdateResponses];
-
 export type SystemFileListData = {
     body?: never;
     path?: never;

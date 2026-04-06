@@ -305,12 +305,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
         keybind: "mod+shift+r",
         onSelect: () => view().reviewPanel.toggle(),
       }),
-      viewCommand({
-        id: "trace.toggle",
-        title: "Toggle Trace Panel",
-        keybind: "ctrl+shift+t",
-        onSelect: () => view().trace.toggle(),
-      }),
+
       viewCommand({
         id: "fileTree.toggle",
         title: language.t("command.fileTree.toggle"),

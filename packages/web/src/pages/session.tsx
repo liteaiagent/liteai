@@ -44,7 +44,7 @@ import { syncSessionModel } from "@/pages/session/session-model-helpers"
 import { createSessionReview } from "@/pages/session/session-review"
 import { SessionSidePanel } from "@/pages/session/session-side-panel"
 import { TerminalPanel } from "@/pages/session/terminal-panel"
-import { TracePanel } from "@/pages/session/trace-panel"
+
 import { useSessionCommands } from "@/pages/session/use-session-commands"
 import { useSessionHashScroll } from "@/pages/session/use-session-hash-scroll"
 import { Identifier } from "@/utils/id"
@@ -143,13 +143,10 @@ export default function Page() {
   const desktopReviewOpen = createMemo(() => isDesktop() && view().reviewPanel.opened())
   const desktopFileTreeOpen = createMemo(() => isDesktop() && layout.fileTree.opened())
   const desktopSidePanelOpen = createMemo(() => desktopReviewOpen() || desktopFileTreeOpen())
-  const traceOpen = createMemo(() => isDesktop() && view().trace.opened())
-  const traceWidth = createMemo(() => (traceOpen() ? layout.trace.width() : 0))
   const sessionPanelWidth = createMemo(() => {
-    const tw = traceWidth()
-    if (!desktopSidePanelOpen()) return tw ? `calc(100% - ${tw}px)` : "100%"
+    if (!desktopSidePanelOpen()) return "100%"
     if (desktopReviewOpen()) return `${layout.session.width()}px`
-    return `calc(100% - ${layout.fileTree.width() + tw}px)`
+    return `calc(100% - ${layout.fileTree.width()}px)`
   })
   const centered = createMemo(() => isDesktop() && !desktopReviewOpen())
 
@@ -1200,7 +1197,7 @@ export default function Page() {
                 direction="horizontal"
                 size={layout.session.width()}
                 min={450}
-                max={typeof window === "undefined" ? 1000 : Math.max(450, window.innerWidth - traceWidth() - 200)}
+                max={typeof window === "undefined" ? 1000 : Math.max(450, window.innerWidth - 200)}
                 onResize={(width) => {
                   size.touch()
                   layout.session.resize(width)
@@ -1216,10 +1213,7 @@ export default function Page() {
           focusReviewDiff={review.focusReviewDiff}
           reviewSnap={ui.reviewSnap}
           size={size}
-          traceWidth={traceWidth()}
         />
-
-        <TracePanel size={size} />
       </div>
 
       <TerminalPanel />

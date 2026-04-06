@@ -16,7 +16,7 @@ const AVATAR_COLOR_KEYS = ["pink", "mint", "orange", "purple", "cyan", "lime"] a
 const DEFAULT_PANEL_WIDTH = 344
 const DEFAULT_SESSION_WIDTH = 600
 const DEFAULT_TERMINAL_HEIGHT = 280
-const DEFAULT_TRACE_WIDTH = 800
+
 export type AvatarColorKey = (typeof AVATAR_COLOR_KEYS)[number]
 
 export function getAvatarColors(key?: string) {
@@ -239,10 +239,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           height: DEFAULT_TERMINAL_HEIGHT,
           opened: false,
         },
-        trace: {
-          width: DEFAULT_TRACE_WIDTH,
-          opened: false,
-        },
+
         review: {
           diffStyle: "split" as ReviewDiffStyle,
           panelOpened: true,
@@ -642,16 +639,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           setStore("terminal", "height", height)
         },
       },
-      trace: {
-        width: createMemo(() => store.trace?.width ?? DEFAULT_TRACE_WIDTH),
-        resize(w: number) {
-          if (!store.trace) {
-            setStore("trace", { width: w, opened: false })
-            return
-          }
-          setStore("trace", "width", w)
-        },
-      },
+
       review: {
         diffStyle: createMemo(() => store.review?.diffStyle ?? "split"),
         setDiffStyle(diffStyle: ReviewDiffStyle) {
@@ -771,7 +759,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         const key = createSessionKeyReader(sessionKey, ensureKey)
         const s = createMemo(() => store.sessionView[key()] ?? { scroll: {} })
         const terminalOpened = createMemo(() => store.terminal?.opened ?? false)
-        const traceOpened = createMemo(() => store.trace?.opened ?? false)
+
         const reviewPanelOpened = createMemo(() => store.review?.panelOpened ?? true)
 
         function setTerminalOpened(next: boolean) {
@@ -784,17 +772,6 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           const value = current.opened ?? false
           if (value === next) return
           setStore("terminal", "opened", next)
-        }
-
-        function setTraceOpened(next: boolean) {
-          const current = store.trace
-          if (!current) {
-            setStore("trace", { width: DEFAULT_TRACE_WIDTH, opened: next })
-          } else {
-            const value = current.opened ?? false
-            if (value === next) return
-            setStore("trace", "opened", next)
-          }
         }
 
         function setReviewPanelOpened(next: boolean) {
@@ -828,18 +805,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
               setTerminalOpened(!terminalOpened())
             },
           },
-          trace: {
-            opened: traceOpened,
-            open() {
-              setTraceOpened(true)
-            },
-            close() {
-              setTraceOpened(false)
-            },
-            toggle() {
-              setTraceOpened(!traceOpened())
-            },
-          },
+
           reviewPanel: {
             opened: reviewPanelOpened,
             open() {
