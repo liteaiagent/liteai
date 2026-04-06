@@ -1,8 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { Provider } from "../../../src/provider/provider"
 import { ProviderID } from "../../../src/provider/schema"
-import { Message } from "../../../src/session/message"
-import { MessageID, PartID, SessionID } from "../../../src/session/schema"
 import {
   applyToolResultBudget,
   createAutocompactState,
@@ -10,6 +8,8 @@ import {
   shouldAutocompact,
   snipCompact,
 } from "../../../src/session/engine/pipeline"
+import { Message } from "../../../src/session/message"
+import { MessageID, PartID, SessionID } from "../../../src/session/schema"
 
 function createMessage(
   role: "user" | "assistant",

@@ -49,7 +49,11 @@ const _state = Instance.state(
   async (current) => {
     for (const [id, item] of Object.entries(current)) {
       log.info("state cleanup aborting session", { sessionID: id })
-      item.abort.abort()
+      try {
+        item.abort.abort()
+      } catch {
+        // Swallowed — see safeAbort() for full explanation of the Bun quirk
+      }
     }
   },
 )
@@ -176,7 +180,80 @@ export function cancel(sessionID: SessionID) {
     SessionStatus.set(sessionID, { type: "idle" })
     return
   }
-  match.abort.abort()
+  safeAbort(match.abort, sessionID)
+}
+
+/**
+ * Safely abort an AbortController, swallowing any errors thrown by
+ * abort event listeners added by providers.
+ *
+ * ## Bun Runtime Discovery (April 2026, Bun v1.3.x)
+ *
+ * When an EventTarget listener throws during `AbortController.abort()`,
+ * Bun exhibits three behaviors simultaneously:
+ *
+ * 1. **JS-level propagation**: The error propagates through `abort()` and
+ *    CAN be caught by a standard `try/catch` — so `cancel()` doesn't crash
+ *    at the JS level.
+ *
+ * 2. **Native error reporting**: Bun's C++ EventTarget dispatcher ALSO
+ *    reports the error through its internal error pipeline, printing the
+ *    error to stderr independently of JS exception handling.
+ *
+ * 3. **Exit code 1**: Bun sets the process exit code to 1 regardless of
+ *    whether JS caught the error.
+ *
+ * Because of (2) and (3), a simple `try/catch` around `abort()` is
+ * insufficient — the process still crashes with exit code 1.
+ *
+ * **What doesn't work:**
+ * - `try/catch` around `abort()` — catches the JS error but Bun still
+ *   reports it natively and exits with code 1.
+ * - Overriding `signal.dispatchEvent()` — Bun's native `abort()` bypasses
+ *   the JS `dispatchEvent` method entirely, calling listeners at the C++ level.
+ * - `globalThis.addEventListener("error")` — Bun reports the error at a
+ *   level below the global error event.
+ *
+ * **What works:**
+ * - `process.on("uncaughtException")` — This is the ONLY mechanism that
+ *   intercepts Bun's native error pipeline. Installing a temporary handler
+ *   before `abort()` prevents both the error output and the exit code 1.
+ *
+ * ## Why this matters
+ *
+ * Provider SDKs add abort listeners on the signal to do cleanup work
+ * (e.g., google-code-assist's `sourceStream.destroy()`, `rl.close()`).
+ * If those listeners throw — which is common during stream teardown —
+ * the process crashes even though the abort itself succeeded.
+ */
+function safeAbort(controller: AbortController, sessionID: string) {
+  const errors: unknown[] = []
+
+  // Install a temporary uncaughtException handler to suppress Bun's
+  // native error reporting during abort(). This is the ONLY mechanism
+  // that prevents Bun from setting exit code 1 (see discovery above).
+  const suppressHandler = (err: Error) => {
+    errors.push(err)
+  }
+  process.on("uncaughtException", suppressHandler)
+
+  try {
+    controller.abort()
+  } catch (e: unknown) {
+    errors.push(e)
+  } finally {
+    process.removeListener("uncaughtException", suppressHandler)
+  }
+
+  if (errors.length > 0) {
+    for (const e of errors) {
+      log.info("cancel: abort listener threw (swallowed)", {
+        sessionID,
+        error: e instanceof Error ? e.message : String(e),
+        name: e instanceof DOMException ? (e as DOMException).name : undefined,
+      })
+    }
+  }
 }
 
 /**
@@ -232,6 +309,8 @@ export const LoopInput = z.object({
 //   tombstone   → flush persister to clean up orphaned message
 
 async function runSession(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
+  const isAbortError = (e: unknown): e is DOMException =>
+    e instanceof DOMException && e.name === "AbortError"
   const { sessionID, session, abort } = input
 
   let persister: EventPersister | undefined
@@ -250,6 +329,7 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
     msgsBuffer,
   })
 
+  try {
   for await (const event of generator) {
     switch (event.type) {
       // ── Turn Start: persist assistant message, create persister ──
@@ -450,18 +530,34 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
       // ── Stream events: route to persister ──
       default: {
         if (persister) {
-          await persister.handleEvent(event)
-
-          // Capture stream result if available via the streaming events
-          // (the persister tracks this internally)
+          const action = await persister.handleEvent(event)
+          if (action === "stop") {
+            log.info("runSession: persister signalled stop during event handling", { sessionID })
+            // Break out of the for-await to stop pulling events from the generator
+            // This prevents repeated AbortError processing when abort fires mid-stream
+            return
+          }
         }
         break
       }
     }
   }
+  } catch (e: unknown) {
+    // AbortError is expected when the user cancels mid-stream.
+    // Swallow it here so it doesn't propagate as an unhandled rejection.
+    if (isAbortError(e)) {
+      log.info("runSession: caught AbortError in event loop", { sessionID })
+    } else {
+      throw e
+    }
+  }
 
-  // Post-loop cleanup
-  SessionCompaction.prune({ sessionID })
+  // Post-loop cleanup (fire-and-forget with catch to prevent unhandled rejection)
+  SessionCompaction.prune({ sessionID }).catch((e: unknown) => {
+    if (!isAbortError(e)) {
+      log.error("runSession: prune failed", { error: e, sessionID })
+    }
+  })
 }
 
 /**

@@ -1,8 +1,8 @@
 import { describe, expect, mock, test } from "bun:test"
 import type { Provider } from "../../../src/provider/provider"
+import { EventPersister } from "../../../src/session/engine/persister"
 import type { Message } from "../../../src/session/message"
 import { MessageID, SessionID } from "../../../src/session/schema"
-import { EventPersister } from "../../../src/session/engine/persister"
 
 // Mock the DB and other dependencies for the test
 mock.module("../index", () => ({

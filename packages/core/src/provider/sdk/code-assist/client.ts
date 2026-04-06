@@ -178,8 +178,13 @@ export async function* stream(
     })
 
     const onAbort = () => {
-      sourceStream.destroy()
-      rl.close()
+      try {
+        sourceStream.destroy()
+        rl.close()
+      } catch {
+        // Swallow errors during abort cleanup — the stream is being
+        // forcefully torn down and errors here are expected.
+      }
     }
     if (signal) {
       if (signal.aborted) onAbort()
@@ -217,6 +222,11 @@ export async function* stream(
       if (signal) signal.removeEventListener("abort", onAbort)
     }
   } catch (error) {
+    // AbortError is expected when the user cancels — don't log as error
+    if (error instanceof DOMException && error.name === "AbortError") {
+      http.info("stream aborted", { provider: "google-code-assist", url })
+      throw error
+    }
     const err = error as { response?: { status?: number; statusText?: string; headers?: unknown } }
     http.error("response", {
       provider: "google-code-assist",

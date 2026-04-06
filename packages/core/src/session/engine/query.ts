@@ -472,9 +472,16 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
   }
 
   // ── Dispatch Stop hook ──
-  await Hook.dispatch("Stop", {
-    session_id: sessionID,
-    cwd: Instance.directory,
-    hook_event_name: "Stop",
-  })
+  try {
+    await Hook.dispatch("Stop", {
+      session_id: sessionID,
+      cwd: Instance.directory,
+      hook_event_name: "Stop",
+    })
+  } catch (e: unknown) {
+    // AbortError during Stop hook dispatch is expected when session is cancelled
+    if (!(e instanceof DOMException && e.name === "AbortError")) {
+      log.error("queryLoop: Stop hook dispatch failed", { error: e, sessionID })
+    }
+  }
 }

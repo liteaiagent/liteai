@@ -53,8 +53,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 3. Connect to the remote machine to tear down and start the stack
-Write-Host "`n[3/3] Restarting Docker Containers remotely..." -ForegroundColor Yellow
-ssh $RemoteHost "cd $RemotePath && docker compose down && docker compose up -d"
+Write-Host "`n[3/3] Fixing permissions & Restarting Docker Containers remotely..." -ForegroundColor Yellow
+ssh $RemoteHost "cd $RemotePath && chmod -R a+rX . && docker compose down && docker compose up -d"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to restart Docker containers." -ForegroundColor Red

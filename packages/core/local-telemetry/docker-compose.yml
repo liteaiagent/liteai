@@ -3,10 +3,11 @@ services:
   tempo:
     image: grafana/tempo:2.10.3
     container_name: tempo
+    user: "1000"
     command: [ "-config.file=/etc/tempo.yaml" ]
     volumes:
       - ./tempo.yaml:/etc/tempo.yaml
-      - tempo_data:/tmp/tempo
+      - ./tempo_data:/tmp/tempo
     # Traefik configuration for Tempo Receivers
     labels:
       - "traefik.enable=true"
@@ -26,6 +27,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    user: "1000"
     environment:
       # Bypass login screen for local dev convenience
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -36,7 +38,7 @@ services:
       - ./datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
       - ./dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
       - ./dashboards:/etc/grafana/provisioning/dashboards/json
-      - grafana_data:/var/lib/grafana
+      - ./grafana_data:/var/lib/grafana
     # Traefik configuration for Grafana UI
     labels:
       - "traefik.enable=true"
@@ -55,13 +57,14 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    user: "1000"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       # This flag allows Prometheus to directly accept OTLP metric pushes
       - "--web.enable-otlp-receiver"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
+      - ./prometheus_data:/prometheus
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.prometheus.rule=Host(`metrics.${DOMAIN}`)"
@@ -77,10 +80,13 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: loki
+    # Loki 3.x defaults to non-root (UID 10001) but the named volume is root-owned,
+    # causing "permission denied" on /tmp/loki subdirectory creation. Run as root for local dev.
+    user: "0"
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
     volumes:
       - ./loki-config.yaml:/etc/loki/local-config.yaml
-      - loki_data:/tmp/loki
+      - ./loki_data:/tmp/loki
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.loki.rule=Host(`logs.${DOMAIN}`)"
@@ -96,9 +102,3 @@ services:
 networks:
   traefik-net:
     external: true
-
-volumes:
-  tempo_data:
-  grafana_data:
-  prometheus_data:
-  loki_data:
