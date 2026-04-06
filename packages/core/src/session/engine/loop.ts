@@ -473,20 +473,6 @@ async function runSessionInner(input: { sessionID: SessionID; session: Session.I
           break
         }
 
-        // ── Tombstone: clean up orphaned message ──
-        case "tombstone": {
-          log.warn("runSession: tombstone received", {
-            sessionID,
-            messageID: event.messageID,
-            reason: event.reason,
-          })
-          if (persister) {
-            await persister.flush(currentStreamResult)
-            currentStreamResult = undefined
-          }
-          break
-        }
-
         // ── Control: compaction, subtask, overflow ──
         case "control": {
           switch (event.action) {

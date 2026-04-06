@@ -83,18 +83,7 @@ export namespace EngineEvent {
     streamResult?: unknown
   }
 
-  /**
-   * Signals that a partial/orphaned message should be cleaned up
-   * due to a streaming fallback or unrecoverable error.
-   */
-  export type TombstoneEvent = {
-    type: "tombstone"
-    /** The ID of the orphaned assistant message */
-    messageID: string
-    /** Why the message was tombstoned */
-    reason: string
-  }
 
   /** All event types that can flow through the queryLoop generator */
-  export type Any = DeltaEvent | BlockEvent | GeneratorResultEvent | TurnStartEvent | TurnEndEvent | TombstoneEvent
+  export type Any = DeltaEvent | BlockEvent | GeneratorResultEvent | TurnStartEvent | TurnEndEvent
 }

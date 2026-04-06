@@ -50,14 +50,13 @@ export type QueryLoopParams = {
  *   via `TurnStartEvent` (create assistant message) and event routing
  *   to `EventPersister`
  * - Yields `GeneratorResultEvent` for flow control (compact, subtask, etc.)
- * - Yields `TombstoneEvent` for error cleanup of partial messages
+ * - ALL errors (including stream crashes) are yielded as events, never swallowed
  *
  * The consumer (`runSession` in loop.ts) should:
  * 1. On `turn-start`: persist the assistant message, create EventPersister
  * 2. On stream events: route to persister.handleEvent()
  * 3. On `turn-end`: flush persister, handle result
  * 4. On `control`: trigger compaction, process subtasks, etc.
- * 5. On `tombstone`: clean up orphaned messages
  */
 export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<EngineEvent.Any, void, unknown> {
   const { sessionID, session, abort, msgsBuffer } = params
@@ -372,22 +371,24 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         // and maintains concurrency state without intercepting the event flow.
         toolExecutor.processEvent(event)
 
-        if (event.type === "error" && event.kind === "stream") {
-          throw event.error
-        }
-
+        // All events — including stream errors — are yielded to the orchestrator,
+        // which routes them to persister.handleEvent() for proper classification
+        // (abort → stop, retryable → backoff, overflow → compact, fatal → error).
         yield event
       }
-    } catch (streamError: unknown) {
-      // Discard any pending tools on stream error
+    } catch (unexpectedError: unknown) {
+      // This catch only fires for truly unexpected errors (bugs in queryLoop,
+      // toolExecutor, or generator protocol errors — NOT stream errors from the
+      // AI SDK, which are already yielded as { type: "error", kind: "stream" }).
+      // Route them through the standard error pipeline so persister can classify.
       toolExecutor.discard()
-      // Yield tombstone so the orchestrator can clean up
-      log.error("queryLoop: stream error", { error: streamError, sessionID })
+      log.error("queryLoop: unexpected error during stream processing", { error: unexpectedError, sessionID })
       yield {
-        type: "tombstone",
-        messageID: assistantMessage.id,
-        reason: streamError instanceof Error ? streamError.message : String(streamError),
-      } satisfies EngineEvent.TombstoneEvent
+        type: "error",
+        kind: "stream",
+        error: unexpectedError,
+        isAbortError: unexpectedError instanceof DOMException && unexpectedError.name === "AbortError",
+      } satisfies EngineEvent.BlockEvent
     } finally {
       turnSpan.end()
     }
@@ -409,6 +410,14 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       structuredOutput,
       streamResult,
     } satisfies EngineEvent.TurnEndEvent
+
+    // ── Exit on fatal error ──
+    // After persister classifies a non-retryable error, it sets assistantMessage.error.
+    // We must break here to prevent the while(true) from creating a new turn.
+    if (assistantMessage.error) {
+      log.info("queryLoop: ending due to fatal error", { sessionID })
+      break
+    }
 
     // ── Reset structured output for next turn ──
     if (structuredOutput !== undefined) {
