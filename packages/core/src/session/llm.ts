@@ -1,5 +1,6 @@
 import { userInfo } from "node:os"
-import type { JSONValue } from "@ai-sdk/provider"
+import type { JSONValue, LanguageModelV2Middleware, LanguageModelV2StreamPart } from "@ai-sdk/provider"
+import { trace } from "@opentelemetry/api"
 import {
   jsonSchema,
   type ModelMessage,
@@ -268,6 +269,7 @@ export namespace LLM {
       model: wrapLanguageModel({
         model: language,
         middleware: [
+          reasoningTelemetryMiddleware,
           {
             async transformParams(args) {
               if (args.type === "stream") {
@@ -303,4 +305,122 @@ export namespace LLM {
     }
     return false
   }
+}
+
+// ─── Reasoning Telemetry Middleware ────────────────────────────────────────────
+//
+// Captures reasoning/thinking text emitted by any provider and patches the
+// OTel span so Langfuse can render it as a ThinkingBlock.
+//
+// How it works:
+// 1. wrapStream intercepts the provider's ReadableStream
+// 2. A TransformStream passes all parts through unchanged while accumulating
+//    reasoning-delta and text-delta chunks
+// 3. On stream completion (flush), if reasoning was present, it sets the
+//    `langfuse.observation.output` span attribute with a ChatML-format message
+//    that includes a `thinking` array.
+//
+// Why `langfuse.observation.output` instead of `ai.response.text`?
+//   The AI SDK's internal telemetry wraps OUTSIDE this middleware. When the
+//   stream completes, the AI SDK's own flush overwrites `ai.response.text`
+//   after our flush runs. `langfuse.observation.output` has HIGHEST priority
+//   in Langfuse's ingestion processor (checked before all framework-specific
+//   extractors) and the AI SDK never touches it.
+//
+// Why the `thinking` array format?
+//   Langfuse's ChatMlMessageSchema directly supports:
+//     thinking: z.array(ThinkingContentPartSchema).optional()
+//   where ThinkingContentPartSchema = { type: "thinking", content: string }
+//   This is rendered by the ThinkingBlock component in the trace UI.
+//
+// This runs once at the middleware layer so ALL providers benefit automatically.
+
+const reasoningTelemetryMiddleware: LanguageModelV2Middleware = {
+  wrapStream: async ({ doStream, params }) => {
+    // Capture the active OTel span while we're still inside the
+    // ai.streamText.doStream span context. By the time the stream
+    // flushes, the async context may have unwound.
+    const span = trace.getActiveSpan()
+
+    const { stream, ...rest } = await doStream()
+
+    // If no span, skip the transform overhead entirely
+    if (!span) {
+      return { stream, ...rest }
+    }
+
+    const reasoningChunks: string[] = []
+    const textChunks: string[] = []
+    const toolCalls: Array<{ type: string; toolCallId: string; toolName: string; input: string }> = []
+
+    const transform = new TransformStream<LanguageModelV2StreamPart, LanguageModelV2StreamPart>({
+      transform(chunk, controller) {
+        if (chunk.type === "reasoning-delta") {
+          reasoningChunks.push(chunk.delta)
+        }
+        if (chunk.type === "text-delta") {
+          textChunks.push(chunk.delta)
+        }
+        if (chunk.type === "tool-call") {
+          toolCalls.push({
+            type: chunk.type,
+            toolCallId: chunk.toolCallId,
+            toolName: chunk.toolName,
+            input: chunk.input,
+          })
+        }
+
+        // Always pass through unchanged — we never alter the stream content
+        controller.enqueue(chunk)
+      },
+      flush() {
+        if (reasoningChunks.length === 0) return
+
+        const reasoningText = reasoningChunks.join("")
+        const responseText = textChunks.join("")
+
+        // Build a ChatML-format output that Langfuse's schema directly supports.
+        // The `thinking` array is defined in BaseChatMlMessageSchema and rendered
+        // by the ThinkingBlock component.
+        const output: Record<string, unknown> = {
+          role: "assistant",
+          thinking: [{ type: "thinking" as const, content: reasoningText }],
+        }
+
+        if (responseText) {
+          output.content = responseText
+        }
+
+        if (toolCalls.length > 0) {
+          // Map to Langfuse's ToolCallSchema format: { id, name, arguments (string) }
+          // The AI SDK uses { toolCallId, toolName, input (string) } which doesn't
+          // match ToolCallSchema and would cause the entire ChatMlMessageSchema to
+          // fail validation, putting everything (including thinking) into the json
+          // bucket where ThinkingBlock can't find it.
+          output.tool_calls = toolCalls.map((tc) => ({
+            id: tc.toolCallId,
+            name: tc.toolName,
+            arguments: tc.input, // already a JSON string from the stream
+            type: tc.type,
+          }))
+        }
+
+        // Setting langfuse.observation.output triggers an early return in
+        // Langfuse's extractInputOutput (line 1482), which skips reading
+        // ai.prompt.messages. So we must also set langfuse.observation.input
+        // to preserve the prompt messages in the trace.
+        //
+        // Output must be a plain object (not wrapped in array) — when wrapped,
+        // the fallback path sets json=[...] and message.json.tool_calls is
+        // undefined because json is an array, not an object.
+        span.setAttribute("langfuse.observation.input", JSON.stringify(params.prompt))
+        span.setAttribute("langfuse.observation.output", JSON.stringify(output))
+      },
+    })
+
+    return {
+      stream: stream.pipeThrough(transform),
+      ...rest,
+    }
+  },
 }

@@ -180,9 +180,7 @@ describe("session.llm telemetry metadata", () => {
         //
         // Direct structural test: read the source and verify no
         // 'langfuse.observation.metadata.langgraph_' keys exist.
-        const source = await Bun.file(
-          path.join(import.meta.dir, "../../src/session/llm.ts"),
-        ).text()
+        const source = await Bun.file(path.join(import.meta.dir, "../../src/session/llm.ts")).text()
 
         // Verify bare keys are used (correct)
         expect(source).toContain("langgraph_node: input.agent.name")
@@ -290,9 +288,7 @@ describe("session.llm telemetry metadata", () => {
 
         // Verify the default works via source inspection
         // The expression `String(input.step ?? 1)` ensures step defaults to "1"
-        const source = await Bun.file(
-          path.join(import.meta.dir, "../../src/session/llm.ts"),
-        ).text()
+        const source = await Bun.file(path.join(import.meta.dir, "../../src/session/llm.ts")).text()
         expect(source).toContain("String(input.step ?? 1)")
       },
     })

@@ -1,0 +1,38 @@
+Executes a shell command in ${shell} with optional timeout. All commands run in ${directory} by default.
+
+IMPORTANT: This tool is for terminal operations (git, npm, docker, etc.). DO NOT use it for file operations — use the specialized tools instead.
+
+## Parameters
+- `command` (required): The command to execute.
+- `workdir` (optional): Working directory. Defaults to ${directory}. Use this instead of `cd <directory> && <command>`.
+- `timeout` (optional): Timeout in milliseconds. Defaults to 2 minutes.
+- `description` (required): A clear 5-10 word summary of what this command does.
+
+## Parallel Execution
+When you need to run multiple independent commands, call this tool multiple times in the same response. The commands will execute in parallel, which is significantly faster.
+
+<good-example>
+Need to check git status and list installed packages? Make two parallel run_command calls:
+  Call 1: git status
+  Call 2: npm list --depth=0
+</good-example>
+
+Only chain commands with `&&` when they are truly sequential (one depends on the other):
+<good-example>
+git add . && git commit -m "message"
+</good-example>
+
+## Output
+- If output exceeds ${maxLines} lines or ${maxBytes} bytes, it will be truncated and the full output written to a file. Use Read with offset/limit or Grep to search the full content.
+- Do NOT use `head`, `tail`, or other truncation commands — the full output is already captured.
+
+## Guidelines
+- Always quote file paths containing spaces with double quotes.
+- Prefer dedicated tools over shell equivalents:
+  - File search → Glob (not find/ls)
+  - Content search → Grep (not grep/rg)
+  - Read files → Read (not cat/head/tail)
+  - Edit files → Edit (not sed/awk)
+  - Write files → Write (not echo/cat <<EOF)
+- Use `workdir` parameter instead of `cd` commands.
+- NEVER use interactive flags (e.g., git rebase -i, git add -i) — they require interactive input which is not supported.
