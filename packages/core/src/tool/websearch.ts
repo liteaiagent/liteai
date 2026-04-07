@@ -1,12 +1,12 @@
 import type { AuthClient } from "google-auth-library"
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/websearch.txt"
 import { Provider } from "../provider/provider"
 import { ProviderID } from "../provider/schema"
 import type { CodeAssistClientConfig } from "../provider/sdk/code-assist"
 import { codeAssistSearch } from "../provider/sdk/code-assist"
 import { abortAfterAny } from "../util/abort"
 import { Tool } from "./tool"
-import DESCRIPTION from "./websearch.txt"
 
 const API_CONFIG = {
   BASE_URL: "https://mcp.exa.ai",

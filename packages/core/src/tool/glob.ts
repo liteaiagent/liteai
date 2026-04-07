@@ -1,10 +1,10 @@
 import path from "node:path"
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/glob.txt"
 import { Ripgrep } from "../file/ripgrep"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
 import { assertExternalDirectory } from "./external-directory"
-import DESCRIPTION from "./glob.txt"
 import { Tool } from "./tool"
 
 export const GlobTool = Tool.define("glob", {

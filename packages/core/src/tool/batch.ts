@@ -1,6 +1,6 @@
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/batch.txt"
 import { ModelID, ProviderID } from "../provider/schema"
-import DESCRIPTION from "./batch.txt"
 import { Tool } from "./tool"
 
 const DISALLOWED = new Set(["batch"])

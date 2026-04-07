@@ -2,6 +2,7 @@ import * as path from "node:path"
 import { createTwoFilesPatch, diffLines } from "diff"
 import z from "zod"
 import type { Snapshot } from "@/snapshot"
+import DESCRIPTION from "../bundled/prompts/tools/write.txt"
 import { Bus } from "../bus"
 import { File } from "../file"
 import { FileTime } from "../file/time"
@@ -12,7 +13,6 @@ import { Filesystem } from "../util/filesystem"
 import { trimDiff } from "./edit"
 import { assertExternalDirectory } from "./external-directory"
 import { Tool } from "./tool"
-import DESCRIPTION from "./write.txt"
 
 const MAX_DIAGNOSTICS_PER_FILE = 20
 const MAX_PROJECT_DIAGNOSTICS_FILES = 5

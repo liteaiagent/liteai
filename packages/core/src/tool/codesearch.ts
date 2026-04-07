@@ -1,6 +1,6 @@
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/codesearch.txt"
 import { abortAfterAny } from "../util/abort"
-import DESCRIPTION from "./codesearch.txt"
 import { Tool } from "./tool"
 
 const API_CONFIG = {

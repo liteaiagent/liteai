@@ -1,8 +1,8 @@
 import path from "node:path"
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/multiedit.txt"
 import { Instance } from "../project/instance"
 import { EditTool } from "./edit"
-import DESCRIPTION from "./multiedit.txt"
 import { Tool } from "./tool"
 
 export const MultiEditTool = Tool.define("multiedit", {

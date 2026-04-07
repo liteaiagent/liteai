@@ -1,6 +1,6 @@
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/question.txt"
 import { Question } from "../question"
-import DESCRIPTION from "./question.txt"
 import { Tool } from "./tool"
 
 export const QuestionTool = Tool.define("question", {

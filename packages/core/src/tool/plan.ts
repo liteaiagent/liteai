@@ -1,12 +1,12 @@
 import path from "node:path"
 import z from "zod"
+import EXIT_DESCRIPTION from "../bundled/prompts/tools/plan-exit.txt"
 import { Instance } from "../project/instance"
 import { Provider } from "../provider/provider"
 import { Question } from "../question"
 import { Session } from "../session"
 import { Message } from "../session/message"
 import { MessageID, PartID, type SessionID } from "../session/schema"
-import EXIT_DESCRIPTION from "./plan-exit.txt"
 import { Tool } from "./tool"
 
 async function getLastModel(sessionID: SessionID) {

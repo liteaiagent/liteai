@@ -1,12 +1,12 @@
 import path from "node:path"
 import { text } from "node:stream/consumers"
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/grep.txt"
 import { Ripgrep } from "../file/ripgrep"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
 import { Process } from "../util/process"
 import { assertExternalDirectory } from "./external-directory"
-import DESCRIPTION from "./grep.txt"
 import { Tool } from "./tool"
 
 const MAX_LINE_LENGTH = 2000

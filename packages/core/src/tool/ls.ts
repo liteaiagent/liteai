@@ -1,9 +1,9 @@
 import * as path from "node:path"
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/ls.txt"
 import { Ripgrep } from "../file/ripgrep"
 import { Instance } from "../project/instance"
 import { assertExternalDirectory } from "./external-directory"
-import DESCRIPTION from "./ls.txt"
 import { Tool } from "./tool"
 
 export const IGNORE_PATTERNS = [

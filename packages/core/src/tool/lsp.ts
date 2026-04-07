@@ -1,11 +1,11 @@
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import z from "zod"
+import DESCRIPTION from "../bundled/prompts/tools/lsp.txt"
 import { LSP } from "../lsp"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
 import { assertExternalDirectory } from "./external-directory"
-import DESCRIPTION from "./lsp.txt"
 import { Tool } from "./tool"
 
 const operations = [

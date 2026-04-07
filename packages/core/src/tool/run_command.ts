@@ -10,9 +10,9 @@ import { Shell } from "@/shell/shell"
 
 import { Filesystem } from "@/util/filesystem"
 import { lazy } from "@/util/lazy"
+import DESCRIPTION from "../bundled/prompts/tools/run_command.txt"
 import { Instance } from "../project/instance"
 import { Log } from "../util/log"
-import DESCRIPTION from "./run_command.txt"
 import { Tool } from "./tool"
 import { Truncate } from "./truncation"
 
