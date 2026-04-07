@@ -5,8 +5,10 @@ import { type Component, createMemo, createResource, createSignal, For, Show } f
 import { useGlobalSync } from "@/context/global-sync"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
+import { useScopedConfig } from "@/hooks/use-scoped-config"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
+import { SettingsScopeSwitcher } from "./settings-scope-switcher"
 
 type PluginEntry = {
   id: string
@@ -14,7 +16,7 @@ type PluginEntry = {
   marketplace: string
   version?: string
   enabled: boolean
-  scope: "user" | "project" | "local"
+  scope: "user" | "project"
 }
 
 type MarketplaceEntry = {
@@ -34,7 +36,7 @@ type MarketplacePlugin = {
 
 type PluginView = "list" | "discover" | "marketplaces" | { type: "marketplace"; name: string }
 
-const SettingsPluginsInner: Component = () => {
+const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
   const sdk = useSDK()
   const [loading, setLoading] = createSignal<string | null>(null)
   const [view, setView] = createSignal<PluginView>("list")
@@ -42,6 +44,7 @@ const SettingsPluginsInner: Component = () => {
   const [addingMarketplace, setAddingMarketplace] = createSignal(false)
   const [marketplaceSearch, setMarketplaceSearch] = createSignal("")
   const [search, setSearch] = createSignal("")
+  const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
 
   const [plugins, { refetch: refetchPlugins }] = createResource(async () => {
     try {
@@ -104,19 +107,21 @@ const SettingsPluginsInner: Component = () => {
   const toggle = async (id: string, on: boolean) => {
     if (loading()) return
     setLoading(id)
-    if (on) {
-      await sdk.client.project.plugin.enable({ id, projectID: sdk.projectID })
-    } else {
-      await sdk.client.project.plugin.disable({ id, projectID: sdk.projectID })
+    try {
+      const currentConfig = await getConfig(props.projectID)
+      const enabledPlugins = { ...(currentConfig.enabledPlugins ?? {}) }
+      enabledPlugins[id] = on
+      await updateConfig({ enabledPlugins }, props.projectID)
+      refetchPlugins()
+    } finally {
+      setLoading(null)
     }
-    refetchPlugins()
-    setLoading(null)
   }
 
   const removePlugin = async (id: string) => {
     if (loading()) return
     setLoading(id)
-    await sdk.client.project.plugin.uninstall({ id, projectID: sdk.projectID })
+    await sdk.client.project.plugin.uninstall({ id, projectID: props.projectID })
     refetchPlugins()
     setLoading(null)
   }
@@ -177,6 +182,9 @@ const SettingsPluginsInner: Component = () => {
               </button>
             </Show>
             <h2 class="text-16-medium text-text-strong">Plugins</h2>
+          </div>
+          <div class="pb-2">
+            <SettingsScopeSwitcher scope={scope} setScope={setScope} hasWorkspace={() => true} />
           </div>
 
           {/* Tab bar */}
@@ -532,7 +540,7 @@ export const SettingsPlugins: Component = () => {
       {(resolved) => (
         <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
-            <SettingsPluginsInner />
+            <SettingsPluginsInner projectID={toProjectID(resolved)} />
           </SyncProvider>
         </SDKProvider>
       )}

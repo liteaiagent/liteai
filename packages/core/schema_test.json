@@ -49,9 +49,7 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "command"
-            ],
+            "required": ["command"],
             "additionalProperties": false
           },
           {
@@ -116,9 +114,7 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": [
-              "url"
-            ],
+            "required": ["url"],
             "additionalProperties": false
           }
         ]
@@ -130,9 +126,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "disabled"
-        ],
+        "required": ["disabled"],
         "additionalProperties": false
       }
     ]

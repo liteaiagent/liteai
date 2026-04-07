@@ -25,10 +25,6 @@
 			"path": "packages/util"
 		},
 		{
-			"name": "gca-proxy",
-			"path": "packages/gca-proxy"
-		},
-		{
 			"name": "vscode",
 			"path": "packages/vscode"
 		},

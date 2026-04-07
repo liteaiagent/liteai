@@ -6,16 +6,19 @@ import { useLanguage } from "@/context/language"
 
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
+import { useScopedConfig } from "@/hooks/use-scoped-config"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
+import { SettingsScopeSwitcher } from "./settings-scope-switcher"
 
-export const SettingsToolsInner: Component = () => {
+const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
   const language = useLanguage()
   const sdk = useSDK()
+  const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
 
   const [tools, { refetch: refetchTools }] = createResource(async () => {
     try {
-      const res = await sdk.client.project.tool.ids({ projectID: sdk.projectID })
+      const res = await sdk.client.project.tool.ids({ projectID: props.projectID })
       return res.data ?? []
     } catch {
       return []
@@ -28,23 +31,21 @@ export const SettingsToolsInner: Component = () => {
     if (loading()) return
     setLoading(id)
     try {
-      const res = await sdk.client.project.config.get({ projectID: sdk.projectID })
-      const currentConfig = res.data ?? {}
+      const currentConfig = await getConfig(props.projectID)
       const disabledTools = { ...(currentConfig.disabledTools ?? {}) }
 
       if (currentlyEnabled) {
         disabledTools[id] = true
       } else {
-        delete disabledTools[id]
+        // When in project scope, explicitly set false to override user-level disable
+        if (scope() === "project") {
+          disabledTools[id] = false
+        } else {
+          delete disabledTools[id]
+        }
       }
 
-      await sdk.client.project.config.update({
-        projectID: sdk.projectID,
-        config: {
-          ...currentConfig,
-          disabledTools,
-        },
-      })
+      await updateConfig({ disabledTools }, props.projectID)
       await refetchTools()
     } finally {
       setLoading(null)
@@ -54,11 +55,14 @@ export const SettingsToolsInner: Component = () => {
   return (
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
-        <div class="flex flex-col gap-1 pt-6 pb-8 max-w-[720px]">
+        <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.tools.title") ?? "Tools"}</h2>
           <p class="text-13-regular text-text-weak">
             {language.t("settings.tools.description") ?? "Available tools for use"}
           </p>
+        </div>
+        <div class="pb-4">
+          <SettingsScopeSwitcher scope={scope} setScope={setScope} hasWorkspace={() => true} />
         </div>
       </div>
 
@@ -122,9 +126,7 @@ export const SettingsTools: Component = () => {
             <h2 class="text-16-medium text-text-strong">{language.t("settings.tools.title") ?? "Tools"}</h2>
           </div>
           <div class="flex flex-col items-center justify-center py-12 text-center max-w-[720px]">
-            <span class="text-14-regular text-text-weak">
-              Tools are configured per workspace. Open a workspace to view them.
-            </span>
+            <span class="text-14-regular text-text-weak">Open a workspace to manage tool settings.</span>
           </div>
         </div>
       }
@@ -132,7 +134,7 @@ export const SettingsTools: Component = () => {
       {(resolved) => (
         <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
-            <SettingsToolsInner />
+            <SettingsToolsInner projectID={toProjectID(resolved)} />
           </SyncProvider>
         </SDKProvider>
       )}

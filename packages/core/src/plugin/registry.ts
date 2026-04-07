@@ -17,7 +17,7 @@ import { type Mounted, all as mountAll } from "./mount"
 
 const log = Log.create({ service: "plugin:registry" })
 
-export type Scope = "user" | "project" | "local"
+export type Scope = "user" | "project"
 
 export type Entry = {
   /** Plugin identifier, e.g. "plugin-name@marketplace-name" */

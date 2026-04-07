@@ -7,8 +7,10 @@ import { useLanguage } from "@/context/language"
 
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider, useSync } from "@/context/sync"
+import { useScopedConfig } from "@/hooks/use-scoped-config"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
+import { SettingsScopeSwitcher } from "./settings-scope-switcher"
 
 const statusLabels = {
   connected: "mcp.status.connected",
@@ -26,11 +28,12 @@ const statusColors = {
   needs_client_registration: "color-yellow-500",
 } as const
 
-export const SettingsMcpInner: Component = () => {
+export const SettingsMcpInner: Component<{ projectID: string }> = (props) => {
   const language = useLanguage()
   const sync = useSync()
   const sdk = useSDK()
   const [loading, setLoading] = createSignal<string | null>(null)
+  const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
 
   const items = createMemo(() =>
     Object.entries(sync.data.mcp ?? {})
@@ -58,11 +61,25 @@ export const SettingsMcpInner: Component = () => {
     try {
       const status = sync.data.mcp[name]
       if (status?.status === "connected") {
-        await sdk.client.project.mcp.disconnect({ name, projectID: sdk.projectID })
+        // Disconnect runtime + persist disabled
+        await sdk.client.project.mcp.disconnect({ name, projectID: props.projectID })
+        const currentConfig = await getConfig(props.projectID)
+        const mcpServers = { ...(currentConfig.mcpServers ?? {}) }
+        if (mcpServers[name]) {
+          mcpServers[name] = { ...mcpServers[name], disabled: true }
+          await updateConfig({ mcpServers }, props.projectID)
+        }
       } else {
-        await sdk.client.project.mcp.connect({ name, projectID: sdk.projectID })
+        // Connect runtime + remove disabled flag
+        const currentConfig = await getConfig(props.projectID)
+        const mcpServers = { ...(currentConfig.mcpServers ?? {}) }
+        if (mcpServers[name]?.disabled) {
+          mcpServers[name] = { ...mcpServers[name], disabled: false }
+          await updateConfig({ mcpServers }, props.projectID)
+        }
+        await sdk.client.project.mcp.connect({ name, projectID: props.projectID })
       }
-      const result = await sdk.client.project.mcp.status({ projectID: sdk.projectID })
+      const result = await sdk.client.project.mcp.status({ projectID: props.projectID })
       if (result.data) sync.set("mcp", result.data)
       refetch()
     } finally {
@@ -80,11 +97,14 @@ export const SettingsMcpInner: Component = () => {
         fallback={
           <>
             <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
-              <div class="flex flex-col gap-1 pt-6 pb-8 max-w-[720px]">
+              <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
                 <h2 class="text-16-medium text-text-strong">{language.t("settings.mcp.title")}</h2>
                 <p class="text-13-regular text-text-weak">
                   {language.t("settings.mcp.connected", { enabled: enabled(), total: items().length })}
                 </p>
+              </div>
+              <div class="pb-4">
+                <SettingsScopeSwitcher scope={scope} setScope={setScope} hasWorkspace={() => true} />
               </div>
             </div>
 
@@ -274,7 +294,7 @@ export const SettingsMcp: Component = () => {
       {(resolved) => (
         <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
-            <SettingsMcpInner />
+            <SettingsMcpInner projectID={toProjectID(resolved)} />
           </SyncProvider>
         </SDKProvider>
       )}

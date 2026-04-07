@@ -47,8 +47,10 @@ export async function tmpdir<T>(options?: TmpDirOptions<T>) {
     await $`git commit --allow-empty -m "root commit ${dirpath}"`.cwd(dirpath).quiet()
   }
   if (options?.config) {
+    const liteaiDir = path.join(dirpath, ".liteai")
+    await fs.mkdir(liteaiDir, { recursive: true })
     await Bun.write(
-      path.join(dirpath, "settings.json"),
+      path.join(liteaiDir, "settings.json"),
       JSON.stringify({
         $schema: "https://liteai.com/config.json",
         ...options.config,

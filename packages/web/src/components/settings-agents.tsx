@@ -5,8 +5,10 @@ import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { SDKProvider, useSDK } from "@/context/sdk"
 import { SyncProvider } from "@/context/sync"
+import { useScopedConfig } from "@/hooks/use-scoped-config"
 import { toProjectID } from "@/utils/project-id"
 import { SettingsList } from "./settings-list"
+import { SettingsScopeSwitcher } from "./settings-scope-switcher"
 
 interface Agent {
   name: string
@@ -33,13 +35,14 @@ const modeColors = {
   all: "text-text-weak",
 } as const
 
-const SettingsAgentsInner: Component = () => {
+const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
   const language = useLanguage()
   const sdk = useSDK()
+  const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
 
   const [agents, { refetch: refetchAgents }] = createResource(async () => {
     try {
-      const { data } = await sdk.client.project.agent.list({ projectID: sdk.projectID })
+      const { data } = await sdk.client.project.agent.list({ projectID: props.projectID })
       return (data ?? []) as Agent[]
     } catch {
       return [] as Agent[]
@@ -55,8 +58,7 @@ const SettingsAgentsInner: Component = () => {
     if (loading()) return
     setLoading(name)
     try {
-      const res = await sdk.client.project.config.get({ projectID: sdk.projectID })
-      const currentConfig = res.data ?? {}
+      const currentConfig = await getConfig(props.projectID)
       const agentConfig = { ...(currentConfig.agent ?? {}) }
 
       if (currentlyEnabled) {
@@ -65,13 +67,7 @@ const SettingsAgentsInner: Component = () => {
         agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: false }
       }
 
-      await sdk.client.project.config.update({
-        projectID: sdk.projectID,
-        config: {
-          ...currentConfig,
-          agent: agentConfig,
-        },
-      })
+      await updateConfig({ agent: agentConfig }, props.projectID)
       await refetchAgents()
     } finally {
       setLoading(null)
@@ -81,9 +77,12 @@ const SettingsAgentsInner: Component = () => {
   return (
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
-        <div class="flex flex-col gap-1 pt-6 pb-8 max-w-[720px]">
+        <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.agents.title")}</h2>
           <p class="text-13-regular text-text-weak">{language.t("settings.agents.loaded", { count: count() })}</p>
+        </div>
+        <div class="pb-4">
+          <SettingsScopeSwitcher scope={scope} setScope={setScope} hasWorkspace={() => true} />
         </div>
       </div>
 
@@ -179,7 +178,7 @@ export const SettingsAgents: Component = () => {
       {(resolved) => (
         <SDKProvider projectID={() => toProjectID(resolved)} directory={() => resolved}>
           <SyncProvider>
-            <SettingsAgentsInner />
+            <SettingsAgentsInner projectID={toProjectID(resolved)} />
           </SyncProvider>
         </SDKProvider>
       )}

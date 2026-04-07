@@ -69,17 +69,20 @@ export const McpRemote = z
     ref: "McpRemoteConfig",
   })
 
-export const Mcp = z.preprocess((val: any) => {
-  if (val && typeof val === "object" && !("type" in val)) {
-    if ("command" in val) {
-      return { ...val, type: "local" }
+export const Mcp = z.preprocess(
+  (val: unknown) => {
+    if (val && typeof val === "object" && !("type" in val)) {
+      if ("command" in val) {
+        return { ...val, type: "local" }
+      }
+      if ("url" in val) {
+        return { ...val, type: "remote" }
+      }
     }
-    if ("url" in val) {
-      return { ...val, type: "remote" }
-    }
-  }
-  return val
-}, z.discriminatedUnion("type", [McpLocal, McpRemote]))
+    return val
+  },
+  z.discriminatedUnion("type", [McpLocal, McpRemote]),
+)
 export type Mcp = z.infer<typeof Mcp>
 
 export const PermissionAction = z.enum(["ask", "allow", "deny"]).meta({

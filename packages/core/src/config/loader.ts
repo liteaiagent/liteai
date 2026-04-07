@@ -112,14 +112,6 @@ export const state = Instance.state(async () => {
     log.debug("loaded custom config", { path: Flag.LITEAI_CONFIG })
   }
 
-  // Project config overrides global and remote config.
-  if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG) {
-    for (const file of await ConfigPaths.projectFiles(Brand.config, Instance.directory, Instance.worktree)) {
-      log.info("loading project config", { path: file })
-      result = mergeConfigConcatArrays(result, await loadFile(file))
-    }
-  }
-
   result.agent = result.agent || {}
 
   const directories = await ConfigPaths.directories(Instance.directory, Instance.worktree)

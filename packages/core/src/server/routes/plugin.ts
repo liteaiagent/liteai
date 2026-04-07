@@ -4,7 +4,7 @@ import z from "zod"
 import { download } from "../../plugin/download"
 import { known, remove as removeMarketplace } from "../../plugin/marketplace"
 import { load, resolve as resolveMarketplace } from "../../plugin/marketplace-source"
-import { disable, enable, install, list as listPlugins, uninstall } from "../../plugin/registry"
+import { disable, enable, install, list as listPlugins, type Scope, uninstall } from "../../plugin/registry"
 import { lazy } from "../../util/lazy"
 
 const MarketplaceInfo = z.object({
@@ -23,7 +23,7 @@ const PluginInfo = z.object({
   marketplace: z.string(),
   version: z.string().optional(),
   enabled: z.boolean(),
-  scope: z.enum(["user", "project", "local"]),
+  scope: z.enum(["user", "project"]),
 })
 
 export const PluginRoutes = lazy(() =>
@@ -58,7 +58,8 @@ export const PluginRoutes = lazy(() =>
       }),
       async (c) => {
         const id = decodeURIComponent(c.req.param("id"))
-        await enable(id)
+        const scope = (c.req.query("scope") ?? "user") as Scope
+        await enable(id, scope)
         return c.json(true)
       },
     )
@@ -74,7 +75,8 @@ export const PluginRoutes = lazy(() =>
       }),
       async (c) => {
         const id = decodeURIComponent(c.req.param("id"))
-        await disable(id)
+        const scope = (c.req.query("scope") ?? "user") as Scope
+        await disable(id, scope)
         return c.json(true)
       },
     )
@@ -93,7 +95,8 @@ export const PluginRoutes = lazy(() =>
       }),
       async (c) => {
         const id = decodeURIComponent(c.req.param("id"))
-        await uninstall(id)
+        const scope = (c.req.query("scope") ?? "user") as Scope
+        await uninstall(id, { scope })
         return c.json(true)
       },
     )

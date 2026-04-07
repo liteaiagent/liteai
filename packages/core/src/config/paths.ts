@@ -9,17 +9,6 @@ import { Global } from "@/global"
 import { Filesystem } from "@/util/filesystem"
 
 export namespace ConfigPaths {
-  export async function projectFiles(name: string, directory: string, worktree: string) {
-    const files: string[] = []
-    for (const file of [`${name}.json`]) {
-      const found = await Filesystem.findUp(file, directory, worktree)
-      for (const resolved of found.toReversed()) {
-        files.push(resolved)
-      }
-    }
-    return files
-  }
-
   export async function directories(directory: string, worktree: string) {
     return [
       Global.Path.config,

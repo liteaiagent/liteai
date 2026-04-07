@@ -24,7 +24,15 @@ async function writeManagedSettings(settings: object, filename = "settings.json"
 }
 
 async function writeConfig(dir: string, config: object, name = "settings.json") {
+  await fs.mkdir(dir, { recursive: true })
   await Filesystem.write(path.join(dir, name), JSON.stringify(config))
+}
+
+/** Write project-level config to .liteai/settings.json within the given project root */
+async function writeProjectConfig(projectRoot: string, config: object) {
+  const liteaiDir = path.join(projectRoot, ".liteai")
+  await fs.mkdir(liteaiDir, { recursive: true })
+  await Filesystem.write(path.join(liteaiDir, "settings.json"), JSON.stringify(config))
 }
 
 async function check(map: (dir: string) => string) {
@@ -69,7 +77,7 @@ test("loads config with defaults when no files exist", async () => {
 test("loads JSON config file", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         model: "test/model",
         username: "testuser",
@@ -106,7 +114,7 @@ test("loads project config from Cygwin paths on Windows", async () => {
 test("ignores legacy tui keys in liteai config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         model: "test/model",
         theme: "legacy",
@@ -125,36 +133,35 @@ test("ignores legacy tui keys in liteai config", async () => {
   })
 })
 
-test("merges multiple config files with correct precedence", async () => {
-  await using tmp = await tmpdir({
-    init: async (dir) => {
-      await writeConfig(
-        dir,
-        {
-          $schema: "https://liteai.com/config.json",
-          model: "base",
-          username: "base",
-        },
-        "settings.json",
-      )
-      await writeConfig(
-        path.join(dir, ".liteai"),
-        {
-          $schema: "https://liteai.com/config.json",
-          model: "override",
-        },
-        "settings.json",
-      )
-    },
-  })
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const config = await Config.get()
-      expect(config.model).toBe("override")
-      expect(config.username).toBe("base")
-    },
-  })
+test("merges global and project config files with correct precedence", async () => {
+  await using globalTmp = await tmpdir()
+  await using tmp = await tmpdir()
+  const prev = Global.Path.config
+  ;(Global.Path as { config: string }).config = globalTmp.path
+  Config.global.reset()
+  try {
+    await writeConfig(globalTmp.path, {
+      $schema: "https://liteai.com/config.json",
+      model: "base",
+      username: "base",
+    })
+    await writeProjectConfig(tmp.path, {
+      $schema: "https://liteai.com/config.json",
+      model: "override",
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.model).toBe("override")
+        expect(config.username).toBe("base")
+      },
+    })
+  } finally {
+    await Instance.disposeAll()
+    ;(Global.Path as { config: string }).config = prev
+    Config.global.reset()
+  }
 })
 
 test("handles environment variable substitution", async () => {
@@ -164,7 +171,7 @@ test("handles environment variable substitution", async () => {
   try {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        await writeConfig(dir, {
+        await writeProjectConfig(dir, {
           $schema: "https://liteai.com/config.json",
           username: "{env:TEST_VAR}",
         })
@@ -194,8 +201,10 @@ test("preserves env variables when adding $schema to config", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         // Config without $schema - should trigger auto-add
+        const liteaiDir = path.join(dir, ".liteai")
+        await fs.mkdir(liteaiDir, { recursive: true })
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(liteaiDir, "settings.json"),
           JSON.stringify({
             username: "{env:PRESERVE_VAR}",
           }),
@@ -209,7 +218,7 @@ test("preserves env variables when adding $schema to config", async () => {
         expect(config.username).toBe("secret_value")
 
         // Read the file to verify the env variable was preserved
-        const content = await Filesystem.readText(path.join(tmp.path, "settings.json"))
+        const content = await Filesystem.readText(path.join(tmp.path, ".liteai", "settings.json"))
         expect(content).toContain("{env:PRESERVE_VAR}")
         expect(content).not.toContain("secret_value")
         expect(content).toContain("$schema")
@@ -274,9 +283,9 @@ test("handles file inclusion substitution", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Filesystem.write(path.join(dir, "included.txt"), "test-user")
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
-        username: "{file:included.txt}",
+        username: "{file:../included.txt}",
       })
     },
   })
@@ -293,9 +302,9 @@ test("handles file inclusion with replacement tokens", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Filesystem.write(path.join(dir, "included.md"), "const out = await Bun.$`echo hi`")
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
-        username: "{file:included.md}",
+        username: "{file:../included.md}",
       })
     },
   })
@@ -311,7 +320,7 @@ test("handles file inclusion with replacement tokens", async () => {
 test("validates config schema and throws on invalid fields", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         invalid_field: "should cause error",
       })
@@ -329,7 +338,9 @@ test("validates config schema and throws on invalid fields", async () => {
 test("throws error for invalid JSON", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Filesystem.write(path.join(dir, "settings.json"), "{ invalid json }")
+      const liteaiDir = path.join(dir, ".liteai")
+      await fs.mkdir(liteaiDir, { recursive: true })
+      await Filesystem.write(path.join(liteaiDir, "settings.json"), "{ invalid json }")
     },
   })
   await Instance.provide({
@@ -343,7 +354,7 @@ test("throws error for invalid JSON", async () => {
 test("handles agent configuration", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         agent: {
           test_agent: {
@@ -373,7 +384,7 @@ test("handles agent configuration", async () => {
 test("treats agent variant as model-scoped setting (not provider option)", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         agent: {
           test_agent: {
@@ -404,7 +415,7 @@ test("treats agent variant as model-scoped setting (not provider option)", async
 test("handles command configuration", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         command: {
           test_command: {
@@ -652,87 +663,77 @@ Helper subagent prompt`,
   })
 })
 
-test("merges instructions arrays from global and local configs", async () => {
-  await using tmp = await tmpdir({
-    git: true,
-    init: async (dir) => {
-      const projectDir = path.join(dir, "project")
-      const liteaiDir = path.join(projectDir, ".liteai")
-      await fs.mkdir(liteaiDir, { recursive: true })
+test("merges instructions arrays from global and project configs", async () => {
+  await using globalTmp = await tmpdir()
+  await using tmp = await tmpdir()
+  const prev = Global.Path.config
+  ;(Global.Path as { config: string }).config = globalTmp.path
+  Config.global.reset()
+  try {
+    await writeConfig(globalTmp.path, {
+      $schema: "https://liteai.com/config.json",
+      instructions: ["global-instructions.md", "shared-rules.md"],
+    })
+    await writeProjectConfig(tmp.path, {
+      $schema: "https://liteai.com/config.json",
+      instructions: ["local-instructions.md"],
+    })
 
-      await Filesystem.write(
-        path.join(dir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          instructions: ["global-instructions.md", "shared-rules.md"],
-        }),
-      )
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        const instructions = config.instructions ?? []
 
-      await Filesystem.write(
-        path.join(liteaiDir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          instructions: ["local-instructions.md"],
-        }),
-      )
-    },
-  })
-
-  await Instance.provide({
-    directory: path.join(tmp.path, "project"),
-    fn: async () => {
-      const config = await Config.get()
-      const instructions = config.instructions ?? []
-
-      expect(instructions).toContain("global-instructions.md")
-      expect(instructions).toContain("shared-rules.md")
-      expect(instructions).toContain("local-instructions.md")
-      expect(instructions.length).toBe(3)
-    },
-  })
+        expect(instructions).toContain("global-instructions.md")
+        expect(instructions).toContain("shared-rules.md")
+        expect(instructions).toContain("local-instructions.md")
+        expect(instructions.length).toBe(3)
+      },
+    })
+  } finally {
+    await Instance.disposeAll()
+    ;(Global.Path as { config: string }).config = prev
+    Config.global.reset()
+  }
 })
 
-test("deduplicates duplicate instructions from global and local configs", async () => {
-  await using tmp = await tmpdir({
-    git: true,
-    init: async (dir) => {
-      const projectDir = path.join(dir, "project")
-      const liteaiDir = path.join(projectDir, ".liteai")
-      await fs.mkdir(liteaiDir, { recursive: true })
+test("deduplicates duplicate instructions from global and project configs", async () => {
+  await using globalTmp = await tmpdir()
+  await using tmp = await tmpdir()
+  const prev = Global.Path.config
+  ;(Global.Path as { config: string }).config = globalTmp.path
+  Config.global.reset()
+  try {
+    await writeConfig(globalTmp.path, {
+      $schema: "https://liteai.com/config.json",
+      instructions: ["duplicate.md", "global-only.md"],
+    })
+    await writeProjectConfig(tmp.path, {
+      $schema: "https://liteai.com/config.json",
+      instructions: ["duplicate.md", "local-only.md"],
+    })
 
-      await Filesystem.write(
-        path.join(dir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          instructions: ["duplicate.md", "global-only.md"],
-        }),
-      )
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        const instructions = config.instructions ?? []
 
-      await Filesystem.write(
-        path.join(liteaiDir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          instructions: ["duplicate.md", "local-only.md"],
-        }),
-      )
-    },
-  })
+        expect(instructions).toContain("global-only.md")
+        expect(instructions).toContain("local-only.md")
+        expect(instructions).toContain("duplicate.md")
 
-  await Instance.provide({
-    directory: path.join(tmp.path, "project"),
-    fn: async () => {
-      const config = await Config.get()
-      const instructions = config.instructions ?? []
-
-      expect(instructions).toContain("global-only.md")
-      expect(instructions).toContain("local-only.md")
-      expect(instructions).toContain("duplicate.md")
-
-      const duplicates = instructions.filter((i) => i === "duplicate.md")
-      expect(duplicates.length).toBe(1)
-      expect(instructions.length).toBe(3)
-    },
-  })
+        const duplicates = instructions.filter((i) => i === "duplicate.md")
+        expect(duplicates.length).toBe(1)
+        expect(instructions.length).toBe(3)
+      },
+    })
+  } finally {
+    await Instance.disposeAll()
+    ;(Global.Path as { config: string }).config = prev
+    Config.global.reset()
+  }
 }, 30000)
 
 // Managed settings tests
@@ -741,7 +742,7 @@ test("deduplicates duplicate instructions from global and local configs", async 
 test("managed settings override user settings", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         model: "user/model",
         share: "auto",
@@ -770,7 +771,7 @@ test("managed settings override user settings", async () => {
 test("managed settings override project settings", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         autoupdate: true,
         disabled_providers: [],
@@ -797,7 +798,7 @@ test("managed settings override project settings", async () => {
 test("missing managed settings file is not an error", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await writeConfig(dir, {
+      await writeProjectConfig(dir, {
         $schema: "https://liteai.com/config.json",
         model: "user/model",
       })
@@ -817,7 +818,7 @@ test("permission config preserves key order", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Filesystem.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           permission: {
@@ -859,161 +860,158 @@ test("permission config preserves key order", async () => {
 })
 
 test("project config can override MCP server enabled status", async () => {
-  await using tmp = await tmpdir({
-    init: async (dir) => {
-      // Base config with disabled MCP servers
-      await Filesystem.write(
-        path.join(dir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          mcpServers: {
-            jira: {
-              type: "remote",
-              url: "https://jira.example.com/mcp",
-              enabled: false,
-            },
-            wiki: {
-              type: "remote",
-              url: "https://wiki.example.com/mcp",
-              enabled: false,
-            },
-          },
-        }),
-      )
-      // .liteai/settings.json enables just jira (higher precedence)
-      const liteaiDir = path.join(dir, ".liteai")
-      await fs.mkdir(liteaiDir, { recursive: true })
-      await Filesystem.write(
-        path.join(liteaiDir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          mcpServers: {
-            jira: {
-              type: "remote",
-              url: "https://jira.example.com/mcp",
-              enabled: true,
-            },
-          },
-        }),
-      )
-    },
-  })
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const config = await Config.get()
-      // jira should be enabled (overridden by .liteai config)
-      expect(config.mcpServers?.jira).toEqual({
-        type: "remote",
-        url: "https://jira.example.com/mcp",
-        enabled: true,
-      })
-      // wiki should still be disabled (not overridden)
-      expect(config.mcpServers?.wiki).toEqual({
-        type: "remote",
-        url: "https://wiki.example.com/mcp",
-        enabled: false,
-      })
-    },
-  })
+  await using globalTmp = await tmpdir()
+  await using tmp = await tmpdir()
+  const prev = Global.Path.config
+  ;(Global.Path as { config: string }).config = globalTmp.path
+  Config.global.reset()
+  try {
+    // Global (user) config with disabled MCP servers
+    await writeConfig(globalTmp.path, {
+      $schema: "https://liteai.com/config.json",
+      mcpServers: {
+        jira: {
+          type: "remote",
+          url: "https://jira.example.com/mcp",
+          disabled: true,
+        },
+        wiki: {
+          type: "remote",
+          url: "https://wiki.example.com/mcp",
+          disabled: true,
+        },
+      },
+    })
+    // Project .liteai/settings.json enables just jira (higher precedence)
+    await writeProjectConfig(tmp.path, {
+      $schema: "https://liteai.com/config.json",
+      mcpServers: {
+        jira: {
+          type: "remote",
+          url: "https://jira.example.com/mcp",
+          disabled: false,
+        },
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        // jira should be enabled (overridden by project config)
+        expect(config.mcpServers?.jira).toEqual({
+          type: "remote",
+          url: "https://jira.example.com/mcp",
+          disabled: false,
+        })
+        // wiki should still be disabled (not overridden)
+        expect(config.mcpServers?.wiki).toEqual({
+          type: "remote",
+          url: "https://wiki.example.com/mcp",
+          disabled: true,
+        })
+      },
+    })
+  } finally {
+    await Instance.disposeAll()
+    ;(Global.Path as { config: string }).config = prev
+    Config.global.reset()
+  }
 })
 
 test("MCP config deep merges preserving base config properties", async () => {
-  await using tmp = await tmpdir({
-    init: async (dir) => {
-      // Base config with full MCP definition
-      await Filesystem.write(
-        path.join(dir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          mcpServers: {
-            myserver: {
-              type: "remote",
-              url: "https://myserver.example.com/mcp",
-              enabled: false,
-              headers: {
-                "X-Custom-Header": "value",
-              },
-            },
+  await using globalTmp = await tmpdir()
+  await using tmp = await tmpdir()
+  const prev = Global.Path.config
+  ;(Global.Path as { config: string }).config = globalTmp.path
+  Config.global.reset()
+  try {
+    // Global (user) config with full MCP definition
+    await writeConfig(globalTmp.path, {
+      $schema: "https://liteai.com/config.json",
+      mcpServers: {
+        myserver: {
+          type: "remote",
+          url: "https://myserver.example.com/mcp",
+          disabled: true,
+          headers: {
+            "X-Custom-Header": "value",
           },
-        }),
-      )
-      // .liteai/settings.json override just enables it, should preserve other properties
-      const liteaiDir = path.join(dir, ".liteai")
-      await fs.mkdir(liteaiDir, { recursive: true })
-      await Filesystem.write(
-        path.join(liteaiDir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          mcpServers: {
-            myserver: {
-              type: "remote",
-              url: "https://myserver.example.com/mcp",
-              enabled: true,
-            },
-          },
-        }),
-      )
-    },
-  })
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const config = await Config.get()
-      expect(config.mcpServers?.myserver).toEqual({
-        type: "remote",
-        url: "https://myserver.example.com/mcp",
-        enabled: true,
-        headers: {
-          "X-Custom-Header": "value",
         },
-      })
-    },
-  })
+      },
+    })
+    // Project config override just enables it, should preserve other properties
+    await writeProjectConfig(tmp.path, {
+      $schema: "https://liteai.com/config.json",
+      mcpServers: {
+        myserver: {
+          type: "remote",
+          url: "https://myserver.example.com/mcp",
+          disabled: false,
+        },
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.mcpServers?.myserver).toEqual({
+          type: "remote",
+          url: "https://myserver.example.com/mcp",
+          disabled: false,
+          headers: {
+            "X-Custom-Header": "value",
+          },
+        })
+      },
+    })
+  } finally {
+    await Instance.disposeAll()
+    ;(Global.Path as { config: string }).config = prev
+    Config.global.reset()
+  }
 })
 
-test("local .liteai config can override MCP from project config", async () => {
-  await using tmp = await tmpdir({
-    init: async (dir) => {
-      // Project config with disabled MCP
-      await Filesystem.write(
-        path.join(dir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          mcpServers: {
-            docs: {
-              type: "remote",
-              url: "https://docs.example.com/mcp",
-              enabled: false,
-            },
-          },
-        }),
-      )
-      // Local .liteai directory config enables it
-      const liteaiDir = path.join(dir, ".liteai")
-      await fs.mkdir(liteaiDir, { recursive: true })
-      await Filesystem.write(
-        path.join(liteaiDir, "settings.json"),
-        JSON.stringify({
-          $schema: "https://liteai.com/config.json",
-          mcpServers: {
-            docs: {
-              type: "remote",
-              url: "https://docs.example.com/mcp",
-              enabled: true,
-            },
-          },
-        }),
-      )
-    },
-  })
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const config = await Config.get()
-      expect(config.mcpServers?.docs?.enabled).toBe(true)
-    },
-  })
+test("project .liteai config can override MCP from user config", async () => {
+  await using globalTmp = await tmpdir()
+  await using tmp = await tmpdir()
+  const prev = Global.Path.config
+  ;(Global.Path as { config: string }).config = globalTmp.path
+  Config.global.reset()
+  try {
+    // User config with disabled MCP
+    await writeConfig(globalTmp.path, {
+      $schema: "https://liteai.com/config.json",
+      mcpServers: {
+        docs: {
+          type: "remote",
+          url: "https://docs.example.com/mcp",
+          disabled: true,
+        },
+      },
+    })
+    // Project config enables it
+    await writeProjectConfig(tmp.path, {
+      $schema: "https://liteai.com/config.json",
+      mcpServers: {
+        docs: {
+          type: "remote",
+          url: "https://docs.example.com/mcp",
+          disabled: false,
+        },
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.mcpServers?.docs?.disabled).toBe(false)
+      },
+    })
+  } finally {
+    await Instance.disposeAll()
+    ;(Global.Path as { config: string }).config = prev
+    Config.global.reset()
+  }
 })
 
 test("project config overrides remote well-known config", async () => {
@@ -1031,7 +1029,7 @@ test("project config overrides remote well-known config", async () => {
                 jira: {
                   type: "remote",
                   url: "https://jira.example.com/mcp",
-                  enabled: false,
+                  disabled: true,
                 },
               },
             },
@@ -1061,14 +1059,14 @@ test("project config overrides remote well-known config", async () => {
       init: async (dir) => {
         // Project config enables jira (overriding remote default)
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
             mcpServers: {
               jira: {
                 type: "remote",
                 url: "https://jira.example.com/mcp",
-                enabled: true,
+                disabled: false,
               },
             },
           }),
@@ -1081,8 +1079,8 @@ test("project config overrides remote well-known config", async () => {
         const config = await Config.get()
         // Verify fetch was called for wellknown config
         expect(fetchedUrl).toBe("https://example.com/.well-known/liteai")
-        // Project config (enabled: true) should override remote (enabled: false)
-        expect(config.mcpServers?.jira?.enabled).toBe(true)
+        // Project config (disabled: false) should override remote (disabled: true)
+        expect(config.mcpServers?.jira?.disabled).toBe(false)
       },
     })
   } finally {
@@ -1106,7 +1104,7 @@ test("wellknown URL with trailing slash is normalized", async () => {
                 slack: {
                   type: "remote",
                   url: "https://slack.example.com/mcp",
-                  enabled: true,
+                  disabled: false,
                 },
               },
             },
@@ -1135,7 +1133,7 @@ test("wellknown URL with trailing slash is normalized", async () => {
       git: true,
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
           }),
@@ -1166,7 +1164,7 @@ describe("LITEAI_DISABLE_PROJECT_CONFIG", () => {
         init: async (dir) => {
           // Create a project config that would normally be loaded
           await Filesystem.write(
-            path.join(dir, "settings.json"),
+            path.join(dir, ".liteai", "settings.json"),
             JSON.stringify({
               $schema: "https://liteai.com/config.json",
               model: "project/model",
@@ -1261,7 +1259,7 @@ describe("LITEAI_DISABLE_PROJECT_CONFIG", () => {
         init: async (dir) => {
           // Create a config with relative instruction path
           await Filesystem.write(
-            path.join(dir, "settings.json"),
+            path.join(dir, ".liteai", "settings.json"),
             JSON.stringify({
               $schema: "https://liteai.com/config.json",
               instructions: ["./CUSTOM.md"],
@@ -1305,14 +1303,11 @@ describe("LITEAI_DISABLE_PROJECT_CONFIG", () => {
     try {
       await using configDirTmp = await tmpdir({
         init: async (dir) => {
-          // Create config in the custom config dir
-          await Filesystem.write(
-            path.join(dir, "settings.json"),
-            JSON.stringify({
-              $schema: "https://liteai.com/config.json",
-              model: "configdir/model",
-            }),
-          )
+          // Create config in the custom config dir (LITEAI_CONFIG_DIR loads settings.json directly)
+          await writeConfig(dir, {
+            $schema: "https://liteai.com/config.json",
+            model: "configdir/model",
+          })
         },
       })
 
@@ -1320,7 +1315,7 @@ describe("LITEAI_DISABLE_PROJECT_CONFIG", () => {
         init: async (dir) => {
           // Create config in project (should be ignored)
           await Filesystem.write(
-            path.join(dir, "settings.json"),
+            path.join(dir, ".liteai", "settings.json"),
             JSON.stringify({
               $schema: "https://liteai.com/config.json",
               model: "project/model",
@@ -1422,7 +1417,7 @@ describe("sensitive field redaction", () => {
   test("redacts telemetry.langfuse.secretKey and mcp oauth clientSecret by default", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        await writeConfig(dir, {
+        await writeProjectConfig(dir, {
           $schema: "https://liteai.com/config.json",
           telemetry: {
             langfuse: {
@@ -1464,7 +1459,7 @@ describe("sensitive field redaction", () => {
         // test unredacted option
         const unredactedConfig = await Config.get({ unredacted: true })
         expect(unredactedConfig.telemetry?.langfuse?.secretKey).toBe("sk-123")
-        const unredactedMcp = unredactedConfig.mcp?.test_server as
+        const unredactedMcp = unredactedConfig.mcpServers?.test_server as
           | { type?: string; oauth?: { clientSecret?: string } }
           | undefined
         if (unredactedMcp && unredactedMcp.type === "remote" && unredactedMcp.oauth) {
