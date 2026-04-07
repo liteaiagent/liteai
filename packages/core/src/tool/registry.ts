@@ -46,10 +46,10 @@ export namespace ToolRegistry {
       // and can cause the agent to get stuck in "idle read" loops when it should be taking action.
       // TodoReadTool,
       WebSearchTool,
-      // CodeSearchTool,
+      //CodeSearchTool,
       SkillTool,
       ApplyPatchTool,
-      // LspTool,
+      //LspTool,
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       PlanExitTool,
     ]

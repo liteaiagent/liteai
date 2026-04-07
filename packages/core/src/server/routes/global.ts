@@ -476,6 +476,5 @@ export const GlobalRoutes = lazy(() =>
           config: Global.Path.config,
         })
       },
-    )
-
+    ),
 )

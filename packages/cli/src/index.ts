@@ -194,5 +194,7 @@ try {
   // Most notably, some docker-container-based MCP servers don't handle such signals unless
   // run using `docker run --init`.
   // Explicitly exit to avoid any hanging subprocesses.
+  const { shutdownTelemetry } = await import("@liteai/core/telemetry/index")
+  await shutdownTelemetry().catch(() => {})
   process.exit()
 }

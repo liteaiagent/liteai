@@ -30,7 +30,7 @@ describe("instrumentation", () => {
   describe("isTelemetryEnabled", () => {
     beforeEach(() => {
       // Clear config before each test
-      applyConfigToEnv({ telemetry: undefined } as any)
+      applyConfigToEnv({ telemetry: undefined } as unknown as Parameters<typeof applyConfigToEnv>[0])
     })
 
     test("is enabled by default (no config set)", () => {
@@ -38,12 +38,12 @@ describe("instrumentation", () => {
     })
 
     test("is disabled when config disabled is true", () => {
-      applyConfigToEnv({ telemetry: { disabled: true } } as any)
+      applyConfigToEnv({ telemetry: { disabled: true } } as unknown as Parameters<typeof applyConfigToEnv>[0])
       expect(isTelemetryEnabled()).toBe(false)
     })
 
     test("is enabled when config disabled is false", () => {
-      applyConfigToEnv({ telemetry: { disabled: false } } as any)
+      applyConfigToEnv({ telemetry: { disabled: false } } as unknown as Parameters<typeof applyConfigToEnv>[0])
       expect(isTelemetryEnabled()).toBe(true)
     })
   })
@@ -55,7 +55,7 @@ describe("instrumentation", () => {
           disabled: true,
           langfuse: { publicKey: "pk" },
         },
-      } as any
+      } as unknown as Parameters<typeof applyConfigToEnv>[0]
 
       applyConfigToEnv(mockConfig)
       expect(isTelemetryEnabled()).toBe(false)

@@ -39,9 +39,7 @@ export async function getOtlpReaders(otelConfig: TelemetryConfig) {
 
       const endpointConfig = otelConfig?.endpoint
       const endpoint =
-        endpointConfig ??
-        process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ??
-        process.env.OTEL_EXPORTER_OTLP_ENDPOINT
+        endpointConfig ?? process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT
       const url = endpoint ? `${endpoint}/v1/metrics` : undefined
 
       switch (protocol) {
@@ -88,9 +86,7 @@ export async function getOtlpLogExporters(otelConfig: TelemetryConfig) {
 
   const endpointConfig = otelConfig?.endpoint
   const endpoint =
-    endpointConfig ??
-    process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ??
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT
+    endpointConfig ?? process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT
   const url = endpoint ? `${endpoint}/v1/logs` : undefined
 
   const exporters = []

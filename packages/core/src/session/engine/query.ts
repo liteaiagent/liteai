@@ -1,5 +1,4 @@
 import { NamedError } from "@liteai/util/error"
-import { context as otelContext, trace } from "@opentelemetry/api"
 import { Agent } from "../../agent/agent"
 import { Bundled } from "../../bundled"
 import { Bus } from "../../bus"
@@ -355,15 +354,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     } satisfies EngineEvent.TurnStartEvent
 
     let streamResult: unknown
-    // ── Wrap the LLM turn in a named agent span (mirrors LangGraph's agent node) ──
-    const turnSpan = trace.getTracer("liteai").startSpan(agent.name)
-    const turnCtx = trace.setSpan(otelContext.active(), turnSpan)
     try {
-      const generator = otelContext.with(turnCtx, () =>
-        SessionProcessor.streamGenerator(streamInput, undefined, (r) => {
-          streamResult = r
-        }),
-      )
+      const generator = SessionProcessor.streamGenerator(streamInput, undefined, (r) => {
+        streamResult = r
+      })
 
       for await (const event of generator) {
         // Feed every event through the executor for lifecycle tracking.
@@ -389,8 +383,6 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         error: unexpectedError,
         isAbortError: unexpectedError instanceof DOMException && unexpectedError.name === "AbortError",
       } satisfies EngineEvent.BlockEvent
-    } finally {
-      turnSpan.end()
     }
 
     // ── Log streaming tool execution stats ──

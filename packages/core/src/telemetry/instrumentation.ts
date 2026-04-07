@@ -2,20 +2,8 @@ import { LangfuseSpanProcessor } from "@langfuse/otel"
 import { DiagConsoleLogger, DiagLogLevel, diag, metrics } from "@opentelemetry/api"
 import { logs } from "@opentelemetry/api-logs"
 import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
-import {
-  BatchLogRecordProcessor,
-  ConsoleLogRecordExporter,
-  LoggerProvider,
-  type LogRecordExporter,
-  type ReadableLogRecord,
-} from "@opentelemetry/sdk-logs"
-import {
-  ConsoleMetricExporter,
-  MeterProvider,
-  PeriodicExportingMetricReader,
-  type PushMetricExporter,
-  type ResourceMetrics,
-} from "@opentelemetry/sdk-metrics"
+import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs"
+import { MeterProvider } from "@opentelemetry/sdk-metrics"
 import { NodeSDK } from "@opentelemetry/sdk-node"
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
 import type { Info } from "../config/schema"
@@ -26,7 +14,7 @@ import { initializePerfettoTracing } from "./perfetto"
 
 const log = Log.create({ service: "telemetry" })
 
-const DEFAULT_METRICS_EXPORT_INTERVAL_MS = 60000
+const _DEFAULT_METRICS_EXPORT_INTERVAL_MS = 60000
 const DEFAULT_LOGS_EXPORT_INTERVAL_MS = 5000
 const DEFAULT_TRACES_EXPORT_INTERVAL_MS = 5000
 
@@ -43,9 +31,7 @@ function telemetryTimeout(ms: number, message: string): Promise<never> {
   })
 }
 
-
-
-let globalTelemetryConfig: Info["telemetry"] | undefined = undefined
+let globalTelemetryConfig: Info["telemetry"] | undefined
 
 /**
  * Telemetry is ENABLED by default (opt-out model).
@@ -155,8 +141,7 @@ export async function initializeTelemetry() {
           (exporter) =>
             new BatchLogRecordProcessor(exporter, {
               scheduledDelayMillis: parseInt(
-                globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ??
-                  DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),
+                globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),
                 10,
               ),
             }),
@@ -201,10 +186,10 @@ export async function initializeTelemetry() {
         flushAt: 10,
         flushInterval:
           parseInt(
-            globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ??
-              DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
+            globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
             10,
           ) / 1000,
+        shouldExportSpan: () => true,
       })
 
       const sdk = new NodeSDK({
@@ -225,10 +210,7 @@ export async function initializeTelemetry() {
 }
 
 export async function shutdownTelemetry() {
-  const timeoutMs = parseInt(
-    globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "2000",
-    10,
-  )
+  const timeoutMs = parseInt(globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "2000", 10)
   log.info("shutting down telemetry", { timeoutMs })
 
   try {
@@ -251,10 +233,7 @@ export async function shutdownTelemetry() {
 }
 
 export async function flushTelemetry(): Promise<void> {
-  const timeoutMs = parseInt(
-    globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "5000",
-    10,
-  )
+  const timeoutMs = parseInt(globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "5000", 10)
   log.info("flushing telemetry", { timeoutMs })
 
   try {

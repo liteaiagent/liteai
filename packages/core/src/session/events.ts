@@ -83,7 +83,6 @@ export namespace EngineEvent {
     streamResult?: unknown
   }
 
-
   /** All event types that can flow through the queryLoop generator */
   export type Any = DeltaEvent | BlockEvent | GeneratorResultEvent | TurnStartEvent | TurnEndEvent
 }

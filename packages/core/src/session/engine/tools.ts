@@ -1,9 +1,6 @@
 import { trace } from "@opentelemetry/api"
 import { type Tool as AITool, asSchema, jsonSchema, type ToolCallOptions, tool } from "ai"
 import z from "zod"
-
-const tracer = trace.getTracer("liteai")
-
 import { PermissionNext } from "@/permission/next"
 import type { Tool } from "@/tool/tool"
 import { Truncate } from "@/tool/truncation"
@@ -117,17 +114,27 @@ export async function resolveTools(input: {
             args,
           },
         )
-        const result = await tracer.startActiveSpan(item.id, async (toolSpan) => {
+        const activeSpan = trace.getActiveSpan()
+        if (activeSpan) {
           // Set I/O so Langfuse renders them in the observation detail panels
-          toolSpan.setAttribute("input.value", JSON.stringify(args))
-          try {
-            const r = await item.execute(args, ctx)
-            toolSpan.setAttribute("output.value", r.output ?? "")
-            return r
-          } finally {
-            toolSpan.end()
+          activeSpan.setAttribute("input.value", JSON.stringify(args))
+        }
+
+        let result: Awaited<ReturnType<typeof item.execute>>
+        try {
+          const r = await item.execute(args, ctx)
+          if (activeSpan) {
+            activeSpan.setAttribute("output.value", r.output ?? "")
           }
-        })
+          result = r
+        } catch (e) {
+          if (activeSpan) {
+            // Record the error as the output so Langfuse shows what was
+            // returned to the AI (e.g. permission denial message) instead of undefined
+            activeSpan.setAttribute("output.value", String(e))
+          }
+          throw e
+        }
         const output = {
           ...result,
           attachments: result.attachments?.map((attachment) => ({
@@ -204,21 +211,40 @@ export async function resolveTools(input: {
         always: ["*"],
       })
 
-      const result = await tracer.startActiveSpan(key, async (toolSpan) => {
+      const activeSpan = trace.getActiveSpan()
+      if (activeSpan) {
         // Set I/O so Langfuse renders them in the observation detail panels
-        toolSpan.setAttribute("input.value", JSON.stringify(args))
-        try {
-          const r = await execute(args, opts)
-          const text = r.content
-            .filter((c: { type: string }) => c.type === "text")
-            .map((c: { text?: string }) => c.text ?? "")
-            .join("\n")
-          toolSpan.setAttribute("output.value", text)
-          return r
-        } finally {
-          toolSpan.end()
+        activeSpan.setAttribute("input.value", JSON.stringify(args))
+      }
+
+      let result: {
+        content: Array<{
+          type: string
+          text?: string
+          mimeType?: string
+          data?: string
+          resource?: { text?: string; blob?: string; mimeType?: string; uri?: string }
+        }>
+        metadata?: Record<string, unknown>
+      }
+      try {
+        const r = await execute(args, opts)
+        const text = r.content
+          .filter((c: { type: string }) => c.type === "text")
+          .map((c: { text?: string }) => c.text ?? "")
+          .join("\n")
+        if (activeSpan) {
+          activeSpan.setAttribute("output.value", text)
         }
-      })
+        result = r
+      } catch (e) {
+        if (activeSpan) {
+          // Record the error as the output so Langfuse shows what was
+          // returned to the AI (e.g. permission denial message) instead of undefined
+          activeSpan.setAttribute("output.value", String(e))
+        }
+        throw e
+      }
 
       await Plugin.trigger(
         "tool.execute.after",
@@ -243,25 +269,27 @@ export async function resolveTools(input: {
 
       for (const contentItem of result.content) {
         if (contentItem.type === "text") {
-          textParts.push(contentItem.text)
+          textParts.push(contentItem.text ?? "")
         } else if (contentItem.type === "image") {
           attachments.push({
             type: "file",
-            mime: contentItem.mimeType,
-            url: `data:${contentItem.mimeType};base64,${contentItem.data}`,
+            mime: contentItem.mimeType ?? "application/octet-stream",
+            url: `data:${contentItem.mimeType ?? "application/octet-stream"};base64,${contentItem.data}`,
           })
         } else if (contentItem.type === "resource") {
           const { resource } = contentItem
-          if (resource.text) {
-            textParts.push(resource.text)
-          }
-          if (resource.blob) {
-            attachments.push({
-              type: "file",
-              mime: resource.mimeType ?? "application/octet-stream",
-              url: `data:${resource.mimeType ?? "application/octet-stream"};base64,${resource.blob}`,
-              filename: resource.uri,
-            })
+          if (resource) {
+            if (resource.text) {
+              textParts.push(resource.text)
+            }
+            if (resource.blob) {
+              attachments.push({
+                type: "file",
+                mime: resource.mimeType ?? "application/octet-stream",
+                url: `data:${resource.mimeType ?? "application/octet-stream"};base64,${resource.blob}`,
+                filename: resource.uri,
+              })
+            }
           }
         }
       }

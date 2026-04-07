@@ -314,18 +314,13 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
     .slice(0, 200)
 
   return tracer.startActiveSpan(
-    // Use the user message as the trace name so it's readable in the Langfuse dashboard
-    firstUserText ?? "liteai.session",
+    "LiteAI", // Hardcode trace name to LiteAI to fix the "Unnamed trace" issue
     {
       attributes: {
-        // ── Langfuse Session grouping ─────────────────────────────────────────
-        // This is the canonical OTel attribute Langfuse uses to group Traces into Sessions
         "langfuse.session.id": input.sessionID,
-        // ── Standard trace-level I/O ─────────────────────────────────────────
-        // Langfuse renders input.value / output.value as the top-level I/O panels
-        "input.value": firstUserText ?? "",
-        // ── Auxiliary metadata ────────────────────────────────────────────────
+        "input.value": firstUserText || "No user input",
         "session.title": input.session.title ?? "",
+        "langfuse.internal.as_root": true,
       },
     },
     async (sessionSpan) => {
@@ -336,7 +331,6 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
         sessionSpan.recordException(e as Error)
         throw e
       } finally {
-        // Capture the last assistant message as the trace output
         const finalMsgs = await Message.filterCompacted(Message.stream(input.sessionID))
         const lastAssistant = finalMsgs.findLast((m) => m.info.role === "assistant")
         const outputText = lastAssistant?.parts
@@ -344,6 +338,7 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
           .map((p) => (p as { text: string }).text)
           .join(" ")
           .slice(0, 500)
+
         if (outputText) {
           sessionSpan.setAttribute("output.value", outputText)
         }

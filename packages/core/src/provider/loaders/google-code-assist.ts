@@ -1,13 +1,11 @@
-import { Auth } from "@/auth"
-import { CA_CLIENT_ID, CA_CLIENT_SECRET } from "@/auth/providers/code-assist"
 import { Log } from "@/util/log"
 import type { Provider } from "../provider"
 import { ModelID, ProviderID } from "../schema"
-import { CA_ENDPOINT, fetchAvailableModels as clientFetchModels } from "../sdk/code-assist/client"
+import { CA_ENDPOINT } from "../sdk/code-assist/client"
 import type { LoaderResult, SDK } from "./types"
 import { useLanguageModel } from "./types"
 
-const log = Log.create({ service: "loader.google-code-assist" })
+const _log = Log.create({ service: "loader.google-code-assist" })
 
 /** Fallback model IDs used when the fetchAvailableModels endpoint is unreachable. */
 const FALLBACK_MODEL_IDS = [
@@ -27,6 +25,9 @@ async function fetchAvailableModels(): Promise<string[] | undefined> {
   return undefined
 
   /*
+  import { Auth } from "@/auth"
+  import { CA_CLIENT_ID, CA_CLIENT_SECRET } from "@/auth/providers/code-assist"
+  import {fetchAvailableModels as clientFetchModels} from "../sdk/code-assist/client"
   const auth = await Auth.get("google-code-assist")
   if (!auth || auth.type !== "oauth") return undefined
 

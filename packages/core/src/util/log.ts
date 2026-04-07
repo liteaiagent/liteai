@@ -53,7 +53,7 @@ export namespace Log {
   // "permission", "plugin", "project", "provider", "pty",
   // "question", "ripgrep", "scheduler", "server", "session",
   // "share-next", "skill", "snapshot", "state", "storage",
-  // "trace", "vcs", "workspace-sync", "worktree"
+  // "trace", "vcs", "workspace-sync", "worktree",
   export const CHANNELS = [
     "agent",
     "auth",
@@ -63,10 +63,8 @@ export namespace Log {
     "file",
     "format",
     "hook",
-    "http",
     "lsp",
     "mcp",
-    "permission",
     "plugin",
     "project",
     "provider",
@@ -78,6 +76,8 @@ export namespace Log {
     "telemetry",
     "vcs",
   ] as const
+
+  export const SUPPRESSED = ["http", "permission"] as const
 
   export interface Options {
     print: boolean
@@ -122,6 +122,12 @@ export namespace Log {
 
   function channelWrite(service: string | undefined, msg: string) {
     if (service) {
+      for (const prefix of SUPPRESSED) {
+        if (service === prefix || service.startsWith(`${prefix}.`) || service.startsWith(`${prefix}:`)) {
+          return // Drop the log entirely
+        }
+      }
+
       for (const [prefix, writer] of channels) {
         if (service === prefix || service.startsWith(`${prefix}.`) || service.startsWith(`${prefix}:`)) {
           writer(msg)
