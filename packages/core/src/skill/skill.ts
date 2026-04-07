@@ -18,6 +18,8 @@ export namespace Skill {
     context: z.enum(["fork"]).optional(),
     agent: z.string().optional(),
     hooks: z.record(z.string(), z.unknown()).optional(),
+    native: z.boolean().optional(),
+    enabled: z.boolean().optional(),
   })
   export type Info = z.infer<typeof Info>
 
@@ -58,6 +60,7 @@ export namespace Skill {
   export async function available(agent?: Agent.Info, invoker?: "user" | "model") {
     const list = await all()
     return list.filter((skill) => {
+      if (skill.enabled === false) return false
       if (agent && PermissionNext.evaluate("skill", skill.name, agent.permission).action === "deny") return false
       if (invoker === "model" && skill.disable_model_invocation) return false
       if (invoker === "user" && skill.user_invocable === false) return false

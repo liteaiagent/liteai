@@ -1,5 +1,6 @@
+import { Switch } from "@liteai/ui/switch"
 import { useParams } from "@solidjs/router"
-import { type Component, createMemo, createResource, For, Show } from "solid-js"
+import { type Component, createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 
@@ -12,7 +13,7 @@ export const SettingsToolsInner: Component = () => {
   const language = useLanguage()
   const sdk = useSDK()
 
-  const [tools] = createResource(async () => {
+  const [tools, { refetch: refetchTools }] = createResource(async () => {
     try {
       const res = await sdk.client.project.tool.ids({ projectID: sdk.projectID })
       return res.data ?? []
@@ -20,6 +21,35 @@ export const SettingsToolsInner: Component = () => {
       return []
     }
   })
+
+  const [loading, setLoading] = createSignal<string | null>(null)
+
+  const toggle = async (id: string, currentlyEnabled: boolean) => {
+    if (loading()) return
+    setLoading(id)
+    try {
+      const res = await sdk.client.project.config.get({ projectID: sdk.projectID })
+      const currentConfig = res.data ?? {}
+      const disabledTools = { ...(currentConfig.disabledTools ?? {}) }
+
+      if (currentlyEnabled) {
+        disabledTools[id] = true
+      } else {
+        delete disabledTools[id]
+      }
+
+      await sdk.client.project.config.update({
+        projectID: sdk.projectID,
+        config: {
+          ...currentConfig,
+          disabledTools,
+        },
+      })
+      await refetchTools()
+    } finally {
+      setLoading(null)
+    }
+  }
 
   return (
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
@@ -45,13 +75,28 @@ export const SettingsToolsInner: Component = () => {
         >
           <SettingsList>
             <For each={tools()}>
-              {(tool) => (
-                <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
-                  <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-                    <span class="text-14-medium text-text-strong truncate">{tool}</span>
+              {(toolItem: string | { id: string; native?: boolean; enabled?: boolean }) => {
+                const tool = typeof toolItem === "string" ? { id: toolItem, native: false, enabled: true } : toolItem
+                return (
+                  <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
+                    <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class="text-14-medium text-text-strong truncate">{tool.id}</span>
+                        <Show when={tool.native}>
+                          <span class="text-11-regular text-text-weaker">built-in</span>
+                        </Show>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <Switch
+                        checked={tool.enabled !== false}
+                        disabled={loading() === tool.id}
+                        onChange={() => toggle(tool.id, tool.enabled !== false)}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )
+              }}
             </For>
           </SettingsList>
         </Show>

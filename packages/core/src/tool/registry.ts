@@ -56,7 +56,14 @@ export namespace ToolRegistry {
   }
 
   export async function ids() {
-    return all().then((x) => x.map((t) => t.id))
+    const config = await Config.get()
+    return all().then((x) =>
+      x.map((t) => ({
+        id: t.id,
+        native: true,
+        enabled: !(config.disabledTools?.[t.id] === true),
+      })),
+    )
   }
 
   export async function tools(
@@ -66,9 +73,11 @@ export namespace ToolRegistry {
     },
     agent?: Agent.Info,
   ) {
+    const config = await Config.get()
     const tools = await all()
     const result = await Promise.all(
       tools
+        .filter((t) => !(config.disabledTools?.[t.id] === true))
         .filter((t) => {
           // use apply tool in same format as codex
           const usePatch =

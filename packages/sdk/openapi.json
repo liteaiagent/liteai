@@ -6870,6 +6870,12 @@
                           "type": "string"
                         },
                         "additionalProperties": {}
+                      },
+                      "native": {
+                        "type": "boolean"
+                      },
+                      "enabled": {
+                        "type": "boolean"
                       }
                     },
                     "required": ["name", "description", "location", "content"]
@@ -10873,6 +10879,26 @@
               "type": "boolean"
             }
           },
+          "disabledTools": {
+            "description": "Tools and their disabled state (tool-id → boolean). If true, the tool is disabled.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "disabledSkills": {
+            "description": "Skills and their disabled state (skill-id → boolean). If true, the skill is disabled.",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
           "extraKnownMarketplaces": {
             "description": "Team-shared plugin marketplaces (name → source). Added marketplaces become available for plugin install.",
             "type": "object",
@@ -11958,7 +11984,19 @@
       "ToolIDs": {
         "type": "array",
         "items": {
-          "type": "string"
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "native": {
+              "type": "boolean"
+            },
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": ["id"]
         }
       },
       "ToolListItem": {
@@ -12062,6 +12100,9 @@
             "type": "boolean"
           },
           "hidden": {
+            "type": "boolean"
+          },
+          "enabled": {
             "type": "boolean"
           },
           "topP": {

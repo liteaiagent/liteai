@@ -1,5 +1,6 @@
+import { Switch } from "@liteai/ui/switch"
 import { useParams } from "@solidjs/router"
-import { type Component, createMemo, createResource, For, Show } from "solid-js"
+import { type Component, createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
 import { SDKProvider, useSDK } from "@/context/sdk"
@@ -13,6 +14,7 @@ interface Agent {
   mode: "subagent" | "primary" | "all"
   native?: boolean
   hidden?: boolean
+  enabled?: boolean
   model?: {
     modelID: string
     providerID: string
@@ -35,7 +37,7 @@ const SettingsAgentsInner: Component = () => {
   const language = useLanguage()
   const sdk = useSDK()
 
-  const [agents] = createResource(async () => {
+  const [agents, { refetch: refetchAgents }] = createResource(async () => {
     try {
       const { data } = await sdk.client.project.agent.list({ projectID: sdk.projectID })
       return (data ?? []) as Agent[]
@@ -46,6 +48,35 @@ const SettingsAgentsInner: Component = () => {
 
   const visible = createMemo(() => (agents() ?? []).filter((a) => !a.hidden))
   const count = createMemo(() => visible().length)
+
+  const [loading, setLoading] = createSignal<string | null>(null)
+
+  const toggle = async (name: string, currentlyEnabled: boolean) => {
+    if (loading()) return
+    setLoading(name)
+    try {
+      const res = await sdk.client.project.config.get({ projectID: sdk.projectID })
+      const currentConfig = res.data ?? {}
+      const agentConfig = { ...(currentConfig.agent ?? {}) }
+
+      if (currentlyEnabled) {
+        agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: true }
+      } else {
+        agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: false }
+      }
+
+      await sdk.client.project.config.update({
+        projectID: sdk.projectID,
+        config: {
+          ...currentConfig,
+          agent: agentConfig,
+        },
+      })
+      await refetchAgents()
+    } finally {
+      setLoading(null)
+    }
+  }
 
   return (
     <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
@@ -80,31 +111,38 @@ const SettingsAgentsInner: Component = () => {
                 }
 
                 return (
-                  <div class="flex flex-col border-b border-border-weak-base last:border-none">
-                    <div class="flex items-start justify-between gap-4 min-h-14 py-3">
-                      <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-                        <div class="flex items-center gap-2.5">
-                          <span class="text-14-medium text-text-strong truncate">{agent.name}</span>
-                          <span class={`text-11-regular text-${color()}`}>●</span>
-                          <Show when={label()}>
-                            <span class="text-11-regular text-text-weaker">{label()}</span>
-                          </Show>
-                          <Show when={agent.native}>
-                            <span class="text-11-regular text-text-weaker">
-                              {language.t("settings.agents.tag.native")}
-                            </span>
-                          </Show>
-                        </div>
-                        <Show when={agent.description}>
-                          <span class="text-12-regular text-text-weak">{agent.description}</span>
+                  <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
+                    <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <div class="flex items-center gap-2.5">
+                        <span class="text-14-medium text-text-strong truncate">{agent.name}</span>
+                        <span class={`text-11-regular text-${color()}`}>●</span>
+                        <Show when={label()}>
+                          <span class="text-11-regular text-text-weaker">{label()}</span>
                         </Show>
-                        <Show when={agent.model}>
+                        <Show when={agent.native}>
                           <span class="text-11-regular text-text-weaker">
-                            {agent.model?.providerID}/{agent.model?.modelID}
+                            {language.t("settings.agents.tag.native")}
                           </span>
                         </Show>
                       </div>
+                      <Show when={agent.description}>
+                        <span class="text-12-regular text-text-weak">{agent.description}</span>
+                      </Show>
+                      <Show when={agent.model}>
+                        <span class="text-11-regular text-text-weaker">
+                          {agent.model?.providerID}/{agent.model?.modelID}
+                        </span>
+                      </Show>
                     </div>
+                    <Show when={agent.name !== "build"}>
+                      <div class="flex flex-col items-end gap-2 shrink-0">
+                        <Switch
+                          checked={agent.enabled !== false}
+                          disabled={loading() === agent.name}
+                          onChange={() => toggle(agent.name, agent.enabled !== false)}
+                        />
+                      </div>
+                    </Show>
                   </div>
                 )
               }}

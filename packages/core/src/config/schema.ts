@@ -696,6 +696,14 @@ export const Info = z
       .record(z.string(), z.boolean())
       .optional()
       .describe("Installed plugins and their enabled/disabled state (plugin-id → boolean)"),
+    disabledTools: z
+      .record(z.string(), z.boolean())
+      .optional()
+      .describe("Tools and their disabled state (tool-id → boolean). If true, the tool is disabled."),
+    disabledSkills: z
+      .record(z.string(), z.boolean())
+      .optional()
+      .describe("Skills and their disabled state (skill-id → boolean). If true, the skill is disabled."),
     extraKnownMarketplaces: z
       .record(
         z.string(),

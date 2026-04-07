@@ -1443,6 +1443,18 @@ export type Config = {
         [key: string]: boolean;
     };
     /**
+     * Tools and their disabled state (tool-id → boolean). If true, the tool is disabled.
+     */
+    disabledTools?: {
+        [key: string]: boolean;
+    };
+    /**
+     * Skills and their disabled state (skill-id → boolean). If true, the skill is disabled.
+     */
+    disabledSkills?: {
+        [key: string]: boolean;
+    };
+    /**
      * Team-shared plugin marketplaces (name → source). Added marketplaces become available for plugin install.
      */
     extraKnownMarketplaces?: {
@@ -1797,7 +1809,11 @@ export type McpResource = {
     client: string;
 };
 
-export type ToolIds = Array<string>;
+export type ToolIds = Array<{
+    id: string;
+    native?: boolean;
+    enabled?: boolean;
+}>;
 
 export type ToolListItem = {
     id: string;
@@ -1834,6 +1850,7 @@ export type Agent = {
     mode: 'subagent' | 'primary' | 'all';
     native?: boolean;
     hidden?: boolean;
+    enabled?: boolean;
     topP?: number;
     temperature?: number;
     color?: string;
@@ -4915,6 +4932,8 @@ export type ProjectSkillListResponses = {
         hooks?: {
             [key: string]: unknown;
         };
+        native?: boolean;
+        enabled?: boolean;
     }>;
 };
 

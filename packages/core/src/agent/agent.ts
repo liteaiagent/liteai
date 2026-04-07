@@ -1,4 +1,5 @@
 import path from "node:path"
+import { NamedError } from "@liteai/util/error"
 import { generateObject, type ModelMessage, streamObject } from "ai"
 import matter from "gray-matter"
 import { mergeDeep, pipe, sortBy, values } from "remeda"
@@ -52,6 +53,7 @@ export namespace Agent {
       mode: z.enum(["subagent", "primary", "all"]),
       native: z.boolean().optional(),
       hidden: z.boolean().optional(),
+      enabled: z.boolean().optional(),
       topP: z.number().optional(),
       temperature: z.number().optional(),
       color: z.string().optional(),
@@ -137,10 +139,12 @@ export namespace Agent {
         log.warn("ignoring user config for protected hidden agent", { name: key })
         continue
       }
-      if (value.disable) {
-        delete result[key]
-        continue
+      let isDisabled = !!value.disable
+      if (key === "build" && isDisabled) {
+        log.warn("ignoring disable config for foundational agent", { name: key })
+        isDisabled = false
       }
+
       let item = result[key]
       if (!item)
         item = result[key] = {
@@ -159,6 +163,7 @@ export namespace Agent {
       item.mode = value.mode ?? item.mode
       item.color = value.color ?? item.color
       item.hidden = value.hidden ?? item.hidden
+      item.enabled = !isDisabled
       item.name = value.name ?? item.name
       item.steps = value.maxTurns ?? value.steps ?? item.steps
       item.options = mergeDeep(item.options, value.options ?? {})
@@ -193,8 +198,20 @@ export namespace Agent {
     return result
   })
 
+  export const AgentDisabledError = NamedError.create(
+    "AgentDisabledError",
+    z.object({
+      agent: z.string(),
+      message: z.string().optional(),
+    }),
+  )
+
   export async function get(agent: string) {
-    return state().then((x) => x[agent])
+    const item = await state().then((x) => x[agent])
+    if (item && item.enabled === false) {
+      throw new AgentDisabledError({ message: `Agent '${agent}' is disabled.`, agent })
+    }
+    return item
   }
 
   export async function list() {
@@ -212,14 +229,18 @@ export namespace Agent {
 
     if (cfg.default_agent) {
       const agent = agents[cfg.default_agent]
-      if (!agent) throw new Error(`default agent "${cfg.default_agent}" not found`)
-      if (agent.mode === "subagent") throw new Error(`default agent "${cfg.default_agent}" is a subagent`)
-      if (agent.hidden === true) throw new Error(`default agent "${cfg.default_agent}" is hidden`)
-      return agent.name
+      if (agent && agent.mode !== "subagent" && agent.hidden !== true && agent.enabled !== false) {
+        return agent.name
+      }
     }
 
-    const primaryVisible = Object.values(agents).find((a) => a.mode !== "subagent" && a.hidden !== true)
-    if (!primaryVisible) throw new Error("no primary visible agent found")
+    const primaryVisible = Object.values(agents).find(
+      (a) => a.mode !== "subagent" && a.hidden !== true && a.enabled !== false,
+    )
+    if (!primaryVisible) {
+      log.warn("no primary visible agent found, falling back to foundational 'build' agent")
+      return "build"
+    }
     return primaryVisible.name
   }
 

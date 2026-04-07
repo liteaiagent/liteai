@@ -23,7 +23,17 @@ export const ToolRoutes: () => Hono<any, any, any> = lazy(
               description: "Tool IDs",
               content: {
                 "application/json": {
-                  schema: resolver(z.array(z.string()).meta({ ref: "ToolIDs" })),
+                  schema: resolver(
+                    z
+                      .array(
+                        z.object({
+                          id: z.string(),
+                          native: z.boolean().optional(),
+                          enabled: z.boolean().optional(),
+                        }),
+                      )
+                      .meta({ ref: "ToolIDs" }),
+                  ),
                 },
               },
             },

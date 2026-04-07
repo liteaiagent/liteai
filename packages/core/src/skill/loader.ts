@@ -87,6 +87,7 @@ export namespace SkillLoader {
       if (source === "bundled" && skills[parsed.name]) return
 
       log.info("loaded skill", { name: parsed.name, path: match, source })
+      parsed.native = source === "bundled"
       skills[parsed.name] = parsed
     }
 
@@ -199,6 +200,11 @@ export namespace SkillLoader {
         dirs.add(path.dirname(skill.location))
         skills[skill.name] = skill as Skill.Info
       }
+    }
+
+    // Process enabled state based on global config
+    for (const skill of Object.values(skills)) {
+      skill.enabled = !(config.disabledSkills?.[skill.name] === true)
     }
 
     return {
