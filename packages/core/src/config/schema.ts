@@ -562,7 +562,7 @@ export const Info = z
       .optional()
       .describe("Agent configuration, see https://liteai.com/docs/agents"),
     provider: z.record(z.string(), Provider).optional().describe("Custom provider configurations and model overrides"),
-    mcp: z
+    mcpServers: z
       .record(
         z.string(),
         z.union([

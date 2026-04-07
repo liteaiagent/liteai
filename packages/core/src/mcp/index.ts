@@ -188,7 +188,7 @@ export namespace MCP {
   type PromptInfo = Awaited<ReturnType<MCPClient["listPrompts"]>>["prompts"][number]
 
   type ResourceInfo = Awaited<ReturnType<MCPClient["listResources"]>>["resources"][number]
-  type McpEntry = NonNullable<Config.Info["mcp"]>[string]
+  type McpEntry = NonNullable<Config.Info["mcpServers"]>[string]
   function isMcpConfigured(entry: McpEntry): entry is Config.Mcp {
     return typeof entry === "object" && entry !== null && "type" in entry
   }
@@ -201,7 +201,7 @@ export namespace MCP {
 
   async function init(): Promise<McpState> {
     const cfg = await Config.getGlobal()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const profile = Platform.active()
     if (profile?.mcpJson) {
@@ -262,7 +262,7 @@ export namespace MCP {
   export async function sync() {
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -371,7 +371,7 @@ export namespace MCP {
     s.clients[name] = result.mcpClient
     s.status[name] = result.status
 
-    await Config.update({ mcp: { [name]: mcp } }).catch((error) => {
+    await Config.update({ mcpServers: { [name]: mcp } }).catch((error) => {
       log.error("Failed to persist MCP config", { name, error })
     })
 
@@ -628,7 +628,7 @@ export namespace MCP {
   export async function status() {
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -665,7 +665,7 @@ export namespace MCP {
 
   export async function connect(name: string) {
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -720,7 +720,7 @@ export namespace MCP {
       s.clients[name] = result.mcpClient
     }
 
-    await Config.update({ mcp: { [name]: { enabled: true } } }).catch((error) => {
+    await Config.update({ mcpServers: { [name]: { enabled: true } } }).catch((error) => {
       log.error("Failed to persist MCP connect state", { name, error })
     })
   }
@@ -736,7 +736,7 @@ export namespace MCP {
     }
     s.status[name] = { status: "disabled" }
 
-    await Config.update({ mcp: { [name]: { enabled: false } } }).catch((error) => {
+    await Config.update({ mcpServers: { [name]: { enabled: false } } }).catch((error) => {
       log.error("Failed to persist MCP disconnect state", { name, error })
     })
   }
@@ -745,7 +745,7 @@ export namespace MCP {
     const result: Record<string, Tool> = {}
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -806,7 +806,7 @@ export namespace MCP {
     const result: Record<string, string[]> = {}
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -848,7 +848,7 @@ export namespace MCP {
   export async function prompts() {
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -890,7 +890,7 @@ export namespace MCP {
   export async function resources() {
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcp ?? {}) }
+    const config = { ...(cfg.mcpServers ?? {}) }
 
     const { Flag } = await import("@/flag/flag")
     const profile = Platform.active()
@@ -990,7 +990,7 @@ export namespace MCP {
    */
   export async function startAuth(mcpName: string): Promise<{ authorizationUrl: string }> {
     const cfg = await Config.get()
-    const mcpConfig = cfg.mcp?.[mcpName]
+    const mcpConfig = cfg.mcpServers?.[mcpName]
 
     if (!mcpConfig) {
       throw new Error(`MCP server not found: ${mcpName}`)
@@ -1150,7 +1150,7 @@ export namespace MCP {
 
       // Now try to reconnect
       const cfg = await Config.get()
-      const mcpConfig = cfg.mcp?.[mcpName]
+      const mcpConfig = cfg.mcpServers?.[mcpName]
 
       if (!mcpConfig) {
         throw new Error(`MCP server not found: ${mcpName}`)
@@ -1191,7 +1191,7 @@ export namespace MCP {
    */
   export async function supportsOAuth(mcpName: string): Promise<boolean> {
     const cfg = await Config.get()
-    const mcpConfig = cfg.mcp?.[mcpName]
+    const mcpConfig = cfg.mcpServers?.[mcpName]
     if (!mcpConfig) return false
     if (!isMcpConfigured(mcpConfig)) return false
     return mcpConfig.type === "remote" && mcpConfig.oauth !== false

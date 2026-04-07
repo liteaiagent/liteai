@@ -162,6 +162,7 @@ export const Instance = {
     Log.Default.warn("disposing instance", { directory })
     if (!trackReboot(directory)) {
       Log.Default.error("skipping dispose — reboot loop detected, instance will not be recreated", { directory })
+      return
     }
     await Promise.all([State.dispose(directory), Effect.runPromise(InstanceState.dispose(directory))])
     cache.delete(directory)

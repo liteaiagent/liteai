@@ -334,16 +334,16 @@ export function redactSensitiveFields(config: Info): Info {
   const redacted = { ...config }
 
   // Deep clone and redact mcp secret keys
-  if (redacted.mcp) {
-    redacted.mcp = { ...redacted.mcp }
-    for (const [key, value] of Object.entries(redacted.mcp)) {
+  if (redacted.mcpServers) {
+    redacted.mcpServers = { ...redacted.mcpServers }
+    for (const [key, value] of Object.entries(redacted.mcpServers)) {
       const mcpVal = value as { type?: string; oauth?: { clientSecret?: string } }
       if (mcpVal && mcpVal.type === "remote" && mcpVal.oauth && typeof mcpVal.oauth === "object") {
         const clonedOauth = { ...mcpVal.oauth }
         if (clonedOauth.clientSecret) {
           clonedOauth.clientSecret = "*****"
         }
-        redacted.mcp[key] = { ...mcpVal, oauth: clonedOauth } as typeof value
+        redacted.mcpServers[key] = { ...mcpVal, oauth: clonedOauth } as typeof value
       }
     }
   }
@@ -381,7 +381,7 @@ export async function update(config: Info) {
     delete config.server
   }
 
-  const filepath = path.join(Instance.directory, `${Brand.config}.json`)
+  const filepath = path.join(Instance.directory, Brand.dir, `${Brand.config}.json`)
   const existing = await loadFile(filepath)
   await Filesystem.writeJson(filepath, mergeDeep(existing, config))
   await Instance.dispose()

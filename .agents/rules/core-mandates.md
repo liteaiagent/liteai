@@ -5,6 +5,11 @@ trigger: always_on
 # CORE MANDATES & SYSTEM CONSTRAINTS
 This is a strict production environment, not an MVP. All code generated must prioritize long-term maintainability, strict typing, and system stability over rapid task execution.
 
+## 0. Major Release & Compatibility Policy (v-Next)
+- **Zero Backward Compatibility:** This is a new major release. You are explicitly authorized and required to BREAK backward compatibility to achieve architectural purity. DO NOT write adapter code, shims, or polyfills to support legacy interfaces.
+- **Clean Code Paradigm:** Ruthlessly strip away legacy cruft. Prioritize modern, clean code patterns. 
+- **AI Agent Standards:** All new implementations must strictly maintain compatibility with modern AI Agent standards. Optimize interfaces for agentic tool-calling, state management, and LLM-driven orchestration.
+
 ## 1. Architecture & Performance (`packages/core`)
 - **Domain:** This package is a multi-tenant, multi-session HTTP/Server-Sent Events (SSE) backend.
 - **Performance:** Code must be strictly non-blocking. Optimize for concurrent connections, minimal memory footprint per session, and efficient event-loop management.
@@ -23,7 +28,7 @@ This is a strict production environment, not an MVP. All code generated must pri
 
 ## 4. Design & Refactoring Guardrails
 - **Design > Speed:** Structural integrity and design patterns take precedence over writing code quickly. 
-- **The "Roadmap" Rule:** If you encounter existing code that is overly complex, an anti-pattern, or poorly performant, DO NOT initiate a massive, unprompted rewrite. Instead, explicitly propose the refactor to be added to the technical roadmap.
+- **The "Roadmap" Rule:** While you must drop legacy compatibility (per Directive 0), if you encounter an entirely separate domain or massive architectural anti-pattern outside your current scope, DO NOT initiate an unprompted global rewrite. Explicitly propose the refactor to be added to the technical roadmap.
 - **Incremental Changes:** Keep functional changes tightly scoped to the current objective.
 
 ## 5. Strict Error Handling (Fail-Fast Protocol)

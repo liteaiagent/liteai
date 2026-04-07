@@ -111,7 +111,7 @@ export function apply(config: Config.Info, mounted: Mounted): Config.Info {
   }
 
   if (Object.keys(mounted.mcp).length) {
-    result.mcp = { ...mounted.mcp, ...result.mcp }
+    result.mcpServers = { ...mounted.mcp, ...result.mcpServers }
   }
 
   for (const [key, val] of Object.entries(mounted.env)) {

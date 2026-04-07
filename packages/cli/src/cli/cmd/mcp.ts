@@ -39,7 +39,7 @@ function getAuthStatusText(status: MCP.AuthStatus): string {
   }
 }
 
-type McpEntry = NonNullable<Config.Info["mcp"]>[string]
+type McpEntry = NonNullable<Config.Info["mcpServers"]>[string]
 
 type McpConfigured = Config.Mcp
 function isMcpConfigured(config: McpEntry): config is McpConfigured {
@@ -77,7 +77,7 @@ export const McpListCommand = cmd({
         prompts.intro("MCP Servers")
 
         const config = await Config.get()
-        const mcpServers = config.mcp ?? {}
+        const mcpServers = config.mcpServers ?? {}
         const statuses = await MCP.status()
 
         const servers = Object.entries(mcpServers).filter((entry): entry is [string, McpConfigured] =>
@@ -154,7 +154,7 @@ export const McpAuthCommand = cmd({
         prompts.intro("MCP OAuth Authentication")
 
         const config = await Config.get()
-        const mcpServers = config.mcp ?? {}
+        const mcpServers = config.mcpServers ?? {}
 
         // Get OAuth-capable servers (remote servers with oauth not explicitly disabled)
         const oauthServers = Object.entries(mcpServers).filter(
@@ -165,7 +165,7 @@ export const McpAuthCommand = cmd({
           prompts.log.warn("No OAuth-capable MCP servers configured")
           prompts.log.info("Remote MCP servers support OAuth by default. Add a remote server in liteai.json:")
           prompts.log.info(`
-  "mcp": {
+  "mcpServers": {
     "my-server": {
       "type": "remote",
       "url": "https://example.com/mcp"
@@ -250,7 +250,7 @@ export const McpAuthCommand = cmd({
             prompts.log.error(status.error)
             prompts.log.info("Add clientId to your MCP server config:")
             prompts.log.info(`
-  "mcp": {
+  "mcpServers": {
     "${serverName}": {
       "type": "remote",
       "url": "${serverConfig.url}",
@@ -291,7 +291,7 @@ export const McpAuthListCommand = cmd({
         prompts.intro("MCP OAuth Status")
 
         const config = await Config.get()
-        const mcpServers = config.mcp ?? {}
+        const mcpServers = config.mcpServers ?? {}
 
         // Get OAuth-capable servers
         const oauthServers = Object.entries(mcpServers).filter(
@@ -409,7 +409,7 @@ async function addMcpToConfig(name: string, mcpConfig: Config.Mcp, configPath: s
   }
 
   // Use jsonc-parser to modify while preserving comments
-  const edits = modify(text, ["mcp", name], mcpConfig, {
+  const edits = modify(text, ["mcpServers", name], mcpConfig, {
     formattingOptions: { tabSize: 2, insertSpaces: true },
   })
   const result = applyEdits(text, edits)
@@ -600,7 +600,7 @@ export const McpDebugCommand = cmd({
         prompts.intro("MCP OAuth Debug")
 
         const config = await Config.get()
-        const mcpServers = config.mcp ?? {}
+        const mcpServers = config.mcpServers ?? {}
         const serverName = args.name
 
         const serverConfig = mcpServers[serverName]

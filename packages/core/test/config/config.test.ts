@@ -602,7 +602,7 @@ test("updates config and writes to file", async () => {
       const newConfig = { model: "updated/model" }
       await Config.update(newConfig as Partial<Config.Info>)
 
-      const writtenConfig = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, "settings.json"))
+      const writtenConfig = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, ".liteai", "settings.json"))
       expect(writtenConfig.model).toBe("updated/model")
     },
   })
@@ -864,7 +864,7 @@ test("project config can override MCP server enabled status", async () => {
         path.join(dir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             jira: {
               type: "remote",
               url: "https://jira.example.com/mcp",
@@ -885,7 +885,7 @@ test("project config can override MCP server enabled status", async () => {
         path.join(liteaiDir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             jira: {
               type: "remote",
               url: "https://jira.example.com/mcp",
@@ -901,13 +901,13 @@ test("project config can override MCP server enabled status", async () => {
     fn: async () => {
       const config = await Config.get()
       // jira should be enabled (overridden by .liteai config)
-      expect(config.mcp?.jira).toEqual({
+      expect(config.mcpServers?.jira).toEqual({
         type: "remote",
         url: "https://jira.example.com/mcp",
         enabled: true,
       })
       // wiki should still be disabled (not overridden)
-      expect(config.mcp?.wiki).toEqual({
+      expect(config.mcpServers?.wiki).toEqual({
         type: "remote",
         url: "https://wiki.example.com/mcp",
         enabled: false,
@@ -924,7 +924,7 @@ test("MCP config deep merges preserving base config properties", async () => {
         path.join(dir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             myserver: {
               type: "remote",
               url: "https://myserver.example.com/mcp",
@@ -943,7 +943,7 @@ test("MCP config deep merges preserving base config properties", async () => {
         path.join(liteaiDir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             myserver: {
               type: "remote",
               url: "https://myserver.example.com/mcp",
@@ -958,7 +958,7 @@ test("MCP config deep merges preserving base config properties", async () => {
     directory: tmp.path,
     fn: async () => {
       const config = await Config.get()
-      expect(config.mcp?.myserver).toEqual({
+      expect(config.mcpServers?.myserver).toEqual({
         type: "remote",
         url: "https://myserver.example.com/mcp",
         enabled: true,
@@ -978,7 +978,7 @@ test("local .liteai config can override MCP from project config", async () => {
         path.join(dir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             docs: {
               type: "remote",
               url: "https://docs.example.com/mcp",
@@ -994,7 +994,7 @@ test("local .liteai config can override MCP from project config", async () => {
         path.join(liteaiDir, "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             docs: {
               type: "remote",
               url: "https://docs.example.com/mcp",
@@ -1009,7 +1009,7 @@ test("local .liteai config can override MCP from project config", async () => {
     directory: tmp.path,
     fn: async () => {
       const config = await Config.get()
-      expect(config.mcp?.docs?.enabled).toBe(true)
+      expect(config.mcpServers?.docs?.enabled).toBe(true)
     },
   })
 })
@@ -1025,7 +1025,7 @@ test("project config overrides remote well-known config", async () => {
         new Response(
           JSON.stringify({
             config: {
-              mcp: {
+              mcpServers: {
                 jira: {
                   type: "remote",
                   url: "https://jira.example.com/mcp",
@@ -1062,7 +1062,7 @@ test("project config overrides remote well-known config", async () => {
           path.join(dir, "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
-            mcp: {
+            mcpServers: {
               jira: {
                 type: "remote",
                 url: "https://jira.example.com/mcp",
@@ -1080,7 +1080,7 @@ test("project config overrides remote well-known config", async () => {
         // Verify fetch was called for wellknown config
         expect(fetchedUrl).toBe("https://example.com/.well-known/liteai")
         // Project config (enabled: true) should override remote (enabled: false)
-        expect(config.mcp?.jira?.enabled).toBe(true)
+        expect(config.mcpServers?.jira?.enabled).toBe(true)
       },
     })
   } finally {
@@ -1100,7 +1100,7 @@ test("wellknown URL with trailing slash is normalized", async () => {
         new Response(
           JSON.stringify({
             config: {
-              mcp: {
+              mcpServers: {
                 slack: {
                   type: "remote",
                   url: "https://slack.example.com/mcp",
@@ -1428,7 +1428,7 @@ describe("sensitive field redaction", () => {
               secretKey: "sk-123",
             },
           },
-          mcp: {
+          mcpServers: {
             test_server: {
               type: "remote",
               url: "http://example.com/mcp",
@@ -1449,7 +1449,7 @@ describe("sensitive field redaction", () => {
         expect(config.telemetry?.langfuse?.publicKey).toBe("pk-123")
         expect(config.telemetry?.langfuse?.secretKey).toBe("*****")
 
-        const mcpServer = config.mcp?.test_server as
+        const mcpServer = config.mcpServers?.test_server as
           | { type?: string; oauth?: { clientId?: string; clientSecret?: string } }
           | undefined
         if (mcpServer && mcpServer.type === "remote" && mcpServer.oauth) {
@@ -1491,7 +1491,7 @@ describe("project config updates", () => {
           },
         } as Parameters<typeof Config.update>[0])
 
-        const rawFile = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, "settings.json"))
+        const rawFile = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, ".liteai", "settings.json"))
         expect(rawFile.username).toBe("valid_update")
         expect(rawFile.telemetry).toBeUndefined()
         expect(rawFile.server).toBeUndefined()
