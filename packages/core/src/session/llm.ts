@@ -40,6 +40,8 @@ export namespace LLM {
     retries?: number
     toolChoice?: "auto" | "required" | "none"
     onSystem?: (system: string[]) => void
+    /** Current step number in the query loop (1-indexed). Used for Langfuse graph visualization. */
+    step?: number
   }
 
   export type StreamOutput = StreamTextResult<ToolSet, unknown>
@@ -237,6 +239,15 @@ export namespace LLM {
           // filterable fields in the Langfuse UI (not buried in catch-all metadata)
           "langfuse.observation.metadata.agentName": input.agent.name,
           "langfuse.observation.metadata.agentMode": input.agent.mode,
+          // Langfuse graph visualization metadata:
+          // Langfuse's Clickhouse query extracts metadata['langgraph_node']
+          // and metadata['langgraph_step'] to render the agent graph view.
+          // Keys here must be bare (no 'langfuse.observation.metadata.' prefix)
+          // because the AI SDK wraps them as 'ai.telemetry.metadata.<key>' and
+          // Langfuse's extractMetadata() strips that prefix, leaving just '<key>'
+          // in the observation metadata column.
+          langgraph_node: input.agent.name,
+          langgraph_step: String(input.step ?? 1),
         },
       },
       headers: {

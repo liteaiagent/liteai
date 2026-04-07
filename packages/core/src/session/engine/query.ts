@@ -322,6 +322,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       abort,
       sessionID,
       system,
+      step,
       messages: [
         ...Message.toModelMessages(msgs, model),
         ...(isLastStep
