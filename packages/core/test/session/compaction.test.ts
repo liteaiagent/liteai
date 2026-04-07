@@ -208,8 +208,9 @@ describe("session.compaction.isOverflow", () => {
   test("returns false when compaction.auto is disabled", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
+        const liteaiDir = path.join(dir, ".liteai")
         await Bun.write(
-          path.join(dir, "settings.json"),
+          path.join(liteaiDir, "settings.json"),
           JSON.stringify({
             compaction: { auto: false },
           }),

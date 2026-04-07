@@ -5927,7 +5927,7 @@
                       },
                       "scope": {
                         "type": "string",
-                        "enum": ["user", "project", "local"]
+                        "enum": ["user", "project"]
                       }
                     },
                     "required": ["id", "name", "marketplace", "enabled", "scope"]

@@ -79,7 +79,7 @@
     "glob": "13.0.5",
     "husky": "9.1.7",
     "semver": "^7.6.0",
-    "turbo": "2.9.4"
+    "turbo": "2.9.5"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.933.0",

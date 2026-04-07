@@ -26,9 +26,6 @@ export namespace TuiConfig {
   }
 
   const state = Instance.state(async () => {
-    const projectFiles = Flag.LITEAI_DISABLE_PROJECT_CONFIG
-      ? []
-      : await ConfigPaths.projectFiles("tui", Instance.directory, Instance.worktree)
     const directories = await ConfigPaths.directories(Instance.directory, Instance.worktree)
     const custom = customPath()
     const managed = Config.managedConfigDir()
@@ -42,10 +39,6 @@ export namespace TuiConfig {
     if (custom) {
       result = mergeInfo(result, await loadFile(custom))
       log.debug("loaded custom tui config", { path: custom })
-    }
-
-    for (const file of projectFiles) {
-      result = mergeInfo(result, await loadFile(file))
     }
 
     for (const dir of unique(directories)) {

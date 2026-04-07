@@ -4532,7 +4532,7 @@ export type ProjectPluginListResponses = {
         marketplace: string;
         version?: string;
         enabled: boolean;
-        scope: 'user' | 'project' | 'local';
+        scope: 'user' | 'project';
     }>;
 };
 

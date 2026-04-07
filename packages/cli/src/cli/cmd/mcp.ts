@@ -124,7 +124,10 @@ export const McpListCommand = cmd({
             hint = `\n    ${status.error}`
           }
 
-          const typeHint = serverConfig.type === "remote" ? serverConfig.url : serverConfig.command.join(" ")
+          const typeHint =
+            serverConfig.type === "remote"
+              ? serverConfig.url
+              : [serverConfig.command, ...(serverConfig.args ?? [])].join(" ")
           prompts.log.info(
             `${statusIcon} ${name} ${UI.Style.TEXT_DIM}${statusText}${hint}\n    ${UI.Style.TEXT_DIM}${typeHint}`,
           )
@@ -490,9 +493,11 @@ export const McpAddCommand = cmd({
           })
           if (prompts.isCancel(command)) throw new UI.CancelledError()
 
+          const parts = command.split(" ")
           const mcpConfig: Config.Mcp = {
             type: "local",
-            command: command.split(" "),
+            command: parts[0] ?? "",
+            args: parts.slice(1),
           }
 
           await addMcpToConfig(name, mcpConfig, configPath)

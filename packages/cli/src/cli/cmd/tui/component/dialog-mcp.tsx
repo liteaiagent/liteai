@@ -110,7 +110,7 @@ function McpDetail(props: { name: string }) {
   const { theme } = useTheme()
   const [loading, setLoading] = createSignal<string | null>(null)
 
-  const mcpConfig = createMemo(() => sync.data.config?.mcp?.[props.name])
+  const mcpConfig = createMemo(() => sync.data.config?.mcpServers?.[props.name])
   const mcpStatus = createMemo(() => sync.data.mcp?.[props.name])
   const enabled = createMemo(() => local.mcp.isEnabled(props.name))
   const [toolsLength, setToolsLength] = createSignal<number | null>(null)
@@ -150,7 +150,7 @@ function McpDetail(props: { name: string }) {
 
   const header = () => {
     const s = mcpStatus()
-    const c = mcpConfig() as { type?: string; command?: string[]; url?: string } | undefined
+    const c = mcpConfig() as { type?: string; command?: string; args?: string[]; url?: string } | undefined
     const isLoading = loading() === "toggle" || loading() === "reconnect"
     const isFailed = s && s.status === "failed"
 
@@ -165,12 +165,12 @@ function McpDetail(props: { name: string }) {
           <>
             <text>
               <span style={{ fg: theme.text, attributes: TextAttributes.BOLD }}>Command: </span>
-              <span style={{ fg: theme.textMuted }}>{c.command?.[0]}</span>
+              <span style={{ fg: theme.textMuted }}>{c.command}</span>
             </text>
-            {(c.command?.length ?? 0) > 1 && (
+            {(c.args?.length ?? 0) > 0 && (
               <text>
                 <span style={{ fg: theme.text, attributes: TextAttributes.BOLD }}>Args: </span>
-                <span style={{ fg: theme.textMuted }}>{c.command?.slice(1).join(" ")}</span>
+                <span style={{ fg: theme.textMuted }}>{c.args?.join(" ")}</span>
               </text>
             )}
           </>

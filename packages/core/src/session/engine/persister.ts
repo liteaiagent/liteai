@@ -448,7 +448,7 @@ export class EventPersister {
       }
     }
 
-    if (assistantMessage.error) {
+    if (assistantMessage.error || this.abort.aborted) {
       try {
         await Session.updatePart({
           id: PartID.ascending(),

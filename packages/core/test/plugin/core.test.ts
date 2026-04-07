@@ -32,7 +32,7 @@ describe("plugin.manifest", () => {
       agents: ["agents/*.md", "extra/*.md"],
       skills: "skills/**/SKILL.md",
       hooks: "hooks/hooks.json",
-      mcpServers: { server1: { type: "local", command: ["node", "index.js"] } },
+      mcpServers: { server1: { type: "local", command: "node", args: ["index.js"] } },
       lspServers: "lsp.json",
       outputStyles: "styles.css",
       settings: "config.json",
@@ -334,7 +334,7 @@ describe("plugin.mount", () => {
     // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     const config = { username: "user-override" } as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       commands: {},
       agents: {},
       hooks: {},
@@ -352,7 +352,7 @@ describe("plugin.mount", () => {
       // biome-ignore lint/suspicious/noExplicitAny: partial config  for test
     } as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       // biome-ignore lint/suspicious/noExplicitAny: partial config for test
       commands: { "plugin:new": { template: "from plugin" } } as any,
       agents: {},
@@ -368,12 +368,12 @@ describe("plugin.mount", () => {
 
   test("apply merges MCP servers (existing takes precedence)", () => {
     const config = {
-      mcp: { existing: { type: "local" as const, command: ["node"] } },
+      mcpServers: { existing: { type: "local" as const, command: "node" } },
       // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     } as any
     const mounted = {
       // biome-ignore lint/suspicious/noExplicitAny: partial config for test
-      mcp: { "plugin:server": { type: "local" as const, command: ["python"] } } as any,
+      mcpServers: { "plugin:server": { type: "local" as const, command: "python" } } as any,
       commands: {},
       agents: {},
       hooks: {},
@@ -382,8 +382,8 @@ describe("plugin.mount", () => {
     }
 
     const result = apply(config, mounted)
-    expect(result.mcp?.existing).toBeTruthy()
-    expect(result.mcp?.["plugin:server"]).toBeTruthy()
+    expect(result.mcpServers?.existing).toBeTruthy()
+    expect(result.mcpServers?.["plugin:server"]).toBeTruthy()
   })
 })
 

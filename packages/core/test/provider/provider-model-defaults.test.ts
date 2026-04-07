@@ -9,7 +9,7 @@ test("model cost defaults to zero when not specified", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -48,7 +48,7 @@ test("model options are merged from existing model", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -81,7 +81,7 @@ test("model modalities default correctly", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -118,7 +118,7 @@ test("model with custom cost values", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -158,7 +158,7 @@ test("model cost overrides existing cost values", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -192,7 +192,7 @@ test("model inherits properties from existing database model", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -228,7 +228,7 @@ test("model with tool_call false", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -263,7 +263,7 @@ test("model defaults tool_call to true when not specified", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -297,7 +297,7 @@ test("model headers are preserved", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -340,7 +340,7 @@ test("model limit defaults to zero when not specified", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -376,7 +376,7 @@ test("provider api field sets model api.url", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -412,7 +412,7 @@ test("explicit baseURL overrides api field", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {

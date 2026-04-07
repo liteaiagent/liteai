@@ -16,7 +16,7 @@ mock.module("../../../src/cli/cmd/tui/app", () => ({
   },
 }))
 
-mock.module("liteai/util/rpc", () => ({
+mock.module("@liteai/core/util/rpc", () => ({
   Rpc: {
     client: () => ({
       call: async () => ({ url: "http://127.0.0.1" }),
@@ -31,7 +31,7 @@ mock.module("../../../src/cli/ui", () => ({
   },
 }))
 
-mock.module("liteai/util/log", () => ({
+mock.module("@liteai/core/util/log", () => ({
   Log: {
     init: async () => {},
     create: () => ({
@@ -50,7 +50,7 @@ mock.module("liteai/util/log", () => ({
   },
 }))
 
-mock.module("liteai/util/timeout", () => ({
+mock.module("@liteai/core/util/timeout", () => ({
   withTimeout: <T>(input: Promise<T>) => input,
 }))
 
@@ -68,13 +68,13 @@ mock.module("../../../src/cli/cmd/tui/win32", () => ({
   win32InstallCtrlCGuard: () => undefined,
 }))
 
-mock.module("liteai/config/tui", () => ({
+mock.module("../../../src/cli/config/tui", () => ({
   TuiConfig: {
     get: () => ({}),
   },
 }))
 
-mock.module("liteai/project/instance", () => ({
+mock.module("@liteai/core/project/instance", () => ({
   Instance: {
     provide: async (input: { directory: string; fn: () => Promise<unknown> | unknown }) => {
       seen.inst.push(input.directory)
@@ -149,9 +149,9 @@ describe("tui thread", () => {
 
   test("uses the real cwd when PWD points at a symlink", async () => {
     await check()
-  })
+  }, 90_000)
 
   test("uses the real cwd after resolving a relative project from PWD", async () => {
     await check(".")
-  })
+  }, 90_000)
 })

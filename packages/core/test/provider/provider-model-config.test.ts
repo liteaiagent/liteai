@@ -9,7 +9,7 @@ test("model whitelist filters models for provider", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -40,7 +40,7 @@ test("model blacklist excludes specific models", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -70,7 +70,7 @@ test("whitelist and blacklist can be combined", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -103,7 +103,7 @@ test("provider removed when all models filtered out", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -131,7 +131,7 @@ test("custom model alias via config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -166,7 +166,7 @@ test("custom provider with npm package", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -209,7 +209,7 @@ test("provider with baseURL from config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -248,7 +248,7 @@ test("provider with custom npm package", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -288,7 +288,7 @@ test("model alias name defaults to alias key when id differs", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -321,7 +321,7 @@ test("completely new provider not in database can be configured", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -371,7 +371,7 @@ test("provider name defaults to id when not in database", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -406,7 +406,7 @@ test("custom model inherits npm package from models.dev provider config", async 
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -442,7 +442,7 @@ test("custom model inherits api.url from models.dev provider", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {

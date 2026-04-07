@@ -51,10 +51,10 @@ test("headers are passed to transports when oauth is enabled (default)", async (
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        `${dir}/settings.json`,
+        `${dir}/.liteai/settings.json`,
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             "test-server": {
               type: "remote",
               url: "https://example.com/mcp",

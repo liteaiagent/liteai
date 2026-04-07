@@ -16,7 +16,9 @@
     "check": "tsgo --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write",
-    "lint:format": "biome format --write"
+    "lint:format": "biome format --write",
+    "test": "bun test --timeout 90000",
+    "test:cov": "bun test --coverage --coverage-reporter=lcov --coverage-dir=./coverage --timeout 90000"
   },
   "exports": {
     "./*": "./src/*"

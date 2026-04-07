@@ -16,7 +16,7 @@ const log = Log.create({ service: "plugin:mount" })
 
 /** Result of mounting one or more plugins into a config. */
 export type Mounted = {
-  mcp: Record<string, Config.Mcp>
+  mcpServers: Record<string, Config.Mcp>
   commands: Record<string, Config.Command>
   agents: Record<string, Config.Agent>
   hooks: Record<string, unknown>
@@ -31,7 +31,7 @@ export type Mounted = {
 }
 
 function empty(): Mounted {
-  return { mcp: {}, commands: {}, agents: {}, hooks: {}, skills: [], env: {} }
+  return { mcpServers: {}, commands: {}, agents: {}, hooks: {}, skills: [], env: {} }
 }
 
 export function one(plugin: Loaded): Mounted {
@@ -52,8 +52,8 @@ export function one(plugin: Loaded): Mounted {
     result.hooks = mergeDeep(result.hooks as Record<string, unknown>, plugin.hooks as Record<string, unknown>)
   }
 
-  if (plugin.mcp) {
-    for (const [name, mcp] of Object.entries(plugin.mcp)) result.mcp[name] = mcp
+  if (plugin.mcpServers) {
+    for (const [name, mcp] of Object.entries(plugin.mcpServers)) result.mcpServers[name] = mcp
   }
 
   log.info("mounted plugin", {
@@ -62,7 +62,7 @@ export function one(plugin: Loaded): Mounted {
     agents: Object.keys(result.agents).length,
     skills: result.skills.length,
     hooks: Object.keys(result.hooks).length,
-    mcp: Object.keys(result.mcp).length,
+    mcpServers: Object.keys(result.mcpServers).length,
   })
 
   return result
@@ -73,7 +73,7 @@ export function all(plugins: Loaded[]): Mounted {
 
   for (const plugin of plugins) {
     const mounted = one(plugin)
-    Object.assign(result.mcp, mounted.mcp)
+    Object.assign(result.mcpServers, mounted.mcpServers)
     Object.assign(result.commands, mounted.commands)
     Object.assign(result.agents, mounted.agents)
     result.skills.push(...mounted.skills)
@@ -110,8 +110,8 @@ export function apply(config: Config.Info, mounted: Mounted): Config.Info {
     result.hooks = existing as any
   }
 
-  if (Object.keys(mounted.mcp).length) {
-    result.mcpServers = { ...mounted.mcp, ...result.mcpServers }
+  if (Object.keys(mounted.mcpServers).length) {
+    result.mcpServers = { ...mounted.mcpServers, ...result.mcpServers }
   }
 
   for (const [key, val] of Object.entries(mounted.env)) {

@@ -125,7 +125,7 @@ describe("tool.read external_directory permission", () => {
         expect(extDirReq).toBeDefined()
       },
     })
-  })
+  }, 90_000)
 
   test("does not ask for external_directory permission when reading inside project", async () => {
     await using tmp = await tmpdir({

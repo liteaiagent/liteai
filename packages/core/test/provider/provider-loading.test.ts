@@ -9,7 +9,7 @@ test("provider loaded from env variable", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
         }),
@@ -36,7 +36,7 @@ test("provider loaded from config with apiKey option", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -63,7 +63,7 @@ test("disabled_providers excludes provider", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           disabled_providers: ["anthropic"],
@@ -87,7 +87,7 @@ test("enabled_providers restricts to only listed providers", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           enabled_providers: ["anthropic"],
@@ -113,7 +113,7 @@ test("env variable takes precedence, config merges options", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -147,7 +147,7 @@ test("disabled_providers prevents loading even with env var", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           disabled_providers: ["openai"],
@@ -171,7 +171,7 @@ test("enabled_providers with empty array allows no providers", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           enabled_providers: [],
@@ -196,7 +196,7 @@ test("disabled_providers and enabled_providers interaction", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           // enabled_providers takes precedence - only these are considered
@@ -230,7 +230,7 @@ test("provider with multiple env var options only includes apiKey when single en
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -272,7 +272,7 @@ test("provider with single env var includes apiKey automatically", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -314,7 +314,7 @@ test("provider env fallback - second env var used if first missing", async () =>
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -354,7 +354,7 @@ test("multiple providers can be configured simultaneously", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -389,7 +389,7 @@ test("provider options are deeply merged", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {

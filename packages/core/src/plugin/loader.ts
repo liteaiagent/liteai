@@ -34,7 +34,7 @@ export const Loaded = z.object({
   agents: z.record(z.string(), z.custom<Config.Agent>()),
   skills: z.array(z.custom<Skill.Info>()),
   hooks: z.custom<HookSchema>().optional(),
-  mcp: z.record(z.string(), z.custom<Config.Mcp>()).optional(),
+  mcpServers: z.record(z.string(), z.custom<Config.Mcp>()).optional(),
 })
 export type Loaded = z.infer<typeof Loaded>
 
@@ -67,12 +67,12 @@ export async function load(root: string): Promise<Loaded | undefined> {
     const name = isVersion(base) ? path.basename(path.dirname(resolved)) : base
     log.info("loading plugin", { name, root: resolved })
 
-    const [commands, agents, skills, hooks, mcp] = await Promise.all([
+    const [commands, agents, skills, hooks, mcpServers] = await Promise.all([
       loadCommands(resolved, name),
       loadAgents(resolved, name),
       loadSkills(resolved, name),
       loadHooks(resolved, name),
-      loadMcp(resolved, name),
+      loadMcpServers(resolved, name),
     ])
 
     log.info("loaded plugin components", {
@@ -81,10 +81,10 @@ export async function load(root: string): Promise<Loaded | undefined> {
       agents: Object.keys(agents).length,
       skills: skills.length,
       hooks: hooks ? Object.keys(hooks).length : 0,
-      mcp: mcp ? Object.keys(mcp).length : 0,
+      mcpServers: mcpServers ? Object.keys(mcpServers).length : 0,
     })
 
-    return { name, root: resolved, commands, agents, skills, hooks, mcp }
+    return { name, root: resolved, commands, agents, skills, hooks, mcpServers }
   })()
 
   CACHE.set(resolved, promise)
@@ -241,7 +241,7 @@ async function loadHooks(root: string, plugin: string): Promise<HookSchema | und
 // MCP servers
 // -------------------------------------------------------------------
 
-async function loadMcp(root: string, plugin: string): Promise<Record<string, Config.Mcp> | undefined> {
+async function loadMcpServers(root: string, plugin: string): Promise<Record<string, Config.Mcp> | undefined> {
   const file = path.join(root, ".mcp.json")
   if (!(await Filesystem.exists(file))) return undefined
 
@@ -254,7 +254,7 @@ async function loadMcp(root: string, plugin: string): Promise<Record<string, Con
     for (const [key, entry] of Object.entries(servers as Record<string, unknown>)) {
       if (key === "mcpServers") continue
       const expanded = expandDeep(entry, root, plugin)
-      const adapted = adaptMcp(key, expanded as Record<string, unknown>)
+      const adapted = adaptMcpServer(key, expanded as Record<string, unknown>)
       if (adapted) result[ns(plugin, key)] = adapted
     }
     return Object.keys(result).length ? result : undefined
@@ -264,12 +264,13 @@ async function loadMcp(root: string, plugin: string): Promise<Record<string, Con
   }
 }
 
-function adaptMcp(name: string, entry: Record<string, unknown>): Config.Mcp | undefined {
+function adaptMcpServer(name: string, entry: Record<string, unknown>): Config.Mcp | undefined {
   if (entry.type === "http" || entry.type === "sse" || entry.url) {
     if (!entry.url || typeof entry.url !== "string") return undefined
     const result: Record<string, unknown> = { type: "remote", url: entry.url }
     if (entry.headers) result.headers = entry.headers
-    if (entry.enabled !== undefined) result.enabled = entry.enabled
+    if (entry.enabled !== undefined) result.disabled = !entry.enabled
+    if (entry.disabled !== undefined) result.disabled = entry.disabled
     if (entry.timeout !== undefined) result.timeout = entry.timeout
     return result as Config.Mcp
   }
@@ -277,20 +278,37 @@ function adaptMcp(name: string, entry: Record<string, unknown>): Config.Mcp | un
   if (entry.command && typeof entry.command === "string") {
     const result: Record<string, unknown> = {
       type: "local",
-      command: [entry.command, ...((entry.args as string[]) ?? [])],
+      command: entry.command,
     }
-    if (entry.env) result.environment = entry.env
-    if (entry.enabled !== undefined) result.enabled = entry.enabled
+    if (entry.args !== undefined) result.args = entry.args
+    if (entry.env) result.env = entry.env
+    if (entry.environment) result.env = entry.environment
+    if (entry.enabled !== undefined) result.disabled = !entry.enabled
+    if (entry.disabled !== undefined) result.disabled = entry.disabled
     if (entry.timeout !== undefined) result.timeout = entry.timeout
     return result as Config.Mcp
   }
 
   if (entry.type === "local" && Array.isArray(entry.command)) {
-    const parsed = Config.McpLocal.safeParse(entry)
+    const command = entry.command[0] as string
+    const args = entry.command.slice(1) as string[]
+    const result: Record<string, unknown> = {
+      type: "local",
+      command,
+      args,
+    }
+    if (entry.env) result.env = entry.env
+    if (entry.environment) result.env = entry.environment
+    if (entry.enabled !== undefined) result.disabled = !entry.enabled
+    if (entry.disabled !== undefined) result.disabled = entry.disabled
+    if (entry.timeout !== undefined) result.timeout = entry.timeout
+
+    const parsed = Config.McpLocal.safeParse(result)
     if (parsed.success) return parsed.data
   }
 
   if (entry.type === "remote" && entry.url) {
+    if (entry.enabled !== undefined) entry.disabled = !entry.enabled
     const parsed = Config.McpRemote.safeParse(entry)
     if (parsed.success) return parsed.data
   }

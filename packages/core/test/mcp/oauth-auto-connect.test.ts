@@ -105,10 +105,10 @@ test("first connect to OAuth server shows needs_auth instead of failed", async (
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        `${dir}/settings.json`,
+        `${dir}/.liteai/settings.json`,
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             "test-oauth": {
               type: "remote",
               url: "https://example.com/mcp",

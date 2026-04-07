@@ -15,7 +15,9 @@ import { tmpdir } from "../fixture/fixture"
 const managedConfigDir = process.env.LITEAI_TEST_MANAGED_CONFIG_DIR ?? ""
 
 afterEach(async () => {
-  await fs.rm(managedConfigDir, { force: true, recursive: true }).catch(() => {})
+  if (managedConfigDir) {
+    await fs.rm(managedConfigDir, { force: true, recursive: true }).catch(() => {})
+  }
 })
 
 async function writeManagedSettings(settings: object, filename = "settings.json") {

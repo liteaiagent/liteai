@@ -18,7 +18,8 @@ describe("plugin.loader.mcp", () => {
             mcpServers: {
               myserver: {
                 type: "local",
-                command: ["node", "server.js"],
+                command: "node",
+                args: ["server.js"],
               },
             },
           }),
@@ -28,8 +29,8 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp).toBeTruthy()
-    expect(result?.mcp?.[`${result?.name}:myserver`]).toBeTruthy()
+    expect(result?.mcpServers).toBeTruthy()
+    expect(result?.mcpServers?.[`${result?.name}:myserver`]).toBeTruthy()
   })
 
   test("loads .mcp.json with command format", async () => {
@@ -52,9 +53,9 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp?.[`${result?.name}:tool`]).toBeTruthy()
+    expect(result?.mcpServers?.[`${result?.name}:tool`]).toBeTruthy()
     // Adapted: command becomes array, env becomes environment
-    const server = result?.mcp?.[`${result?.name}:tool`]
+    const server = result?.mcpServers?.[`${result?.name}:tool`]
     expect(server).toBeTruthy()
   })
 
@@ -77,7 +78,7 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp?.[`${result?.name}:remote`]).toBeTruthy()
+    expect(result?.mcpServers?.[`${result?.name}:remote`]).toBeTruthy()
   })
 
   test("returns undefined mcp when no servers found", async () => {
@@ -91,7 +92,7 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp).toBeUndefined()
+    expect(result?.mcpServers).toBeUndefined()
   })
 
   test("loads .mcp.json with flat server format", async () => {
@@ -108,7 +109,7 @@ describe("plugin.loader.mcp", () => {
 
     const result = await load(tmp.path)
     expect(result).toBeTruthy()
-    expect(result?.mcp?.[`${result?.name}:myserver`]).toBeTruthy()
+    expect(result?.mcpServers?.[`${result?.name}:myserver`]).toBeTruthy()
   })
 })
 
@@ -166,7 +167,7 @@ describe("plugin.loader.convention-paths", () => {
     })
 
     const result = await load(tmp.path)
-    expect(result?.mcp).toBeUndefined()
+    expect(result?.mcpServers).toBeUndefined()
   })
 
   // settings loading is no longer part of the plugin loader
@@ -180,7 +181,7 @@ describe("plugin.mount.apply", () => {
     // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     const config = { hooks: { PreToolUse: [{ hooks: [{ type: "command", command: "echo 1" }] }] } } as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       commands: {},
       agents: {},
       hooks: { PreToolUse: [{ hooks: [{ type: "command", command: "echo 1" }] }] },
@@ -197,7 +198,7 @@ describe("plugin.mount.apply", () => {
     // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     const config = {} as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       commands: {},
       agents: {},
       hooks: { PostToolUse: [{ hooks: [{ type: "command", command: "echo post" }] }] },
@@ -216,7 +217,7 @@ describe("plugin.mount.apply", () => {
       // biome-ignore lint/suspicious/noExplicitAny: partial config  for test
     } as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       commands: {},
       // biome-ignore lint/suspicious/noExplicitAny: partial config for test
       agents: { "plugin:new": { prompt: "from plugin" } } as any,
@@ -236,7 +237,7 @@ describe("plugin.mount.apply", () => {
       // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     } as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       commands: {},
       agents: {},
       hooks: {},
@@ -253,7 +254,7 @@ describe("plugin.mount.apply", () => {
     // biome-ignore lint/suspicious/noExplicitAny: partial config for test
     const config = { username: "me" } as any
     const mounted = {
-      mcp: {},
+      mcpServers: {},
       commands: {},
       agents: {},
       hooks: {},
@@ -277,7 +278,7 @@ describe("plugin.mount.components", () => {
           path.join(dir, ".mcp.json"),
           JSON.stringify({
             mcpServers: {
-              srv: { type: "local", command: ["node", "srv.js"] },
+              srv: { type: "local", command: "node", args: ["srv.js"] },
             },
           }),
         )
@@ -288,7 +289,7 @@ describe("plugin.mount.components", () => {
     if (!loaded) throw new Error("expected loaded")
 
     const mounted = one(loaded)
-    expect(mounted.mcp[`${loaded.name}:srv`]).toBeTruthy()
+    expect(mounted.mcpServers[`${loaded.name}:srv`]).toBeTruthy()
   })
 
   test("one mounts skills", async () => {

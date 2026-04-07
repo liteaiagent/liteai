@@ -13,7 +13,9 @@ afterEach(async () => {
   delete process.env.LITEAI_TUI_CONFIG
   await fs.rm(path.join(Global.Path.config, "tui.json"), { force: true }).catch(() => {})
   await fs.rm(path.join(Global.Path.config, "tui.jsonc"), { force: true }).catch(() => {})
-  await fs.rm(managedConfigDir, { force: true, recursive: true }).catch(() => {})
+  if (managedConfigDir) {
+    await fs.rm(managedConfigDir, { force: true, recursive: true }).catch(() => {})
+  }
 })
 
 test("loads tui config with the same precedence order as server config paths", async () => {
@@ -42,8 +44,9 @@ test("loads tui config with the same precedence order as server config paths", a
 test("flattens nested tui key inside tui.json", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
+      await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
       await Bun.write(
-        path.join(dir, "tui.json"),
+        path.join(dir, ".liteai", "tui.json"),
         JSON.stringify({
           theme: "outer",
           tui: { scroll_speed: 3, diff_style: "stacked" },
@@ -67,8 +70,9 @@ test("flattens nested tui key inside tui.json", async () => {
 test("top-level keys in tui.json take precedence over nested tui key", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
+      await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
       await Bun.write(
-        path.join(dir, "tui.json"),
+        path.join(dir, ".liteai", "tui.json"),
         JSON.stringify({
           diff_style: "auto",
           tui: { diff_style: "stacked", scroll_speed: 2 },
@@ -90,7 +94,8 @@ test("top-level keys in tui.json take precedence over nested tui key", async () 
 test("project config takes precedence over LITEAI_TUI_CONFIG (matches LITEAI_CONFIG)", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "tui.json"), JSON.stringify({ theme: "project", diff_style: "auto" }))
+      await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
+      await Bun.write(path.join(dir, ".liteai", "tui.json"), JSON.stringify({ theme: "project", diff_style: "auto" }))
       const custom = path.join(dir, "custom-tui.json")
       await Bun.write(custom, JSON.stringify({ theme: "custom", diff_style: "stacked" }))
       process.env.LITEAI_TUI_CONFIG = custom
@@ -113,7 +118,8 @@ test("merges keybind overrides across precedence layers", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(path.join(Global.Path.config, "tui.json"), JSON.stringify({ keybinds: { app_exit: "ctrl+q" } }))
-      await Bun.write(path.join(dir, "tui.json"), JSON.stringify({ keybinds: { theme_list: "ctrl+k" } }))
+      await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
+      await Bun.write(path.join(dir, ".liteai", "tui.json"), JSON.stringify({ keybinds: { theme_list: "ctrl+k" } }))
     },
   })
 
@@ -172,9 +178,10 @@ test("applies env and file substitutions in tui.json", async () => {
   try {
     await using tmp = await tmpdir({
       init: async (dir) => {
-        await Bun.write(path.join(dir, "keybind.txt"), "ctrl+q")
+        await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
+        await Bun.write(path.join(dir, ".liteai", "keybind.txt"), "ctrl+q")
         await Bun.write(
-          path.join(dir, "tui.json"),
+          path.join(dir, ".liteai", "tui.json"),
           JSON.stringify({
             theme: "{env:TUI_THEME_TEST}",
             keybinds: { app_exit: "{file:keybind.txt}" },
@@ -200,9 +207,10 @@ test("applies env and file substitutions in tui.json", async () => {
 test("applies file substitutions when first identical token is in a commented line", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "theme.txt"), "resolved-theme")
+      await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
+      await Bun.write(path.join(dir, ".liteai", "theme.txt"), "resolved-theme")
       await Bun.write(
-        path.join(dir, "tui.jsonc"),
+        path.join(dir, ".liteai", "tui.json"),
         `{
   // "theme": "{file:theme.txt}",
   "theme": "{file:theme.txt}"

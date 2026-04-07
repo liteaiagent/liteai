@@ -9,7 +9,10 @@ import { tmpdir } from "../fixture/fixture"
 test("getModel returns model for valid provider/model", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -31,7 +34,10 @@ test("getModel returns model for valid provider/model", async () => {
 test("getModel throws ModelNotFoundError for invalid model", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -48,7 +54,10 @@ test("getModel throws ModelNotFoundError for invalid model", async () => {
 test("getModel throws ModelNotFoundError for invalid provider", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -74,7 +83,10 @@ test("parseModel handles model IDs with slashes", () => {
 test("defaultModel returns first available model when no config set", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -95,7 +107,7 @@ test("defaultModel respects config model setting", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           model: "anthropic/claude-sonnet-4-20250514",
@@ -120,7 +132,10 @@ test("defaultModel respects config model setting", async () => {
 test("getSmallModel returns appropriate small model", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -140,7 +155,7 @@ test("getSmallModel respects config small_model override", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           small_model: "anthropic/claude-sonnet-4-20250514",
@@ -180,7 +195,10 @@ test("provider.sort prioritizes preferred models", () => {
 test("closest finds model by partial match", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -200,7 +218,10 @@ test("closest finds model by partial match", async () => {
 test("closest returns undefined for nonexistent provider", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -216,7 +237,7 @@ test("getModel uses realIdByKey for aliased models", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -253,7 +274,10 @@ test("getModel uses realIdByKey for aliased models", async () => {
 test("getModel returns consistent results", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -274,7 +298,10 @@ test("getModel returns consistent results", async () => {
 test("ModelNotFoundError includes suggestions for typos", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -299,7 +326,10 @@ test("ModelNotFoundError includes suggestions for typos", async () => {
 test("ModelNotFoundError for provider includes suggestions", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -324,7 +354,10 @@ test("ModelNotFoundError for provider includes suggestions", async () => {
 test("getProvider returns undefined for nonexistent provider", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -339,7 +372,10 @@ test("getProvider returns undefined for nonexistent provider", async () => {
 test("getProvider returns provider info", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -358,7 +394,10 @@ test("getProvider returns provider info", async () => {
 test("closest returns undefined when no partial match found", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -376,7 +415,10 @@ test("closest returns undefined when no partial match found", async () => {
 test("closest checks multiple query terms in order", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({

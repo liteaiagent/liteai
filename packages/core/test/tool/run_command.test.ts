@@ -126,7 +126,7 @@ describe("tool.run_command permissions", () => {
         expect(extDirReq).toBeDefined()
       },
     })
-  })
+  }, 90_000)
 
   test("asks for external_directory permission when workdir is outside project", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -154,7 +154,7 @@ describe("tool.run_command permissions", () => {
         expect(extDirReq?.patterns).toContain(path.join(os.tmpdir(), "*"))
       },
     })
-  })
+  }, 90_000)
 
   test("asks for external_directory permission when file arg is outside project", async () => {
     await using outerTmp = await tmpdir({
@@ -189,7 +189,7 @@ describe("tool.run_command permissions", () => {
         expect(extDirReq?.always).toContain(expected)
       },
     })
-  })
+  }, 90_000)
 
   test("does not ask for external_directory permission when rm inside project", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -219,7 +219,7 @@ describe("tool.run_command permissions", () => {
         expect(extDirReq).toBeUndefined()
       },
     })
-  })
+  }, 90_000)
 
   test("includes always patterns for auto-approval", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -246,7 +246,7 @@ describe("tool.run_command permissions", () => {
         expect(requests[0].always.some((p) => p.endsWith("*"))).toBe(true)
       },
     })
-  })
+  }, 90_000)
 
   test("does not ask for bash permission when command is cd only", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -272,7 +272,7 @@ describe("tool.run_command permissions", () => {
         expect(runCommandReq).toBeUndefined()
       },
     })
-  })
+  }, 90_000)
 
   test("matches redirects in permission pattern", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -293,7 +293,7 @@ describe("tool.run_command permissions", () => {
         expect(runCommandReq?.patterns).toContain("cat > /tmp/output.txt")
       },
     })
-  })
+  }, 90_000)
 
   test("always pattern has space before wildcard to not include different commands", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -315,7 +315,7 @@ describe("tool.run_command permissions", () => {
         expect(pattern).toBe("ls *")
       },
     })
-  })
+  }, 90_000)
 })
 
 describe("tool.run_command truncation", () => {

@@ -301,7 +301,7 @@ describe("hook.dispatch", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             disableAllHooks: true,
             hooks: {
@@ -332,7 +332,7 @@ describe("hook.dispatch", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             hooks: {
               PreToolUse: [
@@ -362,7 +362,7 @@ describe("hook.dispatch", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             hooks: {
               PreToolUse: [
@@ -393,7 +393,7 @@ describe("hook.dispatch", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             hooks: {
               PreToolUse: [
@@ -491,7 +491,7 @@ describe("hook.list", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             hooks: {
               PreToolUse: [
@@ -534,7 +534,7 @@ describe("hook.list", () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
         await Filesystem.write(
-          path.join(dir, "settings.json"),
+          path.join(dir, ".liteai", "settings.json"),
           JSON.stringify({
             hooks: {
               PreToolUse: [

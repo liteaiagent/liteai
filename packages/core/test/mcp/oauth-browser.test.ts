@@ -109,10 +109,10 @@ test("BrowserOpenFailed event is published when open() throws", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        `${dir}/settings.json`,
+        `${dir}/.liteai/settings.json`,
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             "test-oauth-server": {
               type: "remote",
               url: "https://example.com/mcp",
@@ -160,10 +160,10 @@ test("BrowserOpenFailed event is NOT published when open() succeeds", async () =
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        `${dir}/settings.json`,
+        `${dir}/.liteai/settings.json`,
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             "test-oauth-server-2": {
               type: "remote",
               url: "https://example.com/mcp",
@@ -209,10 +209,10 @@ test("open() is called with the authorization URL", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        `${dir}/settings.json`,
+        `${dir}/.liteai/settings.json`,
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
-          mcp: {
+          mcpServers: {
             "test-oauth-server-3": {
               type: "remote",
               url: "https://example.com/mcp",

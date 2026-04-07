@@ -22,8 +22,9 @@ describe("Abort during AI thinking", () => {
   test("abort while model is emitting reasoning tokens does not crash the process", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
+        const liteaiDir = path.join(dir, ".liteai")
         await Bun.write(
-          path.join(dir, "settings.json"),
+          path.join(liteaiDir, "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
             enabled_providers: ["openai"],
@@ -192,8 +193,9 @@ describe("Abort during AI thinking", () => {
   test("abort while model has not started streaming yet does not crash", async () => {
     await using tmp = await tmpdir({
       init: async (dir) => {
+        const liteaiDir = path.join(dir, ".liteai")
         await Bun.write(
-          path.join(dir, "settings.json"),
+          path.join(liteaiDir, "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
             enabled_providers: ["openai"],

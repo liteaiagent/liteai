@@ -8,7 +8,10 @@ import { tmpdir } from "../fixture/fixture"
 test("model variants are generated for reasoning models", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -31,7 +34,7 @@ test("model variants can be disabled via config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -69,7 +72,7 @@ test("model variants can be customized via config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -110,7 +113,7 @@ test("disabled key is stripped from variant config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -150,7 +153,7 @@ test("all variants can be disabled via config", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -187,7 +190,7 @@ test("variant config merges with generated variants", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -227,7 +230,7 @@ test("variants filtered in second pass for database models", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -265,7 +268,7 @@ test("custom model with variants enabled and disabled", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -322,7 +325,7 @@ test("Google Vertex: retains baseURL for custom proxy", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -366,7 +369,7 @@ test("Google Vertex: supports OpenAI compatible models", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {
@@ -412,7 +415,10 @@ test("Google Vertex: supports OpenAI compatible models", async () => {
 test("cloudflare-ai-gateway loads with env variables", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(dir, "settings.json"), JSON.stringify({ $schema: "https://liteai.com/config.json" }))
+      await Bun.write(
+        path.join(dir, ".liteai", "settings.json"),
+        JSON.stringify({ $schema: "https://liteai.com/config.json" }),
+      )
     },
   })
   await Instance.provide({
@@ -433,7 +439,7 @@ test("cloudflare-ai-gateway forwards config metadata options", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
-        path.join(dir, "settings.json"),
+        path.join(dir, ".liteai", "settings.json"),
         JSON.stringify({
           $schema: "https://liteai.com/config.json",
           provider: {

@@ -134,8 +134,9 @@ describe("session.llm telemetry metadata", () => {
 
     await using tmp = await tmpdir({
       init: async (dir) => {
+        const liteaiDir = path.join(dir, ".liteai")
         await Bun.write(
-          path.join(dir, "settings.json"),
+          path.join(liteaiDir, "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
             enabled_providers: [providerID],
@@ -229,8 +230,9 @@ describe("session.llm telemetry metadata", () => {
 
     await using tmp = await tmpdir({
       init: async (dir) => {
+        const liteaiDir = path.join(dir, ".liteai")
         await Bun.write(
-          path.join(dir, "settings.json"),
+          path.join(liteaiDir, "settings.json"),
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
             enabled_providers: [providerID],
