@@ -9,7 +9,7 @@
  *   { "mcpServers": { "<name>": { command, args, env } | { type: "http", url, headers } } }
  *
  * LiteAI format:
- *   { "<name>": { type: "local", command: [...], environment } | { type: "remote", url, headers } }
+ *   { "<name>": { type: "local", command: string, args: string[], env: Record<string, string> } | { type: "remote", url, headers } }
  */
 
 import { Filesystem } from "@/util/filesystem"
@@ -26,7 +26,7 @@ type McpJsonEntry = {
   url?: string
   headers?: Record<string, string>
   oauth?: Record<string, unknown> | false
-  enabled?: boolean
+  disabled?: boolean
   timeout?: number
 }
 
@@ -37,10 +37,11 @@ type McpJsonFile = {
 type Adapted =
   | {
       type: "local"
-      command: string[]
-      environment?: Record<string, string>
+      command: string
+      args?: string[]
+      env?: Record<string, string>
       cwd?: string
-      enabled?: boolean
+      disabled?: boolean
       timeout?: number
     }
   | {
@@ -48,7 +49,7 @@ type Adapted =
       url: string
       headers?: Record<string, string>
       oauth?: Record<string, unknown> | false
-      enabled?: boolean
+      disabled?: boolean
       timeout?: number
     }
 
@@ -64,7 +65,7 @@ function adapt(name: string, entry: McpJsonEntry): Adapted | undefined {
       url: entry.url,
       ...(entry.headers && { headers: entry.headers }),
       ...(entry.oauth !== undefined && { oauth: entry.oauth }),
-      ...(entry.enabled !== undefined && { enabled: entry.enabled }),
+      ...(entry.disabled !== undefined && { disabled: entry.disabled }),
       ...(entry.timeout !== undefined && { timeout: entry.timeout }),
     }
   }
@@ -72,10 +73,11 @@ function adapt(name: string, entry: McpJsonEntry): Adapted | undefined {
   if (entry.command) {
     return {
       type: "local",
-      command: [entry.command, ...(entry.args ?? [])],
-      ...(entry.env && { environment: entry.env }),
+      command: entry.command,
+      ...(entry.args && { args: entry.args }),
+      ...(entry.env && { env: entry.env }),
       ...(entry.cwd && { cwd: entry.cwd }),
-      ...(entry.enabled !== undefined && { enabled: entry.enabled }),
+      ...(entry.disabled !== undefined && { disabled: entry.disabled }),
       ...(entry.timeout !== undefined && { timeout: entry.timeout }),
     }
   }

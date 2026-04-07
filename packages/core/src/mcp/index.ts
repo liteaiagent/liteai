@@ -226,7 +226,7 @@ export namespace MCP {
         }
 
         // If disabled by config, mark as disabled without trying to connect
-        if (mcp.enabled === false) {
+        if (mcp.disabled === true) {
           log.info("mcp server disabled by config", { name: key })
           status[key] = { status: "disabled" }
           return
@@ -279,7 +279,7 @@ export namespace MCP {
         if (key in s.status) return
         if (!isMcpConfigured(mcp)) return
 
-        if (mcp.enabled === false) {
+        if (mcp.disabled === true) {
           s.status[key] = { status: "disabled" }
           return
         }
@@ -384,7 +384,7 @@ export namespace MCP {
     // Expand ${VAR} and ${VAR:-default} patterns in all config string values
     const mcp = expandDeep(raw)
 
-    if (mcp.enabled === false) {
+    if (mcp.disabled === true) {
       log.info("mcp server disabled", { key })
       return {
         mcpClient: undefined,
@@ -503,19 +503,20 @@ export namespace MCP {
     }
 
     if (mcp.type === "local") {
-      const [cmd, ...args] = mcp.command
+      const cmd = mcp.command
+      const args = mcp.args ?? []
       const cwd = Global.Path.home
       const env = {
         ...process.env,
         ...(cmd === "liteai" ? { BUN_BE_BUN: "1" } : {}),
-        ...mcp.environment,
+        ...mcp.env,
       }
       log.info("spawning local mcp process", {
         key,
         cmd,
         args,
         cwd,
-        extraEnvKeys: Object.keys(mcp.environment ?? {}),
+        extraEnvKeys: Object.keys(mcp.env ?? {}),
       })
       const transport = new StdioClientTransport({
         stderr: "pipe",
@@ -696,7 +697,7 @@ export namespace MCP {
       return
     }
 
-    const result = await create(name, { ...mcp, enabled: true })
+    const result = await create(name, { ...mcp, disabled: false })
 
     if (!result) {
       const s = await state()
@@ -720,7 +721,7 @@ export namespace MCP {
       s.clients[name] = result.mcpClient
     }
 
-    await Config.update({ mcpServers: { [name]: { enabled: true } } }).catch((error) => {
+    await Config.update({ mcpServers: { [name]: { disabled: false } } }).catch((error) => {
       log.error("Failed to persist MCP connect state", { name, error })
     })
   }
@@ -736,7 +737,7 @@ export namespace MCP {
     }
     s.status[name] = { status: "disabled" }
 
-    await Config.update({ mcpServers: { [name]: { enabled: false } } }).catch((error) => {
+    await Config.update({ mcpServers: { [name]: { disabled: true } } }).catch((error) => {
       log.error("Failed to persist MCP disconnect state", { name, error })
     })
   }

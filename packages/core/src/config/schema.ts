@@ -13,12 +13,13 @@ export const ModelId = z.string().meta({ $ref: "https://models.dev/model-schema.
 export const McpLocal = z
   .object({
     type: z.literal("local").describe("Type of MCP server connection"),
-    command: z.string().array().describe("Command and arguments to run the MCP server"),
-    environment: z
+    command: z.string().describe("Command to run the MCP server"),
+    args: z.string().array().optional().describe("Arguments to run the MCP server"),
+    env: z
       .record(z.string(), z.string())
       .optional()
       .describe("Environment variables to set when running the MCP server"),
-    enabled: z.boolean().optional().describe("Enable or disable the MCP server on startup"),
+    disabled: z.boolean().optional().describe("Disable the MCP server on startup"),
     timeout: z
       .number()
       .int()
@@ -50,7 +51,7 @@ export const McpRemote = z
   .object({
     type: z.literal("remote").describe("Type of MCP server connection"),
     url: z.string().describe("URL of the remote MCP server"),
-    enabled: z.boolean().optional().describe("Enable or disable the MCP server on startup"),
+    disabled: z.boolean().optional().describe("Disable the MCP server on startup"),
     headers: z.record(z.string(), z.string()).optional().describe("Headers to send with the request"),
     oauth: z
       .union([McpOAuth, z.literal(false)])
@@ -68,7 +69,17 @@ export const McpRemote = z
     ref: "McpRemoteConfig",
   })
 
-export const Mcp = z.discriminatedUnion("type", [McpLocal, McpRemote])
+export const Mcp = z.preprocess((val: any) => {
+  if (val && typeof val === "object" && !("type" in val)) {
+    if ("command" in val) {
+      return { ...val, type: "local" }
+    }
+    if ("url" in val) {
+      return { ...val, type: "remote" }
+    }
+  }
+  return val
+}, z.discriminatedUnion("type", [McpLocal, McpRemote]))
 export type Mcp = z.infer<typeof Mcp>
 
 export const PermissionAction = z.enum(["ask", "allow", "deny"]).meta({
@@ -569,7 +580,7 @@ export const Info = z
           Mcp,
           z
             .object({
-              enabled: z.boolean(),
+              disabled: z.boolean(),
             })
             .strict(),
         ]),

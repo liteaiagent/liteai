@@ -323,6 +323,9 @@ async function load(text: string, options: { path: string } | { dir: string; sou
   throw new ConfigPaths.InvalidError({
     path: source,
     issues: parsed.error.issues,
+    message:
+      `Invalid configuration at ${source}:\n` +
+      parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n"),
   })
 }
 
@@ -449,6 +452,9 @@ function parseConfig(text: string, filepath: string): Info {
   throw new ConfigPaths.InvalidError({
     path: filepath,
     issues: parsed.error.issues,
+    message:
+      `Invalid configuration at ${filepath}:\n` +
+      parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n"),
   })
 }
 

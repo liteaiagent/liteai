@@ -10312,13 +10312,17 @@
             "const": "local"
           },
           "command": {
-            "description": "Command and arguments to run the MCP server",
+            "description": "Command to run the MCP server",
+            "type": "string"
+          },
+          "args": {
+            "description": "Arguments to run the MCP server",
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "environment": {
+          "env": {
             "description": "Environment variables to set when running the MCP server",
             "type": "object",
             "propertyNames": {
@@ -10328,8 +10332,8 @@
               "type": "string"
             }
           },
-          "enabled": {
-            "description": "Enable or disable the MCP server on startup",
+          "disabled": {
+            "description": "Disable the MCP server on startup",
             "type": "boolean"
           },
           "timeout": {
@@ -10372,8 +10376,8 @@
             "description": "URL of the remote MCP server",
             "type": "string"
           },
-          "enabled": {
-            "description": "Enable or disable the MCP server on startup",
+          "disabled": {
+            "description": "Disable the MCP server on startup",
             "type": "boolean"
           },
           "headers": {
@@ -10630,7 +10634,7 @@
               "$ref": "#/components/schemas/ProviderConfig"
             }
           },
-          "mcp": {
+          "mcpServers": {
             "description": "MCP (Model Context Protocol) server configurations",
             "type": "object",
             "propertyNames": {
@@ -10651,11 +10655,11 @@
                 {
                   "type": "object",
                   "properties": {
-                    "enabled": {
+                    "disabled": {
                       "type": "boolean"
                     }
                   },
-                  "required": ["enabled"],
+                  "required": ["disabled"],
                   "additionalProperties": false
                 }
               ]

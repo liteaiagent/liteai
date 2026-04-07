@@ -1145,19 +1145,23 @@ export type McpLocalConfig = {
      */
     type: 'local';
     /**
-     * Command and arguments to run the MCP server
+     * Command to run the MCP server
      */
-    command: Array<string>;
+    command: string;
+    /**
+     * Arguments to run the MCP server
+     */
+    args?: Array<string>;
     /**
      * Environment variables to set when running the MCP server
      */
-    environment?: {
+    env?: {
         [key: string]: string;
     };
     /**
-     * Enable or disable the MCP server on startup
+     * Disable the MCP server on startup
      */
-    enabled?: boolean;
+    disabled?: boolean;
     /**
      * Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.
      */
@@ -1189,9 +1193,9 @@ export type McpRemoteConfig = {
      */
     url: string;
     /**
-     * Enable or disable the MCP server on startup
+     * Disable the MCP server on startup
      */
-    enabled?: boolean;
+    disabled?: boolean;
     /**
      * Headers to send with the request
      */
@@ -1345,9 +1349,9 @@ export type Config = {
     /**
      * MCP (Model Context Protocol) server configurations
      */
-    mcp?: {
+    mcpServers?: {
         [key: string]: McpLocalConfig | McpRemoteConfig | {
-            enabled: boolean;
+            disabled: boolean;
         };
     };
     formatter?: false | {

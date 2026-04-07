@@ -602,7 +602,9 @@ test("updates config and writes to file", async () => {
       const newConfig = { model: "updated/model" }
       await Config.update(newConfig as Partial<Config.Info>)
 
-      const writtenConfig = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, ".liteai", "settings.json"))
+      const writtenConfig = await Filesystem.readJson<Record<string, unknown>>(
+        path.join(tmp.path, ".liteai", "settings.json"),
+      )
       expect(writtenConfig.model).toBe("updated/model")
     },
   })
@@ -1491,7 +1493,9 @@ describe("project config updates", () => {
           },
         } as Parameters<typeof Config.update>[0])
 
-        const rawFile = await Filesystem.readJson<Record<string, unknown>>(path.join(tmp.path, ".liteai", "settings.json"))
+        const rawFile = await Filesystem.readJson<Record<string, unknown>>(
+          path.join(tmp.path, ".liteai", "settings.json"),
+        )
         expect(rawFile.username).toBe("valid_update")
         expect(rawFile.telemetry).toBeUndefined()
         expect(rawFile.server).toBeUndefined()
