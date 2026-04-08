@@ -43,7 +43,7 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
   const [agents, { refetch: refetchAgents }] = createResource(async () => {
     try {
       const { data } = await sdk.client.project.agent.list({ projectID: props.projectID })
-      return (data ?? []) as Agent[]
+      return ((data ?? []) as Agent[]).sort((a, b) => a.name.localeCompare(b.name))
     } catch {
       return [] as Agent[]
     }

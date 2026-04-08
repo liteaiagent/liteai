@@ -26,7 +26,7 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
   const [skills, { refetch: refetchSkills }] = createResource(async () => {
     try {
       const { data } = await sdk.client.project.skill.list({ projectID: props.projectID })
-      return (data ?? []) as Skill[]
+      return ((data ?? []) as Skill[]).sort((a, b) => a.name.localeCompare(b.name))
     } catch {
       return [] as Skill[]
     }

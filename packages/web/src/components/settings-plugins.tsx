@@ -49,7 +49,7 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
   const [plugins, { refetch: refetchPlugins }] = createResource(async () => {
     try {
       const { data } = await sdk.client.project.plugin.list({ projectID: sdk.projectID })
-      return (data ?? []) as PluginEntry[]
+      return ((data ?? []) as PluginEntry[]).sort((a, b) => a.name.localeCompare(b.name))
     } catch {
       return [] as PluginEntry[]
     }
@@ -58,7 +58,7 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
   const [marketplaces, { refetch: refetchMarketplaces }] = createResource(async () => {
     try {
       const { data } = await sdk.client.project.plugin.marketplace.list({ projectID: sdk.projectID })
-      return (data ?? []) as MarketplaceEntry[]
+      return ((data ?? []) as MarketplaceEntry[]).sort((a, b) => a.name.localeCompare(b.name))
     } catch {
       return [] as MarketplaceEntry[]
     }

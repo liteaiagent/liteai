@@ -19,7 +19,12 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
   const [tools, { refetch: refetchTools }] = createResource(async () => {
     try {
       const res = await sdk.client.project.tool.ids({ projectID: props.projectID })
-      return res.data ?? []
+      const data = res.data ?? []
+      return data.sort((a: string | { id: string }, b: string | { id: string }) => {
+        const idA = typeof a === "string" ? a : a.id
+        const idB = typeof b === "string" ? b : b.id
+        return idA.localeCompare(idB)
+      })
     } catch {
       return []
     }
