@@ -9,11 +9,6 @@ function truthy(key: string) {
   return value === "true" || value === "1"
 }
 
-function falsy(key: string) {
-  const value = env(key)?.toLowerCase()
-  return value === "false" || value === "0"
-}
-
 function number(key: string) {
   const value = env(key)
   if (!value) return undefined
@@ -32,7 +27,7 @@ export namespace Flag {
   export const LITEAI_DISABLE_TERMINAL_TITLE = truthy("DISABLE_TERMINAL_TITLE")
   export const LITEAI_PERMISSION = env("PERMISSION")
   export const LITEAI_DISABLE_LSP_DOWNLOAD = truthy("DISABLE_LSP_DOWNLOAD")
-  export const LITEAI_ENABLE_EXPERIMENTAL_MODELS = truthy("ENABLE_EXPERIMENTAL_MODELS")
+  export const LITEAI_ENABLE_ALPHA_MODELS = truthy("ENABLE_ALPHA_MODELS")
   export const LITEAI_DISABLE_AUTOCOMPACT = truthy("DISABLE_AUTOCOMPACT")
   export const LITEAI_COMPACTION_BUFFER_TOKENS = number("COMPACTION_BUFFER_TOKENS")
   export const LITEAI_PRUNE_MINIMUM_TOKENS = number("PRUNE_MINIMUM_TOKENS")
@@ -54,21 +49,13 @@ export namespace Flag {
   export const LITEAI_SERVER_CSRF_TOKEN = env("SERVER_CSRF_TOKEN")
 
   // Experimental
-  export const LITEAI_EXPERIMENTAL = truthy("EXPERIMENTAL")
-  export const LITEAI_EXPERIMENTAL_FILEWATCHER = truthy("EXPERIMENTAL_FILEWATCHER")
-  export const LITEAI_EXPERIMENTAL_DISABLE_FILEWATCHER = truthy("EXPERIMENTAL_DISABLE_FILEWATCHER")
-  export const LITEAI_EXPERIMENTAL_ICON_DISCOVERY = LITEAI_EXPERIMENTAL || truthy("EXPERIMENTAL_ICON_DISCOVERY")
+  export const LITEAI_DISABLE_FILEWATCHER = truthy("DISABLE_FILEWATCHER")
 
-  const copy = env("EXPERIMENTAL_DISABLE_COPY_ON_SELECT")
-  export const LITEAI_EXPERIMENTAL_DISABLE_COPY_ON_SELECT =
-    copy === undefined ? process.platform === "win32" : truthy("EXPERIMENTAL_DISABLE_COPY_ON_SELECT")
-  export const LITEAI_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS = number("EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS")
-  export const LITEAI_EXPERIMENTAL_OUTPUT_TOKEN_MAX = number("EXPERIMENTAL_OUTPUT_TOKEN_MAX")
-  export const LITEAI_EXPERIMENTAL_OXFMT = LITEAI_EXPERIMENTAL || truthy("EXPERIMENTAL_OXFMT")
+  export const LITEAI_BASH_TIMEOUT_MS = number("BASH_TIMEOUT_MS")
+  export const LITEAI_OUTPUT_TOKEN_MAX = number("OUTPUT_TOKEN_MAX")
+  export const LITEAI_EXPERIMENTAL_OXFMT = truthy("EXPERIMENTAL_OXFMT")
   export const LITEAI_EXPERIMENTAL_LSP_TY = truthy("EXPERIMENTAL_LSP_TY")
   export const LITEAI_DISABLE_FILETIME_CHECK = truthy("DISABLE_FILETIME_CHECK")
-  export const LITEAI_EXPERIMENTAL_WORKSPACES = LITEAI_EXPERIMENTAL || truthy("EXPERIMENTAL_WORKSPACES")
-  export const LITEAI_EXPERIMENTAL_MARKDOWN = !falsy("EXPERIMENTAL_MARKDOWN")
   export const LITEAI_MODELS_URL = env("MODELS_URL")
 
   // Configuration Overrides

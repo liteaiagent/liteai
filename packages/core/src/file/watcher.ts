@@ -75,7 +75,7 @@ export namespace FileWatcher {
       const subs: ParcelWatcher.AsyncSubscription[] = []
       const cfgIgnores = cfg.watcher?.ignore ?? []
 
-      if (Flag.LITEAI_EXPERIMENTAL_FILEWATCHER) {
+      {
         const pending = w.subscribe(Instance.directory, subscribe, {
           ignore: [...FileIgnore.PATTERNS, ...cfgIgnores, ...Protected.paths()],
           backend,
@@ -118,7 +118,7 @@ export namespace FileWatcher {
   )
 
   export function init() {
-    if (Flag.LITEAI_EXPERIMENTAL_DISABLE_FILEWATCHER) {
+    if (Flag.LITEAI_DISABLE_FILEWATCHER) {
       return
     }
     state()

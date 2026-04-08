@@ -1,7 +1,9 @@
 # Phase 1: Flag Cleanup — Execution Spec
 
-> **Parent:** [`experimental-audit.md`](../spec/experimental-audit.md) — full audit plan covering all 4 phases + design rationales
+> **Status:** ✅ COMPLETED
 > **Risk:** Low — env var renames, flag removals, one package move
+> **Depends on:** None
+> **Parent:** [`experimental-audit.md`](../spec/experimental-audit.md) — full audit plan covering all 4 phases + design rationales
 > **Verification:** `bun typecheck` + `bun lint:fix` after each task. Scoped tests per task.
 
 ---

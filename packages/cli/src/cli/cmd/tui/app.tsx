@@ -22,6 +22,7 @@ import { RouteProvider, useRoute } from "@tui/context/route"
 import { SDKProvider, useSDK } from "@tui/context/sdk"
 import { SyncProvider, useSync } from "@tui/context/sync"
 import { ThemeProvider, useTheme } from "@tui/context/theme"
+import { DISABLE_COPY_ON_SELECT } from "@tui/flags"
 import { Home } from "@tui/routes/home"
 import { Session } from "@tui/routes/session"
 import { DialogProvider, useDialog } from "@tui/ui/dialog"
@@ -221,7 +222,7 @@ function App() {
   const promptRef = usePromptRef()
 
   useKeyboard((evt) => {
-    if (!Flag.LITEAI_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
+    if (!DISABLE_COPY_ON_SELECT) return
     if (!renderer.getSelection()) return
 
     // Windows Terminal-like behavior:
@@ -377,22 +378,18 @@ function App() {
         dialog.replace(() => <DialogSessionList />)
       },
     },
-    ...(Flag.LITEAI_EXPERIMENTAL_WORKSPACES
-      ? [
-          {
-            title: "Manage workspaces",
-            value: "workspace.list",
-            category: "Workspace",
-            suggested: true,
-            slash: {
-              name: "workspaces",
-            },
-            onSelect: () => {
-              dialog.replace(() => <DialogWorkspaceList />)
-            },
-          },
-        ]
-      : []),
+    {
+      title: "Manage workspaces",
+      value: "workspace.list",
+      category: "Workspace",
+      suggested: true,
+      slash: {
+        name: "workspaces",
+      },
+      onSelect: () => {
+        dialog.replace(() => <DialogWorkspaceList />)
+      },
+    },
     {
       title: "New session",
       suggested: route.data.type === "session",
@@ -806,14 +803,14 @@ function App() {
         height={dimensions().height}
         backgroundColor={theme.background}
         onMouseDown={(evt) => {
-          if (!Flag.LITEAI_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
+          if (!DISABLE_COPY_ON_SELECT) return
           if (evt.button !== MouseButton.RIGHT) return
 
           if (!Selection.copy(renderer, toast)) return
           evt.preventDefault()
           evt.stopPropagation()
         }}
-        onMouseUp={Flag.LITEAI_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? undefined : () => Selection.copy(renderer, toast)}
+        onMouseUp={DISABLE_COPY_ON_SELECT ? undefined : () => Selection.copy(renderer, toast)}
       >
         <Switch>
           <Match when={route.data.type === "home"}>

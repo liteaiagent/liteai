@@ -1,7 +1,7 @@
-import { Flag } from "@liteai/core/flag/flag"
 import { MouseButton, type Renderable, RGBA } from "@opentui/core"
 import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { useTheme } from "@tui/context/theme"
+import { DISABLE_COPY_ON_SELECT } from "@tui/flags"
 import { Selection } from "@tui/util/selection"
 import { batch, createContext, type JSX, type ParentProps, Show, useContext } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -176,14 +176,14 @@ export function DialogProvider(props: ParentProps) {
       <box
         position="absolute"
         onMouseDown={(evt) => {
-          if (!Flag.LITEAI_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
+          if (!DISABLE_COPY_ON_SELECT) return
           if (evt.button !== MouseButton.RIGHT) return
 
           if (!Selection.copy(renderer, toast)) return
           evt.preventDefault()
           evt.stopPropagation()
         }}
-        onMouseUp={!Flag.LITEAI_EXPERIMENTAL_DISABLE_COPY_ON_SELECT ? () => Selection.copy(renderer, toast) : undefined}
+        onMouseUp={!DISABLE_COPY_ON_SELECT ? () => Selection.copy(renderer, toast) : undefined}
       >
         <Show when={value.stack.length}>
           <Dialog onClose={() => value.clear()} size={value.size}>

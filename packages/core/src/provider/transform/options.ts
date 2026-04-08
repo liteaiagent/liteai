@@ -5,7 +5,7 @@ import { Flag } from "@/flag/flag"
 import type { Provider } from "../provider"
 import { sdkKey } from "./message"
 
-export const OUTPUT_TOKEN_MAX = Flag.LITEAI_EXPERIMENTAL_OUTPUT_TOKEN_MAX || 32_000
+export const OUTPUT_TOKEN_MAX = Flag.LITEAI_OUTPUT_TOKEN_MAX || 32_000
 
 export function temperature(model: Provider.Model) {
   const id = model.id.toLowerCase()

@@ -383,7 +383,7 @@ function filterProviders(
       model.api.id = model.api.id ?? model.id ?? modelID
       if (modelID === "gpt-5-chat-latest" || (providerID === ProviderID.openrouter && modelID === "openai/gpt-5-chat"))
         delete provider.models[modelID]
-      if (model.status === "alpha" && !Flag.LITEAI_ENABLE_EXPERIMENTAL_MODELS) delete provider.models[modelID]
+      if (model.status === "alpha" && !Flag.LITEAI_ENABLE_ALPHA_MODELS) delete provider.models[modelID]
       if (model.status === "deprecated") delete provider.models[modelID]
       if (
         configProvider?.blacklist?.includes(modelID) ||

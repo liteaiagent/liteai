@@ -308,8 +308,7 @@ export namespace Project {
             },
           }
 
-    if (Flag.LITEAI_EXPERIMENTAL_ICON_DISCOVERY)
-      discover(existing).catch((err) => log.warn("Failed to discover icon", err))
+    discover(existing).catch((err) => log.warn("Failed to discover icon", err))
 
     const result: Info = {
       ...existing,

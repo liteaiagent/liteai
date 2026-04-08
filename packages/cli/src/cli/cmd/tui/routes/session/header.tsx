@@ -1,4 +1,3 @@
-import { Flag } from "@liteai/core/flag/flag"
 import type { AssistantMessage, Session } from "@liteai/sdk"
 import { useTerminalDimensions } from "@opentui/solid"
 import { SplitBorder } from "@tui/component/border"
@@ -103,18 +102,12 @@ export function Header() {
           <Match when={session()?.parentID}>
             <box flexDirection="column" gap={1}>
               <box flexDirection={narrow() ? "column" : "row"} justifyContent="space-between" gap={narrow() ? 1 : 0}>
-                {Flag.LITEAI_EXPERIMENTAL_WORKSPACES ? (
-                  <box flexDirection="column">
-                    <text fg={theme.text}>
-                      <b>Subagent session</b>
-                    </text>
-                    <WorkspaceInfo workspace={workspace} />
-                  </box>
-                ) : (
+                <box flexDirection="column">
                   <text fg={theme.text}>
                     <b>Subagent session</b>
                   </text>
-                )}
+                  <WorkspaceInfo workspace={workspace} />
+                </box>
 
                 <ContextInfo context={context} cost={cost} />
               </box>
@@ -160,14 +153,10 @@ export function Header() {
           </Match>
           <Match when={true}>
             <box flexDirection={narrow() ? "column" : "row"} justifyContent="space-between" gap={1}>
-              {Flag.LITEAI_EXPERIMENTAL_WORKSPACES ? (
-                <box flexDirection="column">
-                  <Title session={session} />
-                  <WorkspaceInfo workspace={workspace} />
-                </box>
-              ) : (
+              <box flexDirection="column">
                 <Title session={session} />
-              )}
+                <WorkspaceInfo workspace={workspace} />
+              </box>
               <ContextInfo context={context} cost={cost} />
             </box>
           </Match>

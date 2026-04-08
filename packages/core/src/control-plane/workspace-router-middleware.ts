@@ -1,5 +1,4 @@
 import type { MiddlewareHandler } from "hono"
-import { Flag } from "../flag/flag"
 import { getAdaptor } from "./adaptors"
 import { Workspace } from "./workspace"
 import { WorkspaceContext } from "./workspace-context"
@@ -36,11 +35,6 @@ async function routeRequest(req: Request) {
 }
 
 export const WorkspaceRouterMiddleware: MiddlewareHandler = async (c, next) => {
-  // Only available in development for now
-  if (!Flag.LITEAI_EXPERIMENTAL_WORKSPACES) {
-    return next()
-  }
-
   const response = await routeRequest(c.req.raw)
   if (response) {
     return response

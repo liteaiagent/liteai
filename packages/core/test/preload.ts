@@ -7,7 +7,7 @@ import os from "node:os"
 import path from "node:path"
 
 // Set XDG env vars FIRST, before any src/ imports
-const dir = path.join(os.tmpdir(), `liteai-test-data-${process.pid}`)
+const dir = path.join(os.tmpdir(), `liteai-test-data-${crypto.randomUUID()}`)
 
 process.env.XDG_DATA_HOME = path.join(dir, "share")
 process.env.XDG_CACHE_HOME = path.join(dir, "cache")

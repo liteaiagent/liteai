@@ -5,7 +5,6 @@ import { WorkspaceID } from "../../src/control-plane/schema"
 import type { Adaptor } from "../../src/control-plane/types"
 import { WorkspaceTable } from "../../src/control-plane/workspace.sql"
 import { WorkspaceContext } from "../../src/control-plane/workspace-context"
-import { Flag } from "../../src/flag/flag"
 import { Instance } from "../../src/project/instance"
 import { Project } from "../../src/project/project"
 import { Database } from "../../src/storage/db"
@@ -15,15 +14,6 @@ import { tmpdir } from "../fixture/fixture"
 afterEach(async () => {
   mock.restore()
   await resetDatabase()
-})
-
-const original = Flag.LITEAI_EXPERIMENTAL_WORKSPACES
-// @ts-expect-error don't do this normally, but it works
-Flag.LITEAI_EXPERIMENTAL_WORKSPACES = true
-
-afterEach(() => {
-  // @ts-expect-error don't do this normally, but it works
-  Flag.LITEAI_EXPERIMENTAL_WORKSPACES = original
 })
 
 type State = {
