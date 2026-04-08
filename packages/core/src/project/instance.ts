@@ -16,31 +16,6 @@ interface InstanceContext {
 const context = Context.create<InstanceContext>("instance")
 const cache = new Map<string, Promise<InstanceContext>>()
 
-// Reboot loop detection: track dispose timestamps per directory
-const MAX_REBOOTS = 3
-const REBOOT_WINDOW = 60_000
-const reboots = new Map<string, number[]>()
-const halted = new Set<string>()
-
-function trackReboot(directory: string): boolean {
-  if (halted.has(directory)) return false
-  const now = Date.now()
-  const times = reboots.get(directory) ?? []
-  times.push(now)
-  // Keep only timestamps within the window
-  const recent = times.filter((t) => now - t < REBOOT_WINDOW)
-  reboots.set(directory, recent)
-  if (recent.length >= MAX_REBOOTS) {
-    halted.add(directory)
-    Log.Default.error(
-      `instance reboot loop detected — ${recent.length} reboots in ${Math.round((now - recent[0]) / 1000)}s, halting instance recreation`,
-      { directory },
-    )
-    return false
-  }
-  return true
-}
-
 const disposal = {
   all: undefined as Promise<void> | undefined,
 }
@@ -107,9 +82,6 @@ export const Instance = {
     const directory = Filesystem.resolve(input.directory)
     let existing = cache.get(directory)
     if (!existing) {
-      if (halted.has(directory)) {
-        throw new Error(`Instance for ${directory} halted due to reboot loop — restart the server to recover`)
-      }
       Log.Default.info("creating instance", { directory })
       existing = track(
         directory,
@@ -160,10 +132,6 @@ export const Instance = {
   async dispose() {
     const directory = Instance.directory
     Log.Default.warn("disposing instance", { directory })
-    if (!trackReboot(directory)) {
-      Log.Default.error("skipping dispose — reboot loop detected, instance will not be recreated", { directory })
-      return
-    }
     await Promise.all([State.dispose(directory), Effect.runPromise(InstanceState.dispose(directory))])
     cache.delete(directory)
     emit(directory)

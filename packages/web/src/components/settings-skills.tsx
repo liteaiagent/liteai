@@ -46,11 +46,7 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
       if (currentlyEnabled) {
         disabledSkills[name] = true
       } else {
-        if (scope() === "project") {
-          disabledSkills[name] = false
-        } else {
-          delete disabledSkills[name]
-        }
+        disabledSkills[name] = false
       }
 
       await updateConfig({ disabledSkills }, props.projectID)
