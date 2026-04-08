@@ -46,6 +46,7 @@ export namespace LSPServer {
   export interface Info {
     id: string
     extensions: string[]
+    priority?: number
     global?: boolean
     root: (file: string) => Promise<string | undefined>
     spawn(root: string): Promise<Handle | undefined>

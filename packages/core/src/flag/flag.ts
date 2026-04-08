@@ -53,8 +53,6 @@ export namespace Flag {
 
   export const LITEAI_BASH_TIMEOUT_MS = number("BASH_TIMEOUT_MS")
   export const LITEAI_OUTPUT_TOKEN_MAX = number("OUTPUT_TOKEN_MAX")
-  export const LITEAI_EXPERIMENTAL_OXFMT = truthy("EXPERIMENTAL_OXFMT")
-  export const LITEAI_EXPERIMENTAL_LSP_TY = truthy("EXPERIMENTAL_LSP_TY")
   export const LITEAI_DISABLE_FILETIME_CHECK = truthy("DISABLE_FILETIME_CHECK")
   export const LITEAI_MODELS_URL = env("MODELS_URL")
 

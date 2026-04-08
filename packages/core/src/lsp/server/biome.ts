@@ -39,6 +39,7 @@ export const Biome: Info = {
     ".gql",
     ".html",
   ],
+  priority: 10,
   async spawn(root) {
     const localBin = path.join(root, "node_modules", ".bin", "biome")
     let bin: string | undefined

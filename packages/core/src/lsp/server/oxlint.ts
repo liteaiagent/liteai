@@ -19,6 +19,7 @@ export const Oxlint: Info = {
     "package.json",
   ]),
   extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".astro", ".svelte"],
+  priority: 30,
   async spawn(root) {
     const ext = process.platform === "win32" ? ".cmd" : ""
 

@@ -1,5 +1,4 @@
 import path from "node:path"
-import { Flag } from "../../flag/flag"
 import { Filesystem } from "../../util/filesystem"
 import { which } from "../../util/which"
 import type { Info } from "./types"
@@ -8,6 +7,7 @@ import { log, NearestRoot, spawn } from "./util"
 export const Ty: Info = {
   id: "ty",
   extensions: [".py", ".pyi"],
+  priority: 10,
   root: NearestRoot([
     "pyproject.toml",
     "ty.toml",
@@ -18,10 +18,6 @@ export const Ty: Info = {
     "pyrightconfig.json",
   ]),
   async spawn(root) {
-    if (!Flag.LITEAI_EXPERIMENTAL_LSP_TY) {
-      return undefined
-    }
-
     let binary = which("ty")
 
     const initialization: Record<string, string> = {}

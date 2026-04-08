@@ -15,6 +15,7 @@ export const ESLint: Info = {
   id: "eslint",
   root: NearestRoot(["package-lock.json", "bun.lockb", "bun.lock", "pnpm-lock.yaml", "yarn.lock"]),
   extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue"],
+  priority: 30,
   async spawn(root) {
     const eslint = Module.resolve("eslint", Instance.directory)
     if (!eslint) return

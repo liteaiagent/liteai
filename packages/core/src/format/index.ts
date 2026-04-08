@@ -73,7 +73,7 @@ export namespace Format {
     return status
   }
 
-  async function getFormatter(ext: string) {
+  async function getFormatter(ext: string): Promise<Formatter.Info | undefined> {
     const formatters = await state().then((x) => x.formatters)
     const result = []
     for (const item of Object.values(formatters)) {
@@ -83,7 +83,8 @@ export namespace Format {
       log.info("enabled", { name: item.name, ext })
       result.push(item)
     }
-    return result
+    result.sort((a, b) => (a.priority ?? 20) - (b.priority ?? 20))
+    return result[0]
   }
 
   export async function status() {
@@ -100,6 +101,12 @@ export namespace Format {
     return result
   }
 
+  const lastFormatResult = new Map<string, { name: string; exitCode: number }>()
+
+  export function getLastFormatResult(filepath: string) {
+    return lastFormatResult.get(filepath)
+  }
+
   export function init() {
     log.info("init")
     Bus.subscribe(File.Event.Edited, async (payload) => {
@@ -107,32 +114,35 @@ export namespace Format {
       log.info("formatting", { file })
       const ext = path.extname(file)
 
-      for (const item of await getFormatter(ext)) {
-        log.info("running", { command: item.command })
-        try {
-          const proc = Process.spawn(
-            item.command.map((x) => x.replace("$FILE", file)),
-            {
-              cwd: Instance.directory,
-              env: { ...process.env, ...item.environment },
-              stdout: "ignore",
-              stderr: "ignore",
-            },
-          )
-          const exit = await proc.exited
-          if (exit !== 0)
-            log.error("failed", {
-              command: item.command,
-              ...item.environment,
-            })
-        } catch (error) {
-          log.error("failed to format file", {
-            error,
+      const item = await getFormatter(ext)
+      if (!item) return
+
+      log.info("running", { command: item.command })
+      try {
+        const proc = Process.spawn(
+          item.command.map((x) => x.replace("$FILE", file)),
+          {
+            cwd: Instance.directory,
+            env: { ...process.env, ...item.environment },
+            stdout: "ignore",
+            stderr: "ignore",
+          },
+        )
+        const exit = await proc.exited
+        lastFormatResult.set(file, { name: item.name, exitCode: exit })
+        if (exit !== 0)
+          log.error("failed", {
             command: item.command,
             ...item.environment,
-            file,
           })
-        }
+      } catch (error) {
+        lastFormatResult.set(file, { name: item.name, exitCode: 1 })
+        log.error("failed to format file", {
+          error,
+          command: item.command,
+          ...item.environment,
+          file,
+        })
       }
     })
   }

@@ -11,6 +11,7 @@ import { NearestRoot, spawn } from "./util"
 export const Pyright: Info = {
   id: "pyright",
   extensions: [".py", ".pyi"],
+  priority: 20,
   root: NearestRoot(["pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "pyrightconfig.json"]),
   async spawn(root) {
     let binary = which("pyright-langserver")

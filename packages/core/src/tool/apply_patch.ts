@@ -6,6 +6,7 @@ import DESCRIPTION from "../bundled/prompts/tools/apply_patch.txt"
 import { Bus } from "../bus"
 import { File } from "../file"
 import { FileWatcher } from "../file/watcher"
+import { Format } from "../format"
 import { LSP } from "../lsp"
 import { Patch } from "../patch"
 import { Instance } from "../project/instance"
@@ -251,6 +252,19 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
       return `M ${path.relative(Instance.worktree, target).replaceAll("\\", "/")}`
     })
     let output = `Success. Updated the following files:\n${summaryLines.join("\n")}`
+
+    for (const change of fileChanges) {
+      if (change.type === "delete") continue
+      const target = change.movePath ?? change.filePath
+      const formatResult = Format.getLastFormatResult(target)
+      if (formatResult) {
+        if (formatResult.exitCode === 0) {
+          output += `\n${path.relative(Instance.worktree, target).replaceAll("\\", "/")} formatted by ${formatResult.name}.`
+        } else {
+          output += `\n${path.relative(Instance.worktree, target).replaceAll("\\", "/")} ${formatResult.name} format failed (exit ${formatResult.exitCode}).`
+        }
+      }
+    }
 
     // Report LSP errors for changed files
     const MAX_DIAGNOSTICS_PER_FILE = 20

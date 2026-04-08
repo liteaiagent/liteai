@@ -1,6 +1,6 @@
 # Phase 1b: Formatter & LSP Mutex-per-Extension Refactor
 
-> **Status:** Not Started
+> **Status:** ✅ COMPLETED
 > **Risk:** Medium
 > **Depends on:** Phase 1 (Flag Cleanup) ✅ COMPLETED
 > **Blocks:** `EXPERIMENTAL_OXFMT` promotion, `EXPERIMENTAL_LSP_TY` promotion

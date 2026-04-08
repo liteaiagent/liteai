@@ -1,5 +1,4 @@
 import { text } from "node:stream/consumers"
-import { Flag } from "@/flag/flag"
 import { BunProc } from "../bun"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
@@ -14,6 +13,7 @@ export interface Info {
   command: string[]
   environment?: Record<string, string>
   extensions: string[]
+  priority: number
   enabled(): Promise<boolean>
 }
 
@@ -21,6 +21,7 @@ export const gofmt: Info = {
   name: "gofmt",
   command: ["gofmt", "-w", "$FILE"],
   extensions: [".go"],
+  priority: 10,
   async enabled() {
     return which("gofmt") !== null
   },
@@ -30,6 +31,7 @@ export const mix: Info = {
   name: "mix",
   command: ["mix", "format", "$FILE"],
   extensions: [".ex", ".exs", ".eex", ".heex", ".leex", ".neex", ".sface"],
+  priority: 10,
   async enabled() {
     return which("mix") !== null
   },
@@ -69,6 +71,7 @@ export const prettier: Info = {
     ".graphql",
     ".gql",
   ],
+  priority: 40,
   async enabled() {
     const items = await Filesystem.findUp("package.json", Instance.directory, Instance.worktree)
     for (const item of items) {
@@ -90,8 +93,8 @@ export const oxfmt: Info = {
     BUN_BE_BUN: "1",
   },
   extensions: [".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"],
+  priority: 20,
   async enabled() {
-    if (!Flag.LITEAI_EXPERIMENTAL_OXFMT) return false
     const items = await Filesystem.findUp("package.json", Instance.directory, Instance.worktree)
     for (const item of items) {
       const json = await Filesystem.readJson<{
@@ -139,6 +142,7 @@ export const biome: Info = {
     ".graphql",
     ".gql",
   ],
+  priority: 20,
   async enabled() {
     const configs = ["biome.json", "biome.jsonc"]
     for (const config of configs) {
@@ -155,6 +159,7 @@ export const zig: Info = {
   name: "zig",
   command: ["zig", "fmt", "$FILE"],
   extensions: [".zig", ".zon"],
+  priority: 10,
   async enabled() {
     return which("zig") !== null
   },
@@ -164,6 +169,7 @@ export const clang: Info = {
   name: "clang-format",
   command: ["clang-format", "-i", "$FILE"],
   extensions: [".c", ".cc", ".cpp", ".cxx", ".c++", ".h", ".hh", ".hpp", ".hxx", ".h++", ".ino", ".C", ".H"],
+  priority: 20,
   async enabled() {
     const items = await Filesystem.findUp(".clang-format", Instance.directory, Instance.worktree)
     return items.length > 0
@@ -174,6 +180,7 @@ export const ktlint: Info = {
   name: "ktlint",
   command: ["ktlint", "-F", "$FILE"],
   extensions: [".kt", ".kts"],
+  priority: 30,
   async enabled() {
     return which("ktlint") !== null
   },
@@ -183,6 +190,7 @@ export const ruff: Info = {
   name: "ruff",
   command: ["ruff", "format", "$FILE"],
   extensions: [".py", ".pyi"],
+  priority: 20,
   async enabled() {
     if (!which("ruff")) return false
     const configs = ["pyproject.toml", "ruff.toml", ".ruff.toml"]
@@ -213,6 +221,7 @@ export const rlang: Info = {
   name: "air",
   command: ["air", "format", "$FILE"],
   extensions: [".R"],
+  priority: 20,
   async enabled() {
     const airPath = which("air")
     if (airPath == null) return false
@@ -242,6 +251,7 @@ export const uvformat: Info = {
   name: "uv",
   command: ["uv", "format", "--", "$FILE"],
   extensions: [".py", ".pyi"],
+  priority: 50,
   async enabled() {
     if (await ruff.enabled()) return false
     if (which("uv") !== null) {
@@ -257,6 +267,7 @@ export const rubocop: Info = {
   name: "rubocop",
   command: ["rubocop", "--autocorrect", "$FILE"],
   extensions: [".rb", ".rake", ".gemspec", ".ru"],
+  priority: 30,
   async enabled() {
     return which("rubocop") !== null
   },
@@ -266,6 +277,7 @@ export const standardrb: Info = {
   name: "standardrb",
   command: ["standardrb", "--fix", "$FILE"],
   extensions: [".rb", ".rake", ".gemspec", ".ru"],
+  priority: 30,
   async enabled() {
     return which("standardrb") !== null
   },
@@ -275,6 +287,7 @@ export const htmlbeautifier: Info = {
   name: "htmlbeautifier",
   command: ["htmlbeautifier", "$FILE"],
   extensions: [".erb", ".html.erb"],
+  priority: 30,
   async enabled() {
     return which("htmlbeautifier") !== null
   },
@@ -284,6 +297,7 @@ export const dart: Info = {
   name: "dart",
   command: ["dart", "format", "$FILE"],
   extensions: [".dart"],
+  priority: 10,
   async enabled() {
     return which("dart") !== null
   },
@@ -293,6 +307,7 @@ export const ocamlformat: Info = {
   name: "ocamlformat",
   command: ["ocamlformat", "-i", "$FILE"],
   extensions: [".ml", ".mli"],
+  priority: 10,
   async enabled() {
     if (!which("ocamlformat")) return false
     const items = await Filesystem.findUp(".ocamlformat", Instance.directory, Instance.worktree)
@@ -304,6 +319,7 @@ export const terraform: Info = {
   name: "terraform",
   command: ["terraform", "fmt", "$FILE"],
   extensions: [".tf", ".tfvars"],
+  priority: 10,
   async enabled() {
     return which("terraform") !== null
   },
@@ -313,6 +329,7 @@ export const latexindent: Info = {
   name: "latexindent",
   command: ["latexindent", "-w", "-s", "$FILE"],
   extensions: [".tex"],
+  priority: 30,
   async enabled() {
     return which("latexindent") !== null
   },
@@ -322,6 +339,7 @@ export const gleam: Info = {
   name: "gleam",
   command: ["gleam", "format", "$FILE"],
   extensions: [".gleam"],
+  priority: 10,
   async enabled() {
     return which("gleam") !== null
   },
@@ -331,6 +349,7 @@ export const shfmt: Info = {
   name: "shfmt",
   command: ["shfmt", "-w", "$FILE"],
   extensions: [".sh", ".bash"],
+  priority: 20,
   async enabled() {
     return which("shfmt") !== null
   },
@@ -340,6 +359,7 @@ export const nixfmt: Info = {
   name: "nixfmt",
   command: ["nixfmt", "$FILE"],
   extensions: [".nix"],
+  priority: 20,
   async enabled() {
     return which("nixfmt") !== null
   },
@@ -349,6 +369,7 @@ export const rustfmt: Info = {
   name: "rustfmt",
   command: ["rustfmt", "$FILE"],
   extensions: [".rs"],
+  priority: 10,
   async enabled() {
     return which("rustfmt") !== null
   },
@@ -358,6 +379,7 @@ export const pint: Info = {
   name: "pint",
   command: ["./vendor/bin/pint", "$FILE"],
   extensions: [".php"],
+  priority: 30,
   async enabled() {
     const items = await Filesystem.findUp("composer.json", Instance.directory, Instance.worktree)
     for (const item of items) {
@@ -376,6 +398,7 @@ export const ormolu: Info = {
   name: "ormolu",
   command: ["ormolu", "-i", "$FILE"],
   extensions: [".hs"],
+  priority: 10,
   async enabled() {
     return which("ormolu") !== null
   },
@@ -385,6 +408,7 @@ export const cljfmt: Info = {
   name: "cljfmt",
   command: ["cljfmt", "fix", "--quiet", "$FILE"],
   extensions: [".clj", ".cljs", ".cljc", ".edn"],
+  priority: 30,
   async enabled() {
     return which("cljfmt") !== null
   },
@@ -394,6 +418,7 @@ export const dfmt: Info = {
   name: "dfmt",
   command: ["dfmt", "-i", "$FILE"],
   extensions: [".d"],
+  priority: 30,
   async enabled() {
     return which("dfmt") !== null
   },

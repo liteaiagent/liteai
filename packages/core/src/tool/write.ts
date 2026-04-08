@@ -7,6 +7,7 @@ import { Bus } from "../bus"
 import { File } from "../file"
 import { FileTime } from "../file/time"
 import { FileWatcher } from "../file/watcher"
+import { Format } from "../format"
 import { LSP } from "../lsp"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
@@ -72,6 +73,14 @@ export const WriteTool = Tool.define("write", {
     })
 
     let output = "Wrote file successfully."
+    const formatResult = Format.getLastFormatResult(filepath)
+    if (formatResult) {
+      if (formatResult.exitCode === 0) {
+        output += `\nFormatted by ${formatResult.name}.`
+      } else {
+        output += `\n${formatResult.name} failed (exit ${formatResult.exitCode}).`
+      }
+    }
     await LSP.touchFile(filepath, true)
     const diagnostics = await LSP.diagnostics()
     const normalizedFilepath = Filesystem.normalizePath(filepath)

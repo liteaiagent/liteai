@@ -27,7 +27,7 @@
 | Promote `EXPERIMENTAL_MARKDOWN` | Already default true. Remove flag — always render markdown |
 | Rename `ENABLE_EXPERIMENTAL_MODELS` → `ENABLE_ALPHA_MODELS` | Rename in `flag.ts`, `state.ts` |
 
-### Phase 1b: Formatter & LSP Mutex-per-Extension Refactor (Medium Risk)
+### Phase 1b: Formatter & LSP Mutex-per-Extension Refactor (Medium Risk) [✅ COMPLETED]
 
 > **Problem:** The current formatter system runs **ALL** matching formatters for a given file extension. If both `oxfmt` and `prettier` support `.ts`, both run sequentially on the same file — causing conflicts, wasted cycles, and non-deterministic output. The LSP system avoids this via a crude global flag swap (`filterServers()`), but this is not per-extension and doesn't generalize.
 >

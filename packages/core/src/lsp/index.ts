@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import z from "zod"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
-import { Flag } from "@/flag/flag"
+
 import { Config } from "../config/config"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
@@ -76,29 +76,6 @@ export namespace LSP {
     })
   export type DocumentSymbol = z.infer<typeof DocumentSymbol>
 
-  const filterServers = (servers: Record<string, LSPServer.Info>) => {
-    if (Flag.LITEAI_EXPERIMENTAL_LSP_TY) {
-      if (servers.pyright) {
-        log.info("LSP server pyright is disabled because LITEAI_EXPERIMENTAL_LSP_TY is enabled")
-        delete servers.pyright
-      }
-    } else {
-      if (servers.ty) {
-        delete servers.ty
-      }
-    }
-
-    // prefer biome over eslint and oxlint
-    if (servers.biome) {
-      for (const id of ["eslint", "oxlint"] as const) {
-        if (servers[id]) {
-          log.info(`LSP server ${id} is disabled because biome is preferred`)
-          delete servers[id]
-        }
-      }
-    }
-  }
-
   const state = Instance.state(
     async () => {
       const clients: LSPClient.Info[] = []
@@ -118,8 +95,6 @@ export namespace LSP {
       for (const server of Object.values(LSPServer)) {
         servers[server.id] = server
       }
-
-      filterServers(servers)
 
       for (const [name, item] of Object.entries(cfg.lsp ?? {})) {
         const existing = servers[name]
@@ -252,9 +227,14 @@ export namespace LSP {
       return client
     }
 
-    for (const server of Object.values(s.servers)) {
-      if (server.extensions.length && !server.extensions.includes(extension)) continue
+    const candidates = Object.values(s.servers)
+      .filter((server) => {
+        if (server.extensions.length && !server.extensions.includes(extension)) return false
+        return true
+      })
+      .sort((a, b) => (a.priority ?? 20) - (b.priority ?? 20))
 
+    for (const server of candidates) {
       const root = await server.root(file)
       if (!root) continue
       if (s.broken.has(root + server.id)) continue
@@ -262,7 +242,7 @@ export namespace LSP {
       const match = s.clients.find((x) => x.root === root && x.serverID === server.id)
       if (match) {
         result.push(match)
-        continue
+        break
       }
 
       const inflight = s.spawning.get(root + server.id)
@@ -270,7 +250,7 @@ export namespace LSP {
         const client = await inflight
         if (!client) continue
         result.push(client)
-        continue
+        break
       }
 
       const task = schedule(server, root, root + server.id)
@@ -287,6 +267,7 @@ export namespace LSP {
 
       result.push(client)
       Bus.publish(Event.Updated, {})
+      break
     }
 
     return result
@@ -554,7 +535,8 @@ export namespace LSP {
       const line = diagnostic.range.start.line + 1
       const col = diagnostic.range.start.character + 1
 
-      return `${severity} [${line}:${col}] ${diagnostic.message}`
+      const source = diagnostic.source ? ` (${diagnostic.source})` : ""
+      return `${severity} [${line}:${col}]${source} ${diagnostic.message}`
     }
   }
 }
