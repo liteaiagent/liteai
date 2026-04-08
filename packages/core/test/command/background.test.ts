@@ -105,6 +105,51 @@ describe("BackgroundTaskRegistry", () => {
     proc2.kill()
   })
 
+  test("notification tracking idempotency and filtering", async () => {
+    const registry = new BackgroundTaskRegistry()
+    const proc1 = spawnEcho("1")
+    const proc2 = spawnEcho("2")
+    const task1 = registry.register(proc1, { command: "echo 1", description: "First" })
+    const task2 = registry.register(proc2, { command: "echo 2", description: "Second" })
+
+    // Wait for both to complete
+    await task1.waitForCompletion(5000)
+    await task2.waitForCompletion(5000)
+
+    // Initially, both are unnotified and completed
+    let pending = registry.getUnnotifiedCompletedTasks()
+    expect(pending.length).toBe(2)
+    expect(pending.map((t) => t.id).sort()).toEqual([task1.id, task2.id].sort())
+
+    // Mark one as notified
+    registry.markNotified(task1.id)
+    pending = registry.getUnnotifiedCompletedTasks()
+    expect(pending.length).toBe(1)
+    expect(pending[0].id).toBe(task2.id)
+
+    // Idempotency: mark again, shouldn't change anything
+    registry.markNotified(task1.id)
+    pending = registry.getUnnotifiedCompletedTasks()
+    expect(pending.length).toBe(1)
+
+    // Mark second, should be empty
+    registry.markNotified(task2.id)
+    pending = registry.getUnnotifiedCompletedTasks()
+    expect(pending.length).toBe(0)
+  }, 10_000)
+
+  test("getUnnotifiedCompletedTasks filters running tasks", () => {
+    const registry = new BackgroundTaskRegistry()
+    const proc = spawnLongRunning()
+    registry.register(proc, { command: "sleep 60", description: "Running" })
+
+    // Running task is not returned
+    const pending = registry.getUnnotifiedCompletedTasks()
+    expect(pending.length).toBe(0)
+
+    proc.kill()
+  })
+
   test("disposeAll terminates running tasks and clears registry", async () => {
     const registry = new BackgroundTaskRegistry()
     // Use a long-running command

@@ -1,6 +1,7 @@
 import { trace } from "@opentelemetry/api"
 import { type Tool as AITool, asSchema, jsonSchema, type ToolCallOptions, tool } from "ai"
 import z from "zod"
+import type { BackgroundTaskRegistry } from "@/command/background"
 import { PermissionNext } from "@/permission/next"
 import type { Tool } from "@/tool/tool"
 import { Truncate } from "@/tool/truncation"
@@ -36,6 +37,9 @@ export async function resolveTools(input: {
   processor: SessionProcessor.Info
   bypassAgentCheck: boolean
   messages: Message.WithParts[]
+  /** Session-scoped registry for background task management. Optional — tools that need it
+   * (run_command, command_status, send_command_input) gracefully handle absence. */
+  backgroundTaskRegistry?: BackgroundTaskRegistry
 }) {
   const tools: Record<string, AITool> = {}
 
@@ -45,7 +49,11 @@ export async function resolveTools(input: {
     abort: options.abortSignal ?? new AbortController().signal,
     messageID: input.processor.message.id,
     callID: options.toolCallId,
-    extra: { model: input.model, bypassAgentCheck: input.bypassAgentCheck },
+    extra: {
+      model: input.model,
+      bypassAgentCheck: input.bypassAgentCheck,
+      backgroundTaskRegistry: input.backgroundTaskRegistry,
+    },
     agent: input.agent.name,
     messages: input.messages,
     // biome-ignore lint/suspicious/noExplicitAny: metadata value is opaque provider data

@@ -252,6 +252,7 @@ export class BackgroundTask {
  */
 export class BackgroundTaskRegistry {
   private _tasks = new Map<string, BackgroundTask>()
+  private _notifiedTaskIds = new Set<string>()
 
   /**
    * Register a spawned process as a background task with output tracking.
@@ -275,6 +276,23 @@ export class BackgroundTaskRegistry {
   }
 
   /**
+   * Mark a task as notification-delivered. Idempotent — safe to call multiple times.
+   * Called by the engine after successfully injecting a task_notification user message.
+   */
+  markNotified(id: string): void {
+    this._notifiedTaskIds.add(id)
+  }
+
+  /**
+   * Returns all tasks that have completed (status done/error) but have NOT yet
+   * been notified via markNotified(). Used by the inter-turn injection logic.
+   * Safe to call repeatedly — markNotified() prevents re-delivery.
+   */
+  getUnnotifiedCompletedTasks(): BackgroundTask[] {
+    return Array.from(this._tasks.values()).filter((t) => t.status !== "running" && !this._notifiedTaskIds.has(t.id))
+  }
+
+  /**
    * List all tracked tasks and their current status.
    */
   list(): BackgroundTaskInfo[] {
@@ -292,6 +310,7 @@ export class BackgroundTaskRegistry {
     await Promise.allSettled(tasks.filter((t) => t.status === "running").map((t) => t.terminate()))
 
     this._tasks.clear()
+    this._notifiedTaskIds.clear()
   }
 
   get size(): number {

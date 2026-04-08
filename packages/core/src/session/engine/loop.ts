@@ -1,6 +1,7 @@
 import { trace } from "@opentelemetry/api"
 import { ulid } from "ulid"
 import z from "zod"
+import { BackgroundTaskRegistry } from "@/command/background"
 import { PermissionNext } from "@/permission/next"
 import { TaskTool } from "@/tool/task"
 import type { Tool } from "@/tool/tool"
@@ -301,7 +302,12 @@ export const LoopInput = z.object({
 //   control     → trigger compaction, process subtasks, handle overflow
 //   tombstone   → flush persister to clean up orphaned message
 
-async function runSession(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
+async function runSession(input: {
+  sessionID: SessionID
+  session: Session.Info
+  abort: AbortSignal
+  registry: BackgroundTaskRegistry
+}) {
   const tracer = trace.getTracer("liteai")
 
   // Resolve the first user message text to use as the trace name/input in Langfuse
@@ -348,7 +354,12 @@ async function runSession(input: { sessionID: SessionID; session: Session.Info; 
   )
 }
 
-async function runSessionInner(input: { sessionID: SessionID; session: Session.Info; abort: AbortSignal }) {
+async function runSessionInner(input: {
+  sessionID: SessionID
+  session: Session.Info
+  abort: AbortSignal
+  registry: BackgroundTaskRegistry
+}) {
   const isAbortError = (e: unknown): e is DOMException => e instanceof DOMException && e.name === "AbortError"
   const { sessionID, session, abort } = input
 
@@ -366,6 +377,7 @@ async function runSessionInner(input: { sessionID: SessionID; session: Session.I
     session,
     abort,
     msgsBuffer,
+    backgroundTaskRegistry: input.registry,
   })
 
   try {
@@ -462,6 +474,23 @@ async function runSessionInner(input: { sessionID: SessionID; session: Session.I
               log.info("runSession: compaction marker created", { markerID: markerWithParts.info.id, sessionID })
             }
             break
+          }
+
+          // flushResult === "continue" — inject any task completion notifications
+          // before the generator's next iteration picks up the buffer.
+          {
+            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+            if (lastUser) {
+              await injectTaskNotifications({
+                registry: input.registry,
+                sessionID,
+                lastUser,
+                msgsBuffer,
+              }).catch((e: unknown) => {
+                // Notification injection failure must NOT crash the engine loop.
+                log.error("runSession: injectTaskNotifications failed", { error: e, sessionID })
+              })
+            }
           }
 
           // Clean up instruction prompt
@@ -595,6 +624,95 @@ function findLastUserFromBuffer(msgs: Message.WithParts[]): Message.User | undef
   return undefined
 }
 
+/**
+ * Checks the BackgroundTaskRegistry for newly completed tasks and injects a
+ * synthetic `<task-notification>` user message into the conversation buffer.
+ *
+ * This mirrors liteai2's coordinator notification pattern: task results arrive
+ * as `<task-notification>` XML in user messages, which the model naturally
+ * responds to on the next turn.
+ *
+ * Called between turns (after persister.flush() → "continue") so the generator
+ * sees the notification in msgsBuffer on the next while-loop iteration.
+ *
+ * @internal Exported for unit testing only.
+ */
+export async function injectTaskNotifications(input: {
+  registry: BackgroundTaskRegistry
+  sessionID: SessionID
+  lastUser: Message.User
+  msgsBuffer: { current: Message.WithParts[] }
+}): Promise<void> {
+  const { registry, sessionID, lastUser, msgsBuffer } = input
+
+  const pending = registry.getUnnotifiedCompletedTasks()
+  if (pending.length === 0) return
+
+  const lines: string[] = ["<task-notification>", `The following background command(s) have completed:`, ""]
+
+  for (const task of pending) {
+    const preview = task.output.getChars(2000)
+    lines.push(
+      `Task ID: ${task.id}`,
+      `Command: ${task.command}`,
+      `Status: ${task.status}`,
+      `Exit code: ${task.exitCode ?? "N/A"}`,
+      "Output:",
+      "```",
+      preview || "(no output)",
+      "```",
+      "",
+    )
+  }
+
+  lines.push("</task-notification>")
+  const notificationText = lines.join("\n")
+
+  // Persist as a real user message with synthetic: true text part.
+  // Using Session.updateMessage + Session.updatePart ensures it survives session
+  // resume and appears correctly in the conversation transcript.
+  const notificationMsgData: Message.User = {
+    id: MessageID.ascending(),
+    role: "user",
+    sessionID,
+    agent: lastUser.agent,
+    model: lastUser.model,
+    time: { created: Date.now() },
+  }
+  const notificationMsg = await Session.updateMessage(notificationMsgData)
+
+  const notificationPart = await Session.updatePart({
+    id: PartID.ascending(),
+    messageID: (notificationMsg as Message.User).id,
+    sessionID,
+    type: "text",
+    text: notificationText,
+    synthetic: true,
+  })
+
+  // Append to in-memory buffer so the generator sees it on the next turn
+  // without a DB read (consistent with the FR-3 buffer invariant).
+  msgsBuffer.current = [
+    ...msgsBuffer.current,
+    {
+      info: notificationMsg as Message.User,
+      parts: [notificationPart as Message.Part],
+    },
+  ]
+
+  // Mark notified only after successful persist to avoid losing notifications
+  // if persist throws (the .catch in the call site will log and absorb the error).
+  for (const task of pending) {
+    registry.markNotified(task.id)
+  }
+
+  log.info("injectTaskNotifications: injected task completion notifications", {
+    sessionID,
+    count: pending.length,
+    taskIds: pending.map((t) => t.id),
+  })
+}
+
 export const loop = fn(LoopInput, async (input) => {
   const { sessionID, resume_existing } = input
 
@@ -606,12 +724,19 @@ export const loop = fn(LoopInput, async (input) => {
     })
   }
 
-  using _ = defer(() => cleanup(sessionID))
+  // Create a fresh BackgroundTaskRegistry scoped to this session.
+  // Disposed (all running tasks terminated) when the session ends via defer.
+  const registry = new BackgroundTaskRegistry()
+
+  await using _ = defer(async () => {
+    await registry.disposeAll()
+    cleanup(sessionID)
+  })
 
   const session = await Session.get(sessionID)
 
   // Delegate to the event-sourced orchestrator
-  await runSession({ sessionID, session, abort })
+  await runSession({ sessionID, session, abort, registry })
 
   for await (const item of Message.stream(sessionID)) {
     if (item.info.role === "user") continue

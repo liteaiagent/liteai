@@ -14,8 +14,9 @@ IMPORTANT: This tool is for terminal operations (git, npm, docker, etc.). DO NOT
 ## Background Task Lifecycle
 When a command exceeds `WaitMsBeforeAsync`, it is automatically moved to the background:
 1. **run_command** returns a `backgroundTaskId` (e.g., "cmd_a1b2c3d4")
-2. Use **command_status** to poll for completion — it uses an efficient sleep, not busy-waiting
-3. Use **send_command_input** to write to stdin or terminate the process
+2. The engine **automatically notifies you** via a `<task-notification>` message when the task completes — you do NOT need to poll manually
+3. Use **command_status** only if you need to check progress before the notification arrives, or if you want to wait efficiently (`WaitDurationSeconds` up to 300s)
+4. Use **send_command_input** to write to stdin or terminate the process
 
 ### Important Rules
 - **NEVER use `sleep` or busy-wait loops** to wait for background tasks. Use `command_status` with `WaitDurationSeconds` instead.

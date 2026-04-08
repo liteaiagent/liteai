@@ -1,4 +1,5 @@
 import { NamedError } from "@liteai/util/error"
+import type { BackgroundTaskRegistry } from "@/command/background"
 import { Agent } from "../../agent/agent"
 import { Bundled } from "../../bundled"
 import { Bus } from "../../bus"
@@ -35,6 +36,9 @@ export type QueryLoopParams = {
   msgsBuffer: { current: Message.WithParts[] }
   /** Whether this is a resume of an existing session (skip start() call) */
   resumeExisting?: boolean
+  /** Session-scoped registry for background tasks. Passed through to resolveTools
+   * so tools can register/query background processes via ctx.extra. */
+  backgroundTaskRegistry?: BackgroundTaskRegistry
 }
 
 // ─── queryLoop ───────────────────────────────────────────────────────────────
@@ -266,6 +270,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       processor: toolProcessorRef as unknown as SessionProcessor.Info,
       bypassAgentCheck,
       messages: msgs,
+      backgroundTaskRegistry: params.backgroundTaskRegistry,
     })
 
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
