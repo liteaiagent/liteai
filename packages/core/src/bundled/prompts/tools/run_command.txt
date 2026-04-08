@@ -1,12 +1,26 @@
-Executes a shell command in ${shell} with optional timeout. All commands run in ${directory} by default.
+Executes a shell command in ${shell} with optional async backgrounding. All commands run in ${directory} by default.
 
 IMPORTANT: This tool is for terminal operations (git, npm, docker, etc.). DO NOT use it for file operations — use the specialized tools instead.
 
 ## Parameters
 - `command` (required): The command to execute.
-- `workdir` (optional): Working directory. Defaults to ${directory}. Use this instead of `cd <directory> && <command>`.
-- `timeout` (optional): Timeout in milliseconds. Defaults to 2 minutes.
+- `cwd` (optional): Working directory. Defaults to ${directory}. Use this instead of `cd <directory> && <command>`.
+- `WaitMsBeforeAsync` (required): Milliseconds to wait for completion before auto-backgrounding (max 10000). If the command finishes within this window, output is returned inline. Otherwise a background task ID is returned for polling via `command_status`.
+  - Short commands (ls, git status): use 5000–10000ms
+  - Long commands (npm install, docker build): use 500–2000ms
+  - Interactive/server commands (dev servers): use 500ms
 - `description` (required): A clear 5-10 word summary of what this command does.
+
+## Background Task Lifecycle
+When a command exceeds `WaitMsBeforeAsync`, it is automatically moved to the background:
+1. **run_command** returns a `backgroundTaskId` (e.g., "cmd_a1b2c3d4")
+2. Use **command_status** to poll for completion — it uses an efficient sleep, not busy-waiting
+3. Use **send_command_input** to write to stdin or terminate the process
+
+### Important Rules
+- **NEVER use `sleep` or busy-wait loops** to wait for background tasks. Use `command_status` with `WaitDurationSeconds` instead.
+- **NEVER run commands that depend on background task output** until `command_status` confirms completion.
+- Background tasks do not survive session boundaries.
 
 ## Parallel Execution
 When you need to run multiple independent commands, call this tool multiple times in the same response. The commands will execute in parallel, which is significantly faster.
@@ -34,5 +48,5 @@ git add . && git commit -m "message"
   - Read files → Read (not cat/head/tail)
   - Edit files → Edit (not sed/awk)
   - Write files → Write (not echo/cat <<EOF)
-- Use `workdir` parameter instead of `cd` commands.
-- NEVER use interactive flags (e.g., git rebase -i, git add -i) — they require interactive input which is not supported.
+- Use `cwd` parameter instead of `cd` commands.
+- NEVER use interactive flags (e.g., git rebase -i, git add -i) — they require interactive input which is not supported in foreground mode. For interactive processes, use `send_command_input`.

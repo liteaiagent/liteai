@@ -1,10 +1,10 @@
-import { expect, test, mock, describe } from "bun:test"
+import { describe, expect, mock, test } from "bun:test"
 import path from "node:path"
 import { Agent } from "../../src/agent/agent"
 import { PermissionNext } from "../../src/permission/next"
 import { Instance } from "../../src/project/instance"
+import { ModelID, ProviderID } from "../../src/provider/schema"
 import { tmpdir } from "../fixture/fixture"
-import { ProviderID, ModelID } from "../../src/provider/schema"
 
 mock.module("ai", () => ({
   generateObject: mock(async () => {
@@ -12,19 +12,22 @@ mock.module("ai", () => ({
       object: {
         identifier: "test-generated-agent",
         whenToUse: "When we need testing",
-        systemPrompt: "You are a generated test agent."
-      }
+        systemPrompt: "You are a generated test agent.",
+      },
     }
   }),
   streamObject: mock(async () => {
     async function* fakeStream() {
-      yield { type: "object", object: { identifier: "stream-agent", whenToUse: "Streamed test", systemPrompt: "Streamed prompt" } }
+      yield {
+        type: "object",
+        object: { identifier: "stream-agent", whenToUse: "Streamed test", systemPrompt: "Streamed prompt" },
+      }
     }
     return {
       object: { identifier: "stream-agent", whenToUse: "Streamed test", systemPrompt: "Streamed prompt" },
-      fullStream: fakeStream()
+      fullStream: fakeStream(),
     }
-  })
+  }),
 }))
 // Helper to evaluate permission for a tool with wildcard pattern
 function evalPerm(agent: Agent.Info | undefined, permission: string): PermissionNext.Action | undefined {
@@ -695,11 +698,11 @@ test("defaultAgent falls back to build when all primary agents are disabled", as
 describe("Agent.generate", () => {
   test("generates an agent config successfully", async () => {
     await using tmp = await tmpdir()
-    
+
     // Set dummy env var for openai to bypass getLanguage init checks if any
     const origKey = process.env.OPENAI_API_KEY
     process.env.OPENAI_API_KEY = "test"
-    
+
     try {
       await Instance.provide({
         directory: tmp.path,
@@ -708,19 +711,19 @@ describe("Agent.generate", () => {
             description: "A test agent",
             model: {
               providerID: ProviderID.make("openai"),
-              modelID: ModelID.make("gpt-4o-mini")
-            }
+              modelID: ModelID.make("gpt-4o-mini"),
+            },
           })
-          
+
           expect(result).toBeDefined()
           expect(result.identifier).toBe("test-generated-agent")
           expect(result.whenToUse).toBe("When we need testing")
           expect(result.systemPrompt).toBe("You are a generated test agent.")
-        }
+        },
       })
     } finally {
-        if (origKey !== undefined) process.env.OPENAI_API_KEY = origKey
-        else delete process.env.OPENAI_API_KEY
+      if (origKey !== undefined) process.env.OPENAI_API_KEY = origKey
+      else delete process.env.OPENAI_API_KEY
     }
   })
 })

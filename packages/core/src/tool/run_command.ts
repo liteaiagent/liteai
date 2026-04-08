@@ -4,7 +4,8 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { Language } from "web-tree-sitter"
 import z from "zod"
-import { Flag } from "@/flag/flag.ts"
+import type { BackgroundTaskRegistry } from "@/command/background"
+import { interpretCommandResult } from "@/command/semantics"
 import { BashArity } from "@/permission/arity"
 import { Shell } from "@/shell/shell"
 
@@ -17,7 +18,7 @@ import { Tool } from "./tool"
 import { Truncate } from "./truncation"
 
 const MAX_METADATA_LENGTH = 30_000
-const DEFAULT_TIMEOUT = Flag.LITEAI_BASH_TIMEOUT_MS || 2 * 60 * 1000
+const MAX_WAIT_BEFORE_ASYNC_MS = 10_000
 
 export const log = Log.create({ service: "bash-tool" })
 
@@ -64,12 +65,16 @@ export const RunCommandTool = Tool.define("run_command", async () => {
       .replaceAll("${maxBytes}", String(Truncate.MAX_BYTES)),
     parameters: z.object({
       command: z.string().describe("The command to execute"),
-      timeout: z.number().describe("Optional timeout in milliseconds").optional(),
-      workdir: z
-        .string()
+      WaitMsBeforeAsync: z
+        .number()
+        .min(0)
+        .max(MAX_WAIT_BEFORE_ASYNC_MS)
         .describe(
-          `The working directory to run the command in. Defaults to ${Instance.directory}. Use this instead of 'cd' commands.`,
-        )
+          `Milliseconds to wait for completion before backgrounding (max ${MAX_WAIT_BEFORE_ASYNC_MS}). If the command completes within this window, output is returned inline. Otherwise, a background task ID is returned for use with command_status.`,
+        ),
+      cwd: z
+        .string()
+        .describe(`Working directory. Defaults to ${Instance.directory}. Use this instead of 'cd' commands.`)
         .optional(),
       description: z
         .string()
@@ -78,11 +83,8 @@ export const RunCommandTool = Tool.define("run_command", async () => {
         ),
     }),
     async execute(params, ctx) {
-      const cwd = params.workdir || Instance.directory
-      if (params.timeout !== undefined && params.timeout < 0) {
-        throw new Error(`Invalid timeout value: ${params.timeout}. Timeout must be a positive number.`)
-      }
-      const timeout = params.timeout ?? DEFAULT_TIMEOUT
+      const cwd = params.cwd || Instance.directory
+
       const tree = await parser().then((p) => p.parse(params.command))
       if (!tree) {
         throw new Error("Failed to parse command")
@@ -165,7 +167,7 @@ export const RunCommandTool = Tool.define("run_command", async () => {
         shell,
         cwd,
         env: process.env,
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ["pipe", "pipe", "pipe"],
         detached: process.platform !== "win32",
         windowsHide: process.platform === "win32",
       })
@@ -194,7 +196,6 @@ export const RunCommandTool = Tool.define("run_command", async () => {
       proc.stdout?.on("data", append)
       proc.stderr?.on("data", append)
 
-      let timedOut = false
       let aborted = false
       let exited = false
 
@@ -212,38 +213,80 @@ export const RunCommandTool = Tool.define("run_command", async () => {
 
       ctx.abort.addEventListener("abort", abortHandler, { once: true })
 
-      const timeoutTimer = setTimeout(() => {
-        timedOut = true
-        void kill()
-      }, timeout + 100)
-
-      await new Promise<void>((resolve, reject) => {
-        const cleanup = () => {
-          clearTimeout(timeoutTimer)
-          ctx.abort.removeEventListener("abort", abortHandler)
-        }
-
+      // Race: completion vs WaitMsBeforeAsync
+      const completionPromise = new Promise<"completed">((resolve, reject) => {
         proc.once("exit", () => {
           exited = true
-          cleanup()
-          resolve()
+          resolve("completed")
         })
-
         proc.once("error", (error) => {
           exited = true
-          cleanup()
           reject(error)
         })
       })
 
-      const resultMetadata: string[] = []
+      const timeoutPromise = new Promise<"timeout">((resolve) => {
+        const timer = setTimeout(() => resolve("timeout"), params.WaitMsBeforeAsync)
+        timer.unref()
+      })
 
-      if (timedOut) {
-        resultMetadata.push(`run_command tool terminated command after exceeding timeout ${timeout} ms`)
+      const raceResult = await Promise.race([completionPromise, timeoutPromise])
+
+      if (raceResult === "timeout" && !exited) {
+        // Command didn't finish in time — background it
+        ctx.abort.removeEventListener("abort", abortHandler)
+
+        // Remove our listeners (BackgroundTask will manage its own)
+        proc.stdout?.removeListener("data", append)
+        proc.stderr?.removeListener("data", append)
+
+        const registry = ctx.extra?.backgroundTaskRegistry as BackgroundTaskRegistry | undefined
+        if (!registry) {
+          // No registry available — fall back to killing the process
+          log.warn("No BackgroundTaskRegistry available, killing timed-out process")
+          await kill()
+          throw new Error(
+            "Command did not complete within the wait period and background task support is not available in this session",
+          )
+        }
+
+        const task = registry.register(proc, {
+          command: params.command,
+          description: params.description,
+        })
+
+        // Seed the background task's buffer with output we already collected
+        if (output) {
+          task.output.append(output)
+        }
+
+        log.info("Command backgrounded", { id: task.id, command: params.command })
+
+        return {
+          title: params.description,
+          metadata: {
+            output: output.length > MAX_METADATA_LENGTH ? `${output.slice(0, MAX_METADATA_LENGTH)}\n\n...` : output,
+            exit: null as number | null,
+            description: params.description,
+            backgroundTaskId: task.id,
+          },
+          output: `Command is still running in the background.\nBackground task ID: ${task.id}\nUse command_status with this ID to check progress and retrieve output.`,
+        }
       }
+
+      // Command completed within the wait window — return inline result
+      ctx.abort.removeEventListener("abort", abortHandler)
+
+      const resultMetadata: string[] = []
 
       if (aborted) {
         resultMetadata.push("User aborted the command")
+      }
+
+      // Semantic exit-code interpretation
+      const interpretation = interpretCommandResult(params.command, proc.exitCode ?? 0, output, "")
+      if (interpretation.message) {
+        resultMetadata.push(interpretation.message)
       }
 
       if (resultMetadata.length > 0) {
@@ -254,8 +297,9 @@ export const RunCommandTool = Tool.define("run_command", async () => {
         title: params.description,
         metadata: {
           output: output.length > MAX_METADATA_LENGTH ? `${output.slice(0, MAX_METADATA_LENGTH)}\n\n...` : output,
-          exit: proc.exitCode,
+          exit: proc.exitCode as number | null,
           description: params.description,
+          backgroundTaskId: undefined as string | undefined,
         },
         output,
       }

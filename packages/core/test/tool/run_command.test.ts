@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import os from "node:os"
 import path from "node:path"
+import { BackgroundTaskRegistry } from "../../src/command/background"
 import type { PermissionNext } from "../../src/permission/next"
 import { Instance } from "../../src/project/instance"
 import { MessageID, SessionID } from "../../src/session/schema"
@@ -18,6 +19,7 @@ const ctx = {
   messages: [],
   metadata: () => {},
   ask: async () => {},
+  extra: { backgroundTaskRegistry: new BackgroundTaskRegistry() },
 }
 
 const projectRoot = path.join(__dirname, "../..")
@@ -33,6 +35,7 @@ describe("tool.run_command", () => {
           const result = await runCommand.execute(
             {
               command: "echo 'test'",
+              WaitMsBeforeAsync: 10_000,
               description: "Echo test message",
             },
             ctx,
@@ -63,6 +66,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: "echo hello",
+            WaitMsBeforeAsync: 10_000,
             description: "Echo hello",
           },
           testCtx,
@@ -90,6 +94,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: "echo foo && echo bar",
+            WaitMsBeforeAsync: 10_000,
             description: "Echo twice",
           },
           testCtx,
@@ -118,6 +123,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: "cd ../",
+            WaitMsBeforeAsync: 10_000,
             description: "Change to parent directory",
           },
           testCtx,
@@ -128,7 +134,7 @@ describe("tool.run_command permissions", () => {
     })
   }, 90_000)
 
-  test("asks for external_directory permission when workdir is outside project", async () => {
+  test("asks for external_directory permission when cwd is outside project", async () => {
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({
       directory: tmp.path,
@@ -144,7 +150,8 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: "ls",
-            workdir: os.tmpdir(),
+            cwd: os.tmpdir(),
+            WaitMsBeforeAsync: 10_000,
             description: "List temp dir",
           },
           testCtx,
@@ -178,6 +185,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: `cat ${filepath}`,
+            WaitMsBeforeAsync: 10_000,
             description: "Read external file",
           },
           testCtx,
@@ -210,6 +218,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: `rm -rf ${path.join(tmp.path, "nested")}`,
+            WaitMsBeforeAsync: 10_000,
             description: "remove nested dir",
           },
           testCtx,
@@ -237,6 +246,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: "git log --oneline -5",
+            WaitMsBeforeAsync: 10_000,
             description: "Git log",
           },
           testCtx,
@@ -264,6 +274,7 @@ describe("tool.run_command permissions", () => {
         await runCommand.execute(
           {
             command: "cd .",
+            WaitMsBeforeAsync: 10_000,
             description: "Stay in current directory",
           },
           testCtx,
@@ -287,7 +298,10 @@ describe("tool.run_command permissions", () => {
             requests.push(req)
           },
         }
-        await runCommand.execute({ command: "cat > /tmp/output.txt", description: "Redirect ls output" }, testCtx)
+        await runCommand.execute(
+          { command: "cat > /tmp/output.txt", WaitMsBeforeAsync: 10_000, description: "Redirect ls output" },
+          testCtx,
+        )
         const runCommandReq = requests.find((r) => r.permission === "run_command")
         expect(runCommandReq).toBeDefined()
         expect(runCommandReq?.patterns).toContain("cat > /tmp/output.txt")
@@ -308,7 +322,7 @@ describe("tool.run_command permissions", () => {
             requests.push(req)
           },
         }
-        await runCommand.execute({ command: "ls -la", description: "List" }, testCtx)
+        await runCommand.execute({ command: "ls -la", WaitMsBeforeAsync: 10_000, description: "List" }, testCtx)
         const runCommandReq = requests.find((r) => r.permission === "run_command")
         expect(runCommandReq).toBeDefined()
         const pattern = runCommandReq?.always[0]
@@ -328,6 +342,7 @@ describe("tool.run_command truncation", () => {
         const result = await runCommand.execute(
           {
             command: `seq 1 ${lineCount}`,
+            WaitMsBeforeAsync: 10_000,
             description: "Generate lines exceeding limit",
           },
           ctx,
@@ -348,6 +363,7 @@ describe("tool.run_command truncation", () => {
         const result = await runCommand.execute(
           {
             command: `head -c ${byteCount} /dev/zero | tr '\\0' 'a'`,
+            WaitMsBeforeAsync: 10_000,
             description: "Generate bytes exceeding limit",
           },
           ctx,
@@ -367,6 +383,7 @@ describe("tool.run_command truncation", () => {
         const result = await runCommand.execute(
           {
             command: "echo hello",
+            WaitMsBeforeAsync: 10_000,
             description: "Echo hello",
           },
           ctx,
@@ -386,6 +403,7 @@ describe("tool.run_command truncation", () => {
         const result = await runCommand.execute(
           {
             command: `seq 1 ${lineCount}`,
+            WaitMsBeforeAsync: 10_000,
             description: "Generate lines for file check",
           },
           ctx,

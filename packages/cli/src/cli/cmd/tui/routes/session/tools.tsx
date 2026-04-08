@@ -260,7 +260,7 @@ export function RunCommand(props: ToolProps<typeof RunCommandTool>) {
   })
 
   const dir = createMemo(() => {
-    const workdir = props.input.workdir
+    const workdir = props.input.cwd
     if (!workdir || workdir === ".") return undefined
 
     const base = sync.data.path.directory

@@ -4,6 +4,7 @@ import { Config } from "../config/config"
 import type { ModelID, ProviderID } from "../provider/schema"
 import { ApplyPatchTool } from "./apply_patch"
 import { BatchTool } from "./batch"
+import { CommandStatusTool } from "./command_status"
 import { EditTool } from "./edit"
 import { GlobTool } from "./glob"
 import { GrepTool } from "./grep"
@@ -14,6 +15,7 @@ import { PlanExitTool } from "./plan"
 import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
 import { RunCommandTool } from "./run_command"
+import { SendCommandInputTool } from "./send_command_input"
 import { SkillTool } from "./skill"
 import { TaskTool } from "./task"
 import { TodoWriteTool } from "./todo"
@@ -31,6 +33,8 @@ export namespace ToolRegistry {
       InvalidTool,
       ...(question ? [QuestionTool] : []),
       RunCommandTool,
+      CommandStatusTool,
+      SendCommandInputTool,
       ReadTool,
       ListTool,
       GlobTool,
