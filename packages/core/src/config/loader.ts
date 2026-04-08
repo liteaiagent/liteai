@@ -398,7 +398,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function patchJson(input: string, patch: unknown, path: string[] = []): string {
   if (!isRecord(patch)) {
-    const edits = modify(input, path, patch, {
+    // If the patch value is exactly null, we intend to delete the property. We pass undefined to modify()
+    const edits = modify(input, path, patch === null ? undefined : patch, {
       formattingOptions: {
         insertSpaces: true,
         tabSize: 2,

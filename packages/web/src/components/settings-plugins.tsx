@@ -45,6 +45,7 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
   const [marketplaceSearch, setMarketplaceSearch] = createSignal("")
   const [search, setSearch] = createSignal("")
   const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
+  const sync = useGlobalSync()
 
   const [plugins, { refetch: refetchPlugins }] = createResource(async () => {
     try {
@@ -110,7 +111,16 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
     try {
       const currentConfig = await getConfig(props.projectID)
       const enabledPlugins = { ...(currentConfig.enabledPlugins ?? {}) }
-      enabledPlugins[id] = on
+      if (scope() === "project") {
+        enabledPlugins[id] = on
+      } else {
+        if (!on) {
+          enabledPlugins[id] = false
+        } else {
+          // If enabling in user scope, we clear the disability
+          enabledPlugins[id] = null as unknown as boolean
+        }
+      }
       await updateConfig({ enabledPlugins }, props.projectID)
       refetchPlugins()
     } finally {
@@ -167,7 +177,9 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
   })
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
+    <div
+      class={`flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10 transition-opacity duration-300 ${loading() !== null ? "opacity-50 pointer-events-none" : ""}`}
+    >
       {/* Header */}
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
@@ -257,7 +269,9 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
                     </div>
                     <div class="flex items-center gap-2">
                       <Switch
-                        checked={plugin.enabled}
+                        checked={
+                          scope() === "user" ? sync.data.config?.enabledPlugins?.[plugin.id] === true : plugin.enabled
+                        }
                         disabled={loading() === plugin.id}
                         onChange={() => toggle(plugin.id, !plugin.enabled)}
                       />

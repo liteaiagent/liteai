@@ -965,7 +965,7 @@ export type AgentConfig = {
     temperature?: number;
     top_p?: number;
     prompt?: string;
-    disable?: boolean;
+    disable?: boolean | null;
     /**
      * Description of when to use the agent
      */
@@ -1037,7 +1037,7 @@ export type AgentConfig = {
     hooks?: {
         [key: string]: unknown;
     };
-    [key: string]: unknown | string | number | boolean | 'subagent' | 'primary' | 'all' | {
+    [key: string]: unknown | string | number | boolean | null | 'subagent' | 'primary' | 'all' | boolean | {
         [key: string]: unknown;
     } | number | PermissionConfig | string | Array<string> | {
         [key: string]: boolean;
@@ -1161,7 +1161,7 @@ export type McpLocalConfig = {
     /**
      * Disable the MCP server on startup
      */
-    disabled?: boolean;
+    disabled?: boolean | null;
     /**
      * Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.
      */
@@ -1195,7 +1195,7 @@ export type McpRemoteConfig = {
     /**
      * Disable the MCP server on startup
      */
-    disabled?: boolean;
+    disabled?: boolean | null;
     /**
      * Headers to send with the request
      */
@@ -1351,7 +1351,7 @@ export type Config = {
      */
     mcpServers?: {
         [key: string]: McpLocalConfig | McpRemoteConfig | {
-            disabled: boolean;
+            disabled: boolean | null;
         };
     };
     formatter?: false | {
@@ -1444,19 +1444,19 @@ export type Config = {
      * Installed plugins and their enabled/disabled state (plugin-id → boolean)
      */
     enabledPlugins?: {
-        [key: string]: boolean;
+        [key: string]: boolean | null;
     };
     /**
      * Tools and their disabled state (tool-id → boolean). If true, the tool is disabled.
      */
     disabledTools?: {
-        [key: string]: boolean;
+        [key: string]: boolean | null;
     };
     /**
      * Skills and their disabled state (skill-id → boolean). If true, the skill is disabled.
      */
     disabledSkills?: {
-        [key: string]: boolean;
+        [key: string]: boolean | null;
     };
     /**
      * Team-shared plugin marketplaces (name → source). Added marketplaces become available for plugin install.

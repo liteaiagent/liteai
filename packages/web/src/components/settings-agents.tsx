@@ -39,6 +39,7 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
   const language = useLanguage()
   const sdk = useSDK()
   const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
+  const sync = useGlobalSync()
 
   const [agents, { refetch: refetchAgents }] = createResource(async () => {
     try {
@@ -64,7 +65,11 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
       if (currentlyEnabled) {
         agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: true }
       } else {
-        agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: false }
+        if (scope() === "project") {
+          agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: false }
+        } else {
+          agentConfig[name] = { ...(agentConfig[name] ?? {}), disable: null as unknown as boolean }
+        }
       }
 
       await updateConfig({ agent: agentConfig }, props.projectID)
@@ -75,7 +80,9 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
   }
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
+    <div
+      class={`flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10 transition-opacity duration-300 ${loading() !== null ? "opacity-50 pointer-events-none" : ""}`}
+    >
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.agents.title")}</h2>
@@ -88,7 +95,7 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
 
       <div class="flex flex-col gap-4 max-w-[720px]">
         <Show
-          when={!agents.loading && count() > 0}
+          when={count() > 0}
           fallback={
             <SettingsList>
               <div class="py-8 text-14-regular text-text-weak text-center">
@@ -136,7 +143,11 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
                     <Show when={agent.name !== "build"}>
                       <div class="flex flex-col items-end gap-2 shrink-0">
                         <Switch
-                          checked={agent.enabled !== false}
+                          checked={
+                            scope() === "user"
+                              ? sync.data.config?.agent?.[agent.name]?.disable !== true
+                              : agent.enabled !== false
+                          }
                           disabled={loading() === agent.name}
                           onChange={() => toggle(agent.name, agent.enabled !== false)}
                         />

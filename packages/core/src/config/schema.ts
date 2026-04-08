@@ -19,7 +19,7 @@ export const McpLocal = z
       .record(z.string(), z.string())
       .optional()
       .describe("Environment variables to set when running the MCP server"),
-    disabled: z.boolean().optional().describe("Disable the MCP server on startup"),
+    disabled: z.boolean().nullable().optional().describe("Disable the MCP server on startup"),
     timeout: z
       .number()
       .int()
@@ -51,7 +51,7 @@ export const McpRemote = z
   .object({
     type: z.literal("remote").describe("Type of MCP server connection"),
     url: z.string().describe("URL of the remote MCP server"),
-    disabled: z.boolean().optional().describe("Disable the MCP server on startup"),
+    disabled: z.boolean().nullable().optional().describe("Disable the MCP server on startup"),
     headers: z.record(z.string(), z.string()).optional().describe("Headers to send with the request"),
     oauth: z
       .union([McpOAuth, z.literal(false)])
@@ -181,7 +181,7 @@ export const Agent = z
     temperature: z.number().optional(),
     top_p: z.number().optional(),
     prompt: z.string().optional(),
-    disable: z.boolean().optional(),
+    disable: z.boolean().nullable().optional(),
     description: z.string().optional().describe("Description of when to use the agent"),
     mode: z.enum(["subagent", "primary", "all"]).optional(),
     hidden: z
@@ -583,7 +583,7 @@ export const Info = z
           Mcp,
           z
             .object({
-              disabled: z.boolean(),
+              disabled: z.boolean().nullable(),
             })
             .strict(),
         ]),
@@ -707,15 +707,15 @@ export const Info = z
       .describe("Config-driven hooks that fire on lifecycle events (Claude Code compatible)"),
     disableAllHooks: z.boolean().optional().describe("Disable all config-driven hooks"),
     enabledPlugins: z
-      .record(z.string(), z.boolean())
+      .record(z.string(), z.boolean().nullable())
       .optional()
       .describe("Installed plugins and their enabled/disabled state (plugin-id → boolean)"),
     disabledTools: z
-      .record(z.string(), z.boolean())
+      .record(z.string(), z.boolean().nullable())
       .optional()
       .describe("Tools and their disabled state (tool-id → boolean). If true, the tool is disabled."),
     disabledSkills: z
-      .record(z.string(), z.boolean())
+      .record(z.string(), z.boolean().nullable())
       .optional()
       .describe("Skills and their disabled state (skill-id → boolean). If true, the skill is disabled."),
     extraKnownMarketplaces: z

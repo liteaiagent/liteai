@@ -15,6 +15,7 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
   const language = useLanguage()
   const sdk = useSDK()
   const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
+  const sync = useGlobalSync()
 
   const [tools, { refetch: refetchTools }] = createResource(async () => {
     try {
@@ -46,7 +47,7 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
         if (scope() === "project") {
           disabledTools[id] = false
         } else {
-          delete disabledTools[id]
+          disabledTools[id] = null as unknown as boolean
         }
       }
 
@@ -58,7 +59,9 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
   }
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
+    <div
+      class={`flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10 transition-opacity duration-300 ${loading() !== null ? "opacity-50 pointer-events-none" : ""}`}
+    >
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.tools.title") ?? "Tools"}</h2>
@@ -98,7 +101,11 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
                     </div>
                     <div class="flex items-center gap-2">
                       <Switch
-                        checked={tool.enabled !== false}
+                        checked={
+                          scope() === "user"
+                            ? sync.data.config?.disabledTools?.[tool.id] !== true
+                            : tool.enabled !== false
+                        }
                         disabled={loading() === tool.id}
                         onChange={() => toggle(tool.id, tool.enabled !== false)}
                       />

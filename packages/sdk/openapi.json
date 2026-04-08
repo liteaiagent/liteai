@@ -9912,7 +9912,14 @@
             "type": "string"
           },
           "disable": {
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "description": {
             "description": "Description of when to use the agent",
@@ -10334,7 +10341,14 @@
           },
           "disabled": {
             "description": "Disable the MCP server on startup",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "timeout": {
             "description": "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.",
@@ -10378,7 +10392,14 @@
           },
           "disabled": {
             "description": "Disable the MCP server on startup",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "headers": {
             "description": "Headers to send with the request",
@@ -10656,7 +10677,14 @@
                   "type": "object",
                   "properties": {
                     "disabled": {
-                      "type": "boolean"
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     }
                   },
                   "required": ["disabled"],
@@ -10880,7 +10908,14 @@
               "type": "string"
             },
             "additionalProperties": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "disabledTools": {
@@ -10890,7 +10925,14 @@
               "type": "string"
             },
             "additionalProperties": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "disabledSkills": {
@@ -10900,7 +10942,14 @@
               "type": "string"
             },
             "additionalProperties": {
-              "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "extraKnownMarketplaces": {

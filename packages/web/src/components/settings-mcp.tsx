@@ -74,7 +74,11 @@ export const SettingsMcpInner: Component<{ projectID: string }> = (props) => {
         const currentConfig = await getConfig(props.projectID)
         const mcpServers = { ...(currentConfig.mcpServers ?? {}) }
         if (mcpServers[name]?.disabled) {
-          mcpServers[name] = { ...mcpServers[name], disabled: false }
+          if (scope() === "project") {
+            mcpServers[name] = { ...mcpServers[name], disabled: false }
+          } else {
+            mcpServers[name] = { ...mcpServers[name], disabled: null as unknown as boolean }
+          }
           await updateConfig({ mcpServers }, props.projectID)
         }
         await sdk.client.project.mcp.connect({ name, projectID: props.projectID })
@@ -91,7 +95,9 @@ export const SettingsMcpInner: Component<{ projectID: string }> = (props) => {
   const [selected, setSelected] = createSignal<string | null>(null)
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
+    <div
+      class={`flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10 transition-opacity duration-300 ${loading() !== null ? "opacity-50 pointer-events-none" : ""}`}
+    >
       <Show
         when={selected()}
         fallback={

@@ -22,6 +22,7 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
   const language = useLanguage()
   const sdk = useSDK()
   const { scope, setScope, getConfig, updateConfig } = useScopedConfig()
+  const sync = useGlobalSync()
 
   const [skills, { refetch: refetchSkills }] = createResource(async () => {
     try {
@@ -57,7 +58,9 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
   }
 
   return (
-    <div class="flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10">
+    <div
+      class={`flex flex-col h-full overflow-y-auto no-scrollbar px-4 pb-10 sm:px-10 sm:pb-10 transition-opacity duration-300 ${loading() !== null ? "opacity-50 pointer-events-none" : ""}`}
+    >
       <div class="sticky top-0 z-10 bg-[linear-gradient(to_bottom,var(--surface-stronger-non-alpha)_calc(100%_-_24px),transparent)]">
         <div class="flex flex-col gap-1 pt-6 pb-4 max-w-[720px]">
           <h2 class="text-16-medium text-text-strong">{language.t("settings.skills.title")}</h2>
@@ -70,7 +73,7 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
 
       <div class="flex flex-col gap-4 max-w-[720px]">
         <Show
-          when={!skills.loading && count() > 0}
+          when={count() > 0}
           fallback={
             <SettingsList>
               <div class="py-8 text-14-regular text-text-weak text-center">
@@ -97,7 +100,11 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
                   </div>
                   <div class="flex flex-col items-end gap-2 shrink-0">
                     <Switch
-                      checked={skill.enabled !== false}
+                      checked={
+                        scope() === "user"
+                          ? sync.data.config?.disabledSkills?.[skill.name] !== true
+                          : skill.enabled !== false
+                      }
                       disabled={loading() === skill.name}
                       onChange={() => toggle(skill.name, skill.enabled !== false)}
                     />
