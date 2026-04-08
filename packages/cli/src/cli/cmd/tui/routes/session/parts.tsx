@@ -7,6 +7,7 @@ import { use } from "./ctx"
 import {
   ApplyPatch,
   CodeSearch,
+  CommandStatus,
   Edit,
   GenericTool,
   Glob,
@@ -15,6 +16,7 @@ import {
   Question,
   Read,
   RunCommand,
+  SendCommandInput,
   Skill,
   Task,
   TodoWrite,
@@ -116,6 +118,12 @@ function ToolPartView(props: { last: boolean; part: ToolPart; message: Assistant
       <Switch>
         <Match when={props.part.tool === "run_command"}>
           <RunCommand {...toolprops} />
+        </Match>
+        <Match when={props.part.tool === "command_status"}>
+          <CommandStatus {...toolprops} />
+        </Match>
+        <Match when={props.part.tool === "send_command_input"}>
+          <SendCommandInput {...toolprops} />
         </Match>
         <Match when={props.part.tool === "glob"}>
           <Glob {...toolprops} />

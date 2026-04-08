@@ -708,3 +708,86 @@ export function Skill(props: ToolProps<typeof SkillTool>) {
     </InlineTool>
   )
 }
+
+export function CommandStatus(props: ToolProps<Tool.Info>) {
+  const { theme } = useTheme()
+  const input = props.input as Record<string, unknown>
+  const metadata = props.metadata as Record<string, unknown>
+  const running = createMemo(() => props.part.state.status === "running")
+  const output = createMemo(() => {
+    let out = props.output || metadata.output || ""
+    if (typeof out === "object") out = JSON.stringify(out, null, 2)
+    return stripAnsi(out as string)
+  })
+  const [expanded, setExpanded] = createSignal(false)
+  const lines = createMemo(() => output().split("\n"))
+  const overflow = createMemo(() => lines().length > 10)
+  const limited = createMemo(() => {
+    if (expanded() || !overflow()) return output()
+    return [...lines().slice(0, 10), "…"].join("\n")
+  })
+
+  return (
+    <Switch>
+      <Match when={metadata.output !== undefined || props.output}>
+        <BlockTool
+          title={`# Status: ${metadata.commandId || input.CommandId || ""}`}
+          part={props.part}
+          spinner={running()}
+          onClick={overflow() ? () => setExpanded((prev) => !prev) : undefined}
+        >
+          <box gap={1}>
+            <text fg={theme.text}>{metadata.status === "running" ? "Running" : "Completed"}</text>
+            <Show when={output()}>
+              <text fg={theme.text}>{limited()}</text>
+            </Show>
+            <Show when={overflow()}>
+              <text fg={theme.textMuted}>{expanded() ? "Click to collapse" : "Click to expand"}</text>
+            </Show>
+          </box>
+        </BlockTool>
+      </Match>
+      <Match when={true}>
+        <InlineTool icon="⚙" pending="Checking status..." complete={input.CommandId} part={props.part}>
+          Status: {input.CommandId as string}
+        </InlineTool>
+      </Match>
+    </Switch>
+  )
+}
+
+export function SendCommandInput(props: ToolProps<Tool.Info>) {
+  const { theme } = useTheme()
+  const input = props.input as Record<string, unknown>
+  const metadata = props.metadata as Record<string, unknown>
+  const running = createMemo(() => props.part.state.status === "running")
+  const output = createMemo(() => {
+    let out = props.output || metadata.output || ""
+    if (typeof out === "object") out = JSON.stringify(out, null, 2)
+    return stripAnsi(out as string)
+  })
+
+  const text = createMemo(() => {
+    if (input.Terminate) return "Sending terminate signal"
+    return `Sending input`
+  })
+
+  return (
+    <Switch>
+      <Match when={metadata.output !== undefined || props.output}>
+        <BlockTool title={`# ${text()}`} part={props.part} spinner={running()}>
+          <box gap={1}>
+            <Show when={output()}>
+              <text fg={theme.text}>{output()}</text>
+            </Show>
+          </box>
+        </BlockTool>
+      </Match>
+      <Match when={true}>
+        <InlineTool icon="⚙" pending="Sending input..." complete={input.CommandId} part={props.part}>
+          {text()}: {input.CommandId as string}
+        </InlineTool>
+      </Match>
+    </Switch>
+  )
+}
