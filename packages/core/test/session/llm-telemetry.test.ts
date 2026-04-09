@@ -185,7 +185,7 @@ describe("session.llm telemetry metadata", () => {
 
         // Verify bare keys are used (correct)
         expect(source).toContain("langgraph_node: input.agent.name")
-        expect(source).toContain("langgraph_step: String(input.step ?? 1)")
+        expect(source).toContain("langgraph_step: String(input.telemetryStep ?? input.step ?? 1)")
 
         // Verify prefixed keys are NOT used (would break Clickhouse lookup)
         expect(source).not.toContain('"langfuse.observation.metadata.langgraph_node"')
@@ -289,9 +289,9 @@ describe("session.llm telemetry metadata", () => {
         await request
 
         // Verify the default works via source inspection
-        // The expression `String(input.step ?? 1)` ensures step defaults to "1"
+        // The expression `String(input.telemetryStep ?? input.step ?? 1)` ensures step defaults to "1"
         const source = await Bun.file(path.join(import.meta.dir, "../../src/session/llm.ts")).text()
-        expect(source).toContain("String(input.step ?? 1)")
+        expect(source).toContain("String(input.telemetryStep ?? input.step ?? 1)")
       },
     })
   })

@@ -24,7 +24,7 @@ import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
-const log = Log.create({ service: "session.query" })
+const log = Log.create({ service: "session.engine" })
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
     }
 
-    const currentTelemetryStep = ++telemetryStep;
+    const currentTelemetryStep = ++telemetryStep
 
     // ── Model resolution ──
     if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
@@ -198,20 +198,19 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     const maxSteps = agent.steps ?? Infinity
     const isLastStep = step >= maxSteps
 
-    if (step === 1) {
-      const text = msgs
-        .findLast((m) => m.info.role === "user")
-        ?.parts.filter((p) => p.type === "text")
-        .map((p) => p.text)
-        .join(" ")
-      log.info("user", {
-        sessionID,
-        agent: agent.name,
-        model: `${lastUser.model.providerID}/${lastUser.model.modelID}`,
-        temperature: agent.temperature,
-        text: text?.slice(0, 200),
-      })
-    }
+    const text = msgs
+      .findLast((m) => m.info.role === "user")
+      ?.parts.filter((p) => p.type === "text")
+      .map((p) => ("text" in p ? p.text : ""))
+      .join(" ")
+
+    log.info(`sending stream text to ${agent.name} agent: ${text?.slice(0, 200)}`, {
+      sessionID,
+      agent: agent.name,
+      model: `${lastUser.model.providerID}/${lastUser.model.modelID}`,
+      temperature: agent.temperature,
+      step,
+    })
 
     // ── Plan reminder injection ──
     msgs = await insertPlanReminder({
@@ -370,12 +369,22 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     } satisfies EngineEvent.TurnStartEvent
 
     let streamResult: unknown
+    let reasoningChunkCount = 0
     try {
       const generator = SessionProcessor.streamGenerator(streamInput, undefined, (r) => {
         streamResult = r
       })
 
       for await (const event of generator) {
+        if (event.type === "delta" && event.part === "reasoning") {
+          reasoningChunkCount++
+          log.info(`received reasoning chunk ${reasoningChunkCount} from ${agent.name} agent`, { sessionID })
+        } else if (event.type === "call" && event.kind === "tool") {
+          log.info(`${agent.name} agent tool call ${event.toolName}`, { sessionID, input: event.input })
+        } else if (event.type === "result" && event.kind === "tool") {
+          log.info(`${agent.name} agent tool result ${event.toolName}`, { sessionID, title: event.title })
+        }
+
         // Feed every event through the executor for lifecycle tracking.
         // The executor monitors tool start/delta/call/result/error events
         // and maintains concurrency state without intercepting the event flow.

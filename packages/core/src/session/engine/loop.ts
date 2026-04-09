@@ -30,7 +30,7 @@ import { queryLoop } from "./query"
 
 globalThis.AI_SDK_LOG_WARNINGS = false
 
-const log = Log.create({ service: "session.prompt" })
+const log = Log.create({ service: "session.engine" })
 
 type SessionState = Record<
   string,
@@ -233,7 +233,7 @@ function safeAbort(controller: AbortController, sessionID: string) {
   process.on("uncaughtException", suppressHandler)
 
   try {
-    log.info("safeAbort: controller.abort()", { sessionID })
+    log.info("session/loop abort: controller.abort()", { sessionID })
     controller.abort()
   } catch (e: unknown) {
     errors.push(e)
@@ -661,7 +661,7 @@ async function runSessionInner(input: {
     // AbortError is expected when the user cancels mid-stream.
     // Swallow it here so it doesn't propagate as an unhandled rejection.
     if (isAbortError(e)) {
-      log.info("runSession: caught AbortError in event loop", { sessionID })
+      log.info("session/loop abort: caught AbortError in event loop", { sessionID })
     } else {
       throw e
     }
@@ -1005,11 +1005,25 @@ async function processSubtask(input: {
       })
     },
   }
+
+  const activeSpan = trace.getActiveSpan()
+  if (activeSpan) {
+    activeSpan.setAttribute("input.value", JSON.stringify(taskArgs))
+    activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", "task")
+    activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(telemetryStep ?? 1))
+  }
+
   const result = await taskTool.execute(taskArgs, ctx).catch((error) => {
     executionError = error
     log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
+    if (activeSpan) {
+      activeSpan.setAttribute("output.value", String(error))
+    }
     return undefined
   })
+  if (activeSpan && result) {
+    activeSpan.setAttribute("output.value", result.output ?? "")
+  }
   const attachments = result?.attachments?.map((attachment) => ({
     ...attachment,
     id: PartID.ascending(),

@@ -63,7 +63,9 @@ export class EventPersister {
     }
 
     try {
-      this.abort.throwIfAborted()
+      if (event.type !== "turn-end" && event.type !== "error") {
+        this.abort.throwIfAborted()
+      }
 
       switch (event.type) {
         case "start": {
@@ -431,7 +433,7 @@ export class EventPersister {
           messageID: assistantMessage.id,
           sessionID,
           type: "step-finish",
-          reason: "error",
+          reason: this.abort.aborted ? "abort" : "error",
           snapshot: this.snapshot ? await Snapshot.track() : undefined,
           cost: assistantMessage.cost,
           tokens: assistantMessage.tokens,

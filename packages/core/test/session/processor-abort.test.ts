@@ -182,7 +182,7 @@ describe("SessionProcessor Abort Reasoning Flush", () => {
         // Step-finish part written on abort
         const stepFinish = parts.find((p) => p.type === "step-finish") as Message.StepFinishPart
         expect(stepFinish).toBeDefined()
-        expect(stepFinish.reason).toBe("error")
+        expect(stepFinish.reason).toBe("abort")
         expect(stepFinish.tokens).toEqual({
           input: 0,
           output: 0,

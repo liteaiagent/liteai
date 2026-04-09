@@ -86,7 +86,7 @@ Users can override priority via the existing config system:
 | Add LSP source attribution to tool results | In `write.ts`, `edit.ts`, `apply_patch.ts`: change `"LSP errors detected"` → `"LSP errors detected by 'ty'"`. Include `source` attribute in `<diagnostics>` tag |
 | Tests | `bun test test/format`, `bun test test/lsp` — verify single formatter/LSP per extension, verify priority ordering, verify config override, verify tool output includes attribution |
 
-### Phase 1c: `run_command` Lifecycle Improvements (High Impact)
+### Phase 1c: `run_command` Lifecycle Improvements (High Impact) [✅ COMPLETED]
 
 > **Problem:** The current `run_command` tool (`tool/run_command.ts`, 265 lines) is a simple spawn-and-wait implementation with no background task support, no progress streaming, no large output handling, and no command semantic interpretation. Long-running commands (typecheck, tests, builds) either block the agent or get killed on timeout — losing all work. This is the agent's most-used tool and its biggest bottleneck.
 >
@@ -136,6 +136,13 @@ Users can override priority via the existing config system:
 | Sleep pattern detection | Block `sleep N` (N ≥ 2) as the first command. Suggest `run_in_background` or appropriate alternatives. Prevents agent polling loops |
 | Silent command detection | Commands like `mv`, `cp`, `mkdir` produce no stdout on success. Detect these and return "Done" instead of empty output, preventing the agent from retrying |
 | Rename `EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS` → `BASH_TIMEOUT_MS` | Already planned in Phase 1. Listed here for dependency tracking |
+
+### Phase 1d: `run_command` UI [✅ COMPLETED]
+[phase-1d-run-command-ui](./phase-1d-run-command-ui)
+
+
+### Phase 1e: Engine Notifications [✅ COMPLETED]
+[phase-1e-engine-notifications](./phase-1e-engine-notifications)
 
 ### Phase 2: Route Promotion (Medium Risk)
 

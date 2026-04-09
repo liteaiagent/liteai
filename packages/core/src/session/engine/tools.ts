@@ -134,7 +134,10 @@ export async function resolveTools(input: {
           // tool call as a distinct node in the graph view, not collapsed into
           // the parent LLM generation step.
           activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", item.id)
-          activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(input.telemetryStep ?? input.step ?? 1))
+          activeSpan.setAttribute(
+            "ai.telemetry.metadata.langgraph_step",
+            String(input.telemetryStep ?? input.step ?? 1),
+          )
         }
 
         let result: Awaited<ReturnType<typeof item.execute>>
