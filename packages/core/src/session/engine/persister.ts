@@ -1,4 +1,3 @@
-import { Agent } from "@/agent/agent"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"
 import { PermissionNext } from "@/permission/next"
@@ -18,7 +17,6 @@ import { SessionCompaction } from "../tasks/compaction"
 import { SessionSummary } from "../tasks/summary"
 
 const log = Log.create({ service: "session.persister" })
-const DOOM_LOOP_THRESHOLD = 3
 
 export class EventPersister {
   private toolcalls: Record<string, Message.ToolPart> = {}
@@ -260,28 +258,6 @@ export class EventPersister {
               })
               this.toolcalls[event.id] = part as Message.ToolPart
               this.upsertPart(part as Message.Part)
-
-              const lastThree = this.allParts.slice(-DOOM_LOOP_THRESHOLD)
-              if (
-                lastThree.length === DOOM_LOOP_THRESHOLD &&
-                lastThree.every(
-                  (p) =>
-                    p.type === "tool" &&
-                    p.tool === event.toolName &&
-                    p.state.status !== "pending" &&
-                    JSON.stringify(p.state.input) === JSON.stringify(event.input),
-                )
-              ) {
-                const agentInfo = await Agent.get(assistantMessage.agent)
-                await PermissionNext.ask({
-                  permission: "doom_loop",
-                  patterns: [event.toolName],
-                  sessionID,
-                  metadata: { tool: event.toolName, input: event.input },
-                  always: [event.toolName],
-                  ruleset: agentInfo.permission,
-                })
-              }
             }
           }
           break

@@ -17,6 +17,7 @@ import { MessageID, type SessionID } from "../schema"
 import { SessionCompaction } from "../tasks/compaction"
 import { ensureTitle } from "../tasks/title"
 import { InstructionPrompt } from "./instruction"
+import { LoopDetectionService } from "./loop-detection"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { insertPlanReminder } from "./plan-reminder"
 import { StreamingToolExecutor } from "./streaming-tool-executor"
@@ -67,6 +68,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
   let structuredOutput: unknown | undefined
   let step = 0
   const autocompactState: AutocompactState = createAutocompactState()
+  const loopDetector = new LoopDetectionService(sessionID)
 
   while (true) {
     if (abort.aborted) {
@@ -109,6 +111,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     }
 
     step++
+    loopDetector.turnStarted()
 
     // ── Title generation (fire-and-forget on first step) ──
     if (step === 1) {
@@ -370,6 +373,22 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         // The executor monitors tool start/delta/call/result/error events
         // and maintains concurrency state without intercepting the event flow.
         toolExecutor.processEvent(event)
+
+        // ── Loop detection ──
+        // Check every event for repetitive patterns (thinking loops, tool call
+        // loops, content chanting). On detection, yield control event and break
+        // the streaming loop — the orchestrator handles recovery.
+        const loopResult = loopDetector.check(event)
+        if (loopResult.count > 0) {
+          // Yield the triggering event first so the persister records partial work
+          yield event
+          yield {
+            type: "control",
+            action: "loop-detected",
+            payload: { loopResult },
+          } satisfies EngineEvent.GeneratorResultEvent
+          break
+        }
 
         // All events — including stream errors — are yielded to the orchestrator,
         // which routes them to persister.handleEvent() for proper classification

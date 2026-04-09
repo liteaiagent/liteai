@@ -24,6 +24,7 @@ import { SessionCompaction } from "../tasks/compaction"
 import { SessionSummary } from "../tasks/summary"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
+import { type LoopDetectionResult, LoopType } from "./loop-detection"
 import { EventPersister } from "./persister"
 import { queryLoop } from "./query"
 
@@ -367,6 +368,10 @@ async function runSessionInner(input: {
   let currentAssistantMessage: Message.Assistant | undefined
   let currentStreamResult: unknown
 
+  // Loop detection recovery state — persisted across turns for escalation
+  let loopDetectionCount = 0
+  let pendingLoopRecovery: LoopDetectionResult | undefined
+
   // Single one-time DB read — after this the buffer is the live message view (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
     current: await Message.filterCompacted(Message.stream(sessionID)),
@@ -419,6 +424,48 @@ async function runSessionInner(input: {
 
           // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
           msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
+
+          // ── Loop recovery: handle pending detection after flush ──
+          if (pendingLoopRecovery) {
+            const recovery = pendingLoopRecovery
+            pendingLoopRecovery = undefined
+
+            // Strip incomplete thinking parts from DB (critical for Code Assist API —
+            // partial thought blocks without thoughtSignature cause 400 errors on retry)
+            await stripIncompleteThinking({
+              sessionID,
+              message: currentAssistantMessage,
+            })
+
+            // Escalation strategy
+            if (loopDetectionCount >= 3) {
+              log.warn("loop escalation: max retries reached, stopping session", {
+                sessionID,
+                count: loopDetectionCount,
+              })
+              return
+            }
+
+            // Inject corrective user message
+            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+            if (lastUser) {
+              const hint =
+                recovery.type === LoopType.THINKING_LOOP
+                  ? "Do not over-plan. Take action immediately using the available tools."
+                  : `Potential loop detected: ${recovery.detail}. Step back and rethink your approach.`
+
+              await injectCorrectionMessage({
+                sessionID,
+                lastUser,
+                text: `<system-correction>${hint}</system-correction>`,
+                msgsBuffer,
+              })
+            }
+
+            // Clean up instruction prompt and continue to next turn
+            await InstructionPrompt.clear(currentAssistantMessage.id)
+            break
+          }
 
           // Handle structured output
           if (event.structuredOutput !== undefined) {
@@ -568,6 +615,18 @@ async function runSessionInner(input: {
               })
               // Append marker to buffer so the next iteration's compaction-task scan finds it
               msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
+              break
+            }
+            case "loop-detected": {
+              const { loopResult } = event.payload as { loopResult: LoopDetectionResult }
+              loopDetectionCount = loopResult.count
+              pendingLoopRecovery = loopResult
+              log.warn("loop detected", {
+                sessionID,
+                type: loopResult.type,
+                detail: loopResult.detail,
+                count: loopResult.count,
+              })
               break
             }
             case "stop": {
@@ -748,6 +807,91 @@ export const loop = fn(LoopInput, async (input) => {
   }
   throw new Error("Impossible")
 })
+
+// ─── Loop Recovery Helpers ──────────────────────────────────────────────────
+
+/**
+ * Strips incomplete reasoning parts from the assistant message in the database.
+ *
+ * When we abort streaming mid-thinking, the partial reasoning block has no end
+ * timestamp and no valid `thoughtSignature` in metadata. The Code Assist API
+ * requires valid signatures on all thinking parts in history — sending back a
+ * partial block causes 400 errors on retry.
+ *
+ * This function removes reasoning parts that were never closed (no `time.end`),
+ * making the message safe to include in subsequent inference calls.
+ */
+async function stripIncompleteThinking(input: { sessionID: SessionID; message: Message.Assistant }): Promise<void> {
+  const { sessionID, message } = input
+
+  // Read the persisted parts for this message from the DB
+  const msgs = await Session.messages({ sessionID, limit: 50 })
+  const assistantMsg = msgs.find((m) => m.info.id === message.id)
+  if (!assistantMsg) return
+
+  for (const part of assistantMsg.parts) {
+    if (part.type === "reasoning" && !part.time?.end) {
+      log.info("stripIncompleteThinking: removing incomplete reasoning part", {
+        sessionID,
+        messageID: message.id,
+        partID: part.id,
+      })
+      await Session.removePart({
+        sessionID,
+        messageID: message.id,
+        partID: part.id,
+      })
+    }
+  }
+}
+
+/**
+ * Injects a corrective synthetic user message into the conversation.
+ *
+ * Creates a real persisted user message with a `synthetic: true` text part
+ * containing the corrective hint, then appends it to the in-memory buffer
+ * so the next queryLoop iteration picks it up without a DB read.
+ */
+async function injectCorrectionMessage(input: {
+  sessionID: SessionID
+  lastUser: Message.User
+  text: string
+  msgsBuffer: { current: Message.WithParts[] }
+}): Promise<void> {
+  const { sessionID, lastUser, text, msgsBuffer } = input
+
+  const correctionMsg: Message.User = {
+    id: MessageID.ascending(),
+    role: "user",
+    sessionID,
+    agent: lastUser.agent,
+    model: lastUser.model,
+    time: { created: Date.now() },
+  }
+  const persisted = await Session.updateMessage(correctionMsg)
+
+  const correctionPart = await Session.updatePart({
+    id: PartID.ascending(),
+    messageID: (persisted as Message.User).id,
+    sessionID,
+    type: "text",
+    text,
+    synthetic: true,
+  })
+
+  msgsBuffer.current = [
+    ...msgsBuffer.current,
+    {
+      info: persisted as Message.User,
+      parts: [correctionPart as Message.Part],
+    },
+  ]
+
+  log.info("injectCorrectionMessage: injected loop correction", {
+    sessionID,
+    messageID: (persisted as Message.User).id,
+  })
+}
 
 async function processSubtask(input: {
   task: Message.SubtaskPart
