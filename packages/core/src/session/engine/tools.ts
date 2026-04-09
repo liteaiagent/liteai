@@ -40,6 +40,9 @@ export async function resolveTools(input: {
   /** Session-scoped registry for background task management. Optional — tools that need it
    * (run_command, command_status, send_command_input) gracefully handle absence. */
   backgroundTaskRegistry?: BackgroundTaskRegistry
+  /** Current step number in the query loop (1-indexed). Used to set langgraph_step on
+   * tool call spans so Langfuse renders tool executions as distinct graph nodes. */
+  step?: number
 }) {
   const tools: Record<string, AITool> = {}
 
@@ -126,6 +129,11 @@ export async function resolveTools(input: {
         if (activeSpan) {
           // Set I/O so Langfuse renders them in the observation detail panels
           activeSpan.setAttribute("input.value", JSON.stringify(args))
+          // Override the inherited langgraph metadata so Langfuse renders this
+          // tool call as a distinct node in the graph view, not collapsed into
+          // the parent LLM generation step.
+          activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", item.id)
+          activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(input.step ?? 1))
         }
 
         let result: Awaited<ReturnType<typeof item.execute>>
@@ -223,6 +231,11 @@ export async function resolveTools(input: {
       if (activeSpan) {
         // Set I/O so Langfuse renders them in the observation detail panels
         activeSpan.setAttribute("input.value", JSON.stringify(args))
+        // Override the inherited langgraph metadata so Langfuse renders this
+        // tool call as a distinct node in the graph view, not collapsed into
+        // the parent LLM generation step.
+        activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", key)
+        activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(input.step ?? 1))
       }
 
       let result: {

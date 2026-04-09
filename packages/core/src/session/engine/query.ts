@@ -274,6 +274,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       bypassAgentCheck,
       messages: msgs,
       backgroundTaskRegistry: params.backgroundTaskRegistry,
+      step,
     })
 
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
