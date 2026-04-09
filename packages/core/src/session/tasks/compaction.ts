@@ -108,6 +108,7 @@ export namespace SessionCompaction {
     abort: AbortSignal
     auto: boolean
     overflow?: boolean
+    telemetryStep?: number
   }): Promise<{ result: "continue" | "stop"; summaryWithParts?: Message.WithParts }> {
     const userMessage = input.messages.findLast((m) => m.info.id === input.parentID)?.info as Message.User
 
@@ -232,6 +233,7 @@ When constructing the summary, try to stick to this template:
         },
       ],
       model,
+      telemetryStep: input.telemetryStep,
     })
 
     if (result === "compact") {

@@ -43,6 +43,7 @@ export namespace LLM {
     onSystem?: (system: string[]) => void
     /** Current step number in the query loop (1-indexed). Used for Langfuse graph visualization. */
     step?: number
+    telemetryStep?: number
   }
 
   export type StreamOutput = StreamTextResult<ToolSet, unknown>
@@ -248,7 +249,7 @@ export namespace LLM {
           // Langfuse's extractMetadata() strips that prefix, leaving just '<key>'
           // in the observation metadata column.
           langgraph_node: input.agent.name,
-          langgraph_step: String(input.step ?? 1),
+          langgraph_step: String(input.telemetryStep ?? input.step ?? 1),
         },
       },
       headers: {

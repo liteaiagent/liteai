@@ -67,6 +67,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
   let structuredOutput: unknown | undefined
   let step = 0
+  let telemetryStep = 0
   const autocompactState: AutocompactState = createAutocompactState()
   const loopDetector = new LoopDetectionService(sessionID)
 
@@ -120,8 +121,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         modelID: lastUser.model.modelID,
         providerID: lastUser.model.providerID,
         history: msgs,
+        telemetryStep: ++telemetryStep,
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
     }
+
+    const currentTelemetryStep = ++telemetryStep;
 
     // ── Model resolution ──
     if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
@@ -159,7 +163,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       yield {
         type: "control",
         action: "subtask",
-        payload: { task, model, lastUser, msgs },
+        payload: { task, model, lastUser, msgs, telemetryStep: ++telemetryStep },
       } satisfies EngineEvent.GeneratorResultEvent
       continue
     }
@@ -169,7 +173,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       yield {
         type: "control",
         action: "compaction-task",
-        payload: { task, lastUser, msgs },
+        payload: { task, lastUser, msgs, telemetryStep: ++telemetryStep },
       } satisfies EngineEvent.GeneratorResultEvent
       // If orchestrator signals "stop", it won't call .next() and the generator closes
       continue
@@ -275,6 +279,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       messages: msgs,
       backgroundTaskRegistry: params.backgroundTaskRegistry,
       step,
+      telemetryStep: ++telemetryStep,
     })
 
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
@@ -332,6 +337,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       sessionID,
       system,
       step,
+      telemetryStep: currentTelemetryStep,
       messages: [
         ...Message.toModelMessages(msgs, model),
         ...(isLastStep

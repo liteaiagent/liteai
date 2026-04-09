@@ -44,11 +44,25 @@ function unwrap(message: string) {
   let json = read(text)
 
   if (json === undefined) {
-    const start = text.indexOf("{")
-    const end = text.lastIndexOf("}")
-    if (start !== -1 && end > start) {
-      json = read(text.slice(start, end + 1))
+    const startObj = text.indexOf("{")
+    const startArr = text.indexOf("[")
+    const isArr = startArr !== -1 && (startObj === -1 || startArr < startObj)
+
+    if (isArr) {
+      const endArr = text.lastIndexOf("]")
+      if (endArr > startArr) {
+        json = read(text.slice(startArr, endArr + 1))
+      }
+    } else if (startObj !== -1) {
+      const endObj = text.lastIndexOf("}")
+      if (endObj > startObj) {
+        json = read(text.slice(startObj, endObj + 1))
+      }
     }
+  }
+
+  if (Array.isArray(json) && json.length > 0) {
+    json = json[0]
   }
 
   if (!record(json)) return message

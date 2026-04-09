@@ -549,7 +549,7 @@ async function runSessionInner(input: {
         case "control": {
           switch (event.action) {
             case "subtask": {
-              const { task, model, lastUser, msgs } = event.payload
+              const { task, model, lastUser, msgs, telemetryStep } = event.payload
               const { subtaskAssistant, syntheticUser } = await processSubtask({
                 task,
                 model,
@@ -558,13 +558,14 @@ async function runSessionInner(input: {
                 session,
                 abort,
                 msgs,
+                telemetryStep,
               })
               // Append subtask messages to buffer (FR-8) — no DB read
               msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
               break
             }
             case "compaction-task": {
-              const { task, lastUser, msgs } = event.payload
+              const { task, lastUser, msgs, telemetryStep } = event.payload
 
               const { result, summaryWithParts } = await SessionCompaction.process({
                 messages: msgs,
@@ -573,6 +574,7 @@ async function runSessionInner(input: {
                 sessionID,
                 auto: task.auto,
                 overflow: task.overflow,
+                telemetryStep,
               })
               if (result === "stop") {
                 // Signal the generator to close by returning early
@@ -901,8 +903,9 @@ async function processSubtask(input: {
   session: Session.Info
   abort: AbortSignal
   msgs: Message.WithParts[]
+  telemetryStep?: number
 }): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
-  const { task, lastUser, sessionID, session, abort, msgs } = input
+  const { task, lastUser, sessionID, session, abort, msgs, telemetryStep } = input
   const taskTool = await TaskTool.init()
   const taskModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {

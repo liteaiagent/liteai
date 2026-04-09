@@ -14,6 +14,7 @@ export async function ensureTitle(input: {
   history: Message.WithParts[]
   providerID: ProviderID
   modelID: ModelID
+  telemetryStep?: number
 }) {
   if (input.session.parentID) return
   if (!Session.isDefaultTitle(input.session.title)) return
@@ -56,6 +57,7 @@ export async function ensureTitle(input: {
     model,
     abort: new AbortController().signal,
     sessionID: input.session.id,
+    telemetryStep: input.telemetryStep,
     retries: 2,
     messages: [
       {
