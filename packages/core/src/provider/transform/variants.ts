@@ -272,6 +272,26 @@ export function variants(model: Provider.Model): Record<string, Record<string, u
         ]),
       )
 
+    case "@ai-sdk/google-code-assist": {
+      // Code Assist uses its own SDK that reads thinkingBudget from
+      // providerOptions["code-assist"].thinkingBudget (see converter.ts).
+      // Variants set thinkingBudget directly; the providerOptions() wrapper
+      // in options.ts namespaces them under the "code-assist" key automatically.
+      if (id.includes("2.5")) {
+        return {
+          low: { thinkingBudget: 1024 },
+          high: { thinkingBudget: 16000 },
+          max: { thinkingBudget: 24576 },
+        }
+      }
+      return Object.fromEntries(
+        ["low", "medium", "high"].map((effort) => [
+          effort,
+          { thinkingBudget: effort === "low" ? 1024 : effort === "medium" ? 8192 : 16000 },
+        ]),
+      )
+    }
+
     case "@ai-sdk/google-vertex":
     // https://v5.ai-sdk.dev/providers/ai-sdk-providers/google-vertex
     case "@ai-sdk/google": {

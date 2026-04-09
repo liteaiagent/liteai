@@ -132,7 +132,12 @@ function buildCodeAssistModel(id: string, database: Record<string, Provider.Info
       npm: "@ai-sdk/google-code-assist",
       url: CA_ENDPOINT,
     },
-    capabilities: ref?.capabilities ?? fallback.capabilities,
+    // All Code Assist models are Gemini reasoning models — always force reasoning: true.
+    // Without this, variants() returns {} and the "Cycle thinking effort" UI is hidden.
+    capabilities: {
+      ...(ref?.capabilities ?? fallback.capabilities),
+      reasoning: true,
+    },
     limit: ref?.limit ?? fallback.limit,
     cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
     release_date: ref?.release_date ?? fallback.release_date,
