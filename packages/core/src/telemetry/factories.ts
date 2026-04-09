@@ -2,6 +2,7 @@ import { ConsoleLogRecordExporter } from "@opentelemetry/sdk-logs"
 import { ConsoleMetricExporter, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics"
 import type { Info } from "../config/schema"
 import { DiagnosticLogExporter, DiagnosticMetricExporter } from "./diagnostic"
+import { ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base"
 
 const DEFAULT_METRICS_EXPORT_INTERVAL_MS = 60000
 
@@ -37,10 +38,7 @@ export async function getOtlpReaders(otelConfig: TelemetryConfig) {
         process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL?.trim() ??
         process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
 
-      const endpointConfig = otelConfig?.endpoint
-      const endpoint =
-        endpointConfig ?? process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-      const url = endpoint ? `${endpoint}/v1/metrics` : undefined
+      const url = otelConfig?.endpoint ? `${otelConfig.endpoint}/v1/metrics` : undefined
 
       switch (protocol) {
         case "http/json": {
@@ -84,10 +82,7 @@ export async function getOtlpLogExporters(otelConfig: TelemetryConfig) {
     process.env.OTEL_EXPORTER_OTLP_LOGS_PROTOCOL?.trim() ??
     process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
 
-  const endpointConfig = otelConfig?.endpoint
-  const endpoint =
-    endpointConfig ?? process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT ?? process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-  const url = endpoint ? `${endpoint}/v1/logs` : undefined
+  const url = otelConfig?.endpoint ? `${otelConfig.endpoint}/v1/logs` : undefined
 
   const exporters = []
   for (const exporterType of exporterTypes) {
@@ -112,3 +107,40 @@ export async function getOtlpLogExporters(otelConfig: TelemetryConfig) {
   }
   return exporters
 }
+
+export async function getOtlpTraceExporters(otelConfig: TelemetryConfig) {
+  const exporterConfig = otelConfig?.traceExporter
+  const exporterTypes = parseExporterTypes(exporterConfig ?? process.env.OTEL_TRACES_EXPORTER)
+
+  const protocolConfig = otelConfig?.protocol
+  const protocol =
+    protocolConfig ??
+    process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL?.trim() ??
+    process.env.OTEL_EXPORTER_OTLP_PROTOCOL?.trim()
+
+  const url = otelConfig?.endpoint ? `${otelConfig.endpoint}/v1/traces` : undefined
+
+  const exporters = []
+  for (const exporterType of exporterTypes) {
+    if (exporterType === "console") {
+      exporters.push(new ConsoleSpanExporter())
+    } else if (exporterType === "otlp") {
+      switch (protocol) {
+        case "http/json": {
+          const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-http")
+          exporters.push(new OTLPTraceExporter(url ? { url } : undefined))
+          break
+        }
+        case "http/protobuf": {
+          const { OTLPTraceExporter } = await import("@opentelemetry/exporter-trace-otlp-proto")
+          exporters.push(new OTLPTraceExporter(url ? { url } : undefined))
+          break
+        }
+        default:
+          throw new Error(`Unknown traces exporter protocol: ${protocol}`)
+      }
+    }
+  }
+  return exporters
+}
+

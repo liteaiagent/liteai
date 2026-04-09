@@ -3,6 +3,7 @@ import { createWriteStream, type WriteStream } from "node:fs"
 import fs from "node:fs/promises"
 import path from "node:path"
 import z from "zod"
+import { logs, SeverityNumber } from "@opentelemetry/api-logs"
 import { Global } from "../global"
 import { Glob } from "./glob"
 
@@ -228,19 +229,83 @@ export namespace Log {
       last = next.getTime()
       return `${[next.toISOString().split(".")[0], `+${diff}ms`, prefix, message].filter(Boolean).join(" ")}\n`
     }
+
+    function otelEmit(
+      lvl: Level,
+      serviceId: string | undefined,
+      msgPayload: unknown,
+      extra?: Record<string, unknown>
+    ) {
+      try {
+        const otelLogger = logs.getLogger("liteai", "1.0.0")
+
+        const severityMap: Record<Level, SeverityNumber> = {
+          DEBUG: SeverityNumber.DEBUG,
+          INFO: SeverityNumber.INFO,
+          WARN: SeverityNumber.WARN,
+          ERROR: SeverityNumber.ERROR,
+        }
+
+        const rawAttributes: Record<string, unknown> = {
+          "service.name": "liteai",
+          "service.namespace": "liteai",
+          "liteai.channel": serviceId ?? "default",
+          ...tags,
+          ...context.getStore(),
+          ...extra,
+        }
+
+        const safeAttributes: Record<string, string | number | boolean> = {}
+        for (const [key, value] of Object.entries(rawAttributes)) {
+          if (value === undefined || value === null) continue
+          if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            safeAttributes[key] = value
+          } else if (value instanceof Error) {
+            safeAttributes[key] = value.message
+          } else {
+            safeAttributes[key] = JSON.stringify(value)
+          }
+        }
+
+        if (msgPayload instanceof Error) {
+          safeAttributes["exception.message"] = msgPayload.message
+          safeAttributes["exception.type"] = msgPayload.name
+          safeAttributes["exception.stacktrace"] = msgPayload.stack || ""
+        }
+
+        const body = msgPayload instanceof Error 
+            ? msgPayload.message 
+            : typeof msgPayload === "object" 
+              ? JSON.stringify(msgPayload) 
+              : String(msgPayload)
+
+        otelLogger.emit({
+          severityNumber: severityMap[lvl],
+          severityText: lvl,
+          body,
+          attributes: safeAttributes as any,
+        })
+      } catch {
+        /* Ignore if telemetry is offline */
+      }
+    }
+
     const result: Logger = {
       debug(message?: unknown, extra?: Record<string, unknown>) {
         if (shouldLog("DEBUG")) {
+          otelEmit("DEBUG", service, message, extra)
           channelWrite(service, `DEBUG ${build(message, extra)}`)
         }
       },
       info(message?: unknown, extra?: Record<string, unknown>) {
         if (shouldLog("INFO")) {
+          otelEmit("INFO", service, message, extra)
           channelWrite(service, `INFO  ${build(message, extra)}`)
         }
       },
       error(message?: unknown, extra?: Record<string, unknown>) {
         if (shouldLog("ERROR")) {
+          otelEmit("ERROR", service, message, extra)
           const msg =
             message instanceof Error ? `ERROR ${build(formatError(message), extra)}` : `ERROR ${build(message, extra)}`
           channelWrite(service, msg)
@@ -248,6 +313,7 @@ export namespace Log {
       },
       warn(message?: unknown, extra?: Record<string, unknown>) {
         if (shouldLog("WARN")) {
+          otelEmit("WARN", service, message, extra)
           channelWrite(service, `WARN  ${build(message, extra)}`)
         }
       },

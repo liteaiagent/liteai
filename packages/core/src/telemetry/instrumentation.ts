@@ -5,11 +5,12 @@ import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@
 import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs"
 import { MeterProvider } from "@opentelemetry/sdk-metrics"
 import { NodeSDK } from "@opentelemetry/sdk-node"
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base"
+import { ATTR_SERVICE_NAMESPACE, ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
 import type { Info } from "../config/schema"
 import { Installation } from "../installation"
 import { Log } from "../util/log"
-import { getOtlpLogExporters, getOtlpReaders } from "./factories"
+import { getOtlpLogExporters, getOtlpReaders, getOtlpTraceExporters } from "./factories"
 import { initializePerfettoTracing } from "./perfetto"
 
 const log = Log.create({ service: "telemetry" })
@@ -105,8 +106,11 @@ export async function initializeTelemetry() {
   }
 
   const baseAttributes: Record<string, string> = {
+    [ATTR_SERVICE_NAMESPACE]: "liteai",
     [ATTR_SERVICE_NAME]: "liteai",
     [ATTR_SERVICE_VERSION]: Installation.VERSION,
+    "deployment.environment.name": process.env.NODE_ENV || "development",
+    "service.instance.id": process.pid.toString(),
   }
 
   const baseResource = resourceFromAttributes(baseAttributes)
@@ -176,6 +180,8 @@ export async function initializeTelemetry() {
     const langfuseSecretKey = globalTelemetryConfig?.langfuse?.secretKey || process.env.LANGFUSE_SECRET_KEY
     const langfuseBaseUrl = globalTelemetryConfig?.langfuse?.baseUrl || "https://langfuse.smartnest.info"
 
+    const spanProcessors: Array<any> = []
+
     if (langfusePublicKey && langfuseSecretKey) {
       log.info("trace exporter configured", { type: "langfuse", baseUrl: langfuseBaseUrl })
 
@@ -192,9 +198,27 @@ export async function initializeTelemetry() {
         shouldExportSpan: () => true,
       })
 
+      spanProcessors.push(langfuseProcessor)
+    } else {
+      log.warn("Langfuse trace exporter skipped: LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY not set")
+    }
+
+    const traceExporters = await getOtlpTraceExporters(globalTelemetryConfig?.otel)
+    for (const exporter of traceExporters) {
+      spanProcessors.push(
+        new BatchSpanProcessor(exporter, {
+          scheduledDelayMillis: parseInt(
+            globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
+            10,
+          ),
+        }),
+      )
+    }
+
+    if (spanProcessors.length > 0) {
       const sdk = new NodeSDK({
         resource,
-        spanProcessors: [langfuseProcessor],
+        spanProcessors,
         // Prevent NodeSDK from trying to automatically register default metrics/logs providers
         // which would collide with our explicit registrations above.
         metricReaders: [],
@@ -203,8 +227,6 @@ export async function initializeTelemetry() {
 
       sdk.start()
       globalNodeSdk = sdk
-    } else {
-      log.warn("Langfuse trace exporter skipped: LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY not set")
     }
   }
 }

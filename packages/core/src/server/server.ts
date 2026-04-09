@@ -15,6 +15,7 @@ import {
   errorHandler,
   projectContextMiddleware,
   requestLogger,
+  requestTracer,
   safeDecodeDirectory,
 } from "./middleware"
 import { AuthRoutes } from "./routes/auth"
@@ -84,6 +85,7 @@ export namespace Server {
         .onError(errorHandler(log))
         .use(csrfMiddleware())
         .use(authMiddleware())
+        .use(requestTracer())
         .use(requestLogger(log))
         .use(corsMiddleware(opts))
 

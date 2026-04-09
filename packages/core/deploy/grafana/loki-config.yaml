@@ -36,4 +36,5 @@ limits_config:
           attributes:
             - service.name
             - service.version
+            - liteai.channel
 

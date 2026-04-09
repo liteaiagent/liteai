@@ -4,6 +4,7 @@ import { basicAuth } from "hono/basic-auth"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
+import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api"
 import { Filesystem } from "@/util/filesystem"
 import { WorkspaceID } from "../control-plane/schema"
 import { WorkspaceContext } from "../control-plane/workspace-context"
@@ -91,6 +92,48 @@ export function csrfMiddleware(): MiddlewareHandler {
 // ---------------------------------------------------------------------------
 // Request logger — logs incoming requests with SSE-aware timer
 // ---------------------------------------------------------------------------
+
+export function requestTracer(): MiddlewareHandler {
+  return async (c, next) => {
+    const tracer = trace.getTracer("liteai-server")
+    const method = c.req.method
+    const target = new URL(c.req.url).pathname
+
+    const client = c.req.header("x-liteai-client") || c.req.header("user-agent")?.split(" ")[0] || "unknown"
+    const workspace = c.req.query("workspace") || c.req.header("x-liteai-workspace") || "none"
+
+    return tracer.startActiveSpan(
+      `${method} ${target}`,
+      {
+        kind: SpanKind.SERVER,
+        attributes: {
+          "http.method": method,
+          "http.url": c.req.url,
+          "http.target": target,
+          "liteai.client": client,
+          "liteai.workspace": workspace,
+        },
+      },
+      async (span) => {
+        try {
+          await next()
+          span.setAttribute("http.status_code", c.res.status)
+          if (c.res.status >= 500) {
+            span.setStatus({ code: SpanStatusCode.ERROR, message: "Server Error" })
+          } else {
+            span.setStatus({ code: SpanStatusCode.OK })
+          }
+        } catch (err) {
+          span.setStatus({ code: SpanStatusCode.ERROR, message: err instanceof Error ? err.message : String(err) })
+          span.recordException(err instanceof Error ? err : new Error(String(err)))
+          throw err
+        } finally {
+          span.end()
+        }
+      }
+    )
+  }
+}
 
 export function requestLogger(log: Log.Logger): MiddlewareHandler {
   return async (c, next) => {

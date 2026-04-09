@@ -15,7 +15,7 @@ if (-not $RemoteHost) {
 }
 
 # Resolve the absolute path of the local-telemetry directory relative to this script
-$LocalTelemetryPath = Join-Path $PSScriptRoot "..\local-telemetry"
+$LocalTelemetryPath = Join-Path $PSScriptRoot ".\grafana"
 
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host " Telemetry Deployment Script" -ForegroundColor Cyan
@@ -52,9 +52,9 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# 3. Connect to the remote machine to tear down and start the stack
-Write-Host "`n[3/3] Fixing permissions & Restarting Docker Containers remotely..." -ForegroundColor Yellow
-ssh $RemoteHost "cd $RemotePath && chmod -R a+rX . && docker compose down && docker compose up -d"
+# 3. Connect to the remote machine to create data dirs, fix permissions & restart Docker Containers
+Write-Host "`n[3/3] Creating data dirs, fixing permissions & Restarting Docker Containers remotely..." -ForegroundColor Yellow
+ssh $RemoteHost "cd $RemotePath && mkdir -p loki_data tempo_data grafana_data prometheus_data && (chmod -R a+rX . 2>/dev/null || true) && (chmod 777 loki_data tempo_data grafana_data prometheus_data 2>/dev/null || true) && docker compose down && docker compose up -d"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to restart Docker containers." -ForegroundColor Red

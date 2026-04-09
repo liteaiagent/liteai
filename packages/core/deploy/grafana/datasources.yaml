@@ -13,6 +13,8 @@ datasources:
     access: proxy
     url: http://prometheus:9090
     uid: prometheus
+    jsonData:
+      timeInterval: "60s"
 
   - name: Loki
     type: loki
