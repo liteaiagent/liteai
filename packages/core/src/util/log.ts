@@ -206,10 +206,10 @@ export namespace Log {
       }
     }
 
-    function build(message: unknown, extra?: Record<string, unknown>) {
+    function buildPrefix(extra?: Record<string, unknown>) {
       const ctx = context.getStore()
       const clientTag = ctx?.client ? { client: ctx.client } : {}
-      const prefix = Object.entries({
+      return Object.entries({
         ...tags,
         ...clientTag,
         ...extra,
@@ -224,6 +224,10 @@ export namespace Log {
           return prefix + value
         })
         .join(" ")
+    }
+
+    function build(message: unknown, extra?: Record<string, unknown>) {
+      const prefix = buildPrefix(extra)
       const next = new Date()
       const diff = next.getTime() - last
       last = next.getTime()
@@ -268,12 +272,17 @@ export namespace Log {
           safeAttributes["exception.stacktrace"] = msgPayload.stack || ""
         }
 
-        const body =
+        let body =
           msgPayload instanceof Error
             ? msgPayload.message
             : typeof msgPayload === "object"
               ? JSON.stringify(msgPayload)
               : String(msgPayload)
+
+        const prefixStr = buildPrefix(extra)
+        if (prefixStr) {
+          body = `${prefixStr} ${body}`
+        }
 
         otelLogger.emit({
           severityNumber: severityMap[lvl],

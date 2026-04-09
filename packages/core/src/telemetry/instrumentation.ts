@@ -181,7 +181,11 @@ export async function initializeTelemetry() {
             globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
             10,
           ) / 1000,
-        shouldExportSpan: () => true,
+        shouldExportSpan: (span: any) => {
+          const targetSpan = span.otelSpan || span
+          const scope = targetSpan.instrumentationScope?.name || targetSpan.instrumentationLibrary?.name
+          return scope === "ai" || scope === "liteai"
+        },
       })
 
       spanProcessors.push(langfuseProcessor)

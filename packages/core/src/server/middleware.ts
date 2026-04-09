@@ -139,22 +139,26 @@ export function requestLogger(log: Log.Logger): MiddlewareHandler {
   return async (c, next) => {
     const client = c.req.header("x-liteai-client") || c.req.header("user-agent")?.split(" ")[0] || "unknown"
     return Log.context.run({ client }, async () => {
-      const skipLogging = c.req.path === "/log" || c.req.path === "/health"
+      const skipLogging = c.req.path === "/log" || c.req.path === "/health" || c.req.method === "OPTIONS"
+      
+      let timer: { stop: () => void } | undefined
       if (!skipLogging) {
         log.info("request", {
           method: c.req.method,
           path: c.req.path,
         })
+        timer = log.time("request", {
+          method: c.req.method,
+          path: c.req.path,
+        })
       }
-      const timer = log.time("request", {
-        method: c.req.method,
-        path: c.req.path,
-      })
+      
       await next()
+      
       // SSE responses return from next() immediately while the stream continues in the background.
       // Logging the timer here would produce misleading "completed in 4ms" entries.
       const streaming = c.res?.headers.get("content-type")?.includes("text/event-stream")
-      if (!skipLogging && !streaming) {
+      if (timer && !streaming) {
         timer.stop()
       }
     })
