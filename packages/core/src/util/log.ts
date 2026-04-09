@@ -2,8 +2,8 @@ import { AsyncLocalStorage } from "node:async_hooks"
 import { createWriteStream, type WriteStream } from "node:fs"
 import fs from "node:fs/promises"
 import path from "node:path"
-import z from "zod"
 import { logs, SeverityNumber } from "@opentelemetry/api-logs"
+import z from "zod"
 import { Global } from "../global"
 import { Glob } from "./glob"
 
@@ -230,12 +230,7 @@ export namespace Log {
       return `${[next.toISOString().split(".")[0], `+${diff}ms`, prefix, message].filter(Boolean).join(" ")}\n`
     }
 
-    function otelEmit(
-      lvl: Level,
-      serviceId: string | undefined,
-      msgPayload: unknown,
-      extra?: Record<string, unknown>
-    ) {
+    function otelEmit(lvl: Level, serviceId: string | undefined, msgPayload: unknown, extra?: Record<string, unknown>) {
       try {
         const otelLogger = logs.getLogger("liteai", "1.0.0")
 
@@ -273,10 +268,11 @@ export namespace Log {
           safeAttributes["exception.stacktrace"] = msgPayload.stack || ""
         }
 
-        const body = msgPayload instanceof Error 
-            ? msgPayload.message 
-            : typeof msgPayload === "object" 
-              ? JSON.stringify(msgPayload) 
+        const body =
+          msgPayload instanceof Error
+            ? msgPayload.message
+            : typeof msgPayload === "object"
+              ? JSON.stringify(msgPayload)
               : String(msgPayload)
 
         otelLogger.emit({

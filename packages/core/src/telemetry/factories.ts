@@ -1,8 +1,8 @@
 import { ConsoleLogRecordExporter } from "@opentelemetry/sdk-logs"
 import { ConsoleMetricExporter, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics"
+import { ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base"
 import type { Info } from "../config/schema"
 import { DiagnosticLogExporter, DiagnosticMetricExporter } from "./diagnostic"
-import { ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base"
 
 const DEFAULT_METRICS_EXPORT_INTERVAL_MS = 60000
 
@@ -143,4 +143,3 @@ export async function getOtlpTraceExporters(otelConfig: TelemetryConfig) {
   }
   return exporters
 }
-

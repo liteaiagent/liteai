@@ -6,14 +6,16 @@ import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs
 import { MeterProvider } from "@opentelemetry/sdk-metrics"
 import { NodeSDK } from "@opentelemetry/sdk-node"
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base"
-import { ATTR_SERVICE_NAMESPACE, ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION, SEMRESATTRS_HOST_ARCH } from "@opentelemetry/semantic-conventions"
+import {
+  ATTR_SERVICE_NAME,
+  ATTR_SERVICE_NAMESPACE,
+  ATTR_SERVICE_VERSION,
+  SEMRESATTRS_HOST_ARCH,
+} from "@opentelemetry/semantic-conventions"
 import type { Info } from "../config/schema"
 import { Installation } from "../installation"
-import { Log } from "../util/log"
 import { getOtlpLogExporters, getOtlpReaders, getOtlpTraceExporters } from "./factories"
 import { initializePerfettoTracing } from "./perfetto"
-
-const log = Log.create({ service: "telemetry" })
 
 const _DEFAULT_METRICS_EXPORT_INTERVAL_MS = 60000
 const DEFAULT_LOGS_EXPORT_INTERVAL_MS = 5000
@@ -78,23 +80,9 @@ export async function initializeTelemetry() {
     const { getGlobal } = await import("../config/loader")
     const globalConfig = await getGlobal()
     applyConfigToEnv(globalConfig)
-  } catch (error) {
-    log.error("Failed to load global config for telemetry bridge", { error })
-  }
+  } catch (error) {}
 
   const telemetryEnabled = isTelemetryEnabled()
-
-  log.info("initializing telemetry", {
-    enabled: telemetryEnabled,
-    optOut: globalTelemetryConfig?.disabled,
-    endpoint: globalTelemetryConfig?.otel?.endpoint,
-    protocol: globalTelemetryConfig?.otel?.protocol,
-    tracesExporter: globalTelemetryConfig?.otel?.traceExporter,
-    metricsExporter: globalTelemetryConfig?.otel?.metricExporter,
-    logsExporter: globalTelemetryConfig?.otel?.logExporter,
-    langfuseBaseUrl: globalTelemetryConfig?.langfuse?.baseUrl,
-    perfetto: globalTelemetryConfig?.perfetto,
-  })
 
   // Initialize Perfetto tracing (independent of OTEL)
   initializePerfettoTracing(globalTelemetryConfig?.perfetto)
@@ -183,8 +171,6 @@ export async function initializeTelemetry() {
     const spanProcessors: Array<any> = []
 
     if (langfusePublicKey && langfuseSecretKey) {
-      log.info("trace exporter configured", { type: "langfuse", baseUrl: langfuseBaseUrl })
-
       const langfuseProcessor = new LangfuseSpanProcessor({
         publicKey: langfusePublicKey,
         secretKey: langfuseSecretKey,
@@ -200,7 +186,6 @@ export async function initializeTelemetry() {
 
       spanProcessors.push(langfuseProcessor)
     } else {
-      log.warn("Langfuse trace exporter skipped: LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY not set")
     }
 
     const traceExporters = await getOtlpTraceExporters(globalTelemetryConfig?.otel)
@@ -233,7 +218,6 @@ export async function initializeTelemetry() {
 
 export async function shutdownTelemetry() {
   const timeoutMs = parseInt(globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "2000", 10)
-  log.info("shutting down telemetry", { timeoutMs })
 
   try {
     const shutdownPromises: Promise<void>[] = []
@@ -245,10 +229,8 @@ export async function shutdownTelemetry() {
     }
 
     await Promise.race([Promise.all(shutdownPromises), telemetryTimeout(timeoutMs, "OpenTelemetry shutdown timeout")])
-    log.info("telemetry shutdown complete")
   } catch (error) {
     if (error instanceof Error && error.message.includes("timeout")) {
-      log.error("telemetry shutdown timed out", { timeoutMs })
     }
     throw error
   }
@@ -256,7 +238,6 @@ export async function shutdownTelemetry() {
 
 export async function flushTelemetry(): Promise<void> {
   const timeoutMs = parseInt(globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? "5000", 10)
-  log.info("flushing telemetry", { timeoutMs })
 
   try {
     const flushPromises: Promise<void>[] = []
@@ -265,8 +246,5 @@ export async function flushTelemetry(): Promise<void> {
     // NodeSDK does not expose forceFlush directly; shutdown handles final flush
 
     await Promise.race([Promise.all(flushPromises), telemetryTimeout(timeoutMs, "OpenTelemetry flush timeout")])
-    log.info("telemetry flush complete")
-  } catch (error) {
-    log.error("telemetry flush failed", { error })
-  }
+  } catch (error) {}
 }

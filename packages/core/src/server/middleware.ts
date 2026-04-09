@@ -1,10 +1,10 @@
 import { NamedError } from "@liteai/util/error"
+import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api"
 import type { ErrorHandler, MiddlewareHandler } from "hono"
 import { basicAuth } from "hono/basic-auth"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
-import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api"
 import { Filesystem } from "@/util/filesystem"
 import { WorkspaceID } from "../control-plane/schema"
 import { WorkspaceContext } from "../control-plane/workspace-context"
@@ -130,7 +130,7 @@ export function requestTracer(): MiddlewareHandler {
         } finally {
           span.end()
         }
-      }
+      },
     )
   }
 }
