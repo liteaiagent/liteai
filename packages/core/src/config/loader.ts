@@ -155,10 +155,30 @@ export const state = Instance.state(async () => {
     if (enabled.length) {
       log.info("scanning for registered plugins", { ids: enabled.map(([k]) => k) })
       const { cachePath, parse: parseRef } = await import("@/plugin/registry")
-      const roots = enabled.map(([key]) => {
-        const parsed = parseRef(key)
-        return cachePath(parsed.marketplace ?? "__local__", parsed.name)
-      })
+      const { Filesystem } = await import("@/util/filesystem")
+      const { Brand } = await import("@/brand")
+      const { Global } = await import("@/global")
+      const { Instance } = await import("@/project/instance")
+
+      const roots = await Promise.all(
+        enabled.map(async ([key]) => {
+          const parsed = parseRef(key)
+          if (parsed.marketplace && parsed.marketplace !== "__local__") {
+            return cachePath(parsed.marketplace, parsed.name)
+          }
+
+          const cPath = cachePath("__local__", parsed.name)
+          if (await Filesystem.exists(cPath)) return cPath
+
+          const pPath = path.join(Instance.directory, Brand.dir, "plugins", parsed.name)
+          if (await Filesystem.exists(pPath)) return pPath
+
+          const gPath = path.join(Global.Path.config, "plugins", parsed.name)
+          if (await Filesystem.exists(gPath)) return gPath
+
+          return cPath
+        }),
+      )
       const plugins = (await Promise.all(roots.map(loadPlugin))).filter((p): p is NonNullable<typeof p> => !!p)
       if (plugins.length) {
         const mounted = mountAll(plugins)

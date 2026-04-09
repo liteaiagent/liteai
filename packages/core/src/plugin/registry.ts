@@ -76,24 +76,76 @@ export function enabled(config: Config.Info): Record<string, boolean> {
 export async function list(): Promise<Entry[]> {
   const cfg = await Config.get()
   const plugins = enabled(cfg)
-  const result: Entry[] = []
+  const result: Map<string, Entry> = new Map()
 
-  for (const [key, on] of Object.entries(plugins)) {
-    const parsed = parse(key)
-    const marketplace = parsed.marketplace ?? "__local__"
-    const root = cachePath(marketplace, parsed.name)
-
-    result.push({
-      id: key,
-      name: parsed.name,
-      marketplace,
-      enabled: on,
-      scope: "user",
-      root,
-    })
+  const addEntry = (id: string, root: string, marketplace = "__local__", version?: string) => {
+    if (!result.has(id)) {
+      result.set(id, {
+        id,
+        name: parse(id).name,
+        marketplace,
+        version,
+        enabled: plugins[id] ?? false,
+        scope: "user",
+        root,
+      })
+    }
   }
 
-  return result
+  const { Filesystem } = await import("@/util/filesystem")
+  const { Instance } = await import("@/project/instance")
+  const { Brand } = await import("@/brand")
+  const fs = await import("node:fs/promises")
+
+  const safeReaddir = async (dir: string) => {
+    try {
+      if (await Filesystem.exists(dir)) {
+        return await fs.readdir(dir, { withFileTypes: true })
+      }
+    } catch {}
+    return []
+  }
+
+  // 1. Scan global unmanaged plugins
+  const globalDir = path.join(Global.Path.config, "plugins")
+  for (const ent of await safeReaddir(globalDir)) {
+    if (ent.isDirectory() && !["cache", "data", "marketplaces"].includes(ent.name)) {
+      addEntry(ent.name, path.join(globalDir, ent.name))
+    }
+  }
+
+  // 2. Scan project unmanaged plugins
+  const projectDir = path.join(Instance.directory, Brand.dir, "plugins")
+  for (const ent of await safeReaddir(projectDir)) {
+    if (ent.isDirectory() && !["cache", "data", "marketplaces"].includes(ent.name)) {
+      addEntry(ent.name, path.join(projectDir, ent.name))
+    }
+  }
+
+  // 3. Scan cached marketplace plugins
+  const cacheDir = cacheRoot()
+  for (const mk of await safeReaddir(cacheDir)) {
+    if (!mk.isDirectory()) continue
+    for (const cp of await safeReaddir(path.join(cacheDir, mk.name))) {
+      if (!cp.isDirectory()) continue
+      for (const v of await safeReaddir(path.join(cacheDir, mk.name, cp.name))) {
+        if (!v.isDirectory()) continue
+        const id = mk.name === "__local__" ? cp.name : `${cp.name}@${mk.name}`
+        addEntry(id, path.join(cacheDir, mk.name, cp.name, v.name), mk.name, v.name === "latest" ? undefined : v.name)
+      }
+    }
+  }
+
+  // 4. Add any from config that weren't found on disk
+  for (const [key] of Object.entries(plugins)) {
+    if (!result.has(key)) {
+      const parsed = parse(key)
+      const marketplace = parsed.marketplace ?? "__local__"
+      addEntry(key, cachePath(marketplace, parsed.name), marketplace)
+    }
+  }
+
+  return Array.from(result.values())
 }
 
 /**
