@@ -70,4 +70,72 @@ export namespace SystemPrompt {
 
     return lines.join("\n")
   }
+
+  let isLoaded = false
+
+  export async function loadSystemMd() {
+    if (isLoaded) return
+    try {
+      const rawContent = await Bundled.systemPrompt("system")
+      const { SectionParser } = await import("./section-parser")
+      const { SectionRegistry } = await import("./section-registry")
+
+      const sections = SectionParser.parse(rawContent)
+
+      for (const section of sections) {
+        if (section.scope === "static") {
+          SectionRegistry.register(section, async () => section.content)
+        } else {
+          if (section.name === "environment") {
+            SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
+              section,
+              async (ctx?: unknown) => (await SystemPrompt.environment(ctx as Provider.Model)).join("\n"),
+              "Environment info contains model ID, working directory, and date — all volatile per session/turn",
+            )
+          } else {
+            SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
+              section,
+              async () => section.content,
+              "parsed from system.md",
+            )
+          }
+        }
+      }
+      isLoaded = true
+    } catch (error) {
+      const { SystemPromptLoadError } = await import("./section-registry")
+      if (error instanceof Error) {
+        throw new SystemPromptLoadError({ message: `Failed to load system prompt: ${error.message}` })
+      }
+      throw new SystemPromptLoadError({ message: "Failed to load system prompt" })
+    }
+  }
+
+  export async function resolveSystemPromptSections(model: Provider.Model) {
+    await loadSystemMd()
+    const { SectionRegistry, resolveProviderTag } = await import("./section-registry")
+    const tag = resolveProviderTag(model)
+
+    const parts: string[] = []
+    let staticBoundary = 0
+
+    const entries = SectionRegistry.all()
+
+    for (const entry of entries) {
+      const { section } = entry
+      if (section.providers === "all" || section.providers.has(tag)) {
+        const content = await SectionRegistry.resolve(section.name, model)
+        parts.push(content)
+        if (section.scope === "static") {
+          staticBoundary = parts.length
+        }
+      }
+    }
+
+    return { parts, boundary: staticBoundary }
+  }
+
+  export function DANGEROUS_resetLoaded() {
+    isLoaded = false
+  }
 }

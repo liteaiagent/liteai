@@ -323,12 +323,9 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
 
     // ── Build system prompt ──
+    const { parts: providerParts, boundary } = await SystemPrompt.resolveSystemPromptSections(model)
     const skills = await SystemPrompt.skills(agent)
-    const system = [
-      ...(await SystemPrompt.environment(model)),
-      ...(skills ? [skills] : []),
-      ...(await InstructionPrompt.system()),
-    ]
+    const system = [...providerParts, ...(skills ? [skills] : []), ...(await InstructionPrompt.system())]
     if (format.type === "json_schema") {
       system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
     }
@@ -340,6 +337,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       abort,
       sessionID,
       system,
+      systemBoundary: boundary,
       step,
       telemetryTracker,
       telemetryBatchId: `gen_${step}`,

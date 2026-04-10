@@ -34,15 +34,16 @@ export interface ParsedSection {
 
 export interface SectionEntry {
   section: ParsedSection
-  compute: () => Promise<string>
+  compute: (ctx?: unknown) => Promise<string>
   cached?: string
 }
 
 // biome-ignore lint/complexity/noStaticOnlyClass: intentional architectural singleton
 export class SectionRegistry {
   private static readonly entries = new Map<string, SectionEntry>()
+  private static readonly computeCallCount = new Map<string, number>()
 
-  static register(section: ParsedSection, compute: () => Promise<string>): void {
+  static register(section: ParsedSection, compute: (ctx?: unknown) => Promise<string>): void {
     if (SectionRegistry.entries.has(section.name)) {
       throw new DuplicateSectionError({ message: `Duplicate section: ${section.name}` })
     }
@@ -51,7 +52,7 @@ export class SectionRegistry {
 
   static DANGEROUS_uncachedSystemPromptSection(
     section: ParsedSection,
-    compute: () => Promise<string>,
+    compute: (ctx?: unknown) => Promise<string>,
     reason: string,
   ): void {
     if (!reason || reason.trim() === "") {
@@ -63,19 +64,25 @@ export class SectionRegistry {
     SectionRegistry.entries.set(section.name, { section, compute })
   }
 
-  static async resolve(name: string): Promise<string> {
+  static async resolve(name: string, ctx?: unknown): Promise<string> {
     const entry = SectionRegistry.entries.get(name)
     if (!entry) {
       throw new UnknownSectionError({ message: `Unknown section: ${name}` })
     }
     if (entry.section.scope === "static") {
       if (entry.cached === undefined) {
-        entry.cached = await entry.compute()
+        if (process.env.NODE_ENV === "test") {
+          SectionRegistry.computeCallCount.set(name, (SectionRegistry.computeCallCount.get(name) || 0) + 1)
+        }
+        entry.cached = await entry.compute(ctx)
       }
       return entry.cached
     }
     // Volatile
-    return entry.compute()
+    if (process.env.NODE_ENV === "test") {
+      SectionRegistry.computeCallCount.set(name, (SectionRegistry.computeCallCount.get(name) || 0) + 1)
+    }
+    return entry.compute(ctx)
   }
 
   static clearAll(): void {
@@ -84,9 +91,16 @@ export class SectionRegistry {
         entry.cached = undefined
       }
     }
+    if (process.env.NODE_ENV === "test") {
+      SectionRegistry.computeCallCount.clear()
+    }
   }
 
   static all(): SectionEntry[] {
     return Array.from(SectionRegistry.entries.values())
+  }
+
+  static getComputeCallCount(name: string): number {
+    return SectionRegistry.computeCallCount.get(name) || 0
   }
 }

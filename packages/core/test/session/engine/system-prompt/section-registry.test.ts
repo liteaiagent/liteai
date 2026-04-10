@@ -41,6 +41,7 @@ describe("SectionRegistry", () => {
     const result2 = await SectionRegistry.resolve(dummySection.name)
     expect(result2).toBe("computed-static")
     expect(callCount).toBe(1) // Cache hit!
+    expect(SectionRegistry.getComputeCallCount(dummySection.name)).toBe(1)
   })
 
   it("should always recompute volatile sections", async () => {
@@ -62,6 +63,7 @@ describe("SectionRegistry", () => {
     const result2 = await SectionRegistry.resolve(dummyVolatile.name)
     expect(result2).toBe("computed-volatile-2")
     expect(callCount).toBe(2) // No cache hit!
+    expect(SectionRegistry.getComputeCallCount(dummyVolatile.name)).toBe(2)
   })
 
   it("should reset cache on clearAll()", async () => {
@@ -76,9 +78,11 @@ describe("SectionRegistry", () => {
     expect(callCount).toBe(1)
 
     SectionRegistry.clearAll() // Clears the cached field!
+    expect(SectionRegistry.getComputeCallCount(dummySection.name)).toBe(0) // Emptied map
 
     await SectionRegistry.resolve(dummySection.name)
     expect(callCount).toBe(2) // Cache cleared, recomputed
+    expect(SectionRegistry.getComputeCallCount(dummySection.name)).toBe(1)
   })
 
   it("should throw DuplicateSectionError on re-registration", () => {
