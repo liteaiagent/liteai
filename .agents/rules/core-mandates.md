@@ -58,5 +58,15 @@ When tasked with a new design, feature architecture, or a large-scale change req
 autonomously if one solution is unequivocally optimal with zero architectural downside.
 - **Mandatory Artifact Creation:** Before initiating any code implementation, you must generate a formal design artifact (e.g., an Architecture Decision Record (ADR), a Markdown specification, or an Mermaid diagram) detailing your evaluated patterns, reasoning, and the finalized blueprint.
 
+## 8. Execution Gate & Planning Protocol
+When discussing, formulating, or modifying a plan or design, you are strictly in "Planning Mode." You must not write, modify, or delete any implementation code until the user provides explicit confirmation to proceed.
+
+- **No Premature Execution:** Do not jump the gun. If the user provides feedback or modifications to a proposed plan/design, your ONLY task is to acknowledge the feedback, update the plan, and wait.
+- **The Acknowledge & Update Loop:** - *User:* "ok, but we also need to remove the condition..."
+  - *WRONG:* You acknowledge the change and immediately start modifying the codebase.
+  - *CORRECT:* You update the plan/design artifact to include the removal of the condition, present the updated plan, and stop.
+- **Explicit Authorization Required:** You must end your planning responses by explicitly asking for permission to begin coding (e.g., "Shall I proceed with implementation?"). Do not transition from Planning Mode to Execution Mode without a definitive "yes," "proceed," or equivalent confirmation from the user.
+
+
 
 NOTE: $0 authorizes breaking changes within the current task scope. $4 prevents scope creep beyond the task boundary.

@@ -22,6 +22,7 @@ import { Provider } from "@/provider/provider"
 import { ProviderTransform } from "@/provider/transform"
 import { Log } from "@/util/log"
 import { SystemPrompt } from "./engine/system"
+import type { TelemetryTracker } from "./engine/telemetry"
 import type { Message } from "./message"
 
 export namespace LLM {
@@ -43,7 +44,8 @@ export namespace LLM {
     onSystem?: (system: string[]) => void
     /** Current step number in the query loop (1-indexed). Used for Langfuse graph visualization. */
     step?: number
-    telemetryStep?: number
+    telemetryTracker?: TelemetryTracker
+    telemetryBatchId?: string
   }
 
   export type StreamOutput = StreamTextResult<ToolSet, unknown>
@@ -249,7 +251,7 @@ export namespace LLM {
           // Langfuse's extractMetadata() strips that prefix, leaving just '<key>'
           // in the observation metadata column.
           langgraph_node: input.agent.name,
-          langgraph_step: String(input.telemetryStep ?? input.step ?? 1),
+          langgraph_step: String(input.telemetryTracker?.getStep(input.telemetryBatchId) ?? 1),
         },
       },
       headers: {

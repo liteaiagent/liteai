@@ -18,6 +18,7 @@ import { Session } from ".."
 import type { Message } from "../message"
 import type { SessionProcessor } from "../processor"
 import { PartID } from "../schema"
+import type { TelemetryTracker } from "./telemetry"
 
 export const STRUCTURED_OUTPUT_DESCRIPTION = `Use this tool to return your final response in the requested structured format.
 
@@ -43,7 +44,8 @@ export async function resolveTools(input: {
   /** Current step number in the query loop (1-indexed). Used to set langgraph_step on
    * tool call spans so Langfuse renders tool executions as distinct graph nodes. */
   step?: number
-  telemetryStep?: number
+  telemetryTracker?: TelemetryTracker
+  telemetryBatchId?: string
   onInject?: (msg: Message.WithParts) => void
 }) {
   const tools: Record<string, AITool> = {}
@@ -137,7 +139,7 @@ export async function resolveTools(input: {
           activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", item.id)
           activeSpan.setAttribute(
             "ai.telemetry.metadata.langgraph_step",
-            String(input.telemetryStep ?? input.step ?? 1),
+            String(input.telemetryTracker?.getStep(input.telemetryBatchId) ?? 1),
           )
         }
 
@@ -253,7 +255,10 @@ export async function resolveTools(input: {
         // tool call as a distinct node in the graph view, not collapsed into
         // the parent LLM generation step.
         activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", key)
-        activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(input.telemetryStep ?? input.step ?? 1))
+        activeSpan.setAttribute(
+          "ai.telemetry.metadata.langgraph_step",
+          String(input.telemetryTracker?.getStep(input.telemetryBatchId) ?? 1),
+        )
       }
 
       let result: {
@@ -340,15 +345,7 @@ export async function resolveTools(input: {
         ...(truncated.truncated && { outputPath: truncated.outputPath }),
       }
 
-      const hasArgs = typeof args === "object" && args !== null && Object.keys(args).length > 0
-      let formattedOutput = truncated.content
-      if (hasArgs) {
-        const argString = JSON.stringify(args, null, 2)
-        formattedOutput = `**Input:**\n\`\`\`json\n${argString}\n\`\`\`\n`
-        if (truncated.content) {
-          formattedOutput += `\n**Output:**\n${truncated.content}`
-        }
-      }
+      const formattedOutput = truncated.content
 
       return {
         title: key,

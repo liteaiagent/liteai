@@ -4,6 +4,7 @@ import type { ModelID, ProviderID } from "../../provider/schema"
 import { iife } from "../../util/iife"
 import { Log } from "../../util/log"
 import { Session } from ".."
+import type { TelemetryTracker } from "../engine/telemetry"
 import { LLM } from "../llm"
 import { Message } from "../message"
 
@@ -14,7 +15,8 @@ export async function ensureTitle(input: {
   history: Message.WithParts[]
   providerID: ProviderID
   modelID: ModelID
-  telemetryStep?: number
+  telemetryTracker?: TelemetryTracker
+  telemetryBatchId?: string
 }) {
   if (input.session.parentID) return
   if (!Session.isDefaultTitle(input.session.title)) return
@@ -57,7 +59,8 @@ export async function ensureTitle(input: {
     model,
     abort: new AbortController().signal,
     sessionID: input.session.id,
-    telemetryStep: input.telemetryStep,
+    telemetryTracker: input.telemetryTracker,
+    telemetryBatchId: input.telemetryBatchId,
     retries: 2,
     messages: [
       {

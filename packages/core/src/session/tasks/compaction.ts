@@ -14,6 +14,7 @@ import { Provider } from "../../provider/provider"
 import { Log } from "../../util/log"
 import { Token } from "../../util/token"
 import { Session } from ".."
+import type { TelemetryTracker } from "../engine/telemetry"
 import { Message } from "../message"
 import { SessionProcessor } from "../processor"
 import { MessageID, PartID, SessionID } from "../schema"
@@ -108,7 +109,8 @@ export namespace SessionCompaction {
     abort: AbortSignal
     auto: boolean
     overflow?: boolean
-    telemetryStep?: number
+    telemetryTracker?: TelemetryTracker
+    telemetryBatchId?: string
   }): Promise<{ result: "continue" | "stop"; summaryWithParts?: Message.WithParts }> {
     const userMessage = input.messages.findLast((m) => m.info.id === input.parentID)?.info as Message.User
 
@@ -233,7 +235,8 @@ When constructing the summary, try to stick to this template:
         },
       ],
       model,
-      telemetryStep: input.telemetryStep,
+      telemetryTracker: input.telemetryTracker,
+      telemetryBatchId: input.telemetryBatchId,
     })
 
     if (result === "compact") {

@@ -27,6 +27,7 @@ import { InstructionPrompt } from "./instruction"
 import { type LoopDetectionResult, LoopType } from "./loop-detection"
 import { EventPersister } from "./persister"
 import { queryLoop } from "./query"
+import type { TelemetryTracker } from "./telemetry"
 
 globalThis.AI_SDK_LOG_WARNINGS = false
 
@@ -549,7 +550,7 @@ async function runSessionInner(input: {
         case "control": {
           switch (event.action) {
             case "subtask": {
-              const { task, model, lastUser, msgs, telemetryStep } = event.payload
+              const { task, model, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
               const { subtaskAssistant, syntheticUser } = await processSubtask({
                 task,
                 model,
@@ -558,14 +559,15 @@ async function runSessionInner(input: {
                 session,
                 abort,
                 msgs,
-                telemetryStep,
+                telemetryTracker,
+                telemetryBatchId,
               })
               // Append subtask messages to buffer (FR-8) — no DB read
               msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
               break
             }
             case "compaction-task": {
-              const { task, lastUser, msgs, telemetryStep } = event.payload
+              const { task, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
 
               const { result, summaryWithParts } = await SessionCompaction.process({
                 messages: msgs,
@@ -574,7 +576,8 @@ async function runSessionInner(input: {
                 sessionID,
                 auto: task.auto,
                 overflow: task.overflow,
-                telemetryStep,
+                telemetryTracker,
+                telemetryBatchId,
               })
               if (result === "stop") {
                 // Signal the generator to close by returning early
@@ -903,9 +906,10 @@ async function processSubtask(input: {
   session: Session.Info
   abort: AbortSignal
   msgs: Message.WithParts[]
-  telemetryStep?: number
+  telemetryTracker?: TelemetryTracker
+  telemetryBatchId?: string
 }): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
-  const { task, lastUser, sessionID, session, abort, msgs, telemetryStep } = input
+  const { task, lastUser, sessionID, session, abort, msgs, telemetryTracker, telemetryBatchId } = input
   const taskTool = await TaskTool.init()
   const taskModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {
@@ -1010,7 +1014,10 @@ async function processSubtask(input: {
   if (activeSpan) {
     activeSpan.setAttribute("input.value", JSON.stringify(taskArgs))
     activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", "task")
-    activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(telemetryStep ?? 1))
+    activeSpan.setAttribute(
+      "ai.telemetry.metadata.langgraph_step",
+      String(telemetryTracker?.getStep(telemetryBatchId) ?? 1),
+    )
   }
 
   const result = await taskTool.execute(taskArgs, ctx).catch((error) => {

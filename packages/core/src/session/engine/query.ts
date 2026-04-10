@@ -22,6 +22,7 @@ import { type AutocompactState, createAutocompactState, executePipeline, shouldA
 import { insertPlanReminder } from "./plan-reminder"
 import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
+import { TelemetryTracker } from "./telemetry"
 import { createStructuredOutputTool, resolveTools, STRUCTURED_OUTPUT_SYSTEM_PROMPT } from "./tools"
 
 const log = Log.create({ service: "session.engine" })
@@ -67,7 +68,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
   let structuredOutput: unknown | undefined
   let step = 0
-  let telemetryStep = 0
+  const telemetryTracker = new TelemetryTracker()
   const autocompactState: AutocompactState = createAutocompactState()
   const loopDetector = new LoopDetectionService(sessionID)
 
@@ -114,8 +115,6 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     step++
     loopDetector.turnStarted()
 
-    const currentTelemetryStep = ++telemetryStep
-
     // ── Title generation (fire-and-forget on first step) ──
     if (step === 1) {
       ensureTitle({
@@ -123,7 +122,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         modelID: lastUser.model.modelID,
         providerID: lastUser.model.providerID,
         history: msgs,
-        telemetryStep: currentTelemetryStep,
+        telemetryTracker,
+        telemetryBatchId: "gen_" + step,
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
     }
 
@@ -163,7 +163,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       yield {
         type: "control",
         action: "subtask",
-        payload: { task, model, lastUser, msgs, telemetryStep: ++telemetryStep },
+        payload: { task, model, lastUser, msgs, telemetryTracker, telemetryBatchId: "task_" + step },
       } satisfies EngineEvent.GeneratorResultEvent
       continue
     }
@@ -173,7 +173,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       yield {
         type: "control",
         action: "compaction-task",
-        payload: { task, lastUser, msgs, telemetryStep: ++telemetryStep },
+        payload: { task, lastUser, msgs, telemetryTracker, telemetryBatchId: "compaction_task_" + step },
       } satisfies EngineEvent.GeneratorResultEvent
       // If orchestrator signals "stop", it won't call .next() and the generator closes
       continue
@@ -278,7 +278,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       messages: msgs,
       backgroundTaskRegistry: params.backgroundTaskRegistry,
       step,
-      telemetryStep: currentTelemetryStep,
+      telemetryTracker,
+      telemetryBatchId: "tools_" + step,
       onInject: (msg: Message.WithParts) => {
         msgsBuffer.current = [...msgsBuffer.current, msg]
         log.info("queryLoop: appended synthetic message via onInject", { sessionID, messageID: msg.info.id })
@@ -340,7 +341,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       sessionID,
       system,
       step,
-      telemetryStep: currentTelemetryStep,
+      telemetryTracker,
+      telemetryBatchId: "gen_" + step,
       messages: [
         ...Message.toModelMessages(msgs, model),
         ...(isLastStep
