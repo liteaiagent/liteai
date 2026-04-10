@@ -4,6 +4,7 @@ import { createStore } from "solid-js/store"
 import { useI18n } from "../context/i18n"
 import { Collapsible } from "./collapsible"
 import type { IconProps } from "./icon"
+import { Markdown } from "./markdown"
 import { TextShimmer } from "./text-shimmer"
 
 export type TriggerTitle = {
@@ -218,32 +219,38 @@ export function BasicTool(props: BasicToolProps) {
   )
 }
 
-function label(input: Record<string, unknown> | undefined) {
-  const keys = ["description", "query", "url", "filePath", "path", "pattern", "name"]
-  return keys.map((key) => input?.[key]).find((value): value is string => typeof value === "string" && value.length > 0)
-}
-
-function args(input: Record<string, unknown> | undefined) {
-  if (!input) return []
-  const skip = new Set(["description", "query", "url", "filePath", "path", "pattern", "name"])
-  return Object.entries(input)
-    .filter(([key]) => !skip.has(key))
-    .flatMap(([key, value]) => {
-      if (typeof value === "string") return [`${key}=${value}`]
-      if (typeof value === "number") return [`${key}=${value}`]
-      if (typeof value === "boolean") return [`${key}=${value}`]
-      return []
-    })
-    .slice(0, 3)
-}
-
 export function GenericTool(props: {
   tool: string
   status?: string
   hideDetails?: boolean
   input?: Record<string, unknown>
+  output?: unknown
 }) {
   const i18n = useI18n()
+
+  const inputJson = () => {
+    if (!props.input || Object.keys(props.input).length === 0) return ""
+    return JSON.stringify(props.input, null, 2)
+  }
+
+  const outputStr = () => {
+    if (props.output === undefined) return ""
+    let value = props.output
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value)
+        if (typeof parsed === "object" && parsed !== null) {
+          value = parsed
+        }
+      } catch {}
+    }
+    if (typeof value === "string") return value
+    try {
+      return JSON.stringify(value, null, 2)
+    } catch {
+      return String(value)
+    }
+  }
 
   return (
     <BasicTool
@@ -251,10 +258,25 @@ export function GenericTool(props: {
       status={props.status}
       trigger={{
         title: i18n.t("ui.basicTool.called", { tool: props.tool }),
-        subtitle: label(props.input),
-        args: args(props.input),
       }}
       hideDetails={props.hideDetails}
-    />
+    >
+      <Show when={inputJson() || outputStr()}>
+        <div style={{ display: "flex", "flex-direction": "column", gap: "16px", padding: "12px 16px 16px 16px" }}>
+          <Show when={inputJson()}>
+            <div style={{ display: "flex", "flex-direction": "column", gap: "8px" }}>
+              <div style={{ "font-size": "13px", color: "var(--text-weak)" }}>Ran with these arguments:</div>
+              <Markdown class="compact-markdown" text={`\`\`\`json\n${inputJson()}\n\`\`\``} />
+            </div>
+          </Show>
+          <Show when={outputStr()}>
+            <div style={{ display: "flex", "flex-direction": "column", gap: "8px" }}>
+              <div style={{ "font-size": "14px", "font-weight": "600", color: "var(--text-strong)" }}>Output</div>
+              <Markdown class="compact-markdown" text={`\`\`\`json\n${outputStr()}\n\`\`\``} />
+            </div>
+          </Show>
+        </div>
+      </Show>
+    </BasicTool>
   )
 }

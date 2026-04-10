@@ -40,8 +40,11 @@ export async function insertPlanReminder(input: {
     const plan = Session.plan(input.session)
     const exists = await Filesystem.exists(plan)
     if (!exists) await fs.mkdir(path.dirname(plan), { recursive: true })
-    const reminderTemplate = await Bundled.miscPrompt(exists ? "plan-reminder-exists" : "plan-reminder-new")
-    const reminderText = reminderTemplate.replace("{{PLAN_PATH}}", plan)
+    const reminderTemplate = await Bundled.miscPrompt("plan-reminder")
+    const infoText = exists
+      ? `A plan file already exists at ${plan}. You can read it and make incremental edits using the edit tool.`
+      : `No plan file exists yet. You should create your plan at ${plan} using the write tool.`
+    const reminderText = reminderTemplate.replace("{{PLAN_INFO}}", infoText)
     const part = await Session.updatePart({
       id: PartID.ascending(),
       messageID: userMessage.info.id,

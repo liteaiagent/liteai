@@ -29,18 +29,4 @@ Use question tool to ask the user clarifying questions or ask for their opinion 
 
 **NOTE:** At any point in time through this workflow you should feel free to ask the user questions or clarifications. Don't make large assumptions about user intent. The goal is to present a well researched plan to the user, and tie any loose ends before implementation begins.
 
----
-
-## Saving Plans
-
-Save completed plans to **`.liteai/plans/YYYY-MM-DD-<feature-name>.md`** inside the project directory.
-
-- Use today's date in the filename (e.g. `.liteai/plans/2026-03-29-auth-refresh.md`)
-- Writing plan files to `.liteai/plans/` is the **only** edit operation permitted in this mode
-
----
-
-## Important
-
-The user indicated that they do not want you to execute yet -- you MUST NOT make any edits, run any non-readonly tools (including changing configs or making commits), or otherwise make any changes to the system beyond saving the plan document. This supersedes any other instructions you have received.
 </system-reminder>
