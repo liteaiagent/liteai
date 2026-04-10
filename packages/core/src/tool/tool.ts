@@ -38,6 +38,7 @@ export namespace Tool {
         metadata: M
         output: string
         attachments?: Omit<Message.FilePart, "id" | "sessionID" | "messageID">[]
+        inject?: Message.WithParts[]
       }>
       formatValidationError?(error: z.ZodError): string
     }>

@@ -44,6 +44,7 @@ export async function resolveTools(input: {
    * tool call spans so Langfuse renders tool executions as distinct graph nodes. */
   step?: number
   telemetryStep?: number
+  onInject?: (msg: Message.WithParts) => void
 }) {
   const tools: Record<string, AITool> = {}
 
@@ -164,6 +165,19 @@ export async function resolveTools(input: {
             messageID: input.processor.message.id,
           })),
         }
+
+        if (result.inject && result.inject.length > 0) {
+          for (const msg of result.inject) {
+            await Session.updateMessage(msg.info)
+            for (const part of msg.parts) {
+              await Session.updatePart(part)
+            }
+            if (input.onInject) {
+              input.onInject(msg)
+            }
+          }
+        }
+
         await Plugin.trigger(
           "tool.execute.after",
           {

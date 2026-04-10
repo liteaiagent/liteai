@@ -55,20 +55,20 @@ export const PlanExitTool = Tool.define("plan_exit", {
       agent: "build",
       model,
     }
-    await Session.updateMessage(userMsg)
-    await Session.updatePart({
+    const userPart = {
       id: PartID.ascending(),
       messageID: userMsg.id,
       sessionID: ctx.sessionID,
       type: "text",
       text: `The plan at ${plan} has been approved, you can now edit files. Execute the plan`,
       synthetic: true,
-    } satisfies Message.TextPart)
+    } satisfies Message.TextPart as Message.Part
 
     return {
       title: "Switching to build agent",
       output: "User approved switching to build agent. Wait for further instructions.",
       metadata: {},
+      inject: [{ info: userMsg, parts: [userPart] }],
     }
   },
 })

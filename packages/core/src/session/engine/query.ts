@@ -279,6 +279,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       backgroundTaskRegistry: params.backgroundTaskRegistry,
       step,
       telemetryStep: currentTelemetryStep,
+      onInject: (msg: Message.WithParts) => {
+        msgsBuffer.current = [...msgsBuffer.current, msg]
+        log.info("queryLoop: appended synthetic message via onInject", { sessionID, messageID: msg.info.id })
+      },
     })
 
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
