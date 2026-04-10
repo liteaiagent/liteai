@@ -12,6 +12,8 @@
 - Q: What syntax/format should mark section boundaries and provider conditions inside `system.md`? → A: HTML comment directives — sections are delimited by `<!-- section: name scope: static|volatile providers: all|<id> -->` … `<!-- /section -->` markers, which are invisible to markdown renderers and require no template engine.
 - Q: What is the representation of `SYSTEM_PROMPT_DYNAMIC_BOUNDARY`? → A: Exported index constant — the resolver exports `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` as a `number` after assembly; callers use it to slice the `string[]` (e.g., `system.slice(0, SYSTEM_PROMPT_DYNAMIC_BOUNDARY)` for static, `system.slice(SYSTEM_PROMPT_DYNAMIC_BOUNDARY)` for dynamic). No sentinel strings or structured return types.
 - Q: What is the concurrency model for the Section Registry cache? → A: First-write-wins, no lock — section compute functions are pure and deterministic (file read + fixed string return), so concurrent cache-miss calls may both compute; duplicate work is acceptable and both writes produce identical output. No mutex or promise deduplication is required.
+- Q: How should the system handle section ordering to satisfy SYSTEM_PROMPT_DYNAMIC_BOUNDARY if a volatile section appears before a static section inside system.md? → A: The parser throws a typed startup error immediately (Strict Ordering).
+- Q: Should resolveSystemPromptSections() emit telemetry logic/logs given its position on the hot path? → A: No, keep it completely silent on the happy path to reduce infrastructure noise, logging only errors.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -21,7 +23,7 @@ A developer maintaining the LiteAI codebase currently must update up to 9 differ
 
 **Why this priority**: This is the root cause of the content duplication problem and directly reduces maintenance burden. Every other story depends on having a unified template as the single source of truth.
 
-**Independent Test**: A developer modifies shared tone instructions in `system.md` and confirms the change is reflected when the session resolves the system prompt for every supported provider (Anthropic Claude, Gemini, OpenAI GPT, Google Code Assist, Trinity, and the default fallback) — without touching any other file.
+**Independent Test**: A developer modifies shared tone instructions in `system.md` and confirms the change is reflected when the session resolves the system prompt for every supported provider (Anthropic Claude, Gemini, OpenAI GPT/Codex, Google Code Assist, Trinity, and the default fallback) — without touching any other file.
 
 **Acceptance Scenarios**:
 
@@ -66,17 +68,18 @@ LiteAI sessions benefit from provider-level prompt caching (e.g., Anthropic's ca
 
 ### User Story 4 - Collapsed Provider Dispatch Logic (Priority: P3)
 
-The current `SystemPrompt.provider()` method uses a long chain of `if (model.api.id.includes(...))` string matches to select one of 9 files. A developer debugging prompt behavior must trace through this dispatch logic and then open the correct file. They want the dispatch logic removed: the provider/model is now an input parameter to a unified resolver, not a file selector.
+The current `SystemPrompt.provider()` method uses a long chain of `if (model.api.id.includes(...))` string matches to select one of 9 files. Additionally, `llm.ts` and `agent.ts` contain Codex/OpenAI OAuth-specific branches (`isCodex`) that bypass the provider() call entirely and pipe the prompt via a separate `options.instructions` API field instead of the standard `system` messages array. A developer wants all of this removed: one resolver, one code path, every provider treated identically.
 
-**Why this priority**: This is a maintainability improvement that follows from Story 1 and Story 2. It reduces cognitive overhead in the engine layer but does not change end-user behavior.
+**Why this priority**: This is a maintainability improvement that follows from Story 1 and Story 2. It reduces cognitive overhead in the engine layer and eliminates a hidden provider-specific branch that breaks the provider-neutral contract.
 
-**Independent Test**: Remove `SystemPrompt.provider()`. Invoke the new unified resolver with each previously-supported provider/model combination and confirm each returns a correctly structured `string[]` with no runtime errors.
+**Independent Test**: Remove `SystemPrompt.provider()`, `SystemPrompt.instructions()`, and all `isCodex` branches. Invoke the new unified resolver with each previously-supported provider/model combination (including OpenAI OAuth/Codex) and confirm each returns a correctly structured `string[]` with no runtime errors. Confirm the system prompt reaches the model via the standard `system` messages array for all providers.
 
 **Acceptance Scenarios**:
 
 1. **Given** the resolver receives a Gemini model, **When** it resolves the system prompt, **Then** the output includes Gemini-specific conditional sections and excludes Anthropic-specific ones.
 2. **Given** the resolver receives an unrecognized model ID, **When** it resolves the system prompt, **Then** it returns the default (generic) sections without throwing an error.
 3. **Given** `Bundled.systemPrompt(name)` is called with any of the legacy provider names, **When** the new API is used, **Then** the call site either uses the new single-entry-point API or a typed deprecation error is thrown at compile time (not silently swallowed at runtime).
+4. **Given** an OpenAI OAuth (Codex) session, **When** the system prompt is assembled, **Then** it is delivered via the standard `system` messages array — identical to every other provider — with no `options.instructions` override and no `isCodex` branch.
 
 ---
 
@@ -86,7 +89,7 @@ The current `SystemPrompt.provider()` method uses a long chain of `if (model.api
 - What happens when a section's compute function throws asynchronously? The error must propagate through `resolveSystemPromptSections()` and must not silently produce a partial prompt.
 - How does the system handle a model ID that partially matches multiple provider patterns? The resolver must apply deterministic, priority-ordered matching, not first-match ambiguity from the old string-include chain.
 - What happens when a cached section's compute function becomes invalid after a code hot-reload? The cache must provide an explicit `clearAll()` mechanism tied to the reload lifecycle, not rely on process restart.
-- What happens when `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` is placed after a section that contains per-session volatile data? The section registry must enforce section ordering at registration time, not at resolution time.
+- What happens when a `volatile` section appears before a `static` section in `system.md` (or `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` is misplaced)? The system MUST throw a typed startup error immediately (Strict Ordering) to enforce section ordering at registration/parsing time, preventing silent cache degradation.
 
 ## Requirements *(mandatory)*
 
@@ -97,20 +100,22 @@ The current `SystemPrompt.provider()` method uses a long chain of `if (model.api
 - **FR-003**: The section registry MUST memoize static sections with global (cross-session) scope, ensuring the compute function is called at most once per process lifetime per section unless the cache is explicitly cleared. Concurrent cache-miss calls (multiple sessions resolving the same uncached section simultaneously) are handled with first-write-wins semantics — no lock or promise deduplication is required, as all compute functions MUST be pure and deterministic (identical inputs always produce identical output).
 - **FR-004**: The section registry MUST support a `DANGEROUS_uncachedSystemPromptSection(name, computeFn, reason)` registration path for volatile sections that recompute on every call; the `reason` parameter MUST be a non-empty string documenting why caching is unsafe.
 - **FR-005**: The resolver MUST expose a `resolveSystemPromptSections()` function that evaluates all registered sections in parallel (where independent) and returns a `string[]` in the correct assembly order.
-- **FR-006**: The resolver MUST export `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` as a numeric constant representing the array index at which static content ends. Content at indices `[0, SYSTEM_PROMPT_DYNAMIC_BOUNDARY)` is static; content at indices `[SYSTEM_PROMPT_DYNAMIC_BOUNDARY, length)` is dynamic. No sentinel string elements are inserted into the array.
+- **FR-006**: The resolver MUST return a `boundary: number` value as part of the `resolveSystemPromptSections()` return object, representing the array index at which static content ends. Content at indices `[0, boundary)` is static and cross-session cacheable; content at indices `[boundary, length)` is volatile. No sentinel string elements are inserted into the `parts` array. `boundary` MUST NOT be exported as a module-level variable — it is session-scoped and varies per call; exposing it globally would create a multi-tenant data race in a concurrent server.
 - **FR-007**: Sections appearing before `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` in the final prompt MUST contain only content that is invariant across sessions and turns (no model ID, no working directory, no date, no per-session MCP or skill state).
 - **FR-008**: The `Bundled.systemPrompt(name)` API MUST be replaced with a single-entry-point function that does not accept a provider name string; callers that previously used the old API must be updated.
 - **FR-009**: The `SystemPrompt.provider()` dispatch function MUST be removed; provider and model are passed as parameters to the unified resolver, not used as file selectors.
 - **FR-010**: The provider/model parameter passed to the resolver MUST be used only to evaluate conditional sections within `system.md`; it MUST NOT determine which file is loaded.
 - **FR-011**: If `system.md` is absent or unreadable, the system MUST throw a structured, typed error at startup (or first resolution), not silently return an empty prompt or fall back to legacy files.
-- **FR-012**: The unified `system.md` MUST contain all content currently spread across the 9 legacy files, with provider-specific content expressed as conditional sections, not duplicate full-file variants.
+- **FR-012**: The unified `system.md` MUST contain all content currently spread across the 9 legacy files, with provider-specific content expressed as conditional sections, not duplicate full-file variants. Content from `codex_header.md` that is universal (coding standards, git hygiene, tool usage) MUST be merged into `providers: all` sections — no `providers: codex` section is permitted.
 - **FR-013**: The legacy provider-specific `.md` files (`anthropic.md`, `gemini.md`, `beast.md`, `trinity.md`, `default.md`, `codex_header.md`, `google-code-assist.md`, `google-code-assist-v1.md`) MUST be deleted from the repository after migration is verified.
+- **FR-014**: The `SystemPrompt.instructions()` function and all `isCodex` provider-specific branches in `llm.ts` and `agent.ts` MUST be removed. The system prompt MUST be delivered via the standard `system` messages array for all providers without exception.
+- **FR-015**: The prompt resolver MUST NOT emit telemetry spans or info-level logs on successful resolutions to prevent noise and latency overhead on the hot path; it MUST only log during error conditions.
 
 ### Key Entities
 
 - **Section Registry**: A global, in-process registry that maps section names to their compute functions, caching scope (`global` or `volatile`), and cached values. Lives for the process lifetime.
 - **System Section**: A named unit of prompt content with an associated compute function and a declared scope. Sections compose into the final `string[]` in a fixed order.
-- **Dynamic Boundary Marker**: An exported numeric constant (`SYSTEM_PROMPT_DYNAMIC_BOUNDARY: number`) produced by the resolver after section assembly. It is the array index at which static content ends; callers slice the `string[]` at this index to separate cacheable from volatile content. No sentinel string is inserted into the array.
+- **Dynamic Boundary Marker**: A per-call `boundary: number` value returned as part of the `resolveSystemPromptSections()` result object `{ parts: string[], boundary: number }`. It is the array index at which static content ends; callers destructure `const { parts, boundary } = await resolveSystemPromptSections(model)` and slice at `boundary` to separate cacheable from volatile content. It is NOT exported as a module-level constant — each call independently computes the boundary for its session context, preventing multi-tenant race conditions.
 - **Unified Template (`system.md`)**: A single markdown file containing all system prompt content. Provider-conditional sections are delimited by HTML comment directives (`<!-- section: name scope: static|volatile providers: all|<id> -->` … `<!-- /section -->`). The resolver strips these markers before returning section text; they are never visible in the final LLM prompt.
 - **Resolver**: A TypeScript module responsible for reading `system.md`, evaluating conditional sections against the active provider/model, pulling static sections from the registry cache, and assembling the final `string[]`.
 
@@ -133,4 +138,4 @@ The current `SystemPrompt.provider()` method uses a long chain of `if (model.api
 - The `Bundled` module continues to load content from the filesystem using `import.meta.dir`-relative paths, consistent with the existing single-file compile strategy.
 - Hot-reload support (cache invalidation on file change) is a future concern and is explicitly out of scope; the cache is cleared only on process restart or explicit programmatic call.
 - The `google-code-assist.md` file (216 bytes) is a thin redirect/alias; its effective content is already covered by `google-code-assist-v1.md` and will be consolidated as a single conditional section.
-- No changes to the conversation message format, provider API adapters, or LLM streaming infrastructure are required by this refactor.
+- The OpenAI Responses API accepts standard `system` role messages; no `options.instructions` override is required for Codex/OpenAI OAuth sessions. The `isCodex` detection and the separate `instructions` code path are therefore unnecessary and are removed as part of this refactor.
