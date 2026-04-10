@@ -4,8 +4,9 @@ export class TelemetryTracker {
 
   public getStep(batchId?: string): number {
     if (batchId) {
-      if (this.batches.has(batchId)) {
-        return this.batches.get(batchId)!
+      const existing = this.batches.get(batchId)
+      if (existing !== undefined) {
+        return existing
       }
       this.step++
       this.batches.set(batchId, this.step)

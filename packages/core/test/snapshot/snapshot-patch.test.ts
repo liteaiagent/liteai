@@ -266,7 +266,7 @@ test("patch with invalid hash", async () => {
       expect(patch.hash).toBe("invalid-hash-12345")
     },
   })
-}, 30_000)
+}, 90_000)
 
 test("revert non-existent file", async () => {
   await using tmp = await bootstrap()

@@ -259,7 +259,7 @@ export namespace Log {
           if (value === undefined || value === null) continue
           if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
             if (typeof value === "string" && value.length > 16000) {
-              safeAttributes[key] = value.substring(0, 16000) + "... [truncated]"
+              safeAttributes[key] = `${value.substring(0, 16000)}... [truncated]`
             } else {
               safeAttributes[key] = value
             }
@@ -268,7 +268,7 @@ export namespace Log {
           } else {
             const strVal = JSON.stringify(value)
             if (strVal && strVal.length > 16000) {
-              safeAttributes[key] = strVal.substring(0, 16000) + "... [truncated]"
+              safeAttributes[key] = `${strVal.substring(0, 16000)}... [truncated]`
             } else {
               safeAttributes[key] = strVal
             }
@@ -294,14 +294,14 @@ export namespace Log {
         }
 
         if (body.length > 16000) {
-          body = body.substring(0, 16000) + "... [truncated]"
+          body = `${body.substring(0, 16000)}... [truncated]`
         }
 
         otelLogger.emit({
           severityNumber: severityMap[lvl],
           severityText: lvl,
           body,
-          attributes: safeAttributes as any,
+          attributes: safeAttributes as import("@opentelemetry/api-logs").LogAttributes,
         })
       } catch {
         /* Ignore if telemetry is offline */

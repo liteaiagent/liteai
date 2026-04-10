@@ -123,7 +123,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         providerID: lastUser.model.providerID,
         history: msgs,
         telemetryTracker,
-        telemetryBatchId: "gen_" + step,
+        telemetryBatchId: `gen_${step}`,
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
     }
 
@@ -163,7 +163,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       yield {
         type: "control",
         action: "subtask",
-        payload: { task, model, lastUser, msgs, telemetryTracker, telemetryBatchId: "task_" + step },
+        payload: { task, model, lastUser, msgs, telemetryTracker, telemetryBatchId: `task_${step}` },
       } satisfies EngineEvent.GeneratorResultEvent
       continue
     }
@@ -173,7 +173,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       yield {
         type: "control",
         action: "compaction-task",
-        payload: { task, lastUser, msgs, telemetryTracker, telemetryBatchId: "compaction_task_" + step },
+        payload: { task, lastUser, msgs, telemetryTracker, telemetryBatchId: `compaction_task_${step}` },
       } satisfies EngineEvent.GeneratorResultEvent
       // If orchestrator signals "stop", it won't call .next() and the generator closes
       continue
@@ -279,7 +279,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       backgroundTaskRegistry: params.backgroundTaskRegistry,
       step,
       telemetryTracker,
-      telemetryBatchId: "tools_" + step,
+      telemetryBatchId: `tools_${step}`,
       onInject: (msg: Message.WithParts) => {
         msgsBuffer.current = [...msgsBuffer.current, msg]
         log.info("queryLoop: appended synthetic message via onInject", { sessionID, messageID: msg.info.id })
@@ -342,7 +342,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       system,
       step,
       telemetryTracker,
-      telemetryBatchId: "gen_" + step,
+      telemetryBatchId: `gen_${step}`,
       messages: [
         ...Message.toModelMessages(msgs, model),
         ...(isLastStep

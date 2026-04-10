@@ -5,7 +5,7 @@ import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@
 import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs"
 import { MeterProvider } from "@opentelemetry/sdk-metrics"
 import { NodeSDK } from "@opentelemetry/sdk-node"
-import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base"
+import { BatchSpanProcessor, type SpanProcessor } from "@opentelemetry/sdk-trace-base"
 import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_NAMESPACE,
@@ -80,7 +80,9 @@ export async function initializeTelemetry() {
     const { getGlobal } = await import("../config/loader")
     const globalConfig = await getGlobal()
     applyConfigToEnv(globalConfig)
-  } catch (error) {}
+  } catch (error) {
+    diag.error("Failed to load global config during telemetry init", error)
+  }
 
   const telemetryEnabled = isTelemetryEnabled()
 
@@ -168,7 +170,7 @@ export async function initializeTelemetry() {
     const langfuseSecretKey = globalTelemetryConfig?.langfuse?.secretKey || process.env.LANGFUSE_SECRET_KEY
     const langfuseBaseUrl = globalTelemetryConfig?.langfuse?.baseUrl || "https://langfuse.smartnest.info"
 
-    const spanProcessors: Array<any> = []
+    const spanProcessors: Array<SpanProcessor> = []
 
     if (langfusePublicKey && langfuseSecretKey) {
       const langfuseProcessor = new LangfuseSpanProcessor({
@@ -181,9 +183,11 @@ export async function initializeTelemetry() {
             globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
             10,
           ) / 1000,
-        shouldExportSpan: (span: any) => {
-          const targetSpan = span.otelSpan || span
-          const scope = targetSpan.instrumentationScope?.name || targetSpan.instrumentationLibrary?.name
+        shouldExportSpan: (span: { otelSpan: import("@opentelemetry/sdk-trace-base").ReadableSpan }) => {
+          // biome-ignore lint/suspicious/noExplicitAny: Safely unpacking nested optional structure
+          const targetSpan = (span as any).otelSpan || span
+          // biome-ignore lint/suspicious/noExplicitAny: Support legacy OTEL properties
+          const scope = targetSpan.instrumentationScope?.name || (targetSpan as any).instrumentationLibrary?.name
           return scope === "ai" || scope === "liteai"
         },
       })
@@ -250,5 +254,7 @@ export async function flushTelemetry(): Promise<void> {
     // NodeSDK does not expose forceFlush directly; shutdown handles final flush
 
     await Promise.race([Promise.all(flushPromises), telemetryTimeout(timeoutMs, "OpenTelemetry flush timeout")])
-  } catch (error) {}
+  } catch (error) {
+    diag.error("Telemetry flush failed or timed out", error)
+  }
 }
