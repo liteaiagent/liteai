@@ -258,11 +258,20 @@ export namespace Log {
         for (const [key, value] of Object.entries(rawAttributes)) {
           if (value === undefined || value === null) continue
           if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-            safeAttributes[key] = value
+            if (typeof value === "string" && value.length > 16000) {
+              safeAttributes[key] = value.substring(0, 16000) + "... [truncated]"
+            } else {
+              safeAttributes[key] = value
+            }
           } else if (value instanceof Error) {
             safeAttributes[key] = value.message
           } else {
-            safeAttributes[key] = JSON.stringify(value)
+            const strVal = JSON.stringify(value)
+            if (strVal && strVal.length > 16000) {
+              safeAttributes[key] = strVal.substring(0, 16000) + "... [truncated]"
+            } else {
+              safeAttributes[key] = strVal
+            }
           }
         }
 
@@ -282,6 +291,10 @@ export namespace Log {
         const prefixStr = buildPrefix(extra)
         if (prefixStr) {
           body = `${prefixStr} ${body}`
+        }
+
+        if (body.length > 16000) {
+          body = body.substring(0, 16000) + "... [truncated]"
         }
 
         otelLogger.emit({

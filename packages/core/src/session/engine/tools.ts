@@ -239,7 +239,7 @@ export async function resolveTools(input: {
         // tool call as a distinct node in the graph view, not collapsed into
         // the parent LLM generation step.
         activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", key)
-        activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(input.step ?? 1))
+        activeSpan.setAttribute("ai.telemetry.metadata.langgraph_step", String(input.telemetryStep ?? input.step ?? 1))
       }
 
       let result: {
@@ -326,10 +326,20 @@ export async function resolveTools(input: {
         ...(truncated.truncated && { outputPath: truncated.outputPath }),
       }
 
+      const hasArgs = typeof args === "object" && args !== null && Object.keys(args).length > 0
+      let formattedOutput = truncated.content
+      if (hasArgs) {
+        const argString = JSON.stringify(args, null, 2)
+        formattedOutput = `**Input:**\n\`\`\`json\n${argString}\n\`\`\`\n`
+        if (truncated.content) {
+          formattedOutput += `\n**Output:**\n${truncated.content}`
+        }
+      }
+
       return {
-        title: "",
+        title: key,
         metadata,
-        output: truncated.content,
+        output: formattedOutput || "*(empty return)*",
         attachments: attachments.map((attachment) => ({
           ...attachment,
           id: PartID.ascending(),

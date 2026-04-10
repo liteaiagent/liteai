@@ -114,6 +114,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     step++
     loopDetector.turnStarted()
 
+    const currentTelemetryStep = ++telemetryStep
+
     // ── Title generation (fire-and-forget on first step) ──
     if (step === 1) {
       ensureTitle({
@@ -121,11 +123,9 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         modelID: lastUser.model.modelID,
         providerID: lastUser.model.providerID,
         history: msgs,
-        telemetryStep: ++telemetryStep,
+        telemetryStep: currentTelemetryStep,
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
     }
-
-    const currentTelemetryStep = ++telemetryStep
 
     // ── Model resolution ──
     if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
@@ -278,7 +278,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       messages: msgs,
       backgroundTaskRegistry: params.backgroundTaskRegistry,
       step,
-      telemetryStep: ++telemetryStep,
+      telemetryStep: currentTelemetryStep,
     })
 
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──

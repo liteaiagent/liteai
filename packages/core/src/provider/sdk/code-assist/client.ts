@@ -61,7 +61,6 @@ async function requestPost<T>(
     provider: "google-code-assist",
     method,
     url,
-    body: JSON.stringify(body),
   })
 
   try {
@@ -95,7 +94,6 @@ async function requestPost<T>(
       status: res.status,
       statusText: res.statusText,
       headers: res.headers,
-      body: JSON.stringify(res.data),
     })
     return res.data
   } catch (error) {
@@ -107,7 +105,6 @@ async function requestPost<T>(
       status: err?.response?.status,
       statusText: err?.response?.statusText,
       headers: err?.response?.headers,
-      body: err?.response?.data ? JSON.stringify(err.response.data) : undefined,
     })
     throw error
   }
@@ -140,7 +137,6 @@ export async function* stream(
     provider: "google-code-assist",
     method,
     url,
-    body: JSON.stringify(req),
   })
 
   // Streaming: no retry (matches gemini-cli's retry: false)
@@ -204,14 +200,12 @@ export async function* stream(
             http.info("sse", {
               provider: "google-code-assist",
               url,
-              chunk: parsed,
             })
             yield parsed
           } catch (e: unknown) {
             http.error("sse parse error", {
               provider: "google-code-assist",
               url,
-              chunk,
               error: e instanceof Error ? e.message : String(e),
             })
           }
