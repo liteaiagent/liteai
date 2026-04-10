@@ -47,7 +47,7 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
         if (scope() === "project") {
           disabledTools[id] = false
         } else {
-          disabledTools[id] = null as unknown as boolean
+          delete disabledTools[id]
         }
       }
 
@@ -89,6 +89,9 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
             <For each={tools()}>
               {(toolItem: string | { id: string; native?: boolean; enabled?: boolean }) => {
                 const tool = typeof toolItem === "string" ? { id: toolItem, native: false, enabled: true } : toolItem
+                const currentlyEnabled = () =>
+                  scope() === "user" ? sync.data.config?.disabledTools?.[tool.id] !== true : tool.enabled !== false
+
                 return (
                   <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
                     <div class="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -101,13 +104,9 @@ const SettingsToolsInner: Component<{ projectID: string }> = (props) => {
                     </div>
                     <div class="flex items-center gap-2">
                       <Switch
-                        checked={
-                          scope() === "user"
-                            ? sync.data.config?.disabledTools?.[tool.id] !== true
-                            : tool.enabled !== false
-                        }
+                        checked={currentlyEnabled()}
                         disabled={loading() === tool.id}
-                        onChange={() => toggle(tool.id, tool.enabled !== false)}
+                        onChange={() => toggle(tool.id, currentlyEnabled())}
                       />
                     </div>
                   </div>

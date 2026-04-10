@@ -34,7 +34,7 @@ Use this tool to interact with interactive processes (REPLs, prompts) or to term
 
   formatValidationError(error: z.ZodError) {
     const issues = error.issues.map((i) => i.message).join("; ")
-    return `Invalid send_command_input parameters: ${issues}. Exactly one of Input or Terminate must be specified.`
+    return `Invalid send_command_input parameters: ${issues}`
   },
 
   async execute(

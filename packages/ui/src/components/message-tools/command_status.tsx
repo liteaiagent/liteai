@@ -1,4 +1,4 @@
-import { createMemo, createSignal, Show } from "solid-js"
+import { createMemo, createSignal, onCleanup, Show } from "solid-js"
 import stripAnsi from "strip-ansi"
 
 import { useI18n } from "../../context/i18n"
@@ -44,13 +44,27 @@ ToolRegistry.register({
     const commandId = () => props.metadata.commandId || props.input.CommandId
 
     const [copied, setCopied] = createSignal(false)
+    let timeoutId: number | undefined
+
+    onCleanup(() => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
+    })
 
     const handleCopy = async () => {
       const content = text()
       if (!content) return
-      await navigator.clipboard.writeText(content)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      try {
+        await navigator.clipboard.writeText(content)
+        setCopied(true)
+        if (timeoutId !== undefined) {
+          window.clearTimeout(timeoutId)
+        }
+        timeoutId = window.setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error("Failed to copy command status", err)
+      }
     }
 
     return (

@@ -177,4 +177,6 @@ export const dict = {
     "Ta sesja jest publiczna w sieci. Jest dostępna dla każdego, kto posiada link.",
   "session.share.popover.description.unshared":
     "Udostępnij sesję publicznie w sieci. Będzie dostępna dla każdego, kto posiada link.",
+  "tool.ranWithArgs": "Uruchomiono z argumentami:",
+  "tool.output": "Wynik",
 }

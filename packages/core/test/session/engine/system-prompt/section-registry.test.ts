@@ -106,7 +106,7 @@ describe("SectionRegistry", () => {
   })
 
   it("should throw UnknownSectionError on unknown name", async () => {
-    expect(SectionRegistry.resolve("missing-xyz")).rejects.toThrow(UnknownSectionError)
+    await expect(SectionRegistry.resolve("missing-xyz")).rejects.toThrow(UnknownSectionError)
   })
 
   it("should list all sections correctly", () => {

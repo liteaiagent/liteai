@@ -12,8 +12,8 @@ mock.module("../../../src/tool/registry", () => ({
         id: "run_command",
         description: "Run a command",
         parameters: z.object({}),
-        async execute() {
-          return { output: "", title: "" }
+        async execute(_args: unknown, ctx: unknown) {
+          return { output: "", title: "", __ctx: ctx }
         },
       },
     ]),
@@ -81,7 +81,11 @@ describe("resolveTools background task registry wiring", () => {
     // Verify the tool set includes run_command
     expect(tools).toBeTypeOf("object")
     expect(tools.run_command).toBeDefined()
-    expect(typeof tools.run_command.execute).toBe("function")
+    expect(typeof tools.run_command?.execute).toBe("function")
+
+    const executeFn = tools.run_command.execute as (a: unknown, c: unknown) => Promise<unknown>
+    const result = (await executeFn({}, {})) as { __ctx: { extra?: { backgroundTaskRegistry?: unknown } } }
+    expect(result.__ctx.extra?.backgroundTaskRegistry).toBe(registry)
   })
 
   test("resolveTools works without backgroundTaskRegistry (optional)", async () => {

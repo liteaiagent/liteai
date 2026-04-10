@@ -177,4 +177,6 @@ export const dict = {
   "session.share.popover.description.shared": "이 세션은 웹에 공개되었습니다. 링크가 있는 누구나 액세스할 수 있습니다.",
   "session.share.popover.description.unshared":
     "세션을 웹에 공개적으로 공유합니다. 링크가 있는 누구나 액세스할 수 있습니다.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

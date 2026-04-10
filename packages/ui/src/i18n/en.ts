@@ -148,6 +148,7 @@ export const dict: Record<string, string> = {
   "ui.message.duration.minutesSeconds": "{{minutes}}m {{seconds}}s",
   "ui.message.interrupted": "Interrupted",
   "ui.message.queued": "Queued",
+  "ui.message.backgroundedWaiting": "Backgrounded — waiting for status [{{commandId}}]",
   "ui.message.attachment.alt": "attachment",
 
   "ui.patch.action.deleted": "Deleted",
@@ -241,4 +242,6 @@ export const dict: Record<string, string> = {
     "This session is public on the web. It is accessible to anyone with the link.",
   "session.share.popover.description.unshared":
     "Share session publicly on the web. It will be accessible to anyone with the link.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

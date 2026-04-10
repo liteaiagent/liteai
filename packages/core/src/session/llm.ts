@@ -13,7 +13,7 @@ import {
 } from "ai"
 import { mergeDeep, pipe } from "remeda"
 import type { Agent } from "@/agent/agent"
-import { Auth } from "@/auth"
+
 import { Hook } from "@/hook"
 import { Installation } from "@/installation"
 import { PermissionNext } from "@/permission/next"
@@ -21,7 +21,7 @@ import { Plugin } from "@/plugin"
 import { Provider } from "@/provider/provider"
 import { ProviderTransform } from "@/provider/transform"
 import { Log } from "@/util/log"
-import { SystemPrompt } from "./engine/system"
+
 import type { TelemetryTracker } from "./engine/telemetry"
 import type { Message } from "./message"
 
@@ -42,8 +42,6 @@ export namespace LLM {
     retries?: number
     toolChoice?: "auto" | "required" | "none"
     onSystem?: (system: string[]) => void
-    /** Current step number in the query loop (1-indexed). Used for Langfuse graph visualization. */
-    step?: number
     telemetryTracker?: TelemetryTracker
     telemetryBatchId?: string
     systemBoundary?: number
@@ -253,7 +251,11 @@ export namespace LLM {
             content: x,
           }
           if (boundaryString && x === boundaryString && input.model.providerID === "anthropic") {
-            ;(msg as any).experimental_providerMetadata = { anthropic: { cacheControl: { type: "ephemeral" } } }
+            ;(
+              msg as ModelMessage & { experimental_providerMetadata?: Record<string, unknown> }
+            ).experimental_providerMetadata = {
+              anthropic: { cacheControl: { type: "ephemeral" } },
+            }
           }
           return msg
         }),

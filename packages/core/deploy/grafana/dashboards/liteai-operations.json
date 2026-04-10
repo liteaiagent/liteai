@@ -58,7 +58,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{ resource.service.name=\"liteai\" }",
+          "query": "{ resource.service.name=\"liteai\" && span.liteai_channel=~\"$liteai_channel\" }",
           "limit": 20
         }
       ],
@@ -66,7 +66,7 @@
       "type": "traces"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],

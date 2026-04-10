@@ -15,7 +15,12 @@ if (-not $RemoteHost) {
 }
 
 # Resolve the absolute path of the local-telemetry directory relative to this script
-$LocalTelemetryPath = Join-Path $PSScriptRoot ".\grafana"
+$LocalTelemetryPath = Join-Path $PSScriptRoot "grafana"
+
+if (-not (Test-Path $LocalTelemetryPath)) {
+    Write-Host "Source directory not found: $LocalTelemetryPath" -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "==================================" -ForegroundColor Cyan
 Write-Host " Telemetry Deployment Script" -ForegroundColor Cyan
@@ -32,9 +37,7 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# 2. Iterate through files and folders in local-telemetry and SCP them
-Write-Host "[2/3] Copying files to $RemoteHost..." -ForegroundColor Yellow
-
+$CopyFailed = $false
 $Items = Get-ChildItem -Path $LocalTelemetryPath
 foreach ($Item in $Items) {
     $ItemPath = $Item.FullName
@@ -45,6 +48,15 @@ foreach ($Item in $Items) {
         Write-Host "  -> Copying file: $($Item.Name)" -ForegroundColor DarkGray
         scp -q "$ItemPath" "$RemoteHost`:$RemotePath/"
     }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  [ERROR] Failed to copy: $($Item.Name)" -ForegroundColor Red
+        $CopyFailed = $true
+    }
+}
+
+if ($CopyFailed) {
+    Write-Host "Failed to copy files." -ForegroundColor Red
+    exit 1
 }
 
 if ($LASTEXITCODE -ne 0) {
@@ -54,7 +66,7 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3. Connect to the remote machine to create data dirs, fix permissions & restart Docker Containers
 Write-Host "`n[3/3] Creating data dirs, fixing permissions & Restarting Docker Containers remotely..." -ForegroundColor Yellow
-ssh $RemoteHost "cd $RemotePath && mkdir -p loki_data tempo_data grafana_data prometheus_data && (chmod -R a+rX . 2>/dev/null || true) && (chmod 777 loki_data tempo_data grafana_data prometheus_data 2>/dev/null || true) && docker compose down && docker compose up -d"
+ssh $RemoteHost "cd $RemotePath && mkdir -p loki_data tempo_data grafana_data prometheus_data && (chmod -R a+rX . 2>/dev/null || true) && (chown -R 10001:10001 loki_data && chmod -R u=rwx,g=rx,o=--- loki_data && chown -R 1000:1000 tempo_data && chmod -R u=rwx,g=rx,o=--- tempo_data && chown -R 1000:1000 grafana_data && chmod -R u=rwx,g=rx,o=--- grafana_data && chown -R 1000:1000 prometheus_data && chmod -R u=rwx,g=rx,o=--- prometheus_data 2>/dev/null || true) && docker compose down && docker compose up -d"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to restart Docker containers." -ForegroundColor Red

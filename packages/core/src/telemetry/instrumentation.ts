@@ -193,7 +193,6 @@ export async function initializeTelemetry() {
       })
 
       spanProcessors.push(langfuseProcessor)
-    } else {
     }
 
     const traceExporters = await getOtlpTraceExporters(globalTelemetryConfig?.otel)

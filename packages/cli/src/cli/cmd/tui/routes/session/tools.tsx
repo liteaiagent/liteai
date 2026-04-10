@@ -731,7 +731,7 @@ export function CommandStatus(props: ToolProps<Tool.Info>) {
     <Switch>
       <Match when={metadata.output !== undefined || props.output}>
         <BlockTool
-          title={`# Status: ${metadata.commandId || input.CommandId || ""}`}
+          title={`# Status: ${metadata.commandId || input.CommandId || "unknown"}`}
           part={props.part}
           spinner={running()}
           onClick={overflow() ? () => setExpanded((prev) => !prev) : undefined}
@@ -749,7 +749,7 @@ export function CommandStatus(props: ToolProps<Tool.Info>) {
       </Match>
       <Match when={true}>
         <InlineTool icon="⚙" pending="Checking status..." complete={input.CommandId} part={props.part}>
-          Status: {input.CommandId as string}
+          Status: {(metadata.commandId || input.CommandId || "unknown") as string}
         </InlineTool>
       </Match>
     </Switch>
@@ -785,7 +785,7 @@ export function SendCommandInput(props: ToolProps<Tool.Info>) {
       </Match>
       <Match when={true}>
         <InlineTool icon="⚙" pending="Sending input..." complete={input.CommandId} part={props.part}>
-          {text()}: {input.CommandId as string}
+          {text()}: {(metadata.commandId || input.CommandId || "unknown") as string}
         </InlineTool>
       </Match>
     </Switch>

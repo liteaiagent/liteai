@@ -191,7 +191,6 @@ describe("session.llm telemetry metadata", () => {
         expect(source).not.toContain('"langfuse.observation.metadata.langgraph_node"')
         expect(source).not.toContain('"langfuse.observation.metadata.langgraph_step"')
 
-        // Also ensure the stream works correctly with the step parameter
         const stream = await LLM.stream({
           user,
           sessionID,
@@ -201,7 +200,6 @@ describe("session.llm telemetry metadata", () => {
           abort: new AbortController().signal,
           messages: [{ role: "user", content: "Hello" }],
           tools: {},
-          step: 3,
         })
 
         for await (const _ of stream.fullStream) {
@@ -280,7 +278,6 @@ describe("session.llm telemetry metadata", () => {
           abort: new AbortController().signal,
           messages: [{ role: "user", content: "Hello" }],
           tools: {},
-          // step intentionally omitted
         })
 
         for await (const _ of stream.fullStream) {

@@ -86,31 +86,34 @@ const SettingsSkillsInner: Component<{ projectID: string }> = (props) => {
         >
           <SettingsList>
             <For each={skills()}>
-              {(skill) => (
-                <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
-                  <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-                    <div class="flex items-center gap-2">
-                      <span class="text-14-medium text-text-strong truncate">{skill.name}</span>
-                      <Show when={skill.native}>
-                        <span class="text-11-regular text-text-weaker">{language.t("settings.agents.tag.native")}</span>
-                      </Show>
+              {(skill) => {
+                const isChecked = () =>
+                  scope() === "user" ? sync.data.config?.disabledSkills?.[skill.name] !== true : skill.enabled !== false
+
+                return (
+                  <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
+                    <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class="text-14-medium text-text-strong truncate">{skill.name}</span>
+                        <Show when={skill.native}>
+                          <span class="text-11-regular text-text-weaker">
+                            {language.t("settings.agents.tag.native")}
+                          </span>
+                        </Show>
+                      </div>
+                      <span class="text-12-regular text-text-weak">{skill.description}</span>
+                      <span class="text-11-regular text-text-weaker truncate">{skill.location}</span>
                     </div>
-                    <span class="text-12-regular text-text-weak">{skill.description}</span>
-                    <span class="text-11-regular text-text-weaker truncate">{skill.location}</span>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                      <Switch
+                        checked={isChecked()}
+                        disabled={loading() === skill.name}
+                        onChange={() => toggle(skill.name, isChecked())}
+                      />
+                    </div>
                   </div>
-                  <div class="flex flex-col items-end gap-2 shrink-0">
-                    <Switch
-                      checked={
-                        scope() === "user"
-                          ? sync.data.config?.disabledSkills?.[skill.name] !== true
-                          : skill.enabled !== false
-                      }
-                      disabled={loading() === skill.name}
-                      onChange={() => toggle(skill.name, skill.enabled !== false)}
-                    />
-                  </div>
-                </div>
-              )}
+                )
+              }}
             </For>
           </SettingsList>
         </Show>

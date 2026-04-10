@@ -118,9 +118,7 @@ export class LoopDetectionService {
     this.contentHashPositions.clear()
     this.contentChunkContents.clear()
 
-    if (this.detectionCleared) {
-      this.detectionCleared = false
-    }
+    this.detectionCleared = false
 
     return NO_LOOP
   }

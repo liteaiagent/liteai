@@ -177,4 +177,6 @@ export const dict = {
     "Эта сессия общедоступна. Доступ к ней может получить любой, у кого есть ссылка.",
   "session.share.popover.description.unshared":
     "Опубликуйте сессию в интернете. Доступ к ней сможет получить любой, у кого есть ссылка.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

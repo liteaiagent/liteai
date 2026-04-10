@@ -178,4 +178,6 @@ export const dict = {
     "Esta sessão é pública na web. Está acessível para qualquer pessoa com o link.",
   "session.share.popover.description.unshared":
     "Compartilhar sessão publicamente na web. Estará acessível para qualquer pessoa com o link.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

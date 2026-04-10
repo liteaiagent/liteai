@@ -74,7 +74,12 @@ export namespace SystemPrompt {
           if (section.name === "environment") {
             SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
               section,
-              async (ctx?: unknown) => (await SystemPrompt.environment(ctx as Provider.Model)).join("\n"),
+              async (ctx?: unknown) => {
+                if (!ctx || typeof ctx !== "object" || !("api" in ctx)) {
+                  throw new Error("SystemPrompt.environment requires a valid Provider.Model context")
+                }
+                return (await SystemPrompt.environment(ctx as Provider.Model)).join("\n")
+              },
               "Environment info contains model ID, working directory, and date — all volatile per session/turn",
             )
           } else {

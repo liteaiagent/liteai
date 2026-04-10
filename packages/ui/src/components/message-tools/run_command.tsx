@@ -86,7 +86,7 @@ ToolRegistry.register({
               </span>
               <Show when={props.metadata.commandId && props.metadata.status === "running"}>
                 <ShellSubmessage
-                  text={`Backgrounded — waiting for status [${props.metadata.commandId}]`}
+                  text={i18n.t("ui.message.backgroundedWaiting", { commandId: props.metadata.commandId as string })}
                   animate={sawPending}
                 />
               </Show>

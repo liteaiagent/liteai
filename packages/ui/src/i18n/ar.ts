@@ -176,4 +176,6 @@ export const dict = {
   "session.share.popover.title": "نشر على الويب",
   "session.share.popover.description.shared": "هذه الجلسة عامة على الويب. يمكن لأي شخص لديه الرابط الوصول إليها.",
   "session.share.popover.description.unshared": "شارك الجلسة علنًا على الويب. ستكون متاحة لأي شخص لديه الرابط.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

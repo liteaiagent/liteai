@@ -177,4 +177,6 @@ export const dict = {
     "Denne session er offentlig på nettet. Den er tilgængelig for alle med linket.",
   "session.share.popover.description.unshared":
     "Del session offentligt på nettet. Den vil være tilgængelig for alle med linket.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

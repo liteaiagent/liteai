@@ -233,6 +233,9 @@ export const RunCommandTool = Tool.define("run_command", async () => {
       const raceResult = await Promise.race([completionPromise, timeoutPromise])
 
       if (raceResult === "timeout" && !exited) {
+        // Prevent unhandled rejection if it fails in the background before task is fully registered
+        completionPromise.catch(() => {})
+
         // Command didn't finish in time — background it
         ctx.abort.removeEventListener("abort", abortHandler)
 

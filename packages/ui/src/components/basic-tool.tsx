@@ -265,13 +265,15 @@ export function GenericTool(props: {
         <div style={{ display: "flex", "flex-direction": "column", gap: "16px", padding: "12px 16px 16px 16px" }}>
           <Show when={inputJson()}>
             <div style={{ display: "flex", "flex-direction": "column", gap: "8px" }}>
-              <div style={{ "font-size": "13px", color: "var(--text-weak)" }}>Ran with these arguments:</div>
+              <div style={{ "font-size": "13px", color: "var(--text-weak)" }}>{i18n.t("tool.ranWithArgs")}</div>
               <Markdown class="compact-markdown" text={`\`\`\`json\n${inputJson()}\n\`\`\``} />
             </div>
           </Show>
           <Show when={outputStr()}>
             <div style={{ display: "flex", "flex-direction": "column", gap: "8px" }}>
-              <div style={{ "font-size": "14px", "font-weight": "600", color: "var(--text-strong)" }}>Output</div>
+              <div style={{ "font-size": "14px", "font-weight": "600", color: "var(--text-strong)" }}>
+                {i18n.t("tool.output")}
+              </div>
               <Markdown class="compact-markdown" text={`\`\`\`json\n${outputStr()}\n\`\`\``} />
             </div>
           </Show>

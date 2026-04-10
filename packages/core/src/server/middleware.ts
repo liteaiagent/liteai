@@ -98,12 +98,13 @@ export function requestTracer(): MiddlewareHandler {
     const tracer = trace.getTracer("liteai-server")
     const method = c.req.method
     const target = new URL(c.req.url).pathname
+    const routePattern = c.req.routePath
 
     const client = c.req.header("x-liteai-client") || c.req.header("user-agent")?.split(" ")[0] || "unknown"
     const workspace = c.req.query("workspace") || c.req.header("x-liteai-workspace") || "none"
 
     return tracer.startActiveSpan(
-      `${method} ${target}`,
+      `${method} ${routePattern || target}`,
       {
         kind: SpanKind.SERVER,
         attributes: {

@@ -254,38 +254,41 @@ const SettingsPluginsInner: Component<{ projectID: string }> = (props) => {
           >
             <SettingsList>
               <For each={filteredPlugins()}>
-                {(plugin) => (
-                  <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2">
-                    <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                {(plugin) => {
+                  const isEnabled = () =>
+                    scope() === "user" ? sync.data.config?.enabledPlugins?.[plugin.id] === true : plugin.enabled
+
+                  return (
+                    <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2">
+                      <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <span class="text-14-medium text-text-strong truncate">{plugin.name}</span>
+                          <span class="text-11-regular text-text-weaker">
+                            {plugin.marketplace === "__local__" ? "local" : plugin.marketplace}
+                          </span>
+                          <Show when={plugin.version}>
+                            <span class="text-11-regular text-text-weaker">v{plugin.version}</span>
+                          </Show>
+                        </div>
+                      </div>
                       <div class="flex items-center gap-2">
-                        <span class="text-14-medium text-text-strong truncate">{plugin.name}</span>
-                        <span class="text-11-regular text-text-weaker">
-                          {plugin.marketplace === "__local__" ? "local" : plugin.marketplace}
-                        </span>
-                        <Show when={plugin.version}>
-                          <span class="text-11-regular text-text-weaker">v{plugin.version}</span>
-                        </Show>
+                        <Switch
+                          checked={isEnabled()}
+                          disabled={loading() === plugin.id}
+                          onChange={() => toggle(plugin.id, !isEnabled())}
+                        />
+                        <Button
+                          variant="secondary"
+                          size="small"
+                          onClick={() => removePlugin(plugin.id)}
+                          disabled={loading() === plugin.id}
+                        >
+                          Remove
+                        </Button>
                       </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <Switch
-                        checked={
-                          scope() === "user" ? sync.data.config?.enabledPlugins?.[plugin.id] === true : plugin.enabled
-                        }
-                        disabled={loading() === plugin.id}
-                        onChange={() => toggle(plugin.id, !plugin.enabled)}
-                      />
-                      <Button
-                        variant="secondary"
-                        size="small"
-                        onClick={() => removePlugin(plugin.id)}
-                        disabled={loading() === plugin.id}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                  )
+                }}
               </For>
             </SettingsList>
           </Show>

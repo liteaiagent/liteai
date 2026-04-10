@@ -182,4 +182,6 @@ export const dict: Record<Keys, string> = {
     "Denne sesjonen er offentlig på nettet. Den er tilgjengelig for alle med lenken.",
   "session.share.popover.description.unshared":
     "Del sesjonen offentlig på nettet. Den vil være tilgjengelig for alle med lenken.",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

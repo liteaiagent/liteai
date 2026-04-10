@@ -115,6 +115,8 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
                   if (!key) return
                   return language.t(key)
                 }
+                const currentlyEnabled = () =>
+                  scope() === "user" ? sync.data.config?.agent?.[agent.name]?.disable !== true : agent.enabled !== false
 
                 return (
                   <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
@@ -143,13 +145,9 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
                     <Show when={agent.name !== "build"}>
                       <div class="flex flex-col items-end gap-2 shrink-0">
                         <Switch
-                          checked={
-                            scope() === "user"
-                              ? sync.data.config?.agent?.[agent.name]?.disable !== true
-                              : agent.enabled !== false
-                          }
+                          checked={currentlyEnabled()}
                           disabled={loading() === agent.name}
-                          onChange={() => toggle(agent.name, agent.enabled !== false)}
+                          onChange={() => toggle(agent.name, currentlyEnabled())}
                         />
                       </div>
                     </Show>

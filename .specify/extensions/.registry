@@ -15,7 +15,8 @@
           "speckit.git.initialize",
           "speckit.git.commit"
         ]
-      },
+      }
+,
       "registered_skills": [],
       "installed_at": "2026-04-10T17:16:39.713607+00:00"
     }

@@ -64,13 +64,12 @@ describe("injectTaskNotifications", () => {
     expect(injected.parts.length).toBe(1)
     const part = injected.parts[0]
     expect(part.type).toBe("text")
-    if (part.type === "text") {
-      expect(part.synthetic).toBe(true)
-      expect(part.text).toContain("<task-notification>")
-      expect(part.text).toContain("cmd_test123")
-      expect(part.text).toContain("test output")
-      expect(part.text).toContain("</task-notification>")
-    }
+    const textPart = part as Extract<typeof part, { type: "text" }>
+    expect(textPart.synthetic).toBe(true)
+    expect(textPart.text).toContain("<task-notification>")
+    expect(textPart.text).toContain("cmd_test123")
+    expect(textPart.text).toContain("test output")
+    expect(textPart.text).toContain("</task-notification>")
 
     // Verify markNotified was called (idempotency/tracking check)
     const pending = registry.getUnnotifiedCompletedTasks()
@@ -184,16 +183,17 @@ describe("injectTaskNotifications", () => {
     expect(injected.parts.length).toBe(1)
 
     const part = injected.parts[0]
-    if (part.type === "text") {
-      // Both tasks present in the single message
-      expect(part.text).toContain("cmd_batch001")
-      expect(part.text).toContain("cmd_batch002")
-      expect(part.text).toContain("first output")
-      expect(part.text).toContain("second output")
-      // Contains both statuses
-      expect(part.text).toContain("Status: done")
-      expect(part.text).toContain("Status: error")
-    }
+    expect(part.type).toBe("text")
+    const textPart = part as Extract<typeof part, { type: "text" }>
+
+    // Both tasks present in the single message
+    expect(textPart.text).toContain("cmd_batch001")
+    expect(textPart.text).toContain("cmd_batch002")
+    expect(textPart.text).toContain("first output")
+    expect(textPart.text).toContain("second output")
+    // Contains both statuses
+    expect(textPart.text).toContain("Status: done")
+    expect(textPart.text).toContain("Status: error")
 
     // Both tasks marked notified
     expect(registry.getUnnotifiedCompletedTasks().length).toBe(0)

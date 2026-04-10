@@ -177,4 +177,6 @@ export const dict = {
     "このセッションはウェブで公開されています。リンクを知っている人なら誰でもアクセスできます。",
   "session.share.popover.description.unshared":
     "セッションをウェブで公開します。リンクを知っている人なら誰でもアクセスできるようになります。",
+  "tool.ranWithArgs": "Ran with these arguments:",
+  "tool.output": "Output",
 }

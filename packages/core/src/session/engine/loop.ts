@@ -830,9 +830,12 @@ async function stripIncompleteThinking(input: { sessionID: SessionID; message: M
   const { sessionID, message } = input
 
   // Read the persisted parts for this message from the DB
-  const msgs = await Session.messages({ sessionID, limit: 50 })
-  const assistantMsg = msgs.find((m) => m.info.id === message.id)
-  if (!assistantMsg) return
+  let assistantMsg: Message.WithParts
+  try {
+    assistantMsg = await Message.get({ sessionID, messageID: message.id })
+  } catch {
+    return
+  }
 
   for (const part of assistantMsg.parts) {
     if (part.type === "reasoning" && !part.time?.end) {
