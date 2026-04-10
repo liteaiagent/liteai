@@ -9,14 +9,12 @@ import { PermissionNext } from "@/permission/next"
 import * as Platform from "@/platform"
 import { Plugin } from "@/plugin"
 import { Log } from "@/util/log"
-import { Auth } from "../auth"
 import { Config } from "../config/config"
 import { Agent as AgentSchema } from "../config/schema"
 import { Instance } from "../project/instance"
 import { Provider } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
 import { ProviderTransform } from "../provider/transform"
-import { SystemPrompt } from "../session/engine/system"
 import { Skill } from "../skill"
 import { Truncate } from "../tool/truncation"
 import { AgentLoader } from "./loader"
@@ -276,21 +274,6 @@ export namespace Agent {
         systemPrompt: z.string(),
       }),
     } satisfies Parameters<typeof generateObject>[0]
-
-    if (defaultModel.providerID === "openai" && (await Auth.get(defaultModel.providerID))?.type === "oauth") {
-      const result = streamObject({
-        ...params,
-        providerOptions: ProviderTransform.providerOptions(model, {
-          instructions: await SystemPrompt.instructions(),
-          store: false,
-        }),
-        onError: () => {},
-      })
-      for await (const part of result.fullStream) {
-        if (part.type === "error") throw part.error
-      }
-      return result.object
-    }
 
     const result = await generateObject(params)
     return result.object

@@ -10,21 +10,6 @@ import { Flag } from "../../flag/flag"
 import { Instance } from "../../project/instance"
 
 export namespace SystemPrompt {
-  export async function instructions() {
-    return (await Bundled.systemPrompt("codex_header")).trim()
-  }
-
-  export async function provider(model: Provider.Model) {
-    if (model.api.id.includes("gpt-5")) return [await Bundled.systemPrompt("codex_header")]
-    if (model.api.id.includes("gpt-") || model.api.id.includes("o1") || model.api.id.includes("o3"))
-      return [await Bundled.systemPrompt("beast")]
-    if (model.providerID === "google-code-assist") return [await Bundled.systemPrompt("google-code-assist")]
-    if (model.api.id.includes("gemini-")) return [await Bundled.systemPrompt("gemini")]
-    if (model.api.id.includes("claude")) return [await Bundled.systemPrompt("anthropic")]
-    if (model.api.id.toLowerCase().includes("trinity")) return [await Bundled.systemPrompt("trinity")]
-    return [await Bundled.systemPrompt("default")]
-  }
-
   export async function environment(model: Provider.Model) {
     const project = Instance.project
     const shell = Shell.acceptable()
@@ -76,7 +61,7 @@ export namespace SystemPrompt {
   export async function loadSystemMd() {
     if (isLoaded) return
     try {
-      const rawContent = await Bundled.systemPrompt("system")
+      const rawContent = await Bundled.systemMd()
       const { SectionParser } = await import("./section-parser")
       const { SectionRegistry } = await import("./section-registry")
 

@@ -46,6 +46,7 @@ export namespace LLM {
     step?: number
     telemetryTracker?: TelemetryTracker
     telemetryBatchId?: string
+    systemBoundary?: number
   }
 
   export type StreamOutput = StreamTextResult<ToolSet, unknown>
@@ -63,32 +64,25 @@ export namespace LLM {
       modelID: input.model.id,
       providerID: input.model.providerID,
     })
-    const [language, provider, auth] = await Promise.all([
+    const [language, provider] = await Promise.all([
       Provider.getLanguage(input.model),
       Provider.getProvider(input.model.providerID),
-      Auth.get(input.model.providerID),
     ]).catch((e) => {
       l.error("stream setup failed", { error: e })
       throw e
     })
-    const isCodex = provider.id === "openai" && auth?.type === "oauth"
 
     const system: string[] = []
-    system.push(
-      [
-        // use agent prompt otherwise provider prompt
-        // For Codex sessions, skip SystemPrompt.provider() since it's sent via options.instructions
-        ...(input.agent.prompt ? [input.agent.prompt] : isCodex ? [] : await SystemPrompt.provider(input.model)),
-        // any custom prompt passed into this call
-        ...input.system,
-        // any custom prompt from last user message
-        ...(input.user.system ? [input.user.system] : []),
-      ]
-        .filter((x) => x)
-        .join("\n"),
-    )
+    if (input.agent.prompt) system.push(input.agent.prompt)
 
-    const header = system[0]
+    let boundaryString: string | undefined
+    if (input.systemBoundary && input.systemBoundary > 0 && input.systemBoundary <= input.system.length) {
+      boundaryString = input.system[input.systemBoundary - 1]
+    }
+
+    system.push(...input.system)
+    if (input.user.system) system.push(input.user.system)
+
     await Plugin.trigger(
       "experimental.chat.system.transform",
       { sessionID: input.sessionID, model: input.model },
@@ -98,14 +92,8 @@ export namespace LLM {
       session_id: input.sessionID,
       cwd: process.cwd(),
       hook_event_name: "InstructionsLoaded",
-      system: system.join("\n"),
+      system: system.filter(Boolean).join("\n"),
     })
-    // rejoin to maintain 2-part structure for caching if header unchanged
-    if (system.length > 2 && system[0] === header) {
-      const rest = system.slice(1)
-      system.length = 0
-      system.push(header, rest.join("\n"))
-    }
 
     // Report resolved system prompt to caller (for telemetry span recording)
     input.onSystem?.(system)
@@ -125,9 +113,6 @@ export namespace LLM {
       mergeDeep(input.agent.options),
       mergeDeep(variant),
     )
-    if (isCodex) {
-      options.instructions = await SystemPrompt.instructions()
-    }
 
     const params = await Plugin.trigger(
       "chat.params",
@@ -162,8 +147,9 @@ export namespace LLM {
       },
     )
 
-    const maxOutputTokens =
-      isCodex || provider.id.includes("github-copilot") ? undefined : ProviderTransform.maxOutputTokens(input.model)
+    const maxOutputTokens = provider.id.includes("github-copilot")
+      ? undefined
+      : ProviderTransform.maxOutputTokens(input.model)
 
     const tools = await resolveTools(input)
 
@@ -261,12 +247,16 @@ export namespace LLM {
       },
       maxRetries: input.retries ?? 0,
       messages: [
-        ...system.map(
-          (x): ModelMessage => ({
+        ...system.filter(Boolean).map((x): ModelMessage => {
+          const msg: ModelMessage = {
             role: "system",
             content: x,
-          }),
-        ),
+          }
+          if (boundaryString && x === boundaryString && input.model.providerID === "anthropic") {
+            ;(msg as any).experimental_providerMetadata = { anthropic: { cacheControl: { type: "ephemeral" } } }
+          }
+          return msg
+        }),
         ...input.messages,
       ],
       model: wrapLanguageModel({

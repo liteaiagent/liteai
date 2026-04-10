@@ -45,9 +45,9 @@ export namespace Bundled {
 
   // ----- Prompts -----
 
-  /** Read a system prompt .md file (provider-specific, e.g. "gemini", "anthropic"). */
-  export async function systemPrompt(name: string): Promise<string> {
-    return fs.readFile(path.join(ROOT, "prompts", "system", `${name}.md`), "utf-8")
+  /** Read the unified system prompt .md file. */
+  export async function systemMd(): Promise<string> {
+    return fs.readFile(path.join(ROOT, "prompts", "system", "system.md"), "utf-8")
   }
 
   /** Read a misc prompt .md file (e.g. "build-switch", "max-steps"). */
