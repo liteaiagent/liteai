@@ -22,9 +22,9 @@ All paths are relative to `packages/core/`.
 
 **Purpose**: Establish new module files and shared error types before any story implementation begins.
 
-- [ ] T001 Create `src/session/engine/section-parser.ts` with the `SectionParser` namespace stub (empty `parse()` function, correct imports from `@liteai/util/error`)
-- [ ] T002 Create `src/session/engine/section-registry.ts` with the `SectionRegistry` class stub and all error type class definitions (`SystemPromptLoadError`, `MissingSectionMarkerError`, `SectionOrderError`, `InvalidSectionAttributeError`, `DuplicateSectionError`, `InvalidVolatileReasonError`) extending `NamedError`
-- [ ] T003 [P] Create `test/session/engine/system-prompt/` directory with `section-parser.test.ts`, `section-registry.test.ts`, and `resolver.test.ts` stub files (empty `describe` blocks only)
+- [x] T001 Create `src/session/engine/section-parser.ts` with the `SectionParser` namespace stub (empty `parse()` function, correct imports from `@liteai/util/error`)
+- [x] T002 Create `src/session/engine/section-registry.ts` with the `SectionRegistry` class stub and all error type class definitions (`SystemPromptLoadError`, `MissingSectionMarkerError`, `SectionOrderError`, `InvalidSectionAttributeError`, `DuplicateSectionError`, `InvalidVolatileReasonError`) extending `NamedError`
+- [x] T003 [P] Create `test/session/engine/system-prompt/` directory with `section-parser.test.ts`, `section-registry.test.ts`, and `resolver.test.ts` stub files (empty `describe` blocks only)
 
 ---
 
