@@ -1,4 +1,0 @@
-# .coderabbit.yaml
-reviews:
-  path_filters:
-    - "packages/core/**/*.ts"
