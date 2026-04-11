@@ -66,7 +66,9 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3. Connect to the remote machine to create data dirs, fix permissions & restart Docker Containers
 Write-Host "`n[3/3] Creating data dirs, fixing permissions & Restarting Docker Containers remotely..." -ForegroundColor Yellow
-ssh $RemoteHost "cd $RemotePath && mkdir -p loki_data tempo_data grafana_data prometheus_data && (chmod -R a+rX . 2>/dev/null || true) && (chown -R 10001:10001 loki_data && chmod -R u=rwx,g=rx,o=--- loki_data && chown -R 1000:1000 tempo_data && chmod -R u=rwx,g=rx,o=--- tempo_data && chown -R 1000:1000 grafana_data && chmod -R u=rwx,g=rx,o=--- grafana_data && chown -R 1000:1000 prometheus_data && chmod -R u=rwx,g=rx,o=--- prometheus_data 2>/dev/null || true) && docker compose down && docker compose up -d"
+Write-Host "NOTE: Setting ownership for container data directories requires elevated privileges." -ForegroundColor DarkGray
+Write-Host "Please ensure the remote user has passwordless sudo configured, or is running as root." -ForegroundColor DarkGray
+ssh $RemoteHost "cd $RemotePath && mkdir -p loki_data tempo_data grafana_data prometheus_data && (chmod -R a+rX . 2>/dev/null || true) && sudo chown -R 10001:10001 loki_data && sudo chmod -R u=rwx,g=rx,o=--- loki_data && sudo chown -R 1000:1000 tempo_data && sudo chmod -R u=rwx,g=rx,o=--- tempo_data && sudo chown -R 1000:1000 grafana_data && sudo chmod -R u=rwx,g=rx,o=--- grafana_data && sudo chown -R 1000:1000 prometheus_data && sudo chmod -R u=rwx,g=rx,o=--- prometheus_data && docker compose down && docker compose up -d"
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to restart Docker containers." -ForegroundColor Red

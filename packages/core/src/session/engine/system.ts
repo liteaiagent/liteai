@@ -56,49 +56,64 @@ export namespace SystemPrompt {
     return lines.join("\n")
   }
 
-  let isLoaded = false
+  // _isLoaded is tracking if the loading happened. It isn't explicitly checked anywhere else but serves as internal state.
+  let _isLoaded = false
+  let loadPromise: Promise<void> | null = null
+  let clearHookAdded = false
 
   export async function loadSystemMd() {
-    if (isLoaded) return
-    try {
-      const rawContent = await Bundled.systemMd()
-      const { SectionParser } = await import("./section-parser")
-      const { SectionRegistry } = await import("./section-registry")
+    const { SectionRegistry } = await import("./section-registry")
+    if (!clearHookAdded) {
+      SectionRegistry.onClear(() => {
+        _isLoaded = false
+      })
+      clearHookAdded = true
+    }
+    if (SectionRegistry.all().length > 0) return
+    if (loadPromise) return await loadPromise
+    loadPromise = (async () => {
+      try {
+        const rawContent = await Bundled.systemMd()
+        const { SectionParser } = await import("./section-parser")
 
-      const sections = SectionParser.parse(rawContent)
+        const sections = SectionParser.parse(rawContent)
 
-      for (const section of sections) {
-        if (section.scope === "static") {
-          SectionRegistry.register(section, async () => section.content)
-        } else {
-          if (section.name === "environment") {
-            SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
-              section,
-              async (ctx?: unknown) => {
-                if (!ctx || typeof ctx !== "object" || !("api" in ctx)) {
-                  throw new Error("SystemPrompt.environment requires a valid Provider.Model context")
-                }
-                return (await SystemPrompt.environment(ctx as Provider.Model)).join("\n")
-              },
-              "Environment info contains model ID, working directory, and date — all volatile per session/turn",
-            )
+        for (const section of sections) {
+          if (section.scope === "static") {
+            SectionRegistry.register(section, async () => section.content)
           } else {
-            SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
-              section,
-              async () => section.content,
-              "parsed from system.md",
-            )
+            if (section.name === "environment") {
+              SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
+                section,
+                async (ctx?: unknown) => {
+                  if (!ctx || typeof ctx !== "object" || !("api" in ctx)) {
+                    throw new Error("SystemPrompt.environment requires a valid Provider.Model context")
+                  }
+                  return (await SystemPrompt.environment(ctx as Provider.Model)).join("\n")
+                },
+                "Environment info contains model ID, working directory, and date — all volatile per session/turn",
+              )
+            } else {
+              SectionRegistry.DANGEROUS_uncachedSystemPromptSection(
+                section,
+                async () => section.content,
+                "parsed from system.md",
+              )
+            }
           }
         }
+        _isLoaded = true
+      } catch (error) {
+        const { SystemPromptLoadError } = await import("./section-registry")
+        if (error instanceof Error) {
+          throw new SystemPromptLoadError({ message: `Failed to load system prompt: ${error.message}` })
+        }
+        throw new SystemPromptLoadError({ message: "Failed to load system prompt" })
+      } finally {
+        loadPromise = null
       }
-      isLoaded = true
-    } catch (error) {
-      const { SystemPromptLoadError } = await import("./section-registry")
-      if (error instanceof Error) {
-        throw new SystemPromptLoadError({ message: `Failed to load system prompt: ${error.message}` })
-      }
-      throw new SystemPromptLoadError({ message: "Failed to load system prompt" })
-    }
+    })()
+    return await loadPromise
   }
 
   export async function resolveSystemPromptSections(model: Provider.Model) {
@@ -126,6 +141,6 @@ export namespace SystemPrompt {
   }
 
   export function DANGEROUS_resetLoaded() {
-    isLoaded = false
+    _isLoaded = false
   }
 }

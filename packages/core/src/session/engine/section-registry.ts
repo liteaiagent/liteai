@@ -42,6 +42,7 @@ export interface SectionEntry {
 export class SectionRegistry {
   private static readonly entries = new Map<string, SectionEntry>()
   private static readonly computeCallCount = new Map<string, number>()
+  private static readonly clearCallbacks: (() => void)[] = []
 
   static register(section: ParsedSection, compute: (ctx?: unknown) => Promise<string>): void {
     if (SectionRegistry.entries.has(section.name)) {
@@ -94,10 +95,17 @@ export class SectionRegistry {
     if (process.env.NODE_ENV === "test") {
       SectionRegistry.computeCallCount.clear()
     }
+    for (const callback of SectionRegistry.clearCallbacks) {
+      callback()
+    }
   }
 
   static all(): SectionEntry[] {
     return Array.from(SectionRegistry.entries.values())
+  }
+
+  static onClear(callback: () => void): void {
+    SectionRegistry.clearCallbacks.push(callback)
   }
 
   static getComputeCallCount(name: string): number {

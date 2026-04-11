@@ -4,6 +4,7 @@ import type { ErrorHandler, MiddlewareHandler } from "hono"
 import { basicAuth } from "hono/basic-auth"
 import { cors } from "hono/cors"
 import { HTTPException } from "hono/http-exception"
+import { routePath } from "hono/route"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
 import { Filesystem } from "@/util/filesystem"
 import { WorkspaceID } from "../control-plane/schema"
@@ -98,7 +99,7 @@ export function requestTracer(): MiddlewareHandler {
     const tracer = trace.getTracer("liteai-server")
     const method = c.req.method
     const target = new URL(c.req.url).pathname
-    const routePattern = c.req.routePath
+    const routePattern = routePath(c)
 
     const client = c.req.header("x-liteai-client") || c.req.header("user-agent")?.split(" ")[0] || "unknown"
     const workspace = c.req.query("workspace") || c.req.header("x-liteai-workspace") || "none"

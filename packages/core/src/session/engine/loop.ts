@@ -833,7 +833,15 @@ async function stripIncompleteThinking(input: { sessionID: SessionID; message: M
   let assistantMsg: Message.WithParts
   try {
     assistantMsg = await Message.get({ sessionID, messageID: message.id })
-  } catch {
+  } catch (e) {
+    if (e instanceof Error && e.name === "NotFoundError") {
+      return
+    }
+    log.error("stripIncompleteThinking: unexpected error getting message", {
+      sessionID,
+      messageID: message.id,
+      error: e,
+    })
     return
   }
 
