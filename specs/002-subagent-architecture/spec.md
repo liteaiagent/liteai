@@ -27,9 +27,17 @@
 ### Context Pruning
 
 - **[runAgent.ts:L385–410](../../liteai2/src/tools/AgentTool/runAgent.ts#L385)** — Intelligent stripping for read-only agents:
-  - ClaudeMd stripping (L390–398): `shouldOmitClaudeMd = agentDefinition.omitClaudeMd && !override?.userContext && featureFlag('tengu_slim_subagent_claudemd', true)`. Destructures `{ claudeMd: _omitted, ...userContextNoClaudeMd }`.
+  - LiteaiMd stripping (L390–398): `shouldOmitLiteaiMd = agentDefinition.omitLiteaiMd && !override?.userContext && featureFlag('liteai_slim_subagent_liteaimd', true)`. Destructures `{ liteaiMd: _omitted, ...userContextNoLiteaiMd }`.
   - Git status stripping (L400–410): `{ gitStatus: _omitted, ...systemContextNoGit }` for Explore/Plan agents. Saves ~1–3 Gtok/week fleet-wide.
-  - Kill-switch: feature flag `tengu_slim_subagent_claudemd` defaults true.
+  - Kill-switch: feature flag `liteai_slim_subagent_liteaimd` defaults true.
+
+### Sub-Agent System Prompt Composition
+
+Sub-agents construct their system prompt independently using the Phase 1 `SectionRegistry` resolver. The resolver is invoked with the **sub-agent's model context** (not the parent's), producing a complete system prompt from scratch. This means:
+- Sub-agents do NOT inherit the parent's compiled system prompt
+- Sub-agents DO get all SectionRegistry sections appropriate for their model
+- Context pruning (US5) strips context fields (`liteaiMd`, `gitStatus`) from the objects passed to the sub-agent, independent of the resolver output
+- The parent's prompt cache is NOT shared (cache sharing is deferred to Phase 4 fork model)
 
 ### Permission Sandboxing
 
@@ -76,6 +84,14 @@ Agent memory is a **filesystem-backed persistent knowledge store** where agents 
 - **[agentMemory.ts](../../liteai2/src/tools/AgentTool/agentMemory.ts)** — Core memory module: `AgentMemoryScope` type, `getAgentMemoryDir()` (path resolution by scope), `loadAgentMemoryPrompt()` (system prompt injection with scope-specific guidelines), `isAgentMemoryPath()` (security boundary check with path traversal prevention).
 - **[agentMemorySnapshot.ts](../../liteai2/src/tools/AgentTool/agentMemorySnapshot.ts)** — Snapshot lifecycle: `checkAgentMemorySnapshot()` detects newer project snapshots, `copyProjectSnapshotToLocal()` seeds local memory from project-level snapshots.
 - **[loadAgentsDir.ts:L455–484](../../liteai2/src/tools/AgentTool/loadAgentsDir.ts#L455)** — Auto-injection of memory tools: when `isAutoMemoryEnabled() && parsed.memory`, the system injects Read/Write/Edit tools scoped to the agent's memory directory and appends `loadAgentMemoryPrompt()` to the system prompt.
+
+**`isAutoMemoryEnabled()` gate**: Memory auto-injection is controlled by a multi-source settings priority chain (first defined wins):
+1. `LITEAI_DISABLE_AUTO_MEMORY` environment variable (truthy → OFF, falsy-defined → ON)
+2. Headless/bare mode → OFF
+3. `autoMemoryEnabled` in user or project settings (supports project-level opt-out)
+4. Default: **enabled**
+
+This is NOT a feature flag — it is a configuration gate that returns a synchronous boolean. When disabled, memory tools are not injected and `loadAgentMemoryPrompt()` is skipped.
 
 ### Critical System Reminder
 
@@ -129,12 +145,13 @@ This discriminator is a **first-class architectural contract** that gates numero
 
 - **[agentToolUtils.ts:runAsyncAgentLifecycle](../../liteai2/src/tools/AgentTool/agentToolUtils.ts#L508)** — Drives background agents from spawn to terminal notification (L508–686). Key lifecycle stages:
   - Progress tracking: `ProgressTracker` with `createActivityDescriptionResolver()` mapping tool names to human-readable descriptions.
-  - Agent summarization: `startAgentSummarization()` triggered via `onCacheSafeParams` callback — periodic summaries for background agents.
+  - Agent summarization: `startAgentSummarization()` triggered via `onCacheSafeParams` callback — produces 30-second-interval periodic summaries for background agents. Timer resets after each summary completes (not on initiation) to prevent overlap. Always enabled for async agents when the caller passes `enableSummarization: true` — not driven by agent definition config. Each summary forks the current transcript and asks for a 3–5 word present-tense activity description.
   - Terminal notifications: `enqueueAgentNotification()` with status (completed/failed/killed), usage metrics, and worktree info.
   - Handoff classification: `classifyHandoffIfNeeded()` — auto-mode safety classifier reviews sub-agent output on handoff (L607–620).
   - Partial results: `extractPartialResult()` (L488–500) — preserves last meaningful output from killed agents.
-  - Cache eviction: `tengu_cache_eviction_hint` event on agent completion (L338–346).
+  - Cache eviction: `liteai_cache_eviction_hint` event on agent completion (L338–346).
   - Retain mode: Live message appending to AppState when UI holds the task (L559–570).
+  > **Deferred**: Retain mode (live message streaming to UI for held tasks) is documented for reference parity with liteai2. It is deferred from this phase as it requires UI integration in `packages/web`. Implementation will follow in the UI integration phase.
 - **[agentToolUtils.ts:filterToolsForAgent](../../liteai2/src/tools/AgentTool/agentToolUtils.ts#L70)** — Tool filtering with disallow lists (`ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, `ASYNC_AGENT_ALLOWED_TOOLS`). MCP tools always allowed.
 - **[agentToolUtils.ts:resolveAgentTools](../../liteai2/src/tools/AgentTool/agentToolUtils.ts#L122)** — Validates agent tool specs against available tools, supports wildcard expansion, and extracts `allowedAgentTypes` from `Agent(type1, type2)` spec syntax.
 
@@ -164,7 +181,7 @@ This discriminator is a **first-class architectural contract** that gates numero
 
 ### Deterministic Cleanup Lifecycle
 
-- **[runAgent.ts:L816–858](../../liteai2/src/tools/AgentTool/runAgent.ts#L816)** — 12-step teardown in `runAgent` finally block:
+- **[runAgent.ts:L816–858](../../liteai2/src/tools/AgentTool/runAgent.ts#L816)** — 11-step teardown in `runAgent` finally block:
   1. MCP cleanup: `mcpCleanup()` — terminates agent-scoped inline connections.
   2. Session hooks: `clearSessionHooks(rootSetAppState, agentId)` — removes agent-registered hooks.
   3. Prompt cache tracking: `cleanupAgentTracking(agentId)` — releases cache entry references.
@@ -176,13 +193,12 @@ This discriminator is a **first-class architectural contract** that gates numero
   9. Shell tasks: `killAgentShellTasks(agentId, rootSetAppState)` — prevents PPID=1 zombie processes from fire-and-forget bash.
   10. Monitor MCP tasks: Feature-gated cleanup for monitor tool connections.
   11. Invoked skills: `clearInvokedSkillsForAgent(agentId)` — resets skill tracking.
-  12. Dump state: `clearDumpState(agentId)` — clears debug dump state.
 
 ## Clarifications
 
 ### Session 2026-04-11
 
-- Q: Should there be a maximum concurrent sub-agent limit per parent session? → A: Configurable limit with a sensible default (e.g., 5–10 concurrent sub-agents per session)
+- Q: Should there be a maximum concurrent sub-agent limit per parent session? → A: Configurable limit with a sensible default of 8 concurrent sub-agents per session
 - Q: Are isolation modes (`worktree`, `remote`) in-scope or explicitly deferred? → A: Fully in-scope — implement worktree and remote isolation in this phase
 - Q: Should sub-agents have a configurable wall-clock timeout in addition to maxTurns? → A: Yes, configurable wall-clock timeout per agent (default: ~30 min)
 - Enrichment: Added detailed Agent Persistent Memory documentation (filesystem-backed per-agent-type knowledge store with 3 scopes, orthogonal to context forking)
@@ -195,7 +211,7 @@ This discriminator is a **first-class architectural contract** that gates numero
 - Q: When should `requiredMcpServers` be validated? → A: Dual enforcement — filter at load-time AND re-validate at spawn-time
 - Q: When wall-clock timeout fires during active tool execution, should the tool get a grace period? → A: Hard-kill — signal abort immediately, no grace period; rely on partial result extraction
 - Q: Should `setAppStateForTasks` be scoped or a full `setAppState` alias? → A: Scoped — expose only task-specific operations (`registerTask`, `killTask`, `deleteTodo`), not a full `setAppState`
-- Enrichment: Added explicit liteai2 agent format compatibility guarantee — all liteai2 `.md` agent definitions must run in liteai without modification; new config fields are strictly additive with sensible defaults
+- Enrichment: Added explicit liteai2 agent format compatibility guarantee — all liteai2 `.md` agent definitions must run in liteai without modification; new config fields are strictly additive with per-field defaults documented in FR-003 and data-model.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -221,7 +237,7 @@ When the AI model delegates a task to a sub-agent (e.g., Explore, Plan, or a cus
 
 Administrators, plugin developers, and the system itself define agents from multiple sources: built-in definitions bundled with the application, plugin-provided definitions, user-level settings, and project-level settings. The system loads all agent definitions with a deterministic priority ordering where later sources override earlier ones. Each agent supports an expanded configuration schema covering tool scoping, skills, MCP server declarations, model selection with inheritance, permission modes, and execution constraints.
 
-**Why this priority**: The type hierarchy and expanded configuration schema define the contract that all other sub-agent features consume. Context forking needs to know which state to inherit (from agent config), permission sandboxing reads permissionMode, MCP mounting reads mcpServers, and context pruning reads omitClaudeMd.
+**Why this priority**: The type hierarchy and expanded configuration schema define the contract that all other sub-agent features consume. Context forking needs to know which state to inherit (from agent config), permission sandboxing reads permissionMode, MCP mounting reads mcpServers, and context pruning reads omitLiteaiMd.
 
 **Independent Test**: Can be tested by defining agents across all four source levels, verifying the correct merge priority produces the expected final configuration, and confirming that expanded fields (tools, skills, mcpServers, model, permissionMode, maxTurns) are correctly parsed and available at runtime. Delivers value by enabling rich, customizable agent behavior without code changes.
 
@@ -250,7 +266,7 @@ When a sub-agent runs as a background task (no interactive user session), any op
 
 1. **Given** a sub-agent running as a background task, **When** it invokes a tool that requires user permission (e.g., file write outside approved directories), **Then** the operation is silently denied and the sub-agent receives an immediate "permission denied" response without any user prompt
 2. **Given** a parent session with `permissionMode: 'auto'`, **When** a sub-agent is spawned with `permissionMode: 'plan'`, **Then** the parent's 'auto' mode takes precedence and the sub-agent inherits auto-approval
-3. **Given** a sub-agent configured with `allowedTools: ["read_file", "search"]`, **When** the parent session has approved "write_file" in its tool decisions, **Then** the sub-agent cannot access "write_file" — the allow-list replaces, not merges
+3. **Given** a sub-agent configured with `tools: ["read_file", "search"]`, **When** the parent session has approved "write_file" in its tool decisions, **Then** the sub-agent cannot access "write_file" — the allow-list replaces, not merges
 4. **Given** a sub-agent with no explicit permission mode, **When** it runs as a foreground task, **Then** permission prompts bubble up to the user normally
 5. **Given** a sub-agent using `permissionMode: 'bubble'`, **When** it requires permission, **Then** prompts bubble to the user terminal regardless of async status
 
@@ -271,8 +287,8 @@ When a sub-agent runs in the background, the system maintains a structured lifec
 3. **Given** a background sub-agent is killed via abort, **When** the kill occurs, **Then** the last meaningful assistant text is extracted as a partial result and included in the notification with status='killed'
 4. **Given** a background sub-agent fails with an error, **When** the error occurs, **Then** a notification is enqueued with status='failed' and the structured error message
 5. **Given** 3 concurrent background agents in the same process, **When** each emits analytics events, **Then** each event is attributed to the correct agent via AsyncLocalStorage-isolated context — no cross-contamination
-6. **Given** a long-running background sub-agent and summarization is enabled, **When** cache-safe params are captured, **Then** periodic summarization starts and summary updates are pushed to AppState
-7. **Given** a completed background agent in auto permission mode, **When** the result is returned to the parent, **Then** the handoff classifier reviews the sub-agent's transcript and flags any security-relevant actions
+6. **Given** a long-running background sub-agent with `enableSummarization: true`, **When** cache-safe params are captured via `onCacheSafeParams`, **Then** a 30-second-interval summarization timer starts, each tick forks the agent's current transcript to produce a 3–5 word activity description, and the summary is pushed to AppState
+7. **Given** a completed background agent in auto permission mode, **When** the result is returned to the parent, **Then** the handoff classifier reviews the sub-agent's transcript regarding security-relevant actions (e.g., unauthorized file mutations outside project dir, shell commands with destructive flags or network exfiltration patterns) using a newly ported YOLO safety classifier (`classifyYoloAction`), gated by a `TRANSCRIPT_CLASSIFIER` feature flag (default: **disabled** — opt-in per deployment). If the classifier flags a security violation, a `"SECURITY WARNING: ... Reason: {reason}"` string is prepended to the task result text returned to the parent. If the classifier is unavailable, a softer `"Note: The safety classifier was unavailable..."` warning is prepended instead. Returns `null` (no warning) when the transcript passes classification
 
 ---
 
@@ -303,7 +319,7 @@ Read-only agents such as Explore and Plan have heavy, unnecessary context automa
 
 **Acceptance Scenarios**:
 
-1. **Given** an agent with `omitClaudeMd: true`, **When** the agent's context is constructed, **Then** project configuration content is stripped from the context
+1. **Given** an agent with `omitLiteaiMd: true`, **When** the agent's context is constructed, **Then** project configuration content is stripped from the context
 2. **Given** a read-only agent, **When** the agent's system context is constructed, **Then** git status information is stripped from the context
 3. **Given** pruning is active, **When** the user or a parent agent explicitly provides context override, **Then** the override is respected and pruning does not strip the user-provided context
 4. **Given** the pruning feature flag is set to disabled, **When** a read-only agent is spawned, **Then** full context is provided and no pruning occurs
@@ -328,6 +344,41 @@ Agents declare MCP servers in their configuration. When a sub-agent is spawned, 
 
 ---
 
+### User Story 6b — Execution Isolation Modes (Priority: P6)
+
+Agents can enforce strict filesystem and process boundaries by configuring isolation modes. `worktree` isolation generates a dedicated git worktree for the agent, preventing parallel side-effects on the main repository. `remote` isolation spawns the agent execution within a temporary Docker container via the local Docker daemon, granting full process, network, and mount isolation. Both isolation runtimes provide retention-based artifact lifecycle management for post-mortem debugging.
+
+**Why this priority**: Complex problem-solving agents executing untrusted code or highly destructive directory modifications require strict isolation guarantees beyond basic context forking.
+
+**Independent Test**: Can be tested by spawning a sub-agent with `isolation: 'remote'`, verifying that `docker run` encapsulates its operations with a read-only project mount, and affirming that the container cleanup lazily triggers after the instance TTL expires.
+
+**Acceptance Scenarios**:
+
+1. **Given** an agent defines `isolation: 'worktree'`, **When** the agent spawns, **Then** a scoped git worktree is created, and all agent file modifications apply strictly to the worktree
+2. **Given** an agent defines `isolation: 'remote'`, **When** the agent spawns, **Then** a temporary Docker container encapsulates the execution state with the project directory mounted strictly as read-only and a writable scratch workspace (`<os.tmpdir()>/liteai-scratch/<agentId>`) mounted read-write for agent-side temporary file operations. *(Scope note: the orchestration loop remains in the parent Node process — only shell tool commands are routed into the container via `docker exec`. This is shell tool interception, not full agent containerization — see FR-018.)*
+3. **Given** an isolated agent execution crashes or terminates, **When** its TTL expires, governed by the `LITEAI_ISOLATION_TTL_MS` environment variable (default: 3600000 ms), **Then** the stale worktree/container is safely garbage-collected upon the next session start
+4. **Given** an agent defines `isolation: 'remote'` but the local Docker daemon is not running or not reachable, **When** the agent spawns, **Then** the spawn fails fast with a structured `AgentSpawnError` identifying Docker as unavailable, and no partial resources are leaked
+5. **Given** an agent defines `isolation: 'remote'` with `containerImage: 'custom-sandbox:latest'`, **When** the agent spawns, **Then** the system uses the specified image instead of the platform default
+6. **Given** an agent defines `isolation: 'worktree'` and the repository has uncommitted changes, **When** the agent spawns, **Then** the worktree is created from the current HEAD and the agent's worktree does not inherit dirty working-directory state
+
+---
+
+### User Story 6c — Agent Persistent Memory (Priority: P6)
+
+When an agent specifies a `memory` scope (`user`, `project`, or `local`), it gains access to a dedicated filesystem-backed knowledge boundary (`MEMORY.md`) to retain cumulative cross-session learnings. This state acts completely orthogonally to context forking. At spawn, the system conditionally injects the previously discovered learnings into the agent's system prompt and auto-provisions memory Read/Write/Edit tools for dynamic retention. 
+
+**Why this priority**: Empowers long-running, iterative sub-agents (e.g. specialized coding/debugging personas) to evolve autonomously by establishing a durable feedback loop devoid of parent-session pollution.
+
+**Independent Test**: Spawn an agent with `memory: 'project'`, instruct it to record a key insight, terminate the session, and spawn entirely new sessions to verify the insight persists and automatically injects into the new agent's initial prompt segment.
+
+**Acceptance Scenarios**:
+
+1. **Given** an agent defines `memory: 'local'`, **When** the agent spawns and `isAutoMemoryEnabled()` is true, **Then** the system automatically provisions memory tools specifically scoped to the `<cwd>/.liteai/agent-memory-local/<agentType>/` directory
+2. **Given** an agent with persistent memory spawns, **When** preexisting insights reside in its `MEMORY.md`, **Then** the contents and scope guidelines are dynamically concatenated into the agent's system prompt
+3. **Given** a new project environment with `AGENT_MEMORY_SNAPSHOT` active, **When** an agent memory directory is requested, **Then** the system actively checks for newer project snapshots and synchronizes them to seed local knowledge
+
+---
+
 ### Edge Cases
 
 - What happens when a sub-agent attempts to spawn its own sub-agent (nested forking)? The system supports arbitrary nesting — each level creates a new fork from its parent's context.
@@ -336,7 +387,7 @@ Agents declare MCP servers in their configuration. When a sub-agent is spawned, 
 - How does context pruning interact with agents that explicitly need a pruned section? User-provided context overrides always take precedence over pruning rules.
 - What happens when multiple agents reference the same MCP server simultaneously? Shared connections are reused via memoization; lifecycle reference counting ensures cleanup only when no agents remain.
 - How does the system handle agent config conflicts between plugin and user settings? Deterministic priority ordering resolves conflicts: later sources override earlier ones field-by-field.
-- What happens when a worktree or remote sub-agent crashes or loses connectivity mid-execution? Isolation artifacts (worktree directories, Docker container instances) are preserved for a configurable TTL (~1 hour) for post-mortem debugging, then garbage collected lazily on the next session start. Sidechain transcripts are always preserved regardless of crash state.
+- What happens when a worktree or remote sub-agent crashes or loses connectivity mid-execution? Isolation artifacts (worktree directories, Docker container instances) are preserved for a configurable TTL governed by `LITEAI_ISOLATION_TTL_MS` (default: 3600000ms / 1 hour) for post-mortem debugging, then garbage collected lazily on the next session start. Sidechain transcripts are always preserved regardless of crash state.
 - What happens when a background agent spawns its own bash tasks as fire-and-forget? The cleanup lifecycle kills all shell tasks registered under the agent's ID to prevent PPID=1 zombie processes.
 - What happens in whale sessions where hundreds of agents have been spawned over time? The cleanup lifecycle removes todos entries and clears invoked skills to prevent unbounded memory growth.
 - What happens when an agent declares hooks but the hook source is not admin-trusted? If `isRestrictedToPluginOnly('hooks')` returns true, user-defined agent hooks are blocked from registration. Only plugin and built-in agent hooks are allowed.
@@ -367,37 +418,40 @@ When a sub-agent exits — whether normally, via abort, or due to an error — t
 ### Functional Requirements
 
 - **FR-001**: System MUST support three distinct agent definition source types (built-in, custom, plugin) with tracked provenance for each loaded agent. Agents declaring `requiredMcpServers` MUST be excluded from the available agent list at load-time when any required server is not connected or has no tools, AND MUST be re-validated at spawn-time to catch servers that disconnected after loading
-- **FR-002**: System MUST load agent definitions with deterministic priority ordering: `built-in < plugin < userSettings < projectSettings`, where later sources override earlier ones by agent identifier
-- **FR-003**: System MUST support the following agent configuration fields: tool allow/deny lists, skills, MCP server declarations, hooks, model (with `'inherit'` support), effort level, permission mode, maximum turns, wall-clock timeout, memory scopes, background execution flag, isolation mode, context stripping flags (`omitClaudeMd`), critical system reminder, `requiredMcpServers`, `thinking` (boolean, default `false`), and `thinkingBudget` (optional number, tokens)
-- **FR-004**: System MUST provide a context forking mechanism that selectively inherits the parent session's state (file state cache, abort controller linkage, app state) while isolating mutable state (tool decisions, messages, set-app-state mutations). Context forking MUST disable `thinkingConfig` by default for all sub-agents to control output token costs, unless the agent definition explicitly sets `thinking: true`, in which case the parent's thinking config is inherited. When `thinkingBudget` is also specified, the inherited thinking config MUST use the agent's budget instead of the parent's (`{ type: 'enabled', budgetTokens: thinkingBudget }`). Context forking MUST also provide a scoped `setAppStateForTasks` root-store bypass exposing only task-specific operations (`registerTask`, `killTask`, `deleteTodo`) — not a full `setAppState` alias — for task registration when `setAppState` is a no-op (nested async agents), and apply effort level overrides from the agent definition at runtime.
+- **FR-002**: System MUST load agent definitions with deterministic priority ordering: `built-in < plugin < userSettings < projectSettings`, where later sources override earlier ones by agent identifier. Protected system agents (`hidden: true`) MUST be immune to user-level overrides — override attempts are ignored and logged as warnings. Note: liteai2's reference implementation includes two additional levels (`flagSettings`, `policySettings`) that are out of scope for this phase — the 4-level model is intentional
+- **FR-003**: System MUST support the following agent configuration fields: tool allow/deny lists, skills, MCP server declarations, hooks, model (with `'inherit'` support), effort level, permission mode, maximum turns, wall-clock timeout, memory scopes, background execution flag, isolation mode, `containerImage` (optional string — Docker image for `remote` isolation, defaults to a platform-defined base image), context stripping flags (`omitLiteaiMd`), critical system reminder, `requiredMcpServers`, `thinking` (boolean, default `false`), and `thinkingBudget` (optional number, tokens). Additionally, existing agent config fields (`variant`, `temperature`, `topP`, `color`) are carried forward from the base agent schema — these are not new to this feature but are included in the `BaseAgentDefinition` type for completeness
+- **FR-004**: System MUST provide a context forking mechanism that selectively inherits the parent session's state (file state cache, abort controller linkage, app state) while isolating mutable state (tool decisions, messages, set-app-state mutations). Context forking MUST disable `thinkingConfig` by default for all sub-agents to control output token costs, unless the agent definition explicitly sets `thinking: true`, in which case the parent's thinking config is inherited. When `thinkingBudget` is also specified, the inherited thinking config MUST use the agent's budget instead of the parent's (`{ type: 'enabled', budgetTokens: thinkingBudget }`). Context forking MUST also provide a scoped `setAppStateForTasks` root-store bypass exposing only task-specific operations (`registerTask`, `killTask`, `deleteTodo`) — not a full `setAppState` alias — for task registration when `setAppState` is a no-op (nested async agents), and apply effort level overrides from the agent definition at runtime (when `effort` is set on the agent config, the forked context's effort level is replaced with the agent's value before entering the query loop). When `shareSetAppState: true` is passed via `SubagentContextOverrides`, the forked context's `setAppState` MUST delegate directly to the parent's `setAppState` function (bypassing the no-op wrapper) — enabling selective state write-through for coordinated parent-child task management. **Implementation note for T014**: Context forking MUST clone `contentReplacementState` (for prompt cache byte-stability) and increment `queryTracking.depth` (for recursion observability) — both fields are defined in the SubagentContext type (see data-model.md) and are required for the forking model.
 - **FR-005**: System MUST link sub-agent abort controllers to the parent's abort controller in a unidirectional hierarchy: parent cancellation propagates to children, but child cancellation does not propagate to the parent
-- **FR-006**: System MUST strip heavy context (project configuration, git status, non-essential system prompt sections) from agents configured with context pruning flags
+- **FR-006**: System MUST strip heavy context from agents configured with context pruning flags. Specifically: (1) project LITEAI.md content (`liteaiMd` field) when `omitLiteaiMd: true` is set on the agent definition AND no explicit `userContext` override is provided, and (2) git status information (`gitStatus` field) from agents designated as read-only based on their `agentType` (hardcoded list: `["explore", "plan"]`). Both strips are gated by the `liteai_slim_subagent_liteaimd` feature flag (default: `true`); when the flag is `false`, full context is provided regardless of agent config
 - **FR-007**: System MUST record sub-agent messages to isolated sidechain transcript files, delivering only the dense task result to the parent session's message chain
 - **FR-008**: System MUST support incremental (append-only) transcript recording per message to avoid re-serialization of the full transcript on each write
+    > Transcript recording errors are logged but do not propagate to the agent execution — this is an intentional exception to Constitution §VI (Fail-Fast) because sidechain transcripts are observability side-channels whose failure must not disrupt the agent's primary task execution
 - **FR-009**: System MUST resolve agent-declared MCP servers on spawn: reusing existing connections for string references and creating new scoped connections for inline definitions
 - **FR-010**: System MUST clean up agent-scoped (inline) MCP connections on agent exit, including abnormal termination, without affecting shared referenced connections
 - **FR-011**: System MUST silently deny permission-requiring operations for sub-agents running as background tasks, returning an immediate denial response rather than blocking
-- **FR-012**: System MUST enforce permission mode inheritance where parent elevated modes (`bypass`, `auto`, `accept-edits`) always take precedence over the sub-agent's declared mode
-- **FR-013**: When a sub-agent specifies an allowed-tools list, session-level tool permissions MUST be replaced entirely — parent approvals MUST NOT leak through to the sub-agent
+- **FR-012**: System MUST enforce permission mode inheritance where parent elevated modes (`bypass`, `auto`, `acceptEdits`) always take precedence over the sub-agent's declared mode
+- **FR-013**: When a sub-agent specifies a `tools` allow-list, session-level tool permissions MUST be replaced entirely — parent approvals MUST NOT leak through to the sub-agent
 - **FR-014**: System MUST support nested sub-agent spawning (sub-agent spawning its own sub-agent) using the same forking model recursively
 - **FR-015**: System MUST maintain hierarchical tracing metadata for sub-agent execution trees, recording parent-child relationships for observability
-- **FR-016**: System MUST enforce a configurable maximum concurrent sub-agent limit per parent session (default: 5–10), rejecting spawn attempts that exceed the limit with a structured error rather than silently queuing or dropping them
+- **FR-016**: System MUST enforce a configurable maximum concurrent sub-agent limit per parent session (default: 8), rejecting spawn attempts that exceed the limit with a structured error rather than silently queuing or dropping them
 - **FR-017**: System MUST implement `worktree` isolation mode: when an agent declares `isolation: 'worktree'`, the system creates a git worktree for the agent's execution, providing filesystem isolation from the parent session's working directory
-- **FR-018**: System MUST implement `remote` isolation mode: when an agent declares `isolation: 'remote'`, the system spawns the agent's execution in a Docker container via the local Docker daemon (CLI/API), providing full process and filesystem isolation
-- **FR-019**: System MUST enforce a configurable wall-clock timeout per sub-agent (default: ~30 minutes), triggering an immediate hard-kill abort via the agent's abort controller when exceeded — no grace period for in-flight tool execution. Partial result extraction (FR-023) preserves the last meaningful output. This ensures no sub-agent can run indefinitely regardless of turn count
-- **FR-020**: System MUST support a `criticalSystemReminder` configuration field per agent definition that gets re-injected as a `<system-reminder>` attachment on every user turn during the agent's execution, reinforcing the agent's operational mode and behavioral constraints
-- **FR-021**: System MUST implement retention-based cleanup for isolation artifacts (worktrees, remote containers): artifacts are preserved for a configurable TTL (default: ~1 hour) after sub-agent exit (normal, crash, or timeout) for post-mortem debugging, then garbage collected lazily on the next session start
+- **FR-018**: System MUST implement `remote` isolation mode: when an agent declares `isolation: 'remote'`, the system isolates task shell operations by executing them within a Docker container via the local Docker daemon (CLI/API `docker exec`), while retaining the primary orchestration loop in the parent Node process. This ensures full container boundary execution while leveraging the `containerImage` configuration (falling back to a platform-defined default), providing full process and filesystem isolation
+- **FR-019**: System MUST enforce a configurable wall-clock timeout per sub-agent (derived from the agent's config `timeout`, which defines a schema-level default of 1800000ms / 30-minutes), triggering an immediate hard-kill abort via the agent's abort controller when exceeded — no grace period for in-flight tool execution. Partial result extraction (FR-023) preserves the last meaningful output. This ensures no sub-agent can run indefinitely regardless of turn count
+- **FR-020**: System MUST support a `criticalSystemReminder` configuration field per agent definition that gets re-injected as a `<system-reminder>` attachment on every user turn during the agent's execution, reinforcing the agent's operational mode and behavioral constraints. **Canonical field name is `criticalSystemReminder` (no `_EXPERIMENTAL` suffix)** — the reference implementation (liteai2) uses `criticalSystemReminder_EXPERIMENTAL` as an in-flight experiment marker; this implementation promotes it to a stable, first-class config field. All task references and schema definitions MUST use the non-suffixed name
+- **FR-021**: System MUST implement retention-based cleanup for isolation artifacts (worktrees, remote containers): artifacts are preserved for a configurable TTL (default: 3600000ms / 1 hour) after sub-agent exit (normal, crash, or timeout) for post-mortem debugging, then garbage collected lazily on the next session start. For worktree garbage collection, the system MUST strictly enforce safety guards: explicit skipping of deletion if the worktree contains uncommitted changes or unpushed commits to prevent any data loss.
 - **FR-022**: System MUST distinguish the root agent from sub-agents via the presence of `agentId` on the execution context (`undefined` = root session, `string` = sub-agent). This discriminator MUST gate behaviors that apply only to the root session, including: title generation, stop hooks, MCP lifecycle notifications, attachment filtering (agent listing deltas, date change), compaction notifications, and memory extraction
-- **FR-023**: System MUST implement a structured async agent lifecycle manager covering: progress tracking with human-readable activity descriptions, optional periodic summarization for long-running agents, terminal notifications (completed/failed/killed) with usage metrics (tokens, tool calls, duration), handoff classification for auto-mode security review, partial result extraction for killed agents, and prompt cache eviction signaling on completion
+- **FR-023**: System MUST implement a structured async agent lifecycle manager covering: progress tracking with human-readable activity descriptions, optional periodic summarization for long-running agents, terminal notifications (completed/failed/killed) with usage metrics (tokens, tool calls, duration), handoff classification for auto-mode security review (warning string format specified in US3b AS7: `"SECURITY WARNING: ... Reason: {reason}"` for violations, `"Note: The safety classifier was unavailable..."` for classifier absence), partial result extraction for killed agents, and prompt cache eviction signaling on completion
 - **FR-024**: System MUST isolate agent execution context using `AsyncLocalStorage<AgentContext>` to prevent analytics attribution cross-contamination between concurrent background agents in the same process. Context MUST be wrapped via `runWithAgentContext()` around the entire agent execution and MUST support invocation boundary detection via single-fire `consumeInvokingRequestId()`
-- **FR-025**: System MUST execute a deterministic cleanup sequence on agent exit (normal, abort, or error) in a `finally` block covering at minimum: MCP connection cleanup, session hook removal, prompt cache tracking release, file state cache clearing, context message reference release, tracing registry cleanup, transcript subdir mapping cleanup, pending todo entry deletion, shell task killing, and invoked skill state clearing. Cleanup MUST be idempotent and MUST NOT throw.
+- **FR-025**: System MUST execute a deterministic cleanup sequence on agent exit (normal, abort, or error) in a `finally` block covering at minimum: MCP connection cleanup, session hook removal, prompt cache tracking release, file state cache clearing, context message reference release, tracing registry cleanup, transcript subdir mapping cleanup, pending todo entry deletion, shell task killing, and invoked skill state clearing. (Note: `clearDumpState` from legacy references is explicitly excluded). Cleanup MUST be idempotent and MUST NOT throw.
 - **FR-026**: System MUST execute `executeSubagentStartHooks()` at agent spawn time, register agent-declared hooks with `isAgent=true` flag (converting Stop→SubagentStop events), enforce admin-trust gating via `isRestrictedToPluginOnly('hooks')`, and clean up all agent-scoped hooks on exit
-- **FR-027**: System MUST preload skills declared in agent frontmatter at spawn time, resolve skill names using namespace-aware lookup (exact match > plugin-prefix match > suffix match), inject loaded skills into the agent's initial messages, and clean up invoked skill state on agent exit
+- **FR-027**: System MUST preload skills declared in agent frontmatter at spawn time, resolve skill names using namespace-aware lookup (exact match > plugin-prefix match > suffix match), inject loaded skills into the agent's initial messages, and clean up invoked skill state on agent exit. If all resolution strategies fail, the skill is silently skipped with a debug log — this is an intentional exception to Constitution §VI (Fail-Fast) because skills are non-critical enrichment that must not block agent spawn
+- **FR-028**: System MUST support Agent Persistent Memory execution scoped to an agent type (via `memory` config: `user` | `project` | `local`). The system MUST inject persisted memory contents into the agent system prompt at spawn time, dynamically auto-inject Read/Write/Edit tools when `isAutoMemoryEnabled()` is active, and manage a synchronized memory snapshot lifecycle for seeding local instances.
+- **FR-029**: System MUST construct sub-agent system prompts independently using the SectionRegistry resolver with the sub-agent's model context. Sub-agents DO NOT inherit the parent's compiled system prompt.
 
 ### Key Entities
 
 - **AgentDefinition**: The core definition type representing an agent's identity and configuration. Supports three source variants (built-in, custom, plugin) with a unified configuration surface. Key attributes include agent type identifier, source provenance, expanded configuration fields (tool scoping, skills, MCP servers, model, permissions, execution constraints), and a prompt/instruction payload.
-- **SubagentContext**: A forked execution context created when the parent spawns a sub-agent. Encapsulates the isolation model: which parent state is cloned (file cache, content replacement state), which is linked (abort controller), which is wrapped (app state with permission avoidance), and which is fresh (tool decisions, messages). Includes a scoped `setAppStateForTasks` interface limited to task registration/kill/todo operations to prevent full state mutation from nested agents. Lifecycle-bound to the sub-agent's execution.
+- **SubagentContext**: A forked execution context created when the parent spawns a sub-agent (see FR-004 for full isolation model). Encapsulates cloned, linked, wrapped, and fresh state categories. Includes scoped `setAppStateForTasks` for task operations. Lifecycle-bound to the sub-agent's execution — see data-model.md for complete type definition.
 - **SidechainTranscript**: An isolated, append-only message recording tied to a sub-agent's execution. Identified by agent ID and optionally grouped under a workflow run directory. Persisted to the filesystem independently of the parent session's message chain.
 - **AgentMcpSession**: A lifecycle-managed MCP server connection scoped to a single agent's execution. Distinguished between "referenced" connections (shared, not cleaned up) and "inline" connections (agent-scoped, cleaned up on exit). Tracks connection health and cleanup responsibility.
 - **AgentMemory**: A filesystem-backed persistent knowledge store scoped to an agent type. Three scope levels (`user`, `project`, `local`) determine storage location and sharing behavior. Contents are injected into the agent's system prompt at spawn time, and Read/Write/Edit tools are auto-injected into the agent's tool pool. Keyed by agent type — orthogonal to session lineage and context forking.
@@ -408,7 +462,7 @@ When a sub-agent exits — whether normally, via abort, or due to an error — t
 
 ### Measurable Outcomes
 
-- **SC-001**: Sub-agents spawn with inherited parent context (file state, app state) in under 100ms for standard configurations, eliminating the cold-start penalty of clean-slate sessions
+- **SC-001**: Sub-agents spawn with inherited parent context (file state, app state) in under 100ms for standard configurations (defined as: default agent with 0 inline MCP definitions, no worktree/Docker isolation, and fewer than 50 entries in the readFileState cache), eliminating the cold-start penalty of clean-slate sessions
 - **SC-002**: Read-only sub-agents with context pruning enabled consume at least 30% fewer input tokens per invocation compared to full-context sub-agents
 - **SC-003**: Background sub-agents never block on permission prompts — all permission-requiring operations resolve (approve or deny) within the sub-agent's turn without user intervention, verified across 100% of test scenarios
 - **SC-004**: Agent-scoped MCP connections are cleaned up within 5 seconds of sub-agent exit, with zero leaked connections observed across 1000 sequential spawns in a stress test
@@ -423,12 +477,12 @@ When a sub-agent exits — whether normally, via abort, or due to an error — t
 - Phase 1 (Unified System Prompt Resolution) is complete and the section-based resolver, `SectionRegistry`, and `SectionParser` are available for sub-agents to construct their system prompts
 - The existing session infrastructure (`Session.create`, `Message` types, `SessionProcessor`) will be extended, not replaced, to support context forking
 - Agent configuration schema changes are additive — existing `.md` frontmatter that doesn't use new fields continues to work without modification
-- **liteai2 agent format compatibility**: Any agent `.md` file from liteai2 MUST work in liteai without modification (copy-paste compatible). New config fields (`thinking`, `thinkingBudget`, etc.) are strictly additive with sensible defaults. The frontmatter parser MUST silently ignore unknown fields to ensure forward compatibility with liteai2 agents that may use fields not yet implemented in liteai
+- **Reference Format Interoperability (liteai2)**: Any agent `.md` configuration file utilizing the external `liteai2` schema MUST be parsed by `liteai` without modification (copy-paste mapping). This is a strict format parity requirement ensuring ecosystem portability, not legacy code backward compatibility. New config fields (`thinking`, `thinkingBudget`, etc.) are purely additive. The parser MUST silently ignore unknown external fields to handle definitions utilizing experimental extensions safely.
 - MCP server infrastructure already exists for project-wide connections; this feature adds per-agent lifecycle management on top of the existing connection pool
 - The current permission system (`PermissionNext`) can be extended for sub-agent scoping without a full rewrite
 - Nested sub-agent depth is unbounded but practically limited by available context window and token budget (no artificial depth limit is enforced)
-- Concurrent sub-agent count per session is bounded by a configurable limit (default 5–10) to prevent resource exhaustion; the limit is enforced at spawn time with a fail-fast rejection
+- Concurrent sub-agent count per session is bounded by a configurable limit (default: 8) to prevent resource exhaustion; the limit is enforced at spawn time with a fail-fast rejection
 - Memory scopes (`user`, `project`, `local`) define persistence boundaries for agent-scoped data. Memory is keyed by agent type (not session lineage), so context forking does not affect memory access — each agent type reads/writes its own memory independently. The filesystem-backed persistence model (MEMORY.md in scoped directories) is the target implementation
-- Isolation modes (`worktree`, `remote`) are fully in-scope for this phase, including runtime implementation of git worktree creation and Docker container spawning via local Docker daemon (CLI/API). Isolation artifacts follow a retention-based cleanup model: preserved for a configurable TTL (~1 hour) for debugging, then garbage collected on next session start
+- Isolation modes (`worktree`, `remote`) are fully in-scope for this phase, including runtime implementation of git worktree creation and Docker container spawning via local Docker daemon (CLI/API). Isolation artifacts follow a retention-based cleanup model: preserved for a configurable TTL (default: 3600000ms / 1 hour) for debugging, then garbage collected on next session start
 - Fork subagent model (cache-identical context sharing with byte-identical API prefixes) and agent resume from sidechain transcripts are deferred to Phase 4 and are NOT in scope for this phase
 - The cleanup lifecycle assumes all resource acquisitions are tracked at acquisition time (e.g., MCP connections in `newlyCreatedClients[]`, hooks via `agentId` key, shell tasks via agent registration). Cleanup of untracked resources is out of scope.
