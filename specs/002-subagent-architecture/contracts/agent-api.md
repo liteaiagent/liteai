@@ -37,7 +37,7 @@ interface ParentContext {
   contentReplacementState: ContentReplacementState
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void
-  model: Provider.Model               // Parent's active model
+  model?: { providerID: string; modelID: string } | Provider.Model // Parent's active model
   thinkingConfig?: ThinkingConfig
 }
 

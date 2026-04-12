@@ -7,7 +7,7 @@
 
 ## Reference Implementation
 
-> All references point to the liteai2 source at `C:\Users\aghassan\Documents\workspace\liteai2\src`
+> All references point to the liteai2 source at `src/`
 
 ### Agent Definition Type System
 

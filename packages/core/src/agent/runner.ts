@@ -54,13 +54,17 @@ export async function runAgent(
 
   logger.info("runAgent invoked", { agentName, sessionId: sessId, timeoutMs })
 
-  let currentCount = 0
-  try {
-    currentCount = Session.incrementAgentCount(sessId)
-    if (currentCount > 5) {
-      throw new ConcurrentAgentLimitError(`Concurrent agent limit reached: 5`)
-    }
+  const concurrentLimit = process.env.LITEAI_CONCURRENT_AGENT_LIMIT
+    ? Number.parseInt(process.env.LITEAI_CONCURRENT_AGENT_LIMIT, 10)
+    : 8
+  const currentCount = Session.getAgentCount(sessId)
+  if (currentCount >= concurrentLimit) {
+    throw new ConcurrentAgentLimitError(`Concurrent agent limit reached: ${concurrentLimit}`)
+  }
+  Session.incrementAgentCount(sessId)
 
+  const startTime = Date.now()
+  try {
     Bus.publish(AgentEvent.Spawned, {
       agentId,
       agentType: agentName,
@@ -84,9 +88,10 @@ export async function runAgent(
 
     // 2. Wrap execution with Context
     const resultMsg = await runWithAgentContext(subContext, async () => {
-      // Create a Promise that rejects on timeout
+      let timeoutId: ReturnType<typeof setTimeout> | undefined
+
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           subContext.abortController.abort(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
           reject(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
         }, timeoutMs)
@@ -99,10 +104,13 @@ export async function runAgent(
         parts: options?.inputParts ?? [],
         model: agentDef.model,
         system: agentDef.prompt,
-        // variant: agentDef.variant, // if supported
       })
 
-      return Promise.race([runPromise, timeoutPromise])
+      try {
+        return await Promise.race([runPromise, timeoutPromise])
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId)
+      }
     })
 
     let finalOutput = "No text output."
@@ -115,29 +123,38 @@ export async function runAgent(
       }
     }
 
+    const duration = Date.now() - startTime
+
     const result: Agent.RunAgentResult = {
       agentId,
       status: "completed",
       result: finalOutput,
-      usage: { totalTokens: 0, toolCalls: 0, duration: 0 },
+      usage: {
+        // TODO: reference Agent.RunAgentResult and SessionPrompt.prompt to calculate true totalTokens
+        totalTokens: 0,
+        // TODO: track tool invocations in this runner to calculate true toolCalls
+        toolCalls: 0,
+        duration,
+      },
     }
 
     Bus.publish(AgentEvent.Completed, {
       agentId,
       agentType: agentName,
       status: "completed",
-      duration: 0,
+      duration,
       usage: result.usage,
     })
     return result
   } catch (err: unknown) {
+    const duration = Date.now() - startTime
     logger.error("runAgent failed", { error: err, agentId, agentName })
     Bus.publish(AgentEvent.Completed, {
       agentId,
       agentType: agentName,
       status: "failed",
-      duration: 0,
-      usage: { totalTokens: 0, toolCalls: 0, duration: 0 },
+      duration,
+      usage: { totalTokens: 0, toolCalls: 0, duration },
     })
     throw err
   } finally {

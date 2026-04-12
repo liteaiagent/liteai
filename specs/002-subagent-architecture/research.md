@@ -52,9 +52,9 @@
 
 ## R-005: Docker Remote Isolation
 
-**Decision**: Use Docker CLI (`docker run --rm`) for remote isolation. Container images are pre-built or configurable. Agent execution is wrapped in a container with the project directory mounted read-only and a scratch workspace mounted read-write.
+**Decision**: Use Docker CLI (`docker run -d`) for remote isolation. Container images are pre-built or configurable. Agent execution is wrapped in a container with the project directory mounted read-only and a scratch workspace mounted read-write. Containers are retained for TTL-based cleanup rather than auto-removed.
 
-**Rationale**: Docker CLI is universally available, requires no additional SDK dependencies, and provides full process/filesystem isolation. The `--rm` flag combined with TTL-based retention ensures cleanup. The architecture avoids tight coupling to any specific container runtime API.
+**Rationale**: Docker CLI is universally available, requires no additional SDK dependencies, and provides full process/filesystem isolation. Containers are retained (no `--rm`) for a configurable TTL to enable post-mortem debugging, then garbage collected lazily on next session start. The architecture avoids tight coupling to any specific container runtime API.
 
 **Alternatives considered**:
 - **Docker SDK (dockerode)**: Rejected — heavyweight dependency, complex lifecycle management. CLI is simpler and sufficient.
@@ -73,7 +73,7 @@
 
 ## R-007: Concurrent Agent Limit Enforcement
 
-**Decision**: Configurable limit (default: 10) enforced at spawn time via an atomic counter per session. Exceeding the limit throws a `ConcurrentAgentLimitError` structured error.
+**Decision**: Configurable limit (default: 8) enforced at spawn time via an atomic counter per session. Exceeding the limit throws a `ConcurrentAgentLimitError` structured error.
 
 **Rationale**: Fail-fast rejection is simpler and more predictable than queuing (which introduces unbounded memory growth and starvation risks). The counter is tracked per-session (not process-wide) to maintain tenant isolation.
 

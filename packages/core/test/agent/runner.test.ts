@@ -28,8 +28,11 @@ import type { SessionID } from "../../src/session/schema"
 
 describe("runAgent", () => {
   beforeEach(() => {
-    spyOn(Bus, "publish").mockResolvedValue(undefined)
-    spyOn(Provider, "defaultModel").mockResolvedValue("test-model" as unknown as Provider.Model)
+    spyOn(Bus, "publish").mockResolvedValue([])
+    spyOn(Provider, "defaultModel").mockResolvedValue({
+      providerID: "test-provider",
+      modelID: "test-model",
+    } as unknown as Awaited<ReturnType<typeof Provider.defaultModel>>)
   })
 
   afterEach(() => {
@@ -55,14 +58,14 @@ describe("runAgent", () => {
       requiredMcpServers: ["missing-server"],
     } as unknown as Agent.AgentDefinition)
 
-    expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(RequiredMcpServerError)
+    await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(RequiredMcpServerError)
   })
 
   it("enforces concurrent limit", async () => {
     spyOn(Agent, "get").mockResolvedValue({ name: "test" } as unknown as Agent.AgentDefinition)
-    spyOn(Session, "incrementAgentCount").mockReturnValue(11) // Exceeds 5
+    spyOn(Session, "getAgentCount").mockReturnValue(11) // Exceeds 5
 
-    expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(ConcurrentAgentLimitError)
+    await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(ConcurrentAgentLimitError)
   })
 
   it("enforces timeout", async () => {
@@ -76,6 +79,6 @@ describe("runAgent", () => {
     spyOn(Agent, "get").mockResolvedValue({ name: "test", timeout: 10 } as unknown as Agent.AgentDefinition)
     spyOn(Session, "incrementAgentCount").mockReturnValue(1)
 
-    expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(AgentTimeoutError)
+    await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(AgentTimeoutError)
   })
 })

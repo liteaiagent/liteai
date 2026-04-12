@@ -218,7 +218,7 @@
 
 ## Phase 10: User Story 7 — Deterministic Cleanup Lifecycle (Priority: P7)
 
-**Goal**: 11-step cleanup sequence in `finally` block: idempotent, non-throwing, releases all acquired resources (MCP, hooks, cache, file state, tracing, todos, shells, skills).
+**Goal**: 12-step cleanup sequence in `finally` block: idempotent, non-throwing, releases all acquired resources (MCP, hooks, cache, file state, tracing, todos, shells, skills, debug dumps).
 
 **Independent Test**: Spawn and kill 100 agents, verify zero resource leaks — no orphaned MCP connections, no stale perfetto entries, no zombie processes, memory within 10% of baseline.
 
@@ -228,7 +228,7 @@
 
 ### Implementation for User Story 7
 
-- [ ] T055 [US7] Implement `AgentCleanup.execute()` in `packages/core/src/agent/cleanup.ts` — 11-step sequence per contracts/agent-api.md: (1) MCP cleanup, (2) session hook removal, (3) prompt cache release, (4) file state clear, (5) context message reference release, (6) perfetto unregister, (7) transcript subdir cleanup, (8) pending todo deletion, (9) shell task killing, (10) monitor MCP cleanup, (11) invoked skill clearing — each step wrapped in try-catch
+- [ ] T055 [US7] Implement `AgentCleanup.execute()` in `packages/core/src/agent/cleanup.ts` — 12-step sequence per contracts/agent-api.md: (1) MCP cleanup, (2) session hook removal, (3) prompt cache release, (4) file state clear, (5) context message reference release, (6) perfetto unregister, (7) transcript subdir cleanup, (8) pending todo deletion, (9) shell task killing, (10) monitor MCP cleanup, (11) invoked skill clearing, (12) debug dump state clearing — each step wrapped in try-catch
 - [ ] T056 [US7] Extend perfetto tracing with `registerPerfettoAgent()` / `unregisterPerfettoAgent()` for hierarchical parent→child agent tracing in `packages/core/src/telemetry/perfetto.ts`
 - [ ] T057 [US7] Extend hook system with `clearSessionHooks(agentId)` in `packages/core/src/hook/hook.ts` — remove all hooks registered by a specific agent ID from the session's hook list
 - [ ] T058 [US7] Refactor `runAgent()` finally block to delegate to `AgentCleanup.execute()` with all acquired resources, replacing inline cleanup steps, in `packages/core/src/agent/runner.ts`
@@ -349,7 +349,7 @@ Task T009: "Source provenance tracking in packages/core/src/agent/loader.ts"
 
 ### MVP First (User Story 1 Only)
 
-1. Complete Phase 1: Setup (4 tasks)
+1. Complete Phase 1: Setup (5 tasks)
 2. Complete Phase 2: Foundational (7 tasks)
 3. Complete Phase 3: User Story 1 — Context-Aware Spawning (9 tasks)
 4. **STOP and VALIDATE**: Test sub-agent spawning independently

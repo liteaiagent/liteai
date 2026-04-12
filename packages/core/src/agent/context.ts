@@ -99,7 +99,7 @@ export function createSubagentContext(
     if (parentSignal.aborted) {
       abortController.abort(parentSignal.reason)
     } else {
-      parentSignal.addEventListener("abort", onAbort)
+      parentSignal.addEventListener("abort", onAbort, { once: true })
     }
   }
 
