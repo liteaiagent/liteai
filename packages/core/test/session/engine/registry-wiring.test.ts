@@ -33,7 +33,13 @@ mock.module("../../../src/plugin", () => ({
   },
 }))
 mock.module("../../../src/project/instance", () => ({
-  Instance: { directory: "/dummy", worktree: "/dummy" },
+  Instance: {
+    directory: "/dummy",
+    worktree: "/dummy",
+    project: { id: "test_project" },
+    state: (init: () => unknown) => init,
+    provide: async <R>(input: { fn: () => R }) => input.fn(),
+  },
 }))
 mock.module("../../../src/hook", () => ({
   Hook: {

@@ -44,10 +44,11 @@ export namespace Session {
 
   export function decrementAgentCount(sessionID: string) {
     const current = sessionAgentCounts.get(sessionID) ?? 0
-    if (current > 0) {
+    if (current > 1) {
       sessionAgentCounts.set(sessionID, current - 1)
       return current - 1
     }
+    sessionAgentCounts.delete(sessionID)
     return 0
   }
 
@@ -661,6 +662,7 @@ export namespace Session {
           }),
         )
       })
+      sessionAgentCounts.delete(sessionID)
     } catch (e) {
       log.error("remove", { error: e })
     }

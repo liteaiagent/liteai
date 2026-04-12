@@ -4,7 +4,9 @@ mock.module("../../src/project/instance", () => ({
   Instance: {
     directory: "/mock/project",
     worktree: "/mock/project",
+    project: { id: "test_project" },
     state: (init: () => unknown) => init,
+    provide: async <R>(input: { fn: () => R }) => input.fn(),
   },
 }))
 
@@ -58,15 +60,19 @@ describe("Agent Hierarchy", () => {
     it("prioritizes sources correctly: builtIn < platform/plugin < project cfg", async () => {
       // Mock loader returns
       const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
-        build: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Agent.AgentDefinition,
-        test_plugin: { source: "plugin", description: "only_plugin" } as unknown as Agent.AgentDefinition,
+        build: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Awaited<
+          ReturnType<typeof AgentLoader.loadPlatformAgents>
+        >[string],
+        test_plugin: { source: "plugin", description: "only_plugin" } as unknown as Awaited<
+          ReturnType<typeof AgentLoader.loadPlatformAgents>
+        >[string],
       })
       const spyLoad = spyOn(AgentLoader, "loadAgent").mockResolvedValue({
         build: {
           source: "custom",
           description: "from_project_agent_md",
           temperature: 0.8,
-        } as unknown as Agent.AgentDefinition,
+        } as unknown as Awaited<ReturnType<typeof AgentLoader.loadAgent>>[string],
       })
 
       const spyCfg = spyOn(Config, "get").mockResolvedValue({
@@ -106,22 +112,27 @@ describe("Agent Hierarchy", () => {
         agent: { custom1: { disable: true } },
       } as unknown as Awaited<ReturnType<typeof Config.get>>)
       const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
-        custom1: { source: "plugin", description: "testing" } as unknown as Agent.AgentDefinition,
+        custom1: { source: "plugin", description: "testing" } as unknown as Awaited<
+          ReturnType<typeof AgentLoader.loadPlatformAgents>
+        >[string],
       })
 
       let thrown = false
       try {
-        await Agent.get("custom1")
-      } catch (e: unknown) {
-        expect((e as Error).name).toBe("AgentDisabledError")
-        thrown = true
+        try {
+          await Agent.get("custom1")
+        } catch (e: unknown) {
+          expect((e as Error).name).toBe("AgentDisabledError")
+          thrown = true
+        }
+        expect(thrown).toBe(true)
+      } finally {
+        spyCfg.mockRestore()
+        spyPlatform.mockRestore()
+        // @ts-expect-error mock
+        InstanceModule.directory = originalDir
+        await fs.rm(tmpProject, { recursive: true, force: true })
       }
-      expect(thrown).toBe(true)
-
-      spyCfg.mockRestore()
-      spyPlatform.mockRestore()
-      // @ts-expect-error mock
-      InstanceModule.directory = originalDir
     })
   })
 

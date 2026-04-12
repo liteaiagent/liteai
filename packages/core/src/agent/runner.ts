@@ -126,7 +126,11 @@ export async function runAgent(
 
     const { AgentMemory } = await import("@/agent/memory")
     if (await AgentMemory.isAutoMemoryEnabled()) {
-      const scope = (await import("@/project/instance")).Instance.worktree ? "local" : "project"
+      const defaultScope = (await import("@/project/instance")).Instance.worktree ? "local" : "project"
+      const scope =
+        agentDef.memory === "local" || agentDef.memory === "project" || agentDef.memory === "user"
+          ? agentDef.memory
+          : defaultScope
       const memPrompt = await AgentMemory.loadAgentMemoryPrompt(agentName, scope)
       finalParts.unshift({ type: "text", text: memPrompt })
     }

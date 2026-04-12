@@ -13,9 +13,7 @@ The sub-agent architecture transforms LiteAI from a single-threaded agent model 
 
 Agents come from three sources, merged in priority order:
 
-```
-builtIn (explore, plan, build) < plugin < userSettings < projectSettings
-```
+
 
 Each agent is configured via a `.md` file with YAML frontmatter:
 

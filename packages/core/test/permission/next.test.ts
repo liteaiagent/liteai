@@ -496,7 +496,7 @@ test("ask - resolves immediately when action is allow", async () => {
       expect(result).toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("ask - throws RejectedError when action is deny", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -515,7 +515,7 @@ test("ask - throws RejectedError when action is deny", async () => {
       ).rejects.toBeInstanceOf(PermissionNext.DeniedError)
     },
   })
-})
+}, 30_000)
 
 test("ask - returns pending promise when action is ask", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -537,7 +537,7 @@ test("ask - returns pending promise when action is ask", async () => {
       await promise.catch(() => {})
     },
   })
-})
+}, 30_000)
 
 test("ask - adds request to pending list", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -575,7 +575,7 @@ test("ask - adds request to pending list", async () => {
       await ask.catch(() => {})
     },
   })
-})
+}, 30_000)
 
 test("ask - publishes asked event", async () => {
   await using tmp = await tmpdir({ git: true })

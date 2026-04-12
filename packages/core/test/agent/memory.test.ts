@@ -5,12 +5,13 @@ import path from "node:path"
 import { AgentMemory } from "../../src/agent/memory"
 
 describe("AgentMemory Tests", () => {
+  let baseDir: string
   let tmpHome: string
   let tmpProject: string
   let tmpWorktree: string
 
   beforeEach(async () => {
-    const baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "liteai_test_"))
+    baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "liteai_test_"))
     tmpHome = path.join(baseDir, "home")
     tmpProject = path.join(baseDir, "project")
     tmpWorktree = path.join(baseDir, "project", "worktree")
@@ -23,15 +24,23 @@ describe("AgentMemory Tests", () => {
       Global: { Path: { home: tmpHome } },
     }))
     mock.module("../../src/project/instance", () => ({
-      Instance: { directory: tmpProject, worktree: tmpWorktree },
+      Instance: {
+        directory: tmpProject,
+        worktree: tmpWorktree,
+        project: { id: "test_project" },
+        state: (init: () => unknown) => init,
+        provide: async <R>(input: { fn: () => R }) => input.fn(),
+      },
     }))
   })
 
   afterEach(async () => {
     mock.restore()
     try {
-      if (tmpHome) await fs.rm(path.dirname(tmpHome), { recursive: true, force: true })
-    } catch {}
+      if (baseDir) await fs.rm(baseDir, { recursive: true, force: true })
+    } catch (error) {
+      console.warn(`Failed to cleanup test directory ${baseDir}:`, error)
+    }
   })
 
   describe("Scope Resolution", () => {
