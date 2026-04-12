@@ -110,7 +110,7 @@ packages/core/src/
 │   │                         #   AgentExecutionContext ALS, runWithAgentContext(), consumeInvokingRequestId()
 │   ├── lifecycle.ts          # NEW — AsyncAgentLifecycle: progress tracking, summarization,
 │   │                         #   terminal notifications, handoff classification, partial result extraction
-│   ├── cleanup.ts            # NEW — deterministic 12-step cleanup sequence (idempotent, non-throwing)
+│   ├── cleanup.ts            # NEW — deterministic 11-step cleanup sequence (idempotent, non-throwing)
 │   ├── memory.ts             # NEW — agent memory: scope resolution, MEMORY.md injection,
 │   │                         #   Read/Write/Edit tool auto-injection, snapshot system
 │   ├── runner.ts             # NEW — runAgent() orchestrator: spawn lifecycle, context fork,
@@ -167,7 +167,7 @@ packages/core/test/
 │   ├── context.test.ts       # SubagentContext forking: state isolation, abort linkage,
 │   │                         #   setAppState no-op, file state cloning, thinking config
 │   ├── lifecycle.test.ts     # Async lifecycle: progress, notifications, partial extraction
-│   ├── cleanup.test.ts       # 12-step cleanup: idempotent, non-throwing, resource release
+│   ├── cleanup.test.ts       # 11-step cleanup: idempotent, non-throwing, resource release
 │   ├── memory.test.ts        # Memory scopes, MEMORY.md injection, tool auto-injection
 │   ├── runner.test.ts        # Agent spawn integration: hooks, skills, MCP, full lifecycle
 │   └── filter.test.ts        # Tool filtering, context pruning, disallow lists

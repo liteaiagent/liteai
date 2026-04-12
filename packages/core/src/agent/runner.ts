@@ -18,6 +18,11 @@ import { AgentEvent } from "./events"
 
 const logger = Log.create({ service: "agent:runner" })
 
+// Phase-local stub for T016. Will be replaced by T037 (Phase 6)
+function extractPartialResultStub(_sessionId: string): string {
+  return "Partial result extraction stub" // TODO: scan messages in reverse for last assistant text, truncate to 2000 chars
+}
+
 export interface RunAgentOptions {
   parentContext?: ParentContext
   overrides?: SubagentContextOverrides
@@ -65,13 +70,6 @@ export async function runAgent(
 
   const startTime = Date.now()
   try {
-    Bus.publish(AgentEvent.Spawned, {
-      agentId,
-      agentType: agentName,
-      parentId: storeContext?.agentId ?? "",
-      isAsync: !!agentDef.background,
-    })
-
     // Build subagent context
     const parentMock = parentContext ?? {
       sessionId: sessId,
@@ -86,8 +84,15 @@ export async function runAgent(
     const subContext = createSubagentContext(parentMock, agentDef, options?.overrides)
     subContext.agentId = agentId
 
-    // 2. Wrap execution with Context
-    const resultMsg = await runWithAgentContext(subContext, async () => {
+    // 2. Wrap entire execution with Context
+    return await runWithAgentContext(subContext, async () => {
+      Bus.publish(AgentEvent.Spawned, {
+        agentId,
+        agentType: agentName,
+        parentId: storeContext?.agentId ?? "",
+        isAsync: !!agentDef.background,
+      })
+
       let timeoutId: ReturnType<typeof setTimeout> | undefined
 
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -106,56 +111,78 @@ export async function runAgent(
         system: agentDef.prompt,
       })
 
+      let resultMsg: Awaited<ReturnType<typeof SessionPrompt.prompt>> | undefined
       try {
-        return await Promise.race([runPromise, timeoutPromise])
+        resultMsg = await Promise.race([runPromise, timeoutPromise])
       } finally {
         if (timeoutId) clearTimeout(timeoutId)
       }
-    })
 
-    let finalOutput = "No text output."
+      let finalOutput = "No text output."
 
-    // Attempt to extract result
-    if (resultMsg?.parts) {
-      const textParts = resultMsg.parts.filter((p) => p.type === "text") as { text: string }[]
-      if (textParts.length > 0) {
-        finalOutput = textParts.map((p) => p.text).join("\n")
+      // Attempt to extract result
+      if (resultMsg?.parts) {
+        const textParts = resultMsg.parts.filter((p) => p.type === "text") as { text: string }[]
+        if (textParts.length > 0) {
+          finalOutput = textParts.map((p) => p.text).join("\n")
+        }
       }
-    }
 
-    const duration = Date.now() - startTime
+      const duration = Date.now() - startTime
 
-    const result: Agent.RunAgentResult = {
-      agentId,
-      status: "completed",
-      result: finalOutput,
-      usage: {
-        // TODO: reference Agent.RunAgentResult and SessionPrompt.prompt to calculate true totalTokens
-        totalTokens: 0,
-        // TODO: track tool invocations in this runner to calculate true toolCalls
-        toolCalls: 0,
+      const result: Agent.RunAgentResult = {
+        agentId,
+        status: "completed",
+        result: finalOutput,
+        usage: {
+          // TODO: reference Agent.RunAgentResult and SessionPrompt.prompt to calculate true totalTokens
+          totalTokens: 0,
+          // TODO: track tool invocations in this runner to calculate true toolCalls
+          toolCalls: 0,
+          duration,
+        },
+      }
+
+      Bus.publish(AgentEvent.Completed, {
+        agentId,
+        agentType: agentName,
+        status: "completed",
         duration,
-      },
-    }
-
-    Bus.publish(AgentEvent.Completed, {
-      agentId,
-      agentType: agentName,
-      status: "completed",
-      duration,
-      usage: result.usage,
+        usage: result.usage,
+      })
+      return result
     })
-    return result
   } catch (err: unknown) {
     const duration = Date.now() - startTime
     logger.error("runAgent failed", { error: err, agentId, agentName })
+
+    let status: "failed" | "killed" = "failed"
+    let partialResult: string | undefined
+
+    if (err instanceof AgentTimeoutError || (err instanceof Error && err.name === "AbortError")) {
+      status = "killed"
+      partialResult = extractPartialResultStub(sessId)
+    }
+
     Bus.publish(AgentEvent.Completed, {
       agentId,
       agentType: agentName,
-      status: "failed",
+      status,
       duration,
       usage: { totalTokens: 0, toolCalls: 0, duration },
     })
+
+    if (status === "killed") {
+      return {
+        agentId,
+        status: "killed",
+        result: partialResult ?? "Killed with no partial result",
+        usage: { totalTokens: 0, toolCalls: 0, duration },
+        partialResult,
+        error: err instanceof Error ? err : new Error(String(err)),
+      }
+    }
+
     throw err
   } finally {
     Session.decrementAgentCount(sessId)

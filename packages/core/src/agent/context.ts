@@ -128,7 +128,13 @@ export function createSubagentContext(
     abortController,
     readFileState: new Map(parent.readFileState), // shallow clone
     toolDecisions: undefined, // fresh
-    thinkingConfig: agent.thinking ? { enabled: true, budget: agent.thinkingBudget } : undefined,
+    thinkingConfig: agent.thinking
+      ? {
+          ...(parent.thinkingConfig || {}),
+          enabled: true,
+          ...(agent.thinkingBudget !== undefined ? { budget: agent.thinkingBudget } : {}),
+        }
+      : undefined,
     getAppState,
     setAppState,
     setAppStateForTasks,
