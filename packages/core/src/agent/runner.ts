@@ -1,4 +1,5 @@
 import { Bus } from "@/bus/index"
+import { clearSessionHooks, type RegisteredSessionGroup, registerSessionHook } from "@/hook/hook"
 import { Provider } from "@/provider/provider"
 import { SessionPrompt } from "@/session/engine"
 import type { PromptInput } from "@/session/engine/loop"
@@ -15,6 +16,7 @@ import {
 } from "./context"
 import { AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "./errors"
 import { AgentEvent } from "./events"
+import { isRestrictedToPluginOnly } from "./policy"
 
 const logger = Log.create({ service: "agent:runner" })
 
@@ -27,6 +29,25 @@ export interface RunAgentOptions {
   parentContext?: ParentContext
   overrides?: SubagentContextOverrides
   inputParts?: PromptInput["parts"]
+}
+
+function executeSubagentStartHooks(agentDef: Agent.AgentDefinition, agentId: string) {
+  if (!agentDef.hooks) return
+
+  if (isRestrictedToPluginOnly("hooks", agentDef)) {
+    logger.warn("blocking execution of user-defined hooks for custom agent", { agentName: agentDef.name })
+    return
+  }
+
+  for (const [evtName, groups] of Object.entries(agentDef.hooks)) {
+    const targetEvent = evtName === "Stop" ? "SubagentStop" : evtName
+    if (Array.isArray(groups)) {
+      for (const group of groups) {
+        const registeredGroup: RegisteredSessionGroup = { ...group, isAgent: true }
+        registerSessionHook(agentId, targetEvent, registeredGroup)
+      }
+    }
+  }
 }
 
 export async function runAgent(
@@ -84,8 +105,32 @@ export async function runAgent(
     const subContext = createSubagentContext(parentMock, agentDef, options?.overrides)
     subContext.agentId = agentId
 
+    const finalParts = options?.inputParts ? [...options.inputParts] : []
+    if (agentDef.skills && agentDef.skills.length > 0) {
+      const { SkillLoader } = await import("@/skill/loader")
+      for (const skillName of agentDef.skills) {
+        const skill = await SkillLoader.resolveSkillName(skillName)
+        if (skill) {
+          SkillLoader.registerInvokedSkill(agentId, skill.name)
+          finalParts.unshift({
+            type: "text",
+            text: `<skill name="${skill.name}">\n${skill.content}\n</skill>`,
+          })
+        }
+      }
+    }
+
+    const { AgentMemory } = await import("@/agent/memory")
+    if (await AgentMemory.isAutoMemoryEnabled()) {
+      const scope = (await import("@/project/instance")).Instance.worktree ? "local" : "project"
+      const memPrompt = await AgentMemory.loadAgentMemoryPrompt(agentName, scope)
+      finalParts.unshift({ type: "text", text: memPrompt })
+    }
+
     // 2. Wrap entire execution with Context
     return await runWithAgentContext(subContext, async () => {
+      executeSubagentStartHooks(agentDef, agentId)
+
       Bus.publish(AgentEvent.Spawned, {
         agentId,
         agentType: agentName,
@@ -102,13 +147,20 @@ export async function runAgent(
         }, timeoutMs)
       })
 
+      let finalSystemPrompt = agentDef.prompt ?? ""
+      if (subContext.criticalSystemReminder) {
+        finalSystemPrompt = finalSystemPrompt
+          ? `${finalSystemPrompt}\n\n<system-reminder>\n${subContext.criticalSystemReminder}\n</system-reminder>`
+          : `<system-reminder>\n${subContext.criticalSystemReminder}\n</system-reminder>`
+      }
+
       // Run session prompt
       const runPromise = SessionPrompt.prompt({
         sessionID: sessId,
         agent: agentName,
-        parts: options?.inputParts ?? [],
+        parts: finalParts,
         model: agentDef.model,
-        system: agentDef.prompt,
+        system: finalSystemPrompt,
       })
 
       let resultMsg: Awaited<ReturnType<typeof SessionPrompt.prompt>> | undefined
@@ -185,6 +237,13 @@ export async function runAgent(
 
     throw err
   } finally {
+    clearSessionHooks(agentId)
+    try {
+      const m = await import("@/skill/loader")
+      await m.SkillLoader.clearInvokedSkillsForAgent(agentId)
+    } catch (err) {
+      logger.error("Failed to clear invoked skills", { error: err, agentId })
+    }
     Session.decrementAgentCount(sessId)
     if (parentContext === undefined) {
       // We initialized a fresh abort controller maybe, but GC will handle it

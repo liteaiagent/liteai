@@ -212,4 +212,59 @@ export namespace SkillLoader {
       dirs: Array.from(dirs),
     }
   }
+
+  export async function resolveSkillName(
+    name: string,
+    allSkills?: Record<string, Skill.Info>,
+  ): Promise<Skill.Info | undefined> {
+    const loaded = allSkills ?? (await load()).skills
+
+    // Strategy 1: Exact match
+    if (loaded[name]) {
+      return loaded[name]
+    }
+
+    // Strategy 2: Plugin-prefix match
+    // Check if the requested name matches a suffix of a loaded skill,
+    // or if the requested name is a suffix and we find a match
+    const suffixMatches = Object.keys(loaded).filter((key) => key.endsWith(`/${name}`))
+    if (suffixMatches.length === 1) {
+      return loaded[suffixMatches[0]]
+    } else if (suffixMatches.length > 1) {
+      log.warn("multiple skills matched suffix, using deterministic first sorted match", {
+        name,
+        matches: suffixMatches,
+      })
+      suffixMatches.sort()
+      return loaded[suffixMatches[0]]
+    }
+
+    const reverseMatches = Object.keys(loaded).filter((key) => name.endsWith(`/${key}`))
+    if (reverseMatches.length === 1) {
+      return loaded[reverseMatches[0]]
+    } else if (reverseMatches.length > 1) {
+      log.warn("multiple skills matched reverse suffix, using deterministic first sorted match", {
+        name,
+        matches: reverseMatches,
+      })
+      reverseMatches.sort()
+      return loaded[reverseMatches[0]]
+    }
+
+    log.debug("failed to resolve skill name, skipping", { name })
+    return undefined
+  }
+
+  const invokedSkillsByAgent = new Map<string, Set<string>>()
+
+  export function registerInvokedSkill(agentId: string, skillName: string) {
+    if (!invokedSkillsByAgent.has(agentId)) {
+      invokedSkillsByAgent.set(agentId, new Set())
+    }
+    invokedSkillsByAgent.get(agentId)?.add(skillName)
+  }
+
+  export function clearInvokedSkillsForAgent(agentId: string) {
+    invokedSkillsByAgent.delete(agentId)
+  }
 }

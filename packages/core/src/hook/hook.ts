@@ -61,6 +61,9 @@ export const Group = z
   .meta({ ref: "HookGroup" })
 export type Group = z.infer<typeof Group>
 
+/** Group that was dynamically registered during a session */
+export type RegisteredSessionGroup = Group & { isAgent?: boolean }
+
 /** Top-level hooks config: event name → array of groups. */
 export const Schema = z.record(z.string(), z.array(Group)).meta({ ref: "HooksConfig" })
 export type Schema = z.infer<typeof Schema>
@@ -111,6 +114,22 @@ function matches(matcher: string | undefined, value: string | undefined): boolea
   }
 }
 
+/** Dynamically registered session hooks (e.g. from agent spawn) */
+const sessionHooks = new Map<string, { agentId: string; event: string; group: RegisteredSessionGroup }>()
+
+export function registerSessionHook(agentId: string, event: string, group: RegisteredSessionGroup) {
+  const id = `${agentId}:${Math.random().toString(36).slice(2)}`
+  sessionHooks.set(id, { agentId, event, group })
+}
+
+export function clearSessionHooks(agentId: string) {
+  for (const [id, reg] of sessionHooks.entries()) {
+    if (reg.agentId === agentId) {
+      sessionHooks.delete(id)
+    }
+  }
+}
+
 /**
  * Dispatch hooks for a given event.
  *
@@ -123,7 +142,10 @@ function matches(matcher: string | undefined, value: string | undefined): boolea
  */
 export async function dispatch(event: string, ctx: Input, opts?: { extra?: Schema }): Promise<Result> {
   const hooks = await HookLoader.load()
-  const groups = [...(hooks[event] ?? []), ...(opts?.extra?.[event] ?? [])]
+  const dynamicGroups = Array.from(sessionHooks.values())
+    .filter((h) => h.event === event)
+    .map((h) => h.group)
+  const groups = [...(hooks[event] ?? []), ...(opts?.extra?.[event] ?? []), ...dynamicGroups]
 
   log.info("dispatch", {
     event,

@@ -695,6 +695,8 @@ export const Info = z
           .positive()
           .optional()
           .describe("Timeout in milliseconds for model context protocol (MCP) requests"),
+        agent_memory: z.boolean().optional().describe("Enable agent memory integration"),
+        agent_memory_snapshot: z.boolean().optional().describe("Enable agent memory local snapshot integration"),
       })
       .optional(),
     hooks: z

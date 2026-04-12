@@ -203,6 +203,13 @@ export async function resolveTools(input: {
     })
   }
 
+  // Auto-inject agent memory tools if enabled
+  const { AgentMemory } = await import("../../agent/memory")
+  if (await AgentMemory.isAutoMemoryEnabled()) {
+    const scope = Instance.worktree ? "local" : "project"
+    AgentMemory.injectAgentMemoryTools(tools, input.agent.name, scope)
+  }
+
   for (const [key, item] of Object.entries(await MCP.tools())) {
     const execute = item.execute
     if (!execute) continue

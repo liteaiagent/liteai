@@ -103,22 +103,50 @@ export function createSubagentContext(
     }
   }
 
-  const getAppState = () => {
-    const state = parent.getAppState()
+  // Implement deep isolation unless shareSetAppState is explicitly true
+  // biome-ignore lint/suspicious/noExplicitAny: generic application state
+  let independentState: any
+  if (!overrides?.shareSetAppState) {
+    const parentState = parent.getAppState?.() || {}
+    independentState =
+      typeof structuredClone === "function" ? structuredClone(parentState) : JSON.parse(JSON.stringify(parentState))
+
     if (agent.background) {
-      return { ...state, shouldAvoidPermissionPrompts: true }
+      independentState.shouldAvoidPermissionPrompts = true
     }
-    return state
   }
 
-  const setAppState = overrides?.shareSetAppState ? parent.setAppState : () => {} // NOOP wrapper by default
+  const getAppState = () => {
+    if (overrides?.shareSetAppState) {
+      const state = parent.getAppState?.() || {}
+      if (agent.background) {
+        return { ...state, shouldAvoidPermissionPrompts: true }
+      }
+      return state
+    }
+    return independentState
+  }
+
+  const setAppState = overrides?.shareSetAppState
+    ? parent.setAppState
+    : // biome-ignore lint/suspicious/noExplicitAny: generic app state
+      (arg: any) => {
+        if (typeof arg === "function") {
+          independentState = arg(independentState) ?? independentState
+        } else {
+          independentState = { ...independentState, ...arg }
+        }
+      }
 
   const setAppStateForTasks = (_action: "registerTask" | "killTask" | "deleteTodo", _payload: unknown) => {
-    // biome-ignore lint/suspicious/noExplicitAny: state requires any for now due to AppState typing
-    parent.setAppState((_state: any) => {
-      // Just a mock implementation for tasks scoping right now
-      return _state
-    })
+    if (!overrides?.shareSetAppState) {
+      return // Short-circuit when not sharing state
+    }
+
+    // TODO: Implement the intended state updates based on _action and _payload
+    // (e.g., call parent.setAppState(prev => updatedState) applying registerTask/killTask/deleteTodo logic).
+    // biome-ignore lint/suspicious/noExplicitAny: currently a no-op identity function placeholder
+    parent.setAppState((state: any) => state)
   }
 
   return {

@@ -58,7 +58,52 @@ export namespace AgentLoader {
       prompt: md.content.trim(),
     }
     const parsed = Agent.safeParse(config)
-    if (parsed.success) return [config.name, { ...parsed.data, source }]
+    if (parsed.success) {
+      if (parsed.data.requiredMcpServers && parsed.data.requiredMcpServers.length > 0) {
+        const mcpData = await (async () => {
+          try {
+            const { MCP } = await import("@/mcp")
+            const status = await MCP.status()
+            const tools = await MCP.tools()
+            return { status, tools }
+          } catch (err) {
+            log.error("failed to query MCP status/tools in parseAgentFromMarkdown, skipping agent", {
+              agent: config.name,
+              err,
+            })
+            return null
+          }
+        })()
+
+        if (!mcpData) return undefined
+        const { status: mcpStatus, tools: mcpTools } = mcpData
+
+        for (const reqServer of parsed.data.requiredMcpServers) {
+          const status = mcpStatus[reqServer]
+          if (status?.status !== "connected") {
+            log.info("excluding agent due to disconnected required MCP server", {
+              agent: config.name,
+              server: reqServer,
+            })
+            return undefined
+          }
+
+          const sanitizedReqServer = reqServer.replace(/[^a-zA-Z0-9_-]/g, "_")
+          const hasTools = Object.keys(mcpTools).some((k) => k.startsWith(`${sanitizedReqServer}_`))
+          if (!hasTools) {
+            log.info("excluding agent due to required MCP server having no tools", {
+              agent: config.name,
+              server: reqServer,
+            })
+            return undefined
+          }
+        }
+      }
+      return [config.name, { ...parsed.data, source }] as [
+        string,
+        z.infer<typeof Agent> & { source: "custom" | "plugin" },
+      ]
+    }
     log.error("invalid agent config, skipping", { path: item, issues: parsed.error.issues })
     const { Session } = await import("@/session")
     Bus.publish(Session.Event.Error, {

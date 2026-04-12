@@ -18,6 +18,21 @@ mock.module("../../src/mcp/index", () => ({
   },
 }))
 
+mock.module("../../src/agent/memory", () => ({
+  AgentMemory: {
+    isAutoMemoryEnabled: mock(() => Promise.resolve(false)),
+    loadAgentMemoryPrompt: mock(() => Promise.resolve("")),
+  },
+}))
+
+mock.module("../../src/skill/loader", () => ({
+  SkillLoader: {
+    resolveSkillName: mock(() => Promise.resolve(undefined)),
+    registerInvokedSkill: mock(() => {}),
+    clearInvokedSkillsForAgent: mock(() => {}),
+  },
+}))
+
 import { Agent } from "../../src/agent/agent"
 import { AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "../../src/agent/errors"
 import { runAgent } from "../../src/agent/runner"
@@ -79,6 +94,8 @@ describe("runAgent", () => {
     spyOn(Agent, "get").mockResolvedValue({ name: "test", timeout: 10 } as unknown as Agent.AgentDefinition)
     spyOn(Session, "incrementAgentCount").mockReturnValue(1)
 
-    await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(AgentTimeoutError)
+    const result = await runAgent("test-agent", "sess_1" as SessionID)
+    expect(result.status).toBe("killed")
+    expect(result.error).toBeInstanceOf(AgentTimeoutError)
   })
 })

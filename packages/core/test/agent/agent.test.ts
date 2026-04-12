@@ -1,6 +1,18 @@
-import { describe, expect, it } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
+
+mock.module("../../src/project/instance", () => ({
+  Instance: {
+    directory: "/mock/project",
+    worktree: "/mock/project",
+    state: (init: () => unknown) => init,
+  },
+}))
+
 import { Agent } from "../../src/agent/agent"
+import { AgentLoader } from "../../src/agent/loader"
+import { Config } from "../../src/config/config"
 import { Agent as SchemaAgent } from "../../src/config/schema"
+import { MCP } from "../../src/mcp"
 
 describe("Agent Hierarchy", () => {
   it("type guards work correctly", () => {
@@ -34,5 +46,113 @@ describe("Agent Hierarchy", () => {
 
     // Unknown fields go to options
     expect((res as unknown as { options: Record<string, unknown> }).options.fooUnknown).toBe("bar")
+  })
+
+  describe("Agent Merge Priority", () => {
+    afterEach(() => {
+      mock.restore()
+      const agentState = (Agent as unknown as { state?: { reset?: () => void } }).state
+      agentState?.reset?.()
+    })
+
+    it("prioritizes sources correctly: builtIn < platform/plugin < project cfg", async () => {
+      // Mock loader returns
+      const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
+        build: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Agent.AgentDefinition,
+        test_plugin: { source: "plugin", description: "only_plugin" } as unknown as Agent.AgentDefinition,
+      })
+      const spyLoad = spyOn(AgentLoader, "loadAgent").mockResolvedValue({
+        build: {
+          source: "custom",
+          description: "from_project_agent_md",
+          temperature: 0.8,
+        } as unknown as Agent.AgentDefinition,
+      })
+
+      const spyCfg = spyOn(Config, "get").mockResolvedValue({
+        agent: {
+          build: { description: "from_cfg", temperature: 0.9 },
+        },
+      } as unknown as Awaited<ReturnType<typeof Config.get>>)
+
+      const result = await Agent.list()
+      const buildAgent = result.find((a) => a.name === "build")
+      expect(buildAgent?.name).toBe("build")
+
+      // Actual merge order is builtIn -> platform plugin -> config -> project markdown
+      // So project markdown should win over cfg
+      expect(buildAgent?.description).toBe("from_project_agent_md")
+      expect(buildAgent?.temperature).toBe(0.8)
+
+      spyPlatform.mockRestore()
+      spyLoad.mockRestore()
+      spyCfg.mockRestore()
+    })
+
+    it("rejects disabled agents", async () => {
+      // Create a unique temporary directory for this test so state is fresh!
+      const fs = await import("node:fs/promises")
+      const path = await import("node:path")
+      const os = await import("node:os")
+      const tmpProject = path.join(os.tmpdir(), `liteai_test_disabled_${Date.now()}`)
+      await fs.mkdir(tmpProject, { recursive: true })
+
+      const InstanceModule = (await import("../../src/project/instance")).Instance
+      const originalDir = InstanceModule.directory
+      // @ts-expect-error mock
+      InstanceModule.directory = tmpProject
+
+      const spyCfg = spyOn(Config, "get").mockResolvedValue({
+        agent: { custom1: { disable: true } },
+      } as unknown as Awaited<ReturnType<typeof Config.get>>)
+      const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
+        custom1: { source: "plugin", description: "testing" } as unknown as Agent.AgentDefinition,
+      })
+
+      let thrown = false
+      try {
+        await Agent.get("custom1")
+      } catch (e: unknown) {
+        expect((e as Error).name).toBe("AgentDisabledError")
+        thrown = true
+      }
+      expect(thrown).toBe(true)
+
+      spyCfg.mockRestore()
+      spyPlatform.mockRestore()
+      // @ts-expect-error mock
+      InstanceModule.directory = originalDir
+    })
+  })
+
+  describe("requiredMcpServers Validation", () => {
+    let oldStatus: typeof MCP.status
+    let oldTools: typeof MCP.tools
+
+    beforeEach(() => {
+      oldStatus = MCP.status
+      oldTools = MCP.tools
+    })
+
+    afterEach(() => {
+      MCP.status = oldStatus
+      MCP.tools = oldTools
+    })
+
+    it("load-time filtering excludes agent when server completely missing", async () => {
+      MCP.status = async () => ({})
+      MCP.tools = async () => ({})
+
+      // mock gray-matter parse used by parseAgentFromMarkdown
+      const ConfigMarkdown = (await import("../../src/config/markdown")).ConfigMarkdown
+      const spyParse = spyOn(ConfigMarkdown, "parse").mockResolvedValue({
+        data: { requiredMcpServers: ["missing_db"] },
+        content: "hello",
+      } as unknown as Awaited<ReturnType<typeof ConfigMarkdown.parse>>)
+
+      const result = await AgentLoader.parseAgentFromMarkdown("/mock/agents/db_agent.md", "custom")
+      expect(result).toBeUndefined()
+      spyParse.mockRestore()
+    })
   })
 })
