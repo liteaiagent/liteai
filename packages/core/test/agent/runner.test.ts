@@ -1,9 +1,38 @@
 import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from "bun:test"
 
 // Mock the prompt and other dependencies before importing runner
+mock.module("../../src/project/instance", () => ({
+  Instance: {
+    get directory() {
+      return "/fake/dir"
+    },
+    get worktree() {
+      return "/fake/dir"
+    },
+  },
+}))
+
+mock.module("../../src/session/transcript", () => ({
+  SidechainTranscript: {
+    create: mock(() => ({
+      getPath: () => "/fake/path",
+      recordMessage: mock(() => Promise.resolve()),
+      recordChain: mock(() => Promise.resolve()),
+    })),
+  },
+}))
+
+let promptImpl: (() => Promise<unknown>) | undefined
+
 mock.module("../../src/session/engine", () => ({
   SessionPrompt: {
-    prompt: mock(() => Promise.resolve({ parts: [{ type: "text", text: "Mock output" }] })),
+    prompt: mock(() => {
+      if (promptImpl) return promptImpl()
+      return Promise.resolve({
+        info: { role: "assistant", tokens: { input: 10, output: 20 } },
+        parts: [{ type: "text", text: "Mock output" }],
+      })
+    }),
   },
 }))
 
@@ -35,7 +64,7 @@ mock.module("../../src/skill/loader", () => ({
 
 import { Agent } from "../../src/agent/agent"
 import { AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "../../src/agent/errors"
-import { runAgent } from "../../src/agent/runner"
+import { DEFAULT_CONCURRENT_AGENT_LIMIT, runAgent } from "../../src/agent/runner"
 import { Bus } from "../../src/bus/index"
 import { Provider } from "../../src/provider/provider"
 import { Session } from "../../src/session/index"
@@ -43,11 +72,18 @@ import type { SessionID } from "../../src/session/schema"
 
 describe("runAgent", () => {
   beforeEach(() => {
+    promptImpl = undefined
     spyOn(Bus, "publish").mockResolvedValue([])
     spyOn(Provider, "defaultModel").mockResolvedValue({
       providerID: "test-provider",
       modelID: "test-model",
     } as unknown as Awaited<ReturnType<typeof Provider.defaultModel>>)
+    spyOn(Session, "get").mockResolvedValue({ directory: "/fake/dir" } as unknown as Awaited<
+      ReturnType<typeof Session.get>
+    >)
+    spyOn(Session, "createNext").mockResolvedValue({ id: "fake_child_1" } as unknown as Awaited<
+      ReturnType<typeof Session.createNext>
+    >)
   })
 
   afterEach(() => {
@@ -78,18 +114,14 @@ describe("runAgent", () => {
 
   it("enforces concurrent limit", async () => {
     spyOn(Agent, "get").mockResolvedValue({ name: "test" } as unknown as Agent.AgentDefinition)
-    spyOn(Session, "getAgentCount").mockReturnValue(11) // Exceeds 5
+    spyOn(Session, "getAgentCount").mockReturnValue(DEFAULT_CONCURRENT_AGENT_LIMIT + 1)
 
     await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(ConcurrentAgentLimitError)
   })
 
   it("enforces timeout", async () => {
     // Simulate a prompt that never resolves
-    mock.module("../../src/session/engine", () => ({
-      SessionPrompt: {
-        prompt: mock(() => new Promise(() => {})),
-      },
-    }))
+    promptImpl = () => new Promise(() => {})
 
     spyOn(Agent, "get").mockResolvedValue({ name: "test", timeout: 10 } as unknown as Agent.AgentDefinition)
     spyOn(Session, "incrementAgentCount").mockReturnValue(1)

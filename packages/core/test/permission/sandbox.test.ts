@@ -40,11 +40,32 @@ describe("PermissionSandbox", () => {
     } as Agent.AgentDefinition
   }
 
+  const applySandboxToContext = (context: SubagentContext, agentDef: Agent.AgentDefinition) => {
+    const parentPermissionCtx = {
+      permissionMode: context.getAppState().permissionMode,
+      shouldAvoidPermissionPrompts: context.getAppState().shouldAvoidPermissionPrompts,
+      toolDecisions: context.toolDecisions,
+    }
+    const derivedPermissionCtx = PermissionSandbox.apply(parentPermissionCtx, agentDef, {
+      isAsync: !!agentDef.background,
+      canShowPermissionPrompts: false,
+    })
+
+    context.setAppState((state) => ({
+      ...state,
+      permissionMode: derivedPermissionCtx.permissionMode,
+      ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
+    }))
+    if (derivedPermissionCtx.toolDecisions) {
+      context.toolDecisions = derivedPermissionCtx.toolDecisions
+    }
+  }
+
   test("mode inheritance precedence: parent elevated mode overrides child plan", () => {
     const context = createMockContext({ permissionMode: "bypassPermissions" })
     const agentDef = createMockAgentDef({ permissionMode: "plan" })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     expect(context.getAppState().permissionMode).toBe("bypassPermissions")
   })
@@ -53,7 +74,7 @@ describe("PermissionSandbox", () => {
     const context = createMockContext({ permissionMode: "plan" })
     const agentDef = createMockAgentDef({ permissionMode: "acceptEdits" })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     expect(context.getAppState().permissionMode).toBe("acceptEdits")
   })
@@ -62,7 +83,7 @@ describe("PermissionSandbox", () => {
     const context = createMockContext({})
     const agentDef = createMockAgentDef({ background: true })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     expect(context.getAppState().shouldAvoidPermissionPrompts).toBe(true)
   })
@@ -71,7 +92,7 @@ describe("PermissionSandbox", () => {
     const context = createMockContext({})
     const agentDef = createMockAgentDef({ options: { bubble: true } })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     expect(context.getAppState().permissionMode).toBe("bubble")
   })
@@ -85,7 +106,7 @@ describe("PermissionSandbox", () => {
     })
     const agentDef = createMockAgentDef({ tools: ["write_file", "search"] })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     const newDecisions = context.toolDecisions
     expect(newDecisions).toBeDefined()
@@ -103,7 +124,7 @@ describe("PermissionSandbox", () => {
     })
     const agentDef = createMockAgentDef({ tools: { write_file: true, denied_tool: false } })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     const newDecisions = context.toolDecisions
     expect(newDecisions).toBeDefined()
@@ -121,7 +142,7 @@ describe("PermissionSandbox", () => {
     })
     const agentDef = createMockAgentDef({ tools: ["write_file"] })
 
-    PermissionSandbox.apply(context, { agentDef })
+    applySandboxToContext(context, agentDef)
 
     const newDecisions = context.toolDecisions
     expect(newDecisions).toBeDefined()

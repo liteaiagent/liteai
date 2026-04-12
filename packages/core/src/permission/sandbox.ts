@@ -1,8 +1,14 @@
 import type { Agent } from "../agent/agent"
-import type { SubagentContext } from "../agent/context"
 
 export interface SandboxOptions {
-  agentDef: Agent.AgentDefinition
+  isAsync: boolean
+  canShowPermissionPrompts: boolean
+}
+
+export interface PermissionContext {
+  permissionMode?: Agent.AgentDefinition["permissionMode"]
+  shouldAvoidPermissionPrompts?: boolean
+  toolDecisions?: Record<string, import("../agent/context").ToolDecision>
 }
 
 const PERMISSION_MODE_RANKS: Record<string, number> = {
@@ -16,16 +22,15 @@ const PERMISSION_MODE_RANKS: Record<string, number> = {
 
 // biome-ignore lint/complexity/noStaticOnlyClass: Architectural pattern — LiteAI services use static classes as organizational namespaces (e.g., PermissionNext, AgentLoader).
 export class PermissionSandbox {
-  static apply(context: SubagentContext, options: SandboxOptions) {
-    const parentState = context.getAppState()
-    const parentMode: Agent.AgentDefinition["permissionMode"] = parentState.permissionMode || "default"
-    let childMode: Agent.AgentDefinition["permissionMode"] = options.agentDef.permissionMode || "default"
+  static apply(parent: PermissionContext, agentDef: Agent.AgentDefinition, options: SandboxOptions): PermissionContext {
+    const parentMode = parent.permissionMode || "default"
+    let childMode = agentDef.permissionMode || "default"
 
     const parentRank = PERMISSION_MODE_RANKS[parentMode ?? "default"] ?? 0
     let childRank = PERMISSION_MODE_RANKS[childMode ?? "default"] ?? 0
 
     // Bubble mode support
-    if (options.agentDef.options?.bubble === true) {
+    if (agentDef.options?.bubble === true) {
       childMode = "bubble"
       childRank = PERMISSION_MODE_RANKS.bubble
     }
@@ -34,24 +39,21 @@ export class PermissionSandbox {
       childMode = parentMode
     }
 
-    context.setAppState((state) => ({
-      ...state,
+    const childContext: PermissionContext = {
       permissionMode: childMode,
-    }))
-
-    if (options.agentDef.background) {
-      context.setAppState((state) => ({
-        ...state,
-        shouldAvoidPermissionPrompts: true,
-      }))
+      shouldAvoidPermissionPrompts: false,
     }
 
-    if (options.agentDef.tools) {
+    if (options.isAsync && !options.canShowPermissionPrompts) {
+      childContext.shouldAvoidPermissionPrompts = true
+    }
+
+    if (agentDef.tools) {
       const allowedTools: string[] = []
-      if (Array.isArray(options.agentDef.tools)) {
-        allowedTools.push(...options.agentDef.tools)
-      } else if (typeof options.agentDef.tools === "object") {
-        for (const [key, val] of Object.entries(options.agentDef.tools)) {
+      if (Array.isArray(agentDef.tools)) {
+        allowedTools.push(...agentDef.tools)
+      } else if (typeof agentDef.tools === "object") {
+        for (const [key, val] of Object.entries(agentDef.tools)) {
           if (val) allowedTools.push(key)
         }
       }
@@ -59,7 +61,7 @@ export class PermissionSandbox {
       const newDecisions: Record<string, import("../agent/context").ToolDecision> = {}
 
       // Preserve CLI-level rules
-      const parentDecisions = parentState.toolDecisions
+      const parentDecisions = parent.toolDecisions
       if (parentDecisions) {
         for (const [tool, decision] of Object.entries(parentDecisions)) {
           if (typeof decision === "object" && decision !== null && decision.source === "cliArg") {
@@ -74,7 +76,9 @@ export class PermissionSandbox {
         }
       }
 
-      context.toolDecisions = newDecisions
+      childContext.toolDecisions = newDecisions
     }
+
+    return childContext
   }
 }

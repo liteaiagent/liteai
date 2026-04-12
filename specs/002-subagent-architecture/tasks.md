@@ -116,14 +116,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T029 [P] [US3] Write permission sandbox tests: background silent deny, mode inheritance precedence (parent bypass overrides child plan), tool allow-list replacement (not merge), bubble mode prompt passthrough, CLI-level rule preservation in `packages/core/test/permission/sandbox.test.ts`
+- [x] T029 [P] [US3] Write permission sandbox tests: background silent deny, mode inheritance precedence (parent bypass overrides child plan), tool allow-list replacement (not merge), bubble mode prompt passthrough, CLI-level rule preservation in `packages/core/test/permission/sandbox.test.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T030 [US3] Implement `PermissionSandbox.apply()` in `packages/core/src/permission/sandbox.ts` — mode inheritance logic (parent elevated modes like `bypass`, `auto`, `acceptEdits` always take precedence), background silent-deny (`shouldAvoidPermissionPrompts: true`), bubble mode support, and `SandboxOptions` interface
-- [ ] T031 [US3] Implement tool allow-list scoping in `packages/core/src/permission/sandbox.ts` — when an agent declares `tools` as an allow-list, replace session-level tool decisions entirely (not merge); preserve CLI-level (`cliArg`) rules from SDK `--allowedTools`
-- [ ] T032 [US3] Extend `PermissionNext` service in `packages/core/src/permission/service.ts` to support `shouldAvoidPermissionPrompts` context flag — when true, any permission check that would prompt returns immediate denial with structured error reason
-- [ ] T033 [US3] Integrate `PermissionSandbox.apply()` into `runAgent()` — apply sandboxing after context forking, before query loop start in `packages/core/src/agent/runner.ts`
+- [x] T030 [US3] Implement `PermissionSandbox.apply()` in `packages/core/src/permission/sandbox.ts` — mode inheritance logic (parent elevated modes like `bypass`, `auto`, `acceptEdits` always take precedence), background silent-deny (`shouldAvoidPermissionPrompts: true`), bubble mode support, and `SandboxOptions` interface
+- [x] T031 [US3] Implement tool allow-list scoping in `packages/core/src/permission/sandbox.ts` — when an agent declares `tools` as an allow-list, replace session-level tool decisions entirely (not merge); preserve CLI-level (`cliArg`) rules from SDK `--allowedTools`
+- [x] T032 [US3] Extend `PermissionNext` service in `packages/core/src/permission/service.ts` to support `shouldAvoidPermissionPrompts` context flag — when true, any permission check that would prompt returns immediate denial with structured error reason
+- [x] T033 [US3] Integrate `PermissionSandbox.apply()` into `runAgent()` — apply sandboxing after context forking, before query loop start in `packages/core/src/agent/runner.ts`
 
 **Checkpoint**: At this point, User Story 3 should be fully functional — background agents never block on permissions, parent modes take precedence, and tool lists are properly scoped.
 
@@ -137,18 +137,18 @@
 
 ### Tests for User Story 3b
 
-- [ ] T034 [P] [US3b] Write lifecycle tests: progress tracking, terminal notification status variants (completed/failed/killed), partial result extraction for killed agents, usage metrics accuracy, 3-agent concurrent ALS isolation, terminal notification timing (assert notification enqueued within 1000ms of terminal state per SC-008), and handoff security reviews (assert proper `classifyHandoffIfNeeded` warning injection logic) in `packages/core/test/agent/lifecycle.test.ts`
+- [x] T034 [P] [US3b] Write lifecycle tests: progress tracking, terminal notification status variants (completed/failed/killed), partial result extraction for killed agents, usage metrics accuracy, 3-agent concurrent ALS isolation, terminal notification timing (assert notification enqueued within 1000ms of terminal state per SC-008), and handoff security reviews (assert proper `classifyHandoffIfNeeded` warning injection logic) in `packages/core/test/agent/lifecycle.test.ts`
 
 ### Implementation for User Story 3b
 
-- [ ] T035 [US3b] Implement `ProgressTracker` in `packages/core/src/agent/lifecycle.ts` — `createActivityDescriptionResolver()` mapping tool names to human-readable descriptions, `currentActivity` tracking, per-tool-call update
-- [ ] T036 [US3b] Implement terminal notification system in `packages/core/src/agent/lifecycle.ts` — `enqueueAgentNotification()` with `TerminalNotification` type: status (completed/failed/killed), description, `UsageMetrics` (tokens, tool calls, duration, optional worktreeInfo), error/partialResult fields
-- [ ] T037 [US3b] Implement `extractPartialResult()` in `packages/core/src/agent/lifecycle.ts` — extract last meaningful assistant text from the agent's message chain for killed agents, enforce strict truncation to 2000 chars. **Replaces** the inline stub introduced in T016: move the implementation to `lifecycle.ts`, export it, update the import in `runner.ts` to point to `lifecycle.ts`, and delete the inline stub
-- [ ] T038 [US3b] Implement `runAsyncAgentLifecycle()` wrapper in `packages/core/src/agent/lifecycle.ts` — orchestrate background agent from spawn to terminal notification: wrap in `runWithAgentContext()`, attach `ProgressTracker`, emit Bus events, handle all terminal states, enqueue notification
-- [ ] T038a [US3b] Implement `classifyHandoffIfNeeded()` in `packages/core/src/agent/lifecycle.ts` — when a completed background agent was running in auto permission mode, execute a handoff security review over the sub-agent's transcript for security-relevant actions (file mutations, shell commands), gated by the `TRANSCRIPT_CLASSIFIER` feature flag (default: disabled). As part of this task, implement the new `classifyYoloAction` safety classifier logic ported from liteai2 in `packages/core/src/permission/classifier.ts`. Prepend security warning or classifier-unavailable notice to the task result text per US3b AS7
-- [ ] T038b [US3b] Implement `startAgentSummarization()` in `packages/core/src/agent/lifecycle.ts` — triggered via `onCacheSafeParams` callback for long-running background agents when `enableSummarization: true`. Use a **restart-after-completion loop** (not `setInterval`) so the next 30-second timer starts only after the previous summary call resolves — this prevents summary calls from overlapping. Each tick forks the agent's current transcript to produce a 3–5 word activity description and explicitly pushes it to the parent session's `rootSetAppState` (bypassing the sub-agent's no-op `setAppState` wrapper)
-- [ ] T038c [P] [US3b] Implement cache eviction signaling in `packages/core/src/agent/lifecycle.ts` — emit `liteai_cache_eviction_hint` bus event on agent completion to notify prompt cache layer of freed context
-- [ ] T039 [US3b] Integrate `runAsyncAgentLifecycle()` into `runAgent()` — when `isAsync: true`, delegate to lifecycle wrapper instead of inline execution in `packages/core/src/agent/runner.ts`
+- [x] T035 [US3b] Implement `ProgressTracker` in `packages/core/src/agent/lifecycle.ts` — `createActivityDescriptionResolver()` mapping tool names to human-readable descriptions, `currentActivity` tracking, per-tool-call update
+- [x] T036 [US3b] Implement terminal notification system in `packages/core/src/agent/lifecycle.ts` — `enqueueAgentNotification()` with `TerminalNotification` type: status (completed/failed/killed), description, `UsageMetrics` (tokens, tool calls, duration, optional worktreeInfo), error/partialResult fields
+- [x] T037 [US3b] Implement `extractPartialResult()` in `packages/core/src/agent/lifecycle.ts` — extract last meaningful assistant text from the agent's message chain for killed agents, enforce strict truncation to 2000 chars. **Replaces** the inline stub introduced in T016: move the implementation to `lifecycle.ts`, export it, update the import in `runner.ts` to point to `lifecycle.ts`, and delete the inline stub
+- [x] T038 [US3b] Implement `runAsyncAgentLifecycle()` wrapper in `packages/core/src/agent/lifecycle.ts` — orchestrate background agent from spawn to terminal notification: wrap in `runWithAgentContext()`, attach `ProgressTracker`, emit Bus events, handle all terminal states, enqueue notification
+- [x] T038a [US3b] Implement `classifyHandoffIfNeeded()` in `packages/core/src/agent/lifecycle.ts` — when a completed background agent was running in auto permission mode, execute a handoff security review over the sub-agent's transcript for security-relevant actions (file mutations, shell commands), gated by the `TRANSCRIPT_CLASSIFIER` feature flag (default: disabled). As part of this task, implement the new `classifyYoloAction` safety classifier logic ported from liteai2 in `packages/core/src/permission/classifier.ts`. Prepend security warning or classifier-unavailable notice to the task result text per US3b AS7
+- [x] T038b [US3b] Implement `startAgentSummarization()` in `packages/core/src/agent/lifecycle.ts` — triggered via `onCacheSafeParams` callback for long-running background agents when `enableSummarization: true`. Use a **restart-after-completion loop** (not `setInterval`) so the next 30-second timer starts only after the previous summary call resolves — this prevents summary calls from overlapping. Each tick forks the agent's current transcript to produce a 3–5 word activity description and explicitly pushes it to the parent session's `rootSetAppState` (bypassing the sub-agent's no-op `setAppState` wrapper)
+- [x] T038c [P] [US3b] Implement cache eviction signaling in `packages/core/src/agent/lifecycle.ts` — emit `liteai_cache_eviction_hint` bus event on agent completion to notify prompt cache layer of freed context
+- [x] T039 [US3b] Integrate `runAsyncAgentLifecycle()` into `runAgent()` — when `isAsync: true`, delegate to lifecycle wrapper instead of inline execution in `packages/core/src/agent/runner.ts`
 
 **Checkpoint**: At this point, User Story 3b should be fully functional — background agents have observable lifecycles with isolated analytics, progress, and structured notifications.
 
@@ -162,13 +162,13 @@
 
 ### Tests for User Story 4
 
-- [ ] T040 [P] [US4] Write sidechain transcript tests: message recording (append JSONL), file naming (`agent-<agentId>.jsonl`), subdir grouping, abort-safe partial transcript preservation, concurrent write isolation, and parent context growth verification (spawn sub-agents with 10/50/200 messages, assert parent message count delta is exactly 1 task_result block per SC-005) in `packages/core/test/session/transcript.test.ts`
+- [x] T040 [P] [US4] Write sidechain transcript tests: message recording (append JSONL), file naming (`agent-<agentId>.jsonl`), subdir grouping, abort-safe partial transcript preservation, concurrent write isolation, and parent context growth verification (spawn sub-agents with 10/50/200 messages, assert parent message count delta is exactly 1 task_result block per SC-005) in `packages/core/test/session/transcript.test.ts`
 
 ### Implementation for User Story 4
 
-- [ ] T041 [US4] Implement `SidechainTranscript` namespace in `packages/core/src/session/transcript.ts` — `create()` factory, `getPath()` resolver (`<dir>/<sessionId>/subagents/<subdir>/agent-<agentId>.jsonl`), `recordMessage()` with `fs.appendFile()` for atomic appends (fire-and-forget safe, errors logged), `recordChain()` for batch append
-- [ ] T042 [US4] Implement `TranscriptMessage` type with `isSidechain: true` discriminator, `uuid`, `parentUuid`, `role`, `content`, `timestamp` fields in `packages/core/src/session/transcript.ts`
-- [ ] T043 [US4] Integrate sidechain recording into `runAgent()` — record initial messages before query loop, append each turn's messages with `lastRecordedUuid` for parent chain continuity, ensure only dense task result returns to parent in `packages/core/src/agent/runner.ts`
+- [x] T041 [US4] Implement `SidechainTranscript` namespace in `packages/core/src/session/transcript.ts` — `create()` factory, `getPath()` resolver (`<dir>/<sessionId>/subagents/<subdir>/agent-<agentId>.jsonl`), `recordMessage()` with `fs.appendFile()` for atomic appends (fire-and-forget safe, errors logged), `recordChain()` for batch append
+- [x] T042 [US4] Implement `TranscriptMessage` type with `isSidechain: true` discriminator, `uuid`, `parentUuid`, `role`, `content`, `timestamp` fields in `packages/core/src/session/transcript.ts`
+- [x] T043 [US4] Integrate sidechain recording into `runAgent()` — record initial messages before query loop, append each turn's messages with `lastRecordedUuid` for parent chain continuity, ensure only dense task result returns to parent in `packages/core/src/agent/runner.ts`
 
 **Checkpoint**: At this point, User Story 4 should be fully functional — sub-agent transcripts are isolated in JSONL files, parent context stays lean.
 

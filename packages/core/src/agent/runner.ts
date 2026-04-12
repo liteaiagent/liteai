@@ -20,10 +20,9 @@ import { isRestrictedToPluginOnly } from "./policy"
 
 const logger = Log.create({ service: "agent:runner" })
 
-// Phase-local stub for T016. Will be replaced by T037 (Phase 6)
-function extractPartialResultStub(_sessionId: string): string {
-  return "Partial result extraction stub" // TODO: scan messages in reverse for last assistant text, truncate to 2000 chars
-}
+import { extractPartialResult, runAsyncAgentLifecycle } from "./lifecycle"
+
+export const DEFAULT_CONCURRENT_AGENT_LIMIT = 8
 
 export interface RunAgentOptions {
   parentContext?: ParentContext
@@ -82,7 +81,7 @@ export async function runAgent(
 
   const concurrentLimit = process.env.LITEAI_CONCURRENT_AGENT_LIMIT
     ? Number.parseInt(process.env.LITEAI_CONCURRENT_AGENT_LIMIT, 10)
-    : 8
+    : DEFAULT_CONCURRENT_AGENT_LIMIT
   const currentCount = Session.getAgentCount(sessId)
   if (currentCount >= concurrentLimit) {
     throw new ConcurrentAgentLimitError(`Concurrent agent limit reached: ${concurrentLimit}`)
@@ -90,6 +89,7 @@ export async function runAgent(
   Session.incrementAgentCount(sessId)
 
   const startTime = Date.now()
+  const localTranscriptMessages: import("@/session/transcript").TranscriptMessage[] = []
   try {
     // Build subagent context
     const parentMock: ParentContext = parentContext ?? {
@@ -107,7 +107,24 @@ export async function runAgent(
     subContext.agentId = agentId
 
     const { PermissionSandbox } = await import("@/permission/sandbox")
-    PermissionSandbox.apply(subContext, { agentDef })
+    const parentPermissionCtx = {
+      permissionMode: parentMock.getAppState().permissionMode,
+      shouldAvoidPermissionPrompts: parentMock.getAppState().shouldAvoidPermissionPrompts,
+      toolDecisions: parentMock.toolDecisions,
+    }
+    const derivedPermissionCtx = PermissionSandbox.apply(parentPermissionCtx, agentDef, {
+      isAsync: !!agentDef.background,
+      canShowPermissionPrompts: false,
+    })
+
+    subContext.setAppState((state) => ({
+      ...state,
+      permissionMode: derivedPermissionCtx.permissionMode,
+      ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
+    }))
+    if (derivedPermissionCtx.toolDecisions) {
+      subContext.toolDecisions = derivedPermissionCtx.toolDecisions
+    }
 
     const finalParts = options?.inputParts ? [...options.inputParts] : []
     if (agentDef.skills && agentDef.skills.length > 0) {
@@ -136,7 +153,7 @@ export async function runAgent(
     }
 
     // 2. Wrap entire execution with Context
-    return await runWithAgentContext(subContext, async () => {
+    const executeLogic = async () => {
       executeSubagentStartHooks(agentDef, agentId)
 
       Bus.publish(AgentEvent.Spawned, {
@@ -146,8 +163,73 @@ export async function runAgent(
         isAsync: !!agentDef.background,
       })
 
-      let timeoutId: ReturnType<typeof setTimeout> | undefined
+      // US4: Sidechain Transcript Isolation
+      // Create an isolated subsession so SQLite doesn't mix messages with the parent.
+      const parentSession = await Session.get(sessId)
+      const sidechainSess = await Session.createNext({
+        parentID: sessId,
+        directory: parentSession.directory,
+        title: `Subagent: ${agentName} (${agentId})`,
+      })
 
+      const { SidechainTranscript } = await import("@/session/transcript")
+      const transcript = SidechainTranscript.create(parentSession.directory, sessId, agentName, agentId)
+
+      let lastRecordedUuid = "root"
+
+      // Record initial messages before query loop
+      const initialUuid = Math.random().toString(36).substring(7)
+      const sysMsg: import("@/session/transcript").TranscriptMessage = {
+        isSidechain: true,
+        uuid: initialUuid,
+        parentUuid: lastRecordedUuid,
+        role: "system",
+        content: agentDef.prompt ?? "No system prompt",
+        timestamp: Date.now(),
+      }
+      await transcript.recordMessage(sysMsg)
+      localTranscriptMessages.push(sysMsg)
+      lastRecordedUuid = initialUuid
+
+      const userMsg: import("@/session/transcript").TranscriptMessage = {
+        isSidechain: true,
+        uuid: Math.random().toString(36).substring(7),
+        parentUuid: lastRecordedUuid,
+        role: "user",
+        // Using JSON stringify to dump the parts array since it contains tool responses or prompts
+        content: JSON.stringify(finalParts),
+        timestamp: Date.now(),
+      }
+      await transcript.recordMessage(userMsg)
+      localTranscriptMessages.push(userMsg)
+
+      // Setup incremental write using Bus to guarantee abort-safe partial preservation
+      const recordedMessageIds = new Set<string>()
+      const { Message } = await import("@/session/message")
+
+      const unsubs = [
+        Bus.subscribe(Message.Event.Updated, async (evt) => {
+          const info = evt.properties.info
+          if (info.sessionID === sidechainSess.id && info.role === "assistant" && "finish" in info && info.finish) {
+            if (recordedMessageIds.has(info.id)) return
+            recordedMessageIds.add(info.id)
+            const newUuid = info.id
+            const astMsg: import("@/session/transcript").TranscriptMessage = {
+              isSidechain: true,
+              uuid: newUuid,
+              parentUuid: lastRecordedUuid,
+              role: "assistant",
+              content: `Assistant turn result: ${info.finish} with ${info.cost} cost.`,
+              timestamp: Date.now(),
+            }
+            await transcript.recordMessage(astMsg)
+            localTranscriptMessages.push(astMsg)
+            lastRecordedUuid = newUuid
+          }
+        }),
+      ]
+
+      let timeoutId: ReturnType<typeof setTimeout> | undefined
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           subContext.abortController.abort(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
@@ -162,9 +244,9 @@ export async function runAgent(
           : `<system-reminder>\n${subContext.criticalSystemReminder}\n</system-reminder>`
       }
 
-      // Run session prompt
+      // Run session prompt explicitly on sidechain subsession
       const runPromise = SessionPrompt.prompt({
-        sessionID: sessId,
+        sessionID: sidechainSess.id,
         agent: agentName,
         parts: finalParts,
         model: agentDef.model,
@@ -176,11 +258,12 @@ export async function runAgent(
         resultMsg = await Promise.race([runPromise, timeoutPromise])
       } finally {
         if (timeoutId) clearTimeout(timeoutId)
+        for (const u of unsubs) u() // cleanup listener
       }
 
       let finalOutput = "No text output."
 
-      // Attempt to extract result
+      // Ensure only dense task result returns to parent
       if (resultMsg?.parts) {
         const textParts = resultMsg.parts.filter((p) => p.type === "text") as { text: string }[]
         if (textParts.length > 0) {
@@ -190,15 +273,20 @@ export async function runAgent(
 
       const duration = Date.now() - startTime
 
+      let totalTokens = 0
+      if (resultMsg && resultMsg.info.role === "assistant" && "tokens" in resultMsg.info) {
+        const inputTokens = resultMsg.info.tokens?.input ?? 0
+        const outputTokens = resultMsg.info.tokens?.output ?? 0
+        totalTokens = inputTokens + outputTokens
+      }
+
       const result: Agent.RunAgentResult = {
         agentId,
         status: "completed",
         result: finalOutput,
         usage: {
-          // TODO: reference Agent.RunAgentResult and SessionPrompt.prompt to calculate true totalTokens
-          totalTokens: 0,
-          // TODO: track tool invocations in this runner to calculate true toolCalls
-          toolCalls: 0,
+          totalTokens,
+          toolCalls: resultMsg?.parts ? resultMsg.parts.filter((p) => p.type === "tool").length : 0,
           duration,
         },
       }
@@ -211,7 +299,13 @@ export async function runAgent(
         usage: result.usage,
       })
       return result
-    })
+    }
+
+    if (agentDef.background) {
+      return await runAsyncAgentLifecycle(agentName, sessId, agentId, executeLogic)
+    } else {
+      return await runWithAgentContext(subContext, executeLogic)
+    }
   } catch (err: unknown) {
     const duration = Date.now() - startTime
     logger.error("runAgent failed", { error: err, agentId, agentName })
@@ -221,7 +315,7 @@ export async function runAgent(
 
     if (err instanceof AgentTimeoutError || (err instanceof Error && err.name === "AbortError")) {
       status = "killed"
-      partialResult = extractPartialResultStub(sessId)
+      partialResult = extractPartialResult(localTranscriptMessages) ?? "Killed with no partial result"
     }
 
     Bus.publish(AgentEvent.Completed, {

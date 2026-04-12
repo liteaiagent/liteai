@@ -1,0 +1,58 @@
+import fs from "node:fs/promises"
+import path from "node:path"
+import { Log } from "@/util/log"
+
+const logger = Log.create({ service: "sidechain-transcript" })
+
+export interface TranscriptMessage {
+  isSidechain: true
+  uuid: string
+  parentUuid?: string
+  role: string
+  content: string | Record<string, unknown> | unknown[]
+  timestamp: number
+}
+
+export namespace SidechainTranscript {
+  export interface SidechainTranscriptInstance {
+    getPath(): string
+    recordMessage(message: TranscriptMessage): Promise<void>
+    recordChain(messages: TranscriptMessage[]): Promise<void>
+  }
+
+  export function getPath(dir: string, sessionId: string, subdir: string, agentId: string): string {
+    return path.join(dir, sessionId, "subagents", subdir, `agent-${agentId}.jsonl`)
+  }
+
+  export function create(dir: string, sessionId: string, subdir: string, agentId: string): SidechainTranscriptInstance {
+    const transcriptPath = getPath(dir, sessionId, subdir, agentId)
+
+    const ensureDirectory = async () => {
+      await fs.mkdir(path.dirname(transcriptPath), { recursive: true })
+    }
+
+    return {
+      getPath() {
+        return transcriptPath
+      },
+      async recordMessage(message: TranscriptMessage) {
+        try {
+          await ensureDirectory()
+          const line = `${JSON.stringify(message)}\n`
+          await fs.appendFile(transcriptPath, line, "utf-8")
+        } catch (err) {
+          logger.error("Failed to record sidechain message", { error: err, agentId, transcriptPath })
+        }
+      },
+      async recordChain(messages: TranscriptMessage[]) {
+        try {
+          await ensureDirectory()
+          const lines = `${messages.map((m) => JSON.stringify(m)).join("\n")}\n`
+          await fs.appendFile(transcriptPath, lines, "utf-8")
+        } catch (err) {
+          logger.error("Failed to record sidechain chain", { error: err, agentId, transcriptPath })
+        }
+      },
+    }
+  }
+}

@@ -13,7 +13,11 @@ The sub-agent architecture transforms LiteAI from a single-threaded agent model 
 
 Agents come from three sources, merged in priority order:
 
+1. **Built-in/default agents**
+2. **Workspace or project-level agents (user-provided)**
+3. **Runtime/ephemeral agents (injected at execution)**
 
+Note: Higher-numbered items override lower-numbered ones in the event of a conflict.
 
 Each agent is configured via a `.md` file with YAML frontmatter:
 

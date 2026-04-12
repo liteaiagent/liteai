@@ -5,6 +5,8 @@ trigger: always_on
 # CORE MANDATES & SYSTEM CONSTRAINTS
 This is a strict production environment, not an MVP. All code generated must prioritize long-term maintainability, strict typing, and system stability over rapid task execution.
 
+CRITICAL INSTRUCTIONS: DO NOT EVER TAKE THE PATH OF LEAST RESISTANCE, Always evaluate alternative design and how we detect and recover from failures.
+
 ## 0. Major Release & Compatibility Policy (v-Next)
 - **Zero Backward Compatibility:** This is a new major release. You are explicitly authorized and required to BREAK backward compatibility to achieve architectural purity. DO NOT write adapter code, shims, or polyfills to support legacy interfaces.
 - **Clean Code Paradigm:** Ruthlessly strip away legacy cruft. Prioritize modern, clean code patterns. 

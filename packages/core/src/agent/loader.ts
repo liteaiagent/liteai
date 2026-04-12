@@ -36,7 +36,9 @@ export namespace AgentLoader {
   export async function parseAgentFromMarkdown(
     item: string,
     source: "custom" | "plugin",
-  ): Promise<[string, z.infer<typeof Agent> & { source: "custom" | "plugin" }] | undefined> {
+  ): Promise<
+    [string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }] | undefined
+  > {
     log.info("parsing agent", { path: item })
     const md = await ConfigMarkdown.parse(item).catch(async (err) => {
       const message = ConfigMarkdown.FrontmatterError.isInstance(err)
@@ -99,10 +101,10 @@ export namespace AgentLoader {
           }
         }
       }
-      return [config.name, { ...parsed.data, source }] as [
-        string,
-        z.infer<typeof Agent> & { source: "custom" | "plugin" },
-      ]
+      return [
+        config.name,
+        { ...parsed.data, source, filePath: item, pluginId: source === "plugin" ? item : undefined },
+      ] as [string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }]
     }
     log.error("invalid agent config, skipping", { path: item, issues: parsed.error.issues })
     const { Session } = await import("@/session")
@@ -116,8 +118,13 @@ export namespace AgentLoader {
 
   export async function loadAgent(
     dir: string,
-  ): Promise<Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }>> {
-    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {}
+  ): Promise<
+    Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }>
+  > {
+    const result: Record<
+      string,
+      z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
+    > = {}
     for (const item of await Glob.scan("agents/**/*.md", {
       cwd: dir,
       absolute: true,
@@ -136,9 +143,14 @@ export namespace AgentLoader {
   export async function scanAgents(
     root: string,
     scope: "global" | "project",
-  ): Promise<Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }>> {
+  ): Promise<
+    Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }>
+  > {
     log.info("scanning for platform agents", { scope, dir: root })
-    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {}
+    const result: Record<
+      string,
+      z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
+    > = {}
     const items = await Glob.scan(EXTERNAL_AGENT_PATTERN, {
       cwd: root,
       absolute: true,
@@ -162,7 +174,10 @@ export namespace AgentLoader {
   // Module-level cache: global platform agents don't change per instance
   const globalPlatformAgentsCache = lazy(async () => {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {}
+    const result: Record<
+      string,
+      z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
+    > = {}
     for (const dir of Platform.dirs()) {
       const root = path.join(Global.Path.home, dir)
       if (!(await Filesystem.isDir(root))) continue
@@ -172,10 +187,13 @@ export namespace AgentLoader {
   })
 
   export async function loadPlatformAgents(): Promise<
-    Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }>
+    Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }>
   > {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {
+    const result: Record<
+      string,
+      z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
+    > = {
       ...(await globalPlatformAgentsCache()),
     }
 

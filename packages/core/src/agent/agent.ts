@@ -96,14 +96,20 @@ export namespace Agent {
 
   export interface BuiltInAgentDefinition extends BaseAgentDefinition {
     source: "builtIn"
+    native: true
+    getSystemPrompt?: () => Promise<string>
   }
 
   export interface CustomAgentDefinition extends BaseAgentDefinition {
     source: "custom"
+    native: false
+    filePath: string
   }
 
   export interface PluginAgentDefinition extends BaseAgentDefinition {
     source: "plugin"
+    native: false
+    pluginId: string
   }
 
   export type AgentDefinition = BuiltInAgentDefinition | CustomAgentDefinition | PluginAgentDefinition
@@ -179,6 +185,7 @@ export namespace Agent {
         hidden: value.hidden,
         native: true,
         source: "builtIn",
+        getSystemPrompt: async () => value.prompt ?? "",
       } as BuiltInAgentDefinition
     }
 
@@ -207,15 +214,19 @@ export namespace Agent {
       }
 
       let item = result[key]
-      if (!item)
+      if (!item) {
+        const source = (value as Record<string, unknown>).source ?? "custom"
         item = result[key] = {
           name: key,
           mode: "all",
           permission: PermissionNext.merge(defaults, user),
           options: {},
           native: false,
-          source: (value as Record<string, unknown>).source ?? "custom",
-        } as AgentDefinition
+          source,
+          filePath: (value as Record<string, unknown>).filePath,
+          pluginId: (value as Record<string, unknown>).pluginId,
+        } as unknown as AgentDefinition
+      }
       if (value.model) item.model = Provider.parseModel(value.model)
       item.variant = value.variant ?? item.variant
       item.prompt = value.prompt ?? item.prompt

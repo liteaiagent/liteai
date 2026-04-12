@@ -140,7 +140,8 @@ export function createSubagentContext(
     : // biome-ignore lint/suspicious/noExplicitAny: generic app state
       (arg: any) => {
         if (typeof arg === "function") {
-          independentState = arg(independentState) ?? independentState
+          const temp = arg(independentState)
+          independentState = temp === undefined ? independentState : temp
         } else {
           independentState = { ...independentState, ...arg }
         }
