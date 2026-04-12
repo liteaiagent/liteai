@@ -212,7 +212,7 @@ export const Agent = z
       .optional()
       .describe("Denied tools (Claude Code compat). Auto-mapped to permission deny rules."),
     permissionMode: z
-      .enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"])
+      .enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"])
       .optional()
       .describe("Permission preset (Claude Code compat). Mapped to LiteAI permission rules."),
     maxTurns: z.number().int().positive().optional().describe("Maximum turns (Claude Code compat). Alias for steps."),

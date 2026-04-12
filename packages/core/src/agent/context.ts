@@ -7,8 +7,16 @@ export interface ThinkingConfig {
   budget?: number
 }
 
+export interface ToolDecision {
+  result: boolean
+  source: string
+  [key: string]: unknown
+}
+
 export interface AppState {
   shouldAvoidPermissionPrompts?: boolean
+  permissionMode?: Agent.Info["permissionMode"]
+  toolDecisions?: Record<string, ToolDecision>
 }
 
 export type AgentContext = SubagentContext | TeammateAgentContext
@@ -25,6 +33,7 @@ export interface ParentContext {
   readFileState: Map<string, any>
   // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
   contentReplacementState?: any
+  toolDecisions?: Record<string, ToolDecision>
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void
   model?: { providerID: string; modelID: string } | Provider.Model
@@ -38,8 +47,7 @@ export interface SubagentContext {
   abortController: AbortController
   // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
   readFileState: Map<string, any>
-  // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
-  toolDecisions?: Record<string, any>
+  toolDecisions?: Record<string, ToolDecision>
   thinkingConfig?: ThinkingConfig
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void

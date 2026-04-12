@@ -68,7 +68,7 @@ export namespace Agent {
 
       tools: z.union([z.string(), z.array(z.string()), z.record(z.string(), z.boolean())]).optional(),
       disallowedTools: z.union([z.string(), z.array(z.string())]).optional(),
-      permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"]).optional(),
+      permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]).optional(),
       skills: z.array(z.string()).optional(),
       mcpServers: z.array(z.union([z.string(), z.record(z.string(), z.any())])).optional(),
       effort: z.enum(["low", "medium", "high", "max"]).optional(),

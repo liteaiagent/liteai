@@ -92,11 +92,12 @@ export async function runAgent(
   const startTime = Date.now()
   try {
     // Build subagent context
-    const parentMock = parentContext ?? {
+    const parentMock: ParentContext = parentContext ?? {
       sessionId: sessId,
       abortController: new AbortController(),
       readFileState: new Map(),
       contentReplacementState: {},
+      toolDecisions: undefined, // Default for root agents, maybe retrieved from session elsewhere if available
       getAppState: () => ({}),
       setAppState: () => {},
       model: agentDef.model ?? (await Provider.defaultModel()),
@@ -104,6 +105,9 @@ export async function runAgent(
 
     const subContext = createSubagentContext(parentMock, agentDef, options?.overrides)
     subContext.agentId = agentId
+
+    const { PermissionSandbox } = await import("@/permission/sandbox")
+    PermissionSandbox.apply(subContext, { agentDef })
 
     const finalParts = options?.inputParts ? [...options.inputParts] : []
     if (agentDef.skills && agentDef.skills.length > 0) {

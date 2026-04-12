@@ -1,5 +1,6 @@
 import { Deferred, Effect, Layer, Schema, ServiceMap } from "effect"
 import z from "zod"
+import { AgentExecutionContext } from "@/agent/context"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Instance } from "@/project/instance"
@@ -163,6 +164,16 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
         }
 
         if (!pending) return
+
+        const ctx = AgentExecutionContext.getStore()
+        if (ctx && "getAppState" in ctx) {
+          const appState = ctx.getAppState()
+          if (appState.shouldAvoidPermissionPrompts) {
+            return yield* new DeniedError({
+              ruleset: [{ permission: request.permission, pattern: "background-agent", action: "deny" }],
+            })
+          }
+        }
 
         const id = request.id ?? PermissionID.ascending()
         const info: Request = {
