@@ -230,11 +230,22 @@ export const Agent = z
       .boolean()
       .optional()
       .describe("Run concurrently (Claude Code compat). Requires background task infrastructure."),
-    isolation: z.literal("worktree").optional().describe("Git worktree isolation (Claude Code compat)."),
+    isolation: z
+      .enum(["worktree", "remote"])
+      .optional()
+      .describe("Git worktree or remote Docker isolation (Claude Code compat)."),
     hooks: z
       .record(z.string(), z.any())
       .optional()
       .describe("Per-agent hooks (Claude Code compat). Parsed but activates after hooks system."),
+    thinking: z.boolean().optional().describe("Enable thinking for models that support it"),
+    thinkingBudget: z.number().int().positive().optional().describe("Token budget for thinking"),
+    criticalSystemReminder: z.string().optional().describe("System reminder injected per turn"),
+    timeout: z.number().int().positive().optional().describe("Agent execution timeout in ms (default: 1800000)"),
+    requiredMcpServers: z.array(z.string()).optional().describe("Required MCP servers to be available"),
+    omitLiteaiMd: z.boolean().optional().describe("Omit liteai.md project file from context"),
+    initialPrompt: z.string().optional().describe("Initial prompt injected after load"),
+    containerImage: z.string().optional().describe("Docker image for remote isolation"),
   })
   .catchall(z.any())
   .transform((agent, _ctx) => {
@@ -265,6 +276,14 @@ export const Agent = z
       "isolation",
       "hooks",
       "effort",
+      "thinking",
+      "thinkingBudget",
+      "criticalSystemReminder",
+      "timeout",
+      "requiredMcpServers",
+      "omitLiteaiMd",
+      "initialPrompt",
+      "containerImage",
     ])
 
     // Extract unknown properties into options

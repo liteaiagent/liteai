@@ -65,11 +65,74 @@ export namespace Agent {
       prompt: z.string().optional(),
       options: z.record(z.string(), z.any()),
       steps: z.number().int().positive().optional(),
+
+      tools: z.union([z.string(), z.array(z.string()), z.record(z.string(), z.boolean())]).optional(),
+      disallowedTools: z.union([z.string(), z.array(z.string())]).optional(),
+      permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"]).optional(),
+      skills: z.array(z.string()).optional(),
+      mcpServers: z.array(z.union([z.string(), z.record(z.string(), z.any())])).optional(),
+      effort: z.enum(["low", "medium", "high", "max"]).optional(),
+      memory: z.enum(["user", "project", "local"]).optional(),
+      background: z.boolean().optional(),
+      isolation: z.enum(["worktree", "remote"]).optional(),
+      hooks: z.record(z.string(), z.any()).optional(),
+      thinking: z.boolean().optional(),
+      thinkingBudget: z.number().int().positive().optional(),
+      timeout: z.number().int().positive().optional(),
+      criticalSystemReminder: z.string().optional(),
+      requiredMcpServers: z.array(z.string()).optional(),
+      omitLiteaiMd: z.boolean().optional(),
+      initialPrompt: z.string().optional(),
+      containerImage: z.string().optional(),
     })
     .meta({
       ref: "Agent",
     })
   export type Info = z.infer<typeof Info>
+
+  export interface BaseAgentDefinition extends Info {
+    source: "builtIn" | "custom" | "plugin"
+  }
+
+  export interface BuiltInAgentDefinition extends BaseAgentDefinition {
+    source: "builtIn"
+  }
+
+  export interface CustomAgentDefinition extends BaseAgentDefinition {
+    source: "custom"
+  }
+
+  export interface PluginAgentDefinition extends BaseAgentDefinition {
+    source: "plugin"
+  }
+
+  export type AgentDefinition = BuiltInAgentDefinition | CustomAgentDefinition | PluginAgentDefinition
+
+  export function isBuiltInAgent(agent: AgentDefinition): agent is BuiltInAgentDefinition {
+    return agent.source === "builtIn"
+  }
+
+  export function isCustomAgent(agent: AgentDefinition): agent is CustomAgentDefinition {
+    return agent.source === "custom"
+  }
+
+  export function isPluginAgent(agent: AgentDefinition): agent is PluginAgentDefinition {
+    return agent.source === "plugin"
+  }
+
+  export interface RunAgentResult {
+    agentId: string
+    status: "completed" | "failed" | "killed"
+    result: string
+    usage: {
+      totalTokens: number
+      toolCalls: number
+      duration: number
+      worktreeInfo?: unknown
+    }
+    partialResult?: string
+    error?: Error
+  }
 
   const state = Instance.state(async () => {
     log.info("loading agents")
@@ -98,7 +161,7 @@ export namespace Agent {
     })
     const user = PermissionNext.fromConfig(cfg.permission ?? {})
 
-    const result: Record<string, Info> = {}
+    const result: Record<string, AgentDefinition> = {}
 
     // Populate built-in declarative agents via the same merge path as user config.
     // This allows user config to override or disable any built-in agent.
@@ -115,7 +178,8 @@ export namespace Agent {
         topP: value.top_p,
         hidden: value.hidden,
         native: true,
-      }
+        source: "builtIn",
+      } as BuiltInAgentDefinition
     }
 
     const dirs = await Config.directories()
@@ -150,7 +214,8 @@ export namespace Agent {
           permission: PermissionNext.merge(defaults, user),
           options: {},
           native: false,
-        }
+          source: (value as Record<string, unknown>).source ?? "custom",
+        } as AgentDefinition
       if (value.model) item.model = Provider.parseModel(value.model)
       item.variant = value.variant ?? item.variant
       item.prompt = value.prompt ?? item.prompt
@@ -163,6 +228,26 @@ export namespace Agent {
       item.enabled = !isDisabled
       item.name = value.name ?? item.name
       item.steps = value.maxTurns ?? value.steps ?? item.steps
+
+      item.tools = value.tools ?? item.tools
+      item.disallowedTools = value.disallowedTools ?? item.disallowedTools
+      item.permissionMode = value.permissionMode ?? item.permissionMode
+      item.skills = value.skills ?? item.skills
+      item.mcpServers = value.mcpServers ?? item.mcpServers
+      item.effort = value.effort ?? item.effort
+      item.memory = value.memory ?? item.memory
+      item.background = value.background ?? item.background
+      item.isolation = value.isolation ?? item.isolation
+      item.hooks = value.hooks ?? item.hooks
+      item.thinking = value.thinking ?? item.thinking
+      item.thinkingBudget = value.thinkingBudget ?? item.thinkingBudget
+      item.timeout = value.timeout ?? item.timeout
+      item.criticalSystemReminder = value.criticalSystemReminder ?? item.criticalSystemReminder
+      item.requiredMcpServers = value.requiredMcpServers ?? item.requiredMcpServers
+      item.omitLiteaiMd = value.omitLiteaiMd ?? item.omitLiteaiMd
+      item.initialPrompt = value.initialPrompt ?? item.initialPrompt
+      item.containerImage = value.containerImage ?? item.containerImage
+
       item.options = mergeDeep(item.options, value.options ?? {})
 
       // Platform compatibility: map provider-specific fields (e.g., Claude Code's

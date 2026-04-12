@@ -24,7 +24,7 @@ You are a test agent.
 `,
         )
 
-        const result = await AgentLoader.parseAgent(filePath)
+        const result = await AgentLoader.parseAgentFromMarkdown(filePath)
         expect(result).toBeDefined()
         if (!result) return
 
@@ -53,7 +53,7 @@ Prompt here.
 `,
         )
 
-        const result = await AgentLoader.parseAgent(filePath)
+        const result = await AgentLoader.parseAgentFromMarkdown(filePath)
         expect(result).toBeDefined()
         if (!result) return
 
@@ -80,7 +80,7 @@ Prompt here.
 `,
         )
 
-        const result = await AgentLoader.parseAgent(filePath)
+        const result = await AgentLoader.parseAgentFromMarkdown(filePath)
         expect(result).toBeUndefined()
       },
     })
@@ -93,7 +93,7 @@ Prompt here.
       fn: async () => {
         const filePath = path.join(tmp.path, "agents", "nonexistent.md")
 
-        const result = await AgentLoader.parseAgent(filePath)
+        const result = await AgentLoader.parseAgentFromMarkdown(filePath)
         expect(result).toBeUndefined()
       },
     })

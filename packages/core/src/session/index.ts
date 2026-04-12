@@ -34,6 +34,27 @@ import { MessageTable, PartTable, SessionTable } from "./session.sql"
 export namespace Session {
   const log = Log.create({ service: "session" })
 
+  const sessionAgentCounts = new Map<string, number>()
+
+  export function incrementAgentCount(sessionID: string) {
+    const current = sessionAgentCounts.get(sessionID) ?? 0
+    sessionAgentCounts.set(sessionID, current + 1)
+    return current + 1
+  }
+
+  export function decrementAgentCount(sessionID: string) {
+    const current = sessionAgentCounts.get(sessionID) ?? 0
+    if (current > 0) {
+      sessionAgentCounts.set(sessionID, current - 1)
+      return current - 1
+    }
+    return 0
+  }
+
+  export function getAgentCount(sessionID: string) {
+    return sessionAgentCounts.get(sessionID) ?? 0
+  }
+
   const parentTitlePrefix = "New session - "
   const childTitlePrefix = "Child session - "
 

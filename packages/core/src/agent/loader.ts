@@ -33,7 +33,10 @@ export namespace AgentLoader {
     return ext.length ? file.slice(0, -ext.length) : file
   }
 
-  export async function parseAgent(item: string): Promise<[string, z.infer<typeof Agent>] | undefined> {
+  export async function parseAgentFromMarkdown(
+    item: string,
+    source: "custom" | "plugin",
+  ): Promise<[string, z.infer<typeof Agent> & { source: "custom" | "plugin" }] | undefined> {
     log.info("parsing agent", { path: item })
     const md = await ConfigMarkdown.parse(item).catch(async (err) => {
       const message = ConfigMarkdown.FrontmatterError.isInstance(err)
@@ -55,7 +58,7 @@ export namespace AgentLoader {
       prompt: md.content.trim(),
     }
     const parsed = Agent.safeParse(config)
-    if (parsed.success) return [config.name, parsed.data]
+    if (parsed.success) return [config.name, { ...parsed.data, source }]
     log.error("invalid agent config, skipping", { path: item, issues: parsed.error.issues })
     const { Session } = await import("@/session")
     Bus.publish(Session.Event.Error, {
@@ -66,15 +69,17 @@ export namespace AgentLoader {
     return undefined
   }
 
-  export async function loadAgent(dir: string): Promise<Record<string, z.infer<typeof Agent>>> {
-    const result: Record<string, z.infer<typeof Agent>> = {}
+  export async function loadAgent(
+    dir: string,
+  ): Promise<Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }>> {
+    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {}
     for (const item of await Glob.scan("agents/**/*.md", {
       cwd: dir,
       absolute: true,
       dot: true,
       symlink: true,
     })) {
-      const entry = await parseAgent(item)
+      const entry = await parseAgentFromMarkdown(item, "custom")
       if (entry) {
         log.info("loaded agent", { name: entry[0], path: item })
         result[entry[0]] = entry[1]
@@ -86,9 +91,9 @@ export namespace AgentLoader {
   export async function scanAgents(
     root: string,
     scope: "global" | "project",
-  ): Promise<Record<string, z.infer<typeof Agent>>> {
+  ): Promise<Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }>> {
     log.info("scanning for platform agents", { scope, dir: root })
-    const result: Record<string, z.infer<typeof Agent>> = {}
+    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {}
     const items = await Glob.scan(EXTERNAL_AGENT_PATTERN, {
       cwd: root,
       absolute: true,
@@ -100,7 +105,7 @@ export namespace AgentLoader {
       return [] as string[]
     })
     for (const item of items) {
-      const entry = await parseAgent(item)
+      const entry = await parseAgentFromMarkdown(item, "plugin")
       if (entry) {
         log.info("loaded platform agent", { scope, name: entry[0], path: item })
         result[entry[0]] = entry[1]
@@ -112,7 +117,7 @@ export namespace AgentLoader {
   // Module-level cache: global platform agents don't change per instance
   const globalPlatformAgentsCache = lazy(async () => {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<string, z.infer<typeof Agent>> = {}
+    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {}
     for (const dir of Platform.dirs()) {
       const root = path.join(Global.Path.home, dir)
       if (!(await Filesystem.isDir(root))) continue
@@ -121,9 +126,13 @@ export namespace AgentLoader {
     return result
   })
 
-  export async function loadPlatformAgents(): Promise<Record<string, z.infer<typeof Agent>>> {
+  export async function loadPlatformAgents(): Promise<
+    Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }>
+  > {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<string, z.infer<typeof Agent>> = { ...(await globalPlatformAgentsCache()) }
+    const result: Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin" }> = {
+      ...(await globalPlatformAgentsCache()),
+    }
 
     for await (const root of Filesystem.up({
       targets: Platform.dirs(),

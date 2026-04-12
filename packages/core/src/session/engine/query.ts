@@ -323,7 +323,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
 
     // ── Build system prompt ──
-    const { parts: providerParts, boundary } = await SystemPrompt.resolveSystemPromptSections(model)
+    const { parts: providerParts, boundary } = await SystemPrompt.resolveSystemPromptSections(model, agent)
     const skills = await SystemPrompt.skills(agent)
     const system = [...providerParts, ...(skills ? [skills] : []), ...(await InstructionPrompt.system())]
     if (format.type === "json_schema") {

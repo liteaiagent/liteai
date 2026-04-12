@@ -116,7 +116,7 @@ export namespace SystemPrompt {
     return await loadPromise
   }
 
-  export async function resolveSystemPromptSections(model: Provider.Model) {
+  export async function resolveSystemPromptSections(model: Provider.Model, agent?: Agent.Info) {
     await loadSystemMd()
     const { SectionRegistry, resolveProviderTag } = await import("./section-registry")
     const tag = resolveProviderTag(model)
@@ -135,6 +135,10 @@ export namespace SystemPrompt {
           staticBoundary = parts.length
         }
       }
+    }
+
+    if (agent?.prompt) {
+      parts.push(agent.prompt)
     }
 
     return { parts, boundary: staticBoundary }
