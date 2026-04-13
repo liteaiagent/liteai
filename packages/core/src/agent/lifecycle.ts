@@ -40,9 +40,20 @@ export interface TerminalNotification {
   partialResult?: string
 }
 
-export function enqueueAgentNotification(_sessionId: string, _notification: TerminalNotification) {
-  // Enqueue notification via some system or event
-  // _sessionId and _notification are needed by signature, but unused because terminal notification transport is a stub
+export function enqueueAgentNotification(sessionId: string, notification: TerminalNotification) {
+  Bus.publish(AgentEvent.TerminalNotification, {
+    agentId: notification.agentId,
+    status: notification.status,
+    description: notification.description,
+    usage: notification.usage,
+    error: notification.error?.message,
+    partialResult: notification.partialResult,
+  })
+  logger.info("terminal notification enqueued", {
+    sessionId,
+    agentId: notification.agentId,
+    status: notification.status,
+  })
 }
 
 export function extractPartialResult(messages: import("@/session/transcript").TranscriptMessage[]): string | undefined {
@@ -105,27 +116,29 @@ export async function classifyHandoffIfNeeded(
   }
 }
 
-// _sessionId and _agentId are required by external callers, but summarization is not fully implemented yet
-export function startAgentSummarization(_sessionId: string, _agentId: string) {
-  let isRunning = true
-
-  const loop = async () => {
-    if (!isRunning) return
-    try {
-      // fork the agent's current transcript to produce a 3-5 word activity description -> parent SetAppState
-      const storeContext = AgentExecutionContext.getStore()
-      if (storeContext && "setAppState" in storeContext) {
-        // Bypass sub-agent setAppState explicitly, we assume we have rootSetAppState or we just call the parent context
-      }
-    } catch (err) {
-      logger.error("Agent summarization loop cycle failed", { error: err, sessionId: _sessionId, agentId: _agentId })
-    }
-    setTimeout(loop, 30_000)
-  }
-  setTimeout(loop, 30_000)
-
+/**
+ * Periodically forks the agent's transcript to produce a 3–5 word activity
+ * description that is pushed to the parent session's AppState for UI display.
+ *
+ * **DEFERRED** — Summarization requires the query loop infrastructure (Phase 9+)
+ * to fork a read-only transcript snapshot. The current function is a no-op that
+ * returns a valid cleanup closure for call-site compatibility.
+ *
+ * @returns A cleanup function that stops the summarization loop (currently a no-op).
+ */
+export function startAgentSummarization(_sessionId: string, _agentId: string): () => void {
+  // TODO (R009 / Phase 9): Implement summarization loop.
+  // Requirements:
+  //   1. Fork current transcript (read-only snapshot)
+  //   2. Send to a lightweight model for 3–5 word description
+  //   3. Push description via setAppStateForTasks (root store passthrough)
+  //   4. Run every 30s with backoff on empty deltas
+  logger.debug("startAgentSummarization called but not yet implemented", {
+    sessionId: _sessionId,
+    agentId: _agentId,
+  })
   return () => {
-    isRunning = false
+    // Cleanup no-op — no timers to clear
   }
 }
 
@@ -135,10 +148,32 @@ export async function runAsyncAgentLifecycle(
   agentId: string,
   runAgentImpl: () => Promise<import("./agent").Agent.RunAgentResult>,
 ) {
-  const storeContext = AgentExecutionContext.getStore()
-  if (!storeContext) return await runAgentImpl()
+  const existingContext = AgentExecutionContext.getStore()
 
-  return await runWithAgentContext(storeContext, async () => {
+  // If no ALS context exists (e.g., agent spawned from an HTTP handler),
+  // construct a minimal SubagentContext for attribution isolation (FR-024).
+  // This ensures ALS is always established — running without context
+  // breaks analytics attribution and concurrent agent isolation.
+  const context: import("./context").AgentContext =
+    existingContext ??
+    ({
+      type: "subagent" as const,
+      agentId,
+      agentType: agentName,
+      parentSessionId: sessionId,
+      isBuiltIn: false,
+      invocationKind: "spawn" as const,
+      queryTracking: { depth: 1 },
+      abortController: new AbortController(),
+      readFileState: new Map(),
+      toolDecisions: undefined,
+      getAppState: () => ({}),
+      setAppState: () => {},
+      setAppStateForTasks: () => {},
+      cwd: process.cwd(),
+    } as import("./context").SubagentContext)
+
+  return await runWithAgentContext(context, async () => {
     let status: "completed" | "failed" | "killed" = "completed"
     let error: Error | undefined
     let usage: UsageMetrics = { totalTokens: 0, toolCalls: 0, duration: 0 }

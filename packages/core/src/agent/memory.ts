@@ -5,6 +5,9 @@ import z from "zod"
 import { Config } from "@/config/config"
 import { Global } from "@/global"
 import { Instance } from "@/project/instance"
+import { Log } from "@/util/log"
+
+const logger = Log.create({ service: "agent:memory" })
 
 export namespace AgentMemory {
   // log is currently unused, but can be added back if needed
@@ -43,7 +46,14 @@ export namespace AgentMemory {
   }
 
   export async function ensureMemoryDirExists(dir: string): Promise<void> {
-    await fs.mkdir(dir, { recursive: true }).catch(() => {})
+    try {
+      await fs.mkdir(dir, { recursive: true })
+    } catch (err: unknown) {
+      // Best-effort: the Write tool does its own mkdir as a safety net.
+      // Log the failure so it's visible in --debug output and UAT telemetry.
+      const code = err instanceof Error && "code" in err ? (err as NodeJS.ErrnoException).code : undefined
+      logger.warn("ensureMemoryDirExists failed", { dir, code: code ?? String(err) })
+    }
   }
 
   export function isAgentMemoryPath(filepath: string, memoryDir: string): boolean {
@@ -59,8 +69,13 @@ export namespace AgentMemory {
     let content = ""
     try {
       content = await fs.readFile(memFile, "utf-8")
-    } catch {
-      // Doesn't exist yet
+    } catch (err: unknown) {
+      const code = err instanceof Error && "code" in err ? (err as NodeJS.ErrnoException).code : undefined
+      if (code !== "ENOENT") {
+        // Non-ENOENT = real problem. Log for observability but don't crash agent spawn.
+        logger.warn("loadAgentMemoryPrompt read failed", { memFile, code: code ?? String(err) })
+      }
+      // ENOENT is expected — memory file doesn't exist yet. Agent proceeds without memory.
     }
 
     return `Agent memory is scoped to ${scope} at ${memDir}.
@@ -95,8 +110,12 @@ ${content ? `<memory>\n${content}\n</memory>` : "<memory>\n(Empty)\n</memory>"}`
     try {
       await fs.mkdir(localDir, { recursive: true })
       await fs.copyFile(path.join(projectDir, "MEMORY.md"), path.join(localDir, "MEMORY.md"))
-    } catch {
-      // Ignore copy errors
+    } catch (err: unknown) {
+      // Snapshot copy is best-effort — log for observability, don't crash agent spawn.
+      logger.warn("copyProjectSnapshotToLocal failed", {
+        agentType,
+        error: err instanceof Error ? err.message : String(err),
+      })
     }
   }
 }

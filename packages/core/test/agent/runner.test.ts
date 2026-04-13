@@ -63,12 +63,28 @@ mock.module("../../src/skill/loader", () => ({
 }))
 
 import { Agent } from "../../src/agent/agent"
-import { AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "../../src/agent/errors"
-import { DEFAULT_CONCURRENT_AGENT_LIMIT, runAgent } from "../../src/agent/runner"
+import {
+  AgentSpawnError,
+  AgentTimeoutError,
+  ConcurrentAgentLimitError,
+  RequiredMcpServerError,
+} from "../../src/agent/errors"
+import { DEFAULT_CONCURRENT_AGENT_LIMIT, runAgent, runAgentByName } from "../../src/agent/runner"
 import { Bus } from "../../src/bus/index"
 import { Provider } from "../../src/provider/provider"
 import { Session } from "../../src/session/index"
 import type { SessionID } from "../../src/session/schema"
+
+/**
+ * Helper to create a minimal AgentDefinition for tests.
+ * Callers can override individual fields as needed.
+ */
+function createTestAgent(overrides: Partial<Agent.AgentDefinition> = {}): Agent.AgentDefinition {
+  return {
+    name: "test-agent",
+    ...overrides,
+  } as Agent.AgentDefinition
+}
 
 describe("runAgent", () => {
   beforeEach(() => {
@@ -87,47 +103,94 @@ describe("runAgent", () => {
   })
 
   afterEach(() => {
-    // Reset any mocks if necessary
     jest.restoreAllMocks()
   })
 
   it("successfully passes validation and executes", async () => {
-    spyOn(Agent, "get").mockResolvedValue({
-      name: "test-agent",
+    const agentDef = createTestAgent({
       requiredMcpServers: ["test-server"],
       model: undefined,
-    } as unknown as Agent.AgentDefinition)
+    })
 
-    const result = await runAgent("test-agent", "sess_1" as SessionID)
+    const result = await runAgent({
+      agentDefinition: agentDef,
+      sessionId: "sess_1" as SessionID,
+    })
     expect(result.status).toBe("completed")
     expect(result.result).toBe("Mock output")
   })
 
   it("throws RequiredMcpServerError if server missing", async () => {
-    spyOn(Agent, "get").mockResolvedValue({
-      name: "test-agent",
+    const agentDef = createTestAgent({
       requiredMcpServers: ["missing-server"],
-    } as unknown as Agent.AgentDefinition)
+    })
 
-    await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(RequiredMcpServerError)
+    await expect(runAgent({ agentDefinition: agentDef, sessionId: "sess_1" as SessionID })).rejects.toThrow(
+      RequiredMcpServerError,
+    )
   })
 
   it("enforces concurrent limit", async () => {
-    spyOn(Agent, "get").mockResolvedValue({ name: "test" } as unknown as Agent.AgentDefinition)
+    const agentDef = createTestAgent()
     spyOn(Session, "getAgentCount").mockReturnValue(DEFAULT_CONCURRENT_AGENT_LIMIT + 1)
 
-    await expect(runAgent("test-agent", "sess_1" as SessionID)).rejects.toThrow(ConcurrentAgentLimitError)
+    await expect(runAgent({ agentDefinition: agentDef, sessionId: "sess_1" as SessionID })).rejects.toThrow(
+      ConcurrentAgentLimitError,
+    )
   })
 
   it("enforces timeout", async () => {
     // Simulate a prompt that never resolves
     promptImpl = () => new Promise(() => {})
 
-    spyOn(Agent, "get").mockResolvedValue({ name: "test", timeout: 10 } as unknown as Agent.AgentDefinition)
+    const agentDef = createTestAgent({ timeout: 10 })
     spyOn(Session, "incrementAgentCount").mockReturnValue(1)
 
-    const result = await runAgent("test-agent", "sess_1" as SessionID)
+    const result = await runAgent({
+      agentDefinition: agentDef,
+      sessionId: "sess_1" as SessionID,
+    })
     expect(result.status).toBe("killed")
     expect(result.error).toBeInstanceOf(AgentTimeoutError)
+  })
+})
+
+describe("runAgentByName", () => {
+  beforeEach(() => {
+    promptImpl = undefined
+    spyOn(Bus, "publish").mockResolvedValue([])
+    spyOn(Provider, "defaultModel").mockResolvedValue({
+      providerID: "test-provider",
+      modelID: "test-model",
+    } as unknown as Awaited<ReturnType<typeof Provider.defaultModel>>)
+    spyOn(Session, "get").mockResolvedValue({ directory: "/fake/dir" } as unknown as Awaited<
+      ReturnType<typeof Session.get>
+    >)
+    spyOn(Session, "createNext").mockResolvedValue({ id: "fake_child_1" } as unknown as Awaited<
+      ReturnType<typeof Session.createNext>
+    >)
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  it("throws AgentSpawnError when agent is not found", async () => {
+    spyOn(Agent, "get").mockResolvedValue(undefined as unknown as Agent.AgentDefinition)
+
+    await expect(runAgentByName("nonexistent-agent", "sess_1" as SessionID)).rejects.toThrow(AgentSpawnError)
+  })
+
+  it("delegates to runAgent when agent is found", async () => {
+    spyOn(Agent, "get").mockResolvedValue(
+      createTestAgent({
+        requiredMcpServers: ["test-server"],
+        model: undefined,
+      }),
+    )
+
+    const result = await runAgentByName("test-agent", "sess_1" as SessionID)
+    expect(result.status).toBe("completed")
+    expect(result.result).toBe("Mock output")
   })
 })

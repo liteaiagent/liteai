@@ -14,7 +14,7 @@ import {
   runWithAgentContext,
   type SubagentContextOverrides,
 } from "./context"
-import { AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "./errors"
+import { AgentSpawnError, AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "./errors"
 import { AgentEvent } from "./events"
 import { isRestrictedToPluginOnly } from "./policy"
 
@@ -24,10 +24,25 @@ import { extractPartialResult, runAsyncAgentLifecycle } from "./lifecycle"
 
 export const DEFAULT_CONCURRENT_AGENT_LIMIT = 8
 
-export interface RunAgentOptions {
+/**
+ * Input for `runAgent`. The caller is responsible for resolving and validating
+ * the `agentDefinition` before invoking the runner — this ensures the type
+ * system prevents null/undefined definitions, and lets each call site
+ * (tool handler, API handler) produce context-appropriate error responses.
+ */
+export interface RunAgentInput {
+  /** Pre-resolved agent definition. Must be non-null — caller validates. */
+  agentDefinition: Agent.AgentDefinition
+  /** Target session for agent execution. */
+  sessionId: SessionID | string
+  /** Parent context for context forking. Auto-detected from ALS if omitted. */
   parentContext?: ParentContext
+  /** Override fields on the forked SubagentContext. */
   overrides?: SubagentContextOverrides
+  /** Additional prompt input parts (tool results, skill content, etc.) */
   inputParts?: PromptInput["parts"]
+  /** Force async/background execution. Defaults to agentDefinition.background. */
+  isAsync?: boolean
 }
 
 function executeSubagentStartHooks(agentDef: Agent.AgentDefinition, agentId: string) {
@@ -49,15 +64,28 @@ function executeSubagentStartHooks(agentDef: Agent.AgentDefinition, agentId: str
   }
 }
 
-export async function runAgent(
-  agentName: string,
-  sessionId: SessionID | string,
-  options?: RunAgentOptions,
-): Promise<Agent.RunAgentResult> {
-  const sessId = sessionId as SessionID
-  const agentDef = await Agent.get(agentName)
+/**
+ * Primary orchestrator for spawning and executing a sub-agent.
+ *
+ * Accepts a pre-validated `AgentDefinition` — the caller must resolve the
+ * agent by name (via `Agent.get()`) and validate it is non-null before
+ * calling this function. This design eliminates null-handling bugs by
+ * construction and allows each call site to produce context-appropriate
+ * error responses (e.g., tool_result errors vs HTTP 404).
+ *
+ * For a convenience wrapper that resolves an agent by name and throws
+ * `AgentSpawnError` if not found, see `runAgentByName()`.
+ *
+ * @see RunAgentInput
+ * @see runAgentByName
+ */
+export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResult> {
+  const { agentDefinition: agentDef, overrides, inputParts } = input
+  const sessId = input.sessionId as SessionID
+  const agentName = agentDef.name
+  const isAsync = input.isAsync ?? !!agentDef.background
   const agentId = Math.random().toString(36).substring(7)
-  const storeContext = options?.parentContext ?? AgentExecutionContext.getStore()
+  const storeContext = input.parentContext ?? AgentExecutionContext.getStore()
   const isFullParent = storeContext && "abortController" in storeContext
   const parentContext = isFullParent ? (storeContext as ParentContext) : undefined
 
@@ -103,16 +131,16 @@ export async function runAgent(
       model: agentDef.model ?? (await Provider.defaultModel()),
     }
 
-    const subContext = createSubagentContext(parentMock, agentDef, options?.overrides)
+    const subContext = createSubagentContext(parentMock, agentDef, overrides)
     subContext.agentId = agentId
 
     const { applyPermissionSandboxToContext } = await import("@/permission/sandbox")
     applyPermissionSandboxToContext(subContext, agentDef, {
-      isAsync: !!agentDef.background,
+      isAsync,
       canShowPermissionPrompts: false,
     })
 
-    const finalParts = options?.inputParts ? [...options.inputParts] : []
+    const finalParts = inputParts ? [...inputParts] : []
     if (agentDef.skills && agentDef.skills.length > 0) {
       const { SkillLoader } = await import("@/skill/loader")
       for (const skillName of agentDef.skills) {
@@ -149,7 +177,7 @@ export async function runAgent(
         agentId,
         agentType: agentName,
         parentId: storeContext?.agentId ?? "",
-        isAsync: !!agentDef.background,
+        isAsync,
       })
 
       // US4: Sidechain Transcript Isolation
@@ -290,7 +318,7 @@ export async function runAgent(
       return result
     }
 
-    if (agentDef.background) {
+    if (isAsync) {
       return await runAsyncAgentLifecycle(agentName, sessId, agentId, executeLogic)
     } else {
       return await runWithAgentContext(subContext, executeLogic)
@@ -336,8 +364,24 @@ export async function runAgent(
       logger.error("Failed to clear invoked skills", { error: err, agentId })
     }
     Session.decrementAgentCount(sessId)
-    if (parentContext === undefined) {
-      // We initialized a fresh abort controller maybe, but GC will handle it
-    }
   }
+}
+
+/**
+ * Convenience wrapper that resolves an agent by name and runs it.
+ * Throws `AgentSpawnError` if the agent is not found.
+ *
+ * For boundary handlers (HTTP, tool call sites) that need custom error
+ * formatting, use `Agent.get()` + `runAgent()` directly instead.
+ */
+export async function runAgentByName(
+  agentName: string,
+  sessionId: SessionID | string,
+  options?: Omit<RunAgentInput, "agentDefinition" | "sessionId">,
+): Promise<Agent.RunAgentResult> {
+  const agentDef = await Agent.get(agentName)
+  if (!agentDef) {
+    throw new AgentSpawnError(`Agent '${agentName}' not found or not loaded`)
+  }
+  return runAgent({ agentDefinition: agentDef, sessionId, ...options })
 }

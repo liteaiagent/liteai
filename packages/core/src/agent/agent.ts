@@ -219,7 +219,7 @@ export namespace Agent {
         const rawSource = valRecord.source
         const source = rawSource === "plugin" ? "plugin" : "custom"
 
-        const base: Record<string, any> = {
+        const base: Record<string, unknown> = {
           name: key,
           mode: "all",
           permission: PermissionNext.merge(defaults, user),
@@ -234,7 +234,7 @@ export namespace Agent {
           base.pluginId = valRecord.pluginId
         }
 
-        item = result[key] = base as AgentDefinition
+        item = result[key] = base as unknown as AgentDefinition
       }
       if (value.model) item.model = Provider.parseModel(value.model)
       item.variant = value.variant ?? item.variant

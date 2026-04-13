@@ -124,15 +124,15 @@ interface SubagentContext {
   abortController: AbortController    // Child of parent's controller (unidirectional)
 
   // Wrapped state (parent access with modifications)
-  getAppState: () => AppState         // Wraps parent's, sets shouldAvoidPermissionPrompts
-  setAppState: () => void             // No-op by default (prevents state leaks)
+  getAppState: () => AppState         // Wraps parent's, sets shouldAvoidPermissionPrompts for background agents
+  setAppState: (updater: (state: AppState) => AppState) => void  // Isolated by default; shared if shareSetAppState override is true
 
   // Fresh state (isolates per agent)
   toolDecisions: undefined            // Fresh per agent — no parent leaks
   messages: ModelMessage[]            // Independent message chain
 
   // Lifecycle
-  setAppStateForTasks: ScopedTaskOps  // Scoped: registerTask, killTask, deleteTodo only
+  setAppStateForTasks: (updater: (state: AppState) => AppState) => void  // Root store passthrough (parent.setAppStateForTasks ?? parent.setAppState)
   thinkingConfig: ThinkingConfig | undefined  // Disabled by default unless agent opts in
 
   // Extensions
@@ -149,6 +149,8 @@ interface SubagentContextOverrides {
   criticalSystemReminder?: string     // Static reminder override
 }
 ```
+
+> **Implementation note**: In the current codebase, `SubagentContext` (the tool-use execution context) and `SubagentSpawnContext` (the ALS analytics context described in the AgentExecutionContext entity below) are merged into a **single `SubagentContext` type** stored in `AgentExecutionContext`. The "Naming note" above describes the *conceptual* separation; the implementation uses one unified type for simplicity. `setAppStateForTasks` is implemented as `parent.setAppStateForTasks ?? parent.setAppState` — a root store passthrough per liteai2's `forkedAgent.ts:416`. This is NOT a scoped API with explicit actions; it's a forwarding reference ensuring task operations always reach the root session's AppState, even when the sub-agent's `setAppState` is isolated.
 
 ### State Transitions
 

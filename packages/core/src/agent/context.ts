@@ -36,6 +36,17 @@ export interface ParentContext {
   toolDecisions?: Record<string, ToolDecision>
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void
+  /**
+   * Root store passthrough for task management. Ensures task registration/kill
+   * always reaches the root session's AppState, even when the sub-agent's
+   * `setAppState` is no-op'd for isolation. Without this, background tasks
+   * spawned by sub-agents become PPID=1 zombies.
+   *
+   * Falls back to `setAppState` if not explicitly provided.
+   * See liteai2 `forkedAgent.ts:416–417`.
+   */
+  setAppStateForTasks?: (updater: (state: AppState) => AppState) => void
+  queryTracking?: { depth: number }
   model?: { providerID: string; modelID: string } | Provider.Model
   thinkingConfig?: ThinkingConfig
 }
@@ -43,15 +54,31 @@ export interface ParentContext {
 export interface SubagentContext {
   type: "subagent"
   agentId: string
-  sessionId: string
+  /** Agent definition name (e.g., "explore", "build"). */
+  agentType: string
+  /** Session ID of the parent that spawned this agent. */
+  parentSessionId: string
+  /** Whether this agent is a built-in (native) agent. */
+  isBuiltIn: boolean
   abortController: AbortController
   // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
   readFileState: Map<string, any>
+  // biome-ignore lint/suspicious/noExplicitAny: cloned from parent for cache stability (FR-004)
+  contentReplacementState?: any
+  /** Recursion depth tracking for nested sub-agent spawns. */
+  queryTracking: { depth: number }
+  /** Whether this invocation is a fresh spawn or a resume. */
+  invocationKind: "spawn" | "resume"
   toolDecisions?: Record<string, ToolDecision>
   thinkingConfig?: ThinkingConfig
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void
-  setAppStateForTasks: (action: "registerTask" | "killTask" | "deleteTodo", payload: unknown) => void
+  /**
+   * Root store passthrough for task management. Ensures task registration/kill
+   * always reaches the root session's AppState, even when this agent's
+   * `setAppState` is no-op'd for isolation. See liteai2 `forkedAgent.ts:416`.
+   */
+  setAppStateForTasks: (updater: (state: AppState) => AppState) => void
   cwd: string
   effort?: string
   criticalSystemReminder?: string
@@ -70,7 +97,7 @@ export interface TeammateAgentContext {
 
 export interface SubagentContextOverrides {
   shareSetAppState?: boolean
-  shareSetResponseLength?: boolean
+  shareSetResponseLength?: boolean // Not yet wired — response length sharing requires query loop integration
   shareAbortController?: boolean
   criticalSystemReminder?: string
 }
@@ -147,23 +174,34 @@ export function createSubagentContext(
         }
       }
 
-  const setAppStateForTasks = (_action: "registerTask" | "killTask" | "deleteTodo", _payload: unknown) => {
-    if (!overrides?.shareSetAppState) {
-      return // Short-circuit when not sharing state
-    }
+  // Task registration/kill must always reach the root store, even when
+  // setAppState is a no-op — otherwise background tasks are never
+  // registered and never killed (PPID=1 zombie). (See liteai2 forkedAgent.ts:416)
+  const setAppStateForTasks = parent.setAppStateForTasks ?? parent.setAppState
 
-    // TODO: Implement the intended state updates based on _action and _payload
-    // (e.g., call parent.setAppState(prev => updatedState) applying registerTask/killTask/deleteTodo logic).
-    // biome-ignore lint/suspicious/noExplicitAny: currently a no-op identity function placeholder
-    parent.setAppState((state: any) => state)
+  // Clone contentReplacementState for cache stability (FR-004)
+  // biome-ignore lint/suspicious/noExplicitAny: generic content replacement state
+  let contentReplacementState: any
+  if (parent.contentReplacementState) {
+    contentReplacementState =
+      typeof structuredClone === "function"
+        ? structuredClone(parent.contentReplacementState)
+        : JSON.parse(JSON.stringify(parent.contentReplacementState))
   }
 
   return {
     type: "subagent",
-    agentId: agent.name || "unknown", // This is usually a uuid assigned later, handling properly in runner
-    sessionId: parent.sessionId,
+    agentId: "", // Placeholder — runner.ts MUST assign a unique agentId after creation
+    agentType: agent.name || "unknown",
+    parentSessionId: parent.sessionId,
+    isBuiltIn: agent.native === true,
+    invocationKind: "spawn",
+    queryTracking: {
+      depth: (parent.queryTracking?.depth ?? 0) + 1,
+    },
     abortController,
     readFileState: new Map(parent.readFileState), // shallow clone
+    contentReplacementState,
     toolDecisions: undefined, // fresh
     thinkingConfig: agent.thinking
       ? {
