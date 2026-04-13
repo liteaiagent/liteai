@@ -89,26 +89,10 @@ describe("Bundled", () => {
 
   // ----- System prompt reads -----
 
-  const EXPECTED_SYSTEM_PROMPTS = [
-    "anthropic",
-    "beast",
-    "codex_header",
-    "default",
-    "gemini",
-    "google-code-assist",
-    "trinity",
-  ] as const
-
-  for (const name of EXPECTED_SYSTEM_PROMPTS) {
-    test(`systemPrompt("${name}") reads file successfully`, async () => {
-      const content = await Bundled.systemPrompt(name)
-      expect(typeof content).toBe("string")
-      expect(content.length).toBeGreaterThan(0)
-    })
-  }
-
-  test("systemPrompt() throws for non-existent prompt", async () => {
-    await expect(Bundled.systemPrompt("nonexistent-prompt-xyz")).rejects.toThrow()
+  test("systemMd() reads file successfully", async () => {
+    const content = await Bundled.systemMd()
+    expect(typeof content).toBe("string")
+    expect(content.length).toBeGreaterThan(0)
   })
 
   // ----- Misc prompt reads -----

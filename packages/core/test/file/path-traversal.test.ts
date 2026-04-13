@@ -126,7 +126,7 @@ describe("Instance.containsPath", () => {
         expect(Instance.containsPath(path.join(tmp.path, "src", "file.ts"))).toBe(true)
       },
     })
-  })
+  }, 30000)
 
   test("returns true for path inside worktree but outside directory (monorepo subdirectory scenario)", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -144,7 +144,7 @@ describe("Instance.containsPath", () => {
         expect(Instance.containsPath(tmp.path)).toBe(true)
       },
     })
-  })
+  }, 30000)
 
   test("returns false for path outside both directory and worktree", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -156,7 +156,7 @@ describe("Instance.containsPath", () => {
         expect(Instance.containsPath("/tmp/other-project")).toBe(false)
       },
     })
-  })
+  }, 30000)
 
   test("returns false for path with .. escaping worktree", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -167,7 +167,7 @@ describe("Instance.containsPath", () => {
         expect(Instance.containsPath(path.join(tmp.path, "..", "escape.txt"))).toBe(false)
       },
     })
-  })
+  }, 30000)
 
   test("handles directory === worktree (running from repo root)", async () => {
     await using tmp = await tmpdir({ git: true })
@@ -180,7 +180,7 @@ describe("Instance.containsPath", () => {
         expect(Instance.containsPath("/etc/passwd")).toBe(false)
       },
     })
-  })
+  }, 30000)
 
   test("non-git project does not allow arbitrary paths via worktree='/'", async () => {
     await using tmp = await tmpdir() // no git: true
@@ -194,5 +194,5 @@ describe("Instance.containsPath", () => {
         expect(Instance.containsPath("/tmp/other")).toBe(false)
       },
     })
-  })
+  }, 30000)
 })

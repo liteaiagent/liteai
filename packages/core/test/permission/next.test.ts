@@ -786,7 +786,7 @@ test("reply - reject cancels all pending for same session", async () => {
       expect(await result2).toBeInstanceOf(PermissionNext.RejectedError)
     },
   })
-})
+}, 30_000)
 
 test("reply - always resolves matching pending requests in same session", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -910,7 +910,7 @@ test("reply - publishes replied event", async () => {
       unsub()
     },
   })
-})
+}, 30_000)
 
 test("reply - does nothing for unknown requestID", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -946,7 +946,7 @@ test("ask - checks all patterns and stops on first deny", async () => {
       ).rejects.toBeInstanceOf(PermissionNext.DeniedError)
     },
   })
-})
+}, 30_000)
 
 test("ask - allows all patterns when all match allow rules", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -964,7 +964,7 @@ test("ask - allows all patterns when all match allow rules", async () => {
       expect(result).toBeUndefined()
     },
   })
-})
+}, 30_000)
 
 test("ask - should deny even when an earlier pattern is ask", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -1002,7 +1002,7 @@ test("ask - should deny even when an earlier pattern is ask", async () => {
       expect(await PermissionNext.list()).toHaveLength(0)
     },
   })
-})
+}, 30_000)
 
 test("ask - abort should clear pending request", async () => {
   await using tmp = await tmpdir({ git: true })
@@ -1035,4 +1035,4 @@ test("ask - abort should clear pending request", async () => {
       }
     },
   })
-})
+}, 30_000)

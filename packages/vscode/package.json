@@ -3,7 +3,7 @@
   "displayName": "liteai",
   "description": "liteai for VS Code",
   "version": "1.2.26",
-  "publisher": "sst-dev",
+  "publisher": "liteaiagent",
   "repository": {
     "type": "git",
     "url": "https://github.com/liteaiagent/liteai"
