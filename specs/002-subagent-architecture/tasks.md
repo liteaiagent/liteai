@@ -182,14 +182,11 @@
 
 ### Tests for User Story 5
 
-- [ ] T044 [P] [US5] Write context pruning and tool filtering tests: `omitLiteaiMd` stripping, git status removal, user-provided context override preserved, feature flag kill-switch disables pruning, `filterToolsForAgent()` disallow lists, `resolveAgentTools()` wildcard expansion in `packages/core/test/agent/filter.test.ts`
-
-### Implementation for User Story 5
-
-- [ ] T045 [US5] Implement `filterToolsForAgent()` in `packages/core/src/agent/filter.ts` — define arrays for `ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, and `ASYNC_AGENT_ALLOWED_TOOLS` internal to the module, then apply these allow/disallow filtering bounds; MCP tools always allowed
-- [ ] T046 [US5] Implement `resolveAgentTools()` in `packages/core/src/agent/filter.ts` — validate agent tool specs against available tools, support wildcard expansion (`"*"`), extract `allowedAgentTypes` from `Agent(type1, type2)` syntax
-- [ ] T047 [US5] Implement context pruning logic in `packages/core/src/agent/filter.ts` — `omitLiteaiMd` stripping (destructure out `liteaiMd` from userContext when flag set and no user override), git status stripping explicitly targeting read-only agents (`explore` and `plan` types), feature flag kill-switch (`liteai_slim_subagent_liteaimd` defaulting true)
-- [ ] T048 [US5] Integrate context pruning into `runAgent()` — apply pruning after context forking based on agent config flags before entering query loop in `packages/core/src/agent/runner.ts`
+- [x] T044 [P] [US5] Write context pruning and tool filtering tests: `omitLiteaiMd` stripping, git status removal, user-provided context override preserved, feature flag kill-switch disables pruning, `filterToolsForAgent()` disallow lists, `resolveAgentTools()` wildcard expansion in `packages/core/test/agent/filter.test.ts`
+- [x] T045 [US5] Implement `filterToolsForAgent()` in `packages/core/src/agent/filter.ts` — define arrays for `ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, and `ASYNC_AGENT_ALLOWED_TOOLS` internal to the module, then apply these allow/disallow filtering bounds; MCP tools always allowed
+- [x] T046 [US5] Implement `resolveAgentTools()` in `packages/core/src/agent/filter.ts` — validate agent tool specs against available tools, support wildcard expansion (`"*"`), extract `allowedAgentTypes` from `Agent(type1, type2)` syntax
+- [x] T047 [US5] Implement context pruning logic in `packages/core/src/agent/filter.ts` — `omitLiteaiMd` stripping (destructure out `liteaiMd` from userContext when flag set and no user override), git status stripping explicitly targeting read-only agents (`explore` and `plan` types), feature flag kill-switch (`liteai_slim_subagent_liteaimd` defaulting true)
+- [x] T048 [US5] Integrate context pruning into `runAgent()` — apply pruning after context forking based on agent config flags before entering query loop in `packages/core/src/agent/runner.ts`
 
 **Checkpoint**: At this point, User Story 5 should be fully functional — read-only agents get pruned context, reducing token consumption.
 
@@ -278,7 +275,7 @@
 
 ### User Story Dependencies
 
-```
+```text
 Phase 1 (Setup)
     ↓
 Phase 2 (Foundational) ──────────── BLOCKS ALL ────────────

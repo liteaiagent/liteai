@@ -5,6 +5,7 @@ import { SessionPrompt } from "@/session/engine"
 import type { PromptInput } from "@/session/engine/loop"
 import { Session } from "@/session/index"
 import type { SessionID } from "@/session/schema"
+import type { TranscriptMessage } from "@/session/transcript"
 import { Log } from "@/util/log"
 import { Agent } from "./agent"
 import {
@@ -117,7 +118,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
   Session.incrementAgentCount(sessId)
 
   const startTime = Date.now()
-  let transcriptMessagesRef: import("@/session/transcript").TranscriptMessage[] | undefined
+  let transcriptMessagesRef: TranscriptMessage[] | undefined
   try {
     // Build subagent context
     const parentMock: ParentContext = parentContext ?? {
@@ -131,8 +132,21 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       model: agentDef.model ?? (await Provider.defaultModel()),
     }
 
-    const subContext = createSubagentContext(parentMock, agentDef, overrides)
-    subContext.agentId = agentId
+    const subContext = createSubagentContext(parentMock, agentDef, agentId, overrides)
+
+    const { pruneContext } = await import("./filter")
+    const { prunedUserContext, prunedSystemContext } = pruneContext(
+      agentDef,
+      overrides?.userContext,
+      overrides?.systemContext,
+      {
+        hasUserOverride: !!overrides?.userContext,
+      },
+    )
+
+    // Save pruned context overrides so they can be consumed by the inner prompt or query loop
+    subContext.prunedUserContext = prunedUserContext
+    subContext.prunedSystemContext = prunedSystemContext
 
     const { applyPermissionSandboxToContext } = await import("@/permission/sandbox")
     applyPermissionSandboxToContext(subContext, agentDef, {
@@ -167,7 +181,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
     }
 
     // 2. Wrap entire execution with Context
-    const localTranscriptMessages: import("@/session/transcript").TranscriptMessage[] = []
+    const localTranscriptMessages: TranscriptMessage[] = []
     transcriptMessagesRef = localTranscriptMessages
 
     const executeLogic = async () => {
@@ -196,7 +210,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
       // Record initial messages before query loop
       const initialUuid = Math.random().toString(36).substring(7)
-      const sysMsg: import("@/session/transcript").TranscriptMessage = {
+      const sysMsg: TranscriptMessage = {
         isSidechain: true,
         uuid: initialUuid,
         parentUuid: lastRecordedUuid,
@@ -208,7 +222,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       localTranscriptMessages.push(sysMsg)
       lastRecordedUuid = initialUuid
 
-      const userMsg: import("@/session/transcript").TranscriptMessage = {
+      const userMsg: TranscriptMessage = {
         isSidechain: true,
         uuid: Math.random().toString(36).substring(7),
         parentUuid: lastRecordedUuid,
@@ -231,7 +245,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
             if (recordedMessageIds.has(info.id)) return
             recordedMessageIds.add(info.id)
             const newUuid = info.id
-            const astMsg: import("@/session/transcript").TranscriptMessage = {
+            const astMsg: TranscriptMessage = {
               isSidechain: true,
               uuid: newUuid,
               parentUuid: lastRecordedUuid,

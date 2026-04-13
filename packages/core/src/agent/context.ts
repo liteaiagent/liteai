@@ -83,6 +83,8 @@ export interface SubagentContext {
   effort?: string
   criticalSystemReminder?: string
   invokingRequestId?: string
+  prunedUserContext?: Record<string, unknown>
+  prunedSystemContext?: Record<string, unknown>
 }
 
 export interface TeammateAgentContext {
@@ -100,6 +102,8 @@ export interface SubagentContextOverrides {
   shareSetResponseLength?: boolean // Not yet wired — response length sharing requires query loop integration
   shareAbortController?: boolean
   criticalSystemReminder?: string
+  userContext?: Record<string, unknown>
+  systemContext?: Record<string, unknown>
 }
 
 export const AgentExecutionContext = new AsyncLocalStorage<AgentContext>()
@@ -124,6 +128,7 @@ export function isRootAgent(): boolean {
 export function createSubagentContext(
   parent: ParentContext,
   agent: Agent.Info,
+  agentId: string,
   overrides?: SubagentContextOverrides,
 ): SubagentContext {
   const abortController = overrides?.shareAbortController ? parent.abortController : new AbortController()
@@ -191,7 +196,7 @@ export function createSubagentContext(
 
   return {
     type: "subagent",
-    agentId: "", // Placeholder — runner.ts MUST assign a unique agentId after creation
+    agentId,
     agentType: agent.name || "unknown",
     parentSessionId: parent.sessionId,
     isBuiltIn: agent.native === true,

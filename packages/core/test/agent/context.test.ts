@@ -43,10 +43,8 @@ describe("Agent Context", () => {
     const agent1 = createAgent({ name: "agent1", background: false })
     const agent2 = createAgent({ name: "agent2", background: true })
 
-    const ctx1 = createSubagentContext(parent, agent1)
-    ctx1.agentId = "agent1-id" // Simulate runner assigning agentId
-    const ctx2 = createSubagentContext(parent, agent2)
-    ctx2.agentId = "agent2-id"
+    const ctx1 = createSubagentContext(parent, agent1, "agent1-id")
+    const ctx2 = createSubagentContext(parent, agent2, "agent2-id")
 
     await Promise.all([
       new Promise<void>((resolve) => {
@@ -68,7 +66,7 @@ describe("Agent Context", () => {
 
   it("consumeInvokingRequestId returns value only once", () => {
     const parent = createParent()
-    const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+    const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
     ctx.invokingRequestId = "req-1"
 
     runWithAgentContext(ctx, () => {
@@ -79,7 +77,7 @@ describe("Agent Context", () => {
 
   it("isRootAgent correctly discriminates", () => {
     const parent = createParent()
-    const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+    const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
     ctx.agentId = "test-id"
 
     runWithAgentContext(ctx, () => {
@@ -98,10 +96,11 @@ describe("Agent Context", () => {
           name: "explore",
           native: true,
         }),
+        "test-id",
       )
 
       expect(ctx.type).toBe("subagent")
-      expect(ctx.agentId).toBe("") // Placeholder — runner sets it
+      expect(ctx.agentId).toBe("test-id")
       expect(ctx.agentType).toBe("explore")
       expect(ctx.parentSessionId).toBe("sess-1")
       expect(ctx.isBuiltIn).toBe(true)
@@ -112,18 +111,18 @@ describe("Agent Context", () => {
 
     it("isBuiltIn is false for non-native agents", () => {
       const parent = createParent()
-      const ctx = createSubagentContext(parent, createAgent({ name: "custom-agent" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "custom-agent" }), "test-id")
       expect(ctx.isBuiltIn).toBe(false)
     })
 
     it("increments queryTracking.depth for nested forks", () => {
       const parent = createParent()
-      const ctx1 = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx1 = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
       expect(ctx1.queryTracking.depth).toBe(1)
 
       // Fork from ctx1 as parent (simulate nested spawn)
       const nestedParent = createParent({ queryTracking: { depth: ctx1.queryTracking.depth } })
-      const ctx2 = createSubagentContext(nestedParent, createAgent({ name: "b" }))
+      const ctx2 = createSubagentContext(nestedParent, createAgent({ name: "b" }), "test-id")
       expect(ctx2.queryTracking.depth).toBe(2)
     })
 
@@ -131,7 +130,7 @@ describe("Agent Context", () => {
       const parent = createParent({
         contentReplacementState: { key: "value", nested: { a: 1 } },
       })
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
       expect(ctx.contentReplacementState).toEqual({ key: "value", nested: { a: 1 } })
       // Verify it's a clone, not the same reference
       expect(ctx.contentReplacementState).not.toBe(parent.contentReplacementState)
@@ -143,7 +142,7 @@ describe("Agent Context", () => {
       const parent = createParent({
         readFileState: new Map([["file.ts", { content: "original" }]]),
       })
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
 
       // Mutate child's file state
       ctx.readFileState.set("new-file.ts", { content: "new" })
@@ -155,7 +154,7 @@ describe("Agent Context", () => {
 
     it("abort propagates parent→child but not child→parent", () => {
       const parent = createParent()
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
 
       // Child abort does NOT propagate to parent
       ctx.abortController.abort("child-reason")
@@ -164,7 +163,7 @@ describe("Agent Context", () => {
 
     it("parent abort propagates to child", () => {
       const parent = createParent()
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
 
       parent.abortController.abort("parent-reason")
       expect(ctx.abortController.signal.aborted).toBe(true)
@@ -174,7 +173,7 @@ describe("Agent Context", () => {
       const parent = createParent({
         toolDecisions: { "some-tool": { result: true, source: "user" } },
       })
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
       expect(ctx.toolDecisions).toBeUndefined()
     })
   })
@@ -189,7 +188,7 @@ describe("Agent Context", () => {
         setAppState: () => {},
         setAppStateForTasks: rootSetter as unknown as ParentContext["setAppStateForTasks"],
       })
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
       ctx.setAppStateForTasks((prev) => prev)
       expect(called).toBe(true)
     })
@@ -201,7 +200,7 @@ describe("Agent Context", () => {
           called = true
         }) as unknown as ParentContext["setAppState"],
       })
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }))
+      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
       ctx.setAppStateForTasks((prev) => prev)
       expect(called).toBe(true)
     })
