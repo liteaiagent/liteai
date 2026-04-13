@@ -13,7 +13,8 @@ import { Filesystem } from "@/util/filesystem"
 import { Glob } from "@/util/glob"
 import { lazy } from "@/util/lazy"
 import { Log } from "@/util/log"
-
+import { Session } from "@/session"
+import { MCP } from "@/mcp"
 export namespace AgentLoader {
   const log = Log.create({ service: "agent:loader" })
 
@@ -40,11 +41,10 @@ export namespace AgentLoader {
     [string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }] | undefined
   > {
     log.info("parsing agent", { path: item })
-    const md = await ConfigMarkdown.parse(item).catch(async (err) => {
+    const md = await ConfigMarkdown.parse(item).catch((err) => {
       const message = ConfigMarkdown.FrontmatterError.isInstance(err)
         ? err.data.message
         : `Failed to parse agent ${item}`
-      const { Session } = await import("@/session")
       Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
       log.error("failed to load agent", { agent: item, err })
       return undefined
@@ -64,7 +64,6 @@ export namespace AgentLoader {
       if (parsed.data.requiredMcpServers && parsed.data.requiredMcpServers.length > 0) {
         const mcpData = await (async () => {
           try {
-            const { MCP } = await import("@/mcp")
             const status = await MCP.status()
             const tools = await MCP.tools()
             return { status, tools }
@@ -107,7 +106,6 @@ export namespace AgentLoader {
       ] as [string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }]
     }
     log.error("invalid agent config, skipping", { path: item, issues: parsed.error.issues })
-    const { Session } = await import("@/session")
     Bus.publish(Session.Event.Error, {
       error: new NamedError.Unknown({
         message: `Invalid agent config ${item}: ${parsed.error.issues.map((i) => i.message).join(", ")}`,
