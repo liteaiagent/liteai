@@ -27,6 +27,7 @@ let tracePath: string | null = null
 const events: TraceEvent[] = []
 const metadataEvents: TraceEvent[] = []
 const pendingSpans = new Map<string, PendingSpan>()
+const activeAgents = new Map<string, string | undefined>()
 
 const MAX_EVENTS = 100_000
 
@@ -258,4 +259,37 @@ export function endToolPerfettoSpan(spanId: string, metadata?: { success?: boole
   evictIfNeeded()
 
   pendingSpans.delete(spanId)
+}
+
+export function registerPerfettoAgent(agentId: string, parentId?: string): void {
+  if (!isEnabled) return
+  activeAgents.set(agentId, parentId)
+
+  events.push({
+    name: `Agent Registered: ${agentId}`,
+    cat: "agent",
+    ph: "i", // Instant event
+    ts: getTimestamp(),
+    pid: 1,
+    tid: 1,
+    args: { agentId, parentId },
+  })
+  evictIfNeeded()
+}
+
+export function unregisterPerfettoAgent(agentId: string): void {
+  if (!isEnabled) return
+
+  events.push({
+    name: `Agent Unregistered: ${agentId}`,
+    cat: "agent",
+    ph: "i",
+    ts: getTimestamp(),
+    pid: 1,
+    tid: 1,
+    args: { agentId },
+  })
+  evictIfNeeded()
+
+  activeAgents.delete(agentId)
 }

@@ -13,6 +13,7 @@ import {
   createSubagentContext,
   type ParentContext,
   runWithAgentContext,
+  type SubagentContext,
   type SubagentContextOverrides,
 } from "./context"
 import { AgentSpawnError, AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "./errors"
@@ -22,6 +23,8 @@ import { isRestrictedToPluginOnly } from "./policy"
 const logger = Log.create({ service: "agent:runner" })
 
 import { extractPartialResult, runAsyncAgentLifecycle } from "./lifecycle"
+import { AgentCleanup, type AcquiredResources } from "./cleanup"
+import { registerPerfettoAgent } from "@/telemetry/perfetto"
 
 export const DEFAULT_CONCURRENT_AGENT_LIMIT = 8
 
@@ -121,6 +124,8 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
   let transcriptMessagesRef: TranscriptMessage[] | undefined
   let mcpCleanup: (() => Promise<void>) | undefined
 
+  let subContext: SubagentContext | undefined
+
   try {
     const { initializeAgentMcpServers } = await import("@/mcp/agent-mcp")
     const initResult = await initializeAgentMcpServers(agentDef)
@@ -139,7 +144,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       model: agentDef.model ?? (await Provider.defaultModel()),
     }
 
-    const subContext = createSubagentContext(parentMock, agentDef, agentId, {
+    subContext = createSubagentContext(parentMock, agentDef, agentId, {
       ...overrides,
       mcpClients: overrides?.mcpClients ?? mcpClients,
     })
@@ -196,6 +201,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
     const executeLogic = async () => {
       executeSubagentStartHooks(agentDef, agentId)
+      registerPerfettoAgent(agentId, storeContext?.agentId)
 
       Bus.publish(AgentEvent.Spawned, {
         agentId,
@@ -273,16 +279,17 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       let timeoutId: ReturnType<typeof setTimeout> | undefined
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
-          subContext.abortController.abort(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
+          subContext?.abortController.abort(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
           reject(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
         }, timeoutMs)
       })
 
       let finalSystemPrompt = agentDef.prompt ?? ""
-      if (subContext.criticalSystemReminder) {
+      const criticalReminder = subContext?.criticalSystemReminder
+      if (criticalReminder) {
         finalSystemPrompt = finalSystemPrompt
-          ? `${finalSystemPrompt}\n\n<system-reminder>\n${subContext.criticalSystemReminder}\n</system-reminder>`
-          : `<system-reminder>\n${subContext.criticalSystemReminder}\n</system-reminder>`
+          ? `${finalSystemPrompt}\n\n<system-reminder>\n${criticalReminder}\n</system-reminder>`
+          : `<system-reminder>\n${criticalReminder}\n</system-reminder>`
       }
 
       // Run session prompt explicitly on sidechain subsession
@@ -380,16 +387,23 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
     throw err
   } finally {
-    if (mcpCleanup) {
-      await mcpCleanup().catch((err) => logger.warn("Agent MCP cleanup failed", { error: err }))
+    const resources: AcquiredResources = {
+      mcpSession: mcpCleanup ? { cleanup: mcpCleanup } : undefined,
+      contextMessages: transcriptMessagesRef,
     }
-    clearSessionHooks(agentId)
-    try {
-      const m = await import("@/skill/loader")
-      await m.SkillLoader.clearInvokedSkillsForAgent(agentId)
-    } catch (err) {
-      logger.error("Failed to clear invoked skills", { error: err, agentId })
+    
+    if (subContext) {
+      await AgentCleanup.execute(subContext, resources).catch((err) =>
+        logger.error("AgentCleanup execution failed", { error: err, agentId })
+      )
+    } else {
+      // Fallback cleanup if context creation failed 
+      if (mcpCleanup) {
+        await mcpCleanup().catch((err) => logger.warn("Agent MCP cleanup fallback failed", { error: err }))
+      }
+      clearSessionHooks(agentId)
     }
+
     Session.decrementAgentCount(sessId)
   }
 }
