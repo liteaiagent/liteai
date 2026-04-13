@@ -89,7 +89,7 @@ export async function runAgent(
   Session.incrementAgentCount(sessId)
 
   const startTime = Date.now()
-  const localTranscriptMessages: import("@/session/transcript").TranscriptMessage[] = []
+  let transcriptMessagesRef: import("@/session/transcript").TranscriptMessage[] | undefined
   try {
     // Build subagent context
     const parentMock: ParentContext = parentContext ?? {
@@ -106,25 +106,11 @@ export async function runAgent(
     const subContext = createSubagentContext(parentMock, agentDef, options?.overrides)
     subContext.agentId = agentId
 
-    const { PermissionSandbox } = await import("@/permission/sandbox")
-    const parentPermissionCtx = {
-      permissionMode: parentMock.getAppState().permissionMode,
-      shouldAvoidPermissionPrompts: parentMock.getAppState().shouldAvoidPermissionPrompts,
-      toolDecisions: parentMock.toolDecisions,
-    }
-    const derivedPermissionCtx = PermissionSandbox.apply(parentPermissionCtx, agentDef, {
+    const { applyPermissionSandboxToContext } = await import("@/permission/sandbox")
+    applyPermissionSandboxToContext(subContext, agentDef, {
       isAsync: !!agentDef.background,
       canShowPermissionPrompts: false,
     })
-
-    subContext.setAppState((state) => ({
-      ...state,
-      permissionMode: derivedPermissionCtx.permissionMode,
-      ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
-    }))
-    if (derivedPermissionCtx.toolDecisions) {
-      subContext.toolDecisions = derivedPermissionCtx.toolDecisions
-    }
 
     const finalParts = options?.inputParts ? [...options.inputParts] : []
     if (agentDef.skills && agentDef.skills.length > 0) {
@@ -153,6 +139,9 @@ export async function runAgent(
     }
 
     // 2. Wrap entire execution with Context
+    const localTranscriptMessages: import("@/session/transcript").TranscriptMessage[] = []
+    transcriptMessagesRef = localTranscriptMessages
+
     const executeLogic = async () => {
       executeSubagentStartHooks(agentDef, agentId)
 
@@ -315,7 +304,7 @@ export async function runAgent(
 
     if (err instanceof AgentTimeoutError || (err instanceof Error && err.name === "AbortError")) {
       status = "killed"
-      partialResult = extractPartialResult(localTranscriptMessages) ?? "Killed with no partial result"
+      partialResult = extractPartialResult(transcriptMessagesRef ?? []) ?? "Killed with no partial result"
     }
 
     Bus.publish(AgentEvent.Completed, {

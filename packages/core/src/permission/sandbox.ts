@@ -82,3 +82,25 @@ export class PermissionSandbox {
     return childContext
   }
 }
+
+export function applyPermissionSandboxToContext(
+  context: import("../agent/context").SubagentContext,
+  agentDef: Agent.AgentDefinition,
+  opts: { isAsync: boolean; canShowPermissionPrompts: boolean },
+) {
+  const parentPermissionCtx = {
+    permissionMode: context.getAppState().permissionMode,
+    shouldAvoidPermissionPrompts: context.getAppState().shouldAvoidPermissionPrompts,
+    toolDecisions: context.toolDecisions,
+  }
+  const derivedPermissionCtx = PermissionSandbox.apply(parentPermissionCtx, agentDef, opts)
+
+  context.setAppState((state) => ({
+    ...state,
+    permissionMode: derivedPermissionCtx.permissionMode,
+    ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
+  }))
+  if (derivedPermissionCtx.toolDecisions) {
+    context.toolDecisions = derivedPermissionCtx.toolDecisions
+  }
+}

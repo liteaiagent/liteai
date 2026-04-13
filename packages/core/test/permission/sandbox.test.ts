@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import type { Agent } from "@/agent/agent"
 import type { SubagentContext } from "@/agent/context"
-import { PermissionSandbox } from "@/permission/sandbox"
+import { applyPermissionSandboxToContext } from "@/permission/sandbox"
 
 describe("PermissionSandbox", () => {
   // Mock contexts and definitions
@@ -41,24 +41,10 @@ describe("PermissionSandbox", () => {
   }
 
   const applySandboxToContext = (context: SubagentContext, agentDef: Agent.AgentDefinition) => {
-    const parentPermissionCtx = {
-      permissionMode: context.getAppState().permissionMode,
-      shouldAvoidPermissionPrompts: context.getAppState().shouldAvoidPermissionPrompts,
-      toolDecisions: context.toolDecisions,
-    }
-    const derivedPermissionCtx = PermissionSandbox.apply(parentPermissionCtx, agentDef, {
+    applyPermissionSandboxToContext(context, agentDef, {
       isAsync: !!agentDef.background,
       canShowPermissionPrompts: false,
     })
-
-    context.setAppState((state) => ({
-      ...state,
-      permissionMode: derivedPermissionCtx.permissionMode,
-      ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
-    }))
-    if (derivedPermissionCtx.toolDecisions) {
-      context.toolDecisions = derivedPermissionCtx.toolDecisions
-    }
   }
 
   test("mode inheritance precedence: parent elevated mode overrides child plan", () => {

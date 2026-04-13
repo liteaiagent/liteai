@@ -103,13 +103,13 @@ export namespace Agent {
   export interface CustomAgentDefinition extends BaseAgentDefinition {
     source: "custom"
     native: false
-    filePath: string
+    filePath?: string
   }
 
   export interface PluginAgentDefinition extends BaseAgentDefinition {
     source: "plugin"
     native: false
-    pluginId: string
+    pluginId?: string
   }
 
   export type AgentDefinition = BuiltInAgentDefinition | CustomAgentDefinition | PluginAgentDefinition
@@ -215,17 +215,26 @@ export namespace Agent {
 
       let item = result[key]
       if (!item) {
-        const source = (value as Record<string, unknown>).source ?? "custom"
-        item = result[key] = {
+        const valRecord = value as Record<string, unknown>
+        const rawSource = valRecord.source
+        const source = rawSource === "plugin" ? "plugin" : "custom"
+
+        const base: Record<string, any> = {
           name: key,
           mode: "all",
           permission: PermissionNext.merge(defaults, user),
           options: {},
           native: false,
           source,
-          filePath: (value as Record<string, unknown>).filePath,
-          pluginId: (value as Record<string, unknown>).pluginId,
-        } as unknown as AgentDefinition
+        }
+
+        if (source === "custom" && typeof valRecord.filePath === "string") {
+          base.filePath = valRecord.filePath
+        } else if (source === "plugin" && typeof valRecord.pluginId === "string") {
+          base.pluginId = valRecord.pluginId
+        }
+
+        item = result[key] = base as AgentDefinition
       }
       if (value.model) item.model = Provider.parseModel(value.model)
       item.variant = value.variant ?? item.variant
