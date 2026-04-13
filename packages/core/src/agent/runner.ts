@@ -119,7 +119,14 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
   const startTime = Date.now()
   let transcriptMessagesRef: TranscriptMessage[] | undefined
+  let mcpCleanup: (() => Promise<void>) | undefined
+
   try {
+    const { initializeAgentMcpServers } = await import("@/mcp/agent-mcp")
+    const initResult = await initializeAgentMcpServers(agentDef)
+    const mcpClients = initResult.clients
+    mcpCleanup = initResult.cleanup
+
     // Build subagent context
     const parentMock: ParentContext = parentContext ?? {
       sessionId: sessId,
@@ -132,7 +139,10 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       model: agentDef.model ?? (await Provider.defaultModel()),
     }
 
-    const subContext = createSubagentContext(parentMock, agentDef, agentId, overrides)
+    const subContext = createSubagentContext(parentMock, agentDef, agentId, {
+      ...overrides,
+      mcpClients: overrides?.mcpClients ?? mcpClients,
+    })
 
     const { pruneContext } = await import("./filter")
     const { prunedUserContext, prunedSystemContext } = pruneContext(
@@ -370,6 +380,9 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
     throw err
   } finally {
+    if (mcpCleanup) {
+      await mcpCleanup().catch((err) => logger.warn("Agent MCP cleanup failed", { error: err }))
+    }
     clearSessionHooks(agentId)
     try {
       const m = await import("@/skill/loader")

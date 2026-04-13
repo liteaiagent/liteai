@@ -210,7 +210,11 @@ export async function resolveTools(input: {
     AgentMemory.injectAgentMemoryTools(tools, input.agent.name, scope)
   }
 
-  for (const [key, item] of Object.entries(await MCP.tools())) {
+  const contextModule = await import("../../agent/context")
+  const agentCtx = contextModule.AgentExecutionContext.getStore()
+  const mcpClients = agentCtx?.type === "subagent" ? agentCtx.mcpClients : undefined
+
+  for (const [key, item] of Object.entries(await MCP.tools(mcpClients))) {
     const execute = item.execute
     if (!execute) continue
 

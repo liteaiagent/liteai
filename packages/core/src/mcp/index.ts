@@ -94,7 +94,7 @@ export namespace MCP {
     }),
   )
 
-  type MCPClient = Client
+  export type MCPClient = Client
 
   export const Status = z
     .discriminatedUnion("status", [
@@ -150,7 +150,7 @@ export namespace MCP {
   }
 
   // Convert MCP tool definition to AI SDK Tool type
-  async function convertMcpTool(mcpTool: MCPToolDef, client: MCPClient, timeout?: number): Promise<Tool> {
+  export async function convertMcpTool(mcpTool: MCPToolDef, client: MCPClient, timeout?: number): Promise<Tool> {
     const inputSchema = mcpTool.inputSchema
 
     // Spread first, then override type to ensure it's always "object"
@@ -249,7 +249,7 @@ export namespace MCP {
     return { status, clients }
   }
 
-  function state() {
+  export function state() {
     if (!cached) cached = init()
     return cached
   }
@@ -380,7 +380,7 @@ export namespace MCP {
     }
   }
 
-  async function create(key: string, raw: Config.Mcp) {
+  export async function create(key: string, raw: Config.Mcp) {
     // Expand ${VAR} and ${VAR:-default} patterns in all config string values
     const mcp = expandDeep(raw)
 
@@ -628,27 +628,7 @@ export namespace MCP {
 
   export async function status() {
     const s = await state()
-    const cfg = await Config.get()
-    const config = { ...(cfg.mcpServers ?? {}) }
-
-    const { Flag } = await import("@/flag/flag")
-    const profile = Platform.active()
-    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-      const { load } = await import("./loader")
-      const mcpJson = await load(Instance.directory, Instance.worktree)
-      if (Object.keys(mcpJson).length > 0) {
-        Object.assign(config, mcpJson)
-      }
-    }
-    if (profile?.mcpJson) {
-      const { loadFile } = await import("./loader")
-      const path = await import("node:path")
-      const p = path.join(Global.Path.config, ".mcp.json")
-      const globalMcpJson = await loadFile(p).catch(() => ({}))
-      if (Object.keys(globalMcpJson).length > 0) {
-        Object.assign(config, globalMcpJson)
-      }
-    }
+    const config = await loadMergedMcpConfigs()
     const result: Record<string, Status> = {}
 
     // Include all configured MCPs from config, not just connected ones
@@ -665,27 +645,7 @@ export namespace MCP {
   }
 
   export async function connect(name: string) {
-    const cfg = await Config.get()
-    const config = { ...(cfg.mcpServers ?? {}) }
-
-    const { Flag } = await import("@/flag/flag")
-    const profile = Platform.active()
-    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-      const { load } = await import("./loader")
-      const mcpJson = await load(Instance.directory, Instance.worktree)
-      if (Object.keys(mcpJson).length > 0) {
-        Object.assign(config, mcpJson)
-      }
-    }
-    if (profile?.mcpJson) {
-      const { loadFile } = await import("./loader")
-      const path = await import("node:path")
-      const p = path.join(Global.Path.config, ".mcp.json")
-      const globalMcpJson = await loadFile(p).catch(() => ({}))
-      if (Object.keys(globalMcpJson).length > 0) {
-        Object.assign(config, globalMcpJson)
-      }
-    }
+    const config = await loadMergedMcpConfigs()
     const mcp = config[name]
     if (!mcp) {
       log.error("MCP config not found", { name })
@@ -726,6 +686,48 @@ export namespace MCP {
     })
   }
 
+  export async function ensureConnected(name: string): Promise<void> {
+    const s = await state()
+    if (s.status[name]?.status === "connected") {
+      return
+    }
+    await connect(name)
+  }
+
+  export async function loadMergedMcpConfigs(): Promise<NonNullable<Config.Info["mcpServers"]>> {
+    const cfg = await Config.get()
+    const config = { ...(cfg.mcpServers ?? {}) }
+
+    const { Flag } = await import("@/flag/flag")
+    const profile = Platform.active()
+    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
+      const { load } = await import("./loader")
+      const mcpJson = await load(Instance.directory, Instance.worktree)
+      if (Object.keys(mcpJson).length > 0) {
+        Object.assign(config, mcpJson)
+      }
+    }
+    if (profile?.mcpJson) {
+      const { loadFile } = await import("./loader")
+      const path = await import("node:path")
+      const p = path.join(Global.Path.config, ".mcp.json")
+      const globalMcpJson = await loadFile(p).catch(() => ({}))
+      if (Object.keys(globalMcpJson).length > 0) {
+        Object.assign(config, globalMcpJson)
+      }
+    }
+    return config
+  }
+
+  export async function getMcpConfigByName(name: string): Promise<Config.Mcp | undefined> {
+    const config = await loadMergedMcpConfigs()
+    const mcp = config[name]
+    if (mcp && isMcpConfigured(mcp)) {
+      return mcp
+    }
+    return undefined
+  }
+
   export async function disconnect(name: string) {
     const s = await state()
     const client = s.clients[name]
@@ -742,39 +744,26 @@ export namespace MCP {
     })
   }
 
-  export async function tools() {
+  export async function tools(extraClients?: Array<{ name: string; client: MCPClient; config: Config.Mcp }>) {
     const result: Record<string, Tool> = {}
     const s = await state()
     const cfg = await Config.get()
-    const config = { ...(cfg.mcpServers ?? {}) }
-
-    const { Flag } = await import("@/flag/flag")
-    const profile = Platform.active()
-    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-      const { load } = await import("./loader")
-      const mcpJson = await load(Instance.directory, Instance.worktree)
-      if (Object.keys(mcpJson).length > 0) {
-        Object.assign(config, mcpJson)
-      }
-    }
-    if (profile?.mcpJson) {
-      const { loadFile } = await import("./loader")
-      const path = await import("node:path")
-      const p = path.join(Global.Path.config, ".mcp.json")
-      const globalMcpJson = await loadFile(p).catch(() => ({}))
-      if (Object.keys(globalMcpJson).length > 0) {
-        Object.assign(config, globalMcpJson)
-      }
-    }
+    const config = await loadMergedMcpConfigs()
     const clientsSnapshot = await clients()
     const defaultTimeout = cfg.experimental?.mcp_timeout
 
-    const connectedClients = Object.entries(clientsSnapshot).filter(
-      ([name]) => s.status[name]?.status === "connected" && name in config,
-    )
+    const connectedClients = Object.entries(clientsSnapshot)
+      .filter(([name]) => s.status[name]?.status === "connected" && name in config)
+      .map(([name, client]) => {
+        const mcpConfig = config[name]
+        const entry = isMcpConfigured(mcpConfig) ? mcpConfig : undefined
+        return { name, client, config: entry }
+      })
+
+    const allClients = [...connectedClients, ...(extraClients ?? [])]
 
     const toolsResults = await Promise.all(
-      connectedClients.map(async ([clientName, client]) => {
+      allClients.map(async ({ name: clientName, client, config: entry }) => {
         const toolsResult = await client.listTools().catch((e) => {
           log.error("failed to get tools", { clientName, error: e.message })
           const failedStatus = {
@@ -785,14 +774,12 @@ export namespace MCP {
           delete s.clients[clientName]
           return undefined
         })
-        return { clientName, client, toolsResult }
+        return { clientName, client, toolsResult, entry }
       }),
     )
 
-    for (const { clientName, client, toolsResult } of toolsResults) {
+    for (const { clientName, client, toolsResult, entry } of toolsResults) {
       if (!toolsResult) continue
-      const mcpConfig = config[clientName]
-      const entry = isMcpConfigured(mcpConfig) ? mcpConfig : undefined
       const timeout = entry?.timeout ?? defaultTimeout
       for (const mcpTool of toolsResult.tools) {
         const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9_-]/g, "_")
@@ -800,33 +787,14 @@ export namespace MCP {
         result[`${sanitizedClientName}_${sanitizedToolName}`] = await convertMcpTool(mcpTool, client, timeout)
       }
     }
+
     return result
   }
 
   export async function toolNames() {
     const result: Record<string, string[]> = {}
     const s = await state()
-    const cfg = await Config.get()
-    const config = { ...(cfg.mcpServers ?? {}) }
-
-    const { Flag } = await import("@/flag/flag")
-    const profile = Platform.active()
-    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-      const { load } = await import("./loader")
-      const mcpJson = await load(Instance.directory, Instance.worktree)
-      if (Object.keys(mcpJson).length > 0) {
-        Object.assign(config, mcpJson)
-      }
-    }
-    if (profile?.mcpJson) {
-      const { loadFile } = await import("./loader")
-      const path = await import("node:path")
-      const p = path.join(Global.Path.config, ".mcp.json")
-      const globalMcpJson = await loadFile(p).catch(() => ({}))
-      if (Object.keys(globalMcpJson).length > 0) {
-        Object.assign(config, globalMcpJson)
-      }
-    }
+    const config = await loadMergedMcpConfigs()
     const clientsSnapshot = await clients()
 
     const connected = Object.entries(clientsSnapshot).filter(
@@ -848,27 +816,7 @@ export namespace MCP {
 
   export async function prompts() {
     const s = await state()
-    const cfg = await Config.get()
-    const config = { ...(cfg.mcpServers ?? {}) }
-
-    const { Flag } = await import("@/flag/flag")
-    const profile = Platform.active()
-    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-      const { load } = await import("./loader")
-      const mcpJson = await load(Instance.directory, Instance.worktree)
-      if (Object.keys(mcpJson).length > 0) {
-        Object.assign(config, mcpJson)
-      }
-    }
-    if (profile?.mcpJson) {
-      const { loadFile } = await import("./loader")
-      const path = await import("node:path")
-      const p = path.join(Global.Path.config, ".mcp.json")
-      const globalMcpJson = await loadFile(p).catch(() => ({}))
-      if (Object.keys(globalMcpJson).length > 0) {
-        Object.assign(config, globalMcpJson)
-      }
-    }
+    const config = await loadMergedMcpConfigs()
     const clientsSnapshot = await clients()
 
     const prompts = Object.fromEntries<PromptInfo & { client: string }>(
@@ -890,27 +838,7 @@ export namespace MCP {
 
   export async function resources() {
     const s = await state()
-    const cfg = await Config.get()
-    const config = { ...(cfg.mcpServers ?? {}) }
-
-    const { Flag } = await import("@/flag/flag")
-    const profile = Platform.active()
-    if (!Flag.LITEAI_DISABLE_PROJECT_CONFIG && profile?.mcpJson) {
-      const { load } = await import("./loader")
-      const mcpJson = await load(Instance.directory, Instance.worktree)
-      if (Object.keys(mcpJson).length > 0) {
-        Object.assign(config, mcpJson)
-      }
-    }
-    if (profile?.mcpJson) {
-      const { loadFile } = await import("./loader")
-      const path = await import("node:path")
-      const p = path.join(Global.Path.config, ".mcp.json")
-      const globalMcpJson = await loadFile(p).catch(() => ({}))
-      if (Object.keys(globalMcpJson).length > 0) {
-        Object.assign(config, globalMcpJson)
-      }
-    }
+    const config = await loadMergedMcpConfigs()
     const clientsSnapshot = await clients()
 
     const result = Object.fromEntries<ResourceInfo & { client: string }>(

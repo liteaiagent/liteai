@@ -200,14 +200,14 @@
 
 ### Tests for User Story 6
 
-- [ ] T049 [P] [US6] Write agent MCP lifecycle tests: string ref resolution (reuse existing), inline connection creation, cleanup (only inline), failed connection fail-fast, policy guard (`isRestrictedToPluginOnly`), concurrent shared connection isolation, and 1000-sequential-spawn stress test (spawn/exit with inline MCP, verify zero open connections post-test) — additionally for SC-004: assert that each inline MCP connection reports as closed within **5000ms** of `runAgent()` returning (use `Date.now()` delta between agent exit and connection closed event, assert `delta < 5000`) in `packages/core/test/mcp/agent-mcp.test.ts`
+- [x] T049 [P] [US6] Write agent MCP lifecycle tests: string ref resolution (reuse existing), inline connection creation, cleanup (only inline), failed connection fail-fast, policy guard (`isRestrictedToPluginOnly`), concurrent shared connection isolation, and 1000-sequential-spawn stress test (spawn/exit with inline MCP, verify zero open connections post-test) — additionally for SC-004: assert that each inline MCP connection reports as closed within **5000ms** of `runAgent()` returning (use `Date.now()` delta between agent exit and connection closed event, assert `delta < 5000`) in `packages/core/test/mcp/agent-mcp.test.ts`
 
 ### Implementation for User Story 6
 
-- [ ] T050 [US6] Implement `getMcpConfigByName()` lookup utility in `packages/core/src/mcp/index.ts` — resolve string MCP server references to existing project-wide connection configs
-- [ ] T051 [US6] Implement `initializeAgentMcpServers()` in `packages/core/src/mcp/agent-mcp.ts` — string ref path (lookup via `getMcpConfigByName()`, reuse memoized `connectToServer()`), inline definition path (create new scoped connection, track in `newlyCreatedClients[]`), policy guard (`isRestrictedToPluginOnly('mcp')` blocks user-defined agents), return cleanup function
-- [ ] T052 [US6] Implement `AgentMcpSession` cleanup function in `packages/core/src/mcp/agent-mcp.ts` — close only `newlyCreatedClients` (inline connections), leave referenced connections untouched, handle errors gracefully (log but don't throw)
-- [ ] T053 [US6] Integrate `initializeAgentMcpServers()` into `runAgent()` — call after context forking, wire cleanup into finally block, fail-fast with `McpConnectionError` if any connection fails in `packages/core/src/agent/runner.ts`
+- [x] T050 [US6] Implement `getMcpConfigByName()` lookup utility in `packages/core/src/mcp/index.ts` — resolve string MCP server references to existing project-wide connection configs
+- [x] T051 [US6] Implement `initializeAgentMcpServers()` in `packages/core/src/mcp/agent-mcp.ts` — string ref path (lookup via `getMcpConfigByName()`, reuse memoized `connectToServer()`), inline definition path (create new scoped connection, track in `newlyCreatedClients[]`), policy guard (`isRestrictedToPluginOnly('mcp')` blocks user-defined agents), return cleanup function
+- [x] T052 [US6] Implement `AgentMcpSession` cleanup function in `packages/core/src/mcp/agent-mcp.ts` — close only `newlyCreatedClients` (inline connections), leave referenced connections untouched, handle errors gracefully (log but don't throw)
+- [x] T053 [US6] Integrate `initializeAgentMcpServers()` into `runAgent()` — call after context forking, wire cleanup into finally block, fail-fast with `McpConnectionError` if any connection fails in `packages/core/src/agent/runner.ts`
 
 **Checkpoint**: At this point, User Story 6 should be fully functional — agents bring their own MCP servers with proper lifecycle management.
 

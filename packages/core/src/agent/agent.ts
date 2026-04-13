@@ -70,6 +70,11 @@ export namespace Agent {
       disallowedTools: z.union([z.string(), z.array(z.string())]).optional(),
       permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]).optional(),
       skills: z.array(z.string()).optional(),
+      /**
+       * List of MCP servers to use.
+       * Can include global server names (strings) or inline configs of the shape:
+       * `{ "<serverName>": McpConfig }`
+       */
       mcpServers: z.array(z.union([z.string(), z.record(z.string(), z.any())])).optional(),
       effort: z.enum(["low", "medium", "high", "max"]).optional(),
       memory: z.enum(["user", "project", "local"]).optional(),
@@ -112,6 +117,12 @@ export namespace Agent {
     pluginId?: string
   }
 
+  /**
+   * Represents the comprehensive configuration for an agent.
+   * Note: If providing inline `mcpServers`, each inline specification MUST be an object
+   * with exactly one key mapping the server's name to its configuration:
+   * e.g., `{ "<serverName>": McpConfig }`
+   */
   export type AgentDefinition = BuiltInAgentDefinition | CustomAgentDefinition | PluginAgentDefinition
 
   export function isBuiltInAgent(agent: AgentDefinition): agent is BuiltInAgentDefinition {

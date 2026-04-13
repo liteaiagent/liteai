@@ -1,4 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks"
+import type { Config } from "@/config/config"
+import type { MCP } from "@/mcp"
 import type { Provider } from "@/provider/provider"
 import type { Agent } from "./agent"
 
@@ -85,6 +87,7 @@ export interface SubagentContext {
   invokingRequestId?: string
   prunedUserContext?: Record<string, unknown>
   prunedSystemContext?: Record<string, unknown>
+  mcpClients?: Array<{ name: string; client: MCP.MCPClient; config: Config.Mcp }>
 }
 
 export interface TeammateAgentContext {
@@ -104,6 +107,7 @@ export interface SubagentContextOverrides {
   criticalSystemReminder?: string
   userContext?: Record<string, unknown>
   systemContext?: Record<string, unknown>
+  mcpClients?: Array<{ name: string; client: MCP.MCPClient; config: Config.Mcp }>
 }
 
 export const AgentExecutionContext = new AsyncLocalStorage<AgentContext>()
@@ -221,5 +225,6 @@ export function createSubagentContext(
     cwd: process.cwd(), // Will be updated if worktree mode
     effort: agent.effort,
     criticalSystemReminder: overrides?.criticalSystemReminder,
+    mcpClients: overrides?.mcpClients,
   }
 }
