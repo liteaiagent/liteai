@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test"
+import { beforeEach, describe, expect, mock, spyOn, test } from "bun:test"
 import { z } from "zod"
 import { BackgroundTaskRegistry } from "../../../src/command/background"
 import { MessageID, SessionID } from "../../../src/session/schema"
@@ -32,15 +32,34 @@ mock.module("../../../src/plugin", () => ({
     trigger: async () => {},
   },
 }))
-mock.module("../../../src/project/instance", () => ({
-  Instance: {
-    directory: "/dummy",
-    worktree: "/dummy",
-    project: { id: "test_project" },
-    state: (init: () => unknown) => init,
-    provide: async <R>(input: { fn: () => R }) => input.fn(),
-  },
-}))
+
+import { Instance } from "../../../src/project/instance"
+
+let orgDirectory: PropertyDescriptor | undefined
+let orgWorktree: PropertyDescriptor | undefined
+let orgProject: PropertyDescriptor | undefined
+
+beforeEach(() => {
+  orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
+  orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+  orgProject = Object.getOwnPropertyDescriptor(Instance, "project")
+
+  Object.defineProperty(Instance, "directory", { get: () => "/dummy", configurable: true })
+  Object.defineProperty(Instance, "worktree", { get: () => "/dummy", configurable: true })
+  Object.defineProperty(Instance, "project", { get: () => ({ id: "test_project" }), configurable: true })
+
+  spyOn(Instance, "state").mockImplementation(((init: () => unknown) => init) as unknown as typeof Instance.state)
+  spyOn(Instance, "provide").mockImplementation((async (input: { fn: () => unknown }) =>
+    input.fn()) as unknown as typeof Instance.provide)
+})
+
+import { afterEach } from "bun:test"
+
+afterEach(() => {
+  if (orgDirectory) Object.defineProperty(Instance, "directory", orgDirectory)
+  if (orgWorktree) Object.defineProperty(Instance, "worktree", orgWorktree)
+  if (orgProject) Object.defineProperty(Instance, "project", orgProject)
+})
 mock.module("../../../src/hook", () => ({
   Hook: {
     dispatch: async () => ({ proceed: true }),

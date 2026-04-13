@@ -1,7 +1,6 @@
 import path from "node:path"
 import { Global } from "@liteai/core/global/index"
 import { LANGUAGE_EXTENSIONS } from "@liteai/core/lsp/language"
-import { Keybind } from "@liteai/core/util/keybind"
 import { Locale } from "@liteai/core/util/locale"
 import type { PermissionRequest } from "@liteai/sdk"
 import type { TextareaRenderable } from "@opentui/core"
@@ -16,6 +15,7 @@ import { useTuiConfig } from "@tui/context/tui-config"
 import { useDialog } from "@tui/ui/dialog"
 import { createMemo, For, Match, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
+import { Keybind } from "../../../../util/keybind"
 
 type PermissionStage = "permission" | "always" | "reject"
 

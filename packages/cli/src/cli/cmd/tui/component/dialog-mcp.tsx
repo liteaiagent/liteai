@@ -1,4 +1,3 @@
-import { Keybind } from "@liteai/core/util/keybind"
 import { Log } from "@liteai/core/util/log"
 import { TextAttributes } from "@opentui/core"
 import { useKeyboard } from "@opentui/solid"
@@ -9,6 +8,7 @@ import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect, type DialogSelectOption, type DialogSelectRef } from "@tui/ui/dialog-select"
 import { entries, map, pipe, sortBy } from "remeda"
 import { createMemo, createSignal, onMount } from "solid-js"
+import { Keybind } from "../../../util/keybind"
 import { useTheme } from "../context/theme"
 
 function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean }) {

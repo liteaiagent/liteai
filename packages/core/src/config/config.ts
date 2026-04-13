@@ -25,8 +25,6 @@ export namespace Config {
   export type Skills = Schema.Skills
   export const Agent = Schema.Agent
   export type Agent = Schema.Agent
-
-  export const Keybinds = Schema.Keybinds
   export const Server = Schema.Server
   export const Layout = Schema.Layout
   export type Layout = Schema.Layout

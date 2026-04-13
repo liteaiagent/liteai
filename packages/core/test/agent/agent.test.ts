@@ -1,18 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
-
-mock.module("../../src/project/instance", () => ({
-  Instance: {
-    directory: "/mock/project",
-    worktree: "/mock/project",
-    project: { id: "test_project" },
-    state: (init: () => unknown) => init,
-    provide: async <R>(input: { fn: () => R }) => input.fn(),
-  },
-}))
-
 import { Agent } from "../../src/agent/agent"
 import { AgentLoader } from "../../src/agent/loader"
 import { Config } from "../../src/config/config"
+import { Instance } from "../../src/project/instance"
+
+let orgDirectory: PropertyDescriptor | undefined
+let orgWorktree: PropertyDescriptor | undefined
+let orgProject: PropertyDescriptor | undefined
+
+beforeEach(() => {
+  orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
+  orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+  orgProject = Object.getOwnPropertyDescriptor(Instance, "project")
+
+  Object.defineProperty(Instance, "directory", { get: () => "/mock/project", configurable: true })
+  Object.defineProperty(Instance, "worktree", { get: () => "/mock/project", configurable: true })
+  Object.defineProperty(Instance, "project", { get: () => ({ id: "test_project" }), configurable: true })
+
+  spyOn(Instance, "state").mockImplementation(((init: () => unknown) => init) as unknown as typeof Instance.state)
+  spyOn(Instance, "provide").mockImplementation((async (input: { fn: () => unknown }) =>
+    input.fn()) as unknown as typeof Instance.provide)
+})
+
+afterEach(() => {
+  if (orgDirectory) Object.defineProperty(Instance, "directory", orgDirectory)
+  if (orgWorktree) Object.defineProperty(Instance, "worktree", orgWorktree)
+  if (orgProject) Object.defineProperty(Instance, "project", orgProject)
+})
+
 import { Agent as SchemaAgent } from "../../src/config/schema"
 import { MCP } from "../../src/mcp"
 
@@ -104,9 +119,8 @@ describe("Agent Hierarchy", () => {
       await fs.mkdir(tmpProject, { recursive: true })
 
       const InstanceModule = (await import("../../src/project/instance")).Instance
-      const originalDir = InstanceModule.directory
-      // @ts-expect-error mock
-      InstanceModule.directory = tmpProject
+      const originalDir = Object.getOwnPropertyDescriptor(InstanceModule, "directory")
+      Object.defineProperty(InstanceModule, "directory", { get: () => tmpProject, configurable: true })
 
       const spyCfg = spyOn(Config, "get").mockResolvedValue({
         agent: { custom1: { disable: true } },
@@ -129,8 +143,7 @@ describe("Agent Hierarchy", () => {
       } finally {
         spyCfg.mockRestore()
         spyPlatform.mockRestore()
-        // @ts-expect-error mock
-        InstanceModule.directory = originalDir
+        if (originalDir) Object.defineProperty(InstanceModule, "directory", originalDir)
         await fs.rm(tmpProject, { recursive: true, force: true })
       }
     })

@@ -8,7 +8,7 @@ import { Instance } from "@liteai/core/project/instance"
 import { Log } from "@liteai/core/util/log"
 import { mergeDeep, unique } from "remeda"
 import type z from "zod"
-import { TuiInfo } from "./tui-schema"
+import { Keybinds, TuiInfo } from "./tui-schema"
 
 export namespace TuiConfig {
   const log = Log.create({ service: "config.tui" })
@@ -54,7 +54,7 @@ export namespace TuiConfig {
       }
     }
 
-    result.keybinds = Config.Keybinds.parse(result.keybinds ?? {})
+    result.keybinds = Keybinds.parse(result.keybinds ?? {})
 
     return {
       config: result,

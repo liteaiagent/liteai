@@ -1,14 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
 import * as fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { AgentMemory } from "../../src/agent/memory"
+import { Global } from "../../src/global"
+import { Instance } from "../../src/project/instance"
 
 describe("AgentMemory Tests", () => {
   let baseDir: string
   let tmpHome: string
   let tmpProject: string
   let tmpWorktree: string
+
+  let orgGlobalHome: PropertyDescriptor | undefined
+  let orgDirectory: PropertyDescriptor | undefined
+  let orgWorktree: PropertyDescriptor | undefined
+  let orgProject: PropertyDescriptor | undefined
 
   beforeEach(async () => {
     baseDir = await fs.mkdtemp(path.join(os.tmpdir(), "liteai_test_"))
@@ -20,21 +27,27 @@ describe("AgentMemory Tests", () => {
     await fs.mkdir(tmpProject, { recursive: true })
     await fs.mkdir(tmpWorktree, { recursive: true })
 
-    mock.module("../../src/global", () => ({
-      Global: { Path: { home: tmpHome } },
-    }))
-    mock.module("../../src/project/instance", () => ({
-      Instance: {
-        directory: tmpProject,
-        worktree: tmpWorktree,
-        project: { id: "test_project" },
-        state: (init: () => unknown) => init,
-        provide: async <R>(input: { fn: () => R }) => input.fn(),
-      },
-    }))
+    orgGlobalHome = Object.getOwnPropertyDescriptor(Global.Path, "home")
+    orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
+    orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+    orgProject = Object.getOwnPropertyDescriptor(Instance, "project")
+
+    Object.defineProperty(Global.Path, "home", { get: () => tmpHome, configurable: true })
+    Object.defineProperty(Instance, "directory", { get: () => tmpProject, configurable: true })
+    Object.defineProperty(Instance, "worktree", { get: () => tmpWorktree, configurable: true })
+    Object.defineProperty(Instance, "project", { get: () => ({ id: "test_project" }), configurable: true })
+
+    spyOn(Instance, "state").mockImplementation(((init: () => unknown) => init) as unknown as typeof Instance.state)
+    spyOn(Instance, "provide").mockImplementation((async (input: { fn: () => unknown }) =>
+      input.fn()) as unknown as typeof Instance.provide)
   })
 
   afterEach(async () => {
+    if (orgGlobalHome) Object.defineProperty(Global.Path, "home", orgGlobalHome)
+    if (orgDirectory) Object.defineProperty(Instance, "directory", orgDirectory)
+    if (orgWorktree) Object.defineProperty(Instance, "worktree", orgWorktree)
+    if (orgProject) Object.defineProperty(Instance, "project", orgProject)
+
     mock.restore()
     try {
       if (baseDir) await fs.rm(baseDir, { recursive: true, force: true })

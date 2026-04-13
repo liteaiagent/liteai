@@ -1,66 +1,55 @@
-import { afterEach, beforeEach, describe, expect, it, jest, mock, spyOn } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test"
 
-// Mock the prompt and other dependencies before importing runner
-mock.module("../../src/project/instance", () => ({
-  Instance: {
-    get directory() {
-      return "/fake/dir"
-    },
-    get worktree() {
-      return "/fake/dir"
-    },
-  },
-}))
+import { Instance } from "../../src/project/instance"
 
-mock.module("../../src/session/transcript", () => ({
-  SidechainTranscript: {
-    create: mock(() => ({
-      getPath: () => "/fake/path",
-      recordMessage: mock(() => Promise.resolve()),
-      recordChain: mock(() => Promise.resolve()),
-    })),
-  },
-}))
+const orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
+const orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+
+beforeEach(() => {
+  Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
+  Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
+})
+
+afterEach(() => {
+  if (orgDirectory) Object.defineProperty(Instance, "directory", orgDirectory)
+  if (orgWorktree) Object.defineProperty(Instance, "worktree", orgWorktree)
+})
+
+import { AgentMemory } from "../../src/agent/memory"
+import { MCP } from "../../src/mcp/index"
+import { SessionPrompt } from "../../src/session/engine"
+import { SidechainTranscript } from "../../src/session/transcript"
+import { SkillLoader } from "../../src/skill/loader"
 
 let promptImpl: (() => Promise<unknown>) | undefined
 
-mock.module("../../src/session/engine", () => ({
-  SessionPrompt: {
-    prompt: mock(() => {
-      if (promptImpl) return promptImpl()
-      return Promise.resolve({
-        info: { role: "assistant", tokens: { input: 10, output: 20 } },
-        parts: [{ type: "text", text: "Mock output" }],
-      })
-    }),
-  },
-}))
+beforeEach(() => {
+  spyOn(SidechainTranscript, "create").mockReturnValue({
+    getPath: () => "/fake/path",
+    recordMessage: async () => {},
+    recordChain: async () => {},
+  } as unknown as ReturnType<typeof SidechainTranscript.create>)
 
-mock.module("../../src/mcp/index", () => ({
-  MCP: {
-    status: mock(() =>
-      Promise.resolve({
-        "test-server": { status: "connected" },
-        "offline-server": { status: "disconnected" },
-      }),
-    ),
-  },
-}))
+  spyOn(SessionPrompt, "prompt").mockImplementation((async () => {
+    if (promptImpl) return promptImpl()
+    return {
+      info: { role: "assistant", tokens: { input: 10, output: 20 } },
+      parts: [{ type: "text", text: "Mock output" }],
+    }
+  }) as unknown as typeof SessionPrompt.prompt)
 
-mock.module("../../src/agent/memory", () => ({
-  AgentMemory: {
-    isAutoMemoryEnabled: mock(() => Promise.resolve(false)),
-    loadAgentMemoryPrompt: mock(() => Promise.resolve("")),
-  },
-}))
+  spyOn(MCP, "status").mockResolvedValue({
+    "test-server": { status: "connected" },
+    "offline-server": { status: "disconnected" },
+  } as unknown as Exclude<Awaited<ReturnType<typeof MCP.status>>, undefined>)
 
-mock.module("../../src/skill/loader", () => ({
-  SkillLoader: {
-    resolveSkillName: mock(() => Promise.resolve(undefined)),
-    registerInvokedSkill: mock(() => {}),
-    clearInvokedSkillsForAgent: mock(() => {}),
-  },
-}))
+  spyOn(AgentMemory, "isAutoMemoryEnabled").mockResolvedValue(false)
+  spyOn(AgentMemory, "loadAgentMemoryPrompt").mockResolvedValue("")
+
+  spyOn(SkillLoader, "resolveSkillName").mockResolvedValue(undefined)
+  spyOn(SkillLoader, "registerInvokedSkill").mockImplementation(() => {})
+  spyOn(SkillLoader, "clearInvokedSkillsForAgent").mockImplementation(() => {})
+})
 
 import { Agent } from "../../src/agent/agent"
 import {

@@ -1,6 +1,6 @@
-import type { Keybind } from "@liteai/core/util/keybind"
 import type { KeyBinding } from "@opentui/core"
 import { createMemo } from "solid-js"
+import type { Keybind } from "../../../util/keybind"
 import { useKeybind } from "../context/keybind"
 
 const TEXTAREA_ACTIONS = [

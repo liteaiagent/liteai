@@ -1,4 +1,3 @@
-import { Keybind } from "@liteai/core/util/keybind"
 import { Locale } from "@liteai/core/util/locale"
 import { type InputRenderable, RGBA, type ScrollBoxRenderable, TextAttributes } from "@opentui/core"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
@@ -9,6 +8,7 @@ import * as fuzzysort from "fuzzysort"
 import { entries, filter, flatMap, groupBy, isDeepEqual, pipe } from "remeda"
 import { batch, createEffect, createMemo, For, type JSX, on, Show } from "solid-js"
 import { createStore } from "solid-js/store"
+import { Keybind } from "../../../util/keybind"
 
 export interface DialogSelectProps<T> {
   title: string
