@@ -7,14 +7,14 @@ import { ConfigMarkdown } from "@/config/markdown"
 import { Agent } from "@/config/schema"
 import { Flag } from "@/flag/flag"
 import { Global } from "@/global"
+import { MCP } from "@/mcp"
 import * as Platform from "@/platform"
 import { Instance } from "@/project/instance"
+import { Session } from "@/session"
 import { Filesystem } from "@/util/filesystem"
 import { Glob } from "@/util/glob"
 import { lazy } from "@/util/lazy"
 import { Log } from "@/util/log"
-import { Session } from "@/session"
-import { MCP } from "@/mcp"
 export namespace AgentLoader {
   const log = Log.create({ service: "agent:loader" })
 

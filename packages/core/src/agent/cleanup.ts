@@ -1,7 +1,7 @@
-import { Log } from "@/util/log"
 import { clearSessionHooks } from "@/hook/hook"
-import { unregisterPerfettoAgent } from "@/telemetry/perfetto"
 import { SkillLoader } from "@/skill/loader"
+import { unregisterPerfettoAgent } from "@/telemetry/perfetto"
+import { Log } from "@/util/log"
 import type { SubagentContext } from "./context"
 
 const logger = Log.create({ service: "agent:cleanup" })
@@ -71,11 +71,7 @@ export namespace AgentCleanup {
     }
 
     // Step 7: Transcript subdir mapping cleanup
-    try {
-      // Future integration with SidechainTranscript directory sweeping. For now, files are kept for analytics.
-    } catch (err) {
-      logger.warn("Cleanup step 7 (Transcript) failed", { agentId: context.agentId, error: err })
-    }
+    // Future integration with SidechainTranscript directory sweeping. For now, files are kept for analytics.
 
     // Step 8: Pending todo entry deletion
     try {
@@ -90,12 +86,7 @@ export namespace AgentCleanup {
     }
 
     // Step 9: Shell task killing
-    try {
-      // Future integration with PtyManager/Subprocess registry
-    } catch (err) {
-      logger.warn("Cleanup step 9 (Shell) failed", { agentId: context.agentId, error: err })
-    }
-
+    // Future integration with PtyManager/Subprocess registry
     // Step 10: Monitor MCP task cleanup
     try {
       if (resources.monitorTaskCleanup) {
@@ -113,10 +104,6 @@ export namespace AgentCleanup {
     }
 
     // Step 12: Debug dump state clearing
-    try {
-      // Potential temp file or dump directory removal
-    } catch (err) {
-      logger.warn("Cleanup step 12 (Debug Dump) failed", { agentId: context.agentId, error: err })
-    }
+    // Potential temp file or dump directory removal
   }
 }

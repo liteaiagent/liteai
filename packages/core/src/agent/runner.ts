@@ -1,5 +1,6 @@
 import { Bus } from "@/bus/index"
 import { clearSessionHooks, type RegisteredSessionGroup, registerSessionHook } from "@/hook/hook"
+import type { IsolationArtifactIdentifier } from "@/isolation/registry"
 import { Provider } from "@/provider/provider"
 import { SessionPrompt } from "@/session/engine"
 import type { PromptInput } from "@/session/engine/loop"
@@ -22,9 +23,9 @@ import { isRestrictedToPluginOnly } from "./policy"
 
 const logger = Log.create({ service: "agent:runner" })
 
-import { extractPartialResult, runAsyncAgentLifecycle } from "./lifecycle"
-import { AgentCleanup, type AcquiredResources } from "./cleanup"
 import { registerPerfettoAgent } from "@/telemetry/perfetto"
+import { type AcquiredResources, AgentCleanup } from "./cleanup"
+import { extractPartialResult, runAsyncAgentLifecycle } from "./lifecycle"
 
 export const DEFAULT_CONCURRENT_AGENT_LIMIT = 8
 
@@ -125,6 +126,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
   let mcpCleanup: (() => Promise<void>) | undefined
 
   let subContext: SubagentContext | undefined
+  let registeredIsolationArtifact: IsolationArtifactIdentifier | undefined
 
   try {
     const { initializeAgentMcpServers } = await import("@/mcp/agent-mcp")
@@ -144,9 +146,40 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       model: agentDef.model ?? (await Provider.defaultModel()),
     }
 
+    const updatedOverrides: SubagentContextOverrides = overrides ? { ...overrides } : {}
+
+    if (agentDef.isolation === "worktree") {
+      logger.info("Initializing worktree isolation", { agentId, agentName })
+      const { Worktree } = await import("@/worktree")
+      const info = await Worktree.makeWorktreeInfo(agentName)
+      const bootstrap = await Worktree.createFromInfo(info)
+      await bootstrap()
+
+      const { IsolationArtifactRegistry } = await import("@/isolation/registry")
+      await IsolationArtifactRegistry.registerWorktreeArtifact(agentId, info.directory)
+      registeredIsolationArtifact = { type: "worktree", directory: info.directory }
+
+      updatedOverrides.cwd = info.directory
+    } else if (agentDef.isolation === "remote") {
+      logger.info("Initializing remote (Docker) isolation", { agentId, agentName })
+      const { DockerIsolation } = await import("@/isolation/docker")
+      const result = await DockerIsolation.createContainer({
+        agentId,
+        projectPath: (await import("@/project/instance")).Instance.directory,
+        subPath: overrides?.cwd,
+      })
+
+      const { IsolationArtifactRegistry } = await import("@/isolation/registry")
+      await IsolationArtifactRegistry.registerRemoteArtifact(agentId, result.containerId)
+      registeredIsolationArtifact = { type: "remote", containerId: result.containerId }
+
+      updatedOverrides.cwd = result.mappedCwd
+      updatedOverrides.execController = result.execController
+    }
+
     subContext = createSubagentContext(parentMock, agentDef, agentId, {
-      ...overrides,
-      mcpClients: overrides?.mcpClients ?? mcpClients,
+      ...updatedOverrides,
+      mcpClients: updatedOverrides.mcpClients ?? mcpClients,
     })
 
     const { pruneContext } = await import("./filter")
@@ -391,15 +424,21 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       mcpSession: mcpCleanup ? { cleanup: mcpCleanup } : undefined,
       contextMessages: transcriptMessagesRef,
     }
-    
+
     if (subContext) {
       await AgentCleanup.execute(subContext, resources).catch((err) =>
-        logger.error("AgentCleanup execution failed", { error: err, agentId })
+        logger.error("AgentCleanup execution failed", { error: err, agentId }),
       )
     } else {
-      // Fallback cleanup if context creation failed 
+      // Fallback cleanup if context creation failed
       if (mcpCleanup) {
         await mcpCleanup().catch((err) => logger.warn("Agent MCP cleanup fallback failed", { error: err }))
+      }
+      if (registeredIsolationArtifact) {
+        const { IsolationArtifactRegistry } = await import("@/isolation/registry")
+        await IsolationArtifactRegistry.deregisterArtifact(agentId, registeredIsolationArtifact).catch((err) =>
+          logger.error("Isolation artifact fallback deregistration failed", { agentId, error: err }),
+        )
       }
       clearSessionHooks(agentId)
     }

@@ -381,6 +381,12 @@ export namespace Session {
     }
 
     await Plugin.trigger("session.start", { sessionID: result.id }, {})
+
+    const { IsolationArtifactRegistry } = await import("@/isolation/registry")
+    IsolationArtifactRegistry.cleanupStaleIsolationArtifacts().catch((e) => {
+      log.warn("failed to clean up stale isolation artifacts", { error: e })
+    })
+
     return result
   }
 

@@ -4,6 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { Language } from "web-tree-sitter"
 import z from "zod"
+import { AgentExecutionContext } from "@/agent/context"
 import type { BackgroundTaskRegistry } from "@/command/background"
 import { interpretCommandResult } from "@/command/semantics"
 import { BashArity } from "@/permission/arity"
@@ -163,6 +164,61 @@ export const RunCommandTool = Tool.define("run_command", async () => {
         })
       }
 
+      // Initialize metadata with empty output
+      ctx.metadata({
+        metadata: {
+          output: "",
+          description: params.description,
+        },
+      })
+
+      const store = AgentExecutionContext.getStore()
+      const execController = store && "execController" in store ? store.execController : undefined
+      if (execController) {
+        log.info("Intercepting command execution via execController", { cwd, command: params.command })
+        // Invoke a shell so pipes, redirects, globs, builtins, and variable
+        // expansion work the same way as the main spawn path (line 215).
+        // `shell` is Shell.acceptable(), resolved once at tool definition time.
+        const shellFlag = shell.endsWith("cmd.exe") ? "/c" : "-c"
+        const res = await execController.exec(shell, [shellFlag, params.command], {
+          cwd,
+          env: process.env as Record<string, string>,
+        })
+
+        let combined = [res.stdout, res.stderr].filter(Boolean).join("\n")
+
+        const resultMetadata: string[] = []
+        const interpretation = interpretCommandResult(params.command, res.exitCode ?? 0, combined, "")
+        if (interpretation.message) {
+          resultMetadata.push(interpretation.message)
+        }
+
+        if (resultMetadata.length > 0) {
+          combined += `\n\n<run_command_metadata>\n${resultMetadata.join("\n")}\n</run_command_metadata>`
+        }
+
+        const metadataOutput =
+          combined.length > MAX_METADATA_LENGTH ? `${combined.slice(0, MAX_METADATA_LENGTH)}\n\n...` : combined
+
+        ctx.metadata({
+          metadata: {
+            output: metadataOutput,
+            description: params.description,
+          },
+        })
+
+        return {
+          title: params.description,
+          metadata: {
+            output: metadataOutput,
+            exit: res.exitCode,
+            description: params.description,
+            backgroundTaskId: undefined,
+          },
+          output: combined,
+        }
+      }
+
       const proc = spawn(params.command, {
         shell,
         cwd,
@@ -173,14 +229,6 @@ export const RunCommandTool = Tool.define("run_command", async () => {
       })
 
       let output = ""
-
-      // Initialize metadata with empty output
-      ctx.metadata({
-        metadata: {
-          output: "",
-          description: params.description,
-        },
-      })
 
       const append = (chunk: Buffer) => {
         output += chunk.toString()

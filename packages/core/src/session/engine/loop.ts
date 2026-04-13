@@ -8,11 +8,11 @@ import type { Tool } from "@/tool/tool"
 
 import { fn } from "@/util/fn"
 import { Agent } from "../../agent/agent"
+import { isRootAgent } from "../../agent/context"
 import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import { ModelID, ProviderID } from "../../provider/schema"
-
 import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
@@ -403,7 +403,7 @@ async function runSessionInner(input: {
 
           // Fire-and-forget summary on first turn
           const lastUser = event.streamInput.user
-          if (lastUser) {
+          if (lastUser && isRootAgent()) {
             SessionSummary.summarize({
               sessionID,
               messageID: lastUser.id,
@@ -671,11 +671,13 @@ async function runSessionInner(input: {
   }
 
   // Post-loop cleanup (fire-and-forget with catch to prevent unhandled rejection)
-  SessionCompaction.prune({ sessionID }).catch((e: unknown) => {
-    if (!isAbortError(e)) {
-      log.error("runSession: prune failed", { error: e, sessionID })
-    }
-  })
+  if (isRootAgent()) {
+    SessionCompaction.prune({ sessionID }).catch((e: unknown) => {
+      if (!isAbortError(e)) {
+        log.error("runSession: prune failed", { error: e, sessionID })
+      }
+    })
+  }
 }
 
 /**

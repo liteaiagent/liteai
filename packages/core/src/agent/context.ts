@@ -15,6 +15,14 @@ export interface ToolDecision {
   [key: string]: unknown
 }
 
+export interface ExecController {
+  exec(
+    cmd: string,
+    args: string[],
+    options?: { cwd?: string; env?: Record<string, string> },
+  ): Promise<{ stdout: string; stderr: string; exitCode: number }>
+}
+
 export interface AppState {
   shouldAvoidPermissionPrompts?: boolean
   permissionMode?: Agent.Info["permissionMode"]
@@ -51,6 +59,7 @@ export interface ParentContext {
   queryTracking?: { depth: number }
   model?: { providerID: string; modelID: string } | Provider.Model
   thinkingConfig?: ThinkingConfig
+  cwd?: string
 }
 
 export interface SubagentContext {
@@ -88,6 +97,7 @@ export interface SubagentContext {
   prunedUserContext?: Record<string, unknown>
   prunedSystemContext?: Record<string, unknown>
   mcpClients?: Array<{ name: string; client: MCP.MCPClient; config: Config.Mcp }>
+  execController?: ExecController
 }
 
 export interface TeammateAgentContext {
@@ -108,6 +118,8 @@ export interface SubagentContextOverrides {
   userContext?: Record<string, unknown>
   systemContext?: Record<string, unknown>
   mcpClients?: Array<{ name: string; client: MCP.MCPClient; config: Config.Mcp }>
+  execController?: ExecController
+  cwd?: string
 }
 
 export const AgentExecutionContext = new AsyncLocalStorage<AgentContext>()
@@ -222,9 +234,10 @@ export function createSubagentContext(
     getAppState,
     setAppState,
     setAppStateForTasks,
-    cwd: process.cwd(), // Will be updated if worktree mode
+    cwd: overrides?.cwd ?? parent.cwd ?? process.cwd(),
     effort: agent.effort,
     criticalSystemReminder: overrides?.criticalSystemReminder,
     mcpClients: overrides?.mcpClients,
+    execController: overrides?.execController,
   }
 }

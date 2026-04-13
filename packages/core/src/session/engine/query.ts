@@ -1,6 +1,7 @@
 import { NamedError } from "@liteai/util/error"
 import type { BackgroundTaskRegistry } from "@/command/background"
 import { Agent } from "../../agent/agent"
+import { AgentExecutionContext, isRootAgent } from "../../agent/context"
 import { Bundled } from "../../bundled"
 import { Bus } from "../../bus"
 import { Hook } from "../../hook"
@@ -13,7 +14,7 @@ import { Session } from ".."
 import type { EngineEvent } from "../events"
 import { Message } from "../message"
 import { SessionProcessor } from "../processor"
-import { MessageID, type SessionID } from "../schema"
+import { MessageID, PartID, type SessionID } from "../schema"
 import { SessionCompaction } from "../tasks/compaction"
 import { ensureTitle } from "../tasks/title"
 import { InstructionPrompt } from "./instruction"
@@ -116,7 +117,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     loopDetector.turnStarted()
 
     // ── Title generation (fire-and-forget on first step) ──
-    if (step === 1) {
+    if (step === 1 && isRootAgent()) {
       ensureTitle({
         session,
         modelID: lastUser.model.modelID,
@@ -221,6 +222,32 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
     // ── Pre-processing context pipeline: budget + snip ──
     msgs = executePipeline(msgs)
+
+    // ── Subagent Critical System Reminder Injection ──
+    if (!isRootAgent()) {
+      const ctx = AgentExecutionContext.getStore()
+      if (ctx && "criticalSystemReminder" in ctx && ctx.criticalSystemReminder) {
+        const lastUserIdx = msgs.findLastIndex((m) => m.info.role === "user")
+        if (lastUserIdx !== -1) {
+          const userMsg = msgs[lastUserIdx]
+          msgs = [...msgs]
+          msgs[lastUserIdx] = {
+            ...userMsg,
+            parts: [
+              ...userMsg.parts,
+              {
+                type: "text",
+                id: PartID.ascending(),
+                text: `<system-reminder>\n${ctx.criticalSystemReminder}\n</system-reminder>`,
+                synthetic: true,
+                messageID: userMsg.info.id,
+                sessionID,
+              } satisfies Message.TextPart,
+            ],
+          }
+        }
+      }
+    }
 
     // ── Proactive autocompact check ──
     if (shouldAutocompact(msgs, model, autocompactState)) {
@@ -480,11 +507,13 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
   // ── Dispatch Stop hook ──
   try {
-    await Hook.dispatch("Stop", {
-      session_id: sessionID,
-      cwd: Instance.directory,
-      hook_event_name: "Stop",
-    })
+    if (isRootAgent()) {
+      await Hook.dispatch("Stop", {
+        session_id: sessionID,
+        cwd: Instance.directory,
+        hook_event_name: "Stop",
+      })
+    }
   } catch (e: unknown) {
     // AbortError during Stop hook dispatch is expected when session is cancelled
     if (!(e instanceof DOMException && e.name === "AbortError")) {
