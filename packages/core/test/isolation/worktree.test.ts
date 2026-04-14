@@ -67,13 +67,13 @@ describe("Worktree Isolation Mode", () => {
     if (originalInstanceWorktreeDescriptor) {
       Object.defineProperty(Instance, "worktree", originalInstanceWorktreeDescriptor)
     } else {
-      delete (Instance as any).worktree
+      Reflect.deleteProperty(Instance, "worktree")
     }
 
     if (originalInstanceProjectDescriptor) {
       Object.defineProperty(Instance, "project", originalInstanceProjectDescriptor)
     } else {
-      delete (Instance as any).project
+      Reflect.deleteProperty(Instance, "project")
     }
 
     await fs.rm(tempDir, { recursive: true, force: true })
@@ -91,7 +91,7 @@ describe("Worktree Isolation Mode", () => {
 
     const { Project } = await import("@/project/project")
     const projectSpy = spyOn(Project, "addSandbox").mockResolvedValue({} as import("@/project/project").Project.Info)
-    const provideSpy = spyOn(Instance, "provide").mockResolvedValue(true as any)
+    const provideSpy = spyOn(Instance, "provide").mockResolvedValue(undefined as never)
 
     const bootstrap = await Worktree.createFromInfo(info)
     expect(bootstrap).toBeTypeOf("function")

@@ -58,7 +58,7 @@ All 70 tasks are marked complete in `tasks.md`. The core architecture is structu
 
 ---
 
-### C2. Docker isolation: Hardcoded image ignores `containerImage` config (FR-018)
+### ~~C2. Docker isolation: Hardcoded image ignores `containerImage` config (FR-018)~~ ✅
 
 **Spec (FR-003)**: `containerImage` optional string — Docker image for remote isolation, defaults to platform-defined base image.
 
@@ -261,7 +261,7 @@ The `killTask` helper at [killShellTasks.ts:L16–L46](file:///C:/Users/aghassan
 
 ---
 
-### M2. `classifyHandoffIfNeeded`: Wrong warning format
+### ~~M2. `classifyHandoffIfNeeded`: Wrong warning format~~ ✅
 
 | Field | Spec (US3b AS7) | Current | liteai2 |
 |-------|-----------------|---------|---------|
@@ -280,20 +280,14 @@ return `SECURITY WARNING: This sub-agent performed actions that may violate secu
 
 ---
 
-### M3. Memory path prefix mismatch
+### ~~M3. Memory path prefix mismatch~~ ✅
 
-| Scope | Spec path | Actual path |
-|-------|-----------|-------------|
-| user | `~/.liteai/agent-memory/<type>/` | `~/.liteai/memory/<type>/` |
-| project | `<cwd>/.liteai/agent-memory/<type>/` | `<cwd>/.liteai/memory/<type>/` |
-| local | `<cwd>/.liteai/agent-memory-local/<type>/` | *same as project — no local worktree differentiation logic* |
-
-> [!NOTE]
-> liteai2 uses a `memory/` directory structure under `~/.claude/` and `<project>/.claude/`. The path convention is brand-specific, so our spec's `agent-memory/` is the correct target — the current code deviates from our own spec, not from liteai2.
+**Updated Decision (2026-04-14):**
+User has explicitly decided to use `memory/` for all agents (root and subagents). This is intentional architecture. There is no mismatch.
 
 ---
 
-### M4. Isolation TTL env var not wired
+### ~~M4. Isolation TTL env var not wired~~ ✅
 
 **Spec** (FR-021): "governed by the `LITEAI_ISOLATION_TTL_MS` environment variable (default: 3600000 ms)"
 

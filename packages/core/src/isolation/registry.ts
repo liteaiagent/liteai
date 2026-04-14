@@ -105,7 +105,9 @@ export namespace IsolationArtifactRegistry {
     log.info("Isolation artifact deregistered", { agentId, type: artifact.type })
   }
 
-  export async function cleanupStaleIsolationArtifacts(maxAgeMs = 1000 * 60 * 60 * 24) {
+  export async function cleanupStaleIsolationArtifacts(
+    maxAgeMs = Number(process.env.LITEAI_ISOLATION_TTL_MS) || 1000 * 60 * 60,
+  ) {
     log.info("Running stale isolation artifacts cleanup")
     const registry = await loadRegistry()
     const now = Date.now()

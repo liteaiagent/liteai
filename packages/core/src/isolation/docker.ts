@@ -24,7 +24,12 @@ export namespace DockerIsolation {
     }),
   )
 
-  export async function createContainer(input: { agentId: string; projectPath: string; subPath?: string }) {
+  export async function createContainer(input: {
+    agentId: string
+    projectPath: string
+    subPath?: string
+    containerImage?: string
+  }) {
     const sanitizedId = input.agentId.replace(/[^a-zA-Z0-9_.-]/g, "_")
     const containerName = `liteai-agent-${sanitizedId}`
     const mappedCwd = "/workspace"
@@ -41,7 +46,7 @@ export namespace DockerIsolation {
 
     log.info("Spawning docker container for isolation", { containerName, projectPath: input.projectPath })
 
-    const image = "node:20-alpine"
+    const image = input.containerImage || "node:20-alpine"
     const relPath = input.subPath?.startsWith(input.projectPath)
       ? input.subPath.slice(input.projectPath.length).replace(/^[/\\]+/, "")
       : ""

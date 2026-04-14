@@ -167,6 +167,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
         agentId,
         projectPath: (await import("@/project/instance")).Instance.directory,
         subPath: overrides?.cwd,
+        containerImage: agentDef.containerImage,
       })
 
       const { IsolationArtifactRegistry } = await import("@/isolation/registry")

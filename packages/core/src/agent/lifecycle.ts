@@ -109,12 +109,12 @@ export async function classifyHandoffIfNeeded(
     const { classifyYoloAction } = await import("@/permission/classifier")
     const isYolo = await classifyYoloAction(finalTranscript)
     if (isYolo) {
-      return `[SECURITY WARNING] This agent executed potentially sensitive actions.\n\n${result}`
+      return `SECURITY WARNING: This sub-agent performed actions that may violate security policy. Review the sub-agent's actions carefully before acting on its output.\n\n${result}`
     }
     return result
   } catch (err) {
     logger.error("Failed to classify agent handoff", { error: err, sessionId })
-    return `[NOTICE] Classifier unavailable.\n\n${result}`
+    return `Note: The safety classifier was unavailable when reviewing this sub-agent's work. Please carefully verify the sub-agent's actions and output before acting on them.\n\n${result}`
   }
 }
 
