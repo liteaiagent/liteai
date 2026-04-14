@@ -15,25 +15,25 @@ All identified gaps (6 critical, 5 medium, 4 minor) have been **resolved**. The 
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| [agent.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/agent.ts) | ✅ Solid | Full type hierarchy, 4-source merge priority, hidden protection, all config fields |
-| [context.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/context.ts) | ✅ Solid | SubagentContext, ALS, abort linkage, setAppStateForTasks, contentReplacementState clone, queryTracking depth |
-| [runner.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/runner.ts) | ✅ Functional | Full orchestrator with hooks, skills, MCP, isolation, memory integration |
-| [filter.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/filter.ts) | ✅ Solid | Tool filtering, context pruning with feature flag, wildcard support |
-| [memory.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/memory.ts) | ✅ Solid | All 3 scopes, tool injection, snapshot system, auto-enable gate |
-| [lifecycle.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/lifecycle.ts) | ✅ Good | Progress tracker, summarization loop, terminal notifications, partial result extraction |
-| [cleanup.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/cleanup.ts) | ✅ Good | 11-step structure correct; step 9 handled at session level via `BackgroundTaskRegistry.disposeAll()` |
-| [sandbox.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/permission/sandbox.ts) | ✅ Good | Mode inheritance, silent deny, CLI-level preservation |
-| [agent-mcp.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/mcp/agent-mcp.ts) | ✅ Good | String ref + inline def, proper cleanup separation |
-| [transcript.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/transcript.ts) | ✅ Good | JSONL append, factory pattern, error swallowing |
-| [events.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/events.ts) | ✅ Complete | All 5 bus events |
-| [errors.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/errors.ts) | ⚠️ Inconsistent | Works, but pattern differs from project convention |
-| [loader.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/loader.ts) | ✅ Good | requiredMcpServers dual validation, source provenance |
-| [policy.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/policy.ts) | ✅ Good | Plugin-only restriction gate |
-| [registry.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/isolation/registry.ts) | ⚠️ Partial | GC works but missing safety guards |
-| Session agent counts | ✅ Present | incrementAgentCount/decrementAgentCount in [session/index.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/index.ts) |
-| PermissionNext `shouldAvoidPermissionPrompts` | ✅ Present | Checked at [service.ts:L171](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/permission/service.ts#L171) |
-| Perfetto tracing | ✅ Present | register/unregister in [perfetto.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/telemetry/perfetto.ts) |
-| Skill resolution | ✅ Present | 3-strategy resolution in [skill/loader.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/skill/loader.ts) |
+| [agent.ts](~/Documents/workspace/liteai/packages/core/src/agent/agent.ts) | ✅ Solid | Full type hierarchy, 4-source merge priority, hidden protection, all config fields |
+| [context.ts](~/Documents/workspace/liteai/packages/core/src/agent/context.ts) | ✅ Solid | SubagentContext, ALS, abort linkage, setAppStateForTasks, contentReplacementState clone, queryTracking depth |
+| [runner.ts](~/Documents/workspace/liteai/packages/core/src/agent/runner.ts) | ✅ Functional | Full orchestrator with hooks, skills, MCP, isolation, memory integration |
+| [filter.ts](~/Documents/workspace/liteai/packages/core/src/agent/filter.ts) | ✅ Solid | Tool filtering, context pruning with feature flag, wildcard support |
+| [memory.ts](~/Documents/workspace/liteai/packages/core/src/agent/memory.ts) | ✅ Solid | All 3 scopes, tool injection, snapshot system, auto-enable gate |
+| [lifecycle.ts](~/Documents/workspace/liteai/packages/core/src/agent/lifecycle.ts) | ✅ Good | Progress tracker, summarization loop, terminal notifications, partial result extraction |
+| [cleanup.ts](~/Documents/workspace/liteai/packages/core/src/agent/cleanup.ts) | ✅ Good | 11-step structure correct; step 9 handled at session level via `BackgroundTaskRegistry.disposeAll()` |
+| [sandbox.ts](~/Documents/workspace/liteai/packages/core/src/permission/sandbox.ts) | ✅ Good | Mode inheritance, silent deny, CLI-level preservation |
+| [agent-mcp.ts](~/Documents/workspace/liteai/packages/core/src/mcp/agent-mcp.ts) | ✅ Good | String ref + inline def, proper cleanup separation |
+| [transcript.ts](~/Documents/workspace/liteai/packages/core/src/session/transcript.ts) | ✅ Good | JSONL append, factory pattern, error swallowing |
+| [events.ts](~/Documents/workspace/liteai/packages/core/src/agent/events.ts) | ✅ Complete | All 5 bus events |
+| [errors.ts](~/Documents/workspace/liteai/packages/core/src/agent/errors.ts) | ⚠️ Inconsistent | Works, but pattern differs from project convention |
+| [loader.ts](~/Documents/workspace/liteai/packages/core/src/agent/loader.ts) | ✅ Good | requiredMcpServers dual validation, source provenance |
+| [policy.ts](~/Documents/workspace/liteai/packages/core/src/agent/policy.ts) | ✅ Good | Plugin-only restriction gate |
+| [registry.ts](~/Documents/workspace/liteai/packages/core/src/isolation/registry.ts) | ⚠️ Partial | GC works but missing safety guards |
+| Session agent counts | ✅ Present | incrementAgentCount/decrementAgentCount in [session/index.ts](~/Documents/workspace/liteai/packages/core/src/session/index.ts) |
+| PermissionNext `shouldAvoidPermissionPrompts` | ✅ Present | Checked at [service.ts:L171](~/Documents/workspace/liteai/packages/core/src/permission/service.ts#L171) |
+| Perfetto tracing | ✅ Present | register/unregister in [perfetto.ts](~/Documents/workspace/liteai/packages/core/src/telemetry/perfetto.ts) |
+| Skill resolution | ✅ Present | 3-strategy resolution in [skill/loader.ts](~/Documents/workspace/liteai/packages/core/src/skill/loader.ts) |
 
 ---
 
@@ -43,7 +43,7 @@ All identified gaps (6 critical, 5 medium, 4 minor) have been **resolved**. The 
 
 **Spec**: "project directory mounted strictly as read-only and a writable scratch workspace (`<os.tmpdir()>/liteai-scratch/<agentId>`) mounted read-write"
 
-**Current**: [docker.ts:L52](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/isolation/docker.ts#L52) mounts project directory without `:ro` flag and creates no scratch workspace.
+**Current**: [docker.ts:L52](~/Documents/workspace/liteai/packages/core/src/isolation/docker.ts#L52) mounts project directory without `:ro` flag and creates no scratch workspace.
 
 > [!NOTE]
 > liteai_cli_mvp does not have a Docker isolation module — this is a new capability defined in the spec. The `:ro` + scratch workspace pattern is derived from the spec (FR-018) and standard container security practices. No direct liteai_cli_mvp reference exists.
@@ -62,7 +62,7 @@ All identified gaps (6 critical, 5 medium, 4 minor) have been **resolved**. The 
 
 **Spec (FR-003)**: `containerImage` optional string — Docker image for remote isolation, defaults to platform-defined base image.
 
-**Current**: [docker.ts:L37](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/isolation/docker.ts#L37) hardcodes `"node:20-alpine"`, ignoring `agentDef.containerImage`.
+**Current**: [docker.ts:L37](~/Documents/workspace/liteai/packages/core/src/isolation/docker.ts#L37) hardcodes `"node:20-alpine"`, ignoring `agentDef.containerImage`.
 
 > [!NOTE]
 > liteai_cli_mvp does not have Docker isolation. This gap is purely spec-driven (FR-003 field declaration).
@@ -78,7 +78,7 @@ All identified gaps (6 critical, 5 medium, 4 minor) have been **resolved**. The 
 
 **Spec**: "MUST strictly enforce safety guards: explicit skipping of deletion if the worktree contains uncommitted changes or unpushed commits to prevent any data loss"
 
-**Current**: [registry.ts:L113–123](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/isolation/registry.ts#L113) calls `Worktree.remove()` directly with **no git status checks**.
+**Current**: [registry.ts:L113–123](~/Documents/workspace/liteai/packages/core/src/isolation/registry.ts#L113) calls `Worktree.remove()` directly with **no git status checks**.
 
 **liteai_cli_mvp Reference**: [worktree.ts:L1058–L1135](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/utils/worktree.ts#L1058) — `cleanupStaleAgentWorktrees()`
 
@@ -169,7 +169,7 @@ const mainThreadAttachments = isMainThread
 ```
 
 > [!NOTE]
-> Resolved: Per-turn injection implemented in [query.ts:L226–250](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/engine/query.ts#L226). Root vs sub-agent gating handled by `isRootAgent()` guards at query.ts:L120 (title), loop.ts:L406 (summary), loop.ts:L674 (prune), query.ts:L510 (Stop hook). IDE-sourced context (selections, diagnostics) never reaches sub-agents because it's injected externally by the VSCode extension.
+> Resolved: Per-turn injection implemented in [query.ts:L226–250](~/Documents/workspace/liteai/packages/core/src/session/engine/query.ts#L226). Root vs sub-agent gating handled by `isRootAgent()` guards at query.ts:L120 (title), loop.ts:L406 (summary), loop.ts:L674 (prune), query.ts:L510 (Stop hook). IDE-sourced context (selections, diagnostics) never reaches sub-agents because it's injected externally by the VSCode extension.
 
 ---
 
@@ -177,7 +177,7 @@ const mainThreadAttachments = isMainThread
 
 **Spec pattern**: Append-only JSONL file per agent (fire-and-forget writes).
 
-**Current**: [runner.ts:L248–253](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/runner.ts#L248) creates a **full SQLite subsession** (`Session.createNext()`) AND a JSONL file.
+**Current**: [runner.ts:L248–253](~/Documents/workspace/liteai/packages/core/src/agent/runner.ts#L248) creates a **full SQLite subsession** (`Session.createNext()`) AND a JSONL file.
 
 **liteai_cli_mvp Reference**: [runAgent.ts:L735–L737](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L735) — fire-and-forget JSONL only:
 
@@ -208,7 +208,7 @@ The query loop is called **directly** with the forked context — no subsession 
 
 **Spec (US3b AS7)**: "execute a handoff security review over the sub-agent's transcript for security-relevant actions"
 
-**Current**: [classifier.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/permission/classifier.ts) is a 5-regex pattern matcher.
+**Current**: [classifier.ts](~/Documents/workspace/liteai/packages/core/src/permission/classifier.ts) is a 5-regex pattern matcher.
 
 **liteai_cli_mvp Reference**: [yoloClassifier.ts:L1012–L1118](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/utils/permissions/yoloClassifier.ts#L1012) — `classifyYoloAction()` is a **1500-line LLM-driven module** that:
 
@@ -227,7 +227,7 @@ The handoff classification is called from [agentToolUtils.ts:L389–L481](file:/
 
 ### ~~M1. Cleanup step 9: Shell task killing~~ ✅
 
-**Current**: [cleanup.ts:L88](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/cleanup.ts#L88) — "Future integration with PtyManager/Subprocess registry"
+**Current**: [cleanup.ts:L88](~/Documents/workspace/liteai/packages/core/src/agent/cleanup.ts#L88) — "Future integration with PtyManager/Subprocess registry"
 
 **liteai_cli_mvp Reference**: [killShellTasks.ts:L53–L76](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/tasks/LocalShellTask/killShellTasks.ts#L53) — `killShellTasksForAgent()`:
 
@@ -294,7 +294,7 @@ User has explicitly decided to use `memory/` for all agents (root and subagents)
 
 **Spec** (FR-021): "governed by the `LITEAI_ISOLATION_TTL_MS` environment variable (default: 3600000 ms)"
 
-**Current**: [registry.ts:L107](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/isolation/registry.ts#L107) takes `maxAgeMs` parameter but the caller does not read from `LITEAI_ISOLATION_TTL_MS`. The default is also wrong: `1000 * 60 * 60 * 24` (24h) instead of the spec's 1 hour.
+**Current**: [registry.ts:L107](~/Documents/workspace/liteai/packages/core/src/isolation/registry.ts#L107) takes `maxAgeMs` parameter but the caller does not read from `LITEAI_ISOLATION_TTL_MS`. The default is also wrong: `1000 * 60 * 60 * 24` (24h) instead of the spec's 1 hour.
 
 **liteai_cli_mvp Reference**: [worktree.ts:L1058–L1060](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/utils/worktree.ts#L1058) — uses a `cutoffDate` parameter passed from the caller (30 days in liteai_cli_mvp's cron context). The spec chose 1 hour as a tighter default.
 
@@ -302,7 +302,7 @@ User has explicitly decided to use `memory/` for all agents (root and subagents)
 
 ### M5. `executeSubagentStartHooks` doesn't collect additional context
 
-**Current**: [runner.ts:L53–70](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/runner.ts#L53) — registers hooks but does not collect or inject additional context from hook results.
+**Current**: [runner.ts:L53–70](~/Documents/workspace/liteai/packages/core/src/agent/runner.ts#L53) — registers hooks but does not collect or inject additional context from hook results.
 
 **liteai_cli_mvp Reference**: [runAgent.ts:L530–L555](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L530) — collects `additionalContexts` from hooks and injects as a message:
 
@@ -344,7 +344,7 @@ if (additionalContexts.length > 0) {
 
 ### m2. Error class pattern inconsistency
 
-**Current**: [errors.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/errors.ts) uses raw `class extends Error` while the rest of the codebase uses `NamedError.create()` (see `Agent.AgentDisabledError` in agent.ts, `DockerSpawnError` in docker.ts). This creates two `AgentDisabledError` definitions — one in each file.
+**Current**: [errors.ts](~/Documents/workspace/liteai/packages/core/src/agent/errors.ts) uses raw `class extends Error` while the rest of the codebase uses `NamedError.create()` (see `Agent.AgentDisabledError` in agent.ts, `DockerSpawnError` in docker.ts). This creates two `AgentDisabledError` definitions — one in each file.
 
 ---
 
@@ -405,7 +405,7 @@ Plan mentions `docker ps --filter label=liteai.agent` for container discovery du
 ### P0 — Must fix before merge
 
 1. ~~**C4**: Wire `criticalSystemReminder` per-turn injection + `isMainThread` gating into the session engine~~ ✅
-   - Ref: [query.ts:L226–250](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/session/engine/query.ts#L226) (per-turn injection), `isRootAgent()` guards throughout engine
+   - Ref: [query.ts:L226–250](~/Documents/workspace/liteai/packages/core/src/session/engine/query.ts#L226) (per-turn injection), `isRootAgent()` guards throughout engine
 2. ~~**C3**: Add uncommitted changes / unpushed commits safety guard to worktree GC~~ ✅
    - Ref: [worktree.ts:L1098–1118](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/src/utils/worktree.ts#L1098)
 3. ~~**C1**: Add `:ro` flag to Docker project mount + create scratch workspace~~ ✅
@@ -414,9 +414,9 @@ Plan mentions `docker ps --filter label=liteai.agent` for container discovery du
 
 4. ~~**C2**: Pass `containerImage` from `agentDef` through to `DockerIsolation.createContainer()`~~ ✅
 5. ~~**C5**: Evaluate whether subsession creation is necessary~~ ✅ — `SessionPrompt.prompt()` requires a real session (persists messages, session-scoped `BackgroundTaskRegistry`). Documented in runner.ts.
-   - Ref: [runner.ts:L258–271](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/runner.ts#L258)
+   - Ref: [runner.ts:L258–271](~/Documents/workspace/liteai/packages/core/src/agent/runner.ts#L258)
 6. ~~**M1**: Shell task killing in cleanup step 9~~ ✅ — handled at session level via `BackgroundTaskRegistry.disposeAll()` in loop.ts defer block
-   - Ref: [cleanup.ts:L88–96](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/agent/cleanup.ts#L88)
+   - Ref: [cleanup.ts:L88–96](~/Documents/workspace/liteai/packages/core/src/agent/cleanup.ts#L88)
 7. ~~**M4**: Read `LITEAI_ISOLATION_TTL_MS` env var + fix default to 3600000ms~~ ✅
 8. ~~**M2**: Fix warning string format to match spec~~ ✅ (resolved as part of C6 classifier upgrade)
 

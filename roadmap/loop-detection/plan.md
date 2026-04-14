@@ -31,7 +31,7 @@ Additionally, the engine has a basic doom-loop check (`persister.ts:DOOM_LOOP_TH
 
 ### Reference: gemini-cli's LoopDetectionService
 
-**Source:** `C:\Users\aghassan\Documents\workspace\gemini-cli\packages\core\src\services\loopDetectionService.ts`
+**Source:** `~\Documents\workspace\gemini-cli\packages\core\src\services\loopDetectionService.ts`
 
 gemini-cli implements a multi-layered `LoopDetectionService` with three detection strategies:
 
@@ -48,7 +48,7 @@ gemini-cli implements a multi-layered `LoopDetectionService` with three detectio
 - `isLoopDetectedForChunk()` — lines 456-504: Frequency + distance + period verification
 - `truncateAndUpdate()` — lines 381-408: Bounded memory with index adjustment
 
-**Recovery mechanism:** `C:\Users\aghassan\Documents\workspace\gemini-cli\packages\core\src\core\client.ts`
+**Recovery mechanism:** `~\Documents\workspace\gemini-cli\packages\core\src\core\client.ts`
 - `_recoverFromLoop()` — lines 1246-1280: Aborts stream, clears detection flag, injects corrective feedback, retries recursively
 - Stream integration — lines 754-798: Checks `addAndCheck()` on every stream event, breaks on detection
 - Turn-level check — lines 688-705: Checks `turnStarted()` before each turn (LLM diagnostic)

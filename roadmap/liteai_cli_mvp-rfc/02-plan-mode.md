@@ -1,6 +1,6 @@
 # Plan Mode — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\ExitPlanModeTool\`, `EnterPlanModeTool\`
+> Source: `~\Documents\workspace\liteai_cli_mvp\src\tools\ExitPlanModeTool\`, `EnterPlanModeTool\`
 
 ---
 

@@ -1,6 +1,6 @@
 # Subagent Architecture — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\AgentTool\`
+> Source: `~\Documents\workspace\liteai_cli_mvp\src\tools\AgentTool\`
 
 ---
 

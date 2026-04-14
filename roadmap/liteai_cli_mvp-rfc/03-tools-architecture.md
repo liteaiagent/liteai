@@ -1,6 +1,6 @@
 # Tools Architecture — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools.ts`, `src\Tool.ts`, `src\constants\prompts.ts`
+> Source: `~\Documents\workspace\liteai_cli_mvp\src\tools.ts`, `src\Tool.ts`, `src\constants\prompts.ts`
 
 ---
 

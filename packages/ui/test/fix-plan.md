@@ -19,28 +19,28 @@ The visual differences stem from **3 missing layers of context** that the Web ap
 ## Files to Modify
 
 ### 1. Storybook Preview Decorator
-**File**: [preview.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/storybook/.storybook/preview.tsx)
+**File**: [preview.tsx](~/Documents/workspace/liteai/packages/storybook/.storybook/preview.tsx)
 
 ### 2. Chat Pane Story Wrapper
-**File**: [story-wrapper.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/chat/__mocks__/story-wrapper.tsx)
+**File**: [story-wrapper.tsx](~/Documents/workspace/liteai/packages/ui/src/panes/chat/__mocks__/story-wrapper.tsx)
 
 ### 3. Chat Pane Story Definition *(optional)*
-**File**: [chat-pane.stories.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-pane.stories.tsx)
+**File**: [chat-pane.stories.tsx](~/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-pane.stories.tsx)
 
 ---
 
 ## Fix 1: Apply Root Font Baseline in Storybook Preview
 
-**Target**: [preview.tsx#L57-L66](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/storybook/.storybook/preview.tsx#L57-L66)
+**Target**: [preview.tsx#L57-L66](~/Documents/workspace/liteai/packages/storybook/.storybook/preview.tsx#L57-L66)
 
 **Problem**: The preview decorator wrapper `<div>` applies inline styles with `padding: 24px` and `background-color: var(--background-base)` but **does not** set the root font-size/line-height baseline that the Web app sets on `<body>`.
 
-**What the Web app does** ([index.html#L18](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/index.html#L18)):
+**What the Web app does** ([index.html#L18](~/Documents/workspace/liteai/packages/web/index.html#L18)):
 ```html
 <body class="antialiased overscroll-none text-12-regular overflow-hidden">
 ```
 
-The `text-12-regular` class ([utilities.css#L46-L53](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/styles/utilities.css#L46-L53)) sets:
+The `text-12-regular` class ([utilities.css#L46-L53](~/Documents/workspace/liteai/packages/ui/src/styles/utilities.css#L46-L53)) sets:
 - `font-family: var(--font-family-sans)` → Inter
 - `font-size: var(--font-size-small)` → **13px**
 - `line-height: var(--line-height-large)` → **150%** (19.5px)
@@ -72,11 +72,11 @@ The `text-12-regular` class ([utilities.css#L46-L53](file:///c:/Users/aghassan/D
 
 ## Fix 2: Add Container Context and Correct Background in StoryWrapper
 
-**Target**: [story-wrapper.tsx#L27](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/chat/__mocks__/story-wrapper.tsx#L27)
+**Target**: [story-wrapper.tsx#L27](~/Documents/workspace/liteai/packages/ui/src/panes/chat/__mocks__/story-wrapper.tsx#L27)
 
 **Problem**: The story wrapper renders the Chat Pane inside a plain `div` with `bg-background-base`, missing the `@container` class and the correct `bg-background-stronger` background.
 
-**What the Web app does** ([session.tsx#L1080-L1089](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/pages/session.tsx#L1080-L1089)):
+**What the Web app does** ([session.tsx#L1080-L1089](~/Documents/workspace/liteai/packages/web/src/pages/session.tsx#L1080-L1089)):
 ```tsx
 <div classList={{
   "@container relative shrink-0 flex flex-col min-h-0 h-full bg-background-stronger flex-1 md:flex-none": true,
@@ -84,7 +84,7 @@ The `text-12-regular` class ([utilities.css#L46-L53](file:///c:/Users/aghassan/D
 }}>
 ```
 
-And the root layout ([index.html#L20](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/index.html#L20)):
+And the root layout ([index.html#L20](~/Documents/workspace/liteai/packages/web/index.html#L20)):
 ```html
 <div id="root" class="flex flex-col h-dvh p-px"></div>
 ```
@@ -103,7 +103,7 @@ And the root layout ([index.html#L20](file:///c:/Users/aghassan/Documents/worksp
 
 ## Fix 3: Remove Preview Padding for Chat Pane Stories *(optional)*
 
-**Target**: [chat-pane.stories.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-pane.stories.tsx)
+**Target**: [chat-pane.stories.tsx](~/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-pane.stories.tsx)
 
 **Problem**: Even after Fix 1 removes the default `24px` padding, the wrapper div still has `min-height: 100vh` which may not match the web layout. For full-page pane stories, the preview padding should be zero.
 

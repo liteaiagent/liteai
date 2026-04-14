@@ -115,7 +115,7 @@ All mono options fall back through `IBM Plex Mono` → system monospace stack.
 
 ## 6. Font Loading Architecture
 
-Fonts are loaded via the `<Font />` component ([font.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/components/font.tsx)):
+Fonts are loaded via the `<Font />` component ([font.tsx](~/Documents/workspace/liteai/packages/ui/src/components/font.tsx)):
 
 ```
 <Font /> component
@@ -126,7 +126,7 @@ Fonts are loaded via the `<Font />` component ([font.tsx](file:///c:/Users/aghas
   └── 12 × Nerd Font Mono variants (loaded but not active unless user selects them)
 ```
 
-The theme CSS ([theme.css](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/styles/theme.css#L1-L5)) sets the CSS variables, and `base.css` applies them to `html, :host` and `code, kbd, samp, pre` elements respectively.
+The theme CSS ([theme.css](~/Documents/workspace/liteai/packages/ui/src/styles/theme.css#L1-L5)) sets the CSS variables, and `base.css` applies them to `html, :host` and `code, kbd, samp, pre` elements respectively.
 
 ---
 

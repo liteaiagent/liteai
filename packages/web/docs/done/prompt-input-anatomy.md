@@ -1,7 +1,7 @@
 # Web `PromptInput` — Full Anatomy
 
 > [!NOTE]
-> Source: [prompt-input.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input.tsx) (1559 lines)
+> Source: [prompt-input.tsx](~/Documents/workspace/liteai/packages/web/src/components/prompt-input.tsx) (1559 lines)
 
 ---
 

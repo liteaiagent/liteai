@@ -11,7 +11,7 @@
 ---
 
 ### 2. Promote `EXPERIMENTAL_FILEWATCHER`
-**What it does:** When enabled, subscribes [watcher.ts:78](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/file/watcher.ts#L78) to the full project directory using a Parcel watcher, enabling real-time file change detection (new files, modifications, deletions).
+**What it does:** When enabled, subscribes [watcher.ts:78](~/Documents/workspace/liteai/packages/core/src/file/watcher.ts#L78) to the full project directory using a Parcel watcher, enabling real-time file change detection (new files, modifications, deletions).
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -31,7 +31,7 @@
 ---
 
 ### 4. Promote `EXPERIMENTAL_ICON_DISCOVERY`
-**What it does:** Automatically scans the project root for `favicon.*` files and sets them as the project icon in [project.ts:311](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/project/project.ts#L311). If found, the project gets a visual identity without manual config.
+**What it does:** Automatically scans the project root for `favicon.*` files and sets them as the project icon in [project.ts:311](~/Documents/workspace/liteai/packages/core/src/project/project.ts#L311). If found, the project gets a visual identity without manual config.
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -51,7 +51,7 @@
 ---
 
 ### 6. Rename `BASH_TIMEOUT_MS`
-**What it does:** Overrides the default timeout (120s) for bash/shell commands executed by the `run_command` tool in [run_command.ts:20](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/tool/run_command.ts#L20).
+**What it does:** Overrides the default timeout (120s) for bash/shell commands executed by the `run_command` tool in [run_command.ts:20](~/Documents/workspace/liteai/packages/core/src/tool/run_command.ts#L20).
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -61,7 +61,7 @@
 ---
 
 ### 7. Rename `OUTPUT_TOKEN_MAX`
-**What it does:** Caps the maximum output tokens sent to the LLM provider per request in [options.ts:8](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/transform/options.ts#L8). Default: 32,000 tokens.
+**What it does:** Caps the maximum output tokens sent to the LLM provider per request in [options.ts:8](~/Documents/workspace/liteai/packages/core/src/provider/transform/options.ts#L8). Default: 32,000 tokens.
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -71,7 +71,7 @@
 ---
 
 ### 8. Promote `EXPERIMENTAL_OXFMT`
-**What it does:** Enables `oxfmt` (a Rust-based formatter) as an auto-detected code formatting option alongside Prettier and Biome in [formatter.ts:94](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/format/formatter.ts#L94).
+**What it does:** Enables `oxfmt` (a Rust-based formatter) as an auto-detected code formatting option alongside Prettier and Biome in [formatter.ts:94](~/Documents/workspace/liteai/packages/core/src/format/formatter.ts#L94).
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -81,7 +81,7 @@
 ---
 
 ### 9. Promote `EXPERIMENTAL_LSP_TY`
-**What it does:** Switches the Python LSP server from Pyright to `ty` (Astral's new Rust-based Python type checker). Currently an env-flag toggle in [lsp/index.ts:80](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/lsp/index.ts#L80); promotion means moving to a config-driven `lsp.server` selection.
+**What it does:** Switches the Python LSP server from Pyright to `ty` (Astral's new Rust-based Python type checker). Currently an env-flag toggle in [lsp/index.ts:80](~/Documents/workspace/liteai/packages/core/src/lsp/index.ts#L80); promotion means moving to a config-driven `lsp.server` selection.
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -91,7 +91,7 @@
 ---
 
 ### 10. Promote `EXPERIMENTAL_WORKSPACES`
-**What it does:** Enables the workspace routing middleware in [workspace-router-middleware.ts:40](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/control-plane/workspace-router-middleware.ts#L40), allowing multi-instance request proxying — a single control plane can route requests to multiple LiteAI instances (one per workspace). Also gates workspace UI in the CLI header.
+**What it does:** Enables the workspace routing middleware in [workspace-router-middleware.ts:40](~/Documents/workspace/liteai/packages/core/src/control-plane/workspace-router-middleware.ts#L40), allowing multi-instance request proxying — a single control plane can route requests to multiple LiteAI instances (one per workspace). Also gates workspace UI in the CLI header.
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|
@@ -111,7 +111,7 @@
 ---
 
 ### 12. Rename `ENABLE_ALPHA_MODELS`
-**What it does:** When enabled, alpha/preview models (e.g., early access GPT/Claude variants) appear in the model selection list in [state.ts:386](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/provider/state.ts#L386).
+**What it does:** When enabled, alpha/preview models (e.g., early access GPT/Claude variants) appear in the model selection list in [state.ts:386](~/Documents/workspace/liteai/packages/core/src/provider/state.ts#L386).
 
 | Dimension | Value | Rationale |
 |-----------|-------|-----------|

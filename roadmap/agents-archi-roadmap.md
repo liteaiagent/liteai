@@ -2,7 +2,7 @@
 
 > **Goal:** Refactor system prompt resolution to match [liteai_cli_mvp's architecture](../liteai_cli_mvp/spec/), consolidating multiple provider-specific system prompts into a single unified prompt, restructuring sub-agent context management, modernizing plan mode, and implementing advanced agent spawning models with durability.
 
-[liteai_cli_mvp source code](C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src)
+[liteai_cli_mvp source code](~\Documents\workspace\liteai_cli_mvp\src)
 ---
 
 ## Dependency Chain
@@ -11,7 +11,7 @@
 Phase 1: System Prompt Resolution  ✅
         │
         ▼
-Phase 2: Sub-Agent Architecture   ◄── current
+Phase 2: Sub-Agent Architecture ✅
         │
         ├──────────────┐
         ▼              ▼
@@ -23,7 +23,7 @@ Each phase is independently testable and deployable. Each phase should be specif
 
 ---
 
-## Phase 1: System Prompt Resolution
+## Phase 1: System Prompt Resolution ✅
 
 > **speckit.specify scope:** "Refactor system prompt resolution to consolidate multiple provider-specific .md files into a single unified system.md with a section-based resolver, dynamic boundary marker, and cached section registry"
 
@@ -64,7 +64,7 @@ liteai_cli_mvp uses a single programmatic prompt builder (`constants/prompts.ts`
 
 ---
 
-## Phase 2: Sub-Agent Architecture
+## Phase 2: Sub-Agent Architecture ✅
 
 > **speckit.specify scope:** "Refactor sub-agent architecture to support context forking, agent definition types, sidechain transcripts, context pruning, permission sandboxing, agent-scoped MCP server mounting, async agent lifecycle management, deterministic cleanup, and agent execution context isolation"
 

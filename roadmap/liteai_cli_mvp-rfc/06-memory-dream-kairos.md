@@ -1,12 +1,12 @@
 # Memory System & Dream/Kairos Engine — liteai_cli_mvp
 
 > Sources:
-> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\autoDream\`
-> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\memdir\`
-> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tasks\DreamTask\`
-> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\AgentTool\agentMemory.ts`
-> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\BriefTool\`
-> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\SleepTool\`
+> - `~\Documents\workspace\liteai_cli_mvp\src\services\autoDream\`
+> - `~\Documents\workspace\liteai_cli_mvp\src\memdir\`
+> - `~\Documents\workspace\liteai_cli_mvp\src\tasks\DreamTask\`
+> - `~\Documents\workspace\liteai_cli_mvp\src\tools\AgentTool\agentMemory.ts`
+> - `~\Documents\workspace\liteai_cli_mvp\src\tools\BriefTool\`
+> - `~\Documents\workspace\liteai_cli_mvp\src\tools\SleepTool\`
 
 ---
 

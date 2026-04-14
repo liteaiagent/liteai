@@ -152,7 +152,7 @@ export const { use: usePaneRoute, provider: PaneRouteProvider } = createSimpleCo
 
 ### `Platform` — Host capability injection
 
-Already exists in [platform.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/context/platform.tsx). Needs extensions for pane use:
+Already exists in [platform.tsx](~/Documents/workspace/liteai/packages/web/src/context/platform.tsx). Needs extensions for pane use:
 
 ```tsx
 export type Platform = {

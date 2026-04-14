@@ -132,6 +132,12 @@ describe("Worktree Isolation Mode", () => {
     await fs.writeFile(registryPath, JSON.stringify(registryData))
 
     const removeSpy = spyOn(Worktree, "remove").mockResolvedValue(true)
+    const processSpy = spyOn(Process, "run").mockResolvedValue({
+      code: 0,
+      stdout: Buffer.from(""),
+      stderr: Buffer.from(""),
+      signal: null
+    } as any)
 
     await IsolationArtifactRegistry.cleanupStaleIsolationArtifacts(1000 * 60 * 60)
 
@@ -140,6 +146,7 @@ describe("Worktree Isolation Mode", () => {
     const updatedRegistry = JSON.parse(await fs.readFile(registryPath, "utf-8"))
     expect(updatedRegistry.worktrees[dummyDir]).toBeUndefined()
 
+    processSpy.mockRestore()
     removeSpy.mockRestore()
   })
 })

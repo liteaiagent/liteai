@@ -1,6 +1,6 @@
 # Skills System — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\skills\`, `src\tools\SkillTool\`
+> Source: `~\Documents\workspace\liteai_cli_mvp\src\skills\`, `src\tools\SkillTool\`
 
 ---
 

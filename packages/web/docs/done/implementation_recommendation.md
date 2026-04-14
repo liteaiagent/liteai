@@ -40,7 +40,7 @@ This is the **high-value, high-impact** work that makes the VSCode extension "re
 **Tasks:** 3.1 → 3.2 → 3.3 → 3.4 → 3.6
 
 > [!NOTE]
-> **Task 3.5 (Terminal Integration) should be deferred** — it requires VSCode's Shell Integration API which is complex, has edge cases across platforms, and Core's PTY module needs deeper changes first (as noted in [the plan](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/docs/todo/vscode-ext/architecture_refactoring_plan.md#L230)). The other 5 tasks deliver 90% of the value.
+> **Task 3.5 (Terminal Integration) should be deferred** — it requires VSCode's Shell Integration API which is complex, has edge cases across platforms, and Core's PTY module needs deeper changes first (as noted in [the plan](~/Documents/workspace/liteai/packages/web/docs/todo/vscode-ext/architecture_refactoring_plan.md#L230)). The other 5 tasks deliver 90% of the value.
 
 **What we'll build:**
 
@@ -54,10 +54,10 @@ packages/vscode/src/
 ```
 
 **Key dependencies already in place:**
-- ✅ Core accepts `--hosted --callback-port --callback-csrf-token` flags ([main.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/main.ts#L44-L66))
-- ✅ `HostedCapabilities` makes callbacks to these exact endpoints ([hosted.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/capabilities/hosted.ts))
-- ✅ Core has `POST /project?directory=...` for workspace registration ([server.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/src/server/server.ts#L124-L162))
-- ✅ `ServerManager` already generates CSRF tokens and spawns the binary ([server-manager.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/vscode/src/server-manager.ts))
+- ✅ Core accepts `--hosted --callback-port --callback-csrf-token` flags ([main.ts](~/Documents/workspace/liteai/packages/core/src/main.ts#L44-L66))
+- ✅ `HostedCapabilities` makes callbacks to these exact endpoints ([hosted.ts](~/Documents/workspace/liteai/packages/core/src/capabilities/hosted.ts))
+- ✅ Core has `POST /project?directory=...` for workspace registration ([server.ts](~/Documents/workspace/liteai/packages/core/src/server/server.ts#L124-L162))
+- ✅ `ServerManager` already generates CSRF tokens and spawns the binary ([server-manager.ts](~/Documents/workspace/liteai/packages/vscode/src/server-manager.ts))
 
 ### Session B — Phase 1.3: File Migration *(do second)*
 

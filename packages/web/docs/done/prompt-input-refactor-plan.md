@@ -9,7 +9,7 @@
 
 | | Web `PromptInput` | UI `ChatPromptInput` |
 |---|---|---|
-| File | [prompt-input.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/web/src/components/prompt-input.tsx) | [chat-prompt-input.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-prompt-input.tsx) |
+| File | [prompt-input.tsx](~/Documents/workspace/liteai/packages/web/src/components/prompt-input.tsx) | [chat-prompt-input.tsx](~/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-prompt-input.tsx) |
 | Lines | 1559 | 735 |
 | Layout | Shell on top, Tray below (siblings) | Tray wraps Shell (nested) |
 | Editor | Full reconciler, pills, IME, parseFromDOM | Simplified text-only |
@@ -23,7 +23,7 @@
 
 > **Completed.** ChatController extended with `commands()` and `hasPaidProviders()`. PermissionController created. ChatPromptInputProps extended with optional command, comment, edit, queue, and worktree props.
 
-### 1a. Extend `ChatController` ([chat-controller.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/controllers/chat-controller.ts))
+### 1a. Extend `ChatController` ([chat-controller.ts](~/Documents/workspace/liteai/packages/ui/src/panes/controllers/chat-controller.ts))
 
 Add:
 ```typescript
@@ -40,7 +40,7 @@ interface ChatController {
 
 ### 1b. New `PermissionController` interface
 
-Create [permission-controller.ts](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/controllers/permission-controller.ts):
+Create [permission-controller.ts](~/Documents/workspace/liteai/packages/ui/src/panes/controllers/permission-controller.ts):
 ```typescript
 export interface PermissionController {
   /** Whether auto-accept (YOLO) is active for this session/directory. */
@@ -226,7 +226,7 @@ Keep web-only:
 
 ## Phase 5: Create Storybook Story
 
-### 5a. Update [chat-prompt-input.stories.tsx](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-prompt-input.stories.tsx)
+### 5a. Update [chat-prompt-input.stories.tsx](~/Documents/workspace/liteai/packages/ui/src/panes/chat/chat-prompt-input.stories.tsx)
 
 Create multiple story variants:
 

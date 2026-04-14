@@ -1,6 +1,6 @@
 # Modular Prompt System & System Reminders — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\constants\systemPromptSections.ts`, `prompts.ts`, `utils\systemPrompt.ts`
+> Source: `~\Documents\workspace\liteai_cli_mvp\src\constants\systemPromptSections.ts`, `prompts.ts`, `utils\systemPrompt.ts`
 
 ---
 

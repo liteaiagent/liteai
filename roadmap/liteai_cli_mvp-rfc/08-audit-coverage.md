@@ -2,7 +2,7 @@
 
 > **Last updated:** 2026-04-07  
 > **Purpose:** Track exactly what has and hasn't been analyzed from liteai_cli_mvp.  
-> **liteai_cli_mvp root:** `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp`  
+> **liteai_cli_mvp root:** `~\Documents\workspace\liteai_cli_mvp`  
 > **All paths below are relative to:** `liteai_cli_mvp/src/`
 
 ---
