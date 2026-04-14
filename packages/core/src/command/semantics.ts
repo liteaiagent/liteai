@@ -4,7 +4,6 @@
  * Many commands use exit codes to convey information other than just success/failure.
  * For example, grep returns 1 when no matches are found, which is not an error condition.
  *
- * Ported from liteai2's BashTool/commandSemantics.ts.
  */
 
 export interface CommandInterpretation {

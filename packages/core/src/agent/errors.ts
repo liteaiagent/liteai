@@ -1,41 +1,37 @@
-export class ConcurrentAgentLimitError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "ConcurrentAgentLimitError"
-  }
-}
+import { NamedError } from "@liteai/util/error"
+import z from "zod"
 
-export class AgentDisabledError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "AgentDisabledError"
-  }
-}
+export const ConcurrentAgentLimitError = NamedError.create(
+  "ConcurrentAgentLimitError",
+  z.object({
+    message: z.string(),
+  }),
+)
 
-export class McpConnectionError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "McpConnectionError"
-  }
-}
+export const McpConnectionError = NamedError.create(
+  "McpConnectionError",
+  z.object({
+    message: z.string(),
+  }),
+)
 
-export class RequiredMcpServerError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "RequiredMcpServerError"
-  }
-}
+export const RequiredMcpServerError = NamedError.create(
+  "RequiredMcpServerError",
+  z.object({
+    message: z.string(),
+  }),
+)
 
-export class AgentSpawnError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "AgentSpawnError"
-  }
-}
+export const AgentSpawnError = NamedError.create(
+  "AgentSpawnError",
+  z.object({
+    message: z.string(),
+  }),
+)
 
-export class AgentTimeoutError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = "AgentTimeoutError"
-  }
-}
+export const AgentTimeoutError = NamedError.create(
+  "AgentTimeoutError",
+  z.object({
+    message: z.string(),
+  }),
+)

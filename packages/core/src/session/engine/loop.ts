@@ -694,7 +694,7 @@ function findLastUserFromBuffer(msgs: Message.WithParts[]): Message.User | undef
  * Checks the BackgroundTaskRegistry for newly completed tasks and injects a
  * synthetic `<task-notification>` user message into the conversation buffer.
  *
- * This mirrors liteai2's coordinator notification pattern: task results arrive
+ * Coordinator notification pattern: task results arrive
  * as `<task-notification>` XML in user messages, which the model naturally
  * responds to on the next turn.
  *

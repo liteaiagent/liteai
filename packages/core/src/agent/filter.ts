@@ -4,7 +4,7 @@ const ALL_AGENT_DISALLOWED_TOOLS = [
   "task_output",
   "plan_exit",
   "plan_enter",
-  // task is allowed for subagents according to liteai2 if user is ant, removing it from global disallow usually.
+  // task is allowed for subagents according to liteai_cli_mvp if user is ant, removing it from global disallow usually.
   // Actually, we'll keep our implementation of custom agent disallowed tools
   "question",
   "task_stop",

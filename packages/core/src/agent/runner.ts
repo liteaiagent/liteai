@@ -50,12 +50,18 @@ export interface RunAgentInput {
   isAsync?: boolean
 }
 
-function executeSubagentStartHooks(agentDef: Agent.AgentDefinition, agentId: string) {
-  if (!agentDef.hooks) return
+async function executeSubagentStartHooks(
+  agentDef: Agent.AgentDefinition,
+  agentId: string,
+  cwd: string,
+  session_id: string,
+): Promise<string[]> {
+  const additionalContexts: string[] = []
+  if (!agentDef.hooks) return additionalContexts
 
   if (isRestrictedToPluginOnly("hooks", agentDef)) {
     logger.warn("blocking execution of user-defined hooks for custom agent", { agentName: agentDef.name })
-    return
+    return additionalContexts
   }
 
   for (const [evtName, groups] of Object.entries(agentDef.hooks)) {
@@ -67,6 +73,21 @@ function executeSubagentStartHooks(agentDef: Agent.AgentDefinition, agentId: str
       }
     }
   }
+
+  const { trigger } = await import("@/hook/hook")
+  const res = await trigger("SubagentStart", {
+    cwd,
+    session_id,
+    hook_event_name: "SubagentStart",
+    source: agentDef.name,
+    agent_id: agentId,
+  })
+
+  if (res.context) {
+    additionalContexts.push(res.context)
+  }
+
+  return additionalContexts
 }
 
 /**
@@ -89,7 +110,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
   const sessId = input.sessionId as SessionID
   const agentName = agentDef.name
   const isAsync = input.isAsync ?? !!agentDef.background
-  const agentId = Math.random().toString(36).substring(7)
+  const agentId = crypto.randomUUID()
   const storeContext = input.parentContext ?? AgentExecutionContext.getStore()
   const isFullParent = storeContext && "abortController" in storeContext
   const parentContext = isFullParent ? (storeContext as ParentContext) : undefined
@@ -103,7 +124,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       .map(([name]) => name)
     for (const req of agentDef.requiredMcpServers) {
       if (!availableNames.includes(req)) {
-        throw new RequiredMcpServerError(`Required MCP server ${req} is not connected`)
+        throw new RequiredMcpServerError({ message: `Required MCP server ${req} is not connected` })
       }
     }
   }
@@ -117,7 +138,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
     : DEFAULT_CONCURRENT_AGENT_LIMIT
   const currentCount = Session.getAgentCount(sessId)
   if (currentCount >= concurrentLimit) {
-    throw new ConcurrentAgentLimitError(`Concurrent agent limit reached: ${concurrentLimit}`)
+    throw new ConcurrentAgentLimitError({ message: `Concurrent agent limit reached: ${concurrentLimit}` })
   }
   Session.incrementAgentCount(sessId)
 
@@ -234,7 +255,39 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
     transcriptMessagesRef = localTranscriptMessages
 
     const executeLogic = async () => {
-      executeSubagentStartHooks(agentDef, agentId)
+      // US4: Sidechain Transcript Isolation
+      //
+      // A full SQLite subsession is architecturally necessary because
+      // SessionPrompt.prompt() persists messages via Session.updateMessage()
+      // and Session.updatePart(). Without a subsession:
+      //   1. Sub-agent messages would leak into the parent conversation
+      //   2. Message.Event.Updated bus events would fire for parent listeners
+      //   3. The BackgroundTaskRegistry in loop.ts is session-scoped — sharing
+      //      the parent session would mix task lifecycles
+      //
+      // The liteai approach provides full observability and crash-resumability
+      // at the cost of additional DB writes. The JSONL sidechain transcript below
+      // captures the same fire-and-forget audit trail for analytics.
+      const parentSession = await Session.get(sessId)
+      const sidechainSess = await Session.createNext({
+        parentID: sessId,
+        directory: parentSession.directory,
+        title: `Subagent: ${agentName} (${agentId})`,
+      })
+
+      const additionalContexts = await executeSubagentStartHooks(
+        agentDef,
+        agentId,
+        subContext?.cwd ?? process.cwd(),
+        sidechainSess.id,
+      )
+      if (additionalContexts.length > 0) {
+        finalParts.push({
+          type: "text",
+          text: `<hook-additional-context>\n${additionalContexts.join("\n")}\n</hook-additional-context>`,
+        })
+      }
+
       registerPerfettoAgent(agentId, storeContext?.agentId)
 
       Bus.publish(AgentEvent.Spawned, {
@@ -244,22 +297,13 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
         isAsync,
       })
 
-      // US4: Sidechain Transcript Isolation
-      // Create an isolated subsession so SQLite doesn't mix messages with the parent.
-      const parentSession = await Session.get(sessId)
-      const sidechainSess = await Session.createNext({
-        parentID: sessId,
-        directory: parentSession.directory,
-        title: `Subagent: ${agentName} (${agentId})`,
-      })
-
       const { SidechainTranscript } = await import("@/session/transcript")
       const transcript = SidechainTranscript.create(parentSession.directory, sessId, agentName, agentId)
 
       let lastRecordedUuid = "root"
 
       // Record initial messages before query loop
-      const initialUuid = Math.random().toString(36).substring(7)
+      const initialUuid = crypto.randomUUID()
       const sysMsg: TranscriptMessage = {
         isSidechain: true,
         uuid: initialUuid,
@@ -274,7 +318,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
       const userMsg: TranscriptMessage = {
         isSidechain: true,
-        uuid: Math.random().toString(36).substring(7),
+        uuid: crypto.randomUUID(),
         parentUuid: lastRecordedUuid,
         role: "user",
         // Using JSON stringify to dump the parts array since it contains tool responses or prompts
@@ -313,8 +357,9 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       let timeoutId: ReturnType<typeof setTimeout> | undefined
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
-          subContext?.abortController.abort(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
-          reject(new AgentTimeoutError(`Agent execution timed out after ${timeoutMs}ms`))
+          const err = new AgentTimeoutError({ message: `Agent execution timed out after ${timeoutMs}ms` })
+          subContext?.abortController.abort(err)
+          reject(err)
         }, timeoutMs)
       })
 
@@ -470,7 +515,7 @@ export async function runAgentByName(
 ): Promise<Agent.RunAgentResult> {
   const agentDef = await Agent.get(agentName)
   if (!agentDef) {
-    throw new AgentSpawnError(`Agent '${agentName}' not found or not loaded`)
+    throw new AgentSpawnError({ message: `Agent '${agentName}' not found or not loaded` })
   }
   return runAgent({ agentDefinition: agentDef, sessionId, ...options })
 }

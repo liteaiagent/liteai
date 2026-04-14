@@ -60,6 +60,8 @@ export namespace DockerIsolation {
         "-d",
         "--name",
         containerName,
+        "--label",
+        "liteai.agent=true",
         "-v",
         `${input.projectPath}:${mappedCwd}:ro`,
         "-v",
@@ -107,8 +109,27 @@ export namespace DockerIsolation {
     }
   }
 
+  const CONTAINER_NAME_PREFIX = "liteai-agent-"
+
   export async function removeContainer(containerId: string) {
-    await Process.run(["docker", "rm", "-f", containerId], { nothrow: true })
-    log.info("Removed docker container", { containerId })
+    try {
+      await Process.run(["docker", "rm", "-f", containerId], { nothrow: true })
+      log.info("Removed docker container", { containerId })
+    } finally {
+      // Clean up the host scratch directory associated with this container.
+      // The containerId follows the convention "liteai-agent-<sanitizedId>".
+      if (containerId.startsWith(CONTAINER_NAME_PREFIX)) {
+        const sanitizedId = containerId.slice(CONTAINER_NAME_PREFIX.length)
+        if (sanitizedId.length > 0) {
+          const scratchSpace = path.join(os.tmpdir(), "liteai-scratch", sanitizedId)
+          try {
+            await fs.rm(scratchSpace, { recursive: true, force: true })
+            log.info("Cleaned up scratch directory", { scratchSpace })
+          } catch (err) {
+            log.error("Failed to clean up scratch directory", { scratchSpace, error: err })
+          }
+        }
+      }
+    }
   }
 }

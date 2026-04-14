@@ -80,8 +80,20 @@ export async function classifyHandoffIfNeeded(
   permissionMode: string,
   transcript?: TranscriptMessage[],
 ): Promise<string> {
-  const flag = process.env.TRANSCRIPT_CLASSIFIER === "true"
-  if (!flag || permissionMode !== "auto") return result
+  const VALID_CLASSIFIER_MODES = ["off", "shadow", "enforce"] as const
+  type ClassifierMode = (typeof VALID_CLASSIFIER_MODES)[number]
+  const rawMode = process.env.LITEAI_CLASSIFIER_MODE ?? "enforce"
+  let mode: ClassifierMode
+  if (VALID_CLASSIFIER_MODES.includes(rawMode as ClassifierMode)) {
+    mode = rawMode as ClassifierMode
+  } else {
+    logger.warn("invalid LITEAI_CLASSIFIER_MODE, falling back to 'enforce'", {
+      configuredValue: rawMode,
+      allowedValues: VALID_CLASSIFIER_MODES,
+    })
+    mode = "enforce"
+  }
+  if (mode === "off" || permissionMode !== "auto") return result
 
   try {
     let finalTranscript = transcript
@@ -107,9 +119,22 @@ export async function classifyHandoffIfNeeded(
     }
 
     const { classifyYoloAction } = await import("@/permission/classifier")
-    const isYolo = await classifyYoloAction(finalTranscript)
-    if (isYolo) {
-      return `SECURITY WARNING: This sub-agent performed actions that may violate security policy. Review the sub-agent's actions carefully before acting on its output.\n\n${result}`
+    const classification = await classifyYoloAction(finalTranscript)
+
+    if (mode === "shadow") {
+      // Shadow mode: log the decision for accuracy observation, but never block
+      logger.info("classifier shadow result", {
+        sessionId,
+        decision: classification.decision,
+        reason: classification.reason,
+      })
+      return result
+    }
+
+    // mode === "enforce"
+    if (classification.decision === "DANGEROUS") {
+      const reason = classification.reason ?? "unspecified policy violation"
+      return `SECURITY WARNING: This sub-agent performed actions that may violate security policy. Reason: ${reason}. Review the sub-agent's actions carefully before acting on its output.\n\n${result}`
     }
     return result
   } catch (err) {
@@ -132,7 +157,6 @@ const MAX_CONTEXT_MESSAGES = 20
  * Build a prompt that asks a lightweight model for a 3–5 word present-tense
  * activity description. Includes the previous summary to force novelty.
  *
- * Ported from liteai2 `agentSummary.ts:buildSummaryPrompt`.
  */
 export function buildSummarizationPrompt(
   transcriptSnapshot: TranscriptMessage[],

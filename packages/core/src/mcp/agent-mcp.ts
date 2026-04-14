@@ -48,14 +48,14 @@ export async function initializeAgentMcpServers(agentDef: Agent.AgentDefinition)
         const config = await MCP.getMcpConfigByName(spec)
         if (!config) {
           log.warn(`MCP server not found: ${spec}`)
-          throw new McpConnectionError(`MCP server not found: ${spec}`)
+          throw new McpConnectionError({ message: `MCP server not found: ${spec}` })
         }
 
         await MCP.ensureConnected(spec)
         const s = await MCP.state()
 
         if (s.status[spec]?.status !== "connected" || !s.clients[spec]) {
-          throw new McpConnectionError(`Failed to connect to required MCP server: ${spec}`)
+          throw new McpConnectionError({ message: `Failed to connect to required MCP server: ${spec}` })
         }
 
         // We DO NOT push to newlyCreatedClients because this is a shared lifecycle
@@ -75,9 +75,9 @@ export async function initializeAgentMcpServers(agentDef: Agent.AgentDefinition)
         // MCP.create bypasses global registry adding
         const result = await MCP.create(serverName, serverConfig as Config.Mcp)
         if (result.status.status !== "connected" || !result.mcpClient) {
-          throw new McpConnectionError(
-            `Failed to connect to inline MCP server '${serverName}': ${result.status.status}`,
-          )
+          throw new McpConnectionError({
+            message: `Failed to connect to inline MCP server '${serverName}': ${result.status.status}`,
+          })
         }
 
         newlyCreatedClients.push(result.mcpClient)

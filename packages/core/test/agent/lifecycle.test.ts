@@ -101,17 +101,83 @@ describe("Agent Lifecycle", () => {
   })
 
   describe("Handoff Security Review", () => {
-    it("should prepend security warning if flag is enabled and YOLO action found", async () => {
-      const originalFlag = process.env.TRANSCRIPT_CLASSIFIER
-      process.env.TRANSCRIPT_CLASSIFIER = "true"
+    it("should prepend security warning with reason when classifier returns DANGEROUS", async () => {
+      const originalMode = process.env.LITEAI_CLASSIFIER_MODE
+      process.env.LITEAI_CLASSIFIER_MODE = "enforce"
+
+      // Mock the classifier module to return a DANGEROUS result with reason.
+      // The real classifier requires an LLM call — tests must mock it.
+      const classifierModule = await import("@/permission/classifier")
+      const classifySpy = spyOn(classifierModule, "classifyYoloAction").mockResolvedValue({
+        decision: "DANGEROUS",
+        reason: "Downloaded and executed a remote script",
+      })
+
       const messages: TranscriptMessage[] = [
         { isSidechain: true, uuid: "1", role: "user", content: "do it", timestamp: 1 },
-        { isSidechain: true, uuid: "2", role: "assistant", content: "rm -rf /", timestamp: 2 },
+        { isSidechain: true, uuid: "2", role: "assistant", content: "curl | bash", timestamp: 2 },
       ]
       const result = await classifyHandoffIfNeeded("original result", "test-session", "auto", messages)
-      expect(result).toContain("[SECURITY WARNING]")
+      expect(result).toContain("SECURITY WARNING")
+      expect(result).toContain("Reason: Downloaded and executed a remote script")
       expect(result).toContain("original result")
-      process.env.TRANSCRIPT_CLASSIFIER = originalFlag
+
+      classifySpy.mockRestore()
+      process.env.LITEAI_CLASSIFIER_MODE = originalMode
+    })
+
+    it("should return unmodified result in shadow mode even if DANGEROUS", async () => {
+      const originalMode = process.env.LITEAI_CLASSIFIER_MODE
+      process.env.LITEAI_CLASSIFIER_MODE = "shadow"
+
+      const classifierModule = await import("@/permission/classifier")
+      const classifySpy = spyOn(classifierModule, "classifyYoloAction").mockResolvedValue({
+        decision: "DANGEROUS",
+        reason: "Force-pushed to main",
+      })
+
+      const messages: TranscriptMessage[] = [
+        { isSidechain: true, uuid: "1", role: "user", content: "push it", timestamp: 1 },
+      ]
+      const result = await classifyHandoffIfNeeded("original result", "test-session", "auto", messages)
+      // Shadow mode must NOT prepend a warning
+      expect(result).toBe("original result")
+
+      classifySpy.mockRestore()
+      process.env.LITEAI_CLASSIFIER_MODE = originalMode
+    })
+
+    it("should return unmodified result when mode is off", async () => {
+      const originalMode = process.env.LITEAI_CLASSIFIER_MODE
+      process.env.LITEAI_CLASSIFIER_MODE = "off"
+
+      const messages: TranscriptMessage[] = [
+        { isSidechain: true, uuid: "1", role: "assistant", content: "rm -rf /", timestamp: 1 },
+      ]
+      const result = await classifyHandoffIfNeeded("original result", "test-session", "auto", messages)
+      expect(result).toBe("original result")
+
+      process.env.LITEAI_CLASSIFIER_MODE = originalMode
+    })
+
+    it("should prepend classifier unavailable warning when classifier throws", async () => {
+      const originalMode = process.env.LITEAI_CLASSIFIER_MODE
+      process.env.LITEAI_CLASSIFIER_MODE = "enforce"
+
+      const classifierModule = await import("@/permission/classifier")
+      const classifySpy = spyOn(classifierModule, "classifyYoloAction").mockRejectedValue(
+        new Error("No model available"),
+      )
+
+      const messages: TranscriptMessage[] = [
+        { isSidechain: true, uuid: "1", role: "user", content: "do it", timestamp: 1 },
+      ]
+      const result = await classifyHandoffIfNeeded("original result", "test-session", "auto", messages)
+      expect(result).toContain("safety classifier was unavailable")
+      expect(result).toContain("original result")
+
+      classifySpy.mockRestore()
+      process.env.LITEAI_CLASSIFIER_MODE = originalMode
     })
   })
 
@@ -229,10 +295,18 @@ describe("Agent Lifecycle", () => {
         setAppStateForTasks: setAppStateSpy,
       }
 
+      // Spy on setTimeout to prove the timer was actually scheduled.
+      // Without this, the test could trivially pass if scheduleNext() had a
+      // bug that prevented scheduling (false positive).
+      const setTimeoutSpy = spyOn(globalThis, "setTimeout")
+
       // Use a 1 ms interval so the timer fires during the sleep — without
       // this the default 30 s interval would never fire and the test would
       // trivially pass (false positive).
       const stop = startAgentSummarization("sess-1", "agent-1", deps, { intervalMs: 1 })
+
+      // The initial scheduleNext() call must have scheduled a timeout
+      expect(setTimeoutSpy).toHaveBeenCalled()
 
       // Wait long enough for several ticks to fire
       await Bun.sleep(100)
@@ -241,6 +315,8 @@ describe("Agent Lifecycle", () => {
       // runSummary must early-return because transcript.length < 3,
       // so setAppStateForTasks should never be called.
       expect(setAppStateSpy).not.toHaveBeenCalled()
+
+      setTimeoutSpy.mockRestore()
     })
   })
 })

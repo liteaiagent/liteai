@@ -11,7 +11,7 @@ export interface AcquiredResources {
   hookRegistrations?: string[]
   cacheTracking?: string
   contextMessages?: unknown[]
-  // Monitor cleanup hook, e.g. from liteai2 task registry
+  // Monitor cleanup hook
   monitorTaskCleanup?: () => Promise<void>
 }
 
@@ -86,7 +86,14 @@ export namespace AgentCleanup {
     }
 
     // Step 9: Shell task killing
-    // Future integration with PtyManager/Subprocess registry
+    // No-op at the agent cleanup level. Each sub-agent runs inside its own
+    // subsession via SessionPrompt.prompt(), which creates a session-scoped
+    // BackgroundTaskRegistry in loop.ts. When the prompt completes (or aborts),
+    // the `defer` block in loop.ts calls `registry.disposeAll()`, terminating
+    // all running tasks BEFORE this cleanup function executes. This makes
+    // agent-level task killing redundant — the session lifecycle already
+    // guarantees deterministic process teardown.
+    // See: session/engine/loop.ts L793–799 (BackgroundTaskRegistry lifecycle)
     // Step 10: Monitor MCP task cleanup
     try {
       if (resources.monitorTaskCleanup) {

@@ -8,6 +8,7 @@ export interface SandboxOptions {
 export interface PermissionContext {
   permissionMode?: Agent.AgentDefinition["permissionMode"]
   shouldAvoidPermissionPrompts?: boolean
+  awaitAutomatedChecksBeforeDialog?: boolean
   toolDecisions?: Record<string, import("../agent/context").ToolDecision>
 }
 
@@ -46,6 +47,8 @@ export class PermissionSandbox {
 
     if (options.isAsync && !options.canShowPermissionPrompts) {
       childContext.shouldAvoidPermissionPrompts = true
+    } else if (options.isAsync && options.canShowPermissionPrompts) {
+      childContext.awaitAutomatedChecksBeforeDialog = true
     }
 
     if (agentDef.tools) {
@@ -99,6 +102,7 @@ export function applyPermissionSandboxToContext(
     ...state,
     permissionMode: derivedPermissionCtx.permissionMode,
     ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
+    ...(derivedPermissionCtx.awaitAutomatedChecksBeforeDialog ? { awaitAutomatedChecksBeforeDialog: true } : {}),
   }))
   if (derivedPermissionCtx.toolDecisions) {
     context.toolDecisions = derivedPermissionCtx.toolDecisions

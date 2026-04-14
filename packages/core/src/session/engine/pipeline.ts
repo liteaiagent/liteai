@@ -9,8 +9,7 @@ const log = Log.create({ service: "session.pipeline" })
 
 /**
  * Maximum aggregate characters of completed tool outputs allowed per
- * logical "turn" (consecutive assistant→user message group). Matches
- * the liteai2 per-message budget.
+ * logical "turn" (consecutive assistant→user message group).
  */
 const MAX_AGGREGATE_OUTPUT_PER_TURN = 200_000
 

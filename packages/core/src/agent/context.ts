@@ -54,8 +54,6 @@ export interface ParentContext {
    * `setAppState` is no-op'd for isolation. Without this, background tasks
    * spawned by sub-agents become PPID=1 zombies.
    *
-   * Falls back to `setAppState` if not explicitly provided.
-   * See liteai2 `forkedAgent.ts:416–417`.
    */
   setAppStateForTasks?: (updater: (state: AppState) => AppState) => void
   queryTracking?: { depth: number }
@@ -89,7 +87,7 @@ export interface SubagentContext {
   /**
    * Root store passthrough for task management. Ensures task registration/kill
    * always reaches the root session's AppState, even when this agent's
-   * `setAppState` is no-op'd for isolation. See liteai2 `forkedAgent.ts:416`.
+   * `setAppState` is no-op'd for isolation.
    */
   setAppStateForTasks: (updater: (state: AppState) => AppState) => void
   cwd: string
@@ -199,7 +197,7 @@ export function createSubagentContext(
 
   // Task registration/kill must always reach the root store, even when
   // setAppState is a no-op — otherwise background tasks are never
-  // registered and never killed (PPID=1 zombie). (See liteai2 forkedAgent.ts:416)
+  // registered and never killed (PPID=1 zombie).
   const setAppStateForTasks = parent.setAppStateForTasks ?? parent.setAppState
 
   // Clone contentReplacementState for cache stability (FR-004)
