@@ -39,7 +39,7 @@ All 70 tasks are marked complete in `tasks.md`. The core architecture is structu
 
 ## 🔴 Critical Gaps (FR violations)
 
-### C1. Docker isolation: Missing read-only mount + scratch workspace (FR-018)
+### ~~C1. Docker isolation: Missing read-only mount + scratch workspace (FR-018)~~ ✅
 
 **Spec**: "project directory mounted strictly as read-only and a writable scratch workspace (`<os.tmpdir()>/liteai-scratch/<agentId>`) mounted read-write"
 
@@ -74,7 +74,7 @@ All 70 tasks are marked complete in `tasks.md`. The core architecture is structu
 
 ---
 
-### C3. Isolation GC: Missing safety guards (FR-021)
+### ~~C3. Isolation GC: Missing safety guards (FR-021)~~ ✅
 
 **Spec**: "MUST strictly enforce safety guards: explicit skipping of deletion if the worktree contains uncommitted changes or unpushed commits to prevent any data loss"
 

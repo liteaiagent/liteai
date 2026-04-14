@@ -2,6 +2,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { Global } from "@/global"
 import { Log } from "@/util/log"
+import { Process } from "@/util/process"
 import { Worktree } from "@/worktree"
 import { DockerIsolation } from "./docker"
 
@@ -114,6 +115,26 @@ export namespace IsolationArtifactRegistry {
       if (now - timestamp > maxAgeMs) {
         log.info("Cleaning up stale worktree artifact", { directory })
         try {
+          // Check for uncommitted changes
+          const status = await Process.run(["git", "--no-optional-locks", "status", "--porcelain", "-uno"], {
+            cwd: directory,
+            nothrow: true,
+          })
+          if (status.code !== 0 || status.stdout.toString().trim().length > 0) {
+            log.info("Skipping worktree cleanup due to uncommitted changes or git error", { directory })
+            continue
+          }
+
+          // Check for unpushed commits
+          const unpushed = await Process.run(["git", "rev-list", "--max-count=1", "HEAD", "--not", "--remotes"], {
+            cwd: directory,
+            nothrow: true,
+          })
+          if (unpushed.code !== 0 || unpushed.stdout.toString().trim().length > 0) {
+            log.info("Skipping worktree cleanup due to unpushed commits or git error", { directory })
+            continue
+          }
+
           await Worktree.remove({ directory })
           delete registry.worktrees[directory]
           changed = true

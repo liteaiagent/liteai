@@ -1,3 +1,6 @@
+import fs from "node:fs/promises"
+import os from "node:os"
+import path from "node:path"
 import { NamedError } from "@liteai/util/error"
 import z from "zod"
 import { Log } from "@/util/log"
@@ -25,6 +28,10 @@ export namespace DockerIsolation {
     const sanitizedId = input.agentId.replace(/[^a-zA-Z0-9_.-]/g, "_")
     const containerName = `liteai-agent-${sanitizedId}`
     const mappedCwd = "/workspace"
+    const scratchSpace = path.join(os.tmpdir(), "liteai-scratch", sanitizedId)
+
+    // Ensure scratch space exists
+    await fs.mkdir(scratchSpace, { recursive: true })
 
     // Check if docker is available
     const check = await Process.run(["docker", "info"], { nothrow: true })
@@ -49,7 +56,9 @@ export namespace DockerIsolation {
         "--name",
         containerName,
         "-v",
-        `${input.projectPath}:${mappedCwd}`,
+        `${input.projectPath}:${mappedCwd}:ro`,
+        "-v",
+        `${scratchSpace}:/scratch`,
         "-w",
         targetCwd,
         image,

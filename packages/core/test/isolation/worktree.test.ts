@@ -63,7 +63,7 @@ describe("Worktree Isolation Mode", () => {
 
   afterAll(async () => {
     Object.defineProperty(Global, "Path", { value: originalGlobalPath, writable: true, configurable: true })
-    
+
     if (originalInstanceWorktreeDescriptor) {
       Object.defineProperty(Instance, "worktree", originalInstanceWorktreeDescriptor)
     } else {
@@ -112,7 +112,7 @@ describe("Worktree Isolation Mode", () => {
     const registerSpy = spyOn(IsolationArtifactRegistry, "registerWorktreeArtifact").mockResolvedValue(undefined)
     await IsolationArtifactRegistry.registerWorktreeArtifact("test-agent", info.directory)
     expect(registerSpy).toHaveBeenCalledWith("test-agent", info.directory)
-    
+
     registerSpy.mockRestore()
     projectSpy.mockRestore()
     provideSpy.mockRestore()
