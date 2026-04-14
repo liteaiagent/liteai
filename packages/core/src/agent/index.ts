@@ -1,4 +1,5 @@
 export * from "./agent"
+export * from "./agent-meta"
 export * from "./cleanup"
 export * from "./context"
 export * from "./errors"

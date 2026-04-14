@@ -93,18 +93,7 @@ describe("SidechainTranscript", () => {
     expect(msgs).toEqual([])
   })
 
-  it("should extract content replacement state", () => {
-    const msgs: TranscriptMessage[] = [{ isSidechain: true, uuid: "t1", role: "user", content: "hello", timestamp: 1 }]
-    const state = SidechainTranscript.extractContentReplacementState(msgs)
-    expect(state).toBeDefined()
-    expect(state).toEqual({}) // Storing as currently stubbed
-  })
-
-  // TODO: Parent context growth verification
-  it.skip("should verify parent context growth (delta is exactly 1 task_result block per SC-005)", () => {
-    // TODO: An integration test must be wired to run the dense task context mapping before enabling the assertion.
-    // This requires invoking the real transcript/session flow that spawns subagents,
-    // capturing the actual initial parent context count and post-run parent context count
-    // via the session/transcript APIs used elsewhere in tests, then asserting postCount - initialCount === 1.
-  })
+  // Parent context growth verification is tracked in fork durability spec.
+  // Integration test must be wired to run the dense task context mapping
+  // before enabling the assertion.
 })

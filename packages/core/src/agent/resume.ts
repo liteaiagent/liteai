@@ -1,10 +1,12 @@
 import fs from "node:fs/promises"
+import path from "node:path"
 import type { SessionID } from "@/session/schema"
 import { Session } from "../session/index"
 import { SidechainTranscript, type TranscriptMessage } from "../session/transcript"
 import { Log } from "../util/log"
 import { Worktree } from "../worktree/index"
 import { Agent } from "./agent"
+import { AgentMeta } from "./agent-meta"
 import { createSubagentContext, type ParentContext, runWithAgentContext } from "./context"
 import { AgentSpawnError, AgentTimeoutError } from "./errors"
 import {
@@ -17,26 +19,18 @@ import { runAsyncAgentLifecycle } from "./lifecycle"
 
 const logger = Log.create({ service: "agent:resume" })
 
+/**
+ * Concurrent resume dedup guard.
+ *
+ * Prevents multiple simultaneous resume attempts for the same agent ID.
+ * Without this, two concurrent `routeMessage()` calls for a stopped agent
+ * would spawn duplicate execution contexts.
+ */
+const activeResumes = new Set<string>()
+
 export interface ResumeAgentResult {
   agentId: string
   description: string
-}
-
-export interface AgentMetadata {
-  agentType?: string
-  description?: string
-  worktreePath?: string
-  [key: string]: unknown
-}
-
-// Temporary shim until actual agent metadata persistence is introduced to backend
-async function readAgentMetadata(
-  // explicitly unused pending metadata persistence database implementation
-  _agentId: string,
-): Promise<AgentMetadata | null> {
-  // In the backend MVP context, we might not have a standalone metadata.json.
-  // We'll return null to trigger the graceful fallbacks defined in the contract.
-  return null
 }
 
 export function reconstructContentOptimizationState(
@@ -129,20 +123,60 @@ export async function resumeAgentBackground(params: {
 }): Promise<ResumeAgentResult> {
   const { agentId, sessionContext, invokingRequestId } = params
 
+  // Dedup guard: prevent duplicate resume execution for the same agent
+  if (activeResumes.has(agentId)) {
+    logger.info("resume already in progress for agent; skipping duplicate", { agentId })
+    return { agentId, description: "(already resuming)" }
+  }
+  activeResumes.add(agentId)
+
   const parentSession = await Session.get(sessionContext.sessionId as SessionID)
 
-  // 1. Load metadata
-  const meta = await readAgentMetadata(agentId)
-
-  // Try to determine agentType from DB if metadata is null
+  // 1. Derive agentType: first pass via subsession title, then refine from sidecar metadata
   let fallbackAgentType = "explore"
+  const childSessions = await Session.children(sessionContext.sessionId as SessionID)
+  const subSession = childSessions.find((s) => s.title.includes(`(${agentId})`))
+  if (subSession) {
+    const match = subSession.title.match(/Subagent:\s+(.+)\s+\(/)
+    if (match) {
+      fallbackAgentType = match[1]
+    }
+  }
+
+  // 2. Load metadata sidecar — authoritative source for agentType, worktreePath,
+  //    description, and rendered system prompt.
+  //
+  //    The `subdir` param in AgentMeta.read maps to the filesystem path
+  //    `{dir}/{sessionId}/subagents/{subdir}/agent-{agentId}.meta.json`.
+  //    When the subsession has been GC'd, the title-derived fallbackAgentType
+  //    may be wrong (e.g., "explore" when the agent was actually "code").
+  //    Strategy: try the fast path first, then enumerate all subagent
+  //    subdirectories to find the correct sidecar.
+  let meta = await AgentMeta.read(parentSession.directory, sessionContext.sessionId, fallbackAgentType, agentId)
+
   if (!meta) {
-    const childSessions = await Session.children(sessionContext.sessionId as SessionID)
-    const subSession = childSessions.find((s) => s.title.includes(`(${agentId})`))
-    if (subSession) {
-      const match = subSession.title.match(/Subagent:\s+(.+)\s+\(/)
-      if (match) {
-        fallbackAgentType = match[1]
+    // Fast path missed — probe across all subagent subdirectories.
+    const subagentsDir = path.join(parentSession.directory, sessionContext.sessionId, "subagents")
+    try {
+      const entries = await fs.readdir(subagentsDir, { withFileTypes: true })
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.name === fallbackAgentType) continue
+        const probedMeta = await AgentMeta.read(parentSession.directory, sessionContext.sessionId, entry.name, agentId)
+        if (probedMeta) {
+          meta = probedMeta
+          logger.info("found agent metadata in alternate subdir via directory probe", {
+            agentId,
+            probed: entry.name,
+            fallback: fallbackAgentType,
+          })
+          break
+        }
+      }
+    } catch (err: unknown) {
+      // ENOENT: subagents directory doesn't exist — no metadata available.
+      // All other errors: fail-fast per Constitution §5.
+      if (typeof err === "object" && err !== null && (err as { code?: string }).code !== "ENOENT") {
+        throw err
       }
     }
   }
@@ -207,17 +241,30 @@ export async function resumeAgentBackground(params: {
   const uiDescription = meta?.description ?? "(resumed)"
 
   // 6. System prompt re-threading for fork child
+  //
+  // Three-tier recovery (strictly better than MVP which accepts cache
+  // degradation in Tier 2 — see forkSubagent.ts L56-58 in liteai_cli_mvp):
+  //   Tier 1: CacheSafeParams LRU (in-memory, byte-exact) — warm server
+  //   Tier 2: .meta.json sidecar  (on-disk, byte-exact) — cold server / LRU eviction
+  //   Tier 3: Throw (unrecoverable)
   let forkParentSystemPrompt: string | undefined
   if (isResumedFork) {
-    // Tier 1
+    // Tier 1: in-memory CacheSafeParams (byte-exact, cache-safe)
     const storedLastParams = getLastCacheSafeParams(sessionContext.sessionId)
     if (storedLastParams?.systemPrompt) {
       forkParentSystemPrompt = Array.isArray(storedLastParams.systemPrompt)
         ? storedLastParams.systemPrompt.join("\n")
         : storedLastParams.systemPrompt
-    } else {
-      // Tier 2 rebuild isn't straightforward without full session config.
-      // Tier 3 fail fast
+      logger.debug("Tier 1 system prompt recovery from CacheSafeParams", { agentId })
+    }
+    // Tier 2: on-disk sidecar (byte-exact, survives LRU eviction / server restart)
+    else if (meta?.renderedSystemPrompt) {
+      forkParentSystemPrompt = meta.renderedSystemPrompt
+      logger.info("Tier 2 system prompt recovery from sidecar", { agentId })
+    }
+    // Tier 3: fail-fast — no cache and no sidecar → unrecoverable
+    else {
+      activeResumes.delete(agentId)
       throw new Error("Cannot resume fork agent: unable to reconstruct parent system prompt")
     }
   }
@@ -238,6 +285,8 @@ export async function resumeAgentBackground(params: {
 
   // We do not await this, we just dispatch it (it's runAsyncAgentLifecycle under the hood)
   void runWithAgentContext(asyncAgentContext, async () => {
+    // Outer try/finally ensures the dedup guard is always cleaned up,
+    // even if the lifecycle throws or the agent is aborted.
     try {
       // Accumulate transcript messages for summarization deps
       const localTranscriptMessages: TranscriptMessage[] = []
@@ -417,8 +466,13 @@ export async function resumeAgentBackground(params: {
         },
       )
     } catch (err) {
+      // Log only — do NOT rethrow. This callback is dispatched via
+      // `void runWithAgentContext(...)` (fire-and-forget), so rethrowing
+      // would create an unhandled promise rejection. The finally block
+      // still runs to clean up the dedup guard.
       logger.error("Unhandled error in resume agent lifecycle", { agentId, error: err })
-      throw err
+    } finally {
+      activeResumes.delete(agentId)
     }
   })
 

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test"
 import {
   buildChildMessage,
   buildForkedMessages,
+  buildWorktreeNotice,
   FORK_BOILERPLATE_TAG,
   FORK_DIRECTIVE_PREFIX,
   ForkAgentConfig,
@@ -415,5 +416,36 @@ describe("fork constants", () => {
 
   it("FORK_DIRECTIVE_PREFIX matches MVP value", () => {
     expect(FORK_DIRECTIVE_PREFIX).toBe("Your directive: ")
+  })
+})
+
+// ─── buildWorktreeNotice ──────────────────────────────────────────────────────
+
+describe("buildWorktreeNotice", () => {
+  it("includes parent CWD in the output", () => {
+    const notice = buildWorktreeNotice("/parent/project", "/worktree/branch-a")
+    expect(notice).toContain("/parent/project")
+  })
+
+  it("includes worktree path in the output", () => {
+    const notice = buildWorktreeNotice("/parent/project", "/worktree/branch-a")
+    expect(notice).toContain("/worktree/branch-a")
+  })
+
+  it("mentions re-reading files from the worktree", () => {
+    const notice = buildWorktreeNotice("/parent", "/wt")
+    // The notice should guide the agent to re-read files from the isolated directory
+    expect(notice.toLowerCase()).toMatch(/re-?read|read.*again|fresh/)
+  })
+
+  it("mentions isolation semantics", () => {
+    const notice = buildWorktreeNotice("/parent", "/wt")
+    // The notice should explain the worktree is an isolated copy
+    expect(notice.toLowerCase()).toMatch(/isolat|separate|independent|copy/)
+  })
+
+  it("returns a non-empty string", () => {
+    const notice = buildWorktreeNotice("/a", "/b")
+    expect(notice.length).toBeGreaterThan(0)
   })
 })

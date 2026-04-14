@@ -395,6 +395,19 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
           }
         : SidechainTranscript.create(parentSession.directory, sessId, agentName, agentId)
 
+      // Persist agent metadata sidecar alongside the JSONL transcript.
+      // Stores identity fields (agentType, worktreePath, description) and the
+      // byte-exact rendered system prompt for fork children — enabling
+      // zero-degradation Tier 2 system prompt recovery on resume.
+      const { AgentMeta } = await import("./agent-meta")
+      await AgentMeta.write(parentSession.directory, sessId, agentName, agentId, {
+        agentType: agentName,
+        agentId,
+        worktreePath: updatedOverrides.cwd !== process.cwd() ? updatedOverrides.cwd : undefined,
+        description: agentDef.description,
+        renderedSystemPrompt: forkContext?.parentSystemPrompt,
+      })
+
       let lastRecordedUuid = "root"
 
       // Record initial messages before query loop

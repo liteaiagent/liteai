@@ -50,13 +50,6 @@ export namespace SidechainTranscript {
     }
   }
 
-  export function extractContentReplacementState(_messages: TranscriptMessage[]): Record<string, unknown> {
-    // Basic extraction placeholder. Optimization state reconstruction is further defined
-    // in T016 by scanning resumed messages for persisted content references.
-    const state: Record<string, unknown> = {}
-    return state
-  }
-
   export function getPath(dir: string, sessionId: string, subdir: string, agentId: string): string {
     return path.join(dir, sessionId, "subagents", subdir, `agent-${agentId}.jsonl`)
   }
