@@ -136,7 +136,7 @@ describe("Worktree Isolation Mode", () => {
       code: 0,
       stdout: Buffer.from(""),
       stderr: Buffer.from(""),
-      signal: null
+      signal: null,
     } as any)
 
     await IsolationArtifactRegistry.cleanupStaleIsolationArtifacts(1000 * 60 * 60)
