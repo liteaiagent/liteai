@@ -368,6 +368,7 @@ async function runSessionInner(input: {
   let persister: EventPersister | undefined
   let currentAssistantMessage: Message.Assistant | undefined
   let currentStreamResult: unknown
+  let currentTurnCache: { system: string[] | string; tools: Record<string, unknown> } | undefined
 
   // Loop detection recovery state — persisted across turns for escalation
   let loopDetectionCount = 0
@@ -400,6 +401,11 @@ async function runSessionInner(input: {
           // Set up instruction prompt cleanup
           // Note: InstructionPrompt.clear will be called in turn-end
           SessionStatus.set(sessionID, { type: "busy" })
+
+          currentTurnCache = {
+            system: event.streamInput.system,
+            tools: event.streamInput.tools,
+          }
 
           // Fire-and-forget summary on first turn
           const lastUser = event.streamInput.user
@@ -541,6 +547,16 @@ async function runSessionInner(input: {
             }
           }
 
+          // Save cache-safe params so forks can inherit them
+          if (currentTurnCache && isRootAgent()) {
+            const { saveCacheSafeParams } = await import("@/agent/fork")
+            saveCacheSafeParams(sessionID, {
+              systemPrompt: currentTurnCache.system,
+              toolConfig: currentTurnCache.tools,
+              forkContextMessages: msgsBuffer.current,
+            })
+          }
+
           // Clean up instruction prompt
           await InstructionPrompt.clear(currentAssistantMessage.id)
           break
@@ -672,6 +688,8 @@ async function runSessionInner(input: {
 
   // Post-loop cleanup (fire-and-forget with catch to prevent unhandled rejection)
   if (isRootAgent()) {
+    import("@/agent/fork").then((m) => m.saveCacheSafeParams(sessionID, null)).catch(() => {})
+
     SessionCompaction.prune({ sessionID }).catch((e: unknown) => {
       if (!isAbortError(e)) {
         log.error("runSession: prune failed", { error: e, sessionID })

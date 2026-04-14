@@ -16,6 +16,7 @@ import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
 import { RunCommandTool } from "./run_command"
 import { SendCommandInputTool } from "./send_command_input"
+import { SendMessageTool } from "./send_message"
 import { SkillTool } from "./skill"
 import { TaskTool } from "./task"
 import { TodoWriteTool } from "./todo"
@@ -42,6 +43,7 @@ export namespace ToolRegistry {
       EditTool,
       MultiEditTool,
       WriteTool,
+      SendMessageTool,
       TaskTool,
       WebFetchTool,
       TodoWriteTool,

@@ -19,6 +19,7 @@ import {
 } from "./context"
 import { AgentSpawnError, AgentTimeoutError, ConcurrentAgentLimitError, RequiredMcpServerError } from "./errors"
 import { AgentEvent } from "./events"
+import type { CacheSafeParams } from "./fork"
 import { isRestrictedToPluginOnly } from "./policy"
 
 const logger = Log.create({ service: "agent:runner" })
@@ -35,6 +36,27 @@ export const DEFAULT_CONCURRENT_AGENT_LIMIT = 8
  * system prevents null/undefined definitions, and lets each call site
  * (tool handler, API handler) produce context-appropriate error responses.
  */
+/**
+ * Fork-specific context for fork child agent spawning.
+ * When provided, the runner threads parent cache-safe params and forces async
+ * mode for all agent spawns to produce a unified task-notification UX.
+ *
+ * MVP Reference: `AgentTool.ts` fork path, `forkSubagent.ts:47-71`
+ */
+export interface ForkSpawnContext {
+  /** Parent's rendered system prompt (byte-exact, not recomputed). */
+  parentSystemPrompt: string
+  /** Cache-safe params for prompt cache sharing with the parent. */
+  cacheSafeParams: CacheSafeParams
+  /**
+   * Parent's transcript messages (last assistant message + prior context).
+   * Used by `buildForkedMessages()` to construct cache-compatible prefixes.
+   */
+  forkMessages: import("@/session/message").Message.WithParts[]
+  /** Bypass sidechain transcript recording for ephemeral forks */
+  skipTranscript?: boolean
+}
+
 export interface RunAgentInput {
   /** Pre-resolved agent definition. Must be non-null — caller validates. */
   agentDefinition: Agent.AgentDefinition
@@ -48,6 +70,12 @@ export interface RunAgentInput {
   inputParts?: PromptInput["parts"]
   /** Force async/background execution. Defaults to agentDefinition.background. */
   isAsync?: boolean
+  /**
+   * Fork-specific context. When provided, the agent is spawned as a fork child
+   * with the parent's prompt cache shared via CacheSafeParams. Forces async
+   * mode for ALL agent spawns when fork is active (FR-005, Research R-010).
+   */
+  forkContext?: ForkSpawnContext
 }
 
 async function executeSubagentStartHooks(
@@ -106,10 +134,13 @@ async function executeSubagentStartHooks(
  * @see runAgentByName
  */
 export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResult> {
-  const { agentDefinition: agentDef, overrides, inputParts } = input
+  const { agentDefinition: agentDef, overrides, inputParts, forkContext } = input
   const sessId = input.sessionId as SessionID
   const agentName = agentDef.name
-  const isAsync = input.isAsync ?? !!agentDef.background
+
+  // FR-005 / R-010: When fork context is provided, ALL agent spawns are forced
+  // to async mode for a unified task-notification interaction model.
+  const isAsync = forkContext ? true : (input.isAsync ?? !!agentDef.background)
   const agentId = crypto.randomUUID()
   const storeContext = input.parentContext ?? AgentExecutionContext.getStore()
   const isFullParent = storeContext && "abortController" in storeContext
@@ -180,6 +211,35 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       await IsolationArtifactRegistry.registerWorktreeArtifact(agentId, info.directory)
       registeredIsolationArtifact = { type: "worktree", directory: info.directory }
 
+      if (forkContext) {
+        const { buildWorktreeNotice } = await import("./fork")
+        const notice = buildWorktreeNotice(parentContext?.cwd ?? process.cwd(), info.directory)
+
+        // Inject the worktree notice into the last user message of the fork context.
+        // This ensures the child agent explicitly knows about its isolated worktree.
+        const forkMessages = [...forkContext.cacheSafeParams.forkContextMessages]
+        if (forkMessages && forkMessages.length > 0) {
+          const originalLastMsg = forkMessages[forkMessages.length - 1]
+          const lastMsg = { ...originalLastMsg, parts: [...originalLastMsg.parts] }
+          forkMessages[forkMessages.length - 1] = lastMsg
+          if (lastMsg.info.role === "user") {
+            lastMsg.parts.push({
+              type: "text",
+              id: originalLastMsg.parts.find((p) => p.type === "text")?.id ?? "", // Dummy fallback ID, true ID generated on save
+              sessionID: lastMsg.info.sessionID,
+              messageID: lastMsg.info.id,
+              text: `<worktree_notice>\n${notice}\n</worktree_notice>`,
+              synthetic: true,
+            } as import("@/session/message").Message.TextPart)
+          }
+        }
+        // Update the fork context with the modified messages
+        forkContext.cacheSafeParams = {
+          ...forkContext.cacheSafeParams,
+          forkContextMessages: forkMessages,
+        }
+      }
+
       updatedOverrides.cwd = info.directory
     } else if (agentDef.isolation === "remote") {
       logger.info("Initializing remote (Docker) isolation", { agentId, agentName })
@@ -199,8 +259,20 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       updatedOverrides.execController = result.execController
     }
 
+    // Fork-aware context construction: thread parent's system prompt and
+    // cache-safe params into the SubagentContext for cache-identical API
+    // prefixes (FR-001, FR-007, FR-009).
+    const forkOverrides: SubagentContextOverrides = forkContext
+      ? {
+          isFork: true,
+          parentSystemPrompt: forkContext.parentSystemPrompt,
+          cacheSafeParams: forkContext.cacheSafeParams,
+        }
+      : {}
+
     subContext = createSubagentContext(parentMock, agentDef, agentId, {
       ...updatedOverrides,
+      ...forkOverrides,
       mcpClients: updatedOverrides.mcpClients ?? mcpClients,
     })
 
@@ -219,6 +291,23 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
     subContext.prunedSystemContext = prunedSystemContext
 
     const { applyPermissionSandboxToContext } = await import("@/permission/sandbox")
+
+    // R-009: Permission mode composition for fork children. Elevated parent
+    // modes (bypassPermissions, acceptEdits, auto) override the fork child's
+    // default 'bubble' mode. A parent in 'auto' mode has already authorized
+    // non-interactive execution — forcing the fork child to 'bubble' would
+    // surface permission prompts for background workers, defeating the purpose.
+    const effectivePermissionMode = forkContext
+      ? resolveForkedPermissionMode(agentDef.permissionMode, parentContext?.getAppState?.()?.permissionMode)
+      : undefined
+    if (effectivePermissionMode && subContext) {
+      // Overwrite the default 'bubble' with the composed permission mode
+      subContext.prunedUserContext = {
+        ...subContext.prunedUserContext,
+        permissionMode: effectivePermissionMode,
+      }
+    }
+
     applyPermissionSandboxToContext(subContext, agentDef, {
       isAsync,
       canShowPermissionPrompts: false,
@@ -298,7 +387,13 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       })
 
       const { SidechainTranscript } = await import("@/session/transcript")
-      const transcript = SidechainTranscript.create(parentSession.directory, sessId, agentName, agentId)
+      const transcript = forkContext?.skipTranscript
+        ? {
+            getPath: () => "",
+            recordMessage: async () => {},
+            recordChain: async () => {},
+          }
+        : SidechainTranscript.create(parentSession.directory, sessId, agentName, agentId)
 
       let lastRecordedUuid = "root"
 
@@ -437,7 +532,9 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
             setAppStateForTasks: subContext.setAppStateForTasks,
           }
         : undefined
-      return await runAsyncAgentLifecycle(agentName, sessId, agentId, executeLogic, summarizationDeps)
+      return await runAsyncAgentLifecycle(agentName, sessId, agentId, executeLogic, summarizationDeps, {
+        cacheSafeParams: forkContext?.cacheSafeParams,
+      })
     } else {
       return await runWithAgentContext(subContext, executeLogic)
     }
@@ -518,4 +615,29 @@ export async function runAgentByName(
     throw new AgentSpawnError({ message: `Agent '${agentName}' not found or not loaded` })
   }
   return runAgent({ agentDefinition: agentDef, sessionId, ...options })
+}
+
+// ─── Fork Permission Composition ──────────────────────────────────────────────
+
+/**
+ * Elevated parent permission modes that override fork child's default 'bubble'.
+ * When the parent session has already opted into a permissive mode, the fork
+ * child inherits that mode rather than forcing interactive prompts for a
+ * background worker.
+ *
+ * MVP Reference: `resumeAgent.ts:158-161` — worker permission context override
+ * Research: R-009
+ */
+const ELEVATED_PERMISSION_MODES = new Set(["bypassPermissions", "acceptEdits", "dontAsk"])
+
+function resolveForkedPermissionMode(
+  childDefault: Agent.Info["permissionMode"],
+  parentMode: Agent.Info["permissionMode"] | undefined,
+): Agent.Info["permissionMode"] | undefined {
+  if (!parentMode) return undefined
+  // If the parent has an elevated mode, override the child's bubble default
+  if (ELEVATED_PERMISSION_MODES.has(parentMode)) {
+    return parentMode
+  }
+  return childDefault
 }

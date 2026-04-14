@@ -73,6 +73,33 @@ describe("SidechainTranscript", () => {
     expect(lines).toHaveLength(50)
   })
 
+  it("should read and parse jsonl correctly, skipping malformed lines", async () => {
+    const transcriptPath = SidechainTranscript.getPath(tempDir, "session4", "groupC", "agent4")
+    await fs.mkdir(path.dirname(transcriptPath), { recursive: true })
+
+    // Write valid and invalid lines
+    const validLine = JSON.stringify({ isSidechain: true, uuid: "v1", role: "user", content: "ok", timestamp: 1 })
+    const data = `${validLine}\n{malformed-json}\n${JSON.stringify({ isSidechain: true, uuid: "v2", role: "assistant", content: "ok2", timestamp: 2 })}\n`
+    await fs.writeFile(transcriptPath, data, "utf-8")
+
+    const msgs = await SidechainTranscript.read(tempDir, "session4", "groupC", "agent4")
+    expect(msgs).toHaveLength(2)
+    expect(msgs[0]?.uuid).toBe("v1")
+    expect(msgs[1]?.uuid).toBe("v2")
+  })
+
+  it("should gracefully handle non-existent transcript on read", async () => {
+    const msgs = await SidechainTranscript.read(tempDir, "session-missing", "group", "missing-agent")
+    expect(msgs).toEqual([])
+  })
+
+  it("should extract content replacement state", () => {
+    const msgs: TranscriptMessage[] = [{ isSidechain: true, uuid: "t1", role: "user", content: "hello", timestamp: 1 }]
+    const state = SidechainTranscript.extractContentReplacementState(msgs)
+    expect(state).toBeDefined()
+    expect(state).toEqual({}) // Storing as currently stubbed
+  })
+
   // TODO: Parent context growth verification
   it.skip("should verify parent context growth (delta is exactly 1 task_result block per SC-005)", () => {
     // TODO: An integration test must be wired to run the dense task context mapping before enabling the assertion.

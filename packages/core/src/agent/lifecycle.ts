@@ -339,12 +339,30 @@ export function startAgentSummarization(
 
 // ─── Async Agent Lifecycle ────────────────────────────────────────────────────
 
+/**
+ * Options for async agent lifecycle execution.
+ * Extends the base lifecycle with fork-specific cache sharing params.
+ */
+export interface AsyncAgentLifecycleOptions {
+  /** Dependencies for the periodic summarization loop. */
+  summarizationDeps?: SummarizationDeps
+  /**
+   * Cache-safe params for fork child spawning. When provided, the params are
+   * threaded through the ALS context so the fork child's query loop can produce
+   * cache-compatible API requests with the parent's prompt cache.
+   *
+   * FR-023, Contract: cache-safe-params.md
+   */
+  cacheSafeParams?: import("./fork").CacheSafeParams
+}
+
 export async function runAsyncAgentLifecycle(
   agentName: string,
   sessionId: string,
   agentId: string,
   runAgentImpl: () => Promise<import("./agent").Agent.RunAgentResult>,
   summarizationDeps?: SummarizationDeps,
+  options?: AsyncAgentLifecycleOptions,
 ) {
   const existingContext = AgentExecutionContext.getStore()
 
@@ -358,6 +376,8 @@ export async function runAsyncAgentLifecycle(
       type: "subagent" as const,
       agentId,
       agentType: agentName,
+      isFork: !!options?.cacheSafeParams,
+      cacheSafeParams: options?.cacheSafeParams,
       parentSessionId: sessionId,
       isBuiltIn: false,
       invocationKind: "spawn" as const,
@@ -376,6 +396,24 @@ export async function runAsyncAgentLifecycle(
     let error: Error | undefined
     let usage: UsageMetrics = { totalTokens: 0, toolCalls: 0, duration: 0 }
     let stopSummarization: (() => void) | undefined
+    const tracker = new ProgressTracker()
+
+    const { Message } = await import("@/session/message")
+    const stopTracking = Bus.subscribe(Message.Event.PartUpdated, (event) => {
+      // Must match the currently running subagent's session!
+      if (
+        event.properties.part.sessionID === agentId &&
+        event.properties.part.type === "tool" &&
+        event.properties.part.state.status === "completed"
+      ) {
+        usage.toolCalls++
+        tracker.updateActivity(event.properties.part.tool)
+        Bus.publish(AgentEvent.Progress, {
+          agentId,
+          activity: tracker.currentActivity,
+        })
+      }
+    })
 
     // Start summarization loop if dependencies are provided
     if (summarizationDeps) {
@@ -387,7 +425,10 @@ export async function runAsyncAgentLifecycle(
       usage = result.usage ?? usage
       return result
     } catch (err: unknown) {
-      if (err instanceof Error && (err.name === "AgentTimeoutError" || err.name === "AbortError")) {
+      if (
+        err instanceof Error &&
+        (err.name === "AgentTimeoutError" || err.name === "AbortError" || err.message?.includes("Abort"))
+      ) {
         status = "killed"
       } else {
         status = "failed"
@@ -395,9 +436,16 @@ export async function runAsyncAgentLifecycle(
       error = err instanceof Error ? err : new Error(String(err))
       throw err // We rethrow usually, but we must enqueue notification first
     } finally {
+      stopTracking()
+
       // Stop summarization before notifications — no point summarizing a
       // terminated agent.
       stopSummarization?.()
+
+      let partialResult: string | undefined
+      if ((status === "killed" || status === "completed") && summarizationDeps) {
+        partialResult = extractPartialResult(summarizationDeps.getTranscript())
+      }
 
       Bus.publish(AgentEvent.CacheEvictionHint, { agentId })
       enqueueAgentNotification(sessionId, {
@@ -406,6 +454,7 @@ export async function runAsyncAgentLifecycle(
         description: `Agent ${agentName} ${status}`,
         usage,
         error,
+        partialResult,
       })
     }
   })

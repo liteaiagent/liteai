@@ -3,6 +3,7 @@ import type { Config } from "@/config/config"
 import type { MCP } from "@/mcp"
 import type { Provider } from "@/provider/provider"
 import type { Agent } from "./agent"
+import type { CacheSafeParams } from "./fork"
 
 export interface ThinkingConfig {
   enabled: boolean
@@ -23,12 +24,22 @@ export interface ExecController {
   ): Promise<{ stdout: string; stderr: string; exitCode: number }>
 }
 
+export interface BackgroundTaskState {
+  status?: "running" | "stopped" | "error" | "completed" | string
+  pendingMessages?: string[]
+  [key: string]: unknown
+}
+
 export interface AppState {
   shouldAvoidPermissionPrompts?: boolean
   permissionMode?: Agent.Info["permissionMode"]
   toolDecisions?: Record<string, ToolDecision>
   /** Per-agent activity descriptions from the periodic summarization loop. */
   agentSummaries?: Record<string, string>
+  /** Name-to-agentId registry for background agents. */
+  agentNameRegistry?: Record<string, string>
+  /** Tasks/state tracking for background agents. */
+  tasks?: Record<string, BackgroundTaskState>
 }
 
 export type AgentContext = SubagentContext | TeammateAgentContext
@@ -67,6 +78,9 @@ export interface SubagentContext {
   agentId: string
   /** Agent definition name (e.g., "explore", "build"). */
   agentType: string
+  isFork: boolean
+  parentSystemPrompt?: string
+  cacheSafeParams?: CacheSafeParams
   /** Session ID of the parent that spawned this agent. */
   parentSessionId: string
   /** Whether this agent is a built-in (native) agent. */
@@ -114,12 +128,16 @@ export interface SubagentContextOverrides {
   shareSetAppState?: boolean
   shareSetResponseLength?: boolean // Not yet wired — response length sharing requires query loop integration
   shareAbortController?: boolean
+  isFork?: boolean
+  parentSystemPrompt?: string
+  cacheSafeParams?: CacheSafeParams
   criticalSystemReminder?: string
   userContext?: Record<string, unknown>
   systemContext?: Record<string, unknown>
   mcpClients?: Array<{ name: string; client: MCP.MCPClient; config: Config.Mcp }>
   execController?: ExecController
   cwd?: string
+  contentReplacementState?: Record<string, unknown>
 }
 
 export const AgentExecutionContext = new AsyncLocalStorage<AgentContext>()
@@ -200,10 +218,12 @@ export function createSubagentContext(
   // registered and never killed (PPID=1 zombie).
   const setAppStateForTasks = parent.setAppStateForTasks ?? parent.setAppState
 
-  // Clone contentReplacementState for cache stability (FR-004)
+  // Clone contentReplacementState for cache stability (FR-004) or use override
   // biome-ignore lint/suspicious/noExplicitAny: generic content replacement state
   let contentReplacementState: any
-  if (parent.contentReplacementState) {
+  if (overrides?.contentReplacementState) {
+    contentReplacementState = overrides.contentReplacementState
+  } else if (parent.contentReplacementState) {
     contentReplacementState =
       typeof structuredClone === "function"
         ? structuredClone(parent.contentReplacementState)
@@ -214,6 +234,9 @@ export function createSubagentContext(
     type: "subagent",
     agentId,
     agentType: agent.name || "unknown",
+    isFork: overrides?.isFork ?? false,
+    parentSystemPrompt: overrides?.parentSystemPrompt,
+    cacheSafeParams: overrides?.cacheSafeParams,
     parentSessionId: parent.sessionId,
     isBuiltIn: agent.native === true,
     invocationKind: "spawn",

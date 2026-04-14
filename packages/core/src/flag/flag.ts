@@ -43,6 +43,7 @@ export namespace Flag {
   export const LITEAI_INJECT_SKILLS_IN_SYSTEM_PROMPT = truthy("INJECT_SKILLS_IN_SYSTEM_PROMPT")
   export declare const LITEAI_DISABLE_AGENTS: boolean
   export declare const LITEAI_DISABLE_PROJECT_CONFIG: boolean
+  export declare const LITEAI_FORK_SUBAGENT: boolean
   export declare const LITEAI_CLIENT: string
   export const LITEAI_SERVER_PASSWORD = env("SERVER_PASSWORD")
   export const LITEAI_SERVER_USERNAME = env("SERVER_USERNAME")
@@ -147,6 +148,15 @@ Object.defineProperty(Flag, "LITEAI_PLUGIN_DIR", {
       .map((d) => d.trim())
       .filter(Boolean)
     return dirs.length ? dirs : undefined
+  },
+  enumerable: true,
+  configurable: false,
+})
+
+// Dynamic getter for LITEAI_FORK_SUBAGENT
+Object.defineProperty(Flag, "LITEAI_FORK_SUBAGENT", {
+  get() {
+    return truthy("FORK_SUBAGENT")
   },
   enumerable: true,
   configurable: false,

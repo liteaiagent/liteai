@@ -20,6 +20,43 @@ export namespace SidechainTranscript {
     recordChain(messages: TranscriptMessage[]): Promise<void>
   }
 
+  export async function read(
+    dir: string,
+    sessionId: string,
+    subdir: string,
+    agentId: string,
+  ): Promise<TranscriptMessage[]> {
+    const transcriptPath = getPath(dir, sessionId, subdir, agentId)
+    try {
+      const content = await fs.readFile(transcriptPath, "utf-8")
+      const lines = content.split("\n").filter((l) => l.trim().length > 0)
+      const messages: TranscriptMessage[] = []
+      for (let i = 0; i < lines.length; i++) {
+        try {
+          messages.push(JSON.parse(lines[i]) as TranscriptMessage)
+        } catch {
+          logger.warn("Skipping malformed transcript line", {
+            sessionId,
+            agentId,
+            lineIndex: i,
+            line: lines[i].slice(0, 200),
+          })
+        }
+      }
+      return messages
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && (err as { code?: string }).code === "ENOENT") return []
+      throw err
+    }
+  }
+
+  export function extractContentReplacementState(_messages: TranscriptMessage[]): Record<string, unknown> {
+    // Basic extraction placeholder. Optimization state reconstruction is further defined
+    // in T016 by scanning resumed messages for persisted content references.
+    const state: Record<string, unknown> = {}
+    return state
+  }
+
   export function getPath(dir: string, sessionId: string, subdir: string, agentId: string): string {
     return path.join(dir, sessionId, "subagents", subdir, `agent-${agentId}.jsonl`)
   }

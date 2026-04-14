@@ -27,9 +27,9 @@ All paths are relative to `packages/core/`:
 
 **Purpose**: Define foundational types and feature gate configuration needed by all user stories.
 
-- [ ] T001 Add FORK_SUBAGENT feature gate — environment variable `LITEAI_FORK_SUBAGENT`, config flag check, coordinator/non-interactive session guard — in `packages/core/src/flag/` (MVP ref: `forkSubagent.ts:32-39`, Research: R-002)
-- [ ] T002 Define `CacheSafeParams` interface and session-scoped storage functions (`saveCacheSafeParams`, `getLastCacheSafeParams`) with per-session isolation via Session module in `packages/core/src/agent/fork.ts` (MVP ref: `forkedAgent.ts:57-81`, Research: R-001, Contract: cache-safe-params.md)
-- [ ] T003 Define `ForkAgentConfig` constant (`agentType: 'fork'`, `tools: '*'`, `maxTurns: 200`, `model: 'inherit'`, `permissionMode: 'bubble'`, `wallClockTimeout: 1_800_000`, `background: true`) in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:60-71`, Data model: entity 1)
+- [x] T001 Add FORK_SUBAGENT feature gate — environment variable `LITEAI_FORK_SUBAGENT`, config flag check, coordinator/non-interactive session guard — in `packages/core/src/flag/` (MVP ref: `forkSubagent.ts:32-39`, Research: R-002)
+- [x] T002 Define `CacheSafeParams` interface and session-scoped storage functions (`saveCacheSafeParams`, `getLastCacheSafeParams`) with per-session isolation via Session module in `packages/core/src/agent/fork.ts` (MVP ref: `forkedAgent.ts:57-81`, Research: R-001, Contract: cache-safe-params.md)
+- [x] T003 Define `ForkAgentConfig` constant (`agentType: 'fork'`, `tools: '*'`, `maxTurns: 200`, `model: 'inherit'`, `permissionMode: 'bubble'`, `wallClockTimeout: 1_800_000`, `background: true`) in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:60-71`, Data model: entity 1)
 
 ---
 
@@ -39,10 +39,10 @@ All paths are relative to `packages/core/`:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 Extend `SubagentContext` with fork-specific fields — `isFork: boolean`, `parentSystemPrompt: string | undefined`, `cacheSafeParams: CacheSafeParams | undefined`, cloned `contentReplacementState`, independent abort controller linked to parent, no-op mutation callbacks, fresh query tracking chain with incremented depth — in `packages/core/src/agent/context.ts` (FR-024, FR-025)
-- [ ] T005 [P] Implement orphaned message filtering pipeline — `filterUnresolvedToolUses()` (remove assistant messages with tool_use blocks lacking matching tool_result), `filterOrphanedThinkingOnlyMessages()` (remove thinking-only assistant messages), `filterWhitespaceOnlyAssistantMessages()` (remove whitespace-only content) — as composable functions in `packages/core/src/agent/filter.ts` (MVP ref: `resumeAgent.ts:70-74`, Research: R-004, FR-014)
-- [ ] T006 [P] Add transcript read and reconstruct capabilities — `SidechainTranscript.read()` for loading persisted JSONL transcripts, content replacement extraction from transcript records for optimization state reconstruction — in `packages/core/src/session/transcript.ts` (FR-010, FR-011, Research: R-005)
-- [ ] T007 [P] Add worktree mtime refresh utility function (`refreshWorktreeMtime`) — `utimes()` to current timestamp, stat validation check — in `packages/core/src/worktree/index.ts` (MVP ref: `resumeAgent.ts:93-97`, Research: R-006, FR-012)
+- [x] T004 Extend `SubagentContext` with fork-specific fields — `isFork: boolean`, `parentSystemPrompt: string | undefined`, `cacheSafeParams: CacheSafeParams | undefined`, cloned `contentReplacementState`, independent abort controller linked to parent, no-op mutation callbacks, fresh query tracking chain with incremented depth — in `packages/core/src/agent/context.ts` (FR-024, FR-025)
+- [x] T005 [P] Implement orphaned message filtering pipeline — `filterUnresolvedToolUses()` (remove assistant messages with tool_use blocks lacking matching tool_result), `filterOrphanedThinkingOnlyMessages()` (remove thinking-only assistant messages), `filterWhitespaceOnlyAssistantMessages()` (remove whitespace-only content) — as composable functions in `packages/core/src/agent/filter.ts` (MVP ref: `resumeAgent.ts:70-74`, Research: R-004, FR-014)
+- [x] T006 [P] Add transcript read and reconstruct capabilities — `SidechainTranscript.read()` for loading persisted JSONL transcripts, content replacement extraction from transcript records for optimization state reconstruction — in `packages/core/src/session/transcript.ts` (FR-010, FR-011, Research: R-005)
+- [x] T007 [P] Add worktree mtime refresh utility function (`refreshWorktreeMtime`) — `utimes()` to current timestamp, stat validation check — in `packages/core/src/worktree/index.ts` (MVP ref: `resumeAgent.ts:93-97`, Research: R-006, FR-012)
 
 **Checkpoint**: Foundation ready — user story implementation can now begin.
 
@@ -56,13 +56,13 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Implement `isForkSubagentEnabled(sessionContext)` gate function — check config flag, exclude coordinator mode and non-interactive sessions — and export `FORK_BOILERPLATE_TAG` sentinel constant in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:32-39`, FR-004, FR-005, Research: R-002)
-- [ ] T009 [US1] Implement `isInForkChild(messages)` recursion guard — scan transcript user messages for `<fork_boilerplate>` sentinel tag, return boolean — in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:78-89`, FR-003, Research: R-003)
-- [ ] T010 [US1] Implement `buildChildMessage(directive)` — construct user message containing `<fork_boilerplate>` tag with 10 behavioral rules, structured output format (Scope, Result, Key files, Files changed, Issues), and per-child directive suffix — in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:171-198`, FR-008, Data model: entity 7)
-- [ ] T011 [US1] Implement `buildForkedMessages(directive, assistantMessage)` — clone parent's last assistant message, generate identical `toolResultPlaceholders` (`"Fork started — processing in background"`), append child directive via `buildChildMessage()`, return cache-compatible message array — in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:107-169`, FR-002, FR-007, FR-009, Contract: fork-spawn.md)
-- [ ] T012 [US1] Wire fork spawn path into agent spawning — detect fork trigger (no `subagent_type` + gate enabled), force ALL spawns to async mode when fork active (FR-005), create SubagentContext with parent's rendered system prompt (no recomputation), parent's exact tool pool, and permission mode composition (elevated parent overrides bubble) — in `packages/core/src/agent/runner.ts` (MVP ref: `AgentTool.ts` fork path, FR-001, FR-005, FR-007, FR-009, Research: R-009, R-010)
-- [ ] T013 [US1] Extend `runAsyncAgentLifecycle` to accept and thread `CacheSafeParams` through fork child spawn — pass params to forked query loop, ensure fork child API requests use parent's system prompt, tool config, and context messages — in `packages/core/src/agent/lifecycle.ts` (FR-023, Contract: cache-safe-params.md)
-- [ ] T014 [P] [US1] Create unit tests for fork spawn — gate function (enabled/disabled/coordinator/non-interactive), recursion guard (detect/miss), buildForkedMessages cache compatibility (identical prefixes across siblings, placeholder text equality), buildChildMessage contract completeness (all 10 rules, boilerplate tag, output format) — in `packages/core/test/agent/fork.test.ts` (Validates: SC-001, SC-003, SC-005, SC-010)
+- [x] T008 [US1] Implement `isForkSubagentEnabled(sessionContext)` gate function — check config flag, exclude coordinator mode and non-interactive sessions — and export `FORK_BOILERPLATE_TAG` sentinel constant in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:32-39`, FR-004, FR-005, Research: R-002)
+- [x] T009 [US1] Implement `isInForkChild(messages)` recursion guard — scan transcript user messages for `<fork_boilerplate>` sentinel tag, return boolean — in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:78-89`, FR-003, Research: R-003)
+- [x] T010 [US1] Implement `buildChildMessage(directive)` — construct user message containing `<fork_boilerplate>` tag with 10 behavioral rules, structured output format (Scope, Result, Key files, Files changed, Issues), and per-child directive suffix — in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:171-198`, FR-008, Data model: entity 7)
+- [x] T011 [US1] Implement `buildForkedMessages(directive, assistantMessage)` — clone parent's last assistant message, generate identical `toolResultPlaceholders` (`"Fork started — processing in background"`), append child directive via `buildChildMessage()`, return cache-compatible message array — in `packages/core/src/agent/fork.ts` (MVP ref: `forkSubagent.ts:107-169`, FR-002, FR-007, FR-009, Contract: fork-spawn.md)
+- [x] T012 [US1] Wire fork spawn path into agent spawning — detect fork trigger (no `subagent_type` + gate enabled), force ALL spawns to async mode when fork active (FR-005), create SubagentContext with parent's rendered system prompt (no recomputation), parent's exact tool pool, and permission mode composition (elevated parent overrides bubble) — in `packages/core/src/agent/runner.ts` (MVP ref: `AgentTool.ts` fork path, FR-001, FR-005, FR-007, FR-009, Research: R-009, R-010)
+- [x] T013 [US1] Extend `runAsyncAgentLifecycle` to accept and thread `CacheSafeParams` through fork child spawn — pass params to forked query loop, ensure fork child API requests use parent's system prompt, tool config, and context messages — in `packages/core/src/agent/lifecycle.ts` (FR-023, Contract: cache-safe-params.md)
+- [x] T014 [P] [US1] Create unit tests for fork spawn — gate function (enabled/disabled/coordinator/non-interactive), recursion guard (detect/miss), buildForkedMessages cache compatibility (identical prefixes across siblings, placeholder text equality), buildChildMessage contract completeness (all 10 rules, boilerplate tag, output format) — in `packages/core/test/agent/fork.test.ts` (Validates: SC-001, SC-003, SC-005, SC-010)
 
 **Checkpoint**: Fork spawning is functional. A parent agent can spawn fork children that share its prompt cache. All agent spawns run in async mode. Fork recursion is blocked.
 
@@ -78,12 +78,12 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Implement `resumeAgentBackground(params)` orchestrator — load transcript + metadata from disk, apply 3-pass orphan filter pipeline (from `filter.ts`), assemble `AgentResumeState` — in `packages/core/src/agent/resume.ts` (MVP ref: `resumeAgent.ts:63-97`, FR-010, Contract: agent-resume.md, Data model: entity 4)
-- [ ] T016 [US2] Implement content optimization state reconstruction — `reconstructContentOptimizationState()` scanning resumed messages for persisted content references, gap-filling from parent's live optimization state for inherited entries — in `packages/core/src/agent/resume.ts` (MVP ref: `toolResultStorage.ts:reconstructForSubagentResume()`, FR-011, Research: R-005, SC-012)
-- [ ] T017 [US2] Implement worktree validation and mtime refresh in resume flow — stat check for worktree existence, `refreshWorktreeMtime()` BEFORE agent begins execution (prevents GC race), fallback to parent cwd with diagnostic log if worktree GC'd — in `packages/core/src/agent/resume.ts` (MVP ref: `resumeAgent.ts:82-97`, FR-012, Research: R-006)
-- [ ] T018 [US2] Implement three-tier system prompt re-threading for fork child resume — Tier 1: parent's live rendered prompt, Tier 2: rebuild from session config, Tier 3: throw explicit error (fail-fast) — in `packages/core/src/agent/resume.ts` (MVP ref: `resumeAgent.ts:116-148`, FR-013, Research: R-008)
-- [ ] T019 [US2] Wire resume into async agent lifecycle — set `invocationKind: 'resume'` on agent context (FR-017), skip permission re-gating (FR-018), preserve agent name registry entry, handle concurrent resume attempts (dedup guard) — in `packages/core/src/agent/resume.ts` (Contract: agent-resume.md, SC-004, SC-006)
-- [ ] T020 [P] [US2] Create unit tests for agent resume — transcript loading + orphan filtering (all 3 filter types), content optimization state reconstruction (cache-identical decisions), worktree validation (exists/GC'd fallback), system prompt re-threading (3 tiers), invocationKind marking — in `packages/core/test/agent/resume.test.ts` (Validates: SC-002, SC-004, SC-006, SC-012)
+- [x] T015 [US2] Implement `resumeAgentBackground(params)` orchestrator — load transcript + metadata from disk, apply 3-pass orphan filter pipeline (from `filter.ts`), assemble `AgentResumeState` — in `packages/core/src/agent/resume.ts` (MVP ref: `resumeAgent.ts:63-97`, FR-010, Contract: agent-resume.md, Data model: entity 4)
+- [x] T016 [US2] Implement content optimization state reconstruction — `reconstructContentOptimizationState()` scanning resumed messages for persisted content references, gap-filling from parent's live optimization state for inherited entries — in `packages/core/src/agent/resume.ts` (MVP ref: `toolResultStorage.ts:reconstructForSubagentResume()`, FR-011, Research: R-005, SC-012)
+- [x] T017 [US2] Implement worktree validation and mtime refresh in resume flow — stat check for worktree existence, `refreshWorktreeMtime()` BEFORE agent begins execution (prevents GC race), fallback to parent cwd with diagnostic log if worktree GC'd — in `packages/core/src/agent/resume.ts` (MVP ref: `resumeAgent.ts:82-97`, FR-012, Research: R-006)
+- [x] T018 [US2] Implement three-tier system prompt re-threading for fork child resume — Tier 1: parent's live rendered prompt, Tier 2: rebuild from session config, Tier 3: throw explicit error (fail-fast) — in `packages/core/src/agent/resume.ts` (MVP ref: `resumeAgent.ts:116-148`, FR-013, Research: R-008)
+- [x] T019 [US2] Wire resume into async agent lifecycle — set `invocationKind: 'resume'` on agent context (FR-017), skip permission re-gating (FR-018), preserve agent name registry entry, handle concurrent resume attempts (dedup guard) — in `packages/core/src/agent/resume.ts` (Contract: agent-resume.md, SC-004, SC-006)
+- [x] T020 [P] [US2] Create unit tests for agent resume — transcript loading + orphan filtering (all 3 filter types), content optimization state reconstruction (cache-identical decisions), worktree validation (exists/GC'd fallback), system prompt re-threading (3 tiers), invocationKind marking — in `packages/core/test/agent/resume.test.ts` (Validates: SC-002, SC-004, SC-006, SC-012)
 
 **Checkpoint**: Interrupted agents can be resumed from sidechain transcripts with full context, cleaned messages, and cache stability.
 
@@ -99,7 +99,7 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 3
 
-- [ ] T021 [US3] Validate and finalize fork behavioral contract content — verify all 10 non-negotiable rules match MVP parity (`forkSubagent.ts:171-198`), verify `<fork_boilerplate>` tag wrapping, verify structured output format (Scope, Result, Key files, Files changed, Issues), verify directive prefix placement, verify report length constraint (500 words) — in `packages/core/src/agent/fork.ts` (FR-008, Data model: entity 7, SC-010)
+- [x] T021 [US3] Validate and finalize fork behavioral contract content — verify all 10 non-negotiable rules match MVP parity (`forkSubagent.ts:171-198`), verify `<fork_boilerplate>` tag wrapping, verify structured output format (Scope, Result, Key files, Files changed, Issues), verify directive prefix placement, verify report length constraint (500 words) — in `packages/core/src/agent/fork.ts` (FR-008, Data model: entity 7, SC-010)
 
 **Checkpoint**: Fork children produce predictable, machine-parseable structured reports.
 
@@ -113,8 +113,8 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 4
 
-- [ ] T022 [US4] Implement `buildWorktreeNotice(parentCwd, worktreePath)` — generate path translation notice mapping parent workspace paths to child's worktree-local paths, include re-read guidance and isolation semantics ("changes stay in worktree, will not affect parent's files") — in `packages/core/src/agent/fork.ts` (FR-006, Data model: entity 9, SC-007)
-- [ ] T023 [US4] Integrate worktree notice injection into fork spawn path — when worktree isolation is active, call `buildWorktreeNotice()` and set `ForkedMessageSet.worktreeNotice`, include in child's context messages — in `packages/core/src/agent/runner.ts` (FR-006, Contract: fork-spawn.md postcondition 1)
+- [x] T022 [US4] Implement `buildWorktreeNotice(parentCwd, worktreePath)` — generate path translation notice mapping parent workspace paths to child's worktree-local paths, include re-read guidance and isolation semantics ("changes stay in worktree, will not affect parent's files") — in `packages/core/src/agent/fork.ts` (FR-006, Data model: entity 9, SC-007)
+- [x] T023 [US4] Integrate worktree notice injection into fork spawn path — when worktree isolation is active, call `buildWorktreeNotice()` and set `ForkedMessageSet.worktreeNotice`, include in child's context messages — in `packages/core/src/agent/runner.ts` (FR-006, Contract: fork-spawn.md postcondition 1)
 
 **Checkpoint**: Fork children in worktrees correctly resolve parent-referenced file paths to worktree-local equivalents.
 
@@ -130,9 +130,9 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 5
 
-- [ ] T024 [US5] Implement `routeMessage(params)` with 3-way routing logic — resolve recipient via AgentNameRegistry lookup then raw ID validation, route based on agent lifecycle state: running→`queuePendingMessage()`, stopped→`resumeAgentBackground()`, evicted→resume from disk transcript — in `packages/core/src/tool/send_message.ts` (MVP ref: `SendMessageTool.ts:800-873`, FR-015, FR-016, Contract: messaging.md)
-- [ ] T025 [US5] Implement `queuePendingMessage(agentId, message)` — add message to agent's pending message queue on task state, consumed by query loop at next tool round — in `packages/core/src/tool/send_message.ts` (Contract: messaging.md queue delivery mechanism)
-- [ ] T026 [US5] Wire SendMessage tool definition — define tool schema (recipientNameOrId, message params), register in tool pool, integrate with existing tool resolution — in `packages/core/src/tool/send_message.ts` (FR-015, SC-011)
+- [x] T024 [US5] Implement `routeMessage(params)` with 3-way routing logic — resolve recipient via AgentNameRegistry lookup then raw ID validation, route based on agent lifecycle state: running→`queuePendingMessage()`, stopped→`resumeAgentBackground()`, evicted→resume from disk transcript — in `packages/core/src/tool/send_message.ts` (MVP ref: `SendMessageTool.ts:800-873`, FR-015, FR-016, Contract: messaging.md)
+- [x] T025 [US5] Implement `queuePendingMessage(agentId, message)` — add message to agent's pending message queue on task state, consumed by query loop at next tool round — in `packages/core/src/tool/send_message.ts` (Contract: messaging.md queue delivery mechanism)
+- [x] T026 [US5] Wire SendMessage tool definition — define tool schema (recipientNameOrId, message params), register in tool pool, integrate with existing tool resolution — in `packages/core/src/tool/send_message.ts` (FR-015, SC-011)
 
 **Checkpoint**: Users can re-engage with any background agent by name or ID, with correct routing for all three lifecycle states.
 
@@ -148,9 +148,9 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 6
 
-- [ ] T027 [P] [US6] Implement real-time progress tracking — report tool use counts and activity descriptions as each tool round completes, emit progress updates within 2 seconds — in `packages/core/src/agent/lifecycle.ts` (FR-019, SC-008, MVP ref: `agentToolUtils.ts` progress tracking)
-- [ ] T028 [US6] Implement structured completion/failure/kill notification generation — include agent's final message, usage metrics (tokens consumed, tool uses, duration), worktree information, structured error for failures — in `packages/core/src/agent/lifecycle.ts` (FR-022, SC-009, MVP ref: `agentToolUtils.ts` notification generation)
-- [ ] T029 [US6] Implement partial result extraction from killed agent's last coherent assistant message and optional agent summarization trigger (enabled when fork active, coordinator active, or explicitly requested) in `packages/core/src/agent/lifecycle.ts` (FR-020, FR-021, SC-009)
+- [x] T027 [P] [US6] Implement real-time progress tracking — report tool use counts and activity descriptions as each tool round completes, emit progress updates within 2 seconds — in `packages/core/src/agent/lifecycle.ts` (FR-019, SC-008, MVP ref: `agentToolUtils.ts` progress tracking)
+- [x] T028 [US6] Implement structured completion/failure/kill notification generation — include agent's final message, usage metrics (tokens consumed, tool uses, duration), worktree information, structured error for failures — in `packages/core/src/agent/lifecycle.ts` (FR-022, SC-009, MVP ref: `agentToolUtils.ts` notification generation)
+- [x] T029 [US6] Implement partial result extraction from killed agent's last coherent assistant message and optional agent summarization trigger (enabled when fork active, coordinator active, or explicitly requested) in `packages/core/src/agent/lifecycle.ts` (FR-020, FR-021, SC-009)
 
 **Checkpoint**: All background agents provide real-time observability with structured lifecycle notifications.
 
@@ -166,8 +166,8 @@ All paths are relative to `packages/core/`:
 
 ### Implementation for User Story 7
 
-- [ ] T030 [US7] Wire `saveCacheSafeParams` into main agent loop's post-turn hook — after each turn completes, capture system prompt, user/system context, tool config, and context messages into session-scoped slot, clear on session end — in `packages/core/src/agent/lifecycle.ts` (FR-023, Contract: cache-safe-params.md, SC-013, MVP ref: `forkedAgent.ts:73-77`)
-- [ ] T031 [US7] Implement ephemeral fork variant with `skipTranscript` support — when `skipTranscript: true`, bypass sidechain transcript recording for system-internal forks (summarization, speculation), reducing I/O overhead — in `packages/core/src/agent/fork.ts` (FR-026)
+- [x] T030 [US7] Wire `saveCacheSafeParams` into main agent loop's post-turn hook — after each turn completes, capture system prompt, user/system context, tool config, and context messages into session-scoped slot, clear on session end — in `packages/core/src/agent/lifecycle.ts` / `loop.ts` (FR-023, Contract: cache-safe-params.md, SC-013, MVP ref: `forkedAgent.ts:73-77`)
+- [x] T031 [US7] Implement ephemeral fork variant with `skipTranscript` support — when `skipTranscript: true`, bypass sidechain transcript recording for system-internal forks (summarization, speculation), reducing I/O overhead — in `packages/core/src/agent/fork.ts` / `runner.ts` (FR-026)
 
 **Checkpoint**: Post-turn system forks achieve ≥90% prompt cache hit rate with main loop's context.
 
@@ -177,12 +177,12 @@ All paths are relative to `packages/core/`:
 
 **Purpose**: Test updates, type validation, formatting, and end-to-end validation.
 
-- [ ] T032 [P] Update orphaned message filter tests — add test cases for all 3 filter functions (unresolved tool uses, thinking-only, whitespace-only), verify composable pipeline order — in `packages/core/test/agent/filter.test.ts` (Validates: SC-006)
-- [ ] T033 [P] Update transcript read/reconstruct tests — add test cases for JSONL loading, content replacement extraction, optimization state reconstruction — in `packages/core/test/session/transcript.test.ts` (Validates: SC-012)
-- [ ] T034 Update module barrel exports — ensure all new public APIs (`isForkSubagentEnabled`, `buildForkedMessages`, `resumeAgentBackground`, `routeMessage`, `CacheSafeParams`, etc.) are exported from their respective module indices in `packages/core/src/`
-- [ ] T035 Run `bun typecheck` and resolve all type errors across modified files
-- [ ] T036 Run `bun lint:fix` and validate formatting compliance across modified files
-- [ ] T037 Run quickstart.md validation scenarios — execute all 5 quickstart flows (fork spawn, agent resume, teammate re-engagement, post-turn cache sharing, behavioral contract) and verify behavioral parity with MVP
+- [x] T032 [P] Update orphaned message filter tests — add test cases for all 3 filter functions (unresolved tool uses, thinking-only, whitespace-only), verify composable pipeline order — in `packages/core/test/agent/filter.test.ts` (Validates: SC-006)
+- [x] T033 [P] Update transcript read/reconstruct tests — add test cases for JSONL loading, content replacement extraction, optimization state reconstruction — in `packages/core/test/session/transcript.test.ts` (Validates: SC-012)
+- [x] T034 Update module barrel exports — ensure all new public APIs (`isForkSubagentEnabled`, `buildForkedMessages`, `resumeAgentBackground`, `routeMessage`, `CacheSafeParams`, etc.) are exported from their respective module indices in `packages/core/src/`
+- [x] T035 Run `bun typecheck` and resolve all type errors across modified files
+- [x] T036 Run `bun lint:fix` and validate formatting compliance across modified files
+- [x] T037 Run quickstart.md validation scenarios — execute all 5 quickstart flows (fork spawn, agent resume, teammate re-engagement, post-turn cache sharing, behavioral contract) and verify behavioral parity with MVP
 
 ---
 

@@ -166,3 +166,65 @@ describe("pruneContext", () => {
     expect(reductionPercent).toBeGreaterThanOrEqual(30)
   })
 })
+
+describe("Orphaned Message Filters", () => {
+  test("filterUnresolvedToolUses drops assistant message with unresolved tool call", () => {
+    const messages = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: [{ type: "tool-call" }] },
+      { role: "user", content: "some text" },
+    ] as import("../../src/session/transcript").TranscriptMessage[]
+    const filtered = import("../../src/agent/filter").then((m) => m.filterUnresolvedToolUses(messages))
+    return filtered.then((res) => {
+      expect(res).toHaveLength(2)
+      expect(res[0].role).toBe("user")
+      expect(res[1].role).toBe("user")
+    })
+  })
+
+  test("filterUnresolvedToolUses keeps assistant message with resolved tool call", () => {
+    const messages = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: [{ type: "tool-call" }] },
+      { role: "tool", content: [{ type: "tool-result" }] },
+    ] as import("../../src/session/transcript").TranscriptMessage[]
+    const filtered = import("../../src/agent/filter").then((m) => m.filterUnresolvedToolUses(messages))
+    return filtered.then((res) => {
+      expect(res).toHaveLength(3)
+    })
+  })
+
+  test("filterOrphanedThinkingOnlyMessages drops thinking-only messages", () => {
+    const messages = [
+      { role: "user", content: "think" },
+      { role: "assistant", content: [{ type: "thinking", text: "hmmm" }] },
+      {
+        role: "assistant",
+        content: [
+          { type: "thinking", text: "hmmm" },
+          { type: "text", text: "aha!" },
+        ],
+      },
+    ] as import("../../src/session/transcript").TranscriptMessage[]
+    const filtered = import("../../src/agent/filter").then((m) => m.filterOrphanedThinkingOnlyMessages(messages))
+    return filtered.then((res) => {
+      expect(res).toHaveLength(2)
+      // Only the one containing 'text' part should be kept
+      expect(res[1].content[1].type).toBe("text")
+    })
+  })
+
+  test("filterWhitespaceOnlyAssistantMessages drops whitespace-only messages", () => {
+    const messages = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "   \n  \t " },
+      { role: "assistant", content: [{ type: "text", text: "   " }] },
+      { role: "assistant", content: [{ type: "text", text: "valid" }] },
+    ] as import("../../src/session/transcript").TranscriptMessage[]
+    const filtered = import("../../src/agent/filter").then((m) => m.filterWhitespaceOnlyAssistantMessages(messages))
+    return filtered.then((res) => {
+      expect(res).toHaveLength(2)
+      expect(res[1].content[0].text).toBe("valid")
+    })
+  })
+})

@@ -222,7 +222,7 @@ These features layer on top of Phase 2's core sub-agent architecture (context fo
 3. speckit.tasks   → Phase 1 tasks
 4. speckit.implement → Phase 1 implementation
 5. Verify Phase 1 (typecheck, tests) ✅
-6. Repeat 1-5 for Phase 2                ◄── current
-7. Repeat 1-5 for Phase 3
-8. Repeat 1-5 for Phase 4                (parallel-eligible with Phase 3)
+6. Repeat 1-5 for Phase 2 ✅
+7. Repeat 1-5 for Phase 4 ◄── current
+8. Repeat 1-5 for Phase 3
 ```

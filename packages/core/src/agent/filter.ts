@@ -1,3 +1,4 @@
+import type { TranscriptMessage } from "../session/transcript"
 import type { Agent } from "./agent"
 
 const ALL_AGENT_DISALLOWED_TOOLS = [
@@ -174,4 +175,77 @@ export function pruneContext(
   }
 
   return { prunedUserContext, prunedSystemContext }
+}
+
+export function filterUnresolvedToolUses(messages: TranscriptMessage[]): TranscriptMessage[] {
+  return messages.filter((msg, index) => {
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) return true
+    // If it has a tool call or tool_use part
+    const hasToolCall = msg.content.some(
+      (part) =>
+        typeof part === "object" &&
+        part !== null &&
+        "type" in part &&
+        (part.type === "tool-call" || part.type === "tool_use"),
+    )
+    if (!hasToolCall) return true
+
+    // Scan ahead for matching tool results
+    for (let i = index + 1; i < messages.length; i++) {
+      const nextMsg = messages[i]
+      if (nextMsg.role === "tool") return true
+      if (nextMsg.role === "user" && Array.isArray(nextMsg.content)) {
+        if (
+          nextMsg.content.some(
+            (part) =>
+              typeof part === "object" &&
+              part !== null &&
+              "type" in part &&
+              (part.type === "tool-result" || part.type === "tool_result"),
+          )
+        ) {
+          return true
+        }
+      }
+      // Stop if we hit another assistant message with tool calls
+      if (nextMsg.role === "assistant") break
+    }
+
+    return false
+  })
+}
+
+export function filterOrphanedThinkingOnlyMessages(messages: TranscriptMessage[]): TranscriptMessage[] {
+  return messages.filter((msg) => {
+    if (msg.role !== "assistant") return true
+    if (typeof msg.content === "string") return msg.content.trim().length > 0
+    if (!Array.isArray(msg.content)) return true
+
+    const containsNonThinking = msg.content.some(
+      (part) =>
+        typeof part === "object" &&
+        part !== null &&
+        "type" in part &&
+        part.type !== "thinking" &&
+        part.type !== "redacted-thinking",
+    )
+    return containsNonThinking
+  })
+}
+
+export function filterWhitespaceOnlyAssistantMessages(messages: TranscriptMessage[]): TranscriptMessage[] {
+  return messages.filter((msg) => {
+    if (msg.role !== "assistant") return true
+    if (typeof msg.content === "string") return msg.content.trim().length > 0
+    if (!Array.isArray(msg.content)) return true
+
+    const hasVisibleContent = msg.content.some((part) => {
+      if (typeof part === "object" && part !== null && "type" in part && part.type === "text") {
+        const text = (part as { text?: string }).text
+        return typeof text === "string" ? text.trim().length > 0 : true
+      }
+      return true
+    })
+    return hasVisibleContent
+  })
 }

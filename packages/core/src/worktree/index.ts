@@ -669,4 +669,17 @@ export namespace Worktree {
 
     return true
   })
+
+  export async function refreshWorktreeMtime(directory: string): Promise<boolean> {
+    try {
+      const stat = await fs.stat(directory)
+      if (!stat.isDirectory()) return false
+      const now = new Date()
+      await fs.utimes(directory, now, now)
+      return true
+    } catch (err) {
+      log.warn("Failed to refresh worktree mtime", { directory, error: err })
+      return false
+    }
+  }
 }
