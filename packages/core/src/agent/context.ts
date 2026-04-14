@@ -27,6 +27,8 @@ export interface AppState {
   shouldAvoidPermissionPrompts?: boolean
   permissionMode?: Agent.Info["permissionMode"]
   toolDecisions?: Record<string, ToolDecision>
+  /** Per-agent activity descriptions from the periodic summarization loop. */
+  agentSummaries?: Record<string, string>
 }
 
 export type AgentContext = SubagentContext | TeammateAgentContext

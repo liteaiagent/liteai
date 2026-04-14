@@ -1,12 +1,16 @@
-import { describe, expect, it, spyOn } from "bun:test"
+import { describe, expect, it, mock, spyOn } from "bun:test"
 import { AgentEvent } from "@/agent/events"
 import {
+  buildSummarizationPrompt,
   classifyHandoffIfNeeded,
   enqueueAgentNotification,
   extractPartialResult,
   ProgressTracker,
+  type SummarizationDeps,
+  startAgentSummarization,
 } from "@/agent/lifecycle"
 import { Bus } from "@/bus/index"
+import type { TranscriptMessage } from "@/session/transcript"
 
 describe("Agent Lifecycle", () => {
   describe("ProgressTracker", () => {
@@ -87,7 +91,7 @@ describe("Agent Lifecycle", () => {
   describe("extractPartialResult", () => {
     it("should extract last partial result and truncate to 2000 chars", () => {
       const longText = "a".repeat(3000)
-      const messages: import("@/session/transcript").TranscriptMessage[] = [
+      const messages: TranscriptMessage[] = [
         { isSidechain: true, uuid: "1", role: "user", content: "do something", timestamp: 1 },
         { isSidechain: true, uuid: "2", role: "assistant", content: longText, timestamp: 2 },
       ]
@@ -100,7 +104,7 @@ describe("Agent Lifecycle", () => {
     it("should prepend security warning if flag is enabled and YOLO action found", async () => {
       const originalFlag = process.env.TRANSCRIPT_CLASSIFIER
       process.env.TRANSCRIPT_CLASSIFIER = "true"
-      const messages: import("@/session/transcript").TranscriptMessage[] = [
+      const messages: TranscriptMessage[] = [
         { isSidechain: true, uuid: "1", role: "user", content: "do it", timestamp: 1 },
         { isSidechain: true, uuid: "2", role: "assistant", content: "rm -rf /", timestamp: 2 },
       ]
@@ -152,6 +156,91 @@ describe("Agent Lifecycle", () => {
       expect(results).toContain("agent-B")
       expect(results).toContain("agent-C")
       expect(results).toHaveLength(3)
+    })
+  })
+
+  // ─── Summarization Tests ──────────────────────────────────────────────────
+
+  describe("buildSummarizationPrompt", () => {
+    it("should include transcript messages in the prompt", () => {
+      const messages: TranscriptMessage[] = [
+        { isSidechain: true, uuid: "1", role: "user", content: "Fix the bug", timestamp: 1 },
+        { isSidechain: true, uuid: "2", role: "assistant", content: "Reading src/foo.ts", timestamp: 2 },
+      ]
+      const prompt = buildSummarizationPrompt(messages, null)
+      expect(prompt).toContain("[user] Fix the bug")
+      expect(prompt).toContain("[assistant] Reading src/foo.ts")
+      expect(prompt).toContain("3-5 words")
+      expect(prompt).toContain("present tense")
+    })
+
+    it("should include previous summary for novelty enforcement", () => {
+      const messages: TranscriptMessage[] = [
+        { isSidechain: true, uuid: "1", role: "assistant", content: "Done", timestamp: 1 },
+      ]
+      const prompt = buildSummarizationPrompt(messages, "Reading runAgent.ts")
+      expect(prompt).toContain('Previous: "Reading runAgent.ts"')
+      expect(prompt).toContain("say something NEW")
+    })
+
+    it("should truncate long message content", () => {
+      const longContent = "x".repeat(500)
+      const messages: TranscriptMessage[] = [
+        { isSidechain: true, uuid: "1", role: "assistant", content: longContent, timestamp: 1 },
+      ]
+      const prompt = buildSummarizationPrompt(messages, null)
+      // Full 500-char content must NOT survive into the prompt
+      expect(prompt).not.toContain(longContent)
+      // The 200-char prefix must be present (truncation boundary)
+      expect(prompt).toContain("x".repeat(200))
+      // Truncation marker must appear after the prefix
+      expect(prompt).toContain("…")
+    })
+  })
+
+  describe("startAgentSummarization", () => {
+    it("should return a cleanup function", () => {
+      const deps: SummarizationDeps = {
+        getTranscript: () => [],
+        setAppStateForTasks: () => {},
+      }
+      const stop = startAgentSummarization("sess-1", "agent-1", deps)
+      expect(typeof stop).toBe("function")
+      // Clean up without errors
+      stop()
+    })
+
+    it("cleanup should be idempotent (safe to call multiple times)", () => {
+      const deps: SummarizationDeps = {
+        getTranscript: () => [],
+        setAppStateForTasks: () => {},
+      }
+      const stop = startAgentSummarization("sess-1", "agent-1", deps)
+      // Should not throw when called multiple times
+      stop()
+      stop()
+      stop()
+    })
+
+    it("should skip summarization when transcript has fewer than 3 messages", async () => {
+      const setAppStateSpy = mock(() => {})
+      const deps: SummarizationDeps = {
+        getTranscript: () => [{ isSidechain: true, uuid: "1", role: "user", content: "hello", timestamp: 1 }],
+        setAppStateForTasks: setAppStateSpy,
+      }
+
+      // Use a 1 ms interval so the timer fires during the sleep — without
+      // this the default 30 s interval would never fire and the test would
+      // trivially pass (false positive).
+      const stop = startAgentSummarization("sess-1", "agent-1", deps, { intervalMs: 1 })
+
+      // Wait long enough for several ticks to fire
+      await Bun.sleep(100)
+      stop()
+
+      // runSummary must early-return because transcript.length < 3,
+      // so setAppStateForTasks should never be called.
+      expect(setAppStateSpy).not.toHaveBeenCalled()
     })
   })
 })

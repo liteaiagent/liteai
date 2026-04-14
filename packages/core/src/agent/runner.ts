@@ -25,7 +25,7 @@ const logger = Log.create({ service: "agent:runner" })
 
 import { registerPerfettoAgent } from "@/telemetry/perfetto"
 import { type AcquiredResources, AgentCleanup } from "./cleanup"
-import { extractPartialResult, runAsyncAgentLifecycle } from "./lifecycle"
+import { extractPartialResult, runAsyncAgentLifecycle, type SummarizationDeps } from "./lifecycle"
 
 export const DEFAULT_CONCURRENT_AGENT_LIMIT = 8
 
@@ -383,7 +383,15 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
     }
 
     if (isAsync) {
-      return await runAsyncAgentLifecycle(agentName, sessId, agentId, executeLogic)
+      // Wire summarization deps: the runner has access to the accumulated
+      // transcript and the subContext's root store passthrough.
+      const summarizationDeps: SummarizationDeps | undefined = subContext
+        ? {
+            getTranscript: () => transcriptMessagesRef ?? [],
+            setAppStateForTasks: subContext.setAppStateForTasks,
+          }
+        : undefined
+      return await runAsyncAgentLifecycle(agentName, sessId, agentId, executeLogic, summarizationDeps)
     } else {
       return await runWithAgentContext(subContext, executeLogic)
     }
