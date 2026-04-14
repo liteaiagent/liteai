@@ -69,9 +69,9 @@ Everything before `user8` stays in the DB for the UI but never reaches the LLM.
 
 **Key implication for the buffer:** Both `user8` and `asst9` are written by `loop.ts` itself during compaction. `loop.ts` already holds them in-memory. No DB re-read is needed. The buffer simply resets to `[user8, asst9]` after compaction.
 
-### Comparison with liteai2
+### Comparison with liteai_cli_mvp
 
-liteai2 keeps the entire message history as a single live JavaScript array with no database. Compaction replaces the array with `buildPostCompactMessages(result)` — a `[boundaryMarker, ...summaryMessages, ...attachments]` splice. `getMessagesAfterCompactBoundary()` is a simple backwards scan + `messages.slice(boundaryIndex)`.
+liteai_cli_mvp keeps the entire message history as a single live JavaScript array with no database. Compaction replaces the array with `buildPostCompactMessages(result)` — a `[boundaryMarker, ...summaryMessages, ...attachments]` splice. `getMessagesAfterCompactBoundary()` is a simple backwards scan + `messages.slice(boundaryIndex)`.
 
 Our buffer approach mirrors this exactly: after compaction, reset the buffer to just the new boundary messages. The full pre-compaction history remains in DB for UI display.
 

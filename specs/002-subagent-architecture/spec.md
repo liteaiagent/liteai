@@ -7,26 +7,26 @@
 
 ## Reference Implementation
 
-> All references point to the liteai2 source at `src/`
+> All references point to the liteai_cli_mvp source at `src/`
 
 ### Agent Definition Type System
 
-- **[loadAgentsDir.ts](../../liteai2/src/tools/AgentTool/loadAgentsDir.ts)** — Defines the complete agent type hierarchy: `BaseAgentDefinition`, `BuiltInAgentDefinition`, `CustomAgentDefinition`, `PluginAgentDefinition`, and the union `AgentDefinition`. Contains `AgentJsonSchema` (Zod, L73–99), `AgentMcpServerSpecSchema` (L63–68), type guards (`isBuiltInAgent`, `isCustomAgent`, `isPluginAgent`), and `getActiveAgentsFromList()` (L193–221) which implements deterministic priority ordering: `builtIn < plugin < userSettings < projectSettings < flagSettings < policySettings`.
-- **[loadAgentsDir.ts:parseAgentFromMarkdown](../../liteai2/src/tools/AgentTool/loadAgentsDir.ts#L541)** — Parses `.md` frontmatter into a `CustomAgentDefinition`, handling all expanded config fields: tools, disallowedTools, skills, mcpServers, hooks, model (with `'inherit'` transform), effort, permissionMode, maxTurns, memory, background, isolation, color, initialPrompt.
-- **[builtInAgents.ts](../../liteai2/src/tools/AgentTool/builtInAgents.ts)** — Registers built-in agents (Explore, Plan, general-purpose) as `BuiltInAgentDefinition` with dynamic `getSystemPrompt()` closures.
+- **[loadAgentsDir.ts](../../liteai_cli_mvp/src/tools/AgentTool/loadAgentsDir.ts)** — Defines the complete agent type hierarchy: `BaseAgentDefinition`, `BuiltInAgentDefinition`, `CustomAgentDefinition`, `PluginAgentDefinition`, and the union `AgentDefinition`. Contains `AgentJsonSchema` (Zod, L73–99), `AgentMcpServerSpecSchema` (L63–68), type guards (`isBuiltInAgent`, `isCustomAgent`, `isPluginAgent`), and `getActiveAgentsFromList()` (L193–221) which implements deterministic priority ordering: `builtIn < plugin < userSettings < projectSettings < flagSettings < policySettings`.
+- **[loadAgentsDir.ts:parseAgentFromMarkdown](../../liteai_cli_mvp/src/tools/AgentTool/loadAgentsDir.ts#L541)** — Parses `.md` frontmatter into a `CustomAgentDefinition`, handling all expanded config fields: tools, disallowedTools, skills, mcpServers, hooks, model (with `'inherit'` transform), effort, permissionMode, maxTurns, memory, background, isolation, color, initialPrompt.
+- **[builtInAgents.ts](../../liteai_cli_mvp/src/tools/AgentTool/builtInAgents.ts)** — Registers built-in agents (Explore, Plan, general-purpose) as `BuiltInAgentDefinition` with dynamic `getSystemPrompt()` closures.
 
 ### Context Forking (`createSubagentContext`)
 
-- **[forkedAgent.ts](../../liteai2/src/utils/forkedAgent.ts)** — Core context forking implementation. Key exports:
+- **[forkedAgent.ts](../../liteai_cli_mvp/src/utils/forkedAgent.ts)** — Core context forking implementation. Key exports:
   - `createSubagentContext()` (L345–462): Creates an isolated `ToolUseContext` from the parent. Isolation model: `readFileState` cloned (L379–381), `abortController` child-linked or shared (L350–354), `getAppState` wrapped to set `shouldAvoidPermissionPrompts` (L358–374), `setAppState` no-op by default (L410–412), `toolDecisions` fresh undefined (L387), `contentReplacementState` cloned for cache stability (L399–403), `queryTracking` with incremented depth (L452–455).
   - `SubagentContextOverrides` type (L260–304): All possible override fields including `shareSetAppState`, `shareSetResponseLength`, `shareAbortController` opt-ins.
   - `CacheSafeParams` type (L57–68): Carries system prompt, user/system context, tool use context, and fork context messages — must be byte-identical to parent for prompt cache hits.
   - `runForkedAgent()` (L489–626): The actual query loop for forked agents with usage tracking, sidechain transcript recording, and analytics.
-- **[forkSubagent.ts](../../liteai2/src/tools/AgentTool/forkSubagent.ts)** — Fork subagent experiment: `FORK_AGENT` definition (L60–71), `buildForkedMessages()` (L107–169) for constructing byte-identical API prefixes, `isInForkChild()` (L78–89) recursion guard, `buildWorktreeNotice()` (L205–210) for git worktree isolation.
+- **[forkSubagent.ts](../../liteai_cli_mvp/src/tools/AgentTool/forkSubagent.ts)** — Fork subagent experiment: `FORK_AGENT` definition (L60–71), `buildForkedMessages()` (L107–169) for constructing byte-identical API prefixes, `isInForkChild()` (L78–89) recursion guard, `buildWorktreeNotice()` (L205–210) for git worktree isolation.
 
 ### Context Pruning
 
-- **[runAgent.ts:L385–410](../../liteai2/src/tools/AgentTool/runAgent.ts#L385)** — Intelligent stripping for read-only agents:
+- **[runAgent.ts:L385–410](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L385)** — Intelligent stripping for read-only agents:
   - LiteaiMd stripping (L390–398): `shouldOmitLiteaiMd = agentDefinition.omitLiteaiMd && !override?.userContext && featureFlag('liteai_slim_subagent_liteaimd', true)`. Destructures `{ liteaiMd: _omitted, ...userContextNoLiteaiMd }`.
   - Git status stripping (L400–410): `{ gitStatus: _omitted, ...systemContextNoGit }` for Explore/Plan agents. Saves ~1–3 Gtok/week fleet-wide.
   - Kill-switch: feature flag `liteai_slim_subagent_liteaimd` defaults true.
@@ -41,7 +41,7 @@ Sub-agents construct their system prompt independently using the Phase 1 `Sectio
 
 ### Permission Sandboxing
 
-- **[runAgent.ts:L412–498](../../liteai2/src/tools/AgentTool/runAgent.ts#L412)** — Full permission sandboxing implementation:
+- **[runAgent.ts:L412–498](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L412)** — Full permission sandboxing implementation:
   - Permission mode inheritance (L421–434): Agent's mode overrides parent **unless** parent is `bypassPermissions`, `acceptEdits`, or `auto` (feature-gated).
   - Async prompt blocking (L440–451): `shouldAvoidPrompts` derived from `canShowPermissionPrompts` param, `bubble` mode, and `isAsync` flag. Sets `shouldAvoidPermissionPrompts: true` on the permission context.
   - Automated check gating (L458–463): Background agents that *can* show prompts get `awaitAutomatedChecksBeforeDialog: true`.
@@ -49,19 +49,19 @@ Sub-agents construct their system prompt independently using the Phase 1 `Sectio
 
 ### Sidechain Transcripts
 
-- **[sessionStorage.ts:recordSidechainTranscript](../../liteai2/src/utils/sessionStorage.ts#L1451)** — Writes messages to an isolated agent transcript file (L1451–1462). Uses `insertMessageChain()` with `isSidechain=true` and the agent's unique ID.
-- **[sessionStorage.ts:setAgentTranscriptSubdir](../../liteai2/src/utils/sessionStorage.ts#L236)** — Routes agent transcripts to grouping subdirectories (L236–241). Path: `<projectDir>/<sessionId>/subagents/<subdir>/agent-<agentId>.jsonl`.
-- **[sessionStorage.ts:getAgentTranscriptPath](../../liteai2/src/utils/sessionStorage.ts#L247)** — Resolves the sidechain file path by agent ID and optional subdir (L247–258).
-- **[runAgent.ts:L735–800](../../liteai2/src/tools/AgentTool/runAgent.ts#L735)** — Recording pattern: initial messages recorded before query loop (fire-and-forget), each turn appended incrementally with `lastRecordedUuid` for parent chain continuity.
+- **[sessionStorage.ts:recordSidechainTranscript](../../liteai_cli_mvp/src/utils/sessionStorage.ts#L1451)** — Writes messages to an isolated agent transcript file (L1451–1462). Uses `insertMessageChain()` with `isSidechain=true` and the agent's unique ID.
+- **[sessionStorage.ts:setAgentTranscriptSubdir](../../liteai_cli_mvp/src/utils/sessionStorage.ts#L236)** — Routes agent transcripts to grouping subdirectories (L236–241). Path: `<projectDir>/<sessionId>/subagents/<subdir>/agent-<agentId>.jsonl`.
+- **[sessionStorage.ts:getAgentTranscriptPath](../../liteai_cli_mvp/src/utils/sessionStorage.ts#L247)** — Resolves the sidechain file path by agent ID and optional subdir (L247–258).
+- **[runAgent.ts:L735–800](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L735)** — Recording pattern: initial messages recorded before query loop (fire-and-forget), each turn appended incrementally with `lastRecordedUuid` for parent chain continuity.
 
 ### Dynamic MCP Server Mounting
 
-- **[runAgent.ts:initializeAgentMcpServers](../../liteai2/src/tools/AgentTool/runAgent.ts#L95)** — Agent-scoped MCP lifecycle (L95–218):
+- **[runAgent.ts:initializeAgentMcpServers](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L95)** — Agent-scoped MCP lifecycle (L95–218):
   - String reference path (L140–151): Looks up existing config via `getMcpConfigByName()`, reuses memoized `connectToServer()`.
   - Inline definition path (L152–170): Creates new scoped connection, tracked in `newlyCreatedClients[]`.
   - Cleanup function (L197–210): Only cleans up `newlyCreatedClients`, not shared referenced connections.
   - Policy guard (L117–127): `isRestrictedToPluginOnly('mcp')` blocks user-defined agents' MCP; admin-trusted sources always allowed.
-- **[loadAgentsDir.ts:AgentMcpServerSpec](../../liteai2/src/tools/AgentTool/loadAgentsDir.ts#L58)** — Type definition: `string` (reference) | `{ [name]: McpServerConfig }` (inline).
+- **[loadAgentsDir.ts:AgentMcpServerSpec](../../liteai_cli_mvp/src/tools/AgentTool/loadAgentsDir.ts#L58)** — Type definition: `string` (reference) | `{ [name]: McpServerConfig }` (inline).
 
 ### Agent Persistent Memory
 
@@ -81,9 +81,9 @@ Agent memory is a **filesystem-backed persistent knowledge store** where agents 
 
 **Snapshot system** (`agentMemorySnapshot.ts`): Project-level snapshots can seed initial agent memory. When `AGENT_MEMORY_SNAPSHOT` feature flag is enabled, the system checks for newer snapshots and copies them to local memory on first load.
 
-- **[agentMemory.ts](../../liteai2/src/tools/AgentTool/agentMemory.ts)** — Core memory module: `AgentMemoryScope` type, `getAgentMemoryDir()` (path resolution by scope), `loadAgentMemoryPrompt()` (system prompt injection with scope-specific guidelines), `isAgentMemoryPath()` (security boundary check with path traversal prevention).
-- **[agentMemorySnapshot.ts](../../liteai2/src/tools/AgentTool/agentMemorySnapshot.ts)** — Snapshot lifecycle: `checkAgentMemorySnapshot()` detects newer project snapshots, `copyProjectSnapshotToLocal()` seeds local memory from project-level snapshots.
-- **[loadAgentsDir.ts:L455–484](../../liteai2/src/tools/AgentTool/loadAgentsDir.ts#L455)** — Auto-injection of memory tools: when `isAutoMemoryEnabled() && parsed.memory`, the system injects Read/Write/Edit tools scoped to the agent's memory directory and appends `loadAgentMemoryPrompt()` to the system prompt.
+- **[agentMemory.ts](../../liteai_cli_mvp/src/tools/AgentTool/agentMemory.ts)** — Core memory module: `AgentMemoryScope` type, `getAgentMemoryDir()` (path resolution by scope), `loadAgentMemoryPrompt()` (system prompt injection with scope-specific guidelines), `isAgentMemoryPath()` (security boundary check with path traversal prevention).
+- **[agentMemorySnapshot.ts](../../liteai_cli_mvp/src/tools/AgentTool/agentMemorySnapshot.ts)** — Snapshot lifecycle: `checkAgentMemorySnapshot()` detects newer project snapshots, `copyProjectSnapshotToLocal()` seeds local memory from project-level snapshots.
+- **[loadAgentsDir.ts:L455–484](../../liteai_cli_mvp/src/tools/AgentTool/loadAgentsDir.ts#L455)** — Auto-injection of memory tools: when `isAutoMemoryEnabled() && parsed.memory`, the system injects Read/Write/Edit tools scoped to the agent's memory directory and appends `loadAgentMemoryPrompt()` to the system prompt.
 
 **`isAutoMemoryEnabled()` gate**: Memory auto-injection is controlled by a multi-source settings priority chain (first defined wins):
 1. `LITEAI_DISABLE_AUTO_MEMORY` environment variable (truthy → OFF, falsy-defined → ON)
@@ -111,10 +111,10 @@ A **short, static text string** configured per-agent that gets **re-injected on 
 
 **Related but distinct:** The broader `<system-reminder>` wrapping mechanism (used by plan mode, auto mode, ephemeral user message reminders in `query.ts`) serves a similar purpose but is dynamically generated from the current mode state. The `criticalSystemReminder` field is the **agent-scoped, static** variant configured at definition time.
 
-- **[attachments.ts:getCriticalSystemReminderAttachment](../../liteai2/src/utils/attachments.ts#L1587)** — Reads `toolUseContext.criticalSystemReminder_EXPERIMENTAL` and emits it as a `critical_system_reminder` attachment on every turn.
-- **[forkedAgent.ts:SubagentContextOverrides](../../liteai2/src/utils/forkedAgent.ts#L295)** — Propagates the reminder through context forking: `criticalSystemReminder_EXPERIMENTAL?: string`.
-- **[verificationAgent.ts](../../liteai2/src/tools/AgentTool/built-in/verificationAgent.ts#L150)** — Example usage: verification agent uses it to reinforce read-only constraints and require a VERDICT.
-- **[runAgent.ts:L711–712](../../liteai2/src/tools/AgentTool/runAgent.ts#L711)** — Passes `agentDefinition.criticalSystemReminder_EXPERIMENTAL` into the subagent context overrides.
+- **[attachments.ts:getCriticalSystemReminderAttachment](../../liteai_cli_mvp/src/utils/attachments.ts#L1587)** — Reads `toolUseContext.criticalSystemReminder_EXPERIMENTAL` and emits it as a `critical_system_reminder` attachment on every turn.
+- **[forkedAgent.ts:SubagentContextOverrides](../../liteai_cli_mvp/src/utils/forkedAgent.ts#L295)** — Propagates the reminder through context forking: `criticalSystemReminder_EXPERIMENTAL?: string`.
+- **[verificationAgent.ts](../../liteai_cli_mvp/src/tools/AgentTool/built-in/verificationAgent.ts#L150)** — Example usage: verification agent uses it to reinforce read-only constraints and require a VERDICT.
+- **[runAgent.ts:L711–712](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L711)** — Passes `agentDefinition.criticalSystemReminder_EXPERIMENTAL` into the subagent context overrides.
 
 ### Root vs Sub-Agent Discriminator
 
@@ -132,18 +132,18 @@ This discriminator is a **first-class architectural contract** that gates numero
 - **Memory extraction**: Sub-agents skip memory extraction (`if (context.toolUseContext.agentId)` guard in extractMemories.ts L532).
 - **Tracing**: `parentId = toolUseContext.agentId ?? getSessionId()` — the agentId doubles as the parent reference in the tracing tree.
 
-- **[attachments.ts:L770](../../liteai2/src/utils/attachments.ts#L770)** — `isMainThread = !toolUseContext.agentId` — gates root-only attachment injection.
-- **[query.ts:L342](../../liteai2/src/query.ts#L342)** — `if (!toolUseContext.agentId)` — root-only session lifecycle operations.
-- **[stopHooks.ts:L112–164](../../liteai2/src/query/stopHooks.ts#L112)** — Multiple `!toolUseContext.agentId` guards for root-only stop hooks.
-- **[PermissionContext.ts:L159](../../liteai2/src/hooks/toolPermission/PermissionContext.ts#L159)** — `const sub = !!toolUseContext.agentId` — sub-agent permission scoping.
+- **[attachments.ts:L770](../../liteai_cli_mvp/src/utils/attachments.ts#L770)** — `isMainThread = !toolUseContext.agentId` — gates root-only attachment injection.
+- **[query.ts:L342](../../liteai_cli_mvp/src/query.ts#L342)** — `if (!toolUseContext.agentId)` — root-only session lifecycle operations.
+- **[stopHooks.ts:L112–164](../../liteai_cli_mvp/src/query/stopHooks.ts#L112)** — Multiple `!toolUseContext.agentId` guards for root-only stop hooks.
+- **[PermissionContext.ts:L159](../../liteai_cli_mvp/src/hooks/toolPermission/PermissionContext.ts#L159)** — `const sub = !!toolUseContext.agentId` — sub-agent permission scoping.
 
 ### Hierarchical Tracing
 
-- **[runAgent.ts:L356–359](../../liteai2/src/tools/AgentTool/runAgent.ts#L356)** — Perfetto span registration: `registerPerfettoAgent(agentId, agentDefinition.agentType, parentId)` with `parentId = toolUseContext.agentId ?? getSessionId()`.
+- **[runAgent.ts:L356–359](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L356)** — Perfetto span registration: `registerPerfettoAgent(agentId, agentDefinition.agentType, parentId)` with `parentId = toolUseContext.agentId ?? getSessionId()`.
 
 ### Async Agent Lifecycle Management
 
-- **[agentToolUtils.ts:runAsyncAgentLifecycle](../../liteai2/src/tools/AgentTool/agentToolUtils.ts#L508)** — Drives background agents from spawn to terminal notification (L508–686). Key lifecycle stages:
+- **[agentToolUtils.ts:runAsyncAgentLifecycle](../../liteai_cli_mvp/src/tools/AgentTool/agentToolUtils.ts#L508)** — Drives background agents from spawn to terminal notification (L508–686). Key lifecycle stages:
   - Progress tracking: `ProgressTracker` with `createActivityDescriptionResolver()` mapping tool names to human-readable descriptions.
   - Agent summarization: `startAgentSummarization()` triggered via `onCacheSafeParams` callback — produces 30-second-interval periodic summaries for background agents. Timer resets after each summary completes (not on initiation) to prevent overlap. Always enabled for async agents when the caller passes `enableSummarization: true` — not driven by agent definition config. Each summary forks the current transcript and asks for a 3–5 word present-tense activity description.
   - Terminal notifications: `enqueueAgentNotification()` with status (completed/failed/killed), usage metrics, and worktree info.
@@ -151,13 +151,13 @@ This discriminator is a **first-class architectural contract** that gates numero
   - Partial results: `extractPartialResult()` (L488–500) — preserves last meaningful output from killed agents.
   - Cache eviction: `liteai_cache_eviction_hint` event on agent completion (L338–346).
   - Retain mode: Live message appending to AppState when UI holds the task (L559–570).
-  > **Deferred**: Retain mode (live message streaming to UI for held tasks) is documented for reference parity with liteai2. It is deferred from this phase as it requires UI integration in `packages/web`. Implementation will follow in the UI integration phase.
-- **[agentToolUtils.ts:filterToolsForAgent](../../liteai2/src/tools/AgentTool/agentToolUtils.ts#L70)** — Tool filtering with disallow lists (`ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, `ASYNC_AGENT_ALLOWED_TOOLS`). MCP tools always allowed.
-- **[agentToolUtils.ts:resolveAgentTools](../../liteai2/src/tools/AgentTool/agentToolUtils.ts#L122)** — Validates agent tool specs against available tools, supports wildcard expansion, and extracts `allowedAgentTypes` from `Agent(type1, type2)` spec syntax.
+  > **Deferred**: Retain mode (live message streaming to UI for held tasks) is documented for reference parity with liteai_cli_mvp. It is deferred from this phase as it requires UI integration in `packages/web`. Implementation will follow in the UI integration phase.
+- **[agentToolUtils.ts:filterToolsForAgent](../../liteai_cli_mvp/src/tools/AgentTool/agentToolUtils.ts#L70)** — Tool filtering with disallow lists (`ALL_AGENT_DISALLOWED_TOOLS`, `CUSTOM_AGENT_DISALLOWED_TOOLS`, `ASYNC_AGENT_ALLOWED_TOOLS`). MCP tools always allowed.
+- **[agentToolUtils.ts:resolveAgentTools](../../liteai_cli_mvp/src/tools/AgentTool/agentToolUtils.ts#L122)** — Validates agent tool specs against available tools, supports wildcard expansion, and extracts `allowedAgentTypes` from `Agent(type1, type2)` spec syntax.
 
 ### Agent Execution Context (`AsyncLocalStorage`)
 
-- **[agentContext.ts](../../liteai2/src/utils/agentContext.ts)** — Process-level agent identity isolation using `AsyncLocalStorage<AgentContext>` (L93). Key exports:
+- **[agentContext.ts](../../liteai_cli_mvp/src/utils/agentContext.ts)** — Process-level agent identity isolation using `AsyncLocalStorage<AgentContext>` (L93). Key exports:
   - `SubagentContext` type (L32–54): Tracks `agentId`, `parentSessionId`, `subagentName`, `isBuiltIn`, `invokingRequestId`, `invocationKind` (spawn|resume), `invocationEmitted` flag.
   - `TeammateAgentContext` type (L60–85): For in-process swarm teammates with `teamName`, `agentColor`, `planModeRequired`, `isTeamLead`.
   - `runWithAgentContext(context, fn)` (L108–110): Wraps entire agent execution for analytics attribution isolation.
@@ -166,7 +166,7 @@ This discriminator is a **first-class architectural contract** that gates numero
 
 ### Hooks Integration at Agent Spawn
 
-- **[runAgent.ts:L530–575](../../liteai2/src/tools/AgentTool/runAgent.ts#L530)** — Hook lifecycle at agent spawn:
+- **[runAgent.ts:L530–575](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L530)** — Hook lifecycle at agent spawn:
   - `executeSubagentStartHooks()` (L533–545): Runs hooks and collects additional context messages.
   - Frontmatter hook registration (L547–570): Registers hooks from agent definition with `isAgent=true` flag, which converts `Stop` hook events to `SubagentStop` (agent-scoped lifecycle).
   - Admin-trust gating (L549): `isRestrictedToPluginOnly('hooks')` blocks user-defined agent hooks from registering if policy restricts.
@@ -174,14 +174,14 @@ This discriminator is a **first-class architectural contract** that gates numero
 
 ### Skills Preloading at Agent Spawn
 
-- **[runAgent.ts:L577–646](../../liteai2/src/tools/AgentTool/runAgent.ts#L577)** — Skill loading at agent spawn:
+- **[runAgent.ts:L577–646](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L577)** — Skill loading at agent spawn:
   - Skills declared in agent frontmatter are loaded and added to `initialMessages` as pre-turn user messages.
   - Plugin skill resolution via `resolveSkillName()` with 3 strategies: exact match, plugin-prefix match, suffix match.
   - `clearInvokedSkillsForAgent(agentId)` cleanup in finally block (L683–684).
 
 ### Deterministic Cleanup Lifecycle
 
-- **[runAgent.ts:L816–858](../../liteai2/src/tools/AgentTool/runAgent.ts#L816)** — 11-step teardown in `runAgent` finally block:
+- **[runAgent.ts:L816–858](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L816)** — 11-step teardown in `runAgent` finally block:
   1. MCP cleanup: `mcpCleanup()` — terminates agent-scoped inline connections.
   2. Session hooks: `clearSessionHooks(rootSetAppState, agentId)` — removes agent-registered hooks.
   3. Prompt cache tracking: `cleanupAgentTracking(agentId)` — releases cache entry references.
@@ -205,13 +205,13 @@ This discriminator is a **first-class architectural contract** that gates numero
 - Q: What is `critical system reminder` in the agent configuration? → A: A per-turn mode-reinforcement mechanism — a short static string re-injected every turn to remind the agent of its operational mode (plan mode = read-only, execution mode = follow/update plan, verification = no edits)
 - Q: When a worktree/remote sub-agent crashes or loses connectivity, what should happen to its isolation artifacts? → A: Cleanup with retention — artifacts preserved for a configurable TTL (~1 hour) for post-mortem debugging, then garbage collected lazily on next session start
 - Enrichment: Added Root vs Sub-Agent Discriminator documentation (`agentId` presence on execution context as the first-class contract for gating root-only behaviors)
-- Architecture review vs liteai2 (2026-04-11): Identified 11 gaps. 9 integrated into spec (hooks at spawn, skills preloading, async lifecycle management, agent execution context ALS, thinking config, cleanup lifecycle, setAppStateForTasks, requiredMcpServers, effort override). 2 deferred to Phase 4 (fork subagent model, agent resume).
+- Architecture review vs liteai_cli_mvp (2026-04-11): Identified 11 gaps. 9 integrated into spec (hooks at spawn, skills preloading, async lifecycle management, agent execution context ALS, thinking config, cleanup lifecycle, setAppStateForTasks, requiredMcpServers, effort override). 2 deferred to Phase 4 (fork subagent model, agent resume).
 - Q: Which container runtime should `remote` isolation target? → A: Docker containers (local Docker daemon via CLI/API)
 - Q: Should sub-agents have configurable extended thinking? → A: Thinking disabled by default for all sub-agents; opt-in via `thinking: true` per agent definition, with optional `thinkingBudget` (number of tokens) to cap thinking cost
 - Q: When should `requiredMcpServers` be validated? → A: Dual enforcement — filter at load-time AND re-validate at spawn-time
 - Q: When wall-clock timeout fires during active tool execution, should the tool get a grace period? → A: Hard-kill — signal abort immediately, no grace period; rely on partial result extraction
 - Q: Should `setAppStateForTasks` be scoped or a full `setAppState` alias? → A: Scoped — expose only task-specific operations (`registerTask`, `killTask`, `deleteTodo`), not a full `setAppState`
-- Enrichment: Added explicit liteai2 agent format compatibility guarantee — all liteai2 `.md` agent definitions must run in liteai without modification; new config fields are strictly additive with per-field defaults documented in FR-003 and data-model.md
+- Enrichment: Added explicit liteai_cli_mvp agent format compatibility guarantee — all liteai_cli_mvp `.md` agent definitions must run in liteai without modification; new config fields are strictly additive with per-field defaults documented in FR-003 and data-model.md
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -418,7 +418,7 @@ When a sub-agent exits — whether normally, via abort, or due to an error — t
 ### Functional Requirements
 
 - **FR-001**: System MUST support three distinct agent definition source types (built-in, custom, plugin) with tracked provenance for each loaded agent. Agents declaring `requiredMcpServers` MUST be excluded from the available agent list at load-time when any required server is not connected or has no tools, AND MUST be re-validated at spawn-time to catch servers that disconnected after loading
-- **FR-002**: System MUST load agent definitions with deterministic priority ordering: `built-in < plugin < userSettings < projectSettings`, where later sources override earlier ones by agent identifier. Protected system agents (`hidden: true`) MUST be immune to user-level overrides — override attempts are ignored and logged as warnings. Note: liteai2's reference implementation includes two additional levels (`flagSettings`, `policySettings`) that are out of scope for this phase — the 4-level model is intentional
+- **FR-002**: System MUST load agent definitions with deterministic priority ordering: `built-in < plugin < userSettings < projectSettings`, where later sources override earlier ones by agent identifier. Protected system agents (`hidden: true`) MUST be immune to user-level overrides — override attempts are ignored and logged as warnings. Note: liteai_cli_mvp's reference implementation includes two additional levels (`flagSettings`, `policySettings`) that are out of scope for this phase — the 4-level model is intentional
 - **FR-003**: System MUST support the following agent configuration fields: tool allow/deny lists, skills, MCP server declarations, hooks, model (with `'inherit'` support), effort level, permission mode, maximum turns, wall-clock timeout, memory scopes, background execution flag, isolation mode, `containerImage` (optional string — Docker image for `remote` isolation, defaults to a platform-defined base image), context stripping flags (`omitLiteaiMd`), critical system reminder, `requiredMcpServers`, `thinking` (boolean, default `false`), and `thinkingBudget` (optional number, tokens). Additionally, existing agent config fields (`variant`, `temperature`, `topP`, `color`) are carried forward from the base agent schema — these are not new to this feature but are included in the `BaseAgentDefinition` type for completeness
 - **FR-004**: System MUST provide a context forking mechanism that selectively inherits the parent session's state (file state cache, abort controller linkage, app state) while isolating mutable state (tool decisions, messages, set-app-state mutations). Context forking MUST disable `thinkingConfig` by default for all sub-agents to control output token costs, unless the agent definition explicitly sets `thinking: true`, in which case the parent's thinking config is inherited. When `thinkingBudget` is also specified, the inherited thinking config MUST use the agent's budget instead of the parent's (`{ type: 'enabled', budgetTokens: thinkingBudget }`). Context forking MUST also provide a scoped `setAppStateForTasks` root-store bypass exposing only task-specific operations (`registerTask`, `killTask`, `deleteTodo`) — not a full `setAppState` alias — for task registration when `setAppState` is a no-op (nested async agents), and apply effort level overrides from the agent definition at runtime (when `effort` is set on the agent config, the forked context's effort level is replaced with the agent's value before entering the query loop). When `shareSetAppState: true` is passed via `SubagentContextOverrides`, the forked context's `setAppState` MUST delegate directly to the parent's `setAppState` function (bypassing the no-op wrapper) — enabling selective state write-through for coordinated parent-child task management. **Implementation note for T014**: Context forking MUST clone `contentReplacementState` (for prompt cache byte-stability) and increment `queryTracking.depth` (for recursion observability) — both fields are defined in the SubagentContext type (see data-model.md) and are required for the forking model.
 - **FR-005**: System MUST link sub-agent abort controllers to the parent's abort controller in a unidirectional hierarchy: parent cancellation propagates to children, but child cancellation does not propagate to the parent
@@ -437,7 +437,7 @@ When a sub-agent exits — whether normally, via abort, or due to an error — t
 - **FR-017**: System MUST implement `worktree` isolation mode: when an agent declares `isolation: 'worktree'`, the system creates a git worktree for the agent's execution, providing filesystem isolation from the parent session's working directory
 - **FR-018**: System MUST implement `remote` isolation mode: when an agent declares `isolation: 'remote'`, the system isolates task shell operations by executing them within a Docker container via the local Docker daemon (CLI/API `docker exec`), while retaining the primary orchestration loop in the parent Node process. This ensures full container boundary execution while leveraging the `containerImage` configuration (falling back to a platform-defined default), providing full process and filesystem isolation
 - **FR-019**: System MUST enforce a configurable wall-clock timeout per sub-agent (derived from the agent's config `timeout`, which defines a schema-level default of 1800000ms / 30-minutes), triggering an immediate hard-kill abort via the agent's abort controller when exceeded — no grace period for in-flight tool execution. Partial result extraction (FR-023) preserves the last meaningful output. This ensures no sub-agent can run indefinitely regardless of turn count
-- **FR-020**: System MUST support a `criticalSystemReminder` configuration field per agent definition that gets re-injected as a `<system-reminder>` attachment on every user turn during the agent's execution, reinforcing the agent's operational mode and behavioral constraints. **Canonical field name is `criticalSystemReminder` (no `_EXPERIMENTAL` suffix)** — the reference implementation (liteai2) uses `criticalSystemReminder_EXPERIMENTAL` as an in-flight experiment marker; this implementation promotes it to a stable, first-class config field. All task references and schema definitions MUST use the non-suffixed name
+- **FR-020**: System MUST support a `criticalSystemReminder` configuration field per agent definition that gets re-injected as a `<system-reminder>` attachment on every user turn during the agent's execution, reinforcing the agent's operational mode and behavioral constraints. **Canonical field name is `criticalSystemReminder` (no `_EXPERIMENTAL` suffix)** — the reference implementation (liteai_cli_mvp) uses `criticalSystemReminder_EXPERIMENTAL` as an in-flight experiment marker; this implementation promotes it to a stable, first-class config field. All task references and schema definitions MUST use the non-suffixed name
 - **FR-021**: System MUST implement retention-based cleanup for isolation artifacts (worktrees, remote containers): artifacts are preserved for a configurable TTL (default: 3600000ms / 1 hour) after sub-agent exit (normal, crash, or timeout) for post-mortem debugging, then garbage collected lazily on the next session start. For worktree garbage collection, the system MUST strictly enforce safety guards: explicit skipping of deletion if the worktree contains uncommitted changes or unpushed commits to prevent any data loss.
 - **FR-022**: System MUST distinguish the root agent from sub-agents via the presence of `agentId` on the execution context (`undefined` = root session, `string` = sub-agent). This discriminator MUST gate behaviors that apply only to the root session, including: title generation, stop hooks, MCP lifecycle notifications, attachment filtering (agent listing deltas, date change), compaction notifications, and memory extraction
 - **FR-023**: System MUST implement a structured async agent lifecycle manager covering: progress tracking with human-readable activity descriptions, optional periodic summarization for long-running agents, terminal notifications (completed/failed/killed) with usage metrics (tokens, tool calls, duration), handoff classification for auto-mode security review (warning string format specified in US3b AS7: `"SECURITY WARNING: ... Reason: {reason}"` for violations, `"Note: The safety classifier was unavailable..."` for classifier absence), partial result extraction for killed agents, and prompt cache eviction signaling on completion
@@ -477,7 +477,7 @@ When a sub-agent exits — whether normally, via abort, or due to an error — t
 - Phase 1 (Unified System Prompt Resolution) is complete and the section-based resolver, `SectionRegistry`, and `SectionParser` are available for sub-agents to construct their system prompts
 - The existing session infrastructure (`Session.create`, `Message` types, `SessionProcessor`) will be extended, not replaced, to support context forking
 - Agent configuration schema changes are additive — existing `.md` frontmatter that doesn't use new fields continues to work without modification
-- **Reference Format Interoperability (liteai2)**: Any agent `.md` configuration file utilizing the external `liteai2` schema MUST be parsed by `liteai` without modification (copy-paste mapping). This is a strict format parity requirement ensuring ecosystem portability, not legacy code backward compatibility. New config fields (`thinking`, `thinkingBudget`, etc.) are purely additive. The parser MUST silently ignore unknown external fields to handle definitions utilizing experimental extensions safely.
+- **Reference Format Interoperability (liteai_cli_mvp)**: Any agent `.md` configuration file utilizing the external `liteai_cli_mvp` schema MUST be parsed by `liteai` without modification (copy-paste mapping). This is a strict format parity requirement ensuring ecosystem portability, not legacy code backward compatibility. New config fields (`thinking`, `thinkingBudget`, etc.) are purely additive. The parser MUST silently ignore unknown external fields to handle definitions utilizing experimental extensions safely.
 - MCP server infrastructure already exists for project-wide connections; this feature adds per-agent lifecycle management on top of the existing connection pool
 - The current permission system (`PermissionNext`) can be extended for sub-agent scoping without a full rewrite
 - Nested sub-agent depth is unbounded but practically limited by available context window and token budget (no artificial depth limit is enforced)

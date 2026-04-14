@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implement a complete sub-agent orchestration layer for LiteAI `packages/core` that enables context-aware agent spawning with isolated execution contexts, typed agent definitions with multi-source priority merging, permission sandboxing for background agents, sidechain transcript recording, context pruning for read-only agents, dynamic MCP server lifecycle management, agent-scoped memory, and deterministic resource cleanup. The architecture follows the liteai2 reference implementation patterns while leveraging LiteAI's existing infrastructure (SectionRegistry, Worktree, MCP connections, PermissionNext) to minimize new surface area.
+Implement a complete sub-agent orchestration layer for LiteAI `packages/core` that enables context-aware agent spawning with isolated execution contexts, typed agent definitions with multi-source priority merging, permission sandboxing for background agents, sidechain transcript recording, context pruning for read-only agents, dynamic MCP server lifecycle management, agent-scoped memory, and deterministic resource cleanup. The architecture follows the liteai_cli_mvp reference implementation patterns while leveraging LiteAI's existing infrastructure (SectionRegistry, Worktree, MCP connections, PermissionNext) to minimize new surface area.
 
 ## Technical Context
 
@@ -18,7 +18,7 @@ Implement a complete sub-agent orchestration layer for LiteAI `packages/core` th
 **Target Platform**: Node.js/Bun on Windows/Linux/macOS — multi-tenant HTTP/SSE backend  
 **Project Type**: Backend library & server (`packages/core` within monorepo)  
 **Performance Goals**: Sub-agent spawn < 100ms, zero resource leaks after 100 spawn/exit cycles, background agents never block on permission prompts  
-**Constraints**: Strictly non-blocking, multi-tenant session isolation, Windows PowerShell compatible toolchain, liteai2 agent format backward compatibility (copy-paste `.md` files)  
+**Constraints**: Strictly non-blocking, multi-tenant session isolation, Windows PowerShell compatible toolchain, liteai_cli_mvp agent format backward compatibility (copy-paste `.md` files)  
 **Scale/Scope**: Supports up to 8 concurrent sub-agents per session (configurable), arbitrary nesting depth, whale sessions with hundreds of historical agent spawns
 
 ## Constitution Check
@@ -45,7 +45,7 @@ Implement a complete sub-agent orchestration layer for LiteAI `packages/core` th
 
 All sub-agent lifecycle concerns (spawn, query loop, cleanup, transcript) live in a single `runAgent()` orchestrator in `agent/runner.ts`, delegating to focused single-responsibility modules (`context.ts`, `lifecycle.ts`, `cleanup.ts`, etc.) via direct function calls.
 
-**Pros**: Explicit call graph; easy to audit lifecycle order; single entry-point for debugging. Matches liteai2 reference pattern.
+**Pros**: Explicit call graph; easy to audit lifecycle order; single entry-point for debugging. Matches liteai_cli_mvp reference pattern.
 **Cons**: `runner.ts` becomes a coordination hub that imports many modules; potential for high fan-out.
 
 ### Alternative 2: Event-Driven Pipeline
@@ -162,7 +162,7 @@ packages/core/src/
 packages/core/test/
 ├── agent/
 │   ├── agent.test.ts         # AgentDefinition type guards, merge priority, hidden protection,
-│   │                         #   requiredMcpServers validation, liteai2 format compatibility
+│   │                         #   requiredMcpServers validation, liteai_cli_mvp format compatibility
 │   ├── benchmark.test.ts     # Spawn latency p95 < 100ms (SC-001), token reduction ≥30% (SC-002)
 │   ├── context.test.ts       # SubagentContext forking: state isolation, abort linkage,
 │   │                         #   setAppState no-op, file state cloning, thinking config

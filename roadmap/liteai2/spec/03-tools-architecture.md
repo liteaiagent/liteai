@@ -1,18 +1,18 @@
-# Tools Architecture — liteai2
+# Tools Architecture — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai2\src\tools.ts`, `src\Tool.ts`, `src\constants\prompts.ts`
+> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools.ts`, `src\Tool.ts`, `src\constants\prompts.ts`
 
 ---
 
 ## Overview
 
-liteai2 has a **40+ tool ecosystem** with feature-flag gating, deny-rule filtering, REPL mode hiding, permission-aware assembly, and MCP tool merging. Each tool is a self-contained module with its own prompt, implementation, and UI components.
+liteai_cli_mvp has a **40+ tool ecosystem** with feature-flag gating, deny-rule filtering, REPL mode hiding, permission-aware assembly, and MCP tool merging. Each tool is a self-contained module with its own prompt, implementation, and UI components.
 
 ---
 
 ## 1. Tool Registration & Discovery
 
-**Source:** [`tools.ts`](../../liteai2/src/tools.ts)
+**Source:** [`tools.ts`](../../liteai_cli_mvp/src/tools.ts)
 
 ### `getAllBaseTools()` — The Source of Truth
 
@@ -27,7 +27,7 @@ Every tool is registered in a single function. Tools are conditionally included 
 
 ### Dead-Code Elimination (DCE)
 
-For feature-gated tools, liteai2 uses lazy `require()` inside `feature()` guards:
+For feature-gated tools, liteai_cli_mvp uses lazy `require()` inside `feature()` guards:
 
 ```ts
 const SleepTool = feature('PROACTIVE') || feature('KAIROS')
@@ -80,7 +80,7 @@ export function assembleToolPool(permissionContext, mcpTools): Tools {
 
 ## 3. Tool Prompt System
 
-**Source:** [`prompts.ts`](../../liteai2/src/constants/prompts.ts)
+**Source:** [`prompts.ts`](../../liteai_cli_mvp/src/constants/prompts.ts)
 
 ### System Prompt Structure
 
@@ -214,9 +214,9 @@ interface Tool {
 
 ---
 
-## Comparison: liteai vs liteai2 (Tools)
+## Comparison: liteai vs liteai_cli_mvp (Tools)
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Tool count | ~15 tools | 40+ tools |
 | Registration | Static array | Conditional DCE-enabled registration |

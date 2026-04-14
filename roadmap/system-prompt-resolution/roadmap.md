@@ -1,8 +1,8 @@
 # System Prompt Resolution — Refactoring Roadmap
 
-> **Goal:** Refactor system prompt resolution to match [liteai2's architecture](../liteai2/spec/), consolidating multiple provider-specific system prompts into a single unified prompt, restructuring sub-agent context management, modernizing plan mode, and implementing advanced agent spawning models with durability.
+> **Goal:** Refactor system prompt resolution to match [liteai_cli_mvp's architecture](../liteai_cli_mvp/spec/), consolidating multiple provider-specific system prompts into a single unified prompt, restructuring sub-agent context management, modernizing plan mode, and implementing advanced agent spawning models with durability.
 
-[liteai2 source code](C:\Users\aghassan\Documents\workspace\liteai2\src)
+[liteai_cli_mvp source code](C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src)
 ---
 
 ## Dependency Chain
@@ -31,7 +31,7 @@ Each phase is independently testable and deployable. Each phase should be specif
 
 Currently, `SystemPrompt.provider()` in `session/engine/system.ts` dispatches by model ID string matching to load one of 9 different `.md` files (`anthropic.md`, `gemini.md`, `beast.md`, `trinity.md`, etc.). Each file duplicates ~70% of its content with the others.
 
-liteai2 uses a single programmatic prompt builder (`constants/prompts.ts`) with:
+liteai_cli_mvp uses a single programmatic prompt builder (`constants/prompts.ts`) with:
 - A `systemPromptSection()` registry that memoizes computed sections
 - A `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` marker separating cacheable static content from per-session dynamic content
 - Static sections (identity, system rules, task guidance, tool usage, tone) + dynamic sections (env info, MCP, skills, language, memory)
@@ -49,8 +49,8 @@ liteai2 uses a single programmatic prompt builder (`constants/prompts.ts`) with:
 
 ### Reference Implementation
 
-- [liteai2/src/constants/prompts.ts](../liteai2/spec/) — `getSystemPrompt()`, section registration, boundary marker
-- [liteai2/src/constants/systemPromptSections.ts](../liteai2/spec/) — Section cache infrastructure
+- [liteai_cli_mvp/src/constants/prompts.ts](../liteai_cli_mvp/spec/) — `getSystemPrompt()`, section registration, boundary marker
+- [liteai_cli_mvp/src/constants/systemPromptSections.ts](../liteai_cli_mvp/spec/) — Section cache infrastructure
 
 ### Files Affected
 
@@ -72,7 +72,7 @@ liteai2 uses a single programmatic prompt builder (`constants/prompts.ts`) with:
 
 liteai currently uses a flat `Agent.Info` configuration loaded from `.md` frontmatter with no context isolation between parent and child agents. There is no concept of context forking, sidechain transcripts, or agent-scoped resource management.
 
-liteai2 implements a full orchestration layer with `createSubagentContext()` that selectively inherits parent state, isolated sidechain transcripts, dynamic MCP server mounting per agent, and hierarchical permission sandboxing.
+liteai_cli_mvp implements a full orchestration layer with `createSubagentContext()` that selectively inherits parent state, isolated sidechain transcripts, dynamic MCP server mounting per agent, and hierarchical permission sandboxing.
 
 ### What to Specify
 
@@ -91,7 +91,7 @@ liteai2 implements a full orchestration layer with `createSubagentContext()` tha
 
 ### Reference Implementation
 
-- [01-subagent-architecture.md](../liteai2/spec/01-subagent-architecture.md) — Full comparison and liteai2 source references
+- [01-subagent-architecture.md](../liteai_cli_mvp/spec/01-subagent-architecture.md) — Full comparison and liteai_cli_mvp source references
 
 ### Depends On
 
@@ -113,7 +113,7 @@ liteai2 implements a full orchestration layer with `createSubagentContext()` tha
 
 ---
 
-> **Architecture Review (2026-04-11):** Phase 2 was enriched with 9 integration gaps identified during spec review vs liteai2. Gaps added: hooks integration at spawn, skills preloading at spawn, async lifecycle management, agent execution context (AsyncLocalStorage), thinking config isolation, deterministic cleanup lifecycle, `setAppStateForTasks` root-store bypass, `requiredMcpServers` availability gating, effort level override runtime behavior. Fork subagent model and agent resume deferred to Phase 4.
+> **Architecture Review (2026-04-11):** Phase 2 was enriched with 9 integration gaps identified during spec review vs liteai_cli_mvp. Gaps added: hooks integration at spawn, skills preloading at spawn, async lifecycle management, agent execution context (AsyncLocalStorage), thinking config isolation, deterministic cleanup lifecycle, `setAppStateForTasks` root-store bypass, `requiredMcpServers` availability gating, effort level override runtime behavior. Fork subagent model and agent resume deferred to Phase 4.
 
 ---
 
@@ -125,7 +125,7 @@ liteai2 implements a full orchestration layer with `createSubagentContext()` tha
 
 liteai currently implements plan mode via `plan-reminder.ts` which injects synthetic text parts into the last user message. There is no persistent plan state, no reminder cycle, and no inline approval flow. The plan/build switch is a simple agent name check.
 
-liteai2 uses an attachment-driven state machine where plan text is never baked into the system prompt (preserving prompt cache). It uses sparse reminders every turn and full plan text refreshes every 5 turns, with an inline approval UI when transitioning from plan to build mode.
+liteai_cli_mvp uses an attachment-driven state machine where plan text is never baked into the system prompt (preserving prompt cache). It uses sparse reminders every turn and full plan text refreshes every 5 turns, with an inline approval UI when transitioning from plan to build mode.
 
 ### What to Specify
 
@@ -141,7 +141,7 @@ liteai2 uses an attachment-driven state machine where plan text is never baked i
 
 ### Reference Implementation
 
-- [02-plan-mode.md](../liteai2/spec/02-plan-mode.md) — Full comparison and liteai2 source references
+- [02-plan-mode.md](../liteai_cli_mvp/spec/02-plan-mode.md) — Full comparison and liteai_cli_mvp source references
 
 ### Depends On
 
@@ -169,7 +169,7 @@ liteai2 uses an attachment-driven state machine where plan text is never baked i
 
 ### Context
 
-liteai2 implements a fork subagent model (feature-gated `FORK_SUBAGENT`) where the child inherits the parent's full conversation context and system prompt for byte-identical API request prefixes, maximizing prompt cache hits. It also supports resuming agents from persisted sidechain transcripts, enabling background agent durability across process restarts and explicit re-engagement.
+liteai_cli_mvp implements a fork subagent model (feature-gated `FORK_SUBAGENT`) where the child inherits the parent's full conversation context and system prompt for byte-identical API request prefixes, maximizing prompt cache hits. It also supports resuming agents from persisted sidechain transcripts, enabling background agent durability across process restarts and explicit re-engagement.
 
 These features layer on top of Phase 2's core sub-agent architecture (context forking, sidechain transcripts, worktree isolation) and are independently valuable — fork optimizes spawning costs, resume enables long-running agent workflows.
 
@@ -194,9 +194,9 @@ These features layer on top of Phase 2's core sub-agent architecture (context fo
 
 ### Reference Implementation
 
-- [forkSubagent.ts](../../liteai2/src/tools/AgentTool/forkSubagent.ts) — Fork agent definition, forked message construction, recursion guard
-- [resumeAgent.ts](../../liteai2/src/tools/AgentTool/resumeAgent.ts) — Agent resume lifecycle, transcript reconstruction
-- [AgentTool.tsx:L318–L356](../../liteai2/src/tools/AgentTool/AgentTool.tsx#L318) — Fork path routing and force-async logic
+- [forkSubagent.ts](../../liteai_cli_mvp/src/tools/AgentTool/forkSubagent.ts) — Fork agent definition, forked message construction, recursion guard
+- [resumeAgent.ts](../../liteai_cli_mvp/src/tools/AgentTool/resumeAgent.ts) — Agent resume lifecycle, transcript reconstruction
+- [AgentTool.tsx:L318–L356](../../liteai_cli_mvp/src/tools/AgentTool/AgentTool.tsx#L318) — Fork path routing and force-async logic
 
 ### Depends On
 

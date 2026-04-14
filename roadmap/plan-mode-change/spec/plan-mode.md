@@ -78,7 +78,7 @@ The reminder is **persisted to the database** and appears in the conversation hi
 - States the plan file path and whether it exists or is new
 - Describes the 5-phase workflow: Explore → Design → Review → Final Plan → `plan_exit`
 
-> **Note:** The 5-phase workflow is only injected **once** (on mode entry). Subsequent turns in plan mode re-use the `plan.md` system prompt (which contains a shorter constraint summary) but do not re-inject the full workflow. A full/sparse cycle (inject full once, inject a one-liner on subsequent turns) is a known improvement — see liteai2 reference.
+> **Note:** The 5-phase workflow is only injected **once** (on mode entry). Subsequent turns in plan mode re-use the `plan.md` system prompt (which contains a shorter constraint summary) but do not re-inject the full workflow. A full/sparse cycle (inject full once, inject a one-liner on subsequent turns) is a known improvement — see liteai_cli_mvp reference.
 
 ### Switching to Build Mode
 
@@ -95,7 +95,7 @@ text: `${buildSwitch}\n\nA plan file exists at ${plan}. You should execute on th
 
 The **full plan history is kept** — there is no compaction or replacement on switch. The model enters build mode with the entire planning conversation in context, plus this synthetic transition message.
 
-> **Known gap:** The plan file content is not injected on switch — only the path. The model must explicitly read the file. Injecting the content directly (like liteai2's `plan_file_reference` attachment) would remove this implicit read-on-entry.
+> **Known gap:** The plan file content is not injected on switch — only the path. The model must explicitly read the file. Injecting the content directly (like liteai_cli_mvp's `plan_file_reference` attachment) would remove this implicit read-on-entry.
 
 ---
 

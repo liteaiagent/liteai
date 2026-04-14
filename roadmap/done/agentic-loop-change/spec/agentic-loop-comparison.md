@@ -1,6 +1,6 @@
 # Agentic ReAct Loop Comparison: LiteAI vs LiteAI2
 
-This document compares the main agentic loop (ReAct loop) implementations between the current **LiteAI** (`packages/core/src/session`) architecture and the **LiteAI2** (`liteai2/src/query.ts`) architecture.
+This document compares the main agentic loop (ReAct loop) implementations between the current **LiteAI** (`packages/core/src/session`) architecture and the **LiteAI2** (`liteai_cli_mvp/src/query.ts`) architecture.
 
 ## Overview
 

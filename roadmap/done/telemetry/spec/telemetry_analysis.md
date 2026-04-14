@@ -1,6 +1,6 @@
 # Telemetry Logging Analysis: Gemini CLI & LiteAI2
 
-As requested, I have analyzed the exact event logging strategies used by `gemini-cli` and `liteai2` to understand what they log, when, and how they handle huge conversational states. You are absolutely right that our problem isn't just about truncation syntax—it's about fundamentally logging the wrong shapes of data at the wrong times.
+As requested, I have analyzed the exact event logging strategies used by `gemini-cli` and `liteai_cli_mvp` to understand what they log, when, and how they handle huge conversational states. You are absolutely right that our problem isn't just about truncation syntax—it's about fundamentally logging the wrong shapes of data at the wrong times.
 
 ## 1. How Gemini CLI Logs (`packages/core/src/telemetry`)
 

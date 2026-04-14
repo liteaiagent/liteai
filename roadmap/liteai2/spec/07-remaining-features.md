@@ -1,4 +1,4 @@
-# Remaining Backend Features — liteai2
+# Remaining Backend Features — liteai_cli_mvp
 
 > Systems not covered in docs 01–06 that warrant porting consideration.
 
@@ -10,7 +10,7 @@
 
 ### What It Does
 
-When the conversation approaches the context window limit, liteai2 automatically compacts the conversation history by summarizing older messages into a dense representation. This prevents the model from hitting context limits mid-task.
+When the conversation approaches the context window limit, liteai_cli_mvp automatically compacts the conversation history by summarizing older messages into a dense representation. This prevents the model from hitting context limits mid-task.
 
 ### Architecture
 
@@ -64,7 +64,7 @@ A more granular context management system that replaces auto-compact in experime
 
 ### What It Does
 
-After the model generates a response, liteai2 predicts what the user will likely say next (prompt suggestion) and **starts executing it speculatively** before the user types anything. If the user accepts the suggestion, the speculated work is injected into the conversation.
+After the model generates a response, liteai_cli_mvp predicts what the user will likely say next (prompt suggestion) and **starts executing it speculatively** before the user types anything. If the user accepts the suggestion, the speculated work is injected into the conversation.
 
 ### Architecture
 

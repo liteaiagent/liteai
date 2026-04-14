@@ -6,9 +6,9 @@
 **Depends on:** Phase 1c (core backend).
 **Goal:** Show "Running… (3s)" timer, "Waiting for command…" status, background task indicators.
 
-## What liteai2 Shows
+## What liteai_cli_mvp Shows
 
-liteai2's `ShellProgressMessage` renders during command execution:
+liteai_cli_mvp's `ShellProgressMessage` renders during command execution:
 
 ```
 last 5 lines of output         ← dimColor, truncated

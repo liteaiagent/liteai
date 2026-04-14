@@ -135,7 +135,7 @@ export async function resolveSystemPromptSections(
 
 ## Boundary Consumer Contract
 
-> **liteai2 divergence note**: liteai2 uses `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` as a sentinel
+> **liteai_cli_mvp divergence note**: liteai_cli_mvp uses `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` as a sentinel
 > string (`'__SYSTEM_PROMPT_DYNAMIC_BOUNDARY__'`) embedded in the `string[]` and consumed via
 > `findIndex()` in `api.ts`. LiteAI uses `boundary` as a **numeric value returned per-call**
 > inside `{ parts, boundary }`. This is an intentional architectural divergence:

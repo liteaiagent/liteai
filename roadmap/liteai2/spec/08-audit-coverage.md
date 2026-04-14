@@ -1,9 +1,9 @@
 # LiteAI2 Analysis Audit — Coverage Tracker
 
 > **Last updated:** 2026-04-07  
-> **Purpose:** Track exactly what has and hasn't been analyzed from liteai2.  
-> **liteai2 root:** `C:\Users\aghassan\Documents\workspace\liteai2`  
-> **All paths below are relative to:** `liteai2/src/`
+> **Purpose:** Track exactly what has and hasn't been analyzed from liteai_cli_mvp.  
+> **liteai_cli_mvp root:** `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp`  
+> **All paths below are relative to:** `liteai_cli_mvp/src/`
 
 ---
 
@@ -561,7 +561,7 @@ COVERAGE:                                          ~19-26%
 ```
 
 > [!IMPORTANT]
-> The liteai2 codebase is significantly larger than initially estimated.
+> The liteai_cli_mvp codebase is significantly larger than initially estimated.
 > Including service/API/MCP code, it's ~5.5MB of TypeScript source.
 > We've thoroughly documented ~1MB and partially read another ~0.4MB.
 

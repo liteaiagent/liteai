@@ -1,18 +1,18 @@
-# Modular Prompt System & System Reminders — liteai2
+# Modular Prompt System & System Reminders — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai2\src\constants\systemPromptSections.ts`, `prompts.ts`, `utils\systemPrompt.ts`
+> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\constants\systemPromptSections.ts`, `prompts.ts`, `utils\systemPrompt.ts`
 
 ---
 
 ## Overview
 
-liteai2's prompt system is divided into **cached** and **uncached** sections, with a precise boundary (`SYSTEM_PROMPT_DYNAMIC_BOUNDARY`) that separates globally-cacheable static content from per-session dynamic content. The `DANGEROUS_uncachedSystemPromptSection()` function is the mechanism for injecting volatile content that must recompute every turn.
+liteai_cli_mvp's prompt system is divided into **cached** and **uncached** sections, with a precise boundary (`SYSTEM_PROMPT_DYNAMIC_BOUNDARY`) that separates globally-cacheable static content from per-session dynamic content. The `DANGEROUS_uncachedSystemPromptSection()` function is the mechanism for injecting volatile content that must recompute every turn.
 
 ---
 
 ## 1. System Prompt Sections Registry
 
-**Source:** [`systemPromptSections.ts`](../../liteai2/src/constants/systemPromptSections.ts)
+**Source:** [`systemPromptSections.ts`](../../liteai_cli_mvp/src/constants/systemPromptSections.ts)
 
 ### The Section Types
 
@@ -180,9 +180,9 @@ if (proactiveModule?.isProactiveActive()) {
 
 ---
 
-## Comparison: liteai vs liteai2 (Prompt System)
+## Comparison: liteai vs liteai_cli_mvp (Prompt System)
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Prompt structure | Single template string | Section registry with compute functions |
 | Caching | No boundary | Explicit static/dynamic boundary |

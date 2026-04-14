@@ -11,7 +11,7 @@ Both platforms utilize strongly-typed configuration schemas, parsing agent roles
 - **LiteAI (`packages/core/src/agent` & `config/schema.ts`)**: 
   LiteAI focuses on rule-based configuration. An "Agent" acts primarily as an execution preset. It defines base model overrides, system prompts, structural permissions (`PermissionNext.Ruleset`), and some Claude Code compatibility fields (`mcpServers`, `hooks`). However, many of these fields currently serve as static configuration properties.
 - **LiteAI2 (`src/tools/AgentTool/loadAgentsDir.ts`)**: 
-  LiteAI2 treats sub-agents as dynamic execution objects. The frontmatter properties (like `mcpServers`, `skills`, and `memory`) are actively hooked into the agent's runner. For example, `liteai2` dynamically connects and tears down specific MCP servers for a single sub-agent execution.
+  LiteAI2 treats sub-agents as dynamic execution objects. The frontmatter properties (like `mcpServers`, `skills`, and `memory`) are actively hooked into the agent's runner. For example, `liteai_cli_mvp` dynamically connects and tears down specific MCP servers for a single sub-agent execution.
 
 ### ✨ Opportunities for LiteAI
 - **Dynamic Resource Mounting**: The `task` tool in LiteAI currently evaluates permissions but delegates mainly back to `SessionPrompt`. LiteAI should adopt LiteAI2's pattern of dynamically mounting specific `MCP servers` and `skills` explicitly for the local lifecycle of the agent, rather than relying strictly on the project-wide default pool.

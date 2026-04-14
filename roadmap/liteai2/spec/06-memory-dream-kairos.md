@@ -1,18 +1,18 @@
-# Memory System & Dream/Kairos Engine — liteai2
+# Memory System & Dream/Kairos Engine — liteai_cli_mvp
 
 > Sources:
-> - `C:\Users\aghassan\Documents\workspace\liteai2\src\services\autoDream\`
-> - `C:\Users\aghassan\Documents\workspace\liteai2\src\memdir\`
-> - `C:\Users\aghassan\Documents\workspace\liteai2\src\tasks\DreamTask\`
-> - `C:\Users\aghassan\Documents\workspace\liteai2\src\tools\AgentTool\agentMemory.ts`
-> - `C:\Users\aghassan\Documents\workspace\liteai2\src\tools\BriefTool\`
-> - `C:\Users\aghassan\Documents\workspace\liteai2\src\tools\SleepTool\`
+> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\autoDream\`
+> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\memdir\`
+> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tasks\DreamTask\`
+> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\AgentTool\agentMemory.ts`
+> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\BriefTool\`
+> - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\SleepTool\`
 
 ---
 
 ## Overview
 
-liteai2's memory system operates at three layers: **per-session memory** (extracting facts from conversations), **persistent agent memory** (scoped to user/project/local), and the **Dream engine** (Kairos) — a background consolidation process that periodically synthesizes recent session knowledge into durable, well-organized memory files. It's the AI equivalent of sleep-based memory consolidation.
+liteai_cli_mvp's memory system operates at three layers: **per-session memory** (extracting facts from conversations), **persistent agent memory** (scoped to user/project/local), and the **Dream engine** (Kairos) — a background consolidation process that periodically synthesizes recent session knowledge into durable, well-organized memory files. It's the AI equivalent of sleep-based memory consolidation.
 
 ---
 
@@ -52,7 +52,7 @@ if (process.env.CLAUDE_CODE_REMOTE_MEMORY_DIR) {
 
 ## 2. Agent Memory — Persistent Per-Agent State
 
-**Source:** [`agentMemory.ts`](../../liteai2/src/tools/AgentTool/agentMemory.ts)
+**Source:** [`agentMemory.ts`](../../liteai_cli_mvp/src/tools/AgentTool/agentMemory.ts)
 
 Each agent can have its own persistent memory directory with a scope declaration:
 
@@ -114,7 +114,7 @@ function isAgentMemoryPath(absolutePath: string): boolean {
 
 ## 3. The Dream Engine (AutoDream)
 
-**Source:** [`autoDream.ts`](../../liteai2/src/services/autoDream/autoDream.ts)
+**Source:** [`autoDream.ts`](../../liteai_cli_mvp/src/services/autoDream/autoDream.ts)
 
 ### What It Does
 
@@ -280,9 +280,9 @@ Extracts facts from the current conversation and saves them to the auto-memory d
 
 ---
 
-## Comparison: liteai vs liteai2 (Memory)
+## Comparison: liteai vs liteai_cli_mvp (Memory)
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Session memory | None | Auto-extraction during session |
 | Persistent memory | None | Per-agent scoped (user/project/local) |

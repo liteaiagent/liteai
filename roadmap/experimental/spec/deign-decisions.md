@@ -71,9 +71,9 @@ File Watcher (Parcel, OS-native)
 
 These enhancements are additive improvements, not prerequisites for the watcher promotion.
 
-### DR-3: `run_command` improvement scope — what we adopt and what we skip from liteai2
+### DR-3: `run_command` improvement scope — what we adopt and what we skip from liteai_cli_mvp
 
-**Context:** Phase 1c draws heavily from liteai2's `BashTool.tsx` (1144 lines), which implements a comprehensive command lifecycle. This record documents what we adopt, what we skip, and why.
+**Context:** Phase 1c draws heavily from liteai_cli_mvp's `BashTool.tsx` (1144 lines), which implements a comprehensive command lifecycle. This record documents what we adopt, what we skip, and why.
 
 **Reference documents:**
 - Agent-facing API spec: [`run-command-improvements.md`](./run-command-improvements.md) — describes the consumer perspective (`run_command`, `command_status`, `send_command_input` tools)
@@ -83,25 +83,25 @@ These enhancements are additive improvements, not prerequisites for the watcher 
 
 | Feature | Source | Rationale |
 |---------|--------|-----------|
-| Background task lifecycle | liteai2 `spawnBackgroundTask()` + `BackgroundTask` registry | Critical for long-running commands. Agent-spec's `WaitMsBeforeAsync` pattern already backgrounds commands; we need the registry to track them |
-| Auto-background on timeout | liteai2 `shellCommand.onTimeout()` | Prevents work loss. Current behavior kills the process — unacceptable for typechecks |
-| Output persistence | liteai2 `persistedOutputPath` / `getToolResultPath()` | Agent-spec's `OutputCharacterCount` handles reading; we need the persistence layer to store |
-| Semantic exit codes | liteai2 `interpretCommandResult()` | Reduces false error reports. Low implementation cost, high agent-quality impact |
-| Sleep detection | liteai2 `detectBlockedSleepPattern()` | Prevents agent waste loops. Simple pattern match |
-| Progress metadata | liteai2 `onProgress()` callback | Already partially implemented via `ctx.metadata()`. Needs threshold + structured updates |
+| Background task lifecycle | liteai_cli_mvp `spawnBackgroundTask()` + `BackgroundTask` registry | Critical for long-running commands. Agent-spec's `WaitMsBeforeAsync` pattern already backgrounds commands; we need the registry to track them |
+| Auto-background on timeout | liteai_cli_mvp `shellCommand.onTimeout()` | Prevents work loss. Current behavior kills the process — unacceptable for typechecks |
+| Output persistence | liteai_cli_mvp `persistedOutputPath` / `getToolResultPath()` | Agent-spec's `OutputCharacterCount` handles reading; we need the persistence layer to store |
+| Semantic exit codes | liteai_cli_mvp `interpretCommandResult()` | Reduces false error reports. Low implementation cost, high agent-quality impact |
+| Sleep detection | liteai_cli_mvp `detectBlockedSleepPattern()` | Prevents agent waste loops. Simple pattern match |
+| Progress metadata | liteai_cli_mvp `onProgress()` callback | Already partially implemented via `ctx.metadata()`. Needs threshold + structured updates |
 
 **What we skip (product-specific or out of scope):**
 
 | Feature | Source | Rationale |
 |---------|--------|-----------|
-| Sandbox (filesystem/network) | liteai2 `SandboxManager` | Requires significant infrastructure. Deferred to separate roadmap |
-| Sed edit simulation | liteai2 `applySedEdit()` / `parseSedEditCommand()` | LiteAI has dedicated `edit`, `write`, and `apply_patch` tools — sed simulation is unnecessary |
-| Foreground task registration (Ctrl+B) | liteai2 `registerForeground()` / `BackgroundHint` | CLI-specific TUI feature, not core engine concern. If needed, belongs in `packages/cli` |
-| Image output handling | liteai2 `isImageOutput()` / `resizeShellImageOutput()` | Rare use case. Can be added later as a non-breaking enhancement |
-| React JSX progress rendering | liteai2 `setToolJSX()` / `<BackgroundHint />` | LiteAI uses SSE, not React. Progress is delivered via metadata updates |
-| Code indexing detection | liteai2 `detectCodeIndexingFromCommand()` | Analytics-specific. Not relevant to core command lifecycle |
-| Git operation tracking | liteai2 `trackGitOperations()` | Nice-to-have. Can be added separately without affecting command lifecycle |
-| Assistant auto-backgrounding | liteai2 `ASSISTANT_BLOCKING_BUDGET_MS` / `KAIROS` | Feature-flagged assistant mode. LiteAI's architecture handles this differently via session routing |
+| Sandbox (filesystem/network) | liteai_cli_mvp `SandboxManager` | Requires significant infrastructure. Deferred to separate roadmap |
+| Sed edit simulation | liteai_cli_mvp `applySedEdit()` / `parseSedEditCommand()` | LiteAI has dedicated `edit`, `write`, and `apply_patch` tools — sed simulation is unnecessary |
+| Foreground task registration (Ctrl+B) | liteai_cli_mvp `registerForeground()` / `BackgroundHint` | CLI-specific TUI feature, not core engine concern. If needed, belongs in `packages/cli` |
+| Image output handling | liteai_cli_mvp `isImageOutput()` / `resizeShellImageOutput()` | Rare use case. Can be added later as a non-breaking enhancement |
+| React JSX progress rendering | liteai_cli_mvp `setToolJSX()` / `<BackgroundHint />` | LiteAI uses SSE, not React. Progress is delivered via metadata updates |
+| Code indexing detection | liteai_cli_mvp `detectCodeIndexingFromCommand()` | Analytics-specific. Not relevant to core command lifecycle |
+| Git operation tracking | liteai_cli_mvp `trackGitOperations()` | Nice-to-have. Can be added separately without affecting command lifecycle |
+| Assistant auto-backgrounding | liteai_cli_mvp `ASSISTANT_BLOCKING_BUDGET_MS` / `KAIROS` | Feature-flagged assistant mode. LiteAI's architecture handles this differently via session routing |
 
-**Key architectural difference:** LiteAI's `run_command` returns results via `Tool.execute()` → SSE. liteai2's `BashTool` uses React state + async generators. Despite the different transport layers, the core lifecycle (spawn → track → notify → retrieve) is identical. Phase 1c implements the lifecycle in LiteAI's SSE-based architecture.
+**Key architectural difference:** LiteAI's `run_command` returns results via `Tool.execute()` → SSE. liteai_cli_mvp's `BashTool` uses React state + async generators. Despite the different transport layers, the core lifecycle (spawn → track → notify → retrieve) is identical. Phase 1c implements the lifecycle in LiteAI's SSE-based architecture.
 

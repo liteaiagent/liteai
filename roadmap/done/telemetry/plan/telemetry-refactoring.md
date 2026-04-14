@@ -3,7 +3,7 @@
 ## Background
 Currently, the telemetry system in `liteai` (`packages/core/src/telemetry/events.ts` and `tracing.ts`) logs massive raw conversational arrays (`messages`) using `JSON.stringify` natively in the log stream bodies. Furthermore, standard string slicing abruptly truncates the JSON, leading to repeated `JSONParserErr` issues in Loki dashboards and completely losing the most critical recent messages from the payload.
 
-We will align with the mature telemetry patterns established in `gemini-cli` and `liteai2`:
+We will align with the mature telemetry patterns established in `gemini-cli` and `liteai_cli_mvp`:
 1. **Reduce spam**: Decouple raw conversational payloads from repetitive iterative events.
 2. **Structural tracking**: Use semantic log records or trace attributes for granular metrics (duration, counts).
 3. **AST-safe truncation**: Maintain JSON validity when object truncation is required for debugging.
@@ -11,7 +11,7 @@ We will align with the mature telemetry patterns established in `gemini-cli` and
 ## Architectural Changes
 
 ### 1. Purge Spammy Log Dumps
-**Reference**: `liteai2` (`src/utils/telemetry/logging.ts`) — strictly logs tokens, cost, and duration in standard OTel `api_request` streams instead of raw request bodies on standard telemetry pipelines.
+**Reference**: `liteai_cli_mvp` (`src/utils/telemetry/logging.ts`) — strictly logs tokens, cost, and duration in standard OTel `api_request` streams instead of raw request bodies on standard telemetry pipelines.
 - **Action**: Remove `logLLMMessages(messages)` completely from `packages/core/src/telemetry/events.ts`.
 - **Action**: Update `queryLoop` (in `src/session/engine/query.ts`) to immediately stop emitting `logLLMMessages` per turn. We do not need a massive cumulative JSON buffer blasting out of the orchestrator on every iterative step. 
 - We will rely purely on structured `Metrics.llmRequests` counters and proper OTel trace Spans to observe LLM usage.
@@ -25,7 +25,7 @@ We will align with the mature telemetry patterns established in `gemini-cli` and
   - Return the processed AST for safe `JSON.stringify()`.
 
 ### 3. Attribute-Only Deep Inspection
-**Reference**: `liteai2` (`sessionTracing.ts`) — outputs generative content/data strings *only* via injected attributes on OTel trace spans (e.g., `modelOutput`, `toolInput`), bypassing standard log bodies entirely.
+**Reference**: `liteai_cli_mvp` (`sessionTracing.ts`) — outputs generative content/data strings *only* via injected attributes on OTel trace spans (e.g., `modelOutput`, `toolInput`), bypassing standard log bodies entirely.
 - **Action**: Refactor `truncateForTelemetry` in `tracing.ts` to utilize the new `safeDeepTruncate` utility.
 - Ensure `startLLMRequestSpan` natively injects the validated JSON payload directly into the Span attribute `llm_request.messages`.
 - Prevent Loki from misinterpreting pure-text properties by prefixing abruptly sliced pure strings (like system configurations) with `[TRUNCATED_TEXT]`.

@@ -1,8 +1,8 @@
-# Plan Mode — liteai2
+# Plan Mode — liteai_cli_mvp
 
-This documents the plan mode implementation in the `liteai2` codebase (`src/`). It is a significantly more developed version of plan mode than liteai's, featuring full/sparse reminder cycles, multi-agent sub-agent workflows, A/B experimentation on plan file structure, and an inline user-approval UI flow.
+This documents the plan mode implementation in the `liteai_cli_mvp` codebase (`src/`). It is a significantly more developed version of plan mode than liteai's, featuring full/sparse reminder cycles, multi-agent sub-agent workflows, A/B experimentation on plan file structure, and an inline user-approval UI flow.
 
-liteai2 source location: `C:\Users\aghassan\Documents\workspace\liteai2\src`
+liteai_cli_mvp source location: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src`
 ---
 
 ## Overview
@@ -13,7 +13,7 @@ Plan mode is a permission mode (`mode: 'plan'` in `toolPermissionContext`) where
 
 ## Plan File
 
-**Source:** [`src/utils/plans.ts`](../../liteai2/src/utils/plans.ts)
+**Source:** [`src/utils/plans.ts`](../../liteai_cli_mvp/src/utils/plans.ts)
 
 ### Path Resolution
 
@@ -53,9 +53,9 @@ In CCR (remote/cloud) sessions, plan files don't persist between sessions. On re
 
 ## Prompt Injection — Attachment System
 
-Unlike liteai, which uses persisted DB parts injected by `plan-reminder.ts`, liteai2 uses an **attachment system**: `getAttachments()` is called each turn and returns typed `Attachment` objects, which are then converted to `UserMessage[]` by `normalizeAttachmentForAPI()` in [`src/utils/messages.ts`](../../liteai2/src/utils/messages.ts#L3136).
+Unlike liteai, which uses persisted DB parts injected by `plan-reminder.ts`, liteai_cli_mvp uses an **attachment system**: `getAttachments()` is called each turn and returns typed `Attachment` objects, which are then converted to `UserMessage[]` by `normalizeAttachmentForAPI()` in [`src/utils/messages.ts`](../../liteai_cli_mvp/src/utils/messages.ts#L3136).
 
-**Source:** [`src/utils/attachments.ts`](../../liteai2/src/utils/attachments.ts)
+**Source:** [`src/utils/attachments.ts`](../../liteai_cli_mvp/src/utils/attachments.ts)
 
 Attachments are **not persisted** in the same way as conversation messages — they are regenerated each turn.
 
@@ -72,7 +72,7 @@ Attachments are **not persisted** in the same way as conversation messages — t
 
 ## Full/Sparse Reminder Cycle
 
-**Source:** [`src/utils/attachments.ts#L1186`](../../liteai2/src/utils/attachments.ts#L1186)
+**Source:** [`src/utils/attachments.ts#L1186`](../../liteai_cli_mvp/src/utils/attachments.ts#L1186)
 
 This is the key design difference from liteai. Plan mode instructions cycle between two forms:
 
@@ -101,7 +101,7 @@ The cycle resets when the user exits and re-enters plan mode (counts start from 
 
 ## Plan Mode Instructions Content
 
-**Source:** [`src/utils/messages.ts#L3136`](../../liteai2/src/utils/messages.ts#L3136)
+**Source:** [`src/utils/messages.ts#L3136`](../../liteai_cli_mvp/src/utils/messages.ts#L3136)
 
 All plan mode instruction messages are wrapped in `<system-reminder>` tags via `wrapMessagesInSystemReminder()`.
 
@@ -139,7 +139,7 @@ When plan mode is active inside a sub-agent (`isSubAgent: true`):
 
 ## Plan File Structure Experiments
 
-**Source:** [`src/utils/planModeV2.ts`](../../liteai2/src/utils/planModeV2.ts)
+**Source:** [`src/utils/planModeV2.ts`](../../liteai_cli_mvp/src/utils/planModeV2.ts)
 
 Phase 4 of the 5-phase workflow is an active A/B test (`tengu_pewter_ledger`). Four arms control how prescriptive the guidance is:
 
@@ -159,7 +159,7 @@ The primary metric is session cost (Opus output tokens are 5× input price), wit
 
 ## Parallel Sub-Agent Count
 
-**Source:** [`src/utils/planModeV2.ts#L5`](../../liteai2/src/utils/planModeV2.ts#L5)
+**Source:** [`src/utils/planModeV2.ts#L5`](../../liteai_cli_mvp/src/utils/planModeV2.ts#L5)
 
 The number of explore/plan sub-agents the model is instructed to launch is dynamic:
 
@@ -181,8 +181,8 @@ function getPlanModeV2ExploreAgentCount(): number {
 
 ## Tool: `ExitPlanModeV2Tool`
 
-**Source:** [`src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts`](../../liteai2/src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts)  
-**Prompt:** [`src/tools/ExitPlanModeTool/prompt.ts`](../../liteai2/src/tools/ExitPlanModeTool/prompt.ts)
+**Source:** [`src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts`](../../liteai_cli_mvp/src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts)  
+**Prompt:** [`src/tools/ExitPlanModeTool/prompt.ts`](../../liteai_cli_mvp/src/tools/ExitPlanModeTool/prompt.ts)
 
 ### Input schema
 
@@ -324,7 +324,7 @@ Next turn: getPlanModeExitAttachment() fires
 
 ## Key Differences vs liteai
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Reminder cycle | Inject once (persisted DB part) | Full/sparse cycle every 5 human turns |
 | Reminder persistence | Persisted to DB — stays in history | Regenerated each turn, not persisted |

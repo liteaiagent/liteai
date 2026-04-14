@@ -1,12 +1,12 @@
-# Skills System — liteai2
+# Skills System — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai2\src\skills\`, `src\tools\SkillTool\`
+> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\skills\`, `src\tools\SkillTool\`
 
 ---
 
 ## Overview
 
-liteai2's skill system is a **two-tier architecture**: skills are registered as metadata in the main agent's context, but their actual execution happens in a **forked sub-agent** — not in the main conversation loop. This prevents skill output from polluting the primary context window.
+liteai_cli_mvp's skill system is a **two-tier architecture**: skills are registered as metadata in the main agent's context, but their actual execution happens in a **forked sub-agent** — not in the main conversation loop. This prevents skill output from polluting the primary context window.
 
 ---
 
@@ -197,9 +197,9 @@ function resolveSkillName(skillName, allSkills, agentDefinition) {
 
 ---
 
-## Comparison: liteai vs liteai2 (Skills)
+## Comparison: liteai vs liteai_cli_mvp (Skills)
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Execution model | In main context | Forked sub-agent (isolated) |
 | Context impact | Pollutes main window | Dense result only returns |

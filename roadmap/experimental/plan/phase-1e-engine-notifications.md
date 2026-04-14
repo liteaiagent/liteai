@@ -7,7 +7,7 @@
 ## The Problem
 
 After Phase 1c, the agent must manually call `command_status` to check if a background task finished.
-This works, but liteai2 goes further: when a background task completes, it **injects a `task_notification`** into the conversation so the agent is automatically told.
+This works, but liteai_cli_mvp goes further: when a background task completes, it **injects a `task_notification`** into the conversation so the agent is automatically told.
 
 This makes the UX smoother:
 1. Agent backgrounds a `bun typecheck`
@@ -24,7 +24,7 @@ This requires changes to the **engine loop** (`loop.ts` / `query.ts`):
 - Options:
   1. **Inter-turn injection:** After a turn ends and before the next starts, check `BackgroundTaskRegistry` for completed tasks and synthesize a system message.
   2. **GeneratorResultEvent extension:** Add a new control action like `"background-task-complete"` that the engine can act on.
-  3. **Synthetic user message:** Inject a synthetic user message with task results (used by liteai2's `task_notification`).
+  3. **Synthetic user message:** Inject a synthetic user message with task results (used by liteai_cli_mvp's `task_notification`).
 
 ## Decision: Create Separate Roadmap
 

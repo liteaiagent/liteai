@@ -107,7 +107,7 @@ it("enqueueAgentNotification publishes Bus event", () => {
 
 **File**: `packages/core/src/agent/memory.ts` L45–47  
 **Original**: Rethrow non-EEXIST errors  
-**Revised per liteai2 analysis**: **Log-but-not-throw**. liteai2's `memdir.ts:129–147` intentionally catches and logs all errors — memory dir creation is best-effort because the Write tool provides its own `mkdir` safety net. This is NOT a Constitution §VI violation: logging makes errors observable for UAT while preserving agent spawn resilience.
+**Revised per liteai_cli_mvp analysis**: **Log-but-not-throw**. liteai_cli_mvp's `memdir.ts:129–147` intentionally catches and logs all errors — memory dir creation is best-effort because the Write tool provides its own `mkdir` safety net. This is NOT a Constitution §VI violation: logging makes errors observable for UAT while preserving agent spawn resilience.
 
 **Fix**:
 ```typescript
@@ -141,7 +141,7 @@ it("logs warning on permission denied but does not throw", async () => {
 
 **File**: `packages/core/src/agent/memory.ts` L60–64  
 **Original**: Rethrow non-ENOENT errors  
-**Revised per liteai2 analysis**: **Catch-and-log**. liteai2's `buildMemoryPrompt` (memdir.ts:286–291) catches all readFile errors — "No memory file yet" is the common case, and non-ENOENT errors are rare real-world edge cases that should be logged but not crash the agent.
+**Revised per liteai_cli_mvp analysis**: **Catch-and-log**. liteai_cli_mvp's `buildMemoryPrompt` (memdir.ts:286–291) catches all readFile errors — "No memory file yet" is the common case, and non-ENOENT errors are rare real-world edge cases that should be logged but not crash the agent.
 
 **Fix**:
 ```typescript
@@ -177,7 +177,7 @@ it("logs warning on permission denied but returns empty content", async () => {
 
 **File**: `packages/core/src/agent/memory.ts` L95–101  
 **Original**: Remove try-catch entirely  
-**Revised per liteai2 analysis**: **Catch-and-log**. liteai2's equivalent (`agentMemorySnapshot.ts`) catches and logs snapshot copy errors — copy failure should not crash agent spawn. The function is called during agent initialization and is not critical-path.
+**Revised per liteai_cli_mvp analysis**: **Catch-and-log**. liteai_cli_mvp's equivalent (`agentMemorySnapshot.ts`) catches and logs snapshot copy errors — copy failure should not crash agent spawn. The function is called during agent initialization and is not critical-path.
 
 **Fix**:
 ```typescript
@@ -430,7 +430,7 @@ The loop should:
 
 **File**: `packages/core/src/agent/context.ts` L150–159  
 **Original plan**: Scoped validator with `registerTask`/`killTask`/`deleteTodo` actions  
-**Revised per liteai2 analysis**: **Root store passthrough**. liteai2's `forkedAgent.ts:416–417` reveals the correct pattern: `setAppStateForTasks` is NOT a scoped operation API — it's a forwarding reference to the root session's `setAppState` that ensures task management always works even when the agent's own `setAppState` is no-op'd for isolation.
+**Revised per liteai_cli_mvp analysis**: **Root store passthrough**. liteai_cli_mvp's `forkedAgent.ts:416–417` reveals the correct pattern: `setAppStateForTasks` is NOT a scoped operation API — it's a forwarding reference to the root session's `setAppState` that ensures task management always works even when the agent's own `setAppState` is no-op'd for isolation.
 
 Without this, background bash tasks spawned by sub-agents are never registered in AppState and become PPID=1 zombies.
 
@@ -438,7 +438,7 @@ Without this, background bash tasks spawned by sub-agents are never registered i
 ```typescript
 // Task registration/kill must always reach the root store, even when
 // setAppState is a no-op — otherwise background tasks are never
-// registered and never killed (PPID=1 zombie). (See liteai2 forkedAgent.ts:416)
+// registered and never killed (PPID=1 zombie). (See liteai_cli_mvp forkedAgent.ts:416)
 setAppStateForTasks: parent.setAppStateForTasks ?? parent.setAppState,
 ```
 
@@ -708,7 +708,7 @@ All tests must pass. Only then proceed to Phase 8.
 ## Notes
 
 - R009 recommends deferring (summarization requires query loop infrastructure).
-- R010 is REVISED: implement as root store passthrough (liteai2 pattern), not a scoped validator.
+- R010 is REVISED: implement as root store passthrough (liteai_cli_mvp pattern), not a scoped validator.
 - R006 is the largest remaining task and has the most cascade changes. Budget accordingly.
 - R002 introduces a new Bus event type (`agent.terminal_notification`) — downstream consumers (SSE layer, web package) will need to subscribe when they wire up notifications.
 - This recovery plan does NOT cover Phases 8–11. Those are new work, not recovery.
@@ -718,8 +718,8 @@ All tests must pass. Only then proceed to Phase 8.
 | Date | Change |
 |------|--------|
 | 2026-04-13 | R001 eliminated, R007/R015 subsumed by `runAgent(RunAgentInput)` refactor (6/6 tests passing) |
-| 2026-04-13 | R003–R005 revised: log-but-not-throw per liteai2 reference analysis |
-| 2026-04-13 | R010 revised: root store passthrough instead of scoped validator per liteai2 `forkedAgent.ts:416` |
+| 2026-04-13 | R003–R005 revised: log-but-not-throw per liteai_cli_mvp reference analysis |
+| 2026-04-13 | R010 revised: root store passthrough instead of scoped validator per liteai_cli_mvp `forkedAgent.ts:416` |
 | 2026-04-13 | R002 implemented: `AgentEvent.TerminalNotification` Bus event + 3 new tests (19/19 agent tests passing) |
 | 2026-04-13 | R003–R005 implemented: logger added to memory.ts, all 3 functions now catch-and-log (19/19 tests passing) |
 | 2026-04-13 | **Tier 0 complete** — all blocking tasks resolved |

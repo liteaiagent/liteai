@@ -1,8 +1,8 @@
-# System Prompt Architecture & Resolution in liteai2
+# System Prompt Architecture & Resolution in liteai_cli_mvp
 
-This document provides an in-depth technical analysis of how `liteai2` dynamically determines, constructs, and caches system prompts across different execution phases and subagents.
+This document provides an in-depth technical analysis of how `liteai_cli_mvp` dynamically determines, constructs, and caches system prompts across different execution phases and subagents.
 
-Unlike traditional setups that rely on static Markdown prompts, `liteai2` builds its system prompts as structured arrays, utilizing memoization, strict boundaries for Anthropic prompt caching, and priority-based overrides.
+Unlike traditional setups that rely on static Markdown prompts, `liteai_cli_mvp` builds its system prompts as structured arrays, utilizing memoization, strict boundaries for Anthropic prompt caching, and priority-based overrides.
 
 ---
 

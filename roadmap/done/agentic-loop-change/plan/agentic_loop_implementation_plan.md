@@ -19,12 +19,12 @@ Currently, the `liteai` loop is tightly coupled to SQLite I/O. The `processor.ts
 ## 2. Reference Source Files (LiteAI2 - READ ONLY)
 These files represent the master architecture we are porting from:
 
-- **Core Loop**: `C:\Users\aghassan\Documents\workspace\liteai2\src\query.ts`
-- **Streaming Tool Executor**: `C:\Users\aghassan\Documents\workspace\liteai2\src\services\tools\StreamingToolExecutor.ts`
-- **Budget Enforcer**: `C:\Users\aghassan\Documents\workspace\liteai2\src\utils\toolResultStorage.ts`
+- **Core Loop**: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\query.ts`
+- **Streaming Tool Executor**: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\tools\StreamingToolExecutor.ts`
+- **Budget Enforcer**: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\toolResultStorage.ts`
 - **Compaction Services**: 
-  - `C:\Users\aghassan\Documents\workspace\liteai2\src\services\compact\snipCompact.ts`
-  - `C:\Users\aghassan\Documents\workspace\liteai2\src\services\compact\autoCompact.ts`
+  - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\compact\snipCompact.ts`
+  - `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\compact\autoCompact.ts`
 
 ---
 

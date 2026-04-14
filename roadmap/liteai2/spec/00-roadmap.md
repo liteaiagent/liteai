@@ -8,11 +8,11 @@
 
 ## Strategic Vision
 
-Port the battle-tested architectural patterns from liteai2 into liteai, transforming it from a simple agentic CLI into a production-grade orchestration platform with intelligent context management, persistent memory, and autonomous capabilities.
+Port the battle-tested architectural patterns from liteai_cli_mvp into liteai, transforming it from a simple agentic CLI into a production-grade orchestration platform with intelligent context management, persistent memory, and autonomous capabilities.
 
 **Guiding principles:**
 1. **Foundation first** — each phase unlocks the next; dependencies flow downward
-2. **No shortcuts on complexity** — liteai2 earned its patterns through millions of real sessions
+2. **No shortcuts on complexity** — liteai_cli_mvp earned its patterns through millions of real sessions
 3. **Incremental integration** — each phase delivers value independently
 4. **Preserve liteai's identity** — adopt patterns, not copy-paste; adapt to liteai's existing architecture
 
@@ -325,7 +325,7 @@ graph TD
 
 ---
 
-## Quick Reference — Where Things Live in liteai2
+## Quick Reference — Where Things Live in liteai_cli_mvp
 
 | System | Primary Source |
 |---|---|

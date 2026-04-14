@@ -7,7 +7,7 @@
 
 **Decision**: Selective clone model — clone immutable/read-heavy parent state (file cache, content replacement state), link lifecycle-critical state (abort controller with child hierarchy), wrap mutable state (app state with permission avoidance), and create fresh isolates for per-agent state (tool decisions, messages, query tracking).
 
-**Rationale**: The liteai2 reference implementation (`forkedAgent.ts:L345–462`) demonstrates that this selective model achieves both isolation safety and performance. Full deep-clone would be prohibitively expensive for file caches (hundreds of MB in large projects). Full sharing would break isolation guarantees. The selective model allows sub-agents to benefit from the parent's warm file cache while preventing side effects from leaking back.
+**Rationale**: The liteai_cli_mvp reference implementation (`forkedAgent.ts:L345–462`) demonstrates that this selective model achieves both isolation safety and performance. Full deep-clone would be prohibitively expensive for file caches (hundreds of MB in large projects). Full sharing would break isolation guarantees. The selective model allows sub-agents to benefit from the parent's warm file cache while preventing side effects from leaking back.
 
 **Alternatives considered**:
 - **Full deep clone**: Rejected — `readFileState` can be 100MB+ in large projects. Cloning is O(n) per spawn, unacceptable for <100ms target.
@@ -18,7 +18,7 @@
 
 **Decision**: Use Node.js `AsyncLocalStorage<AgentContext>` to maintain per-agent identity context across async continuations. Wrap entire agent execution via `runWithAgentContext()`.
 
-**Rationale**: Multiple background agents share the same Node.js process. Without ALS, analytics events from Agent A would incorrectly use Agent B's context when reading shared `AppState`. ALS provides zero-overhead context propagation that naturally follows Promise chains, `await` boundaries, and callback invocations. The liteai2 implementation (`agentContext.ts:L93`) validates this approach at scale.
+**Rationale**: Multiple background agents share the same Node.js process. Without ALS, analytics events from Agent A would incorrectly use Agent B's context when reading shared `AppState`. ALS provides zero-overhead context propagation that naturally follows Promise chains, `await` boundaries, and callback invocations. The liteai_cli_mvp implementation (`agentContext.ts:L93`) validates this approach at scale.
 
 **Alternatives considered**:
 - **Thread-local storage**: Not applicable — Node.js is single-threaded (Bun uses the same event loop model).
@@ -29,7 +29,7 @@
 
 **Decision**: Append-only JSONL (one JSON object per line) stored at `<sessionDir>/<sessionId>/subagents/<subdir>/agent-<agentId>.jsonl`. Each message is appended as a single line, using `fs.appendFile()` for atomic appends.
 
-**Rationale**: JSONL avoids the re-serialization problem inherent in updating a JSON array. Appending a single line is O(1) regardless of transcript length. File-per-agent isolation prevents concurrent write conflicts. The path convention mirrors liteai2's `sessionStorage.ts:L247`.
+**Rationale**: JSONL avoids the re-serialization problem inherent in updating a JSON array. Appending a single line is O(1) regardless of transcript length. File-per-agent isolation prevents concurrent write conflicts. The path convention mirrors liteai_cli_mvp's `sessionStorage.ts:L247`.
 
 **Alternatives considered**:
 - **SQLite transcript table**: Rejected — adds DB schema complexity and couples transcripts to the session DB. Filesystem storage is simpler, more portable, and naturally supports streaming reads for debugging tools.

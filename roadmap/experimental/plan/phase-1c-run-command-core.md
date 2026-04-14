@@ -3,9 +3,9 @@
 **Scope:** `packages/core` only — no UI, no SSE event changes, no engine rewiring.
 **Goal:** Refactor run_command from blocking spawn-and-wait to async-first with three tools.
 
-## What liteai2 Does (Reference)
+## What liteai_cli_mvp Does (Reference)
 
-liteai2's BashTool shows a rich terminal UI during command execution:
+liteai_cli_mvp's BashTool shows a rich terminal UI during command execution:
 
 ```
 Running… (2s · timeout 2m)     ← ShellTimeDisplay: elapsed + timeout countdown
@@ -47,11 +47,11 @@ Three tools backed by a session-scoped task registry:
 - `disposeAll()` for session cleanup
 
 #### Command Semantics (`src/command/semantics.ts`)
-- Port `commandSemantics.ts` from liteai2
+- Port `commandSemantics.ts` from liteai_cli_mvp
 - grep/rg exit 1 = no match (not error), diff exit 1 = files differ
 
 #### Tool prompt update (`src/bundled/prompts/tools/run_command.txt`)
-- Adapted from liteai2's `prompt.ts` — teach async workflow, `run_in_background`, no sleep loops
+- Adapted from liteai_cli_mvp's `prompt.ts` — teach async workflow, `run_in_background`, no sleep loops
 - Document `command_status` and `send_command_input` usage patterns
 
 ## Files Changed

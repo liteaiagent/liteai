@@ -150,7 +150,7 @@ interface SubagentContextOverrides {
 }
 ```
 
-> **Implementation note**: In the current codebase, `SubagentContext` (the tool-use execution context) and `SubagentSpawnContext` (the ALS analytics context described in the AgentExecutionContext entity below) are merged into a **single `SubagentContext` type** stored in `AgentExecutionContext`. The "Naming note" above describes the *conceptual* separation; the implementation uses one unified type for simplicity. `setAppStateForTasks` is implemented as `parent.setAppStateForTasks ?? parent.setAppState` — a root store passthrough per liteai2's `forkedAgent.ts:416`. This is NOT a scoped API with explicit actions; it's a forwarding reference ensuring task operations always reach the root session's AppState, even when the sub-agent's `setAppState` is isolated.
+> **Implementation note**: In the current codebase, `SubagentContext` (the tool-use execution context) and `SubagentSpawnContext` (the ALS analytics context described in the AgentExecutionContext entity below) are merged into a **single `SubagentContext` type** stored in `AgentExecutionContext`. The "Naming note" above describes the *conceptual* separation; the implementation uses one unified type for simplicity. `setAppStateForTasks` is implemented as `parent.setAppStateForTasks ?? parent.setAppState` — a root store passthrough per liteai_cli_mvp's `forkedAgent.ts:416`. This is NOT a scoped API with explicit actions; it's a forwarding reference ensuring task operations always reach the root session's AppState, even when the sub-agent's `setAppState` is isolated.
 
 ### State Transitions
 

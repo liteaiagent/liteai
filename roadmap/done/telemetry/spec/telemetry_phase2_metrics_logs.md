@@ -15,18 +15,18 @@ The telemetry subsystem currently has full **trace** instrumentation (interactio
 - Prometheus and Loki are deployed but receive no data.
 - Massive LLM conversational payloads are currently 10k-character truncated in Tempo due to span attribute limits. Full, untruncated payloads must be routed to Loki.
 
-This roadmap item covers wiring these pipelines into production code, specifically referencing the mature Node.js implementation from the `liteai2` workspace.
+This roadmap item covers wiring these pipelines into production code, specifically referencing the mature Node.js implementation from the `liteai_cli_mvp` workspace.
 
 ---
 
-## Reference Implementation: `liteai2`
+## Reference Implementation: `liteai_cli_mvp`
 
-We will strictly follow the `liteai2` production NodeSDK telemetry configuration as the blueprint for Phase 2. The `liteai2` workspace demonstrates proper Three-Pillar observability with dynamic exporter bridging.
+We will strictly follow the `liteai_cli_mvp` production NodeSDK telemetry configuration as the blueprint for Phase 2. The `liteai_cli_mvp` workspace demonstrates proper Three-Pillar observability with dynamic exporter bridging.
 
 **Key Reference Files:**
-- **Exporter Setup:** `C:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\instrumentation.ts`
+- **Exporter Setup:** `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\instrumentation.ts`
   *Provides the exact logic for dynamically invoking `@opentelemetry/exporter-logs-otlp-http` and `@opentelemetry/exporter-metrics-otlp-http`, and applying them to `LoggerProvider` and `MeterProvider` with proper compression schemas.*
-- **Provider Initialization:** `C:\Users\aghassan\Documents\workspace\liteai2\src\bootstrap\state.ts`
+- **Provider Initialization:** `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\bootstrap\state.ts`
   *Demonstrates how to correctly initialize the core OTel SDK `api-logs` and `sdk-metrics` providers at application boot time.*
 
 ---
@@ -63,7 +63,7 @@ All metrics should carry these attributes for slicing:
 - `tool_name` (for tool-specific metrics)
 
 ### Implementation Approach
-Create a `src/telemetry/metrics.ts` module, modeled entirely after `liteai2/src/utils/telemetry/instrumentation.ts`:
+Create a `src/telemetry/metrics.ts` module, modeled entirely after `liteai_cli_mvp/src/utils/telemetry/instrumentation.ts`:
 ```typescript
 import { metrics } from "@opentelemetry/api"
 

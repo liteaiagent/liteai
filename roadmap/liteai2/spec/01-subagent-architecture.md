@@ -1,18 +1,18 @@
-# Subagent Architecture — liteai2
+# Subagent Architecture — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai2\src\tools\AgentTool\`
+> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\AgentTool\`
 
 ---
 
 ## Overview
 
-liteai2 treats sub-agents as **fully orchestrated parallel workers** with their own system prompts, tool pools, permission scopes, MCP connections, skills, memory, and sidechain transcripts. This is in contrast to liteai's current approach where `TaskTool` creates a clean-slate `Session.create({ parentID })` with no inherited context.
+liteai_cli_mvp treats sub-agents as **fully orchestrated parallel workers** with their own system prompts, tool pools, permission scopes, MCP connections, skills, memory, and sidechain transcripts. This is in contrast to liteai's current approach where `TaskTool` creates a clean-slate `Session.create({ parentID })` with no inherited context.
 
 ---
 
 ## 1. Agent Definition System
 
-**Source:** [`loadAgentsDir.ts`](../../liteai2/src/tools/AgentTool/loadAgentsDir.ts)
+**Source:** [`loadAgentsDir.ts`](../../liteai_cli_mvp/src/tools/AgentTool/loadAgentsDir.ts)
 
 ### Type Hierarchy
 
@@ -58,9 +58,9 @@ Later sources override earlier ones by `agentType` name via `getActiveAgentsFrom
 
 ## 2. Context Forking — `createSubagentContext()`
 
-**Source:** [`forkedAgent.ts`](../../liteai2/src/utils/forkedAgent.ts)
+**Source:** [`forkedAgent.ts`](../../liteai_cli_mvp/src/utils/forkedAgent.ts)
 
-This is the **critical architectural difference** from liteai. Instead of a clean-slate session, liteai2 creates an isolated `ToolUseContext` that inherits the parent's state selectively:
+This is the **critical architectural difference** from liteai. Instead of a clean-slate session, liteai_cli_mvp creates an isolated `ToolUseContext` that inherits the parent's state selectively:
 
 ### Isolation Model
 
@@ -89,9 +89,9 @@ Key insight: **CacheSafeParams** (system prompt, user/system context, tools, mes
 
 ## 3. Context Pruning — Intelligent Stripping
 
-**Source:** [`runAgent.ts:L386-L410`](../../liteai2/src/tools/AgentTool/runAgent.ts#L386)
+**Source:** [`runAgent.ts:L386-L410`](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L386)
 
-liteai2 actively prunes heavy context for read-only agents:
+liteai_cli_mvp actively prunes heavy context for read-only agents:
 
 ### CLAUDE.md Stripping
 
@@ -118,7 +118,7 @@ Feature flag `tengu_slim_subagent_claudemd` (defaults true) — can revert insta
 
 ## 4. Dynamic MCP Server Mounting
 
-**Source:** [`runAgent.ts:L95-L218`](../../liteai2/src/tools/AgentTool/runAgent.ts#L95)
+**Source:** [`runAgent.ts:L95-L218`](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L95)
 
 Agents declare MCP servers in frontmatter. On spawn:
 
@@ -140,7 +140,7 @@ Policy guard: `isRestrictedToPluginOnly('mcp')` blocks user-defined agents from 
 
 ## 5. Permission Sandboxing
 
-**Source:** [`runAgent.ts:L412-L498`](../../liteai2/src/tools/AgentTool/runAgent.ts#L412)
+**Source:** [`runAgent.ts:L412-L498`](../../liteai_cli_mvp/src/tools/AgentTool/runAgent.ts#L412)
 
 ### Async Prompt Blocking
 
@@ -168,7 +168,7 @@ When `allowedTools` is provided, session-level permissions are replaced (not mer
 
 ## 6. Sidechain Transcripts
 
-**Source:** [`sessionStorage.ts → recordSidechainTranscript()`](../../liteai2/src/utils/sessionStorage.ts)
+**Source:** [`sessionStorage.ts → recordSidechainTranscript()`](../../liteai_cli_mvp/src/utils/sessionStorage.ts)
 
 Sub-agent messages are recorded to an **isolated transcript** file, not polluted into the parent's message chain:
 
@@ -201,9 +201,9 @@ Perfetto spans create parent-child links for visualizing swarm execution trees.
 
 ---
 
-## Comparison: liteai vs liteai2 (Subagents)
+## Comparison: liteai vs liteai_cli_mvp (Subagents)
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Context sharing | Empty slate — no parent history | Selective fork with intelligent pruning |
 | MCP lifecycle | Static project-wide pool | Dynamic per-agent mount + cleanup |

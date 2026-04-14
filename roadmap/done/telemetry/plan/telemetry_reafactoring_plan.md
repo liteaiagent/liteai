@@ -2,9 +2,9 @@
 
 ## Background & Motivation
 
-The current liteai trace system is a custom SQLite append-log (`TraceTable`) that is tightly coupled to the session/message layer. After studying the liteai2 codebase (`src/utils/telemetry/`), it's clear that their architecture is significantly more mature — using **OpenTelemetry (OTel) as the native tracing backbone** and **Perfetto for local performance profiling**. We should adopt this architecture rather than evolving our custom SQLite trace in isolation.
+The current liteai trace system is a custom SQLite append-log (`TraceTable`) that is tightly coupled to the session/message layer. After studying the liteai_cli_mvp codebase (`src/utils/telemetry/`), it's clear that their architecture is significantly more mature — using **OpenTelemetry (OTel) as the native tracing backbone** and **Perfetto for local performance profiling**. We should adopt this architecture rather than evolving our custom SQLite trace in isolation.
 
-### What liteai2 Does (Brief Summary)
+### What liteai_cli_mvp Does (Brief Summary)
 
 | Layer | Implementation | Purpose |
 |---|---|---|
@@ -14,7 +14,7 @@ The current liteai trace system is a custom SQLite append-log (`TraceTable`) tha
 | **Perfetto** | Chrome Trace Event format → `~/.claude/traces/trace-<session>.json` | Local deep performance profiling (TTFT, TTLT, ITPS, OTPS, cache hit rate) viewable in `ui.perfetto.dev` |
 | **Exporters** | OTLP (gRPC, HTTP/JSON, HTTP/Protobuf), Prometheus, Console, BigQuery | Pluggable via `OTEL_*` env vars |
 
-### Key Architectural Decisions in liteai2
+### Key Architectural Decisions in liteai_cli_mvp
 
 1. **Span hierarchy via `AsyncLocalStorage`** — `interactionContext` and `toolContext` use ALS to maintain parent-child span relationships without passing IDs through the call stack.
 2. **Content deduplication** — System prompts and tool schemas are hashed; full content is logged once per unique hash via OTel Log events (not spans).
@@ -26,21 +26,21 @@ The current liteai trace system is a custom SQLite append-log (`TraceTable`) tha
 
 ## Reference Files
 
-### liteai2 — Reference Implementation (read-only, port from here)
+### liteai_cli_mvp — Reference Implementation (read-only, port from here)
 
 | File | Purpose |
 |---|---|
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\instrumentation.ts` | OTel bootstrap: MeterProvider, TracerProvider, LoggerProvider, exporter selection, Perfetto init, shutdown lifecycle (~826 lines) |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\sessionTracing.ts` | High-level span API: `startInteractionSpan`, `startLLMRequestSpan`, `startToolSpan`, `endToolSpan`, etc. Uses `AsyncLocalStorage` + `WeakRef` span registry (~928 lines) |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\perfettoTracing.ts` | Chrome Trace Event format output: TTFT/TTLT/ITPS/OTPS metrics, bounded event buffer, periodic write (~1121 lines) |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\betaSessionTracing.ts` | Content dedup: hash-based system prompt + tool schema tracking, `new_context` delta computation, truncation (~492 lines) |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\events.ts` | OTel Log event emitter: `logOTelEvent()`, monotonic sequence counter (~76 lines) |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\bigqueryExporter.ts` | Custom BigQuery metrics exporter (reference only, may not be needed) |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetry\pluginTelemetry.ts` | Plugin-specific telemetry hooks |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\telemetryAttributes.ts` | Shared telemetry attribute builder |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\services\api\claude.ts` | Call site: `startLLMRequestSpan`/`endLLMRequestSpan` usage in LLM call layer |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\services\tools\toolExecution.ts` | Call site: `startToolSpan`/`endToolSpan` usage in tool execution |
-| `c:\Users\aghassan\Documents\workspace\liteai2\src\utils\hooks.ts` | Call site: hook span integration |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\instrumentation.ts` | OTel bootstrap: MeterProvider, TracerProvider, LoggerProvider, exporter selection, Perfetto init, shutdown lifecycle (~826 lines) |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\sessionTracing.ts` | High-level span API: `startInteractionSpan`, `startLLMRequestSpan`, `startToolSpan`, `endToolSpan`, etc. Uses `AsyncLocalStorage` + `WeakRef` span registry (~928 lines) |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\perfettoTracing.ts` | Chrome Trace Event format output: TTFT/TTLT/ITPS/OTPS metrics, bounded event buffer, periodic write (~1121 lines) |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\betaSessionTracing.ts` | Content dedup: hash-based system prompt + tool schema tracking, `new_context` delta computation, truncation (~492 lines) |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\events.ts` | OTel Log event emitter: `logOTelEvent()`, monotonic sequence counter (~76 lines) |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\bigqueryExporter.ts` | Custom BigQuery metrics exporter (reference only, may not be needed) |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetry\pluginTelemetry.ts` | Plugin-specific telemetry hooks |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\telemetryAttributes.ts` | Shared telemetry attribute builder |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\api\claude.ts` | Call site: `startLLMRequestSpan`/`endLLMRequestSpan` usage in LLM call layer |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\services\tools\toolExecution.ts` | Call site: `startToolSpan`/`endToolSpan` usage in tool execution |
+| `c:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\utils\hooks.ts` | Call site: hook span integration |
 
 ### liteai — Files to Modify
 
@@ -62,10 +62,10 @@ The current liteai trace system is a custom SQLite append-log (`TraceTable`) tha
 
 | File | Purpose |
 |---|---|
-| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\instrumentation.ts` | OTel bootstrap (port from liteai2) |
-| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\tracing.ts` | High-level span API (port from liteai2) |
-| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\perfetto.ts` | Perfetto Chrome Trace output (port from liteai2) |
-| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\events.ts` | OTel Log events (port from liteai2) |
+| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\instrumentation.ts` | OTel bootstrap (port from liteai_cli_mvp) |
+| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\tracing.ts` | High-level span API (port from liteai_cli_mvp) |
+| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\perfetto.ts` | Perfetto Chrome Trace output (port from liteai_cli_mvp) |
+| `c:\Users\aghassan\Documents\workspace\liteai\packages\core\src\telemetry\events.ts` | OTel Log events (port from liteai_cli_mvp) |
 
 ---
 
@@ -124,7 +124,7 @@ The current liteai trace system is a custom SQLite append-log (`TraceTable`) tha
 ### Phase 1: New Telemetry Foundation (COMPLETED)
 
 #### [NEW] `src/telemetry/instrumentation.ts`
-Bootstrap OTel providers. Adapted from liteai2 but simplified for our server architecture (no CLI/TUI concerns):
+Bootstrap OTel providers. Adapted from liteai_cli_mvp but simplified for our server architecture (no CLI/TUI concerns):
 
 - `initializeTelemetry()` — creates `MeterProvider`, `TracerProvider`, `LoggerProvider` based on env vars
 - Exporter selection via `OTEL_*` env vars (OTLP, Console)
@@ -144,7 +144,7 @@ LITEAI_PERFETTO_TRACE=1            # Optional local profiling
 ```
 
 #### [NEW] `src/telemetry/tracing.ts`
-High-level span API (ported from liteai2's `sessionTracing.ts`):
+High-level span API (ported from liteai_cli_mvp's `sessionTracing.ts`):
 
 ```ts
 export function startInteractionSpan(userPrompt: string): Span
@@ -159,11 +159,11 @@ export function endHookSpan(span: Span, result?: HookResult): void
 
 - Uses `AsyncLocalStorage<SpanContext>` for `interactionContext` and `toolContext`
 - Automatically parents tool spans under interaction spans
-- `WeakRef`-based span registry with TTL cleanup (30 min, matching liteai2)
+- `WeakRef`-based span registry with TTL cleanup (30 min, matching liteai_cli_mvp)
 - Perfetto spans emitted in parallel at each call site
 
 #### [NEW] `src/telemetry/perfetto.ts`
-Chrome Trace Event format output (ported from liteai2's `perfettoTracing.ts`):
+Chrome Trace Event format output (ported from liteai_cli_mvp's `perfettoTracing.ts`):
 
 - `startLLMRequestPerfettoSpan()` / `endLLMRequestPerfettoSpan()` with derived metrics (TTFT, TTLT, ITPS, OTPS, cache hit rate)
 - `startToolPerfettoSpan()` / `endToolPerfettoSpan()`
@@ -173,7 +173,7 @@ Chrome Trace Event format output (ported from liteai2's `perfettoTracing.ts`):
 - Periodic write option via `LITEAI_PERFETTO_WRITE_INTERVAL_S`
 
 #### [NEW] `src/telemetry/events.ts`
-OTel Log-based events (ported from liteai2's `events.ts` + `betaSessionTracing.ts`):
+OTel Log-based events (ported from liteai_cli_mvp's `events.ts` + `betaSessionTracing.ts`):
 
 ```ts
 export function logOTelEvent(eventName: string, metadata: Record<string, string>): void
@@ -337,7 +337,7 @@ Optional (lazy-loaded based on `OTEL_EXPORTER_OTLP_PROTOCOL`):
 
 > [!IMPORTANT]
 > **Q2: Perfetto — developer-only or general availability?**  
-> In liteai2, Perfetto is ant-only (stripped from external builds via `feature('PERFETTO_TRACING')`). For liteai, do you want it available to all users or gated behind a dev flag?
+> In liteai_cli_mvp, Perfetto is ant-only (stripped from external builds via `feature('PERFETTO_TRACING')`). For liteai, do you want it available to all users or gated behind a dev flag?
 
 > [!WARNING]
 > **Q3: Trace viewer UI migration**  
@@ -345,7 +345,7 @@ Optional (lazy-loaded based on `OTEL_EXPORTER_OTLP_PROTOCOL`):
 
 > [!NOTE]
 > **Q4: BigQuery / custom exporter needs?**  
-> liteai2 has a `BigQueryMetricsExporter` for enterprise customers. Do we need any custom exporters, or is OTLP sufficient for now?
+> liteai_cli_mvp has a `BigQueryMetricsExporter` for enterprise customers. Do we need any custom exporters, or is OTLP sufficient for now?
 
 > [!NOTE]
 > **Q5: Vercel AI SDK `experimental_telemetry` integration**  
@@ -392,6 +392,6 @@ Since legacy `src/trace/` tests were reliant on SQLite trace tracking (which has
 > This phase has been expanded into its own detailed implementation plan: [agentic_loop_implementation_plan.md](file:///c:/Users/aghassan/Documents/workspace/liteai/packages/core/plan/agentic_loop_implementation_plan.md).
 
 Once test coverage is adequately established on the telemetry pipeline, we pivot to structurally overhauling how LiteAI routes state logic (currently heavily recursive via `loop.ts`).
-1. **Goal**: Rip out the rigid inner `processSubtask(...)` inside `loop.ts` and restructure it mathematically to resemble the pure event-driven finite-state engine found in `liteai2`.
+1. **Goal**: Rip out the rigid inner `processSubtask(...)` inside `loop.ts` and restructure it mathematically to resemble the pure event-driven finite-state engine found in `liteai_cli_mvp`.
 2. **Context Fragmentation**: The new ReAct loop will drastically improve sub-agent transitions, leveraging OTel explicitly to trace internal thoughts without disjointing them into random UI message ids.
 3. **Concurrent Execution**: Enable parallel tool dispatch properly via structured state progression.

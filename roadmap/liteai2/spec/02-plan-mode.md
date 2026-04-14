@@ -1,12 +1,12 @@
-# Plan Mode — liteai2
+# Plan Mode — liteai_cli_mvp
 
-> Source: `C:\Users\aghassan\Documents\workspace\liteai2\src\tools\ExitPlanModeTool\`, `EnterPlanModeTool\`
+> Source: `C:\Users\aghassan\Documents\workspace\liteai_cli_mvp\src\tools\ExitPlanModeTool\`, `EnterPlanModeTool\`
 
 ---
 
 ## Overview
 
-Plan Mode in liteai2 is an **attachment-driven state machine** that controls how the AI approaches multi-step tasks. It switches between `plan` and `build` phases, with the plan text embedded directly in model context.
+Plan Mode in liteai_cli_mvp is an **attachment-driven state machine** that controls how the AI approaches multi-step tasks. It switches between `plan` and `build` phases, with the plan text embedded directly in model context.
 
 ---
 
@@ -104,7 +104,7 @@ This means the model enters build mode with **immediate, in-context access** to 
 
 ## 4. Explore + Plan Sub-Agents
 
-liteai2 supports spawning dedicated sub-agents for the explore and plan phases:
+liteai_cli_mvp supports spawning dedicated sub-agents for the explore and plan phases:
 
 - **Explore agent:** Read-only, strips CLAUDE.md + gitStatus to save tokens. Uses search tools to understand the codebase.
 - **Plan agent:** Also read-only, writes a plan file and returns it. Separate plan file paths per sub-agent.
@@ -125,9 +125,9 @@ Switches from build → plan mode. This is the reverse path, used when:
 
 ---
 
-## Comparison: liteai vs liteai2 (Plan Mode)
+## Comparison: liteai vs liteai_cli_mvp (Plan Mode)
 
-| Dimension | liteai | liteai2 |
+| Dimension | liteai | liteai_cli_mvp |
 |---|---|---|
 | Plan storage | Artifact file, no in-context | Deduplicated: file + attachment cycle |
 | Reminder system | None — plan drifts out of context | Sparse/full reminder every turn/5 turns |

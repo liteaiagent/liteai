@@ -136,7 +136,7 @@ All decisions resolved:
 
 ### Architecture Decision: OOP Registry vs. Stateless Module
 
-> **liteai2 uses**: A stateless module (`systemPromptSections.ts`) with the cache stored in
+> **liteai_cli_mvp uses**: A stateless module (`systemPromptSections.ts`) with the cache stored in
 > `bootstrap/state.ts` as a plain `Map`. Sections are assembled inline at the `getSystemPrompt()`
 > call site — no `register()`/`resolve()` abstraction exists.
 >
@@ -145,7 +145,7 @@ All decisions resolved:
 >
 > **Rationale for divergence**:
 > - **Testability**: each test instantiates with a clean registry via `clearAll()` — no global
->   state bleed between tests (liteai2 requires manual `clearSystemPromptSectionState()` calls)
+>   state bleed between tests (liteai_cli_mvp requires manual `clearSystemPromptSectionState()` calls)
 > - **Encapsulation**: the registry owns both section definitions and cached values — no split
 >   ownership across module-level state in a separate `bootstrap/state.ts` file
 > - **Extensibility**: future features (e.g., per-tenant section overrides, hot-reload hooks)

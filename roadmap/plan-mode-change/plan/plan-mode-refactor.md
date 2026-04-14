@@ -1,18 +1,18 @@
-# Plan Mode — Complete Port from liteai2
+# Plan Mode — Complete Port from liteai_cli_mvp
 
 Reference docs:
 - [liteai plan mode](../specs/plan-mode.md)
-- [liteai2 plan mode](../specs/plan-mode-liteai2.md)
+- [liteai_cli_mvp plan mode](../specs/plan-mode-liteai_cli_mvp.md)
 
 ---
 
 ## Goal
 
-A complete adoption of the liteai2 plan mode architecture, adapted to liteai's codebase.
+A complete adoption of the liteai_cli_mvp plan mode architecture, adapted to liteai's codebase.
 
 **Key commitments:**
-- Plans stored in `~/.liteai/plans/` via `Global.Path.root` (equivalent of liteai2's `~/.claude/plans/`)
-- Plan filenames keep the current `<timestamp>-<slug>.md` format (liteai exception vs liteai2's word-slug)
+- Plans stored in `~/.liteai/plans/` via `Global.Path.root` (equivalent of liteai_cli_mvp's `~/.claude/plans/`)
+- Plan filenames keep the current `<timestamp>-<slug>.md` format (liteai exception vs liteai_cli_mvp's word-slug)
 - Tool renamed: `plan_exit` → `exit_plan_mode` / `plan_enter` → `enter_plan_mode`
 - `question` tool renamed to `ask_user` (**core-only change** — web/vscode use the `Question` system via bus events and API routes, not the tool ID)
 - Attachment-style, ephemeral prompt injection replacing persisted synthetic DB parts for reminders
@@ -25,7 +25,7 @@ A complete adoption of the liteai2 plan mode architecture, adapted to liteai's c
 
 ## Phase 1 — `ask_user` Tool Rename
 
-**Goal:** Rename the `question` tool to `ask_user` to match liteai2's `AskUserQuestion` semantics.
+**Goal:** Rename the `question` tool to `ask_user` to match liteai_cli_mvp's `AskUserQuestion` semantics.
 
 **Scope:** `packages/core` only. Web and vscode do **not** reference the tool ID at all. Their `question.*` references (`question.asked` bus events, `QuestionRequest` types, `project.question.reply` API routes, UI state keys) belong to the `Question` subsystem — a separate concept named after what it does, not after the tool. They are completely unaffected by this rename.
 
@@ -46,7 +46,7 @@ A complete adoption of the liteai2 plan mode architecture, adapted to liteai's c
 
 ## Phase 2 — Plan File Subsystem
 
-**Goal:** Replace `Session.plan()` (project-relative, `timestamp-slug.md`) with a global `~/.liteai/plans/` directory. **Plan filenames keep the current `<timestamp>-<slug>.md` format** — deliberate exception from liteai2's word-slug approach.
+**Goal:** Replace `Session.plan()` (project-relative, `timestamp-slug.md`) with a global `~/.liteai/plans/` directory. **Plan filenames keep the current `<timestamp>-<slug>.md` format** — deliberate exception from liteai_cli_mvp's word-slug approach.
 
 ### Subsystems
 
@@ -89,7 +89,7 @@ export namespace Plan {
 
 `getPlansDirectory()` creates the directory with `mkdirSync({ recursive: true })` on first access, replacing the inline `fs.mkdir` in `plan-reminder.ts`.
 
-`settings.plansDirectory` mirrors liteai2 — allows a project-relative path to use local plans instead of the global directory.
+`settings.plansDirectory` mirrors liteai_cli_mvp — allows a project-relative path to use local plans instead of the global directory.
 
 ---
 
@@ -153,7 +153,7 @@ Walk backwards through `messages[]`, count non-synthetic, non-tool-result user m
 | `src/tool/registry.ts` | **Modify** — update import name |
 | `src/bundled/prompts/misc/build-switch.md` | **Modify** — add `{{PLAN_CONTENT}}` placeholder |
 
-### Tool Result (matches liteai2 pattern)
+### Tool Result (matches liteai_cli_mvp pattern)
 
 ```ts
 `User has approved your plan. You can now edit files and run tools. Execute the plan.
