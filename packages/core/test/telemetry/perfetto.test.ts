@@ -6,9 +6,11 @@ import {
   endToolPerfettoSpan,
   initializePerfettoTracing,
   isPerfettoTracingEnabled,
+  registerPerfettoAgent,
   startInteractionPerfettoSpan,
   startLLMRequestPerfettoSpan,
   startToolPerfettoSpan,
+  unregisterPerfettoAgent,
 } from "../../src/telemetry/perfetto"
 
 describe("perfetto", () => {
@@ -58,5 +60,19 @@ describe("perfetto", () => {
     expect(() => endInteractionPerfettoSpan("")).not.toThrow()
     expect(() => endLLMRequestPerfettoSpan("", {})).not.toThrow()
     expect(() => endToolPerfettoSpan("", {})).not.toThrow()
+  })
+
+  test("registerPerfettoAgent and unregisterPerfettoAgent record hierarchical metadata", () => {
+    initializePerfettoTracing(true, "test-session-hierarchy")
+
+    // Register a parent agent
+    expect(() => registerPerfettoAgent("parent-agent-id")).not.toThrow()
+
+    // Register a child agent linked to the parent
+    expect(() => registerPerfettoAgent("child-agent-id", "parent-agent-id")).not.toThrow()
+
+    // Unregister agents
+    expect(() => unregisterPerfettoAgent("child-agent-id")).not.toThrow()
+    expect(() => unregisterPerfettoAgent("parent-agent-id")).not.toThrow()
   })
 })

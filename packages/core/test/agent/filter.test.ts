@@ -138,4 +138,31 @@ describe("pruneContext", () => {
     expect(result.prunedUserContext?.liteaiMd).toBeDefined()
     expect(result.prunedSystemContext?.gitStatus).toBeDefined()
   })
+
+  test("token reduction verification: Explore agent with pruning enabled vs disabled (>= 30% reduction)", () => {
+    // SC-002 Verification
+    const agentDef = { omitLiteaiMd: true, name: "explore" } as Agent.AgentDefinition
+
+    // Simulate a heavy user context and system context
+    const heavyLiteaiMd = "a".repeat(5000)
+    const heavyGitStatus = "b".repeat(5000)
+
+    const userCtx = { liteaiMd: heavyLiteaiMd, query: "help me explore", other: "small" }
+    const sysCtx = { gitStatus: heavyGitStatus, os: "windows", memory: "16gb" }
+
+    // Baseline (pruning disabled)
+    const disabledResult = pruneContext(agentDef, userCtx, sysCtx, { liteaiSlimSubagentLiteaimdFlag: false })
+    const baselineTokens = JSON.stringify(disabledResult).length
+
+    // Pruned (pruning enabled)
+    const enabledResult = pruneContext(agentDef, userCtx, sysCtx, {
+      liteaiSlimSubagentLiteaimdFlag: true,
+      hasUserOverride: false,
+    })
+    const prunedTokens = JSON.stringify(enabledResult).length
+
+    // Assert >= 30% reduction
+    const reductionPercent = ((baselineTokens - prunedTokens) / baselineTokens) * 100
+    expect(reductionPercent).toBeGreaterThanOrEqual(30)
+  })
 })

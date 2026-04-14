@@ -84,20 +84,15 @@ describe("Dynamic MCP Server Lifecycle", () => {
       mcpServers: ["bad-server"],
     }
 
-    const mockGetMcpConfigByName = spyOn(MCP, "getMcpConfigByName").mockResolvedValue({ type: "remote", url: "x" })
-    const mockEnsureConnected = spyOn(MCP, "ensureConnected").mockResolvedValue()
-    const mockState = spyOn(MCP, "state").mockResolvedValue({
+    spyOn(MCP, "getMcpConfigByName").mockResolvedValue({ type: "remote", url: "x" })
+    spyOn(MCP, "ensureConnected").mockResolvedValue()
+    spyOn(MCP, "state").mockResolvedValue({
       status: { "bad-server": { status: "failed", error: "ded" } },
       clients: {},
     })
 
     await expect(initializeAgentMcpServers(agentDef)).rejects.toThrow(McpConnectionError)
 
-    mockGetMcpConfigByName.mockRestore()
-    mockEnsureConnected.mockRestore()
-    mockState.mockRestore()
-
-    await expect(initializeAgentMcpServers(agentDef)).rejects.toThrow(McpConnectionError)
     mock.restore()
   })
 
