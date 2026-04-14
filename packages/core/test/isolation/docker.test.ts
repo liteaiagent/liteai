@@ -11,6 +11,7 @@ describe("Docker Isolation Mode", () => {
   let tempDir: string
   let projectDir: string
   let dataDir: string
+  let originalGlobalPath: typeof Global.Path
 
   beforeAll(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "liteai-docker-test-"))
@@ -19,13 +20,16 @@ describe("Docker Isolation Mode", () => {
     await fs.mkdir(projectDir, { recursive: true })
     await fs.mkdir(dataDir, { recursive: true })
 
+    originalGlobalPath = Global.Path
     Object.defineProperty(Global, "Path", {
-      value: { data: dataDir },
+      value: { ...originalGlobalPath, data: dataDir },
       writable: true,
+      configurable: true,
     })
   })
 
   afterAll(async () => {
+    Object.defineProperty(Global, "Path", { value: originalGlobalPath, writable: true, configurable: true })
     await fs.rm(tempDir, { recursive: true, force: true })
   })
 

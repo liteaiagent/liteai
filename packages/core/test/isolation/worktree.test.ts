@@ -20,6 +20,9 @@ describe("Worktree Isolation Mode", () => {
   let tempDir: string
   let projectDir: string
   let dataDir: string
+  let originalGlobalPath: typeof Global.Path
+  let originalInstanceWorktreeDescriptor: PropertyDescriptor | undefined
+  let originalInstanceProjectDescriptor: PropertyDescriptor | undefined
 
   beforeAll(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "liteai-worktree-test-"))
@@ -36,23 +39,43 @@ describe("Worktree Isolation Mode", () => {
     await runGit(["add", "test.txt"], projectDir)
     await runGit(["commit", "-m", "initial"], projectDir)
 
+    originalGlobalPath = Global.Path
     Object.defineProperty(Global, "Path", {
-      value: { data: dataDir },
+      value: { ...originalGlobalPath, data: dataDir },
       writable: true,
+      configurable: true,
     })
 
+    originalInstanceWorktreeDescriptor = Object.getOwnPropertyDescriptor(Instance, "worktree")
     Object.defineProperty(Instance, "worktree", {
       value: projectDir,
       writable: true,
+      configurable: true,
     })
 
+    originalInstanceProjectDescriptor = Object.getOwnPropertyDescriptor(Instance, "project")
     Object.defineProperty(Instance, "project", {
       value: { id: "test-project", vcs: "git" },
       writable: true,
+      configurable: true,
     })
   })
 
   afterAll(async () => {
+    Object.defineProperty(Global, "Path", { value: originalGlobalPath, writable: true, configurable: true })
+    
+    if (originalInstanceWorktreeDescriptor) {
+      Object.defineProperty(Instance, "worktree", originalInstanceWorktreeDescriptor)
+    } else {
+      delete (Instance as any).worktree
+    }
+
+    if (originalInstanceProjectDescriptor) {
+      Object.defineProperty(Instance, "project", originalInstanceProjectDescriptor)
+    } else {
+      delete (Instance as any).project
+    }
+
     await fs.rm(tempDir, { recursive: true, force: true })
   })
 
@@ -67,8 +90,8 @@ describe("Worktree Isolation Mode", () => {
     expect(info.directory).toStartWith(dataDir)
 
     const { Project } = await import("@/project/project")
-    spyOn(Project, "addSandbox").mockResolvedValue({} as import("@/project/project").Project.Info)
-    spyOn(Instance, "provide").mockResolvedValue(true)
+    const projectSpy = spyOn(Project, "addSandbox").mockResolvedValue({} as import("@/project/project").Project.Info)
+    const provideSpy = spyOn(Instance, "provide").mockResolvedValue(true as any)
 
     const bootstrap = await Worktree.createFromInfo(info)
     expect(bootstrap).toBeTypeOf("function")
@@ -89,7 +112,10 @@ describe("Worktree Isolation Mode", () => {
     const registerSpy = spyOn(IsolationArtifactRegistry, "registerWorktreeArtifact").mockResolvedValue(undefined)
     await IsolationArtifactRegistry.registerWorktreeArtifact("test-agent", info.directory)
     expect(registerSpy).toHaveBeenCalledWith("test-agent", info.directory)
+    
     registerSpy.mockRestore()
+    projectSpy.mockRestore()
+    provideSpy.mockRestore()
   })
 
   it("should perform TTL-based retention cleanup of stale worktrees", async () => {
