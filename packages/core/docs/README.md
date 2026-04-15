@@ -93,9 +93,13 @@ Below is an overview of the key subsystems within LiteAI. For each feature, you 
 The core loop executing AI tasks, prompt resolution, and message state.
 - **Source:** [`src/agent/`](../src/agent/), [`src/session/`](../src/session/)
 - **Documentation:**
+  - ⭐ [**Agent Execution Modes**](./agent-execution-modes.md) — **Start here.** Comprehensive guide to all agent modes (Normal, Fork, Plan, Coordinator, Swarm), their differences, how to switch between them, and implementation status.
   - [**Agent Loop**](./agent.md) — How the core AI interaction flow is orchestrated.
   - [**Session Management**](./session.md) — How interactions and states are represented.
-  - [**System Prompts & Pipeline**](./system-prompt-pipeline.md) — Construction phase for instructions.
+  - [**System Prompts & Pipeline**](./system-prompt-pipeline.md) — Unified system prompt resolution via `SectionRegistry`, `system.md`, and static/volatile boundary.
+  - [**Sub-Agent Architecture**](./subagent-architecture.md) — Context forking, sidechain transcripts (JSONL + SQLite), permission sandboxing, and deterministic cleanup.
+  - [**Fork Subagent & Agent Durability**](./fork-subagent-durability.md) — Cache-optimized fork spawning, agent resume from persisted transcripts, and 3-tier system prompt recovery.
+  - [**Spawning Models Comparison**](./spawning-models-comparison.md) — Side-by-side comparison of standard vs fork sub-agent spawning mechanics.
   - [**Prompt Engineering**](./prompt-engineering.md) — Guidelines to formatting robust prompts.
   - [**Session Diff**](./session-diff.md) — Mechanics of observing side-effects during a session.
 
