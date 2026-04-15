@@ -23,6 +23,16 @@ The MVP was built as a **CLI application**; this project implements a **multi-te
 
 > **Propagation directive**: This mandate MUST be carried forward into `plan.md` and `tasks.md` when those artifacts are generated, ensuring every implementation task references the relevant MVP source for design grounding and parity validation.
 
+## Clarifications
+
+### Session 2026-04-15
+
+- Q: What happens when the user disconnects during the approval wait — should the approval gate time out, and if so, what is the timeout behavior? → A: No timeout — approval gate blocks indefinitely (MVP parity). Disconnect-during-approval is handled by existing session reconnection infrastructure. No future timeout planned; analyze only if issue is reported in production.
+- Q: Who is authorized to approve or reject a plan in a multi-tenant backend with multiple connected clients? → A: Any client connected to the session can approve/reject (session = trust boundary, MVP parity). No per-client authorization required.
+- Q: What server-side observability (logging, metrics, tracing) is required for plan mode operations? → A: Use existing OpenTelemetry infrastructure — structured log events and span annotations for state transitions, approval requests, and outcomes. No new metrics/counters this phase.
+- Q: Should ExitPlanModeTool detect and protect against overwriting an "unrelated file" at the plan path? → A: No — remove this edge case. The plan path is deterministic and session-scoped; any existing file is a prior plan and overwriting is correct behavior.
+- Q: Where is PlanModeState persisted for session resume? → A: SQLite session metadata — persisted as a JSON column on the session row, consistent with existing session persistence. No separate sidecar file.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Attachment-Driven Plan Reminder Cycle (Priority: P1)
@@ -87,7 +97,7 @@ When the planning agent needs to do deep research (reading files, searching code
 
 **Acceptance Scenarios**:
 
-1. **Given** a Plan/Explore sub-agent is configured with `disallowedTools: ['FileEdit', 'FileWrite', ...]`, **When** `ToolRegistry.tools()` assembles the tool pool for that agent, **Then** the disallowed tools are filtered out from the returned tool pool.
+1. **Given** a Plan/Explore sub-agent is configured with `disallowedTools: ["edit", "write", "multiedit", "apply_patch", "plan_exit", "task"]`, **When** `ToolRegistry.tools()` assembles the tool pool for that agent, **Then** the disallowed tools are filtered out from the returned tool pool.
 2. **Given** an Explore sub-agent is spawned, **When** it attempts to invoke a file modification tool, **Then** the tool is not available in the sub-agent's tool pool and the model cannot call it.
 3. **Given** an Explore sub-agent runs, **When** it completes its research, **Then** it returns a structured summary to the planning agent via the sidechain transcript result.
 4. **Given** the `disallowedTools` list for an agent is empty or undefined, **When** `ToolRegistry.tools()` assembles the tool pool, **Then** no tools are filtered and the full tool pool is returned (no regression).
@@ -114,10 +124,9 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 ### Edge Cases
 
 - **Plan file does not exist when approval is requested**: If `ExitPlanModeTool` is invoked but the plan file path resolves to a non-existent file (plan text was never written), the tool must return an error indicating the plan must be written first, rather than emitting an approval request for an empty plan.
-- **User disconnects during approval wait**: If the SSE client disconnects while the approval request is pending, the approval gate must time out after a configurable interval (or on next reconnect) and resume or cancel gracefully without leaking the blocked model execution.
+- **User disconnects during approval wait**: If the SSE client disconnects while the approval request is pending, the approval gate remains open indefinitely (no timeout). When the user reconnects, the pending approval request is presented via the existing session reconnection infrastructure. No model execution leak occurs because the query loop is blocked at the `Question.ask()` call until a response is received.
 - **EnterPlanModeTool called while already in plan mode**: The tool must be idempotent — re-entering plan mode when already active should not double-emit events or corrupt turn counters.
 - **ExitPlanModeTool called while not in plan mode**: The tool must return a descriptive error rather than blindly emitting an approval request for a non-existent plan mode session.
-- **Plan file path conflict**: If the session's plan file path is already occupied by an unrelated file (user error), `ExitPlanModeTool` must detect this before overwriting and surface an error.
 - **Full reminder at turn 5 but plan file deleted between turns**: If the plan file is deleted between the reminder trigger and the file read, the attachment must fall back to sparse mode rather than crashing.
 - **Reminder cycle desync after resume**: If the session was interrupted mid-plan-mode and resumed (via Phase 4 infrastructure), `turnsSincePlanReminder` must be restored from the persisted state, not reset to 0.
 - **disallowedTools enforcement regression**: Existing agents with no `disallowedTools` config must receive their full tool pool unchanged — the new deny filter must be a no-op when the list is empty or undefined.
@@ -130,7 +139,7 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 
 - **FR-001**: System MUST store plan mode state as a session-scoped object with fields: `active: boolean`, `planText: string | undefined`, `planFilePath: string`, `turnsSincePlanReminder: number`. This state persists for the lifetime of the session and is never inferred dynamically from the agent name.
 - **FR-002**: System MUST expose `PlanModeState` read/write operations that are safe for concurrent access within a single session's query loop without external synchronization (query loop is single-threaded per session).
-- **FR-003**: System MUST initialize `PlanModeState` with `active: false` and `turnsSincePlanReminder: 0` for new sessions, and restore persisted state when resuming interrupted sessions.
+- **FR-003**: System MUST initialize `PlanModeState` with `active: false` and `turnsSincePlanReminder: 0` for new sessions, and restore persisted state when resuming interrupted sessions. `PlanModeState` is persisted as a JSON column on the session row in SQLite, consistent with existing session persistence.
 
 #### Attachment-Based Reminder System
 
@@ -143,7 +152,7 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 #### ExitPlanModeTool (Plan-to-Build Transition)
 
 - **FR-009**: `ExitPlanModeTool` MUST write the plan content to the session's plan file path on disk before emitting an approval request.
-- **FR-010**: `ExitPlanModeTool` MUST emit a `plan.approval_requested` SSE event containing `{ planText, planFilePath }` and block model execution until the session receives a user approval or rejection action.
+- **FR-010**: `ExitPlanModeTool` MUST emit a `plan.approval_requested` SSE event containing `{ planText, planFilePath }` and block model execution until the session receives a user approval or rejection action. Any client connected to the session is authorized to respond — the session boundary is the trust boundary (no per-client authorization).
 - **FR-011**: On approval, `ExitPlanModeTool` MUST: (a) set `PlanModeState.active = false`, (b) reset `PlanModeState.turnsSincePlanReminder = 0`, (c) transition the session to the build agent, and (d) return a tool result containing the full plan text and instruction to execute it — NOT a synthetic user message.
 - **FR-012**: On rejection, `ExitPlanModeTool` MUST throw a typed `RejectedError` that the query loop handles by leaving `PlanModeState.active = true` and surfacing a model-visible explanation to continue refining the plan.
 - **FR-013**: `ExitPlanModeTool` MUST validate that the plan content is non-empty before writing and requesting approval. Empty plan content is rejected with a descriptive error.
@@ -159,13 +168,13 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 
 #### disallowedTools Enforcement (Phase 2 Gap Closure)
 
-- **FR-020**: `ToolRegistry.tools()` MUST apply the agent's `disallowedTools` array as a deny filter, removing matching tools from the assembled tool pool before returning it. The filter must be applied after all other assembly steps (allow-list, capability checks).
+- **FR-020**: `ToolRegistry.tools()` MUST apply the agent's `disallowedTools` array as a deny filter, removing matching tools from the assembled tool pool before returning it. The filter must be applied after all other assembly steps (allow-list, capability checks). The `disallowedTools` values MUST be liteai canonical tool IDs (lowercase, e.g., `edit`, `write`, `plan_exit`).
 - **FR-021**: When an agent has no `disallowedTools` config (undefined or empty array), `ToolRegistry.tools()` MUST return the full tool pool unchanged — the deny filter must be a no-op in this case (no regression).
-- **FR-022**: The `disallowedTools` deny filter MUST match tools by tool name (string equality). Wildcard patterns are not required in this phase.
+- **FR-022**: The `disallowedTools` deny filter MUST match tools by exact `t.id` string equality against liteai canonical tool IDs. External-platform tool names (e.g., Claude Code's `Edit`, `ExitPlanMode`, `Bash`) are translated to canonical IDs by the platform profile's `toolNameMap` at config load time — the deny filter never sees external names.
 
 #### Plan/Explore Sub-Agents
 
-- **FR-023**: Plan and Explore sub-agent definitions MUST declare `omitClaudeMd: true` (skip project-level context to reduce noise), independent sidechain transcripts, and a `disallowedTools` list that excludes all file modification tools (`FileEdit`, `FileWrite`, `NotebookEdit`).
+- **FR-023**: Plan and Explore sub-agent definitions MUST declare `omitLiteaiMd: true` (skip project-level context to reduce noise), independent sidechain transcripts, and a `disallowedTools` list that excludes all file modification tools (`edit`, `write`, `multiedit`, `apply_patch`), the plan exit tool (`plan_exit`), and the agent/task tool (`task`). Reference: MVP `planAgent.ts:77-83`, `exploreAgent.ts:67-73`.
 - **FR-024**: Plan/Explore sub-agents MUST operate within the Phase 2 sub-agent infrastructure: context forking, isolated sidechain transcripts, and async lifecycle management.
 - **FR-025**: The planning agent MUST be able to spawn Plan/Explore sub-agents without requiring explicit user approval (they inherit the parent's permission mode with bubble surfacing).
 
@@ -175,6 +184,15 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 - **FR-027**: System MUST emit `plan.approval_requested` when `ExitPlanModeTool` blocks awaiting user action. Payload: `{ planText: string, planFilePath: string }`.
 - **FR-028**: Both SSE event types MUST be scoped to the session — only clients subscribed to the affected session receive them.
 
+#### Observability
+
+- **FR-029**: Plan mode state transitions (enter, exit, approval requested, approved, rejected), reminder cycle events (sparse vs full injection), and `disallowedTools` filtering actions MUST emit structured log events and OpenTelemetry span annotations using the existing `@opentelemetry/api` infrastructure. No new metrics or counters are required in this phase.
+
+#### Platform Profile Tool Name Bridge
+
+- **FR-030**: The `PlatformProfile` interface MUST be extended with an optional `toolNameMap: Record<string, string>` field that maps platform-specific tool names to liteai canonical tool IDs (e.g., Claude Code's `"Edit"` → `"edit"`, `"ExitPlanMode"` → `"plan_exit"`, `"Bash"` → `"run_command"`, `"Agent"` → `"task"`).
+- **FR-031**: During agent config processing in `agent.ts`, the `disallowedTools` and `tools` arrays MUST be normalized using the active platform profile's `toolNameMap` before being stored on the agent definition. This ensures the core system only ever operates on liteai canonical tool IDs. Unknown names (not in the map) pass through unchanged to support MCP tools and liteai-native names.
+
 #### Constraints
 
 - **C-001**: All implementation MUST achieve behavioral parity with or superiority to the MVP reference implementation (`liteai_cli_mvp/src`), adapted from CLI to multi-tenant HTTP/SSE backend architecture. No behavioral degradation from MVP is acceptable. See *Reference Implementation Mandate* section above for full context and key reference files.
@@ -183,13 +201,14 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 
 ### Key Entities
 
-- **PlanModeState**: The session-scoped object tracking plan mode activity: `{ active: boolean, planText: string | undefined, planFilePath: string, turnsSincePlanReminder: number }`. Single source of truth for all plan mode logic.
+- **PlanModeState**: The session-scoped object tracking plan mode activity: `{ active: boolean, planText: string | undefined, planFilePath: string, turnsSincePlanReminder: number }`. Single source of truth for all plan mode logic. Persisted as a JSON column on the session row in SQLite; restored on session resume.
 - **Plan Attachment**: A non-synthetic user message part appended by the reminder system containing either a sparse reminder (`"Plan at <path>, staying on track?"`) or the full plan text. Appended to the last user message before it is sent to the model.
 - **ExitPlanModeTool**: The tool the planning agent invokes when the plan is ready. Writes the plan to disk, emits an approval SSE event, blocks until user responds, then returns a tool result containing the full plan text for the build agent.
 - **EnterPlanModeTool**: The tool the build agent invokes when the current task requires planning. Sets `PlanModeState.active = true`, emits a state-changed SSE event, and returns the existing plan (or creation guidance) in its tool result.
-- **Plan/Explore Sub-Agent**: A read-only sub-agent definition (using Phase 2 infrastructure) with `omitClaudeMd: true` and a `disallowedTools` list excluding all write tools. Used by the planning agent for deep repository research.
+- **Plan/Explore Sub-Agent**: A read-only sub-agent definition (using Phase 2 infrastructure) with `omitLiteaiMd: true` and a `disallowedTools` list excluding all mutation tools (`edit`, `write`, `multiedit`, `apply_patch`), the plan exit tool (`plan_exit`), and the agent/task tool (`task`). Used by the planning agent for deep repository research.
 - **Approval Gate**: The server-side mechanism that suspends model execution after `ExitPlanModeTool` emits `plan.approval_requested` and resumes it when the client sends an approve or reject action. Backed by the existing `Question.ask()` infrastructure.
-- **disallowedTools Deny Filter**: A filter pass in `ToolRegistry.tools()` that removes tools matching any name in the agent's `disallowedTools` array, applied after all other assembly steps.
+- **disallowedTools Deny Filter**: A filter pass in `ToolRegistry.tools()` that removes tools matching any liteai canonical ID in the agent's `disallowedTools` array, applied after all other assembly steps. External-platform tool names are translated at the config boundary by the platform profile's `toolNameMap`.
+- **toolNameMap**: A `Record<string, string>` on `PlatformProfile` that translates platform-specific tool names (e.g., `"Edit"`, `"ExitPlanMode"`, `"Bash"`) to liteai canonical tool IDs (e.g., `"edit"`, `"plan_exit"`, `"run_command"`). Applied once at agent config load time so the core system never deals with external naming conventions.
 
 ## Success Criteria *(mandatory)*
 
@@ -200,7 +219,7 @@ The current plan mode is determined entirely by checking the agent name (`agent.
 - **SC-003**: Every 5th user message in plan mode carries the full plan text attachment, verified by reading the actual plan file content from disk. Other messages carry the sparse reminder only.
 - **SC-004**: The `plan.approval_requested` SSE event is emitted within 500ms of `ExitPlanModeTool` invocation, and model execution is verifiably blocked until a user action is received.
 - **SC-005**: On plan approval, the `ExitPlanModeTool` tool result contains the full plan text and the session mode is `build` — verified by inspecting the tool result content and the session's agent state.
-- **SC-006**: Plan/Explore sub-agents cannot invoke any file modification tool (`FileEdit`, `FileWrite`, `NotebookEdit`) — 100% of invocation attempts of disallowed tools result in a tool-not-found error, not a permission error.
+- **SC-006**: Plan/Explore sub-agents cannot invoke any file modification tool (`edit`, `write`, `multiedit`, `apply_patch`) — 100% of invocation attempts of disallowed tools result in a tool-not-found error, not a permission error.
 - **SC-007**: `ToolRegistry.tools()` returns an identical tool pool for agents with no `disallowedTools` config before and after this change — zero regression verified by existing tool assembly tests.
 - **SC-008**: `EnterPlanModeTool` is idempotent — invoking it N times when already in plan mode produces the same result as invoking it once and does not emit redundant SSE events.
 - **SC-009**: The `plan.state_changed` SSE event is emitted within 500ms of any plan mode state transition (enter or exit), and only subscribed session clients receive it.

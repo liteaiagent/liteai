@@ -21,23 +21,23 @@ This document is the **definitive guide** to understanding LiteAI's agent execut
 ```mermaid
 flowchart TD
     subgraph "Session Mode (mutually exclusive)"
-        Normal["Normal Mode\n(default)"]
-        Coordinator["Coordinator Mode\n⏳ Phase 5"]
+        Normal["Normal Mode<br/>(default)"]
+        Coordinator["Coordinator Mode<br/>⏳ Phase 5"]
     end
 
     subgraph "Spawning Model (optimization layer)"
-        Standard["Standard Spawn\n(default)"]
-        Fork["Fork Spawn\n(feature-flagged)"]
+        Standard["Standard Spawn<br/>(default)"]
+        Fork["Fork Spawn<br/>(feature-flagged)"]
     end
 
     subgraph "Workflow State (within a session)"
-        Explore["Explore / Build\n(default)"]
-        Plan["Plan Mode\n⏳ Phase 3"]
+        Explore["Explore / Build<br/>(default)"]
+        Plan["Plan Mode<br/>⏳ Phase 3"]
     end
 
     subgraph "Team Topology (extends Coordinator)"
-        Solo["Solo Agent\n(default)"]
-        Swarm["Agent Swarm\n⏳ Phase 5"]
+        Solo["Solo Agent<br/>(default)"]
+        Swarm["Agent Swarm<br/>⏳ Phase 5"]
     end
 
     Normal --- Standard
