@@ -1,5 +1,6 @@
 import type { Config } from "@/config/config"
 import type { PermissionNext } from "@/permission/next"
+import { Log } from "@/util/log"
 
 /**
  * A platform profile defines the directory conventions, file patterns,
@@ -57,4 +58,52 @@ export interface PlatformProfile {
    * Returns `undefined` if no compat fields are present.
    */
   permissionTransform?(value: Config.Agent): PermissionNext.Ruleset | undefined
+
+  /**
+   * Optional mapping from platform-specific tool names to liteai canonical tool IDs.
+   * Resolves PascalCase (e.g., "Edit") to lowercase ("edit").
+   */
+  readonly toolNameMap?: Record<string, string>
+}
+
+/**
+ * Utility to normalize tool names using the provided toolNameMap.
+ * Unknown names pass through unchanged.
+ */
+export function normalizeToolNames<T extends string | string[] | Record<string, boolean>>(
+  names: T,
+  map?: Record<string, string>,
+): T extends string ? string[] : T {
+  if (names == null) return names as unknown as T extends string ? string[] : T
+
+  if (typeof names === "string") {
+    const list = names
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+    return list.map((name) => map?.[name] ?? name) as unknown as T extends string ? string[] : T
+  }
+
+  if (Array.isArray(names)) {
+    return names.map((name) => {
+      const trimmed = name.trim()
+      return map?.[trimmed] ?? trimmed
+    }) as unknown as T extends string ? string[] : T
+  }
+
+  const log = Log.create({ service: "platform.profile" })
+  const result: Record<string, boolean> = {}
+  for (const [key, val] of Object.entries(names)) {
+    const normalizedKey = map?.[key] ?? key
+    if (normalizedKey in result && result[normalizedKey] !== val) {
+      log.warn("normalizeToolNames: key collision after normalization — last-write-wins", {
+        originalKey: key,
+        normalizedKey,
+        priorValue: result[normalizedKey],
+        incomingValue: val,
+      })
+    }
+    result[normalizedKey] = val
+  }
+  return result as unknown as T extends string ? string[] : T
 }

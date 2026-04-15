@@ -19,11 +19,11 @@
 
 **Purpose**: Extend the platform profile layer to translate external tool names to liteai canonical IDs, closing the silent deny-filter bug where PascalCase names (e.g., `"Edit"`) fail to match lowercase tool IDs (e.g., `"edit"`) in `resolveAgentTools()`.
 
-- [ ] T052 [P] Add `toolNameMap?: Record<string, string>` field to `PlatformProfile` interface in `packages/core/src/platform/profile.ts` — optional mapping from platform-specific tool names to liteai canonical tool IDs per FR-030
-- [ ] T053 [P] Populate `toolNameMap` in `packages/core/src/platform/profiles/claude.ts` — map Claude Code tool names to liteai canonical IDs: `Edit→edit`, `Write→write`, `Read→read`, `Glob→glob`, `Grep→grep`, `List→list`, `NotebookEdit→multiedit`, `Agent→task`, `ExitPlanMode→plan_exit`, `Bash→run_command`. Reference: MVP `planAgent.ts` constants
-- [ ] T054 Create `normalizeToolNames()` utility in `packages/core/src/platform/profile.ts` (or a co-located module) — accepts a `string | string[]` and an optional `toolNameMap`, returns the array with each entry translated through the map (unknown names pass through unchanged for MCP tools and liteai-native names) per FR-031
-- [ ] T055 Wire `normalizeToolNames()` into agent config processing in `packages/core/src/agent/agent.ts` at line ~264 — apply to both `value.disallowedTools` and `value.tools` before storing on the agent definition. Use `Platform.active()?.toolNameMap` per FR-031
-- [ ] T056 [P] Add test for toolNameMap normalization — verify that Claude Code PascalCase names in `disallowedTools` are translated to liteai canonical IDs, that unknown names pass through unchanged, and that `undefined` map is a no-op
+- [x] T052 [P] Add `toolNameMap?: Record<string, string>` field to `PlatformProfile` interface in `packages/core/src/platform/profile.ts` — optional mapping from platform-specific tool names to liteai canonical tool IDs per FR-030
+- [x] T053 [P] Populate `toolNameMap` in `packages/core/src/platform/profiles/claude.ts` — map Claude Code tool names to liteai canonical IDs: `Edit→edit`, `Write→write`, `Read→read`, `Glob→glob`, `Grep→grep`, `List→list`, `NotebookEdit→multiedit`, `Agent→task`, `ExitPlanMode→plan_exit`, `Bash→run_command`. Reference: MVP `planAgent.ts` constants
+- [x] T054 Create `normalizeToolNames()` utility in `packages/core/src/platform/profile.ts` (or a co-located module) — accepts a `string | string[]` and an optional `toolNameMap`, returns the array with each entry translated through the map (unknown names pass through unchanged for MCP tools and liteai-native names) per FR-031
+- [x] T055 Wire `normalizeToolNames()` into agent config processing in `packages/core/src/agent/agent.ts` at line ~264 — apply to both `value.disallowedTools` and `value.tools` before storing on the agent definition. Use `Platform.active()?.toolNameMap` per FR-031
+- [x] T056 [P] Add test for toolNameMap normalization — verify that Claude Code PascalCase names in `disallowedTools` are translated to liteai canonical IDs, that unknown names pass through unchanged, and that `undefined` map is a no-op
 
 **Checkpoint**: `disallowedTools: ["Edit", "ExitPlanMode"]` in a Claude Code agent definition is normalized to `["edit", "plan_exit"]` before it reaches `resolveAgentTools()`. The silent deny-filter bug is eliminated.
 
@@ -31,11 +31,11 @@
 
 **Purpose**: Schema migration, shared types, and SSE event definitions needed by all user stories
 
-- [ ] T001 Add `plan_mode` nullable JSON column to SessionTable in `packages/core/src/session/session.sql.ts` — type `text({ mode: "json" }).$type<PlanModeState>()` per data-model.md schema migration
-- [ ] T002 Generate and apply drizzle-orm migration for the new `plan_mode` column — run `bun db generate` and verify migration SQL
-- [ ] T003 [P] Create `packages/core/src/session/plan-mode-state.ts` — define `PlanModeState` interface, `createDefaultPlanModeState(session)` factory, `getPlanModeState(sessionID)` reader (returns default when column is null), and `setPlanModeState(sessionID, updater)` writer per contracts/plan-mode-api.md
-- [ ] T004 [P] Define `PlanStateChanged` and `PlanApprovalRequested` BusEvent types in `packages/core/src/session/index.ts` under `Session.Event` namespace — payloads per data-model.md SSE Event Payloads section
-- [ ] T005 [P] Route `plan.state_changed` and `plan.approval_requested` BusEvents through the ACP SSE event infrastructure in `packages/core/src/acp/events.ts` — subscribe to Bus events and relay as session-scoped SSE
+- [x] T001 Add `plan_mode` nullable JSON column to SessionTable in `packages/core/src/session/session.sql.ts` — type `text({ mode: "json" }).$type<PlanModeState>()` per data-model.md schema migration
+- [x] T002 Generate and apply drizzle-orm migration for the new `plan_mode` column — run `bun db generate` and verify migration SQL
+- [x] T003 [P] Create `packages/core/src/session/plan-mode-state.ts` — define `PlanModeState` interface, `createDefaultPlanModeState(session)` factory, `getPlanModeState(sessionID)` reader (returns default when column is null), and `setPlanModeState(sessionID, updater)` writer per contracts/plan-mode-api.md
+- [x] T004 [P] Define `PlanStateChanged` and `PlanApprovalRequested` BusEvent types in `packages/core/src/session/index.ts` under `Session.Event` namespace — payloads per data-model.md SSE Event Payloads section
+- [x] T005 [P] Route `plan.state_changed` and `plan.approval_requested` BusEvents through the ACP SSE event infrastructure in `packages/core/src/acp/events.ts` — subscribe to Bus events and relay as session-scoped SSE
 
 ---
 
@@ -49,12 +49,12 @@
 
 **Independent Test**: Activate plan mode, make several turns, verify the turn counter increments and persists between turns. Verify concurrent sessions maintain independent state.
 
-- [ ] T006 [US5] Wire `getPlanModeState()` into the query loop in `packages/core/src/session/engine/query.ts` — read PlanModeState at the start of each turn (after agent resolution at line ~198), store in a local variable for use by downstream systems
-- [ ] T007 [US5] Wire `setPlanModeState()` into the query loop in `packages/core/src/session/engine/query.ts` — after each turn completes (before the turn-end yield at line ~472), persist the updated PlanModeState (with incremented `turnsSincePlanReminder` if active) back to the session row
-- [ ] T008 [US5] Add `fromRow`/`toRow` integration in `packages/core/src/session/index.ts` — extend `Session.fromRow()` and `Session.toRow()` to read/write the `plan_mode` column, and add `planModeState` to `Session.Info` if needed (or keep it as a separate accessor via `getPlanModeState`)
-- [ ] T009 [US5] Add OpenTelemetry span annotations for plan mode state transitions in `packages/core/src/session/plan-mode-state.ts` — log structured events for state reads, writes, and `active` field changes per FR-029
-- [ ] T010 [US5] Verify `setPlanModeState()` emits `plan.state_changed` BusEvent when the `active` field changes — confirm the event fires with correct `{ sessionID, active, planFilePath, turnsSincePlanReminder }` payload
-- [ ] T047 [US5] Create `tests/plan-mode/plan-mode-state.test.ts` — test PlanModeState CRUD: default initialization, read/write cycle, turn counter increment, persistence via fromRow/toRow, and multi-session isolation. Verify SC-010 (`turnsSincePlanReminder` monotonic increment and reset at 5)
+- [x] T006 [US5] Wire `getPlanModeState()` into the query loop in `packages/core/src/session/engine/query.ts` — read PlanModeState at the start of each turn (after agent resolution at line ~198), store in a local variable for use by downstream systems
+- [x] T007 [US5] Wire `setPlanModeState()` into the query loop in `packages/core/src/session/engine/query.ts` — after each turn completes (before the turn-end yield at line ~472), persist the updated PlanModeState (with incremented `turnsSincePlanReminder` if active) back to the session row
+- [x] T008 [US5] Add `fromRow`/`toRow` integration in `packages/core/src/session/index.ts` — extend `Session.fromRow()` and `Session.toRow()` to read/write the `plan_mode` column, and add `planModeState` to `Session.Info` if needed (or keep it as a separate accessor via `getPlanModeState`)
+- [x] T009 [US5] Add OpenTelemetry span annotations for plan mode state transitions in `packages/core/src/session/plan-mode-state.ts` — log structured events for state reads, writes, and `active` field changes per FR-029
+- [x] T010 [US5] Verify `setPlanModeState()` emits `plan.state_changed` BusEvent when the `active` field changes — confirm the event fires with correct `{ sessionID, active, planFilePath, turnsSincePlanReminder }` payload
+- [x] T047 [US5] Create `tests/plan-mode/plan-mode-state.test.ts` — test PlanModeState CRUD: default initialization, read/write cycle, turn counter increment, persistence via fromRow/toRow, and multi-session isolation. Verify SC-010 (`turnsSincePlanReminder` monotonic increment and reset at 5)
 
 **Checkpoint**: PlanModeState is readable, writable, persisted in SQLite, and integrated with the query loop. All subsequent user stories can now read/write plan mode state.
 
@@ -68,15 +68,15 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Rewrite `packages/core/src/session/engine/plan-reminder.ts` — replace `insertPlanReminder()` with `injectPlanAttachment()` per contracts/plan-mode-api.md: accept `PlanModeState` as input, return updated state, append in-memory parts (no `Session.updatePart()` DB writes), set `synthetic: false` on injected parts
-- [ ] T012 [US1] Implement sparse reminder injection in `packages/core/src/session/engine/plan-reminder.ts` — when `active === true` and `turnsSincePlanReminder < 5`: append `"Plan at <relative-path>, staying on track?"` as a non-synthetic text part to the last user message
-- [ ] T013 [US1] Implement full plan text injection in `packages/core/src/session/engine/plan-reminder.ts` — when `active === true` and `turnsSincePlanReminder >= 5`: read plan file from disk via `fs.readFile()`, append full contents as text part, reset counter to 0. Fall back to sparse if file doesn't exist per edge case specification
-- [ ] T014 [US1] Implement plan-not-exists handling in `packages/core/src/session/engine/plan-reminder.ts` — when `active === true` but plan file doesn't exist: append `"No plan file exists yet at <path>"` as sparse attachment per acceptance scenario 4
-- [ ] T015 [US1] Implement no-op path in `packages/core/src/session/engine/plan-reminder.ts` — when `active === false`: return messages and state unchanged, zero operations per FR-008
-- [ ] T016 [US1] Update `packages/core/src/session/engine/query.ts` to call `injectPlanAttachment()` instead of `insertPlanReminder()` at line ~217 — pass `planModeState` read from Phase 2, capture `updatedState` return value, update the local state variable for persistence in T007
-- [ ] T017 [US1] Remove the old `insertPlanReminder()` export and its build-switch / plan-enter synthetic part injection logic from `packages/core/src/session/engine/plan-reminder.ts` — clean break from the legacy approach per Constitution Principle I
-- [ ] T018 [US1] Add OpenTelemetry span annotations for reminder injection events in `packages/core/src/session/engine/plan-reminder.ts` — log whether sparse or full reminder was injected, and the current turn counter value per FR-029
-- [ ] T048 [US1] Create `tests/plan-mode/plan-reminder.test.ts` — test attachment injection: sparse reminder on every turn, full plan text at turn 5, no-op when inactive, plan-file-not-exists fallback. Verify SC-001 (system prompt unchanged), SC-002 (exactly one attachment per message), SC-003 (full text every 5th)
+- [x] T011 [US1] Rewrite `packages/core/src/session/engine/plan-reminder.ts` — replace `insertPlanReminder()` with `injectPlanAttachment()` per contracts/plan-mode-api.md: accept `PlanModeState` as input, return updated state, append in-memory parts (no `Session.updatePart()` DB writes), set `synthetic: false` on injected parts
+- [x] T012 [US1] Implement sparse reminder injection in `packages/core/src/session/engine/plan-reminder.ts` — when `active === true` and `turnsSincePlanReminder < 5`: append `"Plan at <relative-path>, staying on track?"` as a non-synthetic text part to the last user message
+- [x] T013 [US1] Implement full plan text injection in `packages/core/src/session/engine/plan-reminder.ts` — when `active === true` and `turnsSincePlanReminder >= 5`: read plan file from disk via `fs.readFile()`, append full contents as text part, reset counter to 0. Fall back to sparse if file doesn't exist per edge case specification
+- [x] T014 [US1] Implement plan-not-exists handling in `packages/core/src/session/engine/plan-reminder.ts` — when `active === true` but plan file doesn't exist: append `"No plan file exists yet at <path>"` as sparse attachment per acceptance scenario 4
+- [x] T015 [US1] Implement no-op path in `packages/core/src/session/engine/plan-reminder.ts` — when `active === false`: return messages and state unchanged, zero operations per FR-008
+- [x] T016 [US1] Update `packages/core/src/session/engine/query.ts` to call `injectPlanAttachment()` instead of `insertPlanReminder()` at line ~217 — pass `planModeState` read from Phase 2, capture `updatedState` return value, update the local state variable for persistence in T007
+- [x] T017 [US1] Remove the old `insertPlanReminder()` export and its build-switch / plan-enter synthetic part injection logic from `packages/core/src/session/engine/plan-reminder.ts` — clean break from the legacy approach per Constitution Principle I
+- [x] T018 [US1] Add OpenTelemetry span annotations for reminder injection events in `packages/core/src/session/engine/plan-reminder.ts` — log whether sparse or full reminder was injected, and the current turn counter value per FR-029
+- [x] T048 [US1] Create `tests/plan-mode/plan-reminder.test.ts` — test attachment injection: sparse reminder on every turn, full plan text at turn 5, no-op when inactive, plan-file-not-exists fallback. Verify SC-001 (system prompt unchanged), SC-002 (exactly one attachment per message), SC-003 (full text every 5th)
 
 **Checkpoint**: Plan reminder cycle works end-to-end via PlanModeState. System prompt is never modified (SC-001). Every user message in plan mode carries exactly one attachment (SC-002). Every 5th message carries full plan text (SC-003).
 

@@ -260,8 +260,11 @@ export namespace Agent {
       item.name = value.name ?? item.name
       item.steps = value.maxTurns ?? value.steps ?? item.steps
 
-      item.tools = value.tools ?? item.tools
-      item.disallowedTools = value.disallowedTools ?? item.disallowedTools
+      const profile = Platform.active()
+      item.tools = value.tools ? Platform.normalizeToolNames(value.tools, profile?.toolNameMap) : item.tools
+      item.disallowedTools = value.disallowedTools
+        ? Platform.normalizeToolNames(value.disallowedTools, profile?.toolNameMap)
+        : item.disallowedTools
       item.permissionMode = value.permissionMode ?? item.permissionMode
       item.skills = value.skills ?? item.skills
       item.mcpServers = value.mcpServers ?? item.mcpServers
@@ -284,7 +287,6 @@ export namespace Agent {
       // Platform compatibility: map provider-specific fields (e.g., Claude Code's
       // tools/disallowedTools/permissionMode) to LiteAI permission rules.
       // Applied before LiteAI's `permission` field so explicit `permission` always wins.
-      const profile = Platform.active()
       const compat = profile?.permissionTransform?.(value)
       if (compat) item.permission = PermissionNext.merge(item.permission, compat)
 

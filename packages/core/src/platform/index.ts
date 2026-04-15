@@ -7,6 +7,7 @@ import { gemini } from "./profiles/gemini"
 import { standard } from "./profiles/standard"
 
 export type { PlatformProfile } from "./profile"
+export { normalizeToolNames } from "./profile"
 
 const log = Log.create({ service: "platform" })
 

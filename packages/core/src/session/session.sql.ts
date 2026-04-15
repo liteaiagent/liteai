@@ -6,6 +6,7 @@ import type { ProjectID } from "../project/schema"
 import type { Snapshot } from "../snapshot"
 import { Timestamps } from "../storage/schema.sql"
 import type { Message } from "./message"
+import type { PlanModeState } from "./plan-mode-state"
 import type { MessageID, PartID, SessionID } from "./schema"
 
 type PartData = Omit<Message.Part, "id" | "sessionID" | "messageID">
@@ -32,6 +33,7 @@ export const SessionTable = sqliteTable(
     summary_diffs: text({ mode: "json" }).$type<Snapshot.FileDiff[]>(),
     revert: text({ mode: "json" }).$type<{ messageID: MessageID; partID?: PartID; snapshot?: string; diff?: string }>(),
     permission: text({ mode: "json" }).$type<PermissionNext.Ruleset>(),
+    plan_mode: text({ mode: "json" }).$type<PlanModeState>(),
     ...Timestamps,
     time_compacting: integer(),
     time_archived: integer(),

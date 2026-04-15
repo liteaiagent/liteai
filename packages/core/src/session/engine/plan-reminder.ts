@@ -1,60 +1,165 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import type { Agent } from "../../agent/agent"
-import { Bundled } from "../../bundled"
+import { trace } from "@opentelemetry/api"
+import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
-import { Session } from ".."
+import { Log } from "../../util/log"
+import type { Session } from ".."
 import type { Message } from "../message"
+import type { PlanModeState } from "../plan-mode-state"
+import { PLAN_REMINDER_FULL_INTERVAL } from "../plan-mode-state"
 import { PartID } from "../schema"
 
-export async function insertPlanReminder(input: {
-  messages: Message.WithParts[]
-  agent: Agent.Info
-  session: Session.Info
-}) {
-  const userMessage = input.messages.findLast((msg) => msg.info.role === "user")
-  if (!userMessage) return input.messages
-  const assistantMessage = input.messages.findLast((msg) => msg.info.role === "assistant")
+const tracer = trace.getTracer("liteai")
+const log = Log.create({ service: "session.engine.plan-reminder" })
 
-  // Switching from plan mode to build mode
-  if (input.agent.name !== "plan" && assistantMessage?.info.agent === "plan") {
-    const plan = Session.plan(input.session)
-    const exists = await Filesystem.exists(plan)
-    if (exists) {
-      const buildSwitch = await Bundled.miscPrompt("build-switch")
-      const part = await Session.updatePart({
+/** Maximum value for the turns-since-reminder counter to prevent unbounded growth. */
+const MAX_PLAN_REMINDER_COUNTER = 100
+
+/** Maximum plan file size (bytes) to read in full. Files exceeding this are truncated. */
+const MAX_PLAN_FILE_SIZE = 100 * 1024
+
+/**
+ * Inject a plan reminder attachment into the last user message when plan mode is
+ * active. Replaces the legacy `insertPlanReminder()`.
+ *
+ * **Contract** (per contracts/plan-mode-api.md):
+ * - If `planModeState.active === false`: return messages unchanged, state unchanged (FR-008)
+ * - If `turnsSincePlanReminder >= PLAN_REMINDER_FULL_INTERVAL`: inject full plan text, reset counter to 0
+ * - Otherwise: inject sparse reminder, increment counter
+ * - Plan file missing on full-reminder turn: fall back to sparse (edge case)
+ * - No DB writes — in-memory part appends only (R-002)
+ * - Parts are set with `synthetic: false` — visible to model as user context
+ *
+ * @returns Updated messages and the mutated PlanModeState (with incremented/reset counter)
+ */
+export async function injectPlanAttachment(input: {
+  messages: Message.WithParts[]
+  planModeState: PlanModeState
+  session: Session.Info
+}): Promise<{
+  messages: Message.WithParts[]
+  updatedState: PlanModeState
+}> {
+  const { messages, planModeState } = input
+
+  // ── T015: No-op when plan mode is inactive (FR-008) ──
+  if (!planModeState.active) {
+    return { messages, updatedState: planModeState }
+  }
+
+  return tracer.startActiveSpan("planReminder.inject", async (span) => {
+    try {
+      const userMessage = messages.findLast((msg) => msg.info.role === "user")
+      if (!userMessage) {
+        span.setAttribute("plan_reminder.skipped", "no_user_message")
+        return { messages, updatedState: planModeState }
+      }
+
+      const planFilePath = planModeState.planFilePath
+      const relativePath = path.relative(Instance.worktree, planFilePath)
+      const isFullReminderTurn = planModeState.turnsSincePlanReminder >= PLAN_REMINDER_FULL_INTERVAL
+
+      span.setAttribute("plan_reminder.turn_counter", planModeState.turnsSincePlanReminder)
+      span.setAttribute("plan_reminder.is_full_turn", isFullReminderTurn)
+
+      let reminderText: string
+      let updatedCounter: number
+
+      if (isFullReminderTurn) {
+        // ── T013: Full plan text injection every Nth turn (FR-005) ──
+        const planExists = await Filesystem.exists(planFilePath)
+        if (planExists) {
+          const stat = await fs.stat(planFilePath)
+          if (stat.size > MAX_PLAN_FILE_SIZE) {
+            // File exceeds threshold — read only the first N bytes to avoid unbounded memory use
+            const handle = await fs.open(planFilePath, "r")
+            try {
+              const buf = Buffer.alloc(MAX_PLAN_FILE_SIZE)
+              const { bytesRead } = await handle.read(buf, 0, MAX_PLAN_FILE_SIZE, 0)
+              reminderText = `${buf.toString("utf-8", 0, bytesRead)}\n... [truncated]`
+            } finally {
+              await handle.close()
+            }
+            updatedCounter = 0
+            span.setAttribute("plan_reminder.type", "truncated")
+            span.setAttribute("plan_reminder.plan_size", stat.size)
+            log.info("plan file exceeds size threshold, injecting truncated content", {
+              sessionID: userMessage.info.sessionID,
+              planFilePath: relativePath,
+              actualSize: stat.size,
+              threshold: MAX_PLAN_FILE_SIZE,
+            })
+          } else {
+            const planContent = await fs.readFile(planFilePath, "utf-8")
+            reminderText = planContent
+            updatedCounter = 0
+            span.setAttribute("plan_reminder.type", "full")
+            span.setAttribute("plan_reminder.plan_size", planContent.length)
+            log.info("injecting full plan text attachment", {
+              sessionID: userMessage.info.sessionID,
+              planFilePath: relativePath,
+              planSize: planContent.length,
+            })
+          }
+        } else {
+          // Plan file is missing — we intentionally keep attempting full-text injection
+          // on subsequent turns when the file is absent. The counter is capped to
+          // prevent unbounded numeric growth while preserving the retry semantics.
+          reminderText = `No plan file exists yet at ${relativePath}`
+          updatedCounter = Math.min(planModeState.turnsSincePlanReminder + 1, MAX_PLAN_REMINDER_COUNTER)
+          span.setAttribute("plan_reminder.type", "sparse_fallback")
+          log.info("full plan text requested but file missing, falling back to sparse", {
+            sessionID: userMessage.info.sessionID,
+            planFilePath: relativePath,
+          })
+        }
+      } else {
+        // ── T012: Sparse reminder injection (FR-004) ──
+        const planExists = await Filesystem.exists(planFilePath)
+        if (planExists) {
+          reminderText = `Plan at ${relativePath}, staying on track?`
+        } else {
+          // ── T014: Plan-not-exists handling (acceptance scenario 4) ──
+          reminderText = `No plan file exists yet at ${relativePath}`
+        }
+        updatedCounter = planModeState.turnsSincePlanReminder + 1
+        span.setAttribute("plan_reminder.type", planExists ? "sparse" : "sparse_no_plan")
+      }
+
+      // ── In-memory part append — no DB writes (R-002 / C-002) ──
+      const attachmentPart: Message.TextPart = {
+        type: "text",
         id: PartID.ascending(),
         messageID: userMessage.info.id,
         sessionID: userMessage.info.sessionID,
-        type: "text",
-        text: `${buildSwitch}\n\nA plan file exists at ${plan}. You should execute on the plan defined within it`,
-        synthetic: true,
-      })
-      userMessage.parts.push(part)
-    }
-    return input.messages
-  }
+        text: reminderText,
+        synthetic: false, // Visible to model as user context, not hidden
+      }
 
-  // Entering plan mode
-  if (input.agent.name === "plan" && assistantMessage?.info.agent !== "plan") {
-    const plan = Session.plan(input.session)
-    const exists = await Filesystem.exists(plan)
-    if (!exists) await fs.mkdir(path.dirname(plan), { recursive: true })
-    const reminderTemplate = await Bundled.miscPrompt("plan-reminder")
-    const infoText = exists
-      ? `A plan file already exists at ${plan}. You can read it and make incremental edits using the edit tool.`
-      : `No plan file exists yet. You should create your plan at ${plan} using the write tool.`
-    const reminderText = reminderTemplate.replace("{{PLAN_INFO}}", infoText)
-    const part = await Session.updatePart({
-      id: PartID.ascending(),
-      messageID: userMessage.info.id,
-      sessionID: userMessage.info.sessionID,
-      type: "text",
-      text: reminderText,
-      synthetic: true,
-    })
-    userMessage.parts.push(part)
-    return input.messages
-  }
-  return input.messages
+      // Clone the user message with the appended attachment part
+      const updatedMessages = [...messages]
+      const userIdx = updatedMessages.findLastIndex((m) => m.info.role === "user")
+      if (userIdx !== -1) {
+        updatedMessages[userIdx] = {
+          ...updatedMessages[userIdx],
+          parts: [...updatedMessages[userIdx].parts, attachmentPart],
+        }
+      }
+
+      const updatedState: PlanModeState = {
+        ...planModeState,
+        turnsSincePlanReminder: updatedCounter,
+      }
+
+      span.setAttribute("plan_reminder.counter_after", updatedCounter)
+
+      return { messages: updatedMessages, updatedState }
+    } catch (e) {
+      span.recordException(e as Error)
+      throw e
+    } finally {
+      span.end()
+    }
+  })
 }

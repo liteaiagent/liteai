@@ -216,6 +216,23 @@ export namespace Session {
         error: Message.Assistant.shape.error,
       }),
     ),
+    PlanStateChanged: BusEvent.define(
+      "plan.state_changed",
+      z.object({
+        sessionID: SessionID.zod,
+        active: z.boolean(),
+        planFilePath: z.string(),
+        turnsSincePlanReminder: z.number(),
+      }),
+    ),
+    PlanApprovalRequested: BusEvent.define(
+      "plan.approval_requested",
+      z.object({
+        sessionID: SessionID.zod,
+        planText: z.string(),
+        planFilePath: z.string(),
+      }),
+    ),
   }
 
   export const create = fn(

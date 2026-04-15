@@ -13,6 +13,8 @@ import { Log } from "../../util/log"
 import { Session } from ".."
 import type { EngineEvent } from "../events"
 import { Message } from "../message"
+import type { PlanModeState } from "../plan-mode-state"
+import { getPlanModeState, setPlanModeState } from "../plan-mode-state"
 import { SessionProcessor } from "../processor"
 import { MessageID, PartID, type SessionID } from "../schema"
 import { SessionCompaction } from "../tasks/compaction"
@@ -20,7 +22,7 @@ import { ensureTitle } from "../tasks/title"
 import { InstructionPrompt } from "./instruction"
 import { LoopDetectionService } from "./loop-detection"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
-import { insertPlanReminder } from "./plan-reminder"
+import { injectPlanAttachment } from "./plan-reminder"
 import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
 import { TelemetryTracker } from "./telemetry"
@@ -199,6 +201,9 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     const maxSteps = agent.steps ?? Infinity
     const isLastStep = step >= maxSteps
 
+    // ── Read PlanModeState at turn start (T006/FR-001) ──
+    let planModeState: PlanModeState = await getPlanModeState(sessionID)
+
     const text = msgs
       .findLast((m) => m.info.role === "user")
       ?.parts.filter((p) => p.type === "text")
@@ -211,14 +216,17 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       model: `${lastUser.model.providerID}/${lastUser.model.modelID}`,
       temperature: agent.temperature,
       step,
+      planModeActive: planModeState.active,
     })
 
-    // ── Plan reminder injection ──
-    msgs = await insertPlanReminder({
+    // ── Plan attachment injection (replaces legacy insertPlanReminder) ──
+    const planResult = await injectPlanAttachment({
       messages: msgs,
-      agent,
+      planModeState,
       session,
     })
+    msgs = planResult.messages
+    planModeState = planResult.updatedState
 
     // ── Pre-processing context pipeline: budget + snip ──
     msgs = executePipeline(msgs)
@@ -466,6 +474,13 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         ...toolStats,
         siblingError: toolExecutor.hasSiblingError(),
       })
+    }
+
+    // ── Persist updated PlanModeState at turn end (T007/FR-006) ──
+    // Increment turnsSincePlanReminder when plan mode is active.
+    // The counter may already have been reset to 0 by injectPlanAttachment (full reminder).
+    if (planModeState.active) {
+      await setPlanModeState(sessionID, () => planModeState)
     }
 
     // ── Yield turn-end: orchestrator flushes persister ──

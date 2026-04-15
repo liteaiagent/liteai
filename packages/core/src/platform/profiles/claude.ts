@@ -63,4 +63,16 @@ export const claude: PlatformProfile = {
   mcpJson: true,
   schemaCompat: true,
   permissionTransform,
+  toolNameMap: {
+    Edit: "edit",
+    Write: "write",
+    Read: "read",
+    Glob: "glob",
+    Grep: "grep",
+    List: "list",
+    NotebookEdit: "multiedit",
+    Agent: "task",
+    ExitPlanMode: "plan_exit",
+    Bash: "run_command",
+  },
 }
