@@ -1,121 +1,229 @@
 # Agent Execution Modes
 
-This document is the **definitive guide** to understanding LiteAI's agent execution modes — the different ways agents can be configured to operate, how they differ, when to use each, and how to activate them.
+This document is the **definitive guide** to understanding LiteAI's agent architecture — the session modes, optional features, and how they compose together.
 
-> **Start here** if you're unsure which mode to use or how they relate to each other.
+> **Start here** if you're unsure how the system is structured or what the user can configure.
+
+---
+
+## Conceptual Framework
+
+LiteAI's agent system is organized along **two independent dimensions**:
+
+1. **Session Modes** — mutually exclusive choices for *how the session operates*
+2. **Features** — orthogonal capabilities that can be enabled/disabled independently
+
+```mermaid
+flowchart TD
+    subgraph "Session Modes (mutually exclusive)"
+        Normal["Normal Mode\n(default) ✅"]
+        Coordinator["Coordinator Mode\n⏳ Phase 5"]
+        Swarm["Swarm Mode\n⏳ Phase 5"]
+    end
+
+    subgraph "Features (orthogonal, opt-in)"
+        Fork["Fork\nSpawning optimization ✅"]
+        Plan["Plan Mode\nStructured planning ✅"]
+    end
+
+    Normal ---|"compatible"| Fork
+    Normal ---|"compatible"| Plan
+    Coordinator ---|"compatible"| Plan
+    Coordinator -.-x|"exclusive"| Fork
+    Swarm ---|"compatible"| Plan
+    Swarm -.-x|"exclusive"| Fork
+    Coordinator ---|"extends to"| Swarm
+
+    style Normal fill:#2d6a4f,stroke:#1b4332,color:#fff
+    style Fork fill:#2d6a4f,stroke:#1b4332,color:#fff
+    style Plan fill:#2d6a4f,stroke:#1b4332,color:#fff
+    style Coordinator fill:#e9c46a,stroke:#f4a261,color:#000
+    style Swarm fill:#e9c46a,stroke:#f4a261,color:#000
+```
+
+> **Key insight:** Session modes and features are independent axes. You pick ONE session mode, then optionally enable Fork and/or Plan Mode on top of it.
 
 ---
 
 ## Quick Reference
 
-| Mode | Purpose | Activation | Implementation Status |
-|---|---|---|---|
-| [**Normal Mode**](#normal-mode) | Default single-agent interaction | Default (no flag needed) | ✅ Implemented |
-| [**Fork Subagent**](#fork-subagent-mode) | Cost/latency optimization for sub-agent spawning | `LITEAI_FORK_SUBAGENT=true` | ✅ Implemented |
-| [**Plan Mode**](#plan-mode) | Structured plan-then-build workflow | Tool-activated (`EnterPlanModeTool`) | ✅ Fully Implemented |
-| [**Coordinator Mode**](#coordinator-mode) | Delegating orchestrator with restricted tool pool | `COORDINATOR_MODE=true` | ⏳ Not yet implemented (Phase 5) |
-| [**Swarm Mode**](#swarm-mode) | Multi-agent teams with inter-agent messaging | Extension of Coordinator Mode | ⏳ Not yet implemented (Phase 5) |
+### Session Modes
 
-### Mode Relationships
+| Mode | Purpose | Status |
+|---|---|---|
+| [**Normal**](#normal-mode) | Root agent does everything — thinks, executes, optionally delegates | ✅ Default |
+| [**Coordinator**](#coordinator-mode) | Root agent only orchestrates — delegates ALL work to workers | ⏳ Phase 5 |
+| [**Swarm**](#swarm-mode) | Multi-agent teams with inter-agent messaging | ⏳ Phase 5 |
 
-```mermaid
-flowchart TD
-    subgraph "Session Mode (mutually exclusive)"
-        Normal["Normal Mode<br/>(default)"]
-        Coordinator["Coordinator Mode<br/>⏳ Phase 5"]
-    end
+### Features
 
-    subgraph "Spawning Model (optimization layer)"
-        Standard["Standard Spawn<br/>(default)"]
-        Fork["Fork Spawn<br/>(feature-flagged)"]
-    end
-
-    subgraph "Workflow State (within a session)"
-        Explore["Explore / Build<br/>(default)"]
-        Plan["Plan Mode<br/>✅ Fully Implemented"]
-    end
-
-    subgraph "Team Topology (extends Coordinator)"
-        Solo["Solo Agent<br/>(default)"]
-        Swarm["Agent Swarm<br/>⏳ Phase 5"]
-    end
-
-    Normal --- Standard
-    Normal --- Fork
-    Normal --- Plan
-    Coordinator --- Swarm
-    Coordinator -.-x|"mutually exclusive"| Fork
-
-    style Normal fill:#2d6a4f,stroke:#1b4332,color:#fff
-    style Standard fill:#2d6a4f,stroke:#1b4332,color:#fff
-    style Explore fill:#2d6a4f,stroke:#1b4332,color:#fff
-    style Solo fill:#2d6a4f,stroke:#1b4332,color:#fff
-    style Fork fill:#2d6a4f,stroke:#1b4332,color:#fff
-    style Coordinator fill:#e9c46a,stroke:#f4a261,color:#000
-    style Plan fill:#e9c46a,stroke:#f4a261,color:#000
-    style Swarm fill:#e9c46a,stroke:#f4a261,color:#000
-```
-
-> **Key insight:** These are not all alternatives to each other. They operate on different axes:
-> - **Session mode** (Normal vs Coordinator) — who does the work
-> - **Spawning model** (Standard vs Fork) — how sub-agents are created
-> - **Workflow state** (Explore/Build vs Plan) — what the agent is doing
-> - **Team topology** (Solo vs Swarm) — how many agents collaborate
+| Feature | Purpose | Status |
+|---|---|---|
+| [**Fork**](#fork-feature) | Cost/latency optimization for subagent spawning via cache sharing | ✅ Implemented |
+| [**Plan Mode**](#plan-mode-feature) | Structured plan-then-build workflow with user approval gates | ✅ Implemented |
 
 ---
 
-## Normal Mode
+## The Root Agent (LiteAI)
 
-> **Status:** ✅ Fully implemented
+In all session modes, there is a single **root agent** — the agent the user directly communicates with. This is:
 
-Normal mode is LiteAI's default operating mode. A single root agent interacts with the user, has full access to all tools, and can spawn sub-agents to delegate tasks.
+- **Name:** `LiteAI` (display name), `liteai` internally
+- **Definition:** [`bundled/agents/liteai.md`](../src/bundled/agents/liteai.md) (declarative frontmatter)
+- **System prompt:** [`bundled/prompts/system/system.md`](../src/bundled/prompts/system/system.md) (injected by the session engine, NOT defined in the agent file)
 
-### How It Works
+The root agent is a **fully autonomous, general-purpose agent**. It can:
+
+- Answer questions, explain concepts, have conversations
+- Edit files, run commands, search code
+- Use skills and MCP tools
+- Search the web, fetch documentation
+- All of this **without** invoking subagents or entering plan mode
+
+Subagents and plan mode are **optional capabilities** the root agent *can* use when the task warrants it — they are not required for normal operation.
+
+> [!NOTE]
+> The agent definition file (`liteai.md`) contains only frontmatter (permissions, mode). Its body is intentionally empty because the system prompt comes from `system.md`, which is injected by the session engine. Subagents (e.g., `explore.md`, `plan.md`) define their own prompts in their body. See the YAML comments in `liteai.md` for details.
+
+---
+
+## Session Modes
+
+### Normal Mode
+
+> **Status:** ✅ Implemented (default)
+
+The root agent handles everything directly. It has full access to all tools and can optionally spawn subagents to delegate tasks.
+
+#### How It Works
 
 1. The user sends a prompt to a session.
-2. The root agent processes the prompt using its full tool pool (file editing, shell, search, etc.).
-3. When the agent needs to delegate, it spawns **sub-agents** via the `task` tool.
-4. Sub-agents operate in isolated contexts (see [Sub-Agent Architecture](./subagent-architecture.md)):
-   - Fresh conversation history (clean slate)
-   - Freshly generated system prompt for the sub-agent's type
+2. The root agent (LiteAI) processes the prompt using its full tool pool (file editing, shell, search, skills, etc.).
+3. When the agent decides to delegate, it spawns **subagents** via the `task` tool.
+4. Subagents operate in isolated contexts (see [Sub-Agent Architecture](./subagent-architecture.md)):
+   - Fresh conversation history (clean slate, unless [Fork](#fork-feature) is enabled)
+   - Freshly generated system prompt for the subagent's type
    - Sandboxed permissions
    - Sidechain transcripts (JSONL + SQLite)
-5. The parent receives a dense result summary when the sub-agent completes.
+5. The root agent receives a dense result summary when the subagent completes.
 
-### How to Activate
+#### When to Use
+
+This is the right choice for the vast majority of tasks. The root agent is fully capable of handling complex multi-file changes, code reviews, debugging, and research without any subagent delegation.
+
+#### Activation
 
 No action needed — this is the default.
 
-### Advantages
+#### Built-in Subagents (available in Normal Mode)
 
-- **Simplicity** — straightforward single-agent loop, easy to reason about
-- **Full tool access** — the root agent can do everything
-- **Clean sub-agent isolation** — each sub-agent starts fresh, no context bleed
-- **Deterministic** — predictable behavior, no coordination overhead
+| Subagent | File | Purpose | Tool Restrictions |
+|---|---|---|---|
+| **Explore** | `explore.md` | Read-only codebase search specialist | Deny writes; allow grep, glob, read, bash (read-only), web |
+| **Plan** | `plan.md` | Read-only architect for designing implementation strategies | Deny writes; allow read/search tools |
+| **General** | `general.md` | General-purpose worker for parallel task execution | Full tools minus todo |
 
-### Limitations
+#### Detailed Documentation
 
-- **No prompt cache sharing** — each sub-agent generates its own system prompt, meaning no cache reuse with the parent (see [Fork Subagent Mode](#fork-subagent-mode) for the optimization)
-- **No structured workflow** — the agent decides ad-hoc whether to plan or execute (see [Plan Mode](#plan-mode) for structured planning)
-- **Single orchestrator** — the root agent both thinks and does work (see [Coordinator Mode](#coordinator-mode) for delegation-only orchestration)
-
-### Detailed Documentation
-
-- [Sub-Agent Architecture](./subagent-architecture.md) — context forking, sidechain transcripts, permission sandboxing, cleanup lifecycle
+- [Sub-Agent Architecture](./subagent-architecture.md) — context isolation, sidechain transcripts, permission sandboxing, cleanup lifecycle
 - [System Prompt Pipeline](./system-prompt-pipeline.md) — how system prompts are resolved per agent
 
 ---
 
-## Fork Subagent Mode
+### Coordinator Mode
 
-> **Status:** ✅ Fully implemented  
-> **Feature flag:** `LITEAI_FORK_SUBAGENT=true`
+> **Status:** ⏳ Not yet implemented (Phase 5)
 
-Fork subagent mode is a **cost and latency optimization layer** that changes _how_ sub-agents are spawned. It is not a different "mode of operation" — it's an optimization on top of Normal Mode.
+> [!WARNING]
+> Coordinator Mode is **not yet implemented**. This section describes the planned design. See the [Multi-Agent Platform Roadmap](../../../../roadmap/agents-platform-roadmap.md#phase-5-coordinator-mode--agent-swarms) for the full specification.
 
-### How It Works
+The root agent becomes a **pure orchestrator** — it plans and delegates but never executes work directly. All real work is performed by worker subagents.
 
-Instead of giving each sub-agent a clean slate, fork spawning makes the child inherit the parent's **exact** conversation context and system prompt (byte-for-byte). This means the upstream LLM provider's prompt cache is shared between parent and child, reducing per-spawn token costs by ≥80% and drastically improving time-to-first-token.
+#### How It Will Work
+
+1. The session starts in coordinator mode (selected via UI or environment variable).
+2. The root agent receives a **coordinator-specific system prompt overlay** covering:
+   - Role definition: delegate, don't execute
+   - Worker lifecycle management (spawn → research → synthesis → implementation → verification)
+   - Concurrency rules (read-only tasks parallelized, write-heavy tasks serialized)
+   - Failure handling (continue existing workers via `SendMessage`, don't respawn)
+3. The coordinator's tool pool is **restricted** to orchestration-only tools:
+   - `Agent` — spawn workers
+   - `SendMessage` — communicate with running/stopped workers
+   - `TaskStop` — manage task lifecycle
+   - `TeamCreate` / `TeamDelete` — manage agent teams (Swarm Mode)
+4. Worker capabilities are injected into the coordinator's context so it knows what each worker can do.
+5. Workers run as background subagents with full tool access.
+
+#### Key Differences from Normal Mode
+
+| Aspect | Normal | Coordinator |
+|---|---|---|
+| **Root agent role** | Does everything (thinks + executes) | Pure orchestrator (delegates only) |
+| **Root agent tools** | Full tool pool | Restricted to orchestration tools |
+| **System prompt** | General-purpose (`system.md`) | `system.md` + coordinator overlay |
+| **Subagent spawning** | On-demand, optional | Primary mechanism — all work delegated |
+| **Concurrency** | Sequential by default | Designed for parallel worker execution |
+| **Fork feature** | ✅ Compatible | ❌ Mutually exclusive |
+
+---
+
+### Swarm Mode
+
+> **Status:** ⏳ Not yet implemented (Phase 5)
+
+> [!WARNING]
+> Swarm Mode is **not yet implemented**. This section describes the planned design. See the [Multi-Agent Platform Roadmap](../../../../roadmap/agents-platform-roadmap.md#phase-5-coordinator-mode--agent-swarms) for the full specification.
+
+Swarm mode extends Coordinator Mode with a full **teammate system** — multiple agents running concurrently, communicating via file-based mailboxes, sharing task lists, and coordinating through structured protocols.
+
+#### How It Will Work
+
+1. The coordinator spawns a **team** of agents via `TeamCreate`.
+2. Teammates run in-process with `AsyncLocalStorage`-based context isolation.
+3. Communication happens through a **file-based mailbox system**:
+   - Each agent has a mailbox file
+   - Messages are written/read via `writeToMailbox()` / `readMailbox()`
+   - Supports structured messages: `shutdown_request`, `shutdown_response`, `plan_approval_response`
+   - Broadcast to all teammates via `to: "*"`
+4. Teammates can claim tasks from a shared task list.
+5. Permission synchronization bridges worker permission requests to the leader's UI.
+
+#### Key Differences from Coordinator
+
+| Aspect | Coordinator (Solo Workers) | Swarm |
+|---|---|---|
+| **Worker communication** | None (workers are independent) | File-based mailbox messaging |
+| **Task distribution** | Coordinator assigns directly | Workers can self-claim from shared list |
+| **Team management** | Individual spawn/kill | `TeamCreate` / `TeamDelete` for groups |
+| **Shutdown protocol** | Abort signal | Structured request → approve/reject → cleanup |
+
+---
+
+## Features
+
+### Fork Feature
+
+> **Status:** ✅ Implemented  
+> **Activation:** Toggle in prompt tray, or `LITEAI_FORK_SUBAGENT=true`  
+> **Compatible with:** Normal Mode only (exclusive with Coordinator/Swarm)
+
+Fork is a **cost and latency optimization** that changes *how* subagents are spawned. Instead of giving each subagent a clean slate, fork spawning makes the child inherit the parent's **exact** conversation context and system prompt (byte-for-byte).
+
+This means the upstream LLM provider's prompt cache is shared between parent and child, reducing per-spawn token costs by **≥80%** and drastically improving time-to-first-token.
+
+#### Standard Spawn vs Fork Spawn
+
+| Aspect | Standard Spawn (default) | Fork Spawn |
+|---|---|---|
+| **Conversation history** | Clean (empty) | Parent's full context (byte-exact copy) |
+| **System prompt** | Freshly generated per agent type | Parent's rendered prompt (byte-exact) |
+| **Prompt cache** | No sharing with parent | Shared with parent (≥80% cost reduction) |
+| **Execution mode** | Sync or async (per config) | **Always async** (all spawns forced to background) |
+| **Subagent spawning** | Allowed (nested) | **Blocked** (recursion guard via `<fork-boilerplate>` sentinel) |
+| **Output format** | Free-form | Strict 500-word structured report |
+
+#### Cache Construction
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -132,249 +240,140 @@ Instead of giving each sub-agent a clean slate, fork spawning makes the child in
 
 The only thing that differs between fork siblings is the final directive text.
 
-### How to Activate
+#### Limitations
 
-Set the environment variable before starting LiteAI:
-
-```bash
-LITEAI_FORK_SUBAGENT=true
-```
-
-Or use the `LITEAI_FORK_SUBAGENT` flag in your configuration.
-
-### What Changes When Enabled
-
-| Aspect | Standard Spawn | Fork Spawn |
-|---|---|---|
-| **Conversation history** | Clean (empty) | Parent's full context (byte-exact copy) |
-| **System prompt** | Freshly generated per agent type | Parent's rendered prompt (byte-exact) |
-| **Prompt cache** | No sharing with parent | Shared with parent (≥80% cost reduction) |
-| **Execution mode** | Sync or async (per config) | **Always async** (all spawns forced to background) |
-| **Sub-agent spawning** | Allowed (nested) | **Blocked** (recursion guard via `<fork-boilerplate>` sentinel) |
-| **Output format** | Free-form | Strict 500-word structured report |
-| **Project rules** | Per agent config (`omitLiteaiMd`) | Inherited from parent context |
-
-### Advantages
-
-- **Massive cost reduction** — prompt cache sharing reduces token costs ≥80%
-- **Faster time-to-first-token** — cached prefix means instant prompt processing
-- **Transparent** — from the agent's perspective, it still uses the `task` tool identically
-- **Agent durability** — fork children have resume capability from persisted transcripts
-
-### Limitations
-
-- **No recursion** — fork children cannot spawn their own sub-agents
+- **No recursion** — fork children cannot spawn their own subagents
 - **Strict output format** — fork children must follow a rigid report structure
 - **Always async** — there is no synchronous fork spawn; all become background tasks
-- **Mutually exclusive with Coordinator Mode** — cannot be active simultaneously
+- **Normal Mode only** — mutually exclusive with Coordinator/Swarm
 
-### Detailed Documentation
+#### Detailed Documentation
 
 - [Fork Subagent & Agent Durability](./fork-subagent-durability.md) — full technical deep-dive on cache construction, resume pipeline, and system prompt recovery
 - [Spawning Models Comparison](./spawning-models-comparison.md) — side-by-side comparison of standard vs fork spawning mechanics
 
 ---
 
-## Plan Mode
+### Plan Mode Feature
 
-> **Status:** ✅ Fully implemented
+> **Status:** ✅ Implemented  
+> **Activation:** Agent-driven with user approval, or user-initiated via `/plan` command  
+> **Compatible with:** All session modes (Normal, Coordinator, Swarm)
 
-Plan mode is a **workflow state** within a session that enforces a structured plan-then-build cycle. Instead of the agent immediately executing changes, it first creates a plan, gets user approval, and only then proceeds to implementation.
+Plan mode is a **workflow state** within a session that enforces a structured plan-then-build cycle. Instead of the agent immediately executing changes, it first explores the codebase, designs a plan, gets user approval, and only then proceeds to implementation.
 
-### How It Works
+#### How It Works
 
-1. The agent (or user) activates plan mode via the idempotent `EnterPlanModeTool`. This transitions the active agent to the `plan` agent and initializes the session-scoped `PlanModeState`.
-2. In plan mode, the `plan` agent drafts a plan document outlining its intended changes. It operates as a dedicated entity, with full read capability but explicit restrictions on modifying files.
-3. The `plan` agent natively accesses powerful read-only sub-agents (e.g., `plan-explore`) to trace dependencies and understand broad architectural implications, enforced via canonical `disallowedTools` policies.
-4. Once ready, the agent calls `ExitPlanModeTool` to submit the plan for approval.
-5. An SSE event (`plan.approval_requested`) is sent to the UI, displaying an inline approval dock.
-6. Support for varying external platform tool names (like Claude Code's PascalCase IDs versus LiteAI's internal lowercase standards) is unified globally across the pipeline via the `PlatformProfile.toolNameMap` translation bridge. This ensures `disallowedTools` correctly deny modifications even on platforms that natively inject upper-cased tool configurations.
-7. On approval, the session switches the user agent to `build` mode with an **attachment-driven reminder loop**.
-8. A reminder system ensures the plan stays within the context window:
-   - **Every turn:** precise, sparse reminders are attached to the agent response via Context items ("Plan at {path}, staying on track?").
-   - **Every 5 turns:** full plan text is injected transparently as an attachment payload, preventing model drift without corrupting prompt construction limits.
-
-### Activation
-
-Plan mode operates dynamically **within a session** via the `EnterPlanModeTool` — not via an environment variable.
+Plan mode is **not a different agent** — it is a permission and workflow state change on the **same continuous root agent**. The root agent stays the same throughout; there is no persona swap or context reset.
 
 ```
-User: "Plan how to refactor the auth module before making changes"
-→ Agent invokes EnterPlanModeTool
-→ Session enters plan mode (switches to 'plan' agent)
-→ Agent drafts plan
-→ Agent invokes ExitPlanModeTool
-→ User approves via UI dock
-→ Session transitions to build mode with plan injected as attachments
+┌─────────────────────────────────────────────────────────────┐
+│                 SINGLE ROOT AGENT (continuous)               │
+│                                                              │
+│  1. User: "Add billing feature"                              │
+│  2. Root agent calls EnterPlanModeTool                       │
+│     → shouldDefer: true → User approves                      │
+│     → Permission context mutates to 'plan' mode              │
+│     → 5-phase workflow injected as tool result text           │
+│                                                              │
+│  ┌──── Phase 1: Initial Understanding ─────────────────────┐ │
+│  │ Root calls task(type="explore") × 1-3 IN PARALLEL       │ │
+│  │ Explore subagents search code, read files, return report │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                              │
+│  ┌──── Phase 2: Design ───────────────────────────────────┐  │
+│  │ Root calls task(type="plan") × 1-3 IN PARALLEL         │  │
+│  │ Plan subagents design implementation, return strategy   │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  Phase 3: Root reviews plans, reads critical files            │
+│  Phase 4: Root writes final plan to plan file                 │
+│  Phase 5: Root calls ExitPlanModeTool → approval → build      │
+│                                                              │
+│  Post-approval: SAME root agent continues with full tools     │
+│  Plan text kept in context via attachment-based reminders      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Advantages
+#### Activation
 
-- **User oversight** — explicit approval gate before any changes are made
-- **Reduced wasted work** — misunderstandings caught at the plan stage, not after 50 file edits
-- **Context persistence** — the plan stays in the agent's context throughout build mode via the attachment-based reminder system
-- **Prompt cache friendly** — plan text is injected via attachments, not baked into the system prompt, preserving cache efficiency
+Plan mode can be activated in two ways:
 
-### Key Differences from Normal Mode
+1. **Agent-driven** (primary path) — The root agent autonomously decides a task is complex enough to warrant planning and calls `EnterPlanModeTool`. Because the tool has `shouldDefer: true`, the user sees an approval prompt: *"Agent wants to enter plan mode. Allow?"* The user approves or rejects.
 
-| Aspect | Normal Mode | Plan Mode |
-|---|---|---|
-| **Workflow** | Ad-hoc (agent decides when to plan vs execute) | Structured (plan → approve → build) |
-| **User approval** | Per-tool (file writes, shell commands) | Per-plan (approve the whole approach) |
-| **Agent context** | No persistent plan awareness | Plan text kept in context via reminders |
-| **Sub-agents** | General-purpose | Dedicated Plan/Explore sub-agents with restricted tool pools |
+2. **User-initiated** — The user types `/plan` (slash command) to manually enter plan mode, bypassing the `shouldDefer` approval.
 
-### Depends On
+#### Tool Profile: Plan vs Fast
 
-- **Phase 2 (Sub-Agent Architecture)** ✅ — Plan/Explore are specialized sub-agents
-- **`disallowedTools` enforcement** — required for restricting Plan/Explore sub-agent tool pools
+The user can control whether the agent is even *allowed* to propose plan mode via the **Tool Profile** selector in the prompt tray:
 
----
-
-## Coordinator Mode
-
-> **Status:** ⏳ Not yet implemented (Phase 5 of [Multi-Agent Platform Roadmap](../../../../roadmap/agents-platform-roadmap.md))
-
-> [!WARNING]
-> Coordinator Mode is **not yet implemented**. This section describes the planned design. See the [Multi-Agent Platform Roadmap — Phase 5](../../../../roadmap/agents-platform-roadmap.md#phase-5-coordinator-mode--agent-swarms) for the full specification and implementation timeline.
-
-Coordinator mode fundamentally changes the role of the root agent. Instead of doing work directly, the root agent becomes a **pure orchestrator** that delegates ALL real work to worker sub-agents. It has a restricted tool pool (only orchestration tools) and a dedicated system prompt focused on task decomposition, worker management, and synthesis.
-
-### How It Will Work
-
-1. The session starts in coordinator mode (detected via environment variable).
-2. The root agent receives a **coordinator-specific system prompt** (~370 lines) covering:
-   - Role definition: delegate, don't execute
-   - Worker lifecycle management (spawn → research → synthesis → implementation → verification)
-   - Concurrency rules (read-only tasks parallelized, write-heavy tasks serialized)
-   - Failure handling (continue existing workers via `SendMessage`, don't respawn)
-3. The coordinator's tool pool is **restricted** to orchestration-only tools:
-   - `Agent` — spawn workers
-   - `SendMessage` — communicate with running/stopped workers
-   - `TaskStop` — manage task lifecycle
-   - `TeamCreate` / `TeamDelete` — manage agent teams
-4. Worker capabilities are injected into the coordinator's context so it knows what each worker can do.
-5. Workers run as background sub-agents with full tool access.
-
-### How to Activate (Planned)
-
-Set the environment variable before starting LiteAI:
-
-```bash
-COORDINATOR_MODE=true
-```
-
-### Advantages (Planned)
-
-- **Parallelism** — multiple workers can operate concurrently on independent tasks
-- **Separation of concerns** — the coordinator focuses on strategy; workers focus on execution
-- **Better for large tasks** — complex multi-file changes can be decomposed and parallelized
-- **Worker re-engagement** — stopped workers can be resumed via `SendMessage` instead of respawning
-
-### Key Differences from Normal Mode
-
-| Aspect | Normal Mode | Coordinator Mode |
-|---|---|---|
-| **Root agent role** | Does everything (thinks + executes) | Pure orchestrator (delegates only) |
-| **Root agent tools** | Full tool pool | Restricted (Agent, SendMessage, TaskStop, TeamCreate, TeamDelete) |
-| **System prompt** | General-purpose | Coordinator-specific (~370 lines of orchestration guidance) |
-| **Sub-agent spawning** | On-demand, optional | Primary mechanism — all work delegated |
-| **Concurrency** | Sequential by default | Designed for parallel worker execution |
-| **Fork subagent** | Compatible (can be enabled alongside) | **Mutually exclusive** — fork is disabled when coordinator is active |
-
-### Depends On
-
-- **Phase 4 (Fork Subagent)** ✅ — coordinator mode is mutually exclusive with fork; requires agent resume for `SendMessage` re-engagement
-- **Phase 3 (Plan Mode)** — `disallowedTools` enforcement needed for coordinator tool filtering
-
----
-
-## Swarm Mode
-
-> **Status:** ⏳ Not yet implemented (Phase 5 of [Multi-Agent Platform Roadmap](../../../../roadmap/agents-platform-roadmap.md))
-
-> [!WARNING]
-> Swarm Mode is **not yet implemented**. This section describes the planned design. See the [Multi-Agent Platform Roadmap — Phase 5](../../../../roadmap/agents-platform-roadmap.md#phase-5-coordinator-mode--agent-swarms) for the full specification and implementation timeline.
-
-Swarm mode extends Coordinator Mode with a full **teammate system** — multiple agents running concurrently, communicating via file-based mailboxes, sharing task lists, and coordinating through structured protocols.
-
-### How It Will Work
-
-1. The coordinator spawns a **team** of agents via `TeamCreate`.
-2. Teammates run in-process with `AsyncLocalStorage`-based context isolation.
-3. Communication happens through a **file-based mailbox system**:
-   - Each agent has a mailbox file
-   - Messages are written/read via `writeToMailbox()` / `readMailbox()`
-   - Supports structured messages: `shutdown_request`, `shutdown_response`, `plan_approval_response`
-   - Broadcast to all teammates via `to: "*"`
-4. Teammates can claim tasks from a shared task list.
-5. Permission synchronization bridges worker permission requests to the leader's UI.
-
-### Advantages (Planned)
-
-- **True multi-agent collaboration** — agents can communicate and coordinate
-- **Shared task management** — built-in task claiming and distribution
-- **Structured protocols** — shutdown, approval, and messaging protocols prevent chaos
-- **Scalable** — teams can be created and disbanded dynamically
-
-### Key Differences from Coordinator Mode
-
-| Aspect | Coordinator (Solo Workers) | Swarm |
-|---|---|---|
-| **Worker communication** | None (workers are independent) | File-based mailbox messaging |
-| **Task distribution** | Coordinator assigns directly | Workers can self-claim from shared list |
-| **Team management** | Individual spawn/kill | `TeamCreate` / `TeamDelete` for groups |
-| **Shutdown protocol** | Abort signal | Structured request → approve/reject → cleanup |
-
----
-
-## Decision Guide: Which Mode Should I Use?
-
-### For Most Users
-
-**Start with Normal Mode** (the default). It covers the vast majority of use cases. If you notice high token costs from frequent sub-agent spawning, enable Fork Subagent Mode.
-
-### By Use Case
-
-| Use Case | Recommended Mode |
+| Profile | Effect |
 |---|---|
-| General coding assistance | Normal Mode |
-| Cost-sensitive environments with frequent sub-agents | Normal Mode + Fork Subagent |
-| Complex tasks requiring user approval before execution | Plan Mode ⏳ |
-| Large multi-file refactors that benefit from parallelism | Coordinator Mode ⏳ |
-| Multi-agent workflows with inter-agent communication | Swarm Mode ⏳ |
+| **Plan** (default) | `EnterPlanModeTool` is in the tool pool. Agent can propose plan mode. Explore and Plan subagents are available. |
+| **Fast** | `EnterPlanModeTool` is removed from the tool pool. Agent executes directly, no planning phase. |
 
-### Compatibility Matrix
+#### Reminder System
 
-| | Normal | Fork | Plan | Coordinator | Swarm |
-|---|---|---|---|---|---|
-| **Normal** | — | ✅ Compatible | ✅ Compatible | ❌ Exclusive | ❌ Exclusive |
-| **Fork** | ✅ | — | ✅ Compatible | ❌ Exclusive | ❌ Exclusive |
-| **Plan** | ✅ | ✅ | — | ✅ Compatible | ✅ Compatible |
-| **Coordinator** | ❌ | ❌ | ✅ | — | ✅ Extension |
-| **Swarm** | ❌ | ❌ | ✅ | ✅ | — |
+Once a plan is approved and the agent enters build mode, a reminder system ensures the plan stays within the context window:
 
-> **Note:** Plan Mode operates on the workflow axis (plan vs build) and is compatible with both session modes (Normal and Coordinator). Fork operates on the spawning axis and is only compatible with Normal Mode.
+| Interval | Content | Purpose |
+|---|---|---|
+| Every turn | Sparse: "Plan at {path}, staying on track?" | Prevent drift |
+| Every 5 turns | Full plan text as attachment | Refresh model memory |
+| On mode switch | Full plan text in tool result | Immediate orientation |
+
+#### Key Differences: Plan On vs Off
+
+| Aspect | Without Plan Mode | With Plan Mode |
+|---|---|---|
+| **Workflow** | Ad-hoc (agent decides when to plan vs execute) | Structured (explore → design → plan → approve → build) |
+| **User approval** | Per-tool (file writes, shell commands) | Per-plan (approve the whole approach before any changes) |
+| **Agent context** | No persistent plan awareness | Plan text kept in context via reminders |
+| **Subagents** | General-purpose only | Dedicated Explore and Plan subagents with restricted tool pools |
+
+#### Limitations
+
+- **Not a guarantee** — even in "Plan" tool profile, the agent may choose not to enter plan mode for simple tasks. The tool description includes "When to Use" and "When NOT to Use" guidance.
+- **Single plan file** — one active plan per session.
 
 ---
 
-## Feature Flags Summary
+## Compatibility Matrix
 
-| Flag | Default | Effect | Status |
-|---|---|---|---|
-| `LITEAI_FORK_SUBAGENT` | `false` | Enable fork subagent spawning model | ✅ Implemented |
-| `COORDINATOR_MODE` | `false` | Enable coordinator mode (delegating orchestrator) | ⏳ Phase 5 |
+|  | Fork ✅ | Plan ✅ | Coordinator ⏳ | Swarm ⏳ |
+|---|---|---|---|---|
+| **Normal ✅** | ✅ Compatible | ✅ Compatible | ❌ Exclusive | ❌ Exclusive |
+| **Fork ✅** | — | ✅ Compatible | ❌ Exclusive | ❌ Exclusive |
+| **Plan ✅** | ✅ Compatible | — | ✅ Compatible | ✅ Compatible |
+| **Coordinator ⏳** | ❌ Exclusive | ✅ Compatible | — | ✅ Extension |
+| **Swarm ⏳** | ❌ Exclusive | ✅ Compatible | ✅ Base | — |
 
-> [!NOTE]
-> Plan Mode is not activated via a feature flag — it is activated dynamically within a session via the `EnterPlanModeTool`.
+> **Summary:** Plan Mode is compatible with everything. Fork is only compatible with Normal Mode. Coordinator and Swarm are exclusive with Normal Mode (and with Fork).
+
+---
+
+## User-Facing Controls (Prompt Tray)
+
+The prompt tray exposes the following controls. See [prompt-tray-redesign-rfc.md](../../../../roadmap/prompt-tray-redesign-rfc.md) for the full design specification.
+
+| Control | Values | Axis |
+|---|---|---|
+| **Agent Selector** | LiteAI (default), custom agents | Who runs |
+| **Session Mode** | Normal, Coordinator ⏳, Swarm ⏳ | How the session operates |
+| **Tool Profile** | Plan (default), Fast | What tools are available |
+| **Fork Toggle** | On / Off | How subagents are spawned |
+| **Model Selector** | Provider + model | Which LLM is used |
+| **YOLO Toggle** | On / Off | Auto-accept permissions |
 
 ---
 
 ## Further Reading
 
-- [Sub-Agent Architecture](./subagent-architecture.md) — context forking, sidechain transcripts, permission sandboxing
+- [Sub-Agent Architecture](./subagent-architecture.md) — context isolation, sidechain transcripts, permission sandboxing
 - [Fork Subagent & Agent Durability](./fork-subagent-durability.md) — cache optimization, agent resume, system prompt recovery
-- [Spawning Models Comparison](./spawning-models-comparison.md) — side-by-side standard vs fork spawning mechanics
+- [Spawning Models Comparison](./spawning-models-comparison.md) — standard vs fork spawning mechanics
 - [System Prompt Pipeline](./system-prompt-pipeline.md) — how system prompts are resolved per agent
 - [Agent Core Roadmap](../../../../roadmap/agents-core-roadmap.md) — Phase 3 (Plan Mode) and Phase UI
-- [Multi-Agent Platform Roadmap](../../../../roadmap/agents-platform-roadmap.md) — Phase 5 (Coordinator + Swarms) and Phase 6 (Specialized Agents)
+- [Multi-Agent Platform Roadmap](../../../../roadmap/agents-platform-roadmap.md) — Phase 5 (Coordinator + Swarms)
+- [Prompt Tray Redesign RFC](../../../../roadmap/prompt-tray-redesign-rfc.md) — UI controls for session modes, tool profiles, fork toggle
+- [Plan Mode MVP Parity RFC](../../../../roadmap/plan-mode-mvp-parity-rfc.md) — backend correction of plan mode architecture
