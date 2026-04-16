@@ -460,7 +460,10 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
 
   const placeholder = createMemo(() => {
     if (props.isApprovalPending) {
-      return language.t("session.plan.approvalRequired" as Parameters<typeof language.t>[0]) ?? "Input locked pending plan approval..."
+      return (
+        language.t("session.plan.approvalRequired" as Parameters<typeof language.t>[0]) ??
+        "Input locked pending plan approval..."
+      )
     }
     return promptPlaceholder({
       mode: store.mode,
@@ -1277,7 +1280,11 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                 <IconButton
                   data-action="prompt-submit"
                   type="submit"
-                  disabled={props.isApprovalPending || store.mode !== "normal" || (!prompt.dirty() && !working() && commentCount() === 0)}
+                  disabled={
+                    props.isApprovalPending ||
+                    store.mode !== "normal" ||
+                    (!prompt.dirty() && !working() && commentCount() === 0)
+                  }
                   tabIndex={store.mode === "normal" ? undefined : -1}
                   icon={working() ? "stop" : "arrow-up"}
                   variant={working() ? "secondary" : prompt.dirty() || commentCount() > 0 ? "primary" : "secondary"}

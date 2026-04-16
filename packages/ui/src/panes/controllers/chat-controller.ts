@@ -86,7 +86,7 @@ export interface ChatController {
 
   /** Optional event subscription for real-time updates (e.g., SSE events) */
   events?: {
-    subscribe(event: string, callback: (payload: any) => void): () => void
+    subscribe(event: string, callback: (payload: unknown) => void): () => void
   }
 }
 

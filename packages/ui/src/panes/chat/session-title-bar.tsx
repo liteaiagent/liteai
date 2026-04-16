@@ -350,7 +350,7 @@ export function SessionTitleBar(props: {
               <Show when={titleValue() || title.editing}>
                 <Show when={props.isPlanModeActive}>
                   <div class="shrink-0 ml-1 mr-2 px-1.5 py-[2px] rounded uppercase text-[9px] font-medium tracking-wider bg-surface-raised-base border border-border-weaker-base text-icon-interactive-active">
-                    {language.t("session.plan.badge" as any) ?? "Plan Mode"}
+                    {language.t("session.plan.badge" as Parameters<typeof language.t>[0]) ?? "Plan Mode"}
                   </div>
                 </Show>
                 <Show

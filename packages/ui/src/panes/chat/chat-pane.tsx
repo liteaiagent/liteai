@@ -1,14 +1,25 @@
 import type { UserMessage } from "@liteai/sdk"
 import { createAutoScroll } from "@liteai/ui/hooks"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
-import { type Component, createEffect, createMemo, createSignal, type JSX, Match, on, onCleanup, Show, Switch } from "solid-js"
+import {
+  type Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  type JSX,
+  Match,
+  on,
+  onCleanup,
+  Show,
+  Switch,
+} from "solid-js"
 import { createStore } from "solid-js/store"
+import { PlanApprovalDock } from "../../components/plan-approval-dock"
 import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
 import { usePaneRoute } from "../shared/pane-route"
 import { type ContextItem, type Prompt, usePrompt } from "../shared/prompt"
 import { ChatNewSession } from "./chat-new-session"
-import { PlanApprovalDock } from "../../components/plan-approval-dock"
 import {
   type ChatPromptCommands,
   type ChatPromptCommentActions,
@@ -147,16 +158,18 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
     const id = sessionID()
     if (!id || !controller.events) return
 
-    const unsubState = controller.events.subscribe("plan.state_changed", (payload: any) => {
-      if (payload?.sessionID === id) {
-        setPlanModeActive(!!payload.active)
+    const unsubState = controller.events.subscribe("plan.state_changed", (payload: unknown) => {
+      const p = payload as { sessionID?: string; active?: boolean }
+      if (p?.sessionID === id) {
+        setPlanModeActive(!!p.active)
       }
     })
 
-    const unsubApproval = controller.events.subscribe("plan.approval_requested", (payload: any) => {
-      if (payload?.sessionID === id) {
+    const unsubApproval = controller.events.subscribe("plan.approval_requested", (payload: unknown) => {
+      const p = payload as { sessionID?: string; planText?: string }
+      if (p?.sessionID === id) {
         setApprovalPending(true)
-        setPlanText(payload.planText || "")
+        setPlanText(p.planText || "")
       }
     })
 

@@ -1,6 +1,6 @@
 import { type Component, Show } from "solid-js"
-import { Button } from "./button"
 import { useLanguage } from "../panes/shared/language"
+import { Button } from "./button"
 import "./plan-approval-dock.css"
 
 export interface PlanApprovalDockProps {
@@ -16,7 +16,7 @@ export const PlanApprovalDock: Component<PlanApprovalDockProps> = (props) => {
     <div class="plan-approval-dock bg-surface-raised-base border border-border-weak-base shadow-md-border rounded-[8px] p-3 mb-3 flex flex-col gap-3">
       <div class="flex items-center justify-between">
         <span class="text-11-medium text-icon-interactive-active uppercase tracking-wider">
-          {language.t("session.plan.approvalRequired" as any) ?? "Plan Requires Approval"}
+          {language.t("session.plan.approvalRequired" as Parameters<typeof language.t>[0]) ?? "Plan Requires Approval"}
         </span>
       </div>
       <Show when={props.description}>
@@ -26,10 +26,10 @@ export const PlanApprovalDock: Component<PlanApprovalDockProps> = (props) => {
       </Show>
       <div class="flex gap-2 justify-end mt-1">
         <Button variant="secondary" onClick={props.onReject}>
-          {language.t("common.reject" as any) ?? "Reject Plan"}
+          {language.t("common.reject" as Parameters<typeof language.t>[0]) ?? "Reject Plan"}
         </Button>
         <Button variant="primary" onClick={props.onApprove}>
-          {language.t("common.approve" as any) ?? "Approve Plan"}
+          {language.t("common.approve" as Parameters<typeof language.t>[0]) ?? "Approve Plan"}
         </Button>
       </div>
     </div>
