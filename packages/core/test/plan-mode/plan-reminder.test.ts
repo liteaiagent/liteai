@@ -70,6 +70,11 @@ describe("injectPlanAttachment (T048)", () => {
           active: true,
           turnsSincePlanReminder: 2,
         }
+
+        // Create the plan file
+        await fs.mkdir(path.dirname(state.planFilePath), { recursive: true })
+        await fs.writeFile(state.planFilePath, "Dummy plan", "utf-8")
+
         const messages = [createUserMessage(session)]
 
         const result = await injectPlanAttachment({
