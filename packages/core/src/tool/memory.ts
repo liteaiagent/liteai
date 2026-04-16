@@ -16,7 +16,8 @@ export const ReadMemoryTool = Tool.define("readMemory", {
   async execute({ file }, ctx) {
     const memDir = getMemDir(ctx)
     const target = path.join(memDir, file)
-    if (!AgentMemory.isAgentMemoryPath(target, memDir)) return { title: "Error", output: "Access denied outside memory directory.", metadata: {} }
+    if (!AgentMemory.isAgentMemoryPath(target, memDir))
+      return { title: "Error", output: "Access denied outside memory directory.", metadata: {} }
     try {
       const content = await fs.readFile(target, "utf-8")
       return { title: "Read Memory", output: content, metadata: {} }
@@ -35,7 +36,8 @@ export const WriteMemoryTool = Tool.define("writeMemory", {
   async execute({ file, content }, ctx) {
     const memDir = getMemDir(ctx)
     const target = path.join(memDir, file)
-    if (!AgentMemory.isAgentMemoryPath(target, memDir)) return { title: "Error", output: "Access denied outside memory directory.", metadata: {} }
+    if (!AgentMemory.isAgentMemoryPath(target, memDir))
+      return { title: "Error", output: "Access denied outside memory directory.", metadata: {} }
     await AgentMemory.ensureMemoryDirExists(memDir)
     await fs.writeFile(target, content, "utf-8")
     return { title: "Write Memory", output: "Memory written successfully.", metadata: {} }
@@ -43,7 +45,8 @@ export const WriteMemoryTool = Tool.define("writeMemory", {
 })
 
 export const EditMemoryTool = Tool.define("editMemory", {
-  description: "Edit existing agent memory file in the agent's memory directory. Use this to selectively replace portions of the file without overwriting everything.",
+  description:
+    "Edit existing agent memory file in the agent's memory directory. Use this to selectively replace portions of the file without overwriting everything.",
   parameters: z.object({
     file: z.string().describe("Filename inside memory dir"),
     oldContent: z.string().describe("Exact string to replace"),
@@ -52,7 +55,8 @@ export const EditMemoryTool = Tool.define("editMemory", {
   async execute({ file, oldContent, newContent }, ctx) {
     const memDir = getMemDir(ctx)
     const target = path.join(memDir, file)
-    if (!AgentMemory.isAgentMemoryPath(target, memDir)) return { title: "Error", output: "Access denied outside memory directory.", metadata: {} }
+    if (!AgentMemory.isAgentMemoryPath(target, memDir))
+      return { title: "Error", output: "Access denied outside memory directory.", metadata: {} }
     try {
       const current = await fs.readFile(target, "utf-8")
       if (!current.includes(oldContent)) {

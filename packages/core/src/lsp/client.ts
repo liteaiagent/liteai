@@ -272,7 +272,9 @@ export namespace LSPClient {
 
         // 2. Wait briefly for graceful exit
         if (proc.exitCode === null && !proc.killed) {
-          proc.kill()
+          if (process.platform !== "win32") {
+            proc.kill()
+          }
           await Promise.race([
             new Promise<void>((resolve) => proc.on("exit", resolve)),
             new Promise<void>((resolve) => setTimeout(resolve, 2000)),
@@ -282,7 +284,14 @@ export namespace LSPClient {
         // 3. Force kill if still alive
         if (proc.exitCode === null && !proc.killed) {
           l.warn("process did not exit gracefully, sending SIGKILL")
-          proc.kill("SIGKILL")
+          if (process.platform === "win32" && proc.pid) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            require("node:child_process").spawnSync("taskkill", ["/pid", proc.pid.toString(), "/T", "/F"], {
+              windowsHide: true,
+            })
+          } else {
+            proc.kill("SIGKILL")
+          }
         }
 
         l.info("shutdown complete")

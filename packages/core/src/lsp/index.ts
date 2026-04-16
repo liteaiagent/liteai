@@ -22,7 +22,14 @@ export namespace LSP {
     for (const child of children) {
       if (child.exitCode === null && !child.killed) {
         try {
-          child.kill("SIGKILL")
+          if (process.platform === "win32" && child.pid) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            require("node:child_process").spawnSync("taskkill", ["/pid", child.pid.toString(), "/T", "/F"], {
+              windowsHide: true,
+            })
+          } else {
+            child.kill("SIGKILL")
+          }
         } catch {}
       }
     }

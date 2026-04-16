@@ -119,4 +119,3 @@ ${content ? `<memory>\n${content}\n</memory>` : "<memory>\n(Empty)\n</memory>"}`
     }
   }
 }
-
