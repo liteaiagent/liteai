@@ -12,7 +12,7 @@ This document is the **definitive guide** to understanding LiteAI's agent execut
 |---|---|---|---|
 | [**Normal Mode**](#normal-mode) | Default single-agent interaction | Default (no flag needed) | ✅ Implemented |
 | [**Fork Subagent**](#fork-subagent-mode) | Cost/latency optimization for sub-agent spawning | `LITEAI_FORK_SUBAGENT=true` | ✅ Implemented |
-| [**Plan Mode**](#plan-mode) | Structured plan-then-build workflow | Tool-activated (`EnterPlanModeTool`) | ⏳ Not yet implemented (Phase 3) |
+| [**Plan Mode**](#plan-mode) | Structured plan-then-build workflow | Tool-activated (`EnterPlanModeTool`) | ✅ Fully Implemented |
 | [**Coordinator Mode**](#coordinator-mode) | Delegating orchestrator with restricted tool pool | `COORDINATOR_MODE=true` | ⏳ Not yet implemented (Phase 5) |
 | [**Swarm Mode**](#swarm-mode) | Multi-agent teams with inter-agent messaging | Extension of Coordinator Mode | ⏳ Not yet implemented (Phase 5) |
 
@@ -32,7 +32,7 @@ flowchart TD
 
     subgraph "Workflow State (within a session)"
         Explore["Explore / Build<br/>(default)"]
-        Plan["Plan Mode<br/>⏳ Phase 3"]
+        Plan["Plan Mode<br/>✅ Fully Implemented"]
     end
 
     subgraph "Team Topology (extends Coordinator)"
@@ -177,40 +177,38 @@ Or use the `LITEAI_FORK_SUBAGENT` flag in your configuration.
 
 ## Plan Mode
 
-> **Status:** ⏳ Not yet implemented (Phase 3 of [Agent Core Roadmap](../../../../roadmap/agents-core-roadmap.md))
-
-> [!WARNING]
-> Plan Mode is **not yet implemented**. This section describes the planned design. See the [Agent Core Architecture Roadmap — Phase 3](../../../../roadmap/agents-core-roadmap.md#phase-3-plan-mode) for the full specification and implementation timeline.
+> **Status:** ✅ Fully implemented
 
 Plan mode is a **workflow state** within a session that enforces a structured plan-then-build cycle. Instead of the agent immediately executing changes, it first creates a plan, gets user approval, and only then proceeds to implementation.
 
-### How It Will Work
+### How It Works
 
-1. The agent (or user) activates plan mode via the `EnterPlanModeTool`.
-2. In plan mode, the agent drafts a plan document outlining what it intends to do.
-3. The agent calls `ExitPlanModeTool` to submit the plan for approval.
-4. An SSE event (`plan.approval_requested`) is sent to the UI, which displays an inline approval dock.
-5. The user reviews and approves/rejects the plan.
-6. On approval, the agent transitions to **build mode** with the full plan text injected into context, ensuring it stays on track.
-7. A reminder system keeps the plan in the agent's context:
-   - **Every turn:** sparse reminder ("Plan at {path}, staying on track?")
-   - **Every 5 turns:** full plan text refresh (prevents model drift)
+1. The agent (or user) activates plan mode via the idempotent `EnterPlanModeTool`. This transitions the active agent to the `plan` agent and initializes the session-scoped `PlanModeState`.
+2. In plan mode, the `plan` agent drafts a plan document outlining its intended changes. It operates as a dedicated entity, with full read capability but explicit restrictions on modifying files.
+3. The `plan` agent natively accesses powerful read-only sub-agents (e.g., `plan-explore`) to trace dependencies and understand broad architectural implications, enforced via canonical `disallowedTools` policies.
+4. Once ready, the agent calls `ExitPlanModeTool` to submit the plan for approval.
+5. An SSE event (`plan.approval_requested`) is sent to the UI, displaying an inline approval dock.
+6. Support for varying external platform tool names (like Claude Code's PascalCase IDs versus LiteAI's internal lowercase standards) is unified globally across the pipeline via the `PlatformProfile.toolNameMap` translation bridge. This ensures `disallowedTools` correctly deny modifications even on platforms that natively inject upper-cased tool configurations.
+7. On approval, the session switches the user agent to `build` mode with an **attachment-driven reminder loop**.
+8. A reminder system ensures the plan stays within the context window:
+   - **Every turn:** precise, sparse reminders are attached to the agent response via Context items ("Plan at {path}, staying on track?").
+   - **Every 5 turns:** full plan text is injected transparently as an attachment payload, preventing model drift without corrupting prompt construction limits.
 
-### How to Activate (Planned)
+### Activation
 
-Plan mode will be activated **within a session** via the `EnterPlanModeTool` — not via an environment variable. The agent or user can invoke it at any time during a conversation.
+Plan mode operates dynamically **within a session** via the `EnterPlanModeTool` — not via an environment variable.
 
 ```
 User: "Plan how to refactor the auth module before making changes"
 → Agent invokes EnterPlanModeTool
-→ Session enters plan mode
+→ Session enters plan mode (switches to 'plan' agent)
 → Agent drafts plan
 → Agent invokes ExitPlanModeTool
 → User approves via UI dock
-→ Session transitions to build mode with plan in context
+→ Session transitions to build mode with plan injected as attachments
 ```
 
-### Advantages (Planned)
+### Advantages
 
 - **User oversight** — explicit approval gate before any changes are made
 - **Reduced wasted work** — misunderstandings caught at the plan stage, not after 50 file edits

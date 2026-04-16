@@ -90,17 +90,17 @@
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Rewrite `ExitPlanModeTool` in `packages/core/src/tool/plan.ts` — replace the current synthetic-message-injection approach with the contract from contracts/plan-mode-api.md: accept `plan: z.string().min(1)` parameter, write to disk, emit `plan.approval_requested`, block via `Question.ask()`, return plan-in-tool-result on approval. Reference: MVP `ExitPlanModeV2Tool.ts` lines 243-417
-- [ ] T020 [US2] Implement plan file write in `ExitPlanModeTool` execute — use `fs.writeFile()` to write `params.plan` to `PlanModeState.planFilePath`. Create parent directories if needed via `fs.mkdir(recursive: true)`. Update `PlanModeState.planText` per FR-009
-- [ ] T021 [US2] Implement approval SSE event emission in `ExitPlanModeTool` execute — after file write, emit `plan.approval_requested` via `Bus.publish()` with `{ sessionID, planText, planFilePath }` per FR-010
-- [ ] T022 [US2] Implement approval blocking in `ExitPlanModeTool` execute — call `Question.ask()` with approve/reject options after emitting SSE event. Structure mirrors the existing `PlanExitTool` pattern at `packages/core/src/tool/plan.ts` lines 27-41 per FR-010
-- [ ] T023 [US2] Implement approval path in `ExitPlanModeTool` execute — on "Yes" answer: call `setPlanModeState()` to set `active = false`, reset `turnsSincePlanReminder = 0`, emit `plan.state_changed` with `{ active: false }`, return tool result with `{ title, output: <full plan text + execution guidance>, metadata: { planFilePath, approved: true } }` per FR-011, FR-014
-- [ ] T024 [US2] Implement rejection path in `ExitPlanModeTool` execute — on "No" answer: throw `Question.RejectedError` containing a descriptive rejection string/reason to be surfaced to the model. `PlanModeState.active` remains `true` per FR-012
-- [ ] T025 [US2] Implement empty plan validation in `ExitPlanModeTool` — validate `params.plan` is non-empty before any write/emit operations. Return descriptive error if empty per FR-013
-- [ ] T026 [US2] Implement not-in-plan-mode guard in `ExitPlanModeTool` — read `PlanModeState` and return descriptive error if `active === false` per edge case specification
-- [ ] T027 [US2] Remove the legacy synthetic user message injection from `ExitPlanModeTool` return — delete the `inject: [{ info: userMsg, parts: [userPart] }]` pattern from the current implementation. The plan text now lives in the tool result `output` field per C-002
-- [ ] T029 [US2] Add OpenTelemetry span annotations for ExitPlanModeTool operations in `packages/core/src/tool/plan.ts` — log plan write, approval requested, approved/rejected outcomes per FR-029
-- [ ] T049 [US2] Create `tests/plan-mode/exit-plan-tool.test.ts` — test ExitPlanModeTool: plan write to disk, approval_requested SSE event emission, approval path (state transition + plan-in-tool-result), rejection path (RejectedError thrown), empty plan validation, not-in-plan-mode guard. Verify SC-004 (event timing), SC-005 (tool result contents)
+- [x] T019 [US2] Rewrite `ExitPlanModeTool` in `packages/core/src/tool/plan.ts` — replace the current synthetic-message-injection approach with the contract from contracts/plan-mode-api.md: accept `plan: z.string().min(1)` parameter, write to disk, emit `plan.approval_requested`, block via `Question.ask()`, return plan-in-tool-result on approval. Reference: MVP `ExitPlanModeV2Tool.ts` lines 243-417
+- [x] T020 [US2] Implement plan file write in `ExitPlanModeTool` execute — use `fs.writeFile()` to write `params.plan` to `PlanModeState.planFilePath`. Create parent directories if needed via `fs.mkdir(recursive: true)`. Update `PlanModeState.planText` per FR-009
+- [x] T021 [US2] Implement approval SSE event emission in `ExitPlanModeTool` execute — after file write, emit `plan.approval_requested` via `Bus.publish()` with `{ sessionID, planText, planFilePath }` per FR-010
+- [x] T022 [US2] Implement approval blocking in `ExitPlanModeTool` execute — call `Question.ask()` with approve/reject options after emitting SSE event. Structure mirrors the existing `PlanExitTool` pattern at `packages/core/src/tool/plan.ts` lines 27-41 per FR-010
+- [x] T023 [US2] Implement approval path in `ExitPlanModeTool` execute — on "Yes" answer: call `setPlanModeState()` to set `active = false`, reset `turnsSincePlanReminder = 0`, emit `plan.state_changed` with `{ active: false }`, return tool result with `{ title, output: <full plan text + execution guidance>, metadata: { planFilePath, approved: true } }` per FR-011, FR-014
+- [x] T024 [US2] Implement rejection path in `ExitPlanModeTool` execute — on "No" answer: throw `Question.RejectedError` containing a descriptive rejection string/reason to be surfaced to the model. `PlanModeState.active` remains `true` per FR-012
+- [x] T025 [US2] Implement empty plan validation in `ExitPlanModeTool` — validate `params.plan` is non-empty before any write/emit operations. Return descriptive error if empty per FR-013
+- [x] T026 [US2] Implement not-in-plan-mode guard in `ExitPlanModeTool` — read `PlanModeState` and return descriptive error if `active === false` per edge case specification
+- [x] T027 [US2] Remove the legacy synthetic user message injection from `ExitPlanModeTool` return — delete the `inject: [{ info: userMsg, parts: [userPart] }]` pattern from the current implementation. The plan text now lives in the tool result `output` field per C-002
+- [x] T029 [US2] Add OpenTelemetry span annotations for ExitPlanModeTool operations in `packages/core/src/tool/plan.ts` — log plan write, approval requested, approved/rejected outcomes per FR-029
+- [x] T049 [US2] Create `tests/plan-mode/exit-plan-tool.test.ts` — test ExitPlanModeTool: plan write to disk, approval_requested SSE event emission, approval path (state transition + plan-in-tool-result), rejection path (RejectedError thrown), empty plan validation, not-in-plan-mode guard. Verify SC-004 (event timing), SC-005 (tool result contents)
 
 **Checkpoint**: ExitPlanModeTool writes plan to disk, emits SSE event, blocks for approval, injects plan into tool result on approval, throws RejectedError on rejection. SC-004, SC-005 are met.
 
@@ -114,14 +114,14 @@
 
 ### Implementation for User Story 3
 
-- [ ] T030 [US3] Implement `EnterPlanModeTool` in `packages/core/src/tool/plan.ts` — un-comment the existing `PlanEnterTool` block (lines 76-133) and rewrite per contracts/plan-mode-api.md: no parameters, set `PlanModeState.active = true`, reset `turnsSincePlanReminder = 0`, emit `plan.state_changed`, return plan text or creation guidance in tool result. Reference: MVP `EnterPlanModeTool.ts` lines 77-101
-- [ ] T031 [US3] Implement existing plan injection in `EnterPlanModeTool` — when plan file exists on disk, read it via `fs.readFile()` and include full text in tool result with `"Review and refine the existing plan at <path>"` guidance per FR-017
-- [ ] T032 [US3] Implement no-plan guidance in `EnterPlanModeTool` — when plan file doesn't exist, return tool result with `"Create a plan at <plan-file-path> using the file write tool"` guidance per FR-017
-- [ ] T033 [US3] Implement idempotent guard in `EnterPlanModeTool` — if `PlanModeState.active` is already `true`, return confirmation message without re-emitting events, without resetting turn counter, and without re-reading the plan file per FR-018
-- [ ] T034 [US3] Implement agent transition in `EnterPlanModeTool` — set the user message `agent` field to `"plan"` in the tool result to trigger the session's agent switch to the plan agent per FR-019
-- [ ] T035 [US3] Add OpenTelemetry span annotations for EnterPlanModeTool operations in `packages/core/src/tool/plan.ts` — log activation, idempotent no-op, and plan file read outcomes per FR-029
-- [ ] T028 [US3] Add `EnterPlanModeTool` to `ToolRegistry` import and tool list in `packages/core/src/tool/registry.ts` — import `PlanEnterTool` from `./plan` and include in the `all()` function return array alongside `PlanExitTool`. This task MUST run after T030. Reference: `PlanEnterTool` is already defined (commented out) as `Tool.define("plan_enter", ...)` in `plan.ts:77` but is not currently registered
-- [ ] T050 [US3] Create `tests/plan-mode/enter-plan-tool.test.ts` — test EnterPlanModeTool: activation path, existing plan injection, no-plan guidance, idempotent guard (no re-emit), agent transition field. Verify SC-008 (idempotency), SC-009 (event timing)
+- [x] T030 [US3] Implement `EnterPlanModeTool` in `packages/core/src/tool/plan.ts` — un-comment the existing `PlanEnterTool` block (lines 76-133) and rewrite per contracts/plan-mode-api.md: no parameters, set `PlanModeState.active = true`, reset `turnsSincePlanReminder = 0`, emit `plan.state_changed`, return plan text or creation guidance in tool result. Reference: MVP `EnterPlanModeTool.ts` lines 77-101
+- [x] T031 [US3] Implement existing plan injection in `EnterPlanModeTool` — when plan file exists on disk, read it via `fs.readFile()` and include full text in tool result with `"Review and refine the existing plan at <path>"` guidance per FR-017
+- [x] T032 [US3] Implement no-plan guidance in `EnterPlanModeTool` — when plan file doesn't exist, return tool result with `"Create a plan at <plan-file-path> using the file write tool"` guidance per FR-017
+- [x] T033 [US3] Implement idempotent guard in `EnterPlanModeTool` — if `PlanModeState.active` is already `true`, return confirmation message without re-emitting events, without resetting turn counter, and without re-reading the plan file per FR-018
+- [x] T034 [US3] Implement agent transition in `EnterPlanModeTool` — set the user message `agent` field to `"plan"` in the tool result to trigger the session's agent switch to the plan agent per FR-019
+- [x] T035 [US3] Add OpenTelemetry span annotations for EnterPlanModeTool operations in `packages/core/src/tool/plan.ts` — log activation, idempotent no-op, and plan file read outcomes per FR-029
+- [x] T028 [US3] Add `EnterPlanModeTool` to `ToolRegistry` import and tool list in `packages/core/src/tool/registry.ts` — import `PlanEnterTool` from `./plan` and include in the `all()` function return array alongside `PlanExitTool`. This task MUST run after T030. Reference: `PlanEnterTool` is already defined (commented out) as `Tool.define("plan_enter", ...)` in `plan.ts:77` but is not currently registered
+- [x] T050 [US3] Create `tests/plan-mode/enter-plan-tool.test.ts` — test EnterPlanModeTool: activation path, existing plan injection, no-plan guidance, idempotent guard (no re-emit), agent transition field. Verify SC-008 (idempotency), SC-009 (event timing)
 
 **Checkpoint**: EnterPlanModeTool enables bidirectional transitions. SC-008 (idempotency) and SC-009 (SSE event timing) are met.
 
@@ -135,12 +135,12 @@
 
 ### Implementation for User Story 4
 
-- [ ] T036 [US4] Wire `disallowedTools` deny filter into `ToolRegistry.tools()` in `packages/core/src/tool/registry.ts` — after the existing assembly steps (config filter at line ~86, model filter at line ~87-95), apply `agent.disallowedTools` as a post-assembly deny filter using exact `t.id` string equality against the normalized canonical IDs per FR-020, FR-022. Log a structured warning if a `disallowedTools` entry does not match any tool in the pool (fail-fast detection per Constitution VI)
-- [ ] T037 [US4] Ensure no-op behavior when `disallowedTools` is undefined or empty in `packages/core/src/tool/registry.ts` — verify the deny filter returns the full tool pool unchanged when the agent has no `disallowedTools` config per FR-021, C-003. This is the zero regression guarantee (SC-007)
-- [ ] T038 [P] [US4] Create `plan-explore` bundled agent definition in `packages/core/src/bundled/agents/plan-explore.md` — YAML frontmatter with `mode: subagent`, `omitLiteaiMd: true`, `permissionMode: inherit`, `disallowedTools: ["edit", "write", "multiedit", "apply_patch", "plan_exit", "task"]`, `description` for the research use case, and system prompt for read-only exploration per FR-023. Reference: MVP `planAgent.ts:77-83` and `exploreAgent.ts:67-73`
-- [ ] T039 [US4] Add `"plan-explore"` to `BUILTIN_AGENT_NAMES` array in `packages/core/src/agent/agent.ts` line 32 — ensures the agent is loaded via `loadBuiltinAgents()` per R-006
-- [ ] T040 [US4] Add OpenTelemetry span annotations for `disallowedTools` filtering in `packages/core/src/tool/registry.ts` — log when tools are removed by the deny filter, including the count of removed tools and the agent name per FR-029
-- [ ] T051 [US4] Extend or create `tests/tool/registry.test.ts` — test disallowedTools deny filter: tools removed by exact ID match, no-op when empty/undefined, full pool verification snapshot before/after, and integration with `toolNameMap` normalization (Claude Code PascalCase names pre-normalized). Verify SC-006 (disallowed tools absent), SC-007 (zero regression)
+- [x] T036 [US4] Wire `disallowedTools` deny filter into `ToolRegistry.tools()` in `packages/core/src/tool/registry.ts` — after the existing assembly steps (config filter at line ~86, model filter at line ~87-95), apply `agent.disallowedTools` as a post-assembly deny filter using exact `t.id` string equality against the normalized canonical IDs per FR-020, FR-022. Log a structured warning if a `disallowedTools` entry does not match any tool in the pool (fail-fast detection per Constitution VI)
+- [x] T037 [US4] Ensure no-op behavior when `disallowedTools` is undefined or empty in `packages/core/src/tool/registry.ts` — verify the deny filter returns the full tool pool unchanged when the agent has no `disallowedTools` config per FR-021, C-003. This is the zero regression guarantee (SC-007)
+- [x] T038 [P] [US4] Create `plan-explore` bundled agent definition in `packages/core/src/bundled/agents/plan-explore.md` — YAML frontmatter with `mode: subagent`, `omitLiteaiMd: true`, `permissionMode: inherit`, `disallowedTools: ["edit", "write", "multiedit", "apply_patch", "plan_exit", "task"]`, `description` for the research use case, and system prompt for read-only exploration per FR-023. Reference: MVP `planAgent.ts:77-83` and `exploreAgent.ts:67-73`
+- [x] T039 [US4] Add `"plan-explore"` to `BUILTIN_AGENT_NAMES` array in `packages/core/src/agent/agent.ts` line 32 — ensures the agent is loaded via `loadBuiltinAgents()` per R-006
+- [x] T040 [US4] Add OpenTelemetry span annotations for `disallowedTools` filtering in `packages/core/src/tool/registry.ts` — log when tools are removed by the deny filter, including the count of removed tools and the agent name per FR-029
+- [x] T051 [US4] Extend or create `tests/tool/registry.test.ts` — test disallowedTools deny filter: tools removed by exact ID match, no-op when empty/undefined, full pool verification snapshot before/after, and integration with `toolNameMap` normalization (Claude Code PascalCase names pre-normalized). Verify SC-006 (disallowed tools absent), SC-007 (zero regression)
 
 **Checkpoint**: Plan/Explore sub-agents cannot invoke file modification tools (SC-006). Existing agents with no `disallowedTools` config receive their full tool pool unchanged (SC-007).
 
@@ -150,11 +150,11 @@
 
 **Purpose**: Cleanup, verification, and documentation updates
 
-- [ ] T041 Remove the legacy `build-switch` and `plan-reminder` bundled prompt references if they are no longer used after the plan-reminder.ts rewrite — check `packages/core/src/bundled/prompts/misc/` for orphaned prompt files
-- [ ] T043 Run `bun typecheck` from `packages/core/` and fix all TypeScript errors introduced by the plan mode changes
-- [ ] T044 Run `bun lint:fix` from `packages/core/` and verify zero linting warnings in modified files
-- [ ] T045 Verify existing tool assembly tests still pass with `disallowedTools` changes — run `bun test test/tool` or relevant scoped test path
-- [ ] T046 Update agent execution modes documentation at `packages/core/docs/agent-execution-modes.md` — add Plan/Explore sub-agent details, update Plan Mode description to reflect the new state machine architecture, and document the `toolNameMap` bridge for platform-specific tool name translation
+- [x] T041 Remove the legacy `build-switch` and `plan-reminder` bundled prompt references if they are no longer used after the plan-reminder.ts rewrite — check `packages/core/src/bundled/prompts/misc/` for orphaned prompt files
+- [x] T043 Run `bun typecheck` from `packages/core/` and fix all TypeScript errors introduced by the plan mode changes
+- [x] T044 Run `bun lint:fix` from `packages/core/` and verify zero linting warnings in modified files
+- [x] T045 Verify existing tool assembly tests still pass with `disallowedTools` changes — run `bun test test/tool` or relevant scoped test path
+- [x] T046 Update agent execution modes documentation at `packages/core/docs/agent-execution-modes.md` — add Plan/Explore sub-agent details, update Plan Mode description to reflect the new state machine architecture, and document the `toolNameMap` bridge for platform-specific tool name translation
 
 ---
 

@@ -2,6 +2,8 @@ import { pathToFileURL } from "node:url"
 import type { AgentSideConnection, PermissionOption, PlanEntry, ToolCallContent } from "@agentclientprotocol/sdk"
 import type { Event, LiteaiClient, ProjectSessionMessageResponse, ToolPart } from "@liteai/sdk"
 import { z } from "zod"
+import { Bus } from "../bus"
+import { Session } from "../session"
 import { Todo } from "../session/todo"
 import { Filesystem } from "../util/filesystem"
 import { Hash } from "../util/hash"
@@ -17,6 +19,7 @@ export class ACPEventStreamer {
   private bashSnapshots = new Map<string, string>()
   private toolStarts = new Set<string>()
   private permissionQueues = new Map<string, Promise<void>>()
+  private busUnsubscribes: Array<() => void> = []
   private permissionOptions: PermissionOption[] = [
     { optionId: "once", kind: "allow_once", name: "Allow once" },
     { optionId: "always", kind: "allow_always", name: "Always allow" },
@@ -32,6 +35,29 @@ export class ACPEventStreamer {
   public start() {
     if (this.eventStarted) return
     this.eventStarted = true
+
+    this.busUnsubscribes.push(
+      Bus.subscribe(Session.Event.PlanStateChanged, async (event) => {
+        if (this.eventAbort.signal.aborted) return
+        const session = this.sessionManager.tryGet(event.properties.sessionID)
+        if (!session) return
+        await this.connection.extNotification("plan.state_changed", event.properties).catch((error) => {
+          log.error("failed to send plan.state_changed to ACP", { error })
+        })
+      }),
+    )
+
+    this.busUnsubscribes.push(
+      Bus.subscribe(Session.Event.PlanApprovalRequested, async (event) => {
+        if (this.eventAbort.signal.aborted) return
+        const session = this.sessionManager.tryGet(event.properties.sessionID)
+        if (!session) return
+        await this.connection.extNotification("plan.approval_requested", event.properties).catch((error) => {
+          log.error("failed to send plan.approval_requested to ACP", { error })
+        })
+      }),
+    )
+
     this.runEventSubscription().catch((error) => {
       if (this.eventAbort.signal.aborted) return
       log.error("event subscription failed", { error })
@@ -40,6 +66,10 @@ export class ACPEventStreamer {
 
   public stop() {
     this.eventAbort.abort()
+    for (const unsubscribe of this.busUnsubscribes) {
+      unsubscribe()
+    }
+    this.busUnsubscribes = []
   }
 
   private async runEventSubscription() {
@@ -328,7 +358,7 @@ export class ACPEventStreamer {
               return
           }
         }
-        return
+        break
       }
 
       case "message.part.delta": {

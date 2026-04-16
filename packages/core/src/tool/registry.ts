@@ -1,7 +1,9 @@
+import { trace } from "@opentelemetry/api"
 import { Flag } from "@/flag/flag"
 import type { Agent } from "../agent/agent"
 import { Config } from "../config/config"
 import type { ModelID, ProviderID } from "../provider/schema"
+import { Log } from "../util/log"
 import { ApplyPatchTool } from "./apply_patch"
 import { BatchTool } from "./batch"
 import { CommandStatusTool } from "./command_status"
@@ -11,7 +13,7 @@ import { GrepTool } from "./grep"
 import { InvalidTool } from "./invalid"
 import { ListTool } from "./ls"
 import { MultiEditTool } from "./multiedit"
-import { PlanExitTool } from "./plan"
+import { PlanEnterTool, PlanExitTool } from "./plan"
 import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
 import { RunCommandTool } from "./run_command"
@@ -26,6 +28,8 @@ import { WebSearchTool } from "./websearch"
 import { WriteTool } from "./write"
 
 export namespace ToolRegistry {
+  const tracer = trace.getTracer("liteai")
+
   async function all(): Promise<Tool.Info[]> {
     const config = await Config.get()
     const question = ["app", "cli", "desktop"].includes(Flag.LITEAI_CLIENT)
@@ -57,6 +61,7 @@ export namespace ToolRegistry {
       ApplyPatchTool,
       //LspTool,
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
+      PlanEnterTool,
       PlanExitTool,
     ]
   }
@@ -81,25 +86,56 @@ export namespace ToolRegistry {
   ) {
     const config = await Config.get()
     const tools = await all()
-    const result = await Promise.all(
-      tools
-        .filter((t) => !(config.disabledTools?.[t.id] === true))
-        .filter((t) => {
-          // use apply tool in same format as codex
-          const usePatch =
-            model.modelID.includes("gpt-") && !model.modelID.includes("oss") && !model.modelID.includes("gpt-4")
-          if (t.id === "apply_patch") return usePatch
-          if (t.id === "edit" || t.id === "write" || t.id === "multiedit") return !usePatch
+    let availableTools = tools
+      .filter((t) => !(config.disabledTools?.[t.id] === true))
+      .filter((t) => {
+        // use apply tool in same format as codex
+        const usePatch =
+          model.modelID.includes("gpt-") && !model.modelID.includes("oss") && !model.modelID.includes("gpt-4")
+        if (t.id === "apply_patch") return usePatch
+        if (t.id === "edit" || t.id === "write" || t.id === "multiedit") return !usePatch
 
-          return true
+        return true
+      })
+
+    if (agent?.disallowedTools && agent.disallowedTools.length > 0) {
+      const availableToolIds = new Set(availableTools.map((t) => t.id))
+      for (const disallowed of agent.disallowedTools) {
+        if (!availableToolIds.has(disallowed)) {
+          tracer.startActiveSpan("tool.registry.disallowed.not_found", (span) => {
+            span.setAttribute("agent", agent.name)
+            span.setAttribute("tool", disallowed)
+            span.addEvent("Disallowed tool not found in tool pool")
+            span.end()
+          })
+          Log.create({ service: "agent" }).warn(
+            `[ToolRegistry] Agent '${agent.name}' disallows tool '${disallowed}' which is not in the pool.`,
+            { agent: agent.name, tool: disallowed },
+          )
+        }
+      }
+
+      const originalCount = availableTools.length
+      availableTools = availableTools.filter((t) => !agent.disallowedTools?.includes(t.id))
+      const removedCount = originalCount - availableTools.length
+
+      if (removedCount > 0) {
+        tracer.startActiveSpan("tool.registry.filtered", (span) => {
+          span.setAttribute("agent", agent.name)
+          span.setAttribute("removedCount", removedCount)
+          span.end()
         })
-        .map(async (t) => {
-          const tool = await t.init({ agent })
-          return {
-            id: t.id,
-            ...tool,
-          }
-        }),
+      }
+    }
+
+    const result = await Promise.all(
+      availableTools.map(async (t) => {
+        const tool = await t.init({ agent })
+        return {
+          id: t.id,
+          ...tool,
+        }
+      }),
     )
     return result
   }

@@ -72,9 +72,11 @@ export const Event = {
   ),
 }
 
-export class RejectedError extends Schema.TaggedErrorClass<RejectedError>()("QuestionRejectedError", {}) {
+export class RejectedError extends Schema.TaggedErrorClass<RejectedError>()("QuestionRejectedError", {
+  reason: Schema.optional(Schema.String),
+}) {
   override get message() {
-    return "The user dismissed this question"
+    return this.reason ?? "The user dismissed this question"
   }
 }
 
