@@ -34,7 +34,7 @@ export namespace ToolRegistry {
     const config = await Config.get()
     const question = ["app", "cli", "desktop"].includes(Flag.LITEAI_CLIENT)
 
-    return [
+    const result: Tool.Info[] = [
       InvalidTool,
       ...(question ? [QuestionTool] : []),
       RunCommandTool,
@@ -64,6 +64,14 @@ export namespace ToolRegistry {
       PlanEnterTool,
       PlanExitTool,
     ]
+
+    const { AgentMemory } = await import("../agent/memory")
+    if (await AgentMemory.isAutoMemoryEnabled()) {
+      const { ReadMemoryTool, WriteMemoryTool, EditMemoryTool } = await import("./memory")
+      result.push(ReadMemoryTool, WriteMemoryTool, EditMemoryTool)
+    }
+
+    return result
   }
 
   export async function ids() {

@@ -203,13 +203,6 @@ export async function resolveTools(input: {
     })
   }
 
-  // Auto-inject agent memory tools if enabled
-  const { AgentMemory } = await import("../../agent/memory")
-  if (await AgentMemory.isAutoMemoryEnabled()) {
-    const scope = Instance.worktree ? "local" : "project"
-    AgentMemory.injectAgentMemoryTools(tools, input.agent.name, scope)
-  }
-
   const contextModule = await import("../../agent/context")
   const agentCtx = contextModule.AgentExecutionContext.getStore()
   const mcpClients = agentCtx?.type === "subagent" ? agentCtx.mcpClients : undefined
