@@ -113,6 +113,8 @@ export function MessageTimeline(props: {
   onNavigateSessionList?: (projectID: string) => void
   /** Optional slot for session context usage indicator. */
   contextUsage?: JSX.Element
+  /** Whether plan mode is active */
+  isPlanModeActive?: boolean
 }) {
   let touchGesture: number | undefined
 
@@ -261,6 +263,7 @@ export function MessageTimeline(props: {
               onNavigateSession={props.onNavigateSession}
               onNavigateSessionList={props.onNavigateSessionList}
               contextUsage={props.contextUsage}
+              isPlanModeActive={props.isPlanModeActive}
             />
 
             <div

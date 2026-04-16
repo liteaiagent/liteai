@@ -19,9 +19,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Initialize Phase UI-A structure by creating packages/ui/src/components/plan-approval-dock.tsx
-- [ ] T002 [P] Create empty styles in packages/ui/src/components/plan-approval-dock.css
-- [ ] T003 Read reference implementations liteai_cli_mvp/src/components/AgentProgressLine.tsx and CoordinatorAgentStatus.tsx for MVP compliance
+- [x] T001 Initialize Phase UI-A structure by creating packages/ui/src/components/plan-approval-dock.tsx
+- [x] T002 [P] Create empty styles in packages/ui/src/components/plan-approval-dock.css
+- [x] T003 Read reference implementations liteai_cli_mvp/src/components/AgentProgressLine.tsx and CoordinatorAgentStatus.tsx for MVP compliance
 
 ---
 
@@ -31,8 +31,8 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Setup `isPlanModeActive` and `isApprovalPending` view state logic in packages/ui/src/panes/chat/chat-pane.tsx
-- [ ] T005 Wire SSE events (`plan.state_changed`, `plan.approval_requested`) listeners to view state in packages/ui/src/panes/chat/chat-pane.tsx
+- [x] T004 Setup `isPlanModeActive` and `isApprovalPending` view state logic in packages/ui/src/panes/chat/chat-pane.tsx
+- [x] T005 Wire SSE events (`plan.state_changed`, `plan.approval_requested`) listeners to view state in packages/ui/src/panes/chat/chat-pane.tsx
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -46,8 +46,8 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T006 [P] [US1] Update packages/ui/src/panes/chat/session-title-bar.tsx to accept `isPlanModeActive` prop
-- [ ] T007 [US1] Implement Plan Mode Badge rendering in packages/ui/src/panes/chat/session-title-bar.tsx when `isPlanModeActive` is true
+- [x] T006 [P] [US1] Update packages/ui/src/panes/chat/session-title-bar.tsx to accept `isPlanModeActive` prop
+- [x] T007 [US1] Implement Plan Mode Badge rendering in packages/ui/src/panes/chat/session-title-bar.tsx when `isPlanModeActive` is true
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -61,11 +61,11 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T008 [P] [US2] Build base Plan Approval Dock UI component in packages/ui/src/components/plan-approval-dock.tsx (using SolidJS/Kobalte)
-- [ ] T009 [P] [US2] Implement vanilla CSS styling in packages/ui/src/components/plan-approval-dock.css
-- [ ] T010 [US2] Adapt MVP design elements from liteai_cli_mvp/src/components/CoordinatorAgentStatus.tsx into packages/ui/src/components/plan-approval-dock.tsx
-- [ ] T011 [US2] Add Approve/Reject button handlers and wire callbacks in packages/ui/src/components/plan-approval-dock.tsx
-- [ ] T012 [US2] Render the Dock within the `promptDocks` slot of packages/ui/src/panes/chat/chat-pane.tsx based on `isApprovalPending` state
+- [x] T008 [P] [US2] Build base Plan Approval Dock UI component in packages/ui/src/components/plan-approval-dock.tsx (using SolidJS/Kobalte)
+- [x] T009 [P] [US2] Implement vanilla CSS styling in packages/ui/src/components/plan-approval-dock.css
+- [x] T010 [US2] Adapt MVP design elements from liteai_cli_mvp/src/components/CoordinatorAgentStatus.tsx into packages/ui/src/components/plan-approval-dock.tsx
+- [x] T011 [US2] Add Approve/Reject button handlers and wire callbacks in packages/ui/src/components/plan-approval-dock.tsx
+- [x] T012 [US2] Render the Dock within the `promptDocks` slot of packages/ui/src/panes/chat/chat-pane.tsx based on `isApprovalPending` state
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -79,8 +79,8 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 3
 
-- [ ] T013 [P] [US3] Update packages/ui/src/panes/chat/chat-prompt-input.tsx to accept `isApprovalPending` prop
-- [ ] T014 [US3] Disable chat input and display lock hint in packages/ui/src/panes/chat/chat-prompt-input.tsx when `isApprovalPending` is true
+- [x] T013 [P] [US3] Update packages/ui/src/panes/chat/chat-prompt-input.tsx to accept `isApprovalPending` prop
+- [x] T014 [US3] Disable chat input and display lock hint in packages/ui/src/panes/chat/chat-prompt-input.tsx when `isApprovalPending` is true
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -90,9 +90,9 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T015 Verify behavioral parity with MVP TUI reference (liteai_cli_mvp/src) against packages/ui implementation
-- [ ] T016 Run typechecking in packages/ui using `bun run typecheck`
-- [ ] T017 Validate UI rendering by running frontend web app via `bun run dev` in packages/web
+- [x] T015 Verify behavioral parity with MVP TUI reference (liteai_cli_mvp/src) against packages/ui implementation
+- [x] T016 Run typechecking in packages/ui using `bun run typecheck`
+- [x] T017 Validate UI rendering by running frontend web app via `bun run dev` in packages/web
 
 ---
 

@@ -1,0 +1,56 @@
+/* Minimal plan approval dock styles */
+.plan-approval-dock {
+  background-color: var(--background-modifier-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.plan-approval-dock-header {
+  display: flex;
+  align-items: center;
+}
+
+.plan-approval-dock-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+.plan-approval-dock-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.plan-approval-dock-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.1s ease;
+}
+
+.plan-approval-dock-btn.approve {
+  background-color: var(--color-interactive-accent);
+  color: var(--color-interactive-accent-foreground);
+}
+
+.plan-approval-dock-btn.approve:hover {
+  background-color: var(--color-interactive-accent-hover);
+}
+
+.plan-approval-dock-btn.reject {
+  background-color: transparent;
+  color: var(--text-color-secondary);
+  border-color: var(--border-color);
+}
+
+.plan-approval-dock-btn.reject:hover {
+  background-color: var(--background-modifier-hover);
+}

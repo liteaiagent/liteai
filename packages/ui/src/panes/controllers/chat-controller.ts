@@ -81,6 +81,13 @@ export interface ChatController {
 
   /** Whether there are any paid providers configured. */
   hasPaidProviders(): boolean
+
+  // ─── Events ───
+
+  /** Optional event subscription for real-time updates (e.g., SSE events) */
+  events?: {
+    subscribe(event: string, callback: (payload: any) => void): () => void
+  }
 }
 
 /** Subset of project data needed by chat components. */

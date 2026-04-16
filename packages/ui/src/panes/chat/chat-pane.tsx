@@ -1,13 +1,14 @@
 import type { UserMessage } from "@liteai/sdk"
 import { createAutoScroll } from "@liteai/ui/hooks"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
-import { type Component, createEffect, createMemo, type JSX, Match, on, onCleanup, Show, Switch } from "solid-js"
+import { type Component, createEffect, createMemo, createSignal, type JSX, Match, on, onCleanup, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
 import { usePaneRoute } from "../shared/pane-route"
 import { type ContextItem, type Prompt, usePrompt } from "../shared/prompt"
 import { ChatNewSession } from "./chat-new-session"
+import { PlanApprovalDock } from "../../components/plan-approval-dock"
 import {
   type ChatPromptCommands,
   type ChatPromptCommentActions,
@@ -110,6 +111,18 @@ interface ChatPaneProps {
    */
   edit?: { id: string; prompt: Prompt; context: ContextItem[] }
   onEditLoaded?: () => void
+
+  /** Optional slot for session context usage indicator */
+  contextUsage?: JSX.Element
+  /** Centered view mode */
+  centered?: boolean
+  /** Tint color override */
+  tint?: string
+
+  /** Called when the user approves a plan */
+  onApprovePlan?: () => void
+  /** Called when the user rejects a plan */
+  onRejectPlan?: () => void
 }
 
 /**
@@ -125,6 +138,33 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
 
   const sessionID = createMemo(() => props.sessionID ?? route()?.sessionID)
   const projectID = createMemo(() => props.projectID ?? route()?.projectID)
+
+  const [isPlanModeActive, setPlanModeActive] = createSignal(false)
+  const [isApprovalPending, setApprovalPending] = createSignal(false)
+  const [planText, setPlanText] = createSignal("")
+
+  createEffect(() => {
+    const id = sessionID()
+    if (!id || !controller.events) return
+
+    const unsubState = controller.events.subscribe("plan.state_changed", (payload: any) => {
+      if (payload?.sessionID === id) {
+        setPlanModeActive(!!payload.active)
+      }
+    })
+
+    const unsubApproval = controller.events.subscribe("plan.approval_requested", (payload: any) => {
+      if (payload?.sessionID === id) {
+        setApprovalPending(true)
+        setPlanText(payload.planText || "")
+      }
+    })
+
+    onCleanup(() => {
+      unsubState()
+      unsubApproval()
+    })
+  })
 
   const messages = createMemo(() => {
     const id = sessionID()
@@ -333,6 +373,8 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
                   sessionKey={`${projectID() ?? ""}:${sessionID() ?? ""}`}
                   onNavigateSession={props.onNavigateSession}
                   onNavigateSessionList={props.onNavigateSessionList}
+                  contextUsage={props.contextUsage}
+                  isPlanModeActive={isPlanModeActive()}
                 />
               </Show>
             </Match>
@@ -350,6 +392,19 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
           class="mt-auto px-3 pb-3"
         >
           {props.promptDocks}
+          <Show when={isApprovalPending()}>
+            <PlanApprovalDock
+              description={planText()}
+              onApprove={() => {
+                setApprovalPending(false)
+                props.onApprovePlan?.()
+              }}
+              onReject={() => {
+                setApprovalPending(false)
+                props.onRejectPlan?.()
+              }}
+            />
+          </Show>
           <ChatPromptInput
             ref={props.inputRef}
             sessionID={sessionID()}
@@ -371,6 +426,7 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
             onAbort={props.onAbort}
             edit={props.edit}
             onEditLoaded={props.onEditLoaded}
+            isApprovalPending={isApprovalPending()}
           />
         </div>
 

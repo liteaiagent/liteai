@@ -25,6 +25,8 @@ export function SessionTitleBar(props: {
   onNavigateSessionList?: (projectID: string) => void
   /** Optional slot for session context usage indicator (e.g. token/cost display). Web-only. */
   contextUsage?: JSX.Element
+  /** Whether plan mode is currently active for this session */
+  isPlanModeActive?: boolean
 }) {
   const controller = useChatController()
   const sessionCtrl = useSessionController()
@@ -346,6 +348,11 @@ export function SessionTitleBar(props: {
                 </Show>
               </div>
               <Show when={titleValue() || title.editing}>
+                <Show when={props.isPlanModeActive}>
+                  <div class="shrink-0 ml-1 mr-2 px-1.5 py-[2px] rounded uppercase text-[9px] font-medium tracking-wider bg-surface-raised-base border border-border-weaker-base text-icon-interactive-active">
+                    {language.t("session.plan.badge" as any) ?? "Plan Mode"}
+                  </div>
+                </Show>
                 <Show
                   when={title.editing}
                   fallback={

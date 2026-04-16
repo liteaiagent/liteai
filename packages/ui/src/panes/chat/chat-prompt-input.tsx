@@ -173,6 +173,9 @@ interface ChatPromptInputProps {
   shouldQueue?: () => boolean
   onQueue?: (draft: unknown) => void
   onAbort?: () => void
+
+  /** Plan mode lock */
+  isApprovalPending?: boolean
 }
 
 const EXAMPLES = [
@@ -455,15 +458,18 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
 
   // ─── Placeholder ───
 
-  const placeholder = createMemo(() =>
-    promptPlaceholder({
+  const placeholder = createMemo(() => {
+    if (props.isApprovalPending) {
+      return language.t("session.plan.approvalRequired" as Parameters<typeof language.t>[0]) ?? "Input locked pending plan approval..."
+    }
+    return promptPlaceholder({
       mode: store.mode,
       commentCount: commentCount(),
       example: suggest() ? language.t(EXAMPLES[store.placeholder]) : "",
       suggest: suggest(),
       t: (key, params) => language.t(key as Parameters<typeof language.t>[0], params as never),
-    }),
-  )
+    })
+  })
 
   createEffect(() => {
     sessionID()
@@ -1192,7 +1198,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
               aria-multiline="true"
               tabIndex={0}
               aria-label={placeholder()}
-              contenteditable="true"
+              contenteditable={!props.isApprovalPending ? "true" : "false"}
               autocapitalize={store.mode === "normal" ? "sentences" : "off"}
               autocorrect={store.mode === "normal" ? "on" : "off"}
               spellcheck={store.mode === "normal"}
@@ -1271,7 +1277,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                 <IconButton
                   data-action="prompt-submit"
                   type="submit"
-                  disabled={store.mode !== "normal" || (!prompt.dirty() && !working() && commentCount() === 0)}
+                  disabled={props.isApprovalPending || store.mode !== "normal" || (!prompt.dirty() && !working() && commentCount() === 0)}
                   tabIndex={store.mode === "normal" ? undefined : -1}
                   icon={working() ? "stop" : "arrow-up"}
                   variant={working() ? "secondary" : prompt.dirty() || commentCount() > 0 ? "primary" : "secondary"}
@@ -1304,7 +1310,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                   class="size-7 p-0"
                   style={buttons()}
                   onClick={pick}
-                  disabled={store.mode !== "normal"}
+                  disabled={props.isApprovalPending || store.mode !== "normal"}
                   tabIndex={store.mode === "normal" ? undefined : -1}
                   aria-label={language.t("prompt.action.attachFile")}
                 >
