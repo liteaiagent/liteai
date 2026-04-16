@@ -1,33 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
 import { Agent } from "../../src/agent/agent"
 import { AgentLoader } from "../../src/agent/loader"
-import { Config } from "../../src/config/config"
-import { Instance } from "../../src/project/instance"
-
-let orgDirectory: PropertyDescriptor | undefined
-let orgWorktree: PropertyDescriptor | undefined
-let orgProject: PropertyDescriptor | undefined
-
-beforeEach(() => {
-  orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
-  orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
-  orgProject = Object.getOwnPropertyDescriptor(Instance, "project")
-
-  Object.defineProperty(Instance, "directory", { get: () => "/mock/project", configurable: true })
-  Object.defineProperty(Instance, "worktree", { get: () => "/mock/project", configurable: true })
-  Object.defineProperty(Instance, "project", { get: () => ({ id: "test_project" }), configurable: true })
-
-  spyOn(Instance, "state").mockImplementation(((init: () => unknown) => init) as unknown as typeof Instance.state)
-  spyOn(Instance, "provide").mockImplementation((async (input: { fn: () => unknown }) =>
-    input.fn()) as unknown as typeof Instance.provide)
-})
-
-afterEach(() => {
-  if (orgDirectory) Object.defineProperty(Instance, "directory", orgDirectory)
-  if (orgWorktree) Object.defineProperty(Instance, "worktree", orgWorktree)
-  if (orgProject) Object.defineProperty(Instance, "project", orgProject)
-})
-
 import { Agent as SchemaAgent } from "../../src/config/schema"
 import { MCP } from "../../src/mcp"
 
@@ -73,41 +46,67 @@ describe("Agent Hierarchy", () => {
     })
 
     it("prioritizes sources correctly: builtIn < platform/plugin < project cfg", async () => {
-      // Mock loader returns
-      const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
-        build: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Awaited<
-          ReturnType<typeof AgentLoader.loadPlatformAgents>
-        >[string],
-        test_plugin: { source: "plugin", description: "only_plugin" } as unknown as Awaited<
-          ReturnType<typeof AgentLoader.loadPlatformAgents>
-        >[string],
-      })
-      const spyLoad = spyOn(AgentLoader, "loadAgent").mockResolvedValue({
-        build: {
-          source: "custom",
-          description: "from_project_agent_md",
-          temperature: 0.8,
-        } as unknown as Awaited<ReturnType<typeof AgentLoader.loadAgent>>[string],
-      })
+      // Create a unique temporary directory for this test so state is fresh!
+      const fs = await import("node:fs/promises")
+      const path = await import("node:path")
+      const os = await import("node:os")
+      const tmpProject = path.join(os.tmpdir(), `liteai_test_merge_${Date.now()}`)
+      await fs.mkdir(tmpProject, { recursive: true })
 
-      const spyCfg = spyOn(Config, "get").mockResolvedValue({
-        agent: {
-          build: { description: "from_cfg", temperature: 0.9 },
-        },
-      } as unknown as Awaited<ReturnType<typeof Config.get>>)
+      const InstanceModule = (await import("../../src/project/instance")).Instance
+      const originalDir = Object.getOwnPropertyDescriptor(InstanceModule, "directory")
+      const originalWorktree = Object.getOwnPropertyDescriptor(InstanceModule, "worktree")
+      Object.defineProperty(InstanceModule, "directory", { get: () => tmpProject, configurable: true })
+      Object.defineProperty(InstanceModule, "worktree", { get: () => tmpProject, configurable: true })
 
-      const result = await Agent.list()
-      const buildAgent = result.find((a) => a.name === "build")
-      expect(buildAgent?.name).toBe("build")
+      try {
+        // Write .liteai/settings.json
+        const liteaiDir = path.join(tmpProject, ".liteai")
+        await fs.mkdir(liteaiDir, { recursive: true })
+        await fs.writeFile(
+          path.join(liteaiDir, "settings.json"),
+          JSON.stringify({
+            $schema: "https://liteai.com/config.json",
+            agent: {
+              build: { description: "from_cfg", temperature: 0.9 },
+            },
+          }),
+        )
 
-      // Actual merge order is builtIn -> platform plugin -> config -> project markdown
-      // So project markdown should win over cfg
-      expect(buildAgent?.description).toBe("from_project_agent_md")
-      expect(buildAgent?.temperature).toBe(0.8)
+        // Write .liteai/agents/build.md
+        const agentsDir = path.join(liteaiDir, "agents")
+        await fs.mkdir(agentsDir, { recursive: true })
+        await fs.writeFile(
+          path.join(agentsDir, "build.md"),
+          `---
+description: from_project_agent_md
+temperature: 0.8
+---
+Prompt`,
+        )
 
-      spyPlatform.mockRestore()
-      spyLoad.mockRestore()
-      spyCfg.mockRestore()
+        // Mock platform agents safely
+        const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
+          build: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Awaited<
+            ReturnType<typeof AgentLoader.loadPlatformAgents>
+          >[string],
+        })
+
+        const result = await Agent.list()
+        const buildAgent = result.find((a) => a.name === "build")
+        expect(buildAgent?.name).toBe("build")
+
+        // Actual merge order is builtIn -> platform plugin -> config -> project markdown
+        // So project markdown should win over cfg
+        expect(buildAgent?.description).toBe("from_project_agent_md")
+        expect(buildAgent?.temperature).toBe(0.8)
+
+        spyPlatform.mockRestore()
+      } finally {
+        if (originalDir) Object.defineProperty(InstanceModule, "directory", originalDir)
+        if (originalWorktree) Object.defineProperty(InstanceModule, "worktree", originalWorktree)
+        await fs.rm(tmpProject, { recursive: true, force: true })
+      }
     })
 
     it("rejects disabled agents", async () => {
@@ -120,19 +119,33 @@ describe("Agent Hierarchy", () => {
 
       const InstanceModule = (await import("../../src/project/instance")).Instance
       const originalDir = Object.getOwnPropertyDescriptor(InstanceModule, "directory")
+      const originalWorktree = Object.getOwnPropertyDescriptor(InstanceModule, "worktree")
       Object.defineProperty(InstanceModule, "directory", { get: () => tmpProject, configurable: true })
+      Object.defineProperty(InstanceModule, "worktree", { get: () => tmpProject, configurable: true })
 
-      const spyCfg = spyOn(Config, "get").mockResolvedValue({
-        agent: { custom1: { disable: true } },
-      } as unknown as Awaited<ReturnType<typeof Config.get>>)
-      const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
-        custom1: { source: "plugin", description: "testing" } as unknown as Awaited<
-          ReturnType<typeof AgentLoader.loadPlatformAgents>
-        >[string],
-      })
-
-      let thrown = false
       try {
+        // Write .liteai/settings.json mapped to custom disabled behavior
+        const liteaiDir = path.join(tmpProject, ".liteai")
+        await fs.mkdir(liteaiDir, { recursive: true })
+        await fs.writeFile(
+          path.join(liteaiDir, "settings.json"),
+          JSON.stringify({
+            $schema: "https://liteai.com/config.json",
+            agent: { custom1: { disable: true } },
+          }),
+        )
+
+        const agentsDir = path.join(liteaiDir, "agents")
+        await fs.mkdir(agentsDir, { recursive: true })
+        await fs.writeFile(
+          path.join(agentsDir, "custom1.md"),
+          `---
+description: testing
+---
+Prompt`,
+        )
+
+        let thrown = false
         try {
           await Agent.get("custom1")
         } catch (e: unknown) {
@@ -141,9 +154,8 @@ describe("Agent Hierarchy", () => {
         }
         expect(thrown).toBe(true)
       } finally {
-        spyCfg.mockRestore()
-        spyPlatform.mockRestore()
         if (originalDir) Object.defineProperty(InstanceModule, "directory", originalDir)
+        if (originalWorktree) Object.defineProperty(InstanceModule, "worktree", originalWorktree)
         await fs.rm(tmpProject, { recursive: true, force: true })
       }
     })
@@ -167,16 +179,28 @@ describe("Agent Hierarchy", () => {
       MCP.status = async () => ({})
       MCP.tools = async () => ({})
 
-      // mock gray-matter parse used by parseAgentFromMarkdown
-      const ConfigMarkdown = (await import("../../src/config/markdown")).ConfigMarkdown
-      const spyParse = spyOn(ConfigMarkdown, "parse").mockResolvedValue({
-        data: { requiredMcpServers: ["missing_db"] },
-        content: "hello",
-      } as unknown as Awaited<ReturnType<typeof ConfigMarkdown.parse>>)
+      // Create a unique temporary directory for this test so state is fresh
+      const fs = await import("node:fs/promises")
+      const path = await import("node:path")
+      const os = await import("node:os")
+      const tmpProject = path.join(os.tmpdir(), `liteai_test_missing_mcp_${Date.now()}`)
+      await fs.mkdir(tmpProject, { recursive: true })
 
-      const result = await AgentLoader.parseAgentFromMarkdown("/mock/agents/db_agent.md", "custom")
-      expect(result).toBeUndefined()
-      spyParse.mockRestore()
+      try {
+        const agentFile = path.join(tmpProject, "db_agent.md")
+        await fs.writeFile(
+          agentFile,
+          `---
+requiredMcpServers: ["missing_db"]
+---
+prompt content`,
+        )
+
+        const result = await AgentLoader.parseAgentFromMarkdown(agentFile, "custom")
+        expect(result).toBeUndefined()
+      } finally {
+        await fs.rm(tmpProject, { recursive: true, force: true })
+      }
     })
   })
 })

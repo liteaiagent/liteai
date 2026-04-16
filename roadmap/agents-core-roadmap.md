@@ -15,7 +15,7 @@ Phase 1: System Prompt Resolution  ✅
 Phase 2: Sub-Agent Architecture ✅
         │
         ▼
-Phase 3: Plan Mode
+Phase 3: Plan Mode ✅
         │
         ▼
 Phase UI: Agent Experience UI
@@ -145,7 +145,7 @@ liteai_cli_mvp implements a full orchestration layer with `createSubagentContext
 
 ---
 
-## Phase 3: Plan Mode
+## Phase 3: Plan Mode ✅
 
 > **speckit.specify scope:** "Refactor plan mode from synthetic message injection to an attachment-driven state machine with PlanModeState, sparse/full reminder cycles, ExitPlanModeTool with inline approval UI, and dedicated Plan/Explore sub-agents"
 
@@ -297,7 +297,7 @@ Complete agent experience designed once, coherently. Enables UAT-2.
 4. speckit.implement → Phase 1 implementation
 5. Verify Phase 1 (typecheck, tests) ✅
 6. Repeat 1-5 for Phase 2 ✅
-7. Repeat 1-5 for Phase 3
+7. Repeat 1-5 for Phase 3 ✅
 8. Phase UI-A (Minimal UI, delivered with Phase 3)
 9. UAT-1: Backend correctness + functional plan mode UI
 10. Backend SSE event wiring (agent.* + plan.* events)

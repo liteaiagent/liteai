@@ -132,11 +132,17 @@ describe("Worktree Isolation Mode", () => {
     await fs.writeFile(registryPath, JSON.stringify(registryData))
 
     const removeSpy = spyOn(Worktree, "remove").mockResolvedValue(true)
-    const processSpy = spyOn(Process, "run").mockResolvedValue({
-      code: 0,
-      stdout: Buffer.from(""),
-      stderr: Buffer.from(""),
-    } as Process.Result)
+    const originalRun = Process.run
+    const processSpy = spyOn(Process, "run").mockImplementation(async (args, opts) => {
+      if (opts?.cwd?.includes("dummy-stale-worktree")) {
+        return {
+          code: 0,
+          stdout: Buffer.from(""),
+          stderr: Buffer.from(""),
+        } as Process.Result
+      }
+      return originalRun(args, opts)
+    })
 
     await IsolationArtifactRegistry.cleanupStaleIsolationArtifacts(1000 * 60 * 60)
 

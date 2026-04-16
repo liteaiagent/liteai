@@ -43,7 +43,16 @@ describe("Bundled", () => {
 
   // ----- Agent reads -----
 
-  const EXPECTED_AGENTS = ["plan", "build", "general", "explore", "compaction", "title", "summary"] as const
+  const EXPECTED_AGENTS = [
+    "plan",
+    "build",
+    "general",
+    "explore",
+    "plan-explore",
+    "compaction",
+    "title",
+    "summary",
+  ] as const
 
   for (const name of EXPECTED_AGENTS) {
     test(`agent("${name}") reads file successfully`, async () => {
@@ -96,12 +105,6 @@ describe("Bundled", () => {
   })
 
   // ----- Misc prompt reads -----
-
-  test('miscPrompt("build-switch") reads file successfully', async () => {
-    const content = await Bundled.miscPrompt("build-switch")
-    expect(typeof content).toBe("string")
-    expect(content.length).toBeGreaterThan(0)
-  })
 
   test('miscPrompt("max-steps") reads file successfully', async () => {
     const content = await Bundled.miscPrompt("max-steps")

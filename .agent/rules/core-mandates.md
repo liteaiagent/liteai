@@ -69,6 +69,16 @@ When discussing, formulating, or modifying a plan or design, you are strictly in
   - *CORRECT:* You update the plan/design artifact to include the removal of the condition, present the updated plan, and stop.
 - **Explicit Authorization Required:** You must end your planning responses by explicitly asking for permission to begin coding (e.g., "Shall I proceed with implementation?"). Do not transition from Planning Mode to Execution Mode without a definitive "yes," "proceed," or equivalent confirmation from the user.
 
+## 9. Test Suite Isolation & Mocking Protocol
+To ensure deterministic execution and prevent lateral pollution across parallel test environments, all test development must adhere to strict boundary guardrails:
+
+- **No Global Module Hijacking (`mock.module`):** You are strictly forbidden from indiscriminately using `mock.module()` for complex objects or entire namespaces. Unless flawlessly reset, it leaks directly into the runner's module cache. Always prefer `spyOn(Object, "method")` which is scoped and safely revertible via `jest.restoreAllMocks()`.
+- **Mandatory Lifecycle Restoration:** Any test block (`describe`/`test`) that mocks an API, database call, or environment variable must contain an explicit `afterEach` or `finally` block to undo it. 
+  - *Required signature:* `afterEach(() => { mock.restore(); jest.restoreAllMocks(); })`
+- **Accessor Property Mocking Policy:** Because Bun's `spyOn` does not support mocking getter/setter accessors natively, if you must mock a getter (e.g., `Instance.directory`), you must capture its original state first using `Object.getOwnPropertyDescriptor()`, override it using `Object.defineProperty()`, and rigidly restore it in `afterEach`.
+- **Hermetic Filesystem States:** Tests that write config files, simulate codebases, or operate on the physical disk must generate a uniquely named temporary directory (e.g., via `os.tmpdir()` + `Date.now()` or UUID). Modifying shared, hardcoded temporary locations or the active workspace path is strictly forbidden as it introduces concurrent race conditions.
+
+
 
 
 NOTE: $0 authorizes breaking changes within the current task scope. $4 prevents scope creep beyond the task boundary.

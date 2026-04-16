@@ -1,22 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test"
-
-import { Instance } from "../../src/project/instance"
-
-const orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
-const orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
-
-beforeEach(() => {
-  Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
-  Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
-})
-
-afterEach(() => {
-  if (orgDirectory) Object.defineProperty(Instance, "directory", orgDirectory)
-  if (orgWorktree) Object.defineProperty(Instance, "worktree", orgWorktree)
-})
-
 import { AgentMemory } from "../../src/agent/memory"
 import { MCP } from "../../src/mcp/index"
+import { Instance } from "../../src/project/instance"
 import { SessionPrompt } from "../../src/session/engine"
 import { SidechainTranscript } from "../../src/session/transcript"
 import { SkillLoader } from "../../src/skill/loader"
@@ -51,7 +36,7 @@ beforeEach(() => {
   spyOn(SkillLoader, "clearInvokedSkillsForAgent").mockImplementation(() => {})
 })
 
-import { Agent } from "../../src/agent/agent"
+import type { Agent } from "../../src/agent/agent"
 import {
   AgentSpawnError,
   AgentTimeoutError,
@@ -76,6 +61,9 @@ function createTestAgent(overrides: Partial<Agent.AgentDefinition> = {}): Agent.
 }
 
 describe("runAgent", () => {
+  let originalDir: PropertyDescriptor | undefined
+  let originalWorktree: PropertyDescriptor | undefined
+
   beforeEach(() => {
     promptImpl = undefined
     spyOn(Bus, "publish").mockResolvedValue([])
@@ -89,10 +77,17 @@ describe("runAgent", () => {
     spyOn(Session, "createNext").mockResolvedValue({ id: "fake_child_1" } as unknown as Awaited<
       ReturnType<typeof Session.createNext>
     >)
+
+    originalDir = Object.getOwnPropertyDescriptor(Instance, "directory")
+    originalWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+    Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
+    Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
+    if (originalDir) Object.defineProperty(Instance, "directory", originalDir)
+    if (originalWorktree) Object.defineProperty(Instance, "worktree", originalWorktree)
   })
 
   it("successfully passes validation and executes", async () => {
@@ -121,11 +116,20 @@ describe("runAgent", () => {
 
   it("enforces concurrent limit", async () => {
     const agentDef = createTestAgent()
-    spyOn(Session, "getAgentCount").mockReturnValue(DEFAULT_CONCURRENT_AGENT_LIMIT + 1)
+    for (let i = 0; i <= DEFAULT_CONCURRENT_AGENT_LIMIT; i++) {
+      Session.incrementAgentCount("sess_1" as SessionID)
+    }
 
-    await expect(runAgent({ agentDefinition: agentDef, sessionId: "sess_1" as SessionID })).rejects.toThrow(
-      ConcurrentAgentLimitError,
-    )
+    try {
+      await expect(runAgent({ agentDefinition: agentDef, sessionId: "sess_1" as SessionID })).rejects.toThrow(
+        ConcurrentAgentLimitError,
+      )
+    } finally {
+      // cleanup
+      for (let i = 0; i <= DEFAULT_CONCURRENT_AGENT_LIMIT; i++) {
+        Session.decrementAgentCount("sess_1" as SessionID)
+      }
+    }
   })
 
   it("enforces timeout", async () => {
@@ -133,7 +137,6 @@ describe("runAgent", () => {
     promptImpl = () => new Promise(() => {})
 
     const agentDef = createTestAgent({ timeout: 10 })
-    spyOn(Session, "incrementAgentCount").mockReturnValue(1)
 
     const result = await runAgent({
       agentDefinition: agentDef,
@@ -145,6 +148,9 @@ describe("runAgent", () => {
 })
 
 describe("runAgentByName", () => {
+  let originalDir: PropertyDescriptor | undefined
+  let originalWorktree: PropertyDescriptor | undefined
+
   beforeEach(() => {
     promptImpl = undefined
     spyOn(Bus, "publish").mockResolvedValue([])
@@ -158,27 +164,28 @@ describe("runAgentByName", () => {
     spyOn(Session, "createNext").mockResolvedValue({ id: "fake_child_1" } as unknown as Awaited<
       ReturnType<typeof Session.createNext>
     >)
+
+    originalDir = Object.getOwnPropertyDescriptor(Instance, "directory")
+    originalWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+    Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
+    Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
+    if (originalDir) Object.defineProperty(Instance, "directory", originalDir)
+    if (originalWorktree) Object.defineProperty(Instance, "worktree", originalWorktree)
   })
 
   it("throws AgentSpawnError when agent is not found", async () => {
-    spyOn(Agent, "get").mockResolvedValue(undefined as unknown as Agent.AgentDefinition)
-
+    // "nonexistent-agent" naturally returns undefined from Agent.get
     await expect(runAgentByName("nonexistent-agent", "sess_1" as SessionID)).rejects.toThrow(AgentSpawnError)
   })
 
   it("delegates to runAgent when agent is found", async () => {
-    spyOn(Agent, "get").mockResolvedValue(
-      createTestAgent({
-        requiredMcpServers: ["test-server"],
-        model: undefined,
-      }),
-    )
-
-    const result = await runAgentByName("test-agent", "sess_1" as SessionID)
+    // We use the builtin 'plan-explore' agent and mock MCP status appropriately since we don't need test-server
+    // 'plan-explore' naturally exists.
+    const result = await runAgentByName("plan-explore", "sess_1" as SessionID)
     expect(result.status).toBe("completed")
     expect(result.result).toBe("Mock output")
   })

@@ -1,7 +1,14 @@
-import { describe, expect, mock, test } from "bun:test"
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test"
+import { Agent } from "../../src/agent/agent"
+import { AgentMeta } from "../../src/agent/agent-meta"
 import type { ParentContext } from "../../src/agent/context"
+import * as contextModule from "../../src/agent/context"
+import * as fork from "../../src/agent/fork"
+import * as lifecycle from "../../src/agent/lifecycle"
 import { reconstructContentOptimizationState, resumeAgentBackground } from "../../src/agent/resume"
-import type { TranscriptMessage } from "../../src/session/transcript"
+import { Session } from "../../src/session/index"
+import { SidechainTranscript, type TranscriptMessage } from "../../src/session/transcript"
+import { Worktree } from "../../src/worktree/index"
 
 // ─── reconstructContentOptimizationState ──────────────────────────────────────
 
@@ -54,28 +61,16 @@ describe("reconstructContentOptimizationState", () => {
 // ─── resumeAgentBackground ────────────────────────────────────────────────────
 
 describe("resumeAgentBackground", () => {
+  afterEach(() => {
+    mock.restore()
+  })
+
   test("throws when transcript is empty", async () => {
-    mock.module("../../src/session/index", () => ({
-      Session: {
-        get: mock(() => Promise.resolve({ directory: "/test/dir" })),
-        children: mock(() => Promise.resolve([{ title: "Subagent: fork (agent-123)" }])),
-      },
-    }))
-    mock.module("../../src/session/transcript", () => ({
-      SidechainTranscript: {
-        read: mock(() => Promise.resolve([])),
-      },
-    }))
-    mock.module("../../src/agent/agent-meta", () => ({
-      AgentMeta: {
-        read: mock(() => Promise.resolve(null)),
-      },
-    }))
-    mock.module("../../src/worktree/index", () => ({
-      Worktree: {
-        refreshWorktreeMtime: mock(() => Promise.resolve(true)),
-      },
-    }))
+    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<ReturnType<typeof Session.get>>)
+    spyOn(Session, "children").mockResolvedValue([{ title: "Subagent: fork (agent-123)" }] as unknown as Awaited<ReturnType<typeof Session.children>>)
+    spyOn(SidechainTranscript, "read").mockResolvedValue([])
+    spyOn(AgentMeta, "read").mockResolvedValue(null)
+    spyOn(Worktree, "refreshWorktreeMtime").mockResolvedValue(true)
 
     const context = { sessionId: "sess-123", cwd: "/test/parent" } as unknown as ParentContext
 
@@ -94,33 +89,12 @@ describe("resumeAgentBackground", () => {
       { isSidechain: true, uuid: "m2", role: "assistant", content: "done", timestamp: 2 },
     ]
 
-    mock.module("../../src/session/index", () => ({
-      Session: {
-        get: mock(() => Promise.resolve({ directory: "/test/dir" })),
-        children: mock(() => Promise.resolve([{ title: "Subagent: fork (agent-fork-1)" }])),
-      },
-    }))
-    mock.module("../../src/session/transcript", () => ({
-      SidechainTranscript: {
-        read: mock(() => Promise.resolve(forkTranscript)),
-      },
-    }))
-    mock.module("../../src/agent/agent-meta", () => ({
-      AgentMeta: {
-        // Metadata exists but has no renderedSystemPrompt
-        read: mock(() => Promise.resolve({ agentType: "fork", agentId: "agent-fork-1" })),
-      },
-    }))
-    mock.module("../../src/agent/fork", () => ({
-      ForkAgentConfig: { name: "fork", wallClockTimeout: 300_000, background: true, source: "builtIn" },
-      getLastCacheSafeParams: mock(() => null),
-      filterOrphanedThinkingOnlyMessages: (msgs: TranscriptMessage[]) => msgs,
-      filterUnresolvedToolUses: (msgs: TranscriptMessage[]) => msgs,
-      filterWhitespaceOnlyAssistantMessages: (msgs: TranscriptMessage[]) => msgs,
-    }))
-    mock.module("../../src/worktree/index", () => ({
-      Worktree: { refreshWorktreeMtime: mock(() => Promise.resolve()) },
-    }))
+    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<ReturnType<typeof Session.get>>)
+    spyOn(Session, "children").mockResolvedValue([{ title: "Subagent: fork (agent-fork-1)" }] as unknown as Awaited<ReturnType<typeof Session.children>>)
+    spyOn(SidechainTranscript, "read").mockResolvedValue(forkTranscript)
+    spyOn(AgentMeta, "read").mockResolvedValue({ agentType: "fork", agentId: "agent-fork-1" })
+    spyOn(Worktree, "refreshWorktreeMtime").mockResolvedValue(true)
+    spyOn(fork, "getLastCacheSafeParams").mockReturnValue(null)
 
     const context = { sessionId: "sess-456", cwd: "/test/parent" } as unknown as ParentContext
 
@@ -144,48 +118,30 @@ describe("resumeAgentBackground", () => {
       description: "Custom task from metadata",
     }
 
-    mock.module("../../src/session/index", () => ({
-      Session: {
-        get: mock(() => Promise.resolve({ directory: "/test/dir" })),
-        // Title says "explore" but metadata says "custom-agent"
-        children: mock(() => Promise.resolve([{ title: "Subagent: explore (agent-meta-test)" }])),
-      },
-    }))
-    mock.module("../../src/session/transcript", () => ({
-      SidechainTranscript: {
-        read: mock(() => Promise.resolve(transcript)),
-      },
-    }))
-    mock.module("../../src/agent/agent-meta", () => ({
-      AgentMeta: {
-        read: mock(() => Promise.resolve(mockMeta)),
-      },
-    }))
-    mock.module("../../src/agent/agent", () => ({
-      Agent: {
-        // Verifying the correct agentType was used
-        get: mock((name: string) => {
-          if (name === "custom-agent")
-            return Promise.resolve({ name: "custom-agent", timeout: 1000, prompt: "test prompt" })
-          return Promise.reject(new Error(`Agent ${name} not found`))
-        }),
-      },
-    }))
-    mock.module("../../src/worktree/index", () => ({
-      Worktree: { refreshWorktreeMtime: mock(() => Promise.resolve()) },
-    }))
-    mock.module("../../src/agent/context", () => ({
-      createSubagentContext: mock(() => ({
-        invocationKind: undefined,
-        invokingRequestId: undefined,
-        abortController: new AbortController(),
-      })),
-      runWithAgentContext: mock((_ctx: unknown, fn: () => unknown) => fn()),
-      AgentExecutionContext: { getStore: () => null },
-    }))
-    mock.module("../../src/agent/lifecycle", () => ({
-      runAsyncAgentLifecycle: mock(() => Promise.resolve()),
-    }))
+    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<ReturnType<typeof Session.get>>)
+    spyOn(Session, "children").mockResolvedValue([
+      { title: "Subagent: explore (agent-meta-test)" },
+    ] as unknown as Awaited<ReturnType<typeof Session.children>>)
+    spyOn(SidechainTranscript, "read").mockResolvedValue(transcript)
+    spyOn(AgentMeta, "read").mockResolvedValue(mockMeta)
+    spyOn(Worktree, "refreshWorktreeMtime").mockResolvedValue(true)
+
+    spyOn(Agent, "get").mockImplementation(async (name) => {
+      if (name === "custom-agent") {
+        return { name: "custom-agent", timeout: 1000, prompt: "test prompt" } as unknown as Awaited<ReturnType<typeof Agent.get>>
+      }
+      throw new Error(`Agent ${name} not found`)
+    })
+
+    spyOn(contextModule, "createSubagentContext").mockReturnValue({
+      invocationKind: undefined,
+      invokingRequestId: undefined,
+      abortController: new AbortController(),
+    } as unknown as contextModule.SubagentContext)
+
+    spyOn(contextModule, "runWithAgentContext").mockImplementation(<T>(_ctx: contextModule.AgentContext, fn: () => T) => fn())
+
+    spyOn(lifecycle, "runAsyncAgentLifecycle").mockResolvedValue(undefined as unknown as Awaited<ReturnType<typeof lifecycle.runAsyncAgentLifecycle>>)
 
     const context = {
       sessionId: "sess-meta",
@@ -200,6 +156,7 @@ describe("resumeAgentBackground", () => {
       prompt: "test",
       sessionContext: context,
     })
+
     // Agent type was resolved (function returned, not threw)
     expect(result.agentId).toBe("agent-meta-test")
     expect(result.description).toBe("Custom task from metadata")
