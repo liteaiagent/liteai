@@ -1,17 +1,38 @@
-import { describe, expect, test } from "bun:test"
+import { afterEach, describe, expect, test } from "bun:test"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import {
   createDefaultPlanModeState,
-  getPlanModeState,
   PLAN_REMINDER_FULL_INTERVAL,
-  setPlanModeState,
+  PlanModeStateRef,
 } from "../../src/session/plan-mode-state"
 import type { SessionID } from "../../src/session/schema"
 import { tmpdir } from "../fixture/fixture"
 
 describe("PlanModeState (T047)", () => {
+  // Ensure refs are cleaned up after each test to prevent leaking into other tests
+  const registeredRefs: PlanModeStateRef[] = []
+  afterEach(() => {
+    for (const ref of registeredRefs) {
+      try {
+        ref.deregister()
+      } catch {
+        // Already deregistered — safe to ignore
+      }
+    }
+    registeredRefs.length = 0
+  })
+
+  /** Helper: create a session and register a PlanModeStateRef for it */
+  async function createSessionWithRef() {
+    const session = await Session.create({})
+    const ref = new PlanModeStateRef(createDefaultPlanModeState(session), session.id)
+    ref.register()
+    registeredRefs.push(ref)
+    return { session, ref }
+  }
+
   test("createDefaultPlanModeState returns correct defaults", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
@@ -30,14 +51,14 @@ describe("PlanModeState (T047)", () => {
     })
   })
 
-  test("getPlanModeState returns default when column is null", async () => {
+  test("PlanModeStateRef.get returns initial state after registration", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        const state = await getPlanModeState(session.id)
+        const { session, ref } = await createSessionWithRef()
 
+        const state = ref.get()
         expect(state.active).toBe(false)
         expect(state.planText).toBeUndefined()
         expect(state.turnsSincePlanReminder).toBe(0)
@@ -47,14 +68,26 @@ describe("PlanModeState (T047)", () => {
     })
   })
 
-  test("setPlanModeState persists and returns updated state", async () => {
+  test("PlanModeStateRef.for throws for unregistered session (fail-fast)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
+        expect(() => PlanModeStateRef.for("non-existent-session-id" as SessionID)).toThrow(
+          "PlanModeStateRef not registered",
+        )
+      },
+    })
+  })
 
-        const result = await setPlanModeState(session.id, (s) => ({
+  test("PlanModeStateRef.update persists changes in-memory and returns updated state", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const { session, ref } = await createSessionWithRef()
+
+        const result = ref.update((s) => ({
           ...s,
           active: true,
           planText: "Test Plan",
@@ -65,11 +98,15 @@ describe("PlanModeState (T047)", () => {
         expect(result.planText).toBe("Test Plan")
         expect(result.turnsSincePlanReminder).toBe(3)
 
-        // Verify persistence via re-read
-        const reRead = await getPlanModeState(session.id)
+        // Verify in-memory persistence via re-read
+        const reRead = ref.get()
         expect(reRead.active).toBe(true)
         expect(reRead.planText).toBe("Test Plan")
         expect(reRead.turnsSincePlanReminder).toBe(3)
+
+        // Verify accessible via static lookup
+        const lookedUp = PlanModeStateRef.for(session.id)
+        expect(lookedUp.get().active).toBe(true)
 
         await Session.remove(session.id)
       },
@@ -81,15 +118,15 @@ describe("PlanModeState (T047)", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        await setPlanModeState(session.id, (s) => ({ ...s, active: true }))
+        const { session, ref } = await createSessionWithRef()
+        ref.update((s) => ({ ...s, active: true }))
 
         for (let i = 1; i <= 6; i++) {
-          await setPlanModeState(session.id, (s) => ({
+          ref.update((s) => ({
             ...s,
             turnsSincePlanReminder: s.turnsSincePlanReminder + 1,
           }))
-          const state = await getPlanModeState(session.id)
+          const state = ref.get()
           expect(state.turnsSincePlanReminder).toBe(i)
         }
 
@@ -102,42 +139,44 @@ describe("PlanModeState (T047)", () => {
     expect(PLAN_REMINDER_FULL_INTERVAL).toBe(5)
   })
 
-  test("setPlanModeState emits PlanStateChanged on active transition", async () => {
+  test("PlanModeStateRef.update emits PlanStateChanged on active transition", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
+        const { session, ref } = await createSessionWithRef()
 
-        const eventPromise = new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Timeout waiting for PlanStateChanged")), 2000)
-          const sub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
-            const props = event.properties as { sessionID: string; active: boolean }
-            if (props.sessionID === session.id) {
-              expect(props.active).toBe(true)
-              sub()
-              clearTimeout(timeout)
-              resolve()
-            }
-          })
+        let eventReceived = false
+        let eventPayload: Record<string, unknown> | undefined
+
+        const unsub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
+          const props = event.properties as { sessionID: string; active: boolean }
+          if (props.sessionID === session.id) {
+            eventReceived = true
+            eventPayload = event.properties as Record<string, unknown>
+          }
         })
 
-        const setPromise = setPlanModeState(session.id, (s) => ({ ...s, active: true }))
-        await Promise.all([setPromise, eventPromise])
+        // Activate plan mode — should emit event synchronously
+        ref.update((s) => ({ ...s, active: true }))
+
+        unsub()
+
+        expect(eventReceived).toBe(true)
+        expect(eventPayload?.sessionID).toBe(session.id)
+        expect(eventPayload?.active).toBe(true)
 
         await Session.remove(session.id)
       },
     })
   })
 
-  test("setPlanModeState does NOT emit PlanStateChanged when active is unchanged", async () => {
+  test("PlanModeStateRef.update does NOT emit PlanStateChanged when active is unchanged", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        // Pre-set to active
-        await setPlanModeState(session.id, (s) => ({ ...s, active: true }))
+        const { session, ref } = await createSessionWithRef()
 
         let emitCount = 0
         const sub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
@@ -147,14 +186,11 @@ describe("PlanModeState (T047)", () => {
           }
         })
 
-        // Update counter only — active stays true
-        await setPlanModeState(session.id, (s) => ({
+        // Update counter only — active stays false (default)
+        ref.update((s) => ({
           ...s,
           turnsSincePlanReminder: s.turnsSincePlanReminder + 1,
         }))
-
-        // Allow any deferred effects to flush
-        await new Promise((r) => setTimeout(r, 50))
 
         expect(emitCount).toBe(0)
         sub()
@@ -164,12 +200,61 @@ describe("PlanModeState (T047)", () => {
     })
   })
 
-  test("getPlanModeState throws for non-existent session", async () => {
+  test("PlanModeStateRef.update round-trips planText correctly", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        await expect(getPlanModeState("non-existent-session-id" as SessionID)).rejects.toThrow()
+        const { session, ref } = await createSessionWithRef()
+        const planContent = "# Implementation Plan\n\n## Phase 1\n- Step A\n- Step B"
+
+        ref.update((s) => ({
+          ...s,
+          active: true,
+          planText: planContent,
+        }))
+
+        const reRead = ref.get()
+        expect(reRead.planText).toBe(planContent)
+
+        await Session.remove(session.id)
+      },
+    })
+  })
+
+  test("PlanModeStateRef.register throws on double registration", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const { session, ref: _existingRef } = await createSessionWithRef()
+
+        const duplicate = new PlanModeStateRef(createDefaultPlanModeState(session), session.id)
+        expect(() => duplicate.register()).toThrow("already registered")
+
+        await Session.remove(session.id)
+      },
+    })
+  })
+
+  test("PlanModeStateRef.deregister makes .for() throw again", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const session = await Session.create({})
+        const ref = new PlanModeStateRef(createDefaultPlanModeState(session), session.id)
+        ref.register()
+        // Don't push to registeredRefs — we deregister manually here
+
+        expect(PlanModeStateRef.has(session.id)).toBe(true)
+
+        ref.deregister()
+
+        expect(PlanModeStateRef.has(session.id)).toBe(false)
+        expect(() => PlanModeStateRef.for(session.id)).toThrow("not registered")
+
+        await Session.remove(session.id)
       },
     })
   })

@@ -17,6 +17,7 @@ import { defer } from "../../util/defer"
 import { Log } from "../../util/log"
 import { Session } from ".."
 import { Message } from "../message"
+import { createDefaultPlanModeState, PlanModeStateRef } from "../plan-mode-state"
 import { SessionRevert } from "../revert"
 import { MessageID, PartID, SessionID } from "../schema"
 import { SessionStatus } from "../status"
@@ -260,6 +261,12 @@ function safeAbort(controller: AbortController, sessionID: string) {
 function cleanup(sessionID: SessionID) {
   log.info("cleanup", { sessionID })
 
+  // Deregister the in-memory PlanModeStateRef for this session.
+  // Safe to call even if no ref was registered (e.g., early abort before runSession).
+  if (PlanModeStateRef.has(sessionID)) {
+    PlanModeStateRef.for(sessionID).deregister()
+  }
+
   const s = state()
   delete s[sessionID]
   SessionStatus.set(sessionID, { type: "idle" })
@@ -374,6 +381,11 @@ async function runSessionInner(input: {
   let loopDetectionCount = 0
   let pendingLoopRecovery: LoopDetectionResult | undefined
 
+  // ── PlanModeState: in-memory ref, lifecycle-bound to this session ──
+  // Created once at session start with defaults. No DB read.
+  const planModeStateRef = new PlanModeStateRef(createDefaultPlanModeState(session), sessionID)
+  planModeStateRef.register()
+
   // Single one-time DB read — after this the buffer is the live message view (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
     current: await Message.filterCompacted(Message.stream(sessionID)),
@@ -384,6 +396,7 @@ async function runSessionInner(input: {
     session,
     abort,
     msgsBuffer,
+    planModeStateRef,
     backgroundTaskRegistry: input.registry,
   })
 

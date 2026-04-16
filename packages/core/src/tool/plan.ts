@@ -10,7 +10,7 @@ import { Provider } from "../provider/provider"
 import { Question } from "../question"
 import { Session } from "../session"
 import { Message } from "../session/message"
-import { getPlanModeState, setPlanModeState } from "../session/plan-mode-state"
+import { PlanModeStateRef } from "../session/plan-mode-state"
 import { MessageID, type SessionID } from "../session/schema"
 import { Tool } from "./tool"
 
@@ -32,7 +32,7 @@ export const PlanExitTool = Tool.define("plan_exit", {
   async execute(params, ctx) {
     return tracer.startActiveSpan("tool.plan_exit.execute", async (span) => {
       try {
-        const state = await getPlanModeState(ctx.sessionID)
+        const state = PlanModeStateRef.for(ctx.sessionID).get()
         if (!state.active) {
           throw new Error("Cannot exit plan mode: Plan mode is not currently active.")
         }
@@ -84,7 +84,7 @@ export const PlanExitTool = Tool.define("plan_exit", {
 
         span.addEvent("tool.plan_exit.approved")
 
-        await setPlanModeState(ctx.sessionID, (s) => ({
+        PlanModeStateRef.for(ctx.sessionID).update((s) => ({
           ...s,
           active: false,
           turnsSincePlanReminder: 0,
@@ -135,7 +135,7 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           throw new Error("EnterPlanMode tool cannot be used in sub-agent contexts")
         }
 
-        const state = await getPlanModeState(ctx.sessionID)
+        const state = PlanModeStateRef.for(ctx.sessionID).get()
         const relPlanPath = path.relative(Instance.worktree, state.planFilePath)
         const model = await getLastModel(ctx.sessionID)
 
@@ -159,10 +159,9 @@ export const PlanEnterTool = Tool.define("plan_enter", {
         }
 
         span.addEvent("tool.plan_enter.activated")
-        // setPlanModeState auto-emits PlanStateChanged via Database.effect
-        // when the `active` field transitions (plan-mode-state.ts:99-111).
-        // No manual Bus.publish needed here — that would cause double emission.
-        await setPlanModeState(ctx.sessionID, (s) => ({
+        // PlanModeStateRef.update() emits PlanStateChanged via Bus.publish
+        // when the `active` field transitions. No manual Bus.publish needed.
+        PlanModeStateRef.for(ctx.sessionID).update((s) => ({
           ...s,
           active: true,
           turnsSincePlanReminder: 0,

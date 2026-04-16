@@ -1,10 +1,7 @@
 import { trace } from "@opentelemetry/api"
-import { eq } from "drizzle-orm"
 import { Bus } from "@/bus"
-import { Database } from "@/storage/db"
 import { Session } from "./index"
 import type { SessionID } from "./schema"
-import { SessionTable } from "./session.sql"
 
 const tracer = trace.getTracer("liteai")
 
@@ -35,88 +32,125 @@ export function createDefaultPlanModeState(session: Session.Info): PlanModeState
   }
 }
 
-/**
- * Read PlanModeState from the session row.
- * Returns default state if the column is null.
- */
-export async function getPlanModeState(sessionID: SessionID): Promise<PlanModeState> {
-  return tracer.startActiveSpan("planModeState.get", async (span) => {
-    try {
-      const row = Database.use((db) =>
-        db.select({ plan_mode: SessionTable.plan_mode }).from(SessionTable).where(eq(SessionTable.id, sessionID)).get(),
-      )
-      if (!row) throw new Error(`Session not found: ${sessionID}`)
+// ─── Session-scoped In-Memory State Registry ─────────────────────────────────
+//
+// Each active session owns a PlanModeStateRef that holds the mutable plan mode
+// state in memory. The ref is registered when the session loop starts and
+// deregistered on cleanup. All reads and writes are synchronous memory
+// operations — zero database overhead on the hot path.
+//
+// The registry is intentionally module-scoped (like `_state` in loop.ts)
+// because the root agent has no AsyncLocalStorage context.
 
-      if (row.plan_mode) {
-        span.setAttribute("plan_mode.active", row.plan_mode.active)
-        span.setAttribute("plan_mode.turnsSincePlanReminder", row.plan_mode.turnsSincePlanReminder)
-        return row.plan_mode
-      }
-
-      // Column is null — return default state via async session lookup
-      const session = await Session.get(sessionID)
-      const defaultState = createDefaultPlanModeState(session)
-      span.setAttribute("plan_mode.active", defaultState.active)
-      span.setAttribute("plan_mode.source", "default")
-      return defaultState
-    } catch (e) {
-      span.recordException(e as Error)
-      throw e
-    } finally {
-      span.end()
-    }
-  })
-}
+const registry = new Map<SessionID, PlanModeStateRef>()
 
 /**
- * Persist PlanModeState to the session row.
- * Emits plan.state_changed SSE event if `active` field changed.
+ * Session-scoped, in-memory plan mode state container.
+ *
+ * Replaces the previous database-backed `getPlanModeState`/`setPlanModeState`
+ * with synchronous memory access. Event emission (`PlanStateChanged`) is
+ * handled inline on `active` transitions via `Bus.publish`.
+ *
+ * Lifecycle:
+ *   - Created by `runSessionInner` in loop.ts
+ *   - Registered via `PlanModeStateRef.register()`
+ *   - Deregistered via `PlanModeStateRef.deregister()` on session cleanup
+ *
+ * Access:
+ *   - `PlanModeStateRef.for(sessionID)` — returns the ref or throws (fail-fast)
  */
-export async function setPlanModeState(
-  sessionID: SessionID,
-  updater: (state: PlanModeState) => PlanModeState,
-): Promise<PlanModeState> {
-  return tracer.startActiveSpan("planModeState.set", async (span) => {
-    try {
-      const current = await getPlanModeState(sessionID)
-      const next = updater(current)
+export class PlanModeStateRef {
+  private _state: PlanModeState
 
-      span.setAttribute("plan_mode.active.before", current.active)
-      span.setAttribute("plan_mode.active.after", next.active)
-      span.setAttribute("plan_mode.turnsSincePlanReminder", next.turnsSincePlanReminder)
+  constructor(
+    initial: PlanModeState,
+    private sessionID: SessionID,
+  ) {
+    this._state = initial
+  }
 
-      const updatedRow = Database.use((db) =>
-        db
-          .update(SessionTable)
-          .set({ plan_mode: next })
-          .where(eq(SessionTable.id, sessionID))
-          .returning({ plan_mode: SessionTable.plan_mode })
-          .get(),
-      )
+  /** Synchronous read — zero DB overhead. */
+  get(): PlanModeState {
+    return this._state
+  }
 
-      if (!updatedRow || !updatedRow.plan_mode) throw new Error("Failed to update plan mode state")
+  /**
+   * Mutate the plan mode state synchronously.
+   * Emits `PlanStateChanged` via `Bus.publish` when the `active` field transitions.
+   */
+  update(fn: (s: PlanModeState) => PlanModeState): PlanModeState {
+    return tracer.startActiveSpan("planModeState.update", (span) => {
+      try {
+        const prev = this._state
+        this._state = fn(prev)
 
-      if (current.active !== next.active) {
-        span.addEvent("plan_mode.state_transition", {
-          from: String(current.active),
-          to: String(next.active),
-        })
-        Database.effect(() => {
-          Bus.publish(Session.Event.PlanStateChanged, {
-            sessionID,
-            active: next.active,
-            planFilePath: next.planFilePath,
-            turnsSincePlanReminder: next.turnsSincePlanReminder,
+        span.setAttribute("plan_mode.active.before", prev.active)
+        span.setAttribute("plan_mode.active.after", this._state.active)
+        span.setAttribute("plan_mode.turnsSincePlanReminder", this._state.turnsSincePlanReminder)
+
+        if (prev.active !== this._state.active) {
+          span.addEvent("plan_mode.state_transition", {
+            from: String(prev.active),
+            to: String(this._state.active),
           })
-        })
-      }
+          Bus.publish(Session.Event.PlanStateChanged, {
+            sessionID: this.sessionID,
+            active: this._state.active,
+            planFilePath: this._state.planFilePath,
+            turnsSincePlanReminder: this._state.turnsSincePlanReminder,
+          })
+        }
 
-      return updatedRow.plan_mode
-    } catch (e) {
-      span.recordException(e as Error)
-      throw e
-    } finally {
-      span.end()
+        return this._state
+      } finally {
+        span.end()
+      }
+    })
+  }
+
+  // ── Registry API ──
+
+  /**
+   * Register this ref for the session. Called at session loop start.
+   * Throws if a ref is already registered (indicates lifecycle bug).
+   */
+  register(): void {
+    if (registry.has(this.sessionID)) {
+      throw new Error(
+        `PlanModeStateRef already registered for session ${this.sessionID}. ` +
+          "This indicates a session lifecycle bug — deregister before re-registering.",
+      )
     }
-  })
+    registry.set(this.sessionID, this)
+  }
+
+  /**
+   * Deregister this ref for the session. Called at session loop cleanup.
+   */
+  deregister(): void {
+    registry.delete(this.sessionID)
+  }
+
+  /**
+   * Look up the ref for a session. Throws if not registered (fail-fast).
+   * Use this from tool execute() functions and queryLoop.
+   */
+  static for(sessionID: SessionID): PlanModeStateRef {
+    const ref = registry.get(sessionID)
+    if (!ref) {
+      throw new Error(
+        `PlanModeStateRef not registered for session ${sessionID}. ` +
+          "This indicates the session loop has not started or has already been cleaned up.",
+      )
+    }
+    return ref
+  }
+
+  /**
+   * Check if a ref is registered for a session. Non-throwing.
+   * Useful for optional access paths (e.g., session resume checks).
+   */
+  static has(sessionID: SessionID): boolean {
+    return registry.has(sessionID)
+  }
 }

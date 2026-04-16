@@ -1,23 +1,45 @@
-import { describe, expect, test } from "bun:test"
+import { afterEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import type { ModelID, ProviderID } from "../../src/provider/schema"
 import { Question } from "../../src/question"
 import { Session } from "../../src/session"
-import { getPlanModeState, setPlanModeState } from "../../src/session/plan-mode-state"
+import { createDefaultPlanModeState, PlanModeStateRef } from "../../src/session/plan-mode-state"
 import { MessageID } from "../../src/session/schema"
 import { PlanExitTool } from "../../src/tool/plan"
 import { tmpdir } from "../fixture/fixture"
 
 describe("PlanExitTool", () => {
+  // Ensure refs are cleaned up after each test
+  const registeredRefs: PlanModeStateRef[] = []
+  afterEach(() => {
+    for (const ref of registeredRefs) {
+      try {
+        ref.deregister()
+      } catch {
+        // Already deregistered
+      }
+    }
+    registeredRefs.length = 0
+  })
+
+  /** Helper: create session + register a PlanModeStateRef */
+  async function createSessionWithRef(overrides?: Partial<{ active: boolean }>) {
+    const session = await Session.create({})
+    const initial = createDefaultPlanModeState(session)
+    const ref = new PlanModeStateRef({ ...initial, active: overrides?.active ?? initial.active }, session.id)
+    ref.register()
+    registeredRefs.push(ref)
+    return { session, ref }
+  }
+
   test("should throw an error if plan is empty", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        await setPlanModeState(session.id, (s) => ({ ...s, active: true }))
+        const { session } = await createSessionWithRef({ active: true })
 
         const toolContext = {
           sessionID: session.id,
@@ -41,9 +63,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        // explicitly inactive
-        await setPlanModeState(session.id, (s) => ({ ...s, active: false }))
+        const { session } = await createSessionWithRef({ active: false })
 
         const toolContext = {
           sessionID: session.id,
@@ -67,8 +87,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        await setPlanModeState(session.id, (s) => ({ ...s, active: true }))
+        const { session, ref } = await createSessionWithRef({ active: true })
 
         // Add a stub provider return to avoid "no model available" in getLastModel
         const { Provider } = await import("../../src/provider/provider")
@@ -111,7 +130,7 @@ describe("PlanExitTool", () => {
 
           expect(approvalRequested).toBe(true)
 
-          const state = await getPlanModeState(session.id)
+          const state = ref.get()
           expect(state.active).toBe(false)
           expect(state.planText).toBe("My awesome plan")
           expect(state.turnsSincePlanReminder).toBe(0)
@@ -138,8 +157,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        await setPlanModeState(session.id, (s) => ({ ...s, active: true }))
+        const { session, ref } = await createSessionWithRef({ active: true })
 
         const originalAsk = Question.ask
         Question.ask = async () => [["No"]]
@@ -170,7 +188,7 @@ describe("PlanExitTool", () => {
           }
           expect(caught).toBe(true)
 
-          const state = await getPlanModeState(session.id)
+          const state = ref.get()
           expect(state.active).toBe(true)
         } finally {
           Question.ask = originalAsk

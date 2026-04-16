@@ -13,8 +13,7 @@ import { Log } from "../../util/log"
 import { Session } from ".."
 import type { EngineEvent } from "../events"
 import { Message } from "../message"
-import type { PlanModeState } from "../plan-mode-state"
-import { getPlanModeState, setPlanModeState } from "../plan-mode-state"
+import type { PlanModeState, PlanModeStateRef } from "../plan-mode-state"
 import { SessionProcessor } from "../processor"
 import { MessageID, PartID, type SessionID } from "../schema"
 import { SessionCompaction } from "../tasks/compaction"
@@ -39,6 +38,9 @@ export type QueryLoopParams = {
   /** Shared in-memory message buffer owned by the orchestrator (loop.ts).
    * Eliminates per-turn DB reads — loop.ts reads DB once and keeps this live. */
   msgsBuffer: { current: Message.WithParts[] }
+  /** Session-scoped in-memory plan mode state. Owned by the orchestrator,
+   * eliminates per-turn DB reads for plan mode state. */
+  planModeStateRef: PlanModeStateRef
   /** Whether this is a resume of an existing session (skip start() call) */
   resumeExisting?: boolean
   /** Session-scoped registry for background tasks. Passed through to resolveTools
@@ -67,7 +69,7 @@ export type QueryLoopParams = {
  * 4. On `control`: trigger compaction, process subtasks, etc.
  */
 export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<EngineEvent.Any, void, unknown> {
-  const { sessionID, session, abort, msgsBuffer } = params
+  const { sessionID, session, abort, msgsBuffer, planModeStateRef } = params
 
   let structuredOutput: unknown | undefined
   let step = 0
@@ -201,8 +203,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     const maxSteps = agent.steps ?? Infinity
     const isLastStep = step >= maxSteps
 
-    // ── Read PlanModeState at turn start (T006/FR-001) ──
-    let planModeState: PlanModeState = await getPlanModeState(sessionID)
+    // ── Read PlanModeState at turn start — synchronous in-memory access (T006/FR-001) ──
+    let planModeState: PlanModeState = planModeStateRef.get()
 
     const text = msgs
       .findLast((m) => m.info.role === "user")
@@ -476,11 +478,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       })
     }
 
-    // ── Persist updated PlanModeState at turn end (T007/FR-006) ──
-    // Increment turnsSincePlanReminder when plan mode is active.
+    // ── Update in-memory PlanModeState at turn end (T007/FR-006) ──
+    // Persist the counter updates from injectPlanAttachment back to the ref.
     // The counter may already have been reset to 0 by injectPlanAttachment (full reminder).
     if (planModeState.active) {
-      await setPlanModeState(sessionID, () => planModeState)
+      planModeStateRef.update(() => planModeState)
     }
 
     // ── Yield turn-end: orchestrator flushes persister ──

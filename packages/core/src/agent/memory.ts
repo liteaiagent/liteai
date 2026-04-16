@@ -1,7 +1,5 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import { tool as createTool } from "ai"
-import z from "zod"
 import { Config } from "@/config/config"
 import { Global } from "@/global"
 import { Instance } from "@/project/instance"

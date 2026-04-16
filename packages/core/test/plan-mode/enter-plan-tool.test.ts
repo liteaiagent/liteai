@@ -1,23 +1,52 @@
-import { describe, expect, test } from "bun:test"
+import { afterEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import type { ModelID, ProviderID } from "../../src/provider/schema"
 import { Session } from "../../src/session"
-import { getPlanModeState, setPlanModeState } from "../../src/session/plan-mode-state"
+import { createDefaultPlanModeState, PlanModeStateRef } from "../../src/session/plan-mode-state"
 import { MessageID } from "../../src/session/schema"
 import { PlanEnterTool } from "../../src/tool/plan"
 import { tmpdir } from "../fixture/fixture"
 
 describe("PlanEnterTool", () => {
+  // Ensure refs are cleaned up after each test
+  const registeredRefs: PlanModeStateRef[] = []
+  afterEach(() => {
+    for (const ref of registeredRefs) {
+      try {
+        ref.deregister()
+      } catch {
+        // Already deregistered
+      }
+    }
+    registeredRefs.length = 0
+  })
+
+  /** Helper: create session + register a PlanModeStateRef */
+  async function createSessionWithRef(overrides?: Partial<{ active: boolean; turnsSincePlanReminder: number }>) {
+    const session = await Session.create({})
+    const initial = createDefaultPlanModeState(session)
+    const ref = new PlanModeStateRef(
+      {
+        ...initial,
+        active: overrides?.active ?? initial.active,
+        turnsSincePlanReminder: overrides?.turnsSincePlanReminder ?? initial.turnsSincePlanReminder,
+      },
+      session.id,
+    )
+    ref.register()
+    registeredRefs.push(ref)
+    return { session, ref }
+  }
+
   test("should activate plan mode and emit event when inactive, with no plan file", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        await setPlanModeState(session.id, (s) => ({ ...s, active: false, turnsSincePlanReminder: 3 }))
+        const { session, ref } = await createSessionWithRef({ active: false, turnsSincePlanReminder: 3 })
 
         const { Provider } = await import("../../src/provider/provider")
         const originalDefaultModel = Provider.defaultModel
@@ -57,7 +86,7 @@ describe("PlanEnterTool", () => {
 
           expect(eventEmitted).toBe(true)
 
-          const state = await getPlanModeState(session.id)
+          const state = ref.get()
           expect(state.active).toBe(true)
           expect(state.turnsSincePlanReminder).toBe(0)
 
@@ -78,8 +107,8 @@ describe("PlanEnterTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        const state = await getPlanModeState(session.id)
+        const { session, ref } = await createSessionWithRef()
+        const state = ref.get()
         await fs.mkdir(path.dirname(state.planFilePath), { recursive: true })
         await fs.writeFile(state.planFilePath, "Existing Plan Content", "utf-8")
 
@@ -117,8 +146,7 @@ describe("PlanEnterTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create({})
-        await setPlanModeState(session.id, (s) => ({ ...s, active: true, turnsSincePlanReminder: 3 }))
+        const { session, ref } = await createSessionWithRef({ active: true, turnsSincePlanReminder: 3 })
 
         const { Provider } = await import("../../src/provider/provider")
         const originalDefaultModel = Provider.defaultModel
@@ -151,7 +179,7 @@ describe("PlanEnterTool", () => {
           expect(result.title).toBe("Already in plan mode")
           expect(result.output).toContain("already in plan mode")
 
-          const state = await getPlanModeState(session.id)
+          const state = ref.get()
           expect(state.active).toBe(true)
           expect(state.turnsSincePlanReminder).toBe(3) // Ensure counter was NOT reset
         } finally {
