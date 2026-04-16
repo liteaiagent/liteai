@@ -27,7 +27,7 @@ async function getLastModel(sessionID: SessionID) {
 export const PlanExitTool = Tool.define("plan_exit", {
   description: EXIT_DESCRIPTION,
   parameters: z.object({
-    plan: z.string().min(1, "Plan cannot be empty").trim(),
+    plan: z.string().trim().min(1, "Plan is empty"),
   }),
   async execute(params, ctx) {
     return tracer.startActiveSpan("tool.plan_exit.execute", async (span) => {

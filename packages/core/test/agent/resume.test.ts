@@ -66,8 +66,12 @@ describe("resumeAgentBackground", () => {
   })
 
   test("throws when transcript is empty", async () => {
-    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<ReturnType<typeof Session.get>>)
-    spyOn(Session, "children").mockResolvedValue([{ title: "Subagent: fork (agent-123)" }] as unknown as Awaited<ReturnType<typeof Session.children>>)
+    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<
+      ReturnType<typeof Session.get>
+    >)
+    spyOn(Session, "children").mockResolvedValue([{ title: "Subagent: fork (agent-123)" }] as unknown as Awaited<
+      ReturnType<typeof Session.children>
+    >)
     spyOn(SidechainTranscript, "read").mockResolvedValue([])
     spyOn(AgentMeta, "read").mockResolvedValue(null)
     spyOn(Worktree, "refreshWorktreeMtime").mockResolvedValue(true)
@@ -89,8 +93,12 @@ describe("resumeAgentBackground", () => {
       { isSidechain: true, uuid: "m2", role: "assistant", content: "done", timestamp: 2 },
     ]
 
-    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<ReturnType<typeof Session.get>>)
-    spyOn(Session, "children").mockResolvedValue([{ title: "Subagent: fork (agent-fork-1)" }] as unknown as Awaited<ReturnType<typeof Session.children>>)
+    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<
+      ReturnType<typeof Session.get>
+    >)
+    spyOn(Session, "children").mockResolvedValue([{ title: "Subagent: fork (agent-fork-1)" }] as unknown as Awaited<
+      ReturnType<typeof Session.children>
+    >)
     spyOn(SidechainTranscript, "read").mockResolvedValue(forkTranscript)
     spyOn(AgentMeta, "read").mockResolvedValue({ agentType: "fork", agentId: "agent-fork-1" })
     spyOn(Worktree, "refreshWorktreeMtime").mockResolvedValue(true)
@@ -118,7 +126,9 @@ describe("resumeAgentBackground", () => {
       description: "Custom task from metadata",
     }
 
-    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<ReturnType<typeof Session.get>>)
+    spyOn(Session, "get").mockResolvedValue({ directory: "/test/dir" } as unknown as Awaited<
+      ReturnType<typeof Session.get>
+    >)
     spyOn(Session, "children").mockResolvedValue([
       { title: "Subagent: explore (agent-meta-test)" },
     ] as unknown as Awaited<ReturnType<typeof Session.children>>)
@@ -128,7 +138,9 @@ describe("resumeAgentBackground", () => {
 
     spyOn(Agent, "get").mockImplementation(async (name) => {
       if (name === "custom-agent") {
-        return { name: "custom-agent", timeout: 1000, prompt: "test prompt" } as unknown as Awaited<ReturnType<typeof Agent.get>>
+        return { name: "custom-agent", timeout: 1000, prompt: "test prompt" } as unknown as Awaited<
+          ReturnType<typeof Agent.get>
+        >
       }
       throw new Error(`Agent ${name} not found`)
     })
@@ -139,9 +151,13 @@ describe("resumeAgentBackground", () => {
       abortController: new AbortController(),
     } as unknown as contextModule.SubagentContext)
 
-    spyOn(contextModule, "runWithAgentContext").mockImplementation(<T>(_ctx: contextModule.AgentContext, fn: () => T) => fn())
+    spyOn(contextModule, "runWithAgentContext").mockImplementation(<T>(_ctx: contextModule.AgentContext, fn: () => T) =>
+      fn(),
+    )
 
-    spyOn(lifecycle, "runAsyncAgentLifecycle").mockResolvedValue(undefined as unknown as Awaited<ReturnType<typeof lifecycle.runAsyncAgentLifecycle>>)
+    spyOn(lifecycle, "runAsyncAgentLifecycle").mockResolvedValue(
+      undefined as unknown as Awaited<ReturnType<typeof lifecycle.runAsyncAgentLifecycle>>,
+    )
 
     const context = {
       sessionId: "sess-meta",

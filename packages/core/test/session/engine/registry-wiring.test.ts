@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test"
+import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test"
 import { z } from "zod"
 import { BackgroundTaskRegistry } from "../../../src/command/background"
 import { MessageID, SessionID } from "../../../src/session/schema"
@@ -43,12 +43,37 @@ mock.module("../../../src/permission/next", () => ({
     evaluate: () => true,
     ask: async () => {},
     merge: () => [],
+    Ruleset: z.any(),
   },
 }))
 
 const { resolveTools } = await import("../../../src/session/engine/tools")
 
+import { Instance } from "../../../src/project/instance"
+
 describe("resolveTools background task registry wiring", () => {
+  let originalDirectory: PropertyDescriptor | undefined
+  let originalWorktree: PropertyDescriptor | undefined
+
+  beforeAll(() => {
+    originalDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
+    originalWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
+
+    Object.defineProperty(Instance, "directory", {
+      get: () => "/mock/dir",
+      configurable: true,
+    })
+    Object.defineProperty(Instance, "worktree", {
+      get: () => "/mock/dir",
+      configurable: true,
+    })
+  })
+
+  afterAll(() => {
+    if (originalDirectory) Object.defineProperty(Instance, "directory", originalDirectory)
+    if (originalWorktree) Object.defineProperty(Instance, "worktree", originalWorktree)
+  })
+
   test("threads backgroundTaskRegistry into tool ctx.extra when tool is executed", async () => {
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test")
