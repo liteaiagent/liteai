@@ -133,10 +133,9 @@ function registerAi4all(database: Record<string, Provider.Info>) {
   }
 }
 
-function mergeConfigModels(
+function mergeConfigProviders(
   database: Record<string, Provider.Info>,
   configProviders: [string, NonNullable<Awaited<ReturnType<typeof Config.get>>["provider"]>[string]][],
-  modelsDev: Record<string, ModelsDev.Provider>,
 ) {
   for (const [providerID, provider] of configProviders) {
     const existing = database[providerID]
@@ -148,9 +147,20 @@ function mergeConfigModels(
       source: "config",
       models: existing?.models ?? {},
     }
+    database[providerID] = parsed
+  }
+}
+
+function mergeConfigModels(
+  providers: Record<string, Provider.Info>,
+  configProviders: [string, NonNullable<Awaited<ReturnType<typeof Config.get>>["provider"]>[string]][],
+  modelsDev: Record<string, ModelsDev.Provider>,
+) {
+  for (const [providerID, provider] of configProviders) {
+    if (!providers[providerID]) continue
 
     for (const [modelID, model] of Object.entries(provider.models ?? {})) {
-      const existingModel = parsed.models[model.id ?? modelID]
+      const existingModel = providers[providerID].models[modelID]
       const name = iife(() => {
         if (model.name) return model.name
         if (model.id && model.id !== modelID) return modelID
@@ -190,7 +200,7 @@ function mergeConfigModels(
             video: model.modalities?.output?.includes("video") ?? existingModel?.capabilities.output.video ?? false,
             pdf: model.modalities?.output?.includes("pdf") ?? existingModel?.capabilities.output.pdf ?? false,
           },
-          interleaved: model.interleaved ?? false,
+          interleaved: model.interleaved ?? existingModel?.capabilities.interleaved ?? false,
         },
         cost: {
           input: model?.cost?.input ?? existingModel?.cost?.input ?? 0,
@@ -215,9 +225,8 @@ function mergeConfigModels(
         pickBy(merged, (v) => !v.disabled),
         (v) => omit(v, ["disabled"]),
       )
-      parsed.models[modelID] = parsedModel
+      providers[providerID].models[modelID] = parsedModel
     }
-    database[providerID] = parsed
   }
 }
 
@@ -348,8 +357,7 @@ async function loadCustom(
       // Loader models are set first; any config-defined models override for same IDs.
       let mergedModels: Record<string, Provider.Model> | undefined
       if (result.models && Object.keys(result.models).length > 0) {
-        const existingModels = database[providerID].models
-        mergedModels = { ...result.models, ...existingModels }
+        mergedModels = { ...result.models }
         database[providerID] = {
           ...database[providerID],
           models: mergedModels,
@@ -458,13 +466,24 @@ async function resolveProviders(
     providers[providerID] = mergeDeep(match, provider)
   }
 
-  mergeConfigModels(database, configProviders, modelsDev)
+  mergeConfigProviders(database, configProviders)
 
   await loadEnvAuth(database, disabled, merge, env)
   await loadPlugins(database, providers, disabled, merge)
   await loadCustom(database, providers, disabled, merge, modelLoaders, varsLoaders)
 
-  // load config overrides
+  // Copy models from `database` into `providers` before applying overrides
+  for (const [id, provider] of Object.entries(database)) {
+    const providerID = ProviderID.make(id)
+    if (!providers[providerID]) continue
+    for (const [modelID, model] of Object.entries(provider.models)) {
+      if (!providers[providerID].models[modelID]) {
+        providers[providerID].models[modelID] = model
+      }
+    }
+  }
+
+  // load config overrides (which copies database[providerID] into providers if it is new)
   for (const [id, provider] of configProviders) {
     const providerID = ProviderID.make(id)
     const partial: Partial<Provider.Info> = { source: "config" }
@@ -473,6 +492,9 @@ async function resolveProviders(
     if (provider.options) partial.options = provider.options
     merge(providerID, partial)
   }
+
+  // Apply model-level config overrides to the final list of providers
+  mergeConfigModels(providers, configProviders, modelsDev)
 
   filterProviders(providers, config, allowed)
 
