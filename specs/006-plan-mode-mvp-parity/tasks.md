@@ -29,13 +29,13 @@
 
 **Purpose**: Read and cross-reference every MVP source file listed in RFC Section 3.1 BEFORE writing any code. This is non-negotiable per constraint C-006.
 
-- [ ] T001 Read MVP `EnterPlanModeTool.ts` and document the permission context mutation pattern, `shouldDefer` behavior, and which tool result text is returned on activation — file: `liteai_cli_mvp/src/tools/EnterPlanModeTool/EnterPlanModeTool.ts`
-- [ ] T002 [P] Read MVP `prompt.ts` and extract the complete "When to Use / When NOT to Use" tool description text (external + internal variants) — file: `liteai_cli_mvp/src/tools/EnterPlanModeTool/prompt.ts`
-- [ ] T003 [P] Read MVP `ExitPlanModeV2Tool.ts` and document the approval flow, plan-in-context injection, and tool result text — file: `liteai_cli_mvp/src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts`
-- [ ] T004 [P] Read MVP `messages.ts` lines 3207-3297 (5-phase workflow) and lines 3330-3361 (interview phase) and extract the complete instruction text — file: `liteai_cli_mvp/src/utils/messages.ts`
-- [ ] T005 [P] Read MVP `exploreAgent.ts` and extract `getExploreSystemPrompt()`, `disallowedTools`, and `whenToUse` — file: `liteai_cli_mvp/src/tools/AgentTool/built-in/exploreAgent.ts`
-- [ ] T006 [P] Read MVP `planAgent.ts` and extract `getPlanV2SystemPrompt()`, `disallowedTools`, and `whenToUse` — file: `liteai_cli_mvp/src/tools/AgentTool/built-in/planAgent.ts`
-- [ ] T007 [P] Read MVP `planModeV2.ts` and document agent count configuration (explore: 3, plan: 1-3) — file: `liteai_cli_mvp/src/utils/planModeV2.ts`
+- [X] T001 Read MVP `EnterPlanModeTool.ts` and document the permission context mutation pattern, `shouldDefer` behavior, and which tool result text is returned on activation — file: `liteai_cli_mvp/src/tools/EnterPlanModeTool/EnterPlanModeTool.ts`
+- [X] T002 [P] Read MVP `prompt.ts` and extract the complete "When to Use / When NOT to Use" tool description text (external + internal variants) — file: `liteai_cli_mvp/src/tools/EnterPlanModeTool/prompt.ts`
+- [X] T003 [P] Read MVP `ExitPlanModeV2Tool.ts` and document the approval flow, plan-in-context injection, and tool result text — file: `liteai_cli_mvp/src/tools/ExitPlanModeTool/ExitPlanModeV2Tool.ts`
+- [X] T004 [P] Read MVP `messages.ts` lines 3207-3297 (5-phase workflow) and lines 3330-3361 (interview phase) and extract the complete instruction text — file: `liteai_cli_mvp/src/utils/messages.ts`
+- [X] T005 [P] Read MVP `exploreAgent.ts` and extract `getExploreSystemPrompt()`, `disallowedTools`, and `whenToUse` — file: `liteai_cli_mvp/src/tools/AgentTool/built-in/exploreAgent.ts`
+- [X] T006 [P] Read MVP `planAgent.ts` and extract `getPlanV2SystemPrompt()`, `disallowedTools`, and `whenToUse` — file: `liteai_cli_mvp/src/tools/AgentTool/built-in/planAgent.ts`
+- [X] T007 [P] Read MVP `planModeV2.ts` and document agent count configuration (explore: 3, plan: 1-3) — file: `liteai_cli_mvp/src/utils/planModeV2.ts`
 
 **Checkpoint**: All MVP source files read and understood. Implementation may now proceed.
 
@@ -47,11 +47,11 @@
 
 **⚠️ CRITICAL**: No new behavior can be built until the legacy purge is complete.
 
-- [ ] T008 [US1] Remove the `inject: [{ info: userMsg, parts: [] }]` return and the `getLastModel()` + `userMsg` construction from `PlanEnterTool.execute()`, including the idempotent (already-active) path — file: `packages/core/src/tool/plan.ts` (lines 94-110, 142-158, 18-25)
-- [ ] T009 [US1] Remove the `inject: [{ info: userMsg, parts: [] }]` return and the `getLastModel()` + `userMsg` construction from `PlanExitTool.execute()` — file: `packages/core/src/tool/plan.ts` (lines 94-110)
-- [ ] T010 [US5] Remove `"plan-explore"` from the `BUILTIN_AGENT_NAMES` array — file: `packages/core/src/agent/agent.ts` (line 37)
-- [ ] T011 [US5] Delete the `plan-explore.md` agent file (dead code, never spawned, duplicates explore.md) — file: `packages/core/src/bundled/agents/plan-explore.md`
-- [ ] T012 Run `bun typecheck` to verify no broken references from the purge. Expect clean build after removing the file and its reference from the names array.
+- [X] T008 [US1] Remove the `inject: [{ info: userMsg, parts: [] }]` return and the `getLastModel()` + `userMsg` construction from `PlanEnterTool.execute()`, including the idempotent (already-active) path — file: `packages/core/src/tool/plan.ts` (lines 94-110, 142-158, 18-25)
+- [X] T009 [US1] Remove the `inject: [{ info: userMsg, parts: [] }]` return and the `getLastModel()` + `userMsg` construction from `PlanExitTool.execute()` — file: `packages/core/src/tool/plan.ts` (lines 94-110)
+- [X] T010 [US5] Remove `"plan-explore"` from the `BUILTIN_AGENT_NAMES` array — file: `packages/core/src/agent/agent.ts` (line 37)
+- [X] T011 [US5] Delete the `plan-explore.md` agent file (dead code, never spawned, duplicates explore.md) — file: `packages/core/src/bundled/agents/plan-explore.md`
+- [X] T012 Run `bun typecheck` to verify no broken references from the purge. Expect clean build after removing the file and its reference from the names array.
 
 **Checkpoint**: Legacy persona-swap mechanism is fully removed. `bun typecheck` passes. No `agent: "plan"` or `agent: "build"` inject patterns remain in `plan.ts`.
 
@@ -61,15 +61,15 @@
 
 **Purpose**: Port all prompts, system instructions, and tool descriptions from the MVP reference implementation. All ported content must be sourced from the MVP files read in Phase 1.
 
-- [ ] T013 [P] [US2] Create `plan-workflow.md` with the 5-phase workflow instructions ported verbatim from MVP `messages.ts` lines 3207-3297. Adapt any MVP-specific tool names to LiteAI equivalents where necessary. — file: `packages/core/src/bundled/prompts/misc/plan-workflow.md`
-- [ ] T014 [P] [US3] Create `plan-interview.md` with the interview mode instructions ported verbatim from MVP `messages.ts` lines 3330-3361. — file: `packages/core/src/bundled/prompts/misc/plan-interview.md`
-- [ ] T015 [P] [US5] Rewrite `plan.md` as a subagent definition: change `mode: primary` to `mode: subagent`, add `omitLiteaiMd: true`, set `disallowedTools: [task, plan_exit, edit, write, multiedit]`, port description from MVP `PLAN_AGENT.whenToUse`, port system prompt from MVP `getPlanV2SystemPrompt()`. Remove the legacy read-only root-agent system-reminder body. — file: `packages/core/src/bundled/agents/plan.md`
-- [ ] T016 [P] [US5] Verify `explore.md` against MVP `EXPLORE_AGENT` definition — compare description, permissions, disallowedTools, and system prompt. Align any discrepancies with the MVP source. Do NOT create a second explore agent file. — file: `packages/core/src/bundled/agents/explore.md`
-- [ ] T017 [P] [US1] Rewrite the `plan_enter` tool description: replace the current 3-line `ENTER_DESCRIPTION` constant with the complete "When to Use This Tool" / "When NOT to Use" / "What Happens in Plan Mode" / examples text ported from MVP `prompt.ts`. — file: `packages/core/src/tool/plan.ts` (lines 122-124)
-- [ ] T018 [P] [US1] Rewrite `plan-exit.txt` tool description: expand from the current 1-line description to include plan file content requirements, prohibition on using plain text/questions for approval, and when to call, ported from MVP `ExitPlanModeV2Tool.ts`. — file: `packages/core/src/bundled/prompts/tools/plan-exit.txt`
-- [ ] T019 [US1] Update `system.md` Section 5 (lines 30-36): replace the current "you are strictly in Planning Mode" directives with a reference to the `plan_enter` tool as the mechanism for structured planning. The stale text currently conflicts with Section 6's autonomous execution directives. — file: `packages/core/src/bundled/prompts/system/system.md`
-- [ ] T020 [US1] Update `build.md` comment block (line 13): the comment says "Subagents (explore.md, plan.md) define their own prompts" — after the rewrite, `plan.md` IS a subagent, so the comment is now correct. Verify no stale references remain. — file: `packages/core/src/bundled/agents/build.md`
-- [ ] T021 Run `bun typecheck` to verify the prompt file imports resolve correctly after creating the new misc/ files.
+- [X] T013 [P] [US2] Create `plan-workflow.md` with the 5-phase workflow instructions ported verbatim from MVP `messages.ts` lines 3207-3297. Adapt any MVP-specific tool names to LiteAI equivalents where necessary. — file: `packages/core/src/bundled/prompts/misc/plan-workflow.md`
+- [X] T014 [P] [US3] Create `plan-interview.md` with the interview mode instructions ported verbatim from MVP `messages.ts` lines 3330-3361. — file: `packages/core/src/bundled/prompts/misc/plan-interview.md`
+- [X] T015 [P] [US5] Rewrite `plan.md` as a subagent definition: change `mode: primary` to `mode: subagent`, add `omitLiteaiMd: true`, set `disallowedTools: [task, plan_exit, edit, write, multiedit]`, port description from MVP `PLAN_AGENT.whenToUse`, port system prompt from MVP `getPlanV2SystemPrompt()`. Remove the legacy read-only root-agent system-reminder body. — file: `packages/core/src/bundled/agents/plan.md`
+- [X] T016 [P] [US5] Verify `explore.md` against MVP `EXPLORE_AGENT` definition — compare description, permissions, disallowedTools, and system prompt. Align any discrepancies with the MVP source. Do NOT create a second explore agent file. — file: `packages/core/src/bundled/agents/explore.md`
+- [X] T017 [P] [US1] Rewrite the `plan_enter` tool description: replace the current 3-line `ENTER_DESCRIPTION` constant with the complete "When to Use This Tool" / "When NOT to Use" / "What Happens in Plan Mode" / examples text ported from MVP `prompt.ts`. — file: `packages/core/src/tool/plan.ts` (lines 122-124)
+- [X] T018 [P] [US1] Rewrite `plan-exit.txt` tool description: expand from the current 1-line description to include plan file content requirements, prohibition on using plain text/questions for approval, and when to call, ported from MVP `ExitPlanModeV2Tool.ts`. — file: `packages/core/src/bundled/prompts/tools/plan-exit.txt`
+- [X] T019 [US1] Update `system.md` Section 5 (lines 30-36): replace the current "you are strictly in Planning Mode" directives with a reference to the `plan_enter` tool as the mechanism for structured planning. The stale text currently conflicts with Section 6's autonomous execution directives. — file: `packages/core/src/bundled/prompts/system/system.md`
+- [X] T020 [US1] Update `build.md` comment block (line 13): the comment says "Subagents (explore.md, plan.md) define their own prompts" — after the rewrite, `plan.md` IS a subagent, so the comment is now correct. Verify no stale references remain. — file: `packages/core/src/bundled/agents/build.md`
+- [X] T021 Run `bun typecheck` to verify the prompt file imports resolve correctly after creating the new misc/ files.
 
 **Checkpoint**: All prompts ported from MVP. No custom-authored prompt content. `bun typecheck` passes.
 
@@ -83,13 +83,13 @@
 
 ### Implementation
 
-- [ ] T022 [US1] Add `Question.ask()` approval gate to `PlanEnterTool.execute()`: before mutating `PlanModeStateRef`, ask the user "Approve entering plan mode?" with Accept/Decline options. On decline, throw `Question.RejectedError`. Import `Question` if not already imported. — file: `packages/core/src/tool/plan.ts`
-- [ ] T022a [US1] Add an "already active" guard at the top of `PlanEnterTool.execute()`: if `PlanModeStateRef.for(session).active === true`, return immediately with `output: "Plan mode is already active."` (FR-014). This replaces the legacy idempotent path removed in T008. — file: `packages/core/src/tool/plan.ts`
-- [ ] T023 [US1] Add `interviewMode` optional boolean parameter to `PlanEnterTool` schema: `parameters: z.object({ interviewMode: z.boolean().optional().default(false) })`. — file: `packages/core/src/tool/plan.ts`
-- [ ] T024 [US1] Load workflow text and return as tool output: import `plan-workflow.md` and `plan-interview.md` as bundled text assets. In `execute()`, after approval, select the correct workflow text based on `params.interviewMode` and return it as the `output` field along with the plan file path. — file: `packages/core/src/tool/plan.ts`
-- [ ] T025 [US1] Verify that `PlanExitTool.execute()` returns the plan text as `output` field (plan-in-context) after removing the inject pattern. Ensure the output includes both the status message and the plan content so the model has the plan in-context when transitioning to build mode. — file: `packages/core/src/tool/plan.ts`
-- [ ] T025a [US2] Verify plan rejection behavior in `PlanExitTool.execute()`: when `Question.ask()` throws `Question.RejectedError`, confirm that (1) `PlanModeStateRef` is NOT mutated (plan mode remains active), (2) no plan text is injected into context, and (3) the agent remains in plan mode to revise the plan. Add a comment documenting this as the "rejection → revision → re-submission" path per spec edge case L113. — file: `packages/core/src/tool/plan.ts`
-- [ ] T026 [US1] Emit `Bus.publish(Session.Event.PlanApprovalRequested)` from `PlanEnterTool` after the user approves entry, so the UI can show the "Plan" badge. Verify the event payload matches what the frontend expects. — file: `packages/core/src/tool/plan.ts`
+- [X] T022 [US1] Add `Question.ask()` approval gate to `PlanEnterTool.execute()`: before mutating `PlanModeStateRef`, ask the user "Approve entering plan mode?" with Accept/Decline options. On decline, throw `Question.RejectedError`. Import `Question` if not already imported. — file: `packages/core/src/tool/plan.ts`
+- [X] T022a [US1] Add an "already active" guard at the top of `PlanEnterTool.execute()`: if `PlanModeStateRef.for(session).active === true`, return immediately with `output: "Plan mode is already active."` (FR-014). This replaces the legacy idempotent path removed in T008. — file: `packages/core/src/tool/plan.ts`
+- [X] T023 [US1] Add `interviewMode` optional boolean parameter to `PlanEnterTool` schema: `parameters: z.object({ interviewMode: z.boolean().optional().default(false) })`. — file: `packages/core/src/tool/plan.ts`
+- [X] T024 [US1] Load workflow text and return as tool output: import `plan-workflow.md` and `plan-interview.md` as bundled text assets. In `execute()`, after approval, select the correct workflow text based on `params.interviewMode` and return it as the `output` field along with the plan file path. — file: `packages/core/src/tool/plan.ts`
+- [X] T025 [US1] Verify that `PlanExitTool.execute()` returns the plan text as `output` field (plan-in-context) after removing the inject pattern. Ensure the output includes both the status message and the plan content so the model has the plan in-context when transitioning to build mode. — file: `packages/core/src/tool/plan.ts`
+- [X] T025a [US2] Verify plan rejection behavior in `PlanExitTool.execute()`: when `Question.ask()` throws `Question.RejectedError`, confirm that (1) `PlanModeStateRef` is NOT mutated (plan mode remains active), (2) no plan text is injected into context, and (3) the agent remains in plan mode to revise the plan. Add a comment documenting this as the "rejection → revision → re-submission" path per spec edge case L113. — file: `packages/core/src/tool/plan.ts`
+- [X] T026 [US1] Emit `Bus.publish(Session.Event.PlanApprovalRequested)` from `PlanEnterTool` after the user approves entry, so the UI can show the "Plan" badge. Verify the event payload matches what the frontend expects. — file: `packages/core/src/tool/plan.ts`
 
 **Checkpoint**: Plan mode entry requires user approval. Workflow instructions are returned as tool output. No agent swap. `bun typecheck` passes.
 
@@ -103,8 +103,8 @@
 
 ### Implementation
 
-- [ ] T027 [US5] Verify that the rewritten `plan.md` (from T015) is correctly loaded by `loadBuiltinAgents()` with `mode: subagent`. Confirm it appears in the agent registry with the correct `disallowedTools` and permissions. — file: `packages/core/src/agent/agent.ts`
-- [ ] T028 [US5] Verify that the `explore.md` agent (verified in T016) has the correct `disallowedTools` alignment with the Plan subagent. Both should disallow: `edit`, `write`, `multiedit`, `task`, `plan_exit`. Confirm `plan_enter` is also disallowed for subagents (since `isRootAgent()` check already prevents it). — file: `packages/core/src/bundled/agents/explore.md`
+- [X] T027 [US5] Verify that the rewritten `plan.md` (from T015) is correctly loaded by `loadBuiltinAgents()` with `mode: subagent`. Confirm it appears in the agent registry with the correct `disallowedTools` and permissions. — file: `packages/core/src/agent/agent.ts`
+- [X] T028 [US5] Verify that the `explore.md` agent (verified in T016) has the correct `disallowedTools` alignment with the Plan subagent. Both should disallow: `edit`, `write`, `multiedit`, `task`, `plan_exit`. Confirm `plan_enter` is also disallowed for subagents (since `isRootAgent()` check already prevents it). — file: `packages/core/src/bundled/agents/explore.md`
 
 **Checkpoint**: Both subagents are registered with correct names and read-only permissions. `bun typecheck` passes.
 
@@ -118,8 +118,8 @@
 
 ### Implementation
 
-- [ ] T029 [US2] Verify that the 5-phase workflow text (created in T013) references the correct LiteAI tool names for spawning subagents (the `task` tool with agent type "explore" or "plan"). If the MVP uses different tool names, map them to LiteAI equivalents in the workflow text. — file: `packages/core/src/bundled/prompts/misc/plan-workflow.md`
-- [ ] T030 [US2] Verify that when `PlanEnterTool` returns the 5-phase workflow text as output, the model can parse and follow the phase structure. Review the output format for clarity and ensure phase numbering, subagent count guidance, and tool names are correct. — file: `packages/core/src/tool/plan.ts`
+- [X] T029 [US2] Verify that the 5-phase workflow text (created in T013) references the correct LiteAI tool names for spawning subagents (the `task` tool with agent type "explore" or "plan"). If the MVP uses different tool names, map them to LiteAI equivalents in the workflow text. — file: `packages/core/src/bundled/prompts/misc/plan-workflow.md`
+- [X] T030 [US2] Verify that when `PlanEnterTool` returns the 5-phase workflow text as output, the model can parse and follow the phase structure. Review the output format for clarity and ensure phase numbering, subagent count guidance, and tool names are correct. — file: `packages/core/src/tool/plan.ts`
 
 **Checkpoint**: 5-phase workflow text is in-context after plan mode entry. Agent can follow the workflow to completion.
 
@@ -133,8 +133,8 @@
 
 ### Implementation
 
-- [ ] T031 [US3] Verify that the interview mode text (created in T014) correctly instructs the agent to use read-only tools directly, lists the allowed tools, and describes the iterative dialogue workflow. — file: `packages/core/src/bundled/prompts/misc/plan-interview.md`
-- [ ] T032 [US3] Verify that `PlanEnterTool` correctly selects interview mode text when `params.interviewMode === true` (implemented in T024). — file: `packages/core/src/tool/plan.ts`
+- [X] T031 [US3] Verify that the interview mode text (created in T014) correctly instructs the agent to use read-only tools directly, lists the allowed tools, and describes the iterative dialogue workflow. — file: `packages/core/src/bundled/prompts/misc/plan-interview.md`
+- [X] T032 [US3] Verify that `PlanEnterTool` correctly selects interview mode text when `params.interviewMode === true` (implemented in T024). — file: `packages/core/src/tool/plan.ts`
 
 **Checkpoint**: Interview mode produces a different workflow instruction set. No subagent spawning in interview mode.
 
@@ -148,9 +148,9 @@
 
 ### Implementation
 
-- [ ] T033 [US4] Invert the guard condition in `injectPlanAttachment()`: change `if (!planModeState.active)` early return to `if (planModeState.active || !planModeState.planText)` early return. This makes reminders fire during build phase (when plan mode is inactive but a plan has been approved), not during plan phase. — file: `packages/core/src/session/engine/plan-reminder.ts` (line 47)
-- [ ] T034 [US4] Update the JSDoc comment for `injectPlanAttachment()` to reflect the new contract: "Inject a plan reminder attachment into the last user message when a plan has been approved and the agent is in build mode." — file: `packages/core/src/session/engine/plan-reminder.ts` (lines 22-35)
-- [ ] T035 [US4] Verify that `PlanExitTool.execute()` sets `planText` on the state ref when the user approves the plan (this is the signal that activates build-phase reminders). Confirm the existing code at `plan.ts:91` already does `planText: params.plan`. — file: `packages/core/src/tool/plan.ts`
+- [X] T033 [US4] Invert the guard condition in `injectPlanAttachment()`: change `if (!planModeState.active)` early return to `if (planModeState.active || !planModeState.planText)` early return. This makes reminders fire during build phase (when plan mode is inactive but a plan has been approved), not during plan phase. — file: `packages/core/src/session/engine/plan-reminder.ts` (line 47)
+- [X] T034 [US4] Update the JSDoc comment for `injectPlanAttachment()` to reflect the new contract: "Inject a plan reminder attachment into the last user message when a plan has been approved and the agent is in build mode." — file: `packages/core/src/session/engine/plan-reminder.ts` (lines 22-35)
+- [X] T035 [US4] Verify that `PlanExitTool.execute()` sets `planText` on the state ref when the user approves the plan (this is the signal that activates build-phase reminders). Confirm the existing code at `plan.ts:91` already does `planText: params.plan`. — file: `packages/core/src/tool/plan.ts`
 
 **Checkpoint**: Reminders fire during build phase, not plan phase. Sparse every turn, full every 5 turns.
 
@@ -160,13 +160,13 @@
 
 **Purpose**: Update existing test suite for intentional architectural changes. All failures are expected — the tests are outdated, not the code.
 
-- [ ] T036 [P] Update `enter-plan-tool.test.ts`: remove assertions for `inject` in return value, add assertions for `Question.ask()` approval flow, add assertion for workflow text in output, add assertion for `interviewMode` parameter behavior. — file: `packages/core/test/plan-mode/enter-plan-tool.test.ts`
-- [ ] T037 [P] Update `exit-plan-tool.test.ts`: remove assertions for `inject` in return value, verify that `output` field contains plan text (plan-in-context), verify `Question.ask()` approval still works. — file: `packages/core/test/plan-mode/exit-plan-tool.test.ts`
-- [ ] T038 [P] Update `plan-reminder.test.ts` (both copies): change test cases to verify reminders fire when `active === false && planText !== undefined`, not when `active === true`. Update the "no-op when inactive" test to "no-op when active or no plan text". — file: `packages/core/test/plan-mode/plan-reminder.test.ts` and `packages/core/test/session/engine/plan-reminder.test.ts`
-- [ ] T039 Verify `plan-mode-state.test.ts` still passes — no changes expected to `PlanModeStateRef` itself, but run to confirm. — file: `packages/core/test/plan-mode/plan-mode-state.test.ts`
-- [ ] T040 Run full scoped test suite: `bun test test/plan-mode/` — all tests must pass.
-- [ ] T041 Run `bun typecheck` — full type check must pass with zero errors.
-- [ ] T042 Run `bun lint:fix` — formatting must be clean.
+- [X] T036 [P] Update `enter-plan-tool.test.ts`: remove assertions for `inject` in return value, add assertions for `Question.ask()` approval flow, add assertion for workflow text in output, add assertion for `interviewMode` parameter behavior. — file: `packages/core/test/plan-mode/enter-plan-tool.test.ts`
+- [X] T037 [P] Update `exit-plan-tool.test.ts`: remove assertions for `inject` in return value, verify that `output` field contains plan text (plan-in-context), verify `Question.ask()` approval still works. — file: `packages/core/test/plan-mode/exit-plan-tool.test.ts`
+- [X] T038 [P] Update `plan-reminder.test.ts` (both copies): change test cases to verify reminders fire when `active === false && planText !== undefined`, not when `active === true`. Update the "no-op when inactive" test to "no-op when active or no plan text". — file: `packages/core/test/plan-mode/plan-reminder.test.ts` and `packages/core/test/session/engine/plan-reminder.test.ts`
+- [X] T039 Verify `plan-mode-state.test.ts` still passes — no changes expected to `PlanModeStateRef` itself, but run to confirm. — file: `packages/core/test/plan-mode/plan-mode-state.test.ts`
+- [X] T040 Run full scoped test suite: `bun test test/plan-mode/` — all tests must pass.
+- [X] T041 Run `bun typecheck` — full type check must pass with zero errors.
+- [X] T042 Run `bun lint:fix` — formatting must be clean.
 
 **Checkpoint**: All scoped tests pass. Typecheck clean. Lint clean.
 
@@ -176,12 +176,12 @@
 
 **Purpose**: Post-implementation codebase search confirming zero residual legacy artifacts. Any match is a blocking defect.
 
-- [ ] T043 Search for `agent: "plan"` in inject messages across `packages/core/src/` — must return zero results.
-- [ ] T044 [P] Search for `agent: "build"` in inject messages across `packages/core/src/` — must return zero results.
-- [ ] T045 [P] Search for `plan-explore` references across `packages/core/src/` — must return zero results.
-- [ ] T046 [P] Search for any code path that swaps the root agent identity during plan/build transitions across `packages/core/src/` — must return zero results.
-- [ ] T047 Verify that `plan-explore.md` file no longer exists on disk at `packages/core/src/bundled/agents/plan-explore.md`.
-- [ ] T048 Verify that `plan.md` has `mode: subagent` (not `mode: primary`) at `packages/core/src/bundled/agents/plan.md`.
+- [X] T043 Search for `agent: "plan"` in inject messages across `packages/core/src/` — must return zero results.
+- [X] T044 [P] Search for `agent: "build"` in inject messages across `packages/core/src/` — must return zero results.
+- [X] T045 [P] Search for `plan-explore` references across `packages/core/src/` — must return zero results.
+- [X] T046 [P] Search for any code path that swaps the root agent identity during plan/build transitions across `packages/core/src/` — must return zero results.
+- [X] T047 Verify that `plan-explore.md` file no longer exists on disk at `packages/core/src/bundled/agents/plan-explore.md`.
+- [X] T048 Verify that `plan.md` has `mode: subagent` (not `mode: primary`) at `packages/core/src/bundled/agents/plan.md`.
 
 **Checkpoint**: SC-009 verified. Zero legacy artifacts remain. Feature is complete.
 

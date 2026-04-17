@@ -29,16 +29,7 @@ function parseBuiltinAgent(raw: string): Config.Agent {
   return AgentSchema.parse(config)
 }
 
-const BUILTIN_AGENT_NAMES = [
-  "plan",
-  "build",
-  "general",
-  "explore",
-  "plan-explore",
-  "compaction",
-  "title",
-  "summary",
-] as const
+const BUILTIN_AGENT_NAMES = ["plan", "build", "general", "explore", "compaction", "title", "summary"] as const
 
 /** Load all built-in agents from the unified bundled directory. */
 async function loadBuiltinAgents(): Promise<Record<string, Config.Agent>> {

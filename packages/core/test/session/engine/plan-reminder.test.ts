@@ -72,27 +72,49 @@ function createTestMessages(overrides?: {
 
 function createPlanState(overrides?: Partial<PlanModeState>): PlanModeState {
   return {
-    active: true,
-    planText: undefined,
+    // Default to build-phase state (active=false + planText set) — reminders
+    // must fire in build phase after a plan has been approved (ADR-003).
+    active: false,
+    planText: "Approved plan",
     planFilePath: path.join(os.tmpdir(), `test-plan-${crypto.randomUUID()}.md`),
     turnsSincePlanReminder: 0,
     ...overrides,
   }
 }
 
-describe("injectPlanAttachment (T048)", () => {
-  // ── T015: No-op when plan mode is inactive ──
-  describe("inactive plan mode", () => {
-    test("returns messages unchanged when planModeState.active is false", async () => {
+describe("injectPlanAttachment (ADR-003 build-phase reminders)", () => {
+  // ── No-op conditions: reminders must NOT fire ──
+  describe("no-op conditions", () => {
+    test("returns messages unchanged when plan mode is ACTIVE (plan phase — no reminders)", async () => {
       await Instance.provide({
         directory: projectRoot,
         fn: async () => {
           const messages = createTestMessages()
-          const state = createPlanState({ active: false })
+          // active=true: we are in plan phase — reminders must NOT fire
+          const state = createPlanState({ active: true, planText: "Some plan" })
           const result = await injectPlanAttachment({
             messages,
             planModeState: state,
-            session: {} as Parameters<typeof injectPlanAttachment>[0]["session"], // unused when inactive
+            session: {} as Parameters<typeof injectPlanAttachment>[0]["session"],
+          })
+
+          expect(result.messages).toBe(messages) // same reference — no copy
+          expect(result.updatedState).toBe(state) // same reference — no mutation
+        },
+      })
+    })
+
+    test("returns messages unchanged when planText is falsy (no approved plan yet)", async () => {
+      await Instance.provide({
+        directory: projectRoot,
+        fn: async () => {
+          const messages = createTestMessages()
+          // active=false but planText undefined — no plan approved yet
+          const state = createPlanState({ active: false, planText: undefined })
+          const result = await injectPlanAttachment({
+            messages,
+            planModeState: state,
+            session: {} as Parameters<typeof injectPlanAttachment>[0]["session"],
           })
 
           expect(result.messages).toBe(messages) // same reference — no copy

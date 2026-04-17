@@ -20,15 +20,16 @@ const MAX_PLAN_REMINDER_COUNTER = 100
 const MAX_PLAN_FILE_SIZE = 100 * 1024
 
 /**
- * Inject a plan reminder attachment into the last user message when plan mode is
- * active. Replaces the legacy `insertPlanReminder()`.
+ * Inject a plan reminder attachment into the last user message when a plan has
+ * been approved and the agent is in build mode. Replaces the legacy `insertPlanReminder()`.
  *
- * **Contract** (per contracts/plan-mode-api.md):
- * - If `planModeState.active === false`: return messages unchanged, state unchanged (FR-008)
+ * **Contract** (ADR-003, FR-011):
+ * - If `planModeState.active === true`: no-op — reminders must NOT fire during plan phase
+ * - If `planModeState.planText` is falsy: no-op — no approved plan exists yet
  * - If `turnsSincePlanReminder >= PLAN_REMINDER_FULL_INTERVAL`: inject full plan text, reset counter to 0
  * - Otherwise: inject sparse reminder, increment counter
  * - Plan file missing on full-reminder turn: fall back to sparse (edge case)
- * - No DB writes — in-memory part appends only (R-002)
+ * - No DB writes — in-memory part appends only
  * - Parts are set with `synthetic: false` — visible to model as user context
  *
  * @returns Updated messages and the mutated PlanModeState (with incremented/reset counter)
@@ -43,8 +44,11 @@ export async function injectPlanAttachment(input: {
 }> {
   const { messages, planModeState } = input
 
-  // ── T015: No-op when plan mode is inactive (FR-008) ──
-  if (!planModeState.active) {
+  // ── No-op when plan mode is active OR no approved plan exists (ADR-003) ──
+  // Reminders fire during BUILD phase: active=false + planText set (approved).
+  // During PLAN phase (active=true) or before any plan is approved (!planText),
+  // return early to avoid injecting reminders at the wrong time.
+  if (planModeState.active || !planModeState.planText) {
     return { messages, updatedState: planModeState }
   }
 

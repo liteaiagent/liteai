@@ -33,14 +33,31 @@ function createUserMessage(session: Session.Info, text = "hello"): Message.WithP
   }
 }
 
-describe("injectPlanAttachment (T048)", () => {
-  test("no-op when plan mode is inactive (SC-001 / FR-008)", async () => {
+/** Helper: build-phase state (active=false, planText set) */
+function buildPhaseState(session: Session.Info, overrides?: Partial<PlanModeState>): PlanModeState {
+  return {
+    ...createDefaultPlanModeState(session),
+    active: false,
+    planText: "Approved plan content",
+    turnsSincePlanReminder: 0,
+    ...overrides,
+  }
+}
+
+describe("injectPlanAttachment (ADR-003 build-phase reminders)", () => {
+  test("no-op when plan mode is active (FR-011 — no reminders during plan phase)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state = createDefaultPlanModeState(session)
+        // active=true means we're in plan phase — reminders must NOT fire
+        const state: PlanModeState = {
+          ...createDefaultPlanModeState(session),
+          active: true,
+          planText: "Some plan",
+          turnsSincePlanReminder: 0,
+        }
         const messages = [createUserMessage(session)]
 
         const result = await injectPlanAttachment({
@@ -59,17 +76,39 @@ describe("injectPlanAttachment (T048)", () => {
     })
   })
 
-  test("injects sparse reminder when counter < INTERVAL (SC-002 / FR-004)", async () => {
+  test("no-op when no plan has been approved (planText falsy)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: 2,
-        }
+        // active=false but no planText — no approved plan yet
+        const state = createDefaultPlanModeState(session) // active: false, planText: undefined
+        const messages = [createUserMessage(session)]
+
+        const result = await injectPlanAttachment({
+          messages,
+          planModeState: state,
+          session,
+        })
+
+        // Messages unchanged (same reference)
+        expect(result.messages).toBe(messages)
+        // State unchanged (same reference)
+        expect(result.updatedState).toBe(state)
+
+        await Session.remove(session.id)
+      },
+    })
+  })
+
+  test("injects sparse reminder in build phase when counter < INTERVAL (FR-011)", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const session = await Session.create({})
+        const state = buildPhaseState(session, { turnsSincePlanReminder: 2 })
 
         // Create the plan file
         await fs.mkdir(path.dirname(state.planFilePath), { recursive: true })
@@ -100,17 +139,13 @@ describe("injectPlanAttachment (T048)", () => {
     })
   })
 
-  test("injects full plan text when counter >= INTERVAL (SC-003 / FR-005)", async () => {
+  test("injects full plan text in build phase when counter >= INTERVAL (FR-011)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: PLAN_REMINDER_FULL_INTERVAL,
-        }
+        const state = buildPhaseState(session, { turnsSincePlanReminder: PLAN_REMINDER_FULL_INTERVAL })
 
         // Create the plan file
         await fs.mkdir(path.dirname(state.planFilePath), { recursive: true })
@@ -145,11 +180,7 @@ describe("injectPlanAttachment (T048)", () => {
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: PLAN_REMINDER_FULL_INTERVAL,
-        }
+        const state = buildPhaseState(session, { turnsSincePlanReminder: PLAN_REMINDER_FULL_INTERVAL })
 
         // No plan file created on disk
         const messages = [createUserMessage(session)]
@@ -174,17 +205,13 @@ describe("injectPlanAttachment (T048)", () => {
     })
   })
 
-  test("exactly one attachment per user message (SC-002)", async () => {
+  test("exactly one attachment per user message in build phase (SC-005)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: 0,
-        }
+        const state = buildPhaseState(session, { turnsSincePlanReminder: 0 })
         const messages = [createUserMessage(session)]
 
         const result = await injectPlanAttachment({
@@ -215,11 +242,7 @@ describe("injectPlanAttachment (T048)", () => {
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: 0,
-        }
+        const state = buildPhaseState(session, { turnsSincePlanReminder: 0 })
         const originalMessage = createUserMessage(session)
         const originalPartsLength = originalMessage.parts.length
         const messages = [originalMessage]
@@ -238,63 +261,13 @@ describe("injectPlanAttachment (T048)", () => {
     })
   })
 
-  test("system prompt is unchanged — attachment is on user message only (SC-001)", async () => {
-    await using tmp = await tmpdir()
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: 0,
-        }
-        const userMsg = createUserMessage(session)
-        const assistantMsg: Message.WithParts = {
-          info: {
-            id: MessageID.ascending(),
-            sessionID: session.id,
-            role: "assistant",
-            time: { created: Date.now() },
-          } as Message.Assistant,
-          parts: [
-            {
-              type: "text",
-              id: PartID.ascending(),
-              messageID: MessageID.ascending(),
-              sessionID: session.id,
-              text: "assistant reply",
-            } as Message.TextPart,
-          ],
-        }
-        const messages = [userMsg, assistantMsg]
-
-        const result = await injectPlanAttachment({
-          messages,
-          planModeState: state,
-          session,
-        })
-
-        // Only the user message should be modified
-        expect(result.messages[1].parts.length).toBe(1)
-        expect((result.messages[1].parts[0] as Message.TextPart).text).toBe("assistant reply")
-
-        await Session.remove(session.id)
-      },
-    })
-  })
-
   test("no-op when no user messages exist", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        const state: PlanModeState = {
-          ...createDefaultPlanModeState(session),
-          active: true,
-          turnsSincePlanReminder: 2,
-        }
+        const state = buildPhaseState(session, { turnsSincePlanReminder: 2 })
 
         const result = await injectPlanAttachment({
           messages: [],

@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import fs from "node:fs/promises"
-import path from "node:path"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
-import type { ModelID, ProviderID } from "../../src/provider/schema"
+import { Question } from "../../src/question"
 import { Session } from "../../src/session"
 import { createDefaultPlanModeState, PlanModeStateRef } from "../../src/session/plan-mode-state"
-import { MessageID } from "../../src/session/schema"
+import { MessageID, type SessionID } from "../../src/session/schema"
 import { PlanEnterTool } from "../../src/tool/plan"
 import { tmpdir } from "../fixture/fixture"
 
@@ -41,16 +39,30 @@ describe("PlanEnterTool", () => {
     return { session, ref }
   }
 
-  test("should activate plan mode and emit event when inactive, with no plan file", async () => {
+  /** Helper: base tool context */
+  function makeToolContext(sessionID: string) {
+    return {
+      sessionID: sessionID as SessionID,
+      messageID: MessageID.ascending(),
+      callID: "test-call",
+      agent: "build",
+      abort: new AbortController().signal,
+      messages: [],
+      metadata: () => {},
+      ask: async () => {},
+    }
+  }
+
+  test("should activate plan mode and emit PlanStateChanged event when user approves", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const { session, ref } = await createSessionWithRef({ active: false, turnsSincePlanReminder: 3 })
 
-        const { Provider } = await import("../../src/provider/provider")
-        const originalDefaultModel = Provider.defaultModel
-        Provider.defaultModel = async () => ({ providerID: "test" as ProviderID, modelID: "test-model" as ModelID })
+        // Stub approval to "Yes"
+        const originalAsk = Question.ask
+        Question.ask = async () => [["Yes"]]
 
         let eventEmitted = false
         const eventPromise = new Promise<void>((resolve, reject) => {
@@ -69,19 +81,8 @@ describe("PlanEnterTool", () => {
         })
 
         try {
-          const toolContext = {
-            sessionID: session.id,
-            messageID: MessageID.ascending(),
-            callID: "test-call-1",
-            agent: "build",
-            abort: new AbortController().signal,
-            messages: [],
-            metadata: () => {},
-            ask: async () => {},
-          }
-
           const instance = await PlanEnterTool.init()
-          const executePromise = instance.execute({}, toolContext)
+          const executePromise = instance.execute({ interviewMode: false }, makeToolContext(session.id))
           const [result] = await Promise.all([executePromise, eventPromise])
 
           expect(eventEmitted).toBe(true)
@@ -90,67 +91,118 @@ describe("PlanEnterTool", () => {
           expect(state.active).toBe(true)
           expect(state.turnsSincePlanReminder).toBe(0)
 
-          expect(result.output).toContain("Create a plan at")
-          expect(result.inject?.length).toBe(1)
-          expect(result.inject?.[0].info.agent).toBe("plan")
-          expect(result.inject?.[0].parts).toEqual([])
+          // No inject — the new architecture returns workflow text as output
+          expect(result.inject).toBeUndefined()
+          // Output contains workflow text (plan mode instructions)
+          expect(result.output).toContain("Plan mode is active")
+          // Plan file path is in the output (dynamic plan file info, MVP parity)
+          expect(result.output).toContain("create your plan at")
         } finally {
-          Provider.defaultModel = originalDefaultModel
+          Question.ask = originalAsk
           await Session.remove(session.id)
         }
       },
     })
   })
 
-  test("should inject existing plan text when plan file exists", async () => {
+  test("should throw RejectedError when user declines plan mode entry", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const { session, ref } = await createSessionWithRef()
-        const state = ref.get()
-        await fs.mkdir(path.dirname(state.planFilePath), { recursive: true })
-        await fs.writeFile(state.planFilePath, "Existing Plan Content", "utf-8")
+        const { session, ref } = await createSessionWithRef({ active: false })
 
-        const { Provider } = await import("../../src/provider/provider")
-        const originalDefaultModel = Provider.defaultModel
-        Provider.defaultModel = async () => ({ providerID: "test" as ProviderID, modelID: "test-model" as ModelID })
+        const originalAsk = Question.ask
+        Question.ask = async () => [["No"]]
 
         try {
-          const toolContext = {
-            sessionID: session.id,
-            messageID: MessageID.ascending(),
-            callID: "test-call-2",
-            agent: "build",
-            abort: new AbortController().signal,
-            messages: [],
-            metadata: () => {},
-            ask: async () => {},
-          }
-
           const instance = await PlanEnterTool.init()
-          const result = await instance.execute({}, toolContext)
+          let caught = false
+          try {
+            await instance.execute({ interviewMode: false }, makeToolContext(session.id))
+          } catch (e: unknown) {
+            caught = true
+            const err = e as Error & { _tag: string }
+            expect(err._tag).toBe("QuestionRejectedError")
+          }
+          expect(caught).toBe(true)
 
-          expect(result.output).toContain("Review and refine the existing plan at")
-          expect(result.output).toContain("Existing Plan Content")
+          // State must NOT have changed — plan mode must remain inactive
+          const state = ref.get()
+          expect(state.active).toBe(false)
         } finally {
-          Provider.defaultModel = originalDefaultModel
+          Question.ask = originalAsk
           await Session.remove(session.id)
         }
       },
     })
   })
 
-  test("should be idempotent if already active and not emit event", async () => {
+  test("should return interview workflow text when interviewMode is true", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const { session } = await createSessionWithRef({ active: false })
+
+        const originalAsk = Question.ask
+        Question.ask = async () => [["Yes"]]
+
+        try {
+          const instance = await PlanEnterTool.init()
+          const result = await instance.execute({ interviewMode: true }, makeToolContext(session.id))
+
+          // Interview mode output must contain the iterative workflow instructions
+          // (not the 5-phase subagent workflow)
+          expect(result.output).toContain("Iterative Planning Workflow")
+          expect(result.inject).toBeUndefined()
+        } finally {
+          Question.ask = originalAsk
+          await Session.remove(session.id)
+        }
+      },
+    })
+  })
+
+  test("should return 5-phase workflow text when interviewMode is false (default)", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const { session } = await createSessionWithRef({ active: false })
+
+        const originalAsk = Question.ask
+        Question.ask = async () => [["Yes"]]
+
+        try {
+          const instance = await PlanEnterTool.init()
+          const result = await instance.execute({ interviewMode: false }, makeToolContext(session.id))
+
+          // 5-phase workflow output must contain Phase 1, Phase 2, etc.
+          expect(result.output).toContain("Phase 1")
+          expect(result.output).toContain("Phase 2")
+          expect(result.inject).toBeUndefined()
+        } finally {
+          Question.ask = originalAsk
+          await Session.remove(session.id)
+        }
+      },
+    })
+  })
+
+  test("should be idempotent when already active — no approval prompt, no event", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const { session, ref } = await createSessionWithRef({ active: true, turnsSincePlanReminder: 3 })
 
-        const { Provider } = await import("../../src/provider/provider")
-        const originalDefaultModel = Provider.defaultModel
-        Provider.defaultModel = async () => ({ providerID: "test" as ProviderID, modelID: "test-model" as ModelID })
+        let askCallCount = 0
+        const originalAsk = Question.ask
+        Question.ask = async () => {
+          askCallCount++
+          return [["Yes"]]
+        }
 
         let eventEmittedCount = 0
         const sub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
@@ -161,30 +213,23 @@ describe("PlanEnterTool", () => {
         })
 
         try {
-          const toolContext = {
-            sessionID: session.id,
-            messageID: MessageID.ascending(),
-            callID: "test-call-3",
-            agent: "build",
-            abort: new AbortController().signal,
-            messages: [],
-            metadata: () => {},
-            ask: async () => {},
-          }
-
           const instance = await PlanEnterTool.init()
-          const result = await instance.execute({}, toolContext)
+          const result = await instance.execute({ interviewMode: false }, makeToolContext(session.id))
 
+          // No approval prompt for already-active state
+          expect(askCallCount).toBe(0)
+          // No state change events
           expect(eventEmittedCount).toBe(0)
           expect(result.title).toBe("Already in plan mode")
-          expect(result.output).toContain("already in plan mode")
+          expect(result.output).toContain("already active")
 
           const state = ref.get()
           expect(state.active).toBe(true)
-          expect(state.turnsSincePlanReminder).toBe(3) // Ensure counter was NOT reset
+          // Counter must NOT be reset — state is unchanged
+          expect(state.turnsSincePlanReminder).toBe(3)
         } finally {
           sub()
-          Provider.defaultModel = originalDefaultModel
+          Question.ask = originalAsk
           await Session.remove(session.id)
         }
       },
