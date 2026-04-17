@@ -879,7 +879,7 @@ async function stripIncompleteThinking(input: { sessionID: SessionID; message: M
   }
 
   for (const part of assistantMsg.parts) {
-    if (part.type === "reasoning" && !part.time?.end) {
+    if (part.type === "reasoning" && !part.time?.end && !part.metadata?.thoughtSignature) {
       log.info("stripIncompleteThinking: removing incomplete reasoning part", {
         sessionID,
         messageID: message.id,

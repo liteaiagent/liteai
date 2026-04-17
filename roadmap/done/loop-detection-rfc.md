@@ -253,7 +253,7 @@ async function stripIncompleteThinking(
   // and don't have a valid thoughtSignature in metadata
   const parts = await Session.getParts(message.id)
   for (const part of parts) {
-    if (part.type === "reasoning" && !part.time?.end) {
+    if (part.type === "reasoning" && !part.time?.end && !part.metadata?.thoughtSignature) {
       await Session.deletePart(part.id)
     }
   }
