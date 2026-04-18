@@ -2708,6 +2708,17 @@
                         "type": "number"
                       }
                     }
+                  },
+                  "sessionMode": {
+                    "type": "string",
+                    "enum": ["Normal", "Coordinator", "Swarm"]
+                  },
+                  "toolProfile": {
+                    "type": "string",
+                    "enum": ["Plan", "Fast"]
+                  },
+                  "forkEnabled": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -9143,6 +9154,207 @@
         },
         "required": ["type", "properties"]
       },
+      "Event.worktree.ready": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "worktree.ready"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "branch": {
+                "type": "string"
+              }
+            },
+            "required": ["name", "branch"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.worktree.failed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "worktree.failed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": ["message"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.agent.spawned": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "agent.spawned"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "parentId": {
+                "type": "string"
+              },
+              "isAsync": {
+                "type": "boolean"
+              }
+            },
+            "required": ["agentId", "agentType", "parentId", "isAsync"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.agent.completed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "agent.completed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "agentType": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "failed", "killed"]
+              },
+              "duration": {
+                "type": "number"
+              },
+              "usage": {
+                "type": "object",
+                "properties": {
+                  "totalTokens": {
+                    "type": "number"
+                  },
+                  "toolCalls": {
+                    "type": "number"
+                  },
+                  "duration": {
+                    "type": "number"
+                  }
+                },
+                "required": ["totalTokens", "toolCalls", "duration"]
+              }
+            },
+            "required": ["agentId", "agentType", "status", "duration", "usage"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.agent.progress": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "agent.progress"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "activity": {
+                "type": "string"
+              }
+            },
+            "required": ["agentId", "activity"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.agent.terminal_notification": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "agent.terminal_notification"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["completed", "failed", "killed"]
+              },
+              "description": {
+                "type": "string"
+              },
+              "usage": {
+                "type": "object",
+                "properties": {
+                  "totalTokens": {
+                    "type": "number"
+                  },
+                  "toolCalls": {
+                    "type": "number"
+                  },
+                  "duration": {
+                    "type": "number"
+                  }
+                },
+                "required": ["totalTokens", "toolCalls", "duration"]
+              },
+              "error": {
+                "type": "string"
+              },
+              "partialResult": {
+                "type": "string"
+              }
+            },
+            "required": ["agentId", "status", "description", "usage"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.liteai_cache_eviction_hint": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "liteai_cache_eviction_hint"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              }
+            },
+            "required": ["agentId"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
       "Todo": {
         "type": "object",
         "properties": {
@@ -9312,6 +9524,20 @@
               }
             },
             "required": ["messageID"]
+          },
+          "sessionMode": {
+            "default": "Normal",
+            "type": "string",
+            "enum": ["Normal", "Coordinator", "Swarm"]
+          },
+          "toolProfile": {
+            "default": "Plan",
+            "type": "string",
+            "enum": ["Plan", "Fast"]
+          },
+          "forkEnabled": {
+            "default": false,
+            "type": "boolean"
           }
         },
         "required": ["id", "slug", "projectID", "directory", "title", "version", "time"]
@@ -9443,6 +9669,61 @@
         },
         "required": ["type", "properties"]
       },
+      "Event.plan.state_changed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "plan.state_changed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string",
+                "pattern": "^ses.*"
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "planFilePath": {
+                "type": "string"
+              },
+              "turnsSincePlanReminder": {
+                "type": "number"
+              }
+            },
+            "required": ["sessionID", "active", "planFilePath", "turnsSincePlanReminder"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.plan.approval_requested": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "plan.approval_requested"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string",
+                "pattern": "^ses.*"
+              },
+              "planText": {
+                "type": "string"
+              },
+              "planFilePath": {
+                "type": "string"
+              }
+            },
+            "required": ["sessionID", "planText", "planFilePath"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
       "Event.vcs.branch.updated": {
         "type": "object",
         "properties": {
@@ -9457,47 +9738,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "required": ["type", "properties"]
-      },
-      "Event.worktree.ready": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "worktree.ready"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "branch": {
-                "type": "string"
-              }
-            },
-            "required": ["name", "branch"]
-          }
-        },
-        "required": ["type", "properties"]
-      },
-      "Event.worktree.failed": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "worktree.failed"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "message": {
-                "type": "string"
-              }
-            },
-            "required": ["message"]
           }
         },
         "required": ["type", "properties"]
@@ -9708,6 +9948,27 @@
             "$ref": "#/components/schemas/Event.file.watcher.updated"
           },
           {
+            "$ref": "#/components/schemas/Event.worktree.ready"
+          },
+          {
+            "$ref": "#/components/schemas/Event.worktree.failed"
+          },
+          {
+            "$ref": "#/components/schemas/Event.agent.spawned"
+          },
+          {
+            "$ref": "#/components/schemas/Event.agent.completed"
+          },
+          {
+            "$ref": "#/components/schemas/Event.agent.progress"
+          },
+          {
+            "$ref": "#/components/schemas/Event.agent.terminal_notification"
+          },
+          {
+            "$ref": "#/components/schemas/Event.liteai_cache_eviction_hint"
+          },
+          {
             "$ref": "#/components/schemas/Event.todo.updated"
           },
           {
@@ -9726,13 +9987,13 @@
             "$ref": "#/components/schemas/Event.session.error"
           },
           {
+            "$ref": "#/components/schemas/Event.plan.state_changed"
+          },
+          {
+            "$ref": "#/components/schemas/Event.plan.approval_requested"
+          },
+          {
             "$ref": "#/components/schemas/Event.vcs.branch.updated"
-          },
-          {
-            "$ref": "#/components/schemas/Event.worktree.ready"
-          },
-          {
-            "$ref": "#/components/schemas/Event.worktree.failed"
           },
           {
             "$ref": "#/components/schemas/Event.pty.created"
@@ -9993,7 +10254,7 @@
           "permissionMode": {
             "description": "Permission preset (Claude Code compat). Mapped to LiteAI permission rules.",
             "type": "string",
-            "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan"]
+            "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]
           },
           "maxTurns": {
             "description": "Maximum turns (Claude Code compat). Alias for steps.",
@@ -10041,9 +10302,9 @@
             "type": "boolean"
           },
           "isolation": {
-            "description": "Git worktree isolation (Claude Code compat).",
+            "description": "Git worktree or remote Docker isolation (Claude Code compat).",
             "type": "string",
-            "const": "worktree"
+            "enum": ["worktree", "remote"]
           },
           "hooks": {
             "description": "Per-agent hooks (Claude Code compat). Parsed but activates after hooks system.",
@@ -10052,6 +10313,45 @@
               "type": "string"
             },
             "additionalProperties": {}
+          },
+          "thinking": {
+            "description": "Enable thinking for models that support it",
+            "type": "boolean"
+          },
+          "thinkingBudget": {
+            "description": "Token budget for thinking",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "criticalSystemReminder": {
+            "description": "System reminder injected per turn",
+            "type": "string"
+          },
+          "timeout": {
+            "description": "Agent execution timeout in ms (default: 1800000)",
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "requiredMcpServers": {
+            "description": "Required MCP servers to be available",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "omitLiteaiMd": {
+            "description": "Omit liteai.md project file from context",
+            "type": "boolean"
+          },
+          "initialPrompt": {
+            "description": "Initial prompt injected after load",
+            "type": "string"
+          },
+          "containerImage": {
+            "description": "Docker image for remote isolation",
+            "type": "string"
           }
         },
         "additionalProperties": {}
@@ -10868,6 +11168,14 @@
                 "type": "integer",
                 "exclusiveMinimum": 0,
                 "maximum": 9007199254740991
+              },
+              "agent_memory": {
+                "description": "Enable agent memory integration",
+                "type": "boolean"
+              },
+              "agent_memory_snapshot": {
+                "description": "Enable agent memory local snapshot integration",
+                "type": "boolean"
               }
             }
           },
@@ -12199,6 +12507,121 @@
             "type": "integer",
             "exclusiveMinimum": 0,
             "maximum": 9007199254740991
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              }
+            ]
+          },
+          "disallowedTools": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "permissionMode": {
+            "type": "string",
+            "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mcpServers": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              ]
+            }
+          },
+          "effort": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "max"]
+          },
+          "memory": {
+            "type": "string",
+            "enum": ["user", "project", "local"]
+          },
+          "background": {
+            "type": "boolean"
+          },
+          "isolation": {
+            "type": "string",
+            "enum": ["worktree", "remote"]
+          },
+          "hooks": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "thinkingBudget": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "timeout": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "criticalSystemReminder": {
+            "type": "string"
+          },
+          "requiredMcpServers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "omitLiteaiMd": {
+            "type": "boolean"
+          },
+          "initialPrompt": {
+            "type": "string"
+          },
+          "containerImage": {
+            "type": "string"
           }
         },
         "required": ["name", "mode", "permission", "options"]

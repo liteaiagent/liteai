@@ -50,7 +50,7 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
     }
   })
 
-  const visible = createMemo(() => (agents() ?? []).filter((a) => !a.hidden))
+  const visible = createMemo(() => (agents() ?? []).filter((a) => !a.hidden && a.name !== "plan"))
   const count = createMemo(() => visible().length)
 
   const [loading, setLoading] = createSignal<string | null>(null)
@@ -122,7 +122,9 @@ const SettingsAgentsInner: Component<{ projectID: string }> = (props) => {
                   <div class="flex items-center justify-between gap-4 min-h-14 py-3 border-b border-border-weak-base last:border-none px-2 rounded -mx-2 w-full text-left">
                     <div class="flex flex-col gap-0.5 min-w-0 flex-1">
                       <div class="flex items-center gap-2.5">
-                        <span class="text-14-medium text-text-strong truncate">{agent.name}</span>
+                        <span class="text-14-medium text-text-strong truncate">
+                          {agent.name === "build" ? "LiteAI" : agent.name}
+                        </span>
                         <span class={`text-11-regular text-${color()}`}>●</span>
                         <Show when={label()}>
                           <span class="text-11-regular text-text-weaker">{label()}</span>

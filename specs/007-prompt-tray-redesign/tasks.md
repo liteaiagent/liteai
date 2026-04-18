@@ -30,8 +30,8 @@ description: "Task list for prompt-tray-redesign feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T001 Update TypeScript definitions for `SessionConfig` by defining the new fields `sessionMode`, `toolProfile`, `forkEnabled` inline in the inferred Drizzle schema types in `packages/core/src/session/session.sql.ts`.
-- [ ] T002 Extend `SessionTable` schema fields to store `session_mode`, `tool_profile`, `fork_enabled` in `packages/core/src/session/session.sql.ts`
+- [x] T001 Update TypeScript definitions for `SessionConfig` by defining the new fields `sessionMode`, `toolProfile`, `forkEnabled` inline in the inferred Drizzle schema types in `packages/core/src/session/session.sql.ts`.
+- [x] T002 Extend `SessionTable` schema fields to store `session_mode`, `tool_profile`, `fork_enabled` in `packages/core/src/session/session.sql.ts`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -45,8 +45,8 @@ description: "Task list for prompt-tray-redesign feature implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T003 [P] [US1] Remove the `plan` agent reference from `packages/web/src/components/settings-agents.tsx` and rename `build` display to "LiteAI"
-- [ ] T004 [US1] Redesign the agent selection UI in `packages/ui/src/panes/chat/chat-prompt-input.tsx` to list custom `mode: primary` agents and exclude `plan`
+- [x] T003 [P] [US1] Remove the `plan` agent reference from `packages/web/src/components/settings-agents.tsx` and rename `build` display to "LiteAI"
+- [x] T004 [US1] Redesign the agent selection UI in `packages/ui/src/panes/chat/chat-prompt-input.tsx` to list custom `mode: primary` agents and exclude `plan`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -60,10 +60,10 @@ description: "Task list for prompt-tray-redesign feature implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T005 [P] [US2] Implement dynamic exclusion of `EnterPlanModeTool`, `ExitPlanModeV2Tool`, and `Explore`/`Plan` proxy agents depending on whether the active `toolProfile` is "Fast" in `packages/core/src/tool/registry.ts`
-- [ ] T006 [P] [US2] Update `packages/core/src/session/engine/query.ts` to pass the active session's `toolProfile` state from DB into the tool registry resolution
-- [ ] T007 [P] [US2] Create standalone `tool-profile-selector.tsx` component in `packages/ui/src/panes/chat/tool-profile-selector.tsx`
-- [ ] T008 [US2] Integrate `tool-profile-selector.tsx` into `packages/ui/src/panes/chat/chat-prompt-input.tsx`
+- [x] T005 [P] [US2] Implement dynamic exclusion of `EnterPlanModeTool`, `ExitPlanModeV2Tool`, and `Explore`/`Plan` proxy agents depending on whether the active `toolProfile` is "Fast" in `packages/core/src/tool/registry.ts`
+- [x] T006 [P] [US2] Update `packages/core/src/session/engine/query.ts` to pass the active session's `toolProfile` state from DB into the tool registry resolution
+- [x] T007 [P] [US2] Create standalone `tool-profile-selector.tsx` component in `packages/ui/src/panes/chat/tool-profile-selector.tsx`
+- [x] T008 [US2] Integrate `tool-profile-selector.tsx` into `packages/ui/src/panes/chat/chat-prompt-input.tsx`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -77,8 +77,8 @@ description: "Task list for prompt-tray-redesign feature implementation"
 
 ### Implementation for User Story 3
 
-- [ ] T009 [P] [US3] Create a standalone fork toggle button component in `packages/ui/src/panes/chat/fork-toggle.tsx`
-- [ ] T010 [US3] Integrate `fork-toggle.tsx` into `packages/ui/src/panes/chat/chat-prompt-input.tsx`, map it to `forkEnabled` session state, and add a reactive dependency on `sessionMode` to disable and gray out the fork toggle when a mutually exclusive mode (like Coordinator) is active.
+- [x] T009 [P] [US3] Create a standalone fork toggle button component in `packages/ui/src/panes/chat/fork-toggle.tsx`
+- [x] T010 [US3] Integrate `fork-toggle.tsx` into `packages/ui/src/panes/chat/chat-prompt-input.tsx`, map it to `forkEnabled` session state, and add a reactive dependency on `sessionMode` to disable and gray out the fork toggle when a mutually exclusive mode (like Coordinator) is active.
 
 **Checkpoint**: All user stories up to P2 should now be independently functional
 
@@ -92,11 +92,11 @@ description: "Task list for prompt-tray-redesign feature implementation"
 
 ### Implementation for User Story 4
 
-- [ ] T011 [P] [US4] Create session mode dropdown list in `packages/ui/src/panes/chat/session-mode-selector.tsx` explicitly disabling `Coordinator` and `Swarm`
-- [ ] T012 [US4] Integrate `session-mode-selector.tsx` into `packages/ui/src/panes/chat/chat-prompt-input.tsx`
+- [x] T011 [P] [US4] Create session mode dropdown list in `packages/ui/src/panes/chat/session-mode-selector.tsx` explicitly disabling `Coordinator` and `Swarm`
+- [x] T012 [US4] Integrate `session-mode-selector.tsx` into `packages/ui/src/panes/chat/chat-prompt-input.tsx`
 
 ### Implementation for Engine Integration (Edge Cases)
-- [ ] T013 [US2] Add reactivity in the session UI or routing engine hook to ensure that toggling the Tool Profile mid-session immediately updates the injected tool pool for the *next* outgoing message without requiring a hard reload.
+- [x] T013 [US2] Add reactivity in the session UI or routing engine hook to ensure that toggling the Tool Profile mid-session immediately updates the injected tool pool for the *next* outgoing message without requiring a hard reload.
 
 **Checkpoint**: All user stories should now be independently functional
 

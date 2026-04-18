@@ -25,6 +25,7 @@ import {
   usePrompt,
 } from "../shared/prompt"
 import { ChatModelSelector } from "./chat-model-selector"
+import { ForkToggle } from "./fork-toggle"
 import { addPartAtCursor } from "./prompt-input/add-part"
 import { createPromptAttachments } from "./prompt-input/attachments"
 import { PromptContextItems } from "./prompt-input/context-items"
@@ -45,6 +46,8 @@ import { PromptImageAttachments } from "./prompt-input/image-attachments"
 import { createImeHandler } from "./prompt-input/ime-handler"
 import { promptPlaceholder } from "./prompt-input/placeholder"
 import { type AtOption, PromptPopover, type SlashCommand } from "./prompt-input/slash-popover"
+import { type SessionMode, SessionModeSelector } from "./session-mode-selector"
+import { type ToolProfile, ToolProfileSelector } from "./tool-profile-selector"
 
 /**
  * Callback to handle prompt submission.
@@ -163,6 +166,16 @@ interface ChatPromptInputProps {
 
   /** New session worktree selection. */
   newSessionWorktree?: string
+
+  /** Callback to persist session config changes (sessionMode, toolProfile, forkEnabled). */
+  onSessionConfigChange?: (
+    sessionID: string,
+    config: {
+      sessionMode?: SessionMode
+      toolProfile?: ToolProfile
+      forkEnabled?: boolean
+    },
+  ) => void
   onNewSessionWorktreeReset?: () => void
 
   /** Edit mode (re-edit a previous message). */
@@ -1108,8 +1121,20 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
 
   // ─── Agent / Model / Variant (controller-based) ───
 
-  const agentNames = createMemo(() => selection.agent.list().map((agent) => agent.name))
+  const agentNames = createMemo(() =>
+    selection.agent
+      .list()
+      .filter((agent) => agent.name !== "plan")
+      .map((agent) => agent.name),
+  )
   const variants = createMemo(() => ["default", ...selection.model.variant.list()])
+
+  // ─── Session Config (Prompt Tray) ───
+
+  const currentSession = createMemo(() => (props.sessionID ? controller.session.get(props.sessionID) : undefined))
+  const sessionMode = createMemo<SessionMode>(() => (currentSession()?.sessionMode as SessionMode) ?? "Normal")
+  const toolProfile = createMemo<ToolProfile>(() => (currentSession()?.toolProfile as ToolProfile) ?? "Plan")
+  const forkEnabled = createMemo(() => currentSession()?.forkEnabled ?? false)
 
   // ─── Render ───
 
@@ -1356,6 +1381,7 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                       size="normal"
                       options={agentNames()}
                       current={selection.agent.current()?.name ?? ""}
+                      label={(x) => (x === "build" ? "LiteAI" : x)}
                       onSelect={selection.agent.set}
                       class="capitalize max-w-[160px] text-text-base"
                       valueClass="truncate text-13-regular text-text-base"
@@ -1425,6 +1451,44 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                       />
                     </TooltipKeybind>
                   </div>
+                </Show>
+
+                {/* ─── Prompt Tray: Session Config Controls ─── */}
+                <Show when={props.sessionID}>
+                  {/* Session Mode selector */}
+                  <SessionModeSelector
+                    current={sessionMode()}
+                    onSelect={(mode) => {
+                      if (props.sessionID && props.onSessionConfigChange) {
+                        props.onSessionConfigChange(props.sessionID, { sessionMode: mode })
+                      }
+                    }}
+                    triggerStyle={control()}
+                  />
+
+                  {/* Tool Profile selector */}
+                  <ToolProfileSelector
+                    current={toolProfile()}
+                    onSelect={(profile) => {
+                      if (props.sessionID && props.onSessionConfigChange) {
+                        props.onSessionConfigChange(props.sessionID, { toolProfile: profile })
+                      }
+                    }}
+                    triggerStyle={control()}
+                  />
+
+                  {/* Fork Toggle */}
+                  <ForkToggle
+                    enabled={forkEnabled()}
+                    onToggle={(enabled) => {
+                      if (props.sessionID && props.onSessionConfigChange) {
+                        props.onSessionConfigChange(props.sessionID, { forkEnabled: enabled })
+                      }
+                    }}
+                    style={control()}
+                    disabled={sessionMode() === "Coordinator"}
+                    disabledTooltip="Fork is not available in Coordinator mode"
+                  />
                 </Show>
 
                 {/* Auto-accept / YOLO button */}

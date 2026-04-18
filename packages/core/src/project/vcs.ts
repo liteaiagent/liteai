@@ -13,7 +13,7 @@ export namespace Vcs {
     BranchUpdated: BusEvent.define(
       "vcs.branch.updated",
       z.object({
-        branch: z.string().optional(),
+        branch: z.string(),
       }),
     ),
   }
@@ -51,7 +51,9 @@ export namespace Vcs {
         if (next !== current) {
           log.info("branch changed", { from: current, to: next })
           current = next
-          Bus.publish(Event.BranchUpdated, { branch: next })
+          if (next !== undefined) {
+            Bus.publish(Event.BranchUpdated, { branch: next })
+          }
         }
       })
 

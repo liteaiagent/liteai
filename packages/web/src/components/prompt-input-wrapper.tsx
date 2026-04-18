@@ -9,6 +9,7 @@ import { useComments } from "@/context/comments"
 import { useLocal } from "@/context/local"
 import { usePermission } from "@/context/permission"
 import { type ContextItem, type ImageAttachmentPart, type Prompt, usePrompt } from "@/context/prompt"
+import { useSDK } from "@/context/sdk"
 import { useSync } from "@/context/sync"
 
 export interface PromptInputWrapperProps {
@@ -30,6 +31,7 @@ export interface PromptInputWrapperProps {
 
 export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) => {
   const sync = useSync()
+  const sdk = useSDK()
   const prompt = usePrompt()
   const local = useLocal()
   const permission = usePermission()
@@ -80,6 +82,22 @@ export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) =>
     dialog.show((() => <DialogSelectProvider />) as never)
   }
 
+  // Persist session config changes (sessionMode, toolProfile, forkEnabled) via the API
+  const handleSessionConfigChange = async (
+    sessionID: string,
+    config: {
+      sessionMode?: "Normal" | "Coordinator" | "Swarm"
+      toolProfile?: "Plan" | "Fast"
+      forkEnabled?: boolean
+    },
+  ) => {
+    await sdk.client.project.session.update({
+      sessionID,
+      projectID: sdk.projectID,
+      ...config,
+    })
+  }
+
   // Workaround since ChatPromptCommands is slightly structurally different than what useCommand() returns in terms of typing,
   // but matches at runtime. We assert its type via any.
   // biome-ignore lint/suspicious/noExplicitAny: Workaround
@@ -107,6 +125,7 @@ export const PromptInputWrapper: Component<PromptInputWrapperProps> = (props) =>
       shouldQueue={props.shouldQueue}
       onQueue={props.onQueue as never}
       onAbort={props.onAbort}
+      onSessionConfigChange={handleSessionConfigChange}
     />
   )
 }

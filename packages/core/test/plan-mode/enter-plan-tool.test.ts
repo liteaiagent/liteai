@@ -117,15 +117,9 @@ describe("PlanEnterTool", () => {
 
         try {
           const instance = await PlanEnterTool.init()
-          let caught = false
-          try {
-            await instance.execute({ interviewMode: false }, makeToolContext(session.id))
-          } catch (e: unknown) {
-            caught = true
-            const err = e as Error & { _tag: string }
-            expect(err._tag).toBe("QuestionRejectedError")
-          }
-          expect(caught).toBe(true)
+          await expect(instance.execute({ interviewMode: false }, makeToolContext(session.id))).rejects.toMatchObject({
+            _tag: "QuestionRejectedError",
+          })
 
           // State must NOT have changed — plan mode must remain inactive
           const state = ref.get()

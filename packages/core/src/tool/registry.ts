@@ -91,6 +91,10 @@ export namespace ToolRegistry {
       modelID: ModelID
     },
     agent?: Agent.Info,
+    options?: {
+      /** When "Fast", plan_enter and plan_exit tools are excluded from the pool. */
+      toolProfile?: "Plan" | "Fast"
+    },
   ) {
     const config = await Config.get()
     const tools = await all()
@@ -105,6 +109,21 @@ export namespace ToolRegistry {
 
         return true
       })
+
+    // ── Tool Profile filtering: exclude plan tools when "Fast" ──
+    if (options?.toolProfile === "Fast") {
+      const planToolIds = new Set(["plan_enter", "plan_exit"])
+      const beforeCount = availableTools.length
+      availableTools = availableTools.filter((t) => !planToolIds.has(t.id))
+      const excluded = beforeCount - availableTools.length
+      if (excluded > 0) {
+        tracer.startActiveSpan("tool.registry.toolProfile.fast", (span) => {
+          span.setAttribute("excludedCount", excluded)
+          span.setAttribute("toolProfile", "Fast")
+          span.end()
+        })
+      }
+    }
 
     if (agent?.disallowedTools && agent.disallowedTools.length > 0) {
       const availableToolIds = new Set(availableTools.map((t) => t.id))

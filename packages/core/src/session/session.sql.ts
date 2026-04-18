@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { index, int, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core"
 import type { WorkspaceID } from "../control-plane/schema"
 import type { PermissionNext } from "../permission/next"
 import { ProjectTable } from "../project/project.sql"
@@ -34,6 +34,9 @@ export const SessionTable = sqliteTable(
     revert: text({ mode: "json" }).$type<{ messageID: MessageID; partID?: PartID; snapshot?: string; diff?: string }>(),
     permission: text({ mode: "json" }).$type<PermissionNext.Ruleset>(),
     plan_mode: text({ mode: "json" }).$type<PlanModeState>(),
+    session_mode: text().notNull().default("Normal"),
+    tool_profile: text().notNull().default("Plan"),
+    fork_enabled: int().notNull().default(0),
     ...Timestamps,
     time_compacting: integer(),
     time_archived: integer(),

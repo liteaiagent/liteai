@@ -273,6 +273,9 @@ export const SessionRoutes = lazy(() =>
               archived: z.number().optional(),
             })
             .optional(),
+          sessionMode: z.enum(["Normal", "Coordinator", "Swarm"]).optional(),
+          toolProfile: z.enum(["Plan", "Fast"]).optional(),
+          forkEnabled: z.boolean().optional(),
         }),
       ),
       async (c) => {
@@ -285,6 +288,18 @@ export const SessionRoutes = lazy(() =>
         }
         if (updates.time?.archived !== undefined) {
           session = await Session.setArchived({ sessionID, time: updates.time.archived })
+        }
+        if (
+          updates.sessionMode !== undefined ||
+          updates.toolProfile !== undefined ||
+          updates.forkEnabled !== undefined
+        ) {
+          session = await Session.setConfig({
+            sessionID,
+            sessionMode: updates.sessionMode,
+            toolProfile: updates.toolProfile,
+            forkEnabled: updates.forkEnabled,
+          })
         }
 
         return c.json(session)

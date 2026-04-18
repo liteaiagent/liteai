@@ -724,6 +724,77 @@ export type EventFileWatcherUpdated = {
     };
 };
 
+export type EventWorktreeReady = {
+    type: 'worktree.ready';
+    properties: {
+        name: string;
+        branch: string;
+    };
+};
+
+export type EventWorktreeFailed = {
+    type: 'worktree.failed';
+    properties: {
+        message: string;
+    };
+};
+
+export type EventAgentSpawned = {
+    type: 'agent.spawned';
+    properties: {
+        agentId: string;
+        agentType: string;
+        parentId: string;
+        isAsync: boolean;
+    };
+};
+
+export type EventAgentCompleted = {
+    type: 'agent.completed';
+    properties: {
+        agentId: string;
+        agentType: string;
+        status: 'completed' | 'failed' | 'killed';
+        duration: number;
+        usage: {
+            totalTokens: number;
+            toolCalls: number;
+            duration: number;
+        };
+    };
+};
+
+export type EventAgentProgress = {
+    type: 'agent.progress';
+    properties: {
+        agentId: string;
+        activity: string;
+    };
+};
+
+export type EventAgentTerminalNotification = {
+    type: 'agent.terminal_notification';
+    properties: {
+        agentId: string;
+        status: 'completed' | 'failed' | 'killed';
+        description: string;
+        usage: {
+            totalTokens: number;
+            toolCalls: number;
+            duration: number;
+        };
+        error?: string;
+        partialResult?: string;
+    };
+};
+
+export type EventLiteaiCacheEvictionHint = {
+    type: 'liteai_cache_eviction_hint';
+    properties: {
+        agentId: string;
+    };
+};
+
 export type Todo = {
     /**
      * Brief description of the task
@@ -788,6 +859,9 @@ export type Session = {
         snapshot?: string;
         diff?: string;
     };
+    sessionMode?: 'Normal' | 'Coordinator' | 'Swarm';
+    toolProfile?: 'Plan' | 'Fast';
+    forkEnabled?: boolean;
 };
 
 export type EventSessionCreated = {
@@ -827,25 +901,29 @@ export type EventSessionError = {
     };
 };
 
+export type EventPlanStateChanged = {
+    type: 'plan.state_changed';
+    properties: {
+        sessionID: string;
+        active: boolean;
+        planFilePath: string;
+        turnsSincePlanReminder: number;
+    };
+};
+
+export type EventPlanApprovalRequested = {
+    type: 'plan.approval_requested';
+    properties: {
+        sessionID: string;
+        planText: string;
+        planFilePath: string;
+    };
+};
+
 export type EventVcsBranchUpdated = {
     type: 'vcs.branch.updated';
     properties: {
         branch?: string;
-    };
-};
-
-export type EventWorktreeReady = {
-    type: 'worktree.ready';
-    properties: {
-        name: string;
-        branch: string;
-    };
-};
-
-export type EventWorktreeFailed = {
-    type: 'worktree.failed';
-    properties: {
-        message: string;
     };
 };
 
@@ -888,7 +966,7 @@ export type EventPtyDeleted = {
     };
 };
 
-export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventSessionStatus | EventSessionIdle | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventVcsBranchUpdated | EventWorktreeReady | EventWorktreeFailed | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
+export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventSessionStatus | EventSessionIdle | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
 
 export type GlobalEvent = {
     directory: string;
@@ -1000,7 +1078,7 @@ export type AgentConfig = {
     /**
      * Permission preset (Claude Code compat). Mapped to LiteAI permission rules.
      */
-    permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan';
+    permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
     /**
      * Maximum turns (Claude Code compat). Alias for steps.
      */
@@ -1028,24 +1106,56 @@ export type AgentConfig = {
      */
     background?: boolean;
     /**
-     * Git worktree isolation (Claude Code compat).
+     * Git worktree or remote Docker isolation (Claude Code compat).
      */
-    isolation?: 'worktree';
+    isolation?: 'worktree' | 'remote';
     /**
      * Per-agent hooks (Claude Code compat). Parsed but activates after hooks system.
      */
     hooks?: {
         [key: string]: unknown;
     };
+    /**
+     * Enable thinking for models that support it
+     */
+    thinking?: boolean;
+    /**
+     * Token budget for thinking
+     */
+    thinkingBudget?: number;
+    /**
+     * System reminder injected per turn
+     */
+    criticalSystemReminder?: string;
+    /**
+     * Agent execution timeout in ms (default: 1800000)
+     */
+    timeout?: number;
+    /**
+     * Required MCP servers to be available
+     */
+    requiredMcpServers?: Array<string>;
+    /**
+     * Omit liteai.md project file from context
+     */
+    omitLiteaiMd?: boolean;
+    /**
+     * Initial prompt injected after load
+     */
+    initialPrompt?: string;
+    /**
+     * Docker image for remote isolation
+     */
+    containerImage?: string;
     [key: string]: unknown | string | number | boolean | null | 'subagent' | 'primary' | 'all' | boolean | {
         [key: string]: unknown;
     } | number | PermissionConfig | string | Array<string> | {
         [key: string]: boolean;
-    } | string | Array<string> | 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | Array<string> | Array<string | {
+    } | string | Array<string> | 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble' | Array<string> | Array<string | {
         [key: string]: unknown;
-    }> | 'low' | 'medium' | 'high' | 'max' | 'user' | 'project' | 'local' | 'worktree' | {
+    }> | 'low' | 'medium' | 'high' | 'max' | 'user' | 'project' | 'local' | 'worktree' | 'remote' | {
         [key: string]: unknown;
-    } | undefined;
+    } | Array<string> | undefined;
 };
 
 export type ProviderConfig = {
@@ -1423,6 +1533,14 @@ export type Config = {
          * Timeout in milliseconds for model context protocol (MCP) requests
          */
         mcp_timeout?: number;
+        /**
+         * Enable agent memory integration
+         */
+        agent_memory?: boolean;
+        /**
+         * Enable agent memory local snapshot integration
+         */
+        agent_memory_snapshot?: boolean;
     };
     /**
      * Config-driven hooks that fire on lifecycle events (Claude Code compatible)
@@ -1869,6 +1987,30 @@ export type Agent = {
         [key: string]: unknown;
     };
     steps?: number;
+    tools?: string | Array<string> | {
+        [key: string]: boolean;
+    };
+    disallowedTools?: string | Array<string>;
+    permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+    skills?: Array<string>;
+    mcpServers?: Array<string | {
+        [key: string]: unknown;
+    }>;
+    effort?: 'low' | 'medium' | 'high' | 'max';
+    memory?: 'user' | 'project' | 'local';
+    background?: boolean;
+    isolation?: 'worktree' | 'remote';
+    hooks?: {
+        [key: string]: unknown;
+    };
+    thinking?: boolean;
+    thinkingBudget?: number;
+    timeout?: number;
+    criticalSystemReminder?: string;
+    requiredMcpServers?: Array<string>;
+    omitLiteaiMd?: boolean;
+    initialPrompt?: string;
+    containerImage?: string;
 };
 
 export type LspStatus = {
@@ -3161,6 +3303,9 @@ export type ProjectSessionUpdateData = {
         time?: {
             archived?: number;
         };
+        sessionMode?: 'Normal' | 'Coordinator' | 'Swarm';
+        toolProfile?: 'Plan' | 'Fast';
+        forkEnabled?: boolean;
     };
     path: {
         sessionID: string;

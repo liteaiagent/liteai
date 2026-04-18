@@ -94,6 +94,7 @@ export async function resolveTools(input: {
   for (const item of await ToolRegistry.tools(
     { modelID: ModelID.make(input.model.api.id), providerID: input.model.providerID },
     input.agent,
+    { toolProfile: input.session.toolProfile },
   )) {
     const schema = ProviderTransform.schema(input.model, z.toJSONSchema(item.parameters))
     tools[item.id] = tool({

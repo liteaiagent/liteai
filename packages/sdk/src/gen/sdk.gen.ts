@@ -841,13 +841,19 @@ export class Session extends HeyApiClient {
         time?: {
             archived?: number;
         };
+        sessionMode?: 'Normal' | 'Coordinator' | 'Swarm';
+        toolProfile?: 'Plan' | 'Fast';
+        forkEnabled?: boolean;
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
                     { in: 'path', key: 'sessionID' },
                     { in: 'path', key: 'projectID' },
                     { in: 'query', key: 'workspace' },
                     { in: 'body', key: 'title' },
-                    { in: 'body', key: 'time' }
+                    { in: 'body', key: 'time' },
+                    { in: 'body', key: 'sessionMode' },
+                    { in: 'body', key: 'toolProfile' },
+                    { in: 'body', key: 'forkEnabled' }
                 ] }]);
         return (options?.client ?? this.client).patch<ProjectSessionUpdateResponses, ProjectSessionUpdateErrors, ThrowOnError>({
             url: '/project/{projectID}/session/{sessionID}',

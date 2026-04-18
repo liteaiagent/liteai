@@ -102,6 +102,9 @@ export namespace Session {
         compacting: row.time_compacting ?? undefined,
         archived: row.time_archived ?? undefined,
       },
+      sessionMode: (row.session_mode as "Normal" | "Coordinator" | "Swarm") ?? "Normal",
+      toolProfile: (row.tool_profile as "Plan" | "Fast") ?? "Plan",
+      forkEnabled: row.fork_enabled === 1,
     }
   }
 
@@ -126,6 +129,9 @@ export namespace Session {
       time_updated: info.time.updated,
       time_compacting: info.time.compacting,
       time_archived: info.time.archived,
+      session_mode: info.sessionMode ?? "Normal",
+      tool_profile: info.toolProfile ?? "Plan",
+      fork_enabled: info.forkEnabled ? 1 : 0,
     }
   }
 
@@ -177,6 +183,9 @@ export namespace Session {
           diff: z.string().optional(),
         })
         .optional(),
+      sessionMode: z.enum(["Normal", "Coordinator", "Swarm"]).default("Normal"),
+      toolProfile: z.enum(["Plan", "Fast"]).default("Plan"),
+      forkEnabled: z.boolean().default(false),
     })
     .meta({
       ref: "Session",
@@ -335,6 +344,9 @@ export namespace Session {
         created: Date.now(),
         updated: Date.now(),
       },
+      sessionMode: "Normal" as const,
+      toolProfile: "Plan" as const,
+      forkEnabled: false,
     }
     log.info("created", result)
     Database.use((db) => {
@@ -502,6 +514,29 @@ export namespace Session {
           .where(eq(SessionTable.id, input.sessionID))
           .returning()
           .get()
+        if (!row) throw new NotFoundError({ message: `Session not found: ${input.sessionID}` })
+        const info = fromRow(row)
+        Database.effect(() => Bus.publish(Event.Updated, { info }))
+        return info
+      })
+    },
+  )
+
+  export const setConfig = fn(
+    z.object({
+      sessionID: SessionID.zod,
+      sessionMode: Info.shape.sessionMode.optional(),
+      toolProfile: Info.shape.toolProfile.optional(),
+      forkEnabled: Info.shape.forkEnabled.optional(),
+    }),
+    async (input) => {
+      return Database.use((db) => {
+        const updates: Record<string, unknown> = { time_updated: Date.now() }
+        if (input.sessionMode !== undefined) updates.session_mode = input.sessionMode
+        if (input.toolProfile !== undefined) updates.tool_profile = input.toolProfile
+        if (input.forkEnabled !== undefined) updates.fork_enabled = input.forkEnabled ? 1 : 0
+
+        const row = db.update(SessionTable).set(updates).where(eq(SessionTable.id, input.sessionID)).returning().get()
         if (!row) throw new NotFoundError({ message: `Session not found: ${input.sessionID}` })
         const info = fromRow(row)
         Database.effect(() => Bus.publish(Event.Updated, { info }))
