@@ -1130,11 +1130,55 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
   const variants = createMemo(() => ["default", ...selection.model.variant.list()])
 
   // ─── Session Config (Prompt Tray) ───
+  //
+  // Local state holds pre-session defaults. Once a session exists, values
+  // are read from the session record. When sessionID transitions from
+  // undefined → defined (session created), any non-default local values
+  // are automatically applied via onSessionConfigChange.
+
+  const [localConfig, setLocalConfig] = createStore<{
+    sessionMode: SessionMode
+    toolProfile: ToolProfile
+    forkEnabled: boolean
+  }>({
+    sessionMode: "Normal",
+    toolProfile: "Plan",
+    forkEnabled: false,
+  })
 
   const currentSession = createMemo(() => (props.sessionID ? controller.session.get(props.sessionID) : undefined))
-  const sessionMode = createMemo<SessionMode>(() => (currentSession()?.sessionMode as SessionMode) ?? "Normal")
-  const toolProfile = createMemo<ToolProfile>(() => (currentSession()?.toolProfile as ToolProfile) ?? "Plan")
-  const forkEnabled = createMemo(() => currentSession()?.forkEnabled ?? false)
+
+  const sessionMode = createMemo<SessionMode>(() =>
+    currentSession() ? ((currentSession()?.sessionMode as SessionMode) ?? "Normal") : localConfig.sessionMode,
+  )
+  const toolProfile = createMemo<ToolProfile>(() =>
+    currentSession() ? ((currentSession()?.toolProfile as ToolProfile) ?? "Plan") : localConfig.toolProfile,
+  )
+  const forkEnabled = createMemo(() =>
+    currentSession() ? (currentSession()?.forkEnabled ?? false) : localConfig.forkEnabled,
+  )
+
+  // Auto-apply local config when a session is first created
+  createEffect(
+    on(
+      () => props.sessionID,
+      (sessionID, prevSessionID) => {
+        if (!sessionID || prevSessionID) return
+        const hasNonDefault =
+          localConfig.sessionMode !== "Normal" ||
+          localConfig.toolProfile !== "Plan" ||
+          localConfig.forkEnabled !== false
+        if (hasNonDefault && props.onSessionConfigChange) {
+          props.onSessionConfigChange(sessionID, {
+            sessionMode: localConfig.sessionMode,
+            toolProfile: localConfig.toolProfile,
+            forkEnabled: localConfig.forkEnabled,
+          })
+        }
+      },
+      { defer: true },
+    ),
+  )
 
   // ─── Render ───
 
@@ -1454,42 +1498,46 @@ export const ChatPromptInput: Component<ChatPromptInputProps> = (props) => {
                 </Show>
 
                 {/* ─── Prompt Tray: Session Config Controls ─── */}
-                <Show when={props.sessionID}>
-                  {/* Session Mode selector */}
-                  <SessionModeSelector
-                    current={sessionMode()}
-                    onSelect={(mode) => {
-                      if (props.sessionID && props.onSessionConfigChange) {
-                        props.onSessionConfigChange(props.sessionID, { sessionMode: mode })
-                      }
-                    }}
-                    triggerStyle={control()}
-                  />
+                {/* Session Mode selector */}
+                <SessionModeSelector
+                  current={sessionMode()}
+                  onSelect={(mode) => {
+                    if (props.sessionID && props.onSessionConfigChange) {
+                      props.onSessionConfigChange(props.sessionID, { sessionMode: mode })
+                    } else {
+                      setLocalConfig("sessionMode", mode)
+                    }
+                  }}
+                  triggerStyle={control()}
+                />
 
-                  {/* Tool Profile selector */}
-                  <ToolProfileSelector
-                    current={toolProfile()}
-                    onSelect={(profile) => {
-                      if (props.sessionID && props.onSessionConfigChange) {
-                        props.onSessionConfigChange(props.sessionID, { toolProfile: profile })
-                      }
-                    }}
-                    triggerStyle={control()}
-                  />
+                {/* Tool Profile selector */}
+                <ToolProfileSelector
+                  current={toolProfile()}
+                  onSelect={(profile) => {
+                    if (props.sessionID && props.onSessionConfigChange) {
+                      props.onSessionConfigChange(props.sessionID, { toolProfile: profile })
+                    } else {
+                      setLocalConfig("toolProfile", profile)
+                    }
+                  }}
+                  triggerStyle={control()}
+                />
 
-                  {/* Fork Toggle */}
-                  <ForkToggle
-                    enabled={forkEnabled()}
-                    onToggle={(enabled) => {
-                      if (props.sessionID && props.onSessionConfigChange) {
-                        props.onSessionConfigChange(props.sessionID, { forkEnabled: enabled })
-                      }
-                    }}
-                    style={control()}
-                    disabled={sessionMode() === "Coordinator"}
-                    disabledTooltip="Fork is not available in Coordinator mode"
-                  />
-                </Show>
+                {/* Fork Toggle */}
+                <ForkToggle
+                  enabled={forkEnabled()}
+                  onToggle={(enabled) => {
+                    if (props.sessionID && props.onSessionConfigChange) {
+                      props.onSessionConfigChange(props.sessionID, { forkEnabled: enabled })
+                    } else {
+                      setLocalConfig("forkEnabled", enabled)
+                    }
+                  }}
+                  style={control()}
+                  disabled={sessionMode() === "Coordinator"}
+                  disabledTooltip="Fork is not available in Coordinator mode"
+                />
 
                 {/* Auto-accept / YOLO button */}
                 <TooltipKeybind
