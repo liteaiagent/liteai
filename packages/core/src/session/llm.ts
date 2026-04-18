@@ -223,10 +223,6 @@ export namespace LLM {
           // Trace-level fields
           "langfuse.trace.name": "LiteAI",
           userId: userInfo().username,
-          // Use the langfuse.observation.metadata.* prefix so these appear as
-          // filterable fields in the Langfuse UI (not buried in catch-all metadata)
-          "langfuse.observation.metadata.agentName": input.agent.name,
-          "langfuse.observation.metadata.agentMode": input.agent.mode,
           // Langfuse graph visualization metadata:
           // Langfuse's Clickhouse query extracts metadata['langgraph_node']
           // and metadata['langgraph_step'] to render the agent graph view.
