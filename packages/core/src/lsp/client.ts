@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { NamedError } from "@liteai/util/error"
@@ -255,6 +256,9 @@ export namespace LSPClient {
       async shutdown() {
         l.info("shutting down")
         const proc = input.server.process
+        // Capture PID before the process exits — pid remains on the ChildProcess
+        // object, but we read it eagerly to be defensive.
+        const pid = proc.pid
 
         // 1. Send LSP shutdown request (protocol-compliant)
         try {
@@ -281,17 +285,25 @@ export namespace LSPClient {
           ])
         }
 
-        // 3. Force kill if still alive
-        if (proc.exitCode === null && !proc.killed) {
-          l.warn("process did not exit gracefully, sending SIGKILL")
-          if (process.platform === "win32" && proc.pid) {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            require("node:child_process").spawnSync("taskkill", ["/pid", proc.pid.toString(), "/T", "/F"], {
+        // 3. Ensure the entire process tree is terminated.
+        //    LSP servers like biome's lsp-proxy spawn child processes that
+        //    outlive the main process after a successful LSP exit notification.
+        //    On Windows, `taskkill /T` kills the full process tree rooted at PID.
+        //    This is idempotent — if the tree is already dead, taskkill exits
+        //    with a non-zero code which is safely ignored.
+        //    On Unix, force-kill the main process if it hasn't exited yet;
+        //    child processes receive SIGPIPE when the pipes close.
+        if (process.platform === "win32" && pid) {
+          try {
+            spawnSync("taskkill", ["/pid", pid.toString(), "/T", "/F"], {
               windowsHide: true,
             })
-          } else {
-            proc.kill("SIGKILL")
+          } catch {
+            // Process tree already terminated
           }
+        } else if (proc.exitCode === null && !proc.killed) {
+          l.warn("process did not exit gracefully, sending SIGKILL")
+          proc.kill("SIGKILL")
         }
 
         l.info("shutdown complete")

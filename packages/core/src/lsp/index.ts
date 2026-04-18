@@ -1,4 +1,4 @@
-import { type ChildProcess, spawn } from "node:child_process"
+import { type ChildProcess, spawn, spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import z from "zod"
@@ -23,8 +23,7 @@ export namespace LSP {
       if (child.exitCode === null && !child.killed) {
         try {
           if (process.platform === "win32" && child.pid) {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            require("node:child_process").spawnSync("taskkill", ["/pid", child.pid.toString(), "/T", "/F"], {
+            spawnSync("taskkill", ["/pid", child.pid.toString(), "/T", "/F"], {
               windowsHide: true,
             })
           } else {
