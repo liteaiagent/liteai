@@ -45,7 +45,7 @@ Fork spawning is controlled by the `LITEAI_FORK_SUBAGENT` feature flag and autom
 | All above pass | **Enabled** |
 
 > [!NOTE]
-> The coordinator mode gate (`ForkGateContext.isCoordinator`) is a forward declaration for the **Phase 5: Coordinator Mode + Agent Swarms** feature. At runtime it is always `undefined`. See [`roadmap/agents-archi-roadmap.md`](../../../../roadmap/agents-archi-roadmap.md) for the planned implementation.
+> The coordinator mode gate (`ForkGateContext.isCoordinator`) is a forward declaration for the **Phase 5: Coordinator Mode + Agent Swarms** feature. At runtime it is always `undefined`. See [`roadmap/agents-platform-roadmap.md`](../../../../roadmap/agents-platform-roadmap.md) for the planned implementation.
 
 When disabled, the system falls back to standard sub-agent spawning silently (no user-visible error).
 

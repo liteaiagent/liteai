@@ -207,7 +207,7 @@ Phase 2 specified `tools/disallowedTools` per-agent config fields but `ToolRegis
 
 ---
 
-## Phase UI: Agent Experience UI
+## Phase UI: Agent Experience UI (Phase UI-A ✅)
 
 > **Scope:** Full agent observability and plan mode UI in `packages/ui`, shared by `packages/web` (primary) and `packages/vscode` (secondary via same pane system).
 
@@ -226,7 +226,7 @@ The `packages/ui` stack is **SolidJS** + Kobalte + vanilla CSS. No code is share
 
 ### Sequencing (Two Sub-Phases)
 
-**Phase UI-A — Minimal (delivered with Phase 3 backend):**
+**Phase UI-A — Minimal (delivered with Phase 3 backend):** ✅
 Functional plan mode UI with minimal design polish. Enables end-to-end UAT-1.
 
 **Phase UI-B — Full (after UAT-1):**
@@ -258,7 +258,7 @@ Complete agent experience designed once, coherently. Enables UAT-2.
 
 ### Files Affected
 
-**Phase UI-A (Minimal):**
+**Phase UI-A (Minimal):** ✅
 
 | File | Action |
 |---|---|
@@ -298,8 +298,8 @@ Complete agent experience designed once, coherently. Enables UAT-2.
 5. Verify Phase 1 (typecheck, tests) ✅
 6. Repeat 1-5 for Phase 2 ✅
 7. Repeat 1-5 for Phase 3 ✅
-8. Phase UI-A (Minimal UI, delivered with Phase 3)
-9. UAT-1: Backend correctness + functional plan mode UI
+8. Phase UI-A (Minimal UI, delivered with Phase 3) ✅
+9. UAT-1: Backend correctness + functional plan mode UI ✅
 10. Backend SSE event wiring (agent.* + plan.* events)
 11. Phase UI-B (Full agent experience design)
 12. UAT-2: UX validation (web primary, vscode secondary)
