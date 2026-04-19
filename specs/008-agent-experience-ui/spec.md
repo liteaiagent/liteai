@@ -70,22 +70,23 @@ Users must be able to view the full sidechain transcript of any specific sub-age
 ### Edge Cases
 
 - If the panel is manually closed when an agent completes, the UI MUST animate/highlight the "explore agent" toggle button without auto-opening.
-- If an agent enters an error or backgrounded state, the UI MUST show an explicit error/paused icon in the chip and persist the state in the list.
+- If an agent enters an error or backgrounded state (identified via `isAsync: true` on `agent.spawned`), the UI MUST show an explicit error/paused icon in the chip and persist the state in the list.
 - If the plan approval request is received while the user is disconnected, the system MUST replay the pending approval state upon reconnection via an explicit fetch/sync.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST subscribe to agent and plan events (spawned, progress, completed, backgrounded, state changed, approval requested) from the backend.
-- **FR-002**: System MUST emit appropriate backend events for agent metadata and plan states from the core backend module, strictly maintaining parity with the MVP CLI internal state field structures.
+- **FR-001a**: System MUST subscribe to agent lifecycle events (`agent.spawned`, `agent.progress`, `agent.completed`, `agent.terminal_notification`) from the backend SSE stream.
+- **FR-001b**: System MUST subscribe to plan mode events (`plan.state_changed`, `plan.approval_requested`) from the backend SSE stream.
+- **FR-002**: System MUST emit appropriate backend events for agent metadata and plan states from the core backend module, maintaining parity with the existing codebase event schemas (see data-model.md).
 - **FR-003**: System MUST auto-open an Agent Panel drawer upon the first agent spawned event.
 - **FR-004**: System MUST render an inline, sticky Plan Approval Dock when a plan awaits user approval, blocking standard chat input simultaneously.
 - **FR-005**: System MUST render sub-agent sidechain transcripts directly in the Agent Panel via drawer body swap.
 - **FR-006**: System MUST render a contextual inline link/chip inside the main chat response that explicitly opens the corresponding agent's details within the Agent Panel drawer.
 
 #### Constraints
-- **C-001**: All implementation MUST achieve behavioral parity with or superiority to the MVP reference implementation (`liteai_cli_mvp/src`), adapted from CLI to multi-tenant HTTP/SSE backend architecture. No behavioral degradation from MVP is acceptable. See *Reference Implementation Mandate* section above for full context and key reference files.
+- **C-001**: All implementation MUST achieve behavioral parity with or superiority to the MVP reference, grounded on the existing codebase event schemas and agent lifecycle patterns (see research.md R-009, data-model.md). MVP source (`liteai_cli_mvp/src`) is not present in workspace; designs are validated against the live `packages/core/src/agent/events.ts` and `packages/core/src/session/` schemas. No behavioral degradation from the established event contracts is acceptable.
 
 ### Key Entities
 
@@ -96,10 +97,10 @@ Users must be able to view the full sidechain transcript of any specific sub-age
 
 ### Measurable Outcomes
 
-- **SC-001**: Agent spawned event triggers open state of Agent Panel instantly without noticeable delay.
+- **SC-001**: Agent spawned event triggers open state of Agent Panel within 1 animation frame (~16ms) of the `agent.spawned` SSE event arriving.
 - **SC-002**: Agent transitions (running/done/error) reflect in Agent Status Badges in real-time with no flickering.
 - **SC-003**: Users successfully review and approve/reject plans from the dock without needing to refresh or navigate away from the primary chat input area.
-- **SC-004**: Application UI components run with 0 visual glitches or unresponsive states during intensive event streams.
+- **SC-004**: Application UI components remain responsive (no dropped frames >16ms) under a simulated burst of 50+ agent events within 1 second, with 0 visual glitches or unresponsive states.
 
 ## Assumptions
 
