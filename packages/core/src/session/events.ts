@@ -42,7 +42,15 @@ export namespace EngineEvent {
   // Special event for signalling flow control from queryLoop
   export type GeneratorResultEvent = {
     type: "control"
-    action: "continue" | "compact" | "stop" | "subtask" | "compaction-task" | "overflow" | "loop-detected"
+    action:
+      | "continue"
+      | "compact"
+      | "stop"
+      | "subtask"
+      | "compaction-task"
+      | "overflow"
+      | "loop-detected"
+      | "plan-stop-correction"
     // biome-ignore lint/suspicious/noExplicitAny: payload varies by action
     payload?: any
   }

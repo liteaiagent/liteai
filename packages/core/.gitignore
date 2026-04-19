@@ -4,3 +4,4 @@ gen
 app.log
 src/provider/models-snapshot.ts
 src/server/app-assets.ts
+trace/

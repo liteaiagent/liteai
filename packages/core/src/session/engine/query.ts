@@ -73,6 +73,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
   let structuredOutput: unknown | undefined
   let step = 0
+  const MAX_PLAN_STOP_CORRECTIONS = 2
+  let planStopCorrectionCount = 0
   const telemetryTracker = new TelemetryTracker()
   const autocompactState: AutocompactState = createAutocompactState()
   const loopDetector = new LoopDetectionService(sessionID)
@@ -113,6 +115,26 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       !["tool-calls", "unknown"].includes(lastAssistant.finish) &&
       lastUser.id < lastAssistant.id
     ) {
+      // ── Plan mode stop-drift recovery ──
+      // When plan mode is active, the model MUST call question or plan_exit.
+      // A bare "stop" means it drifted. Re-read PlanModeState in case a tool
+      // call in this turn mutated it (e.g., plan_exit was approved).
+      const currentPlanState = planModeStateRef.get()
+      if (currentPlanState.active && planStopCorrectionCount < MAX_PLAN_STOP_CORRECTIONS) {
+        planStopCorrectionCount++
+        log.warn("plan mode stop-drift: model stopped without calling question/plan_exit", {
+          sessionID,
+          correctionCount: planStopCorrectionCount,
+          max: MAX_PLAN_STOP_CORRECTIONS,
+          finish: lastAssistant.finish,
+        })
+        yield {
+          type: "control",
+          action: "plan-stop-correction",
+          payload: { correctionCount: planStopCorrectionCount },
+        } satisfies EngineEvent.GeneratorResultEvent
+        continue
+      }
       log.info("queryLoop exiting: model finished", { sessionID, finish: lastAssistant.finish })
       break
     }
@@ -507,6 +529,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     }
 
     // ── Check if model finished ──
+    // NOTE: This check uses the generator's local `assistantMessage` which may
+    // NOT have `finish` set (the persister mutates the orchestrator's copy).
+    // The primary stop-drift recovery for plan mode is at the EARLY EXIT check
+    // at the top of the while loop, where `lastAssistant.finish` from the
+    // buffer is always accurate.
     const modelFinished = assistantMessage.finish && !["tool-calls", "unknown"].includes(assistantMessage.finish)
     if (modelFinished && !assistantMessage.error) {
       if (format.type === "json_schema") {

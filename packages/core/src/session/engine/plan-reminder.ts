@@ -1,6 +1,7 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import { trace } from "@opentelemetry/api"
+import { Bundled } from "../../bundled"
 import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
 import { Log } from "../../util/log"
@@ -20,17 +21,15 @@ const MAX_PLAN_REMINDER_COUNTER = 100
 const MAX_PLAN_FILE_SIZE = 100 * 1024
 
 /**
- * Inject a plan reminder attachment into the last user message when a plan has
- * been approved and the agent is in build mode. Replaces the legacy `insertPlanReminder()`.
+ * Inject a plan reminder attachment into the last user message.
  *
- * **Contract** (ADR-003, FR-011):
- * - If `planModeState.active === true`: no-op — reminders must NOT fire during plan phase
- * - If `planModeState.planText` is falsy: no-op — no approved plan exists yet
- * - If `turnsSincePlanReminder >= PLAN_REMINDER_FULL_INTERVAL`: inject full plan text, reset counter to 0
- * - Otherwise: inject sparse reminder, increment counter
- * - Plan file missing on full-reminder turn: fall back to sparse (edge case)
- * - No DB writes — in-memory part appends only
- * - Parts are set with `synthetic: false` — visible to model as user context
+ * Dispatches to the correct handler based on plan mode phase:
+ *
+ * - **Active plan mode** (`active=true`): Injects per-turn `<system-reminder>`
+ *   constraints via `injectActivePlanReminder()` to prevent model drift.
+ * - **Build mode** (`active=false`, `planText` set): Injects plan text reminders
+ *   using the full/sparse cycle (existing ADR-003 / FR-011 behavior).
+ * - **No plan**: No-op.
  *
  * @returns Updated messages and the mutated PlanModeState (with incremented/reset counter)
  */
@@ -42,13 +41,17 @@ export async function injectPlanAttachment(input: {
   messages: Message.WithParts[]
   updatedState: PlanModeState
 }> {
-  const { messages, planModeState } = input
+  const { messages, planModeState, session } = input
 
-  // ── No-op when plan mode is active OR no approved plan exists (ADR-003) ──
-  // Reminders fire during BUILD phase: active=false + planText set (approved).
-  // During PLAN phase (active=true) or before any plan is approved (!planText),
-  // return early to avoid injecting reminders at the wrong time.
-  if (planModeState.active || !planModeState.planText) {
+  // ── Active plan mode: inject per-turn constraint reminder (MVP pattern) ──
+  // During PLAN phase (active=true), inject <system-reminder> constraints into
+  // the last user message on every turn using a full/sparse cycle.
+  if (planModeState.active) {
+    return injectActivePlanReminder({ messages, planModeState, session })
+  }
+
+  // ── No approved plan: no-op ──
+  if (!planModeState.planText) {
     return { messages, updatedState: planModeState }
   }
 
@@ -157,6 +160,104 @@ export async function injectPlanAttachment(input: {
       }
 
       span.setAttribute("plan_reminder.counter_after", updatedCounter)
+
+      return { messages: updatedMessages, updatedState }
+    } catch (e) {
+      span.recordException(e as Error)
+      throw e
+    } finally {
+      span.end()
+    }
+  })
+}
+
+/**
+ * Injects a condensed plan mode constraint reminder into the last user message
+ * on EVERY turn during active plan mode. Mirrors the MVP's attachment system
+ * (liteai_cli_mvp/src/utils/attachments.ts → getPlanModeAttachments).
+ *
+ * Uses a full/sparse cycle identical to the build-phase reminder:
+ * - **Full** (every PLAN_REMINDER_FULL_INTERVAL turns): Complete constraint text
+ *   from plan-active-reminder.md + plan file path + turn termination rules
+ * - **Sparse** (between full injections): One-liner reminder with key constraints
+ *
+ * Wrapped in `<system-reminder>` tags for authority (MVP pattern).
+ *
+ * @internal Exported for unit testing only.
+ */
+export async function injectActivePlanReminder(input: {
+  messages: Message.WithParts[]
+  planModeState: PlanModeState
+  session: Session.Info
+}): Promise<{
+  messages: Message.WithParts[]
+  updatedState: PlanModeState
+}> {
+  const { messages, planModeState } = input
+
+  return tracer.startActiveSpan("planReminder.injectActive", async (span) => {
+    try {
+      const userMessage = messages.findLast((msg) => msg.info.role === "user")
+      if (!userMessage) {
+        span.setAttribute("plan_active_reminder.skipped", "no_user_message")
+        return { messages, updatedState: planModeState }
+      }
+
+      const relativePath = path.relative(Instance.worktree, planModeState.planFilePath)
+      const isFullReminderTurn = planModeState.turnsSincePlanReminder >= PLAN_REMINDER_FULL_INTERVAL
+
+      let reminderText: string
+      let updatedCounter: number
+
+      if (isFullReminderTurn) {
+        // ── Full constraint reminder (every Nth turn) ──
+        const fullReminder = await Bundled.miscPrompt("plan-active-reminder")
+        reminderText = fullReminder.replace("{{PLAN_FILE_PATH}}", relativePath)
+        updatedCounter = 0
+        span.setAttribute("plan_active_reminder.type", "full")
+      } else {
+        // ── Sparse one-liner reminder (between full injections) ──
+        reminderText = [
+          `PLAN MODE ACTIVE. Implementation is BLOCKED until you call \`plan_exit\` and the user approves.`,
+          `Read-only except plan file (${relativePath}). End every turn with \`question\` or \`plan_exit\`. Do NOT start building.`,
+        ].join(" ")
+        updatedCounter = planModeState.turnsSincePlanReminder + 1
+        span.setAttribute("plan_active_reminder.type", "sparse")
+      }
+
+      // Wrap in <system-reminder> for authority (MVP pattern: wrapInSystemReminder)
+      const wrappedText = `<system-reminder>\n${reminderText}\n</system-reminder>`
+
+      // ── In-memory part append — no DB writes ──
+      const attachmentPart: Message.TextPart = {
+        type: "text",
+        id: PartID.ascending(),
+        messageID: userMessage.info.id,
+        sessionID: userMessage.info.sessionID,
+        text: wrappedText,
+        synthetic: true,
+      }
+
+      const updatedMessages = [...messages]
+      const userIdx = updatedMessages.findLastIndex((m) => m.info.role === "user")
+      if (userIdx !== -1) {
+        updatedMessages[userIdx] = {
+          ...updatedMessages[userIdx],
+          parts: [...updatedMessages[userIdx].parts, attachmentPart],
+        }
+      }
+
+      const updatedState: PlanModeState = {
+        ...planModeState,
+        turnsSincePlanReminder: updatedCounter,
+      }
+
+      span.setAttribute("plan_active_reminder.counter_after", updatedCounter)
+      log.info("injecting plan mode active reminder", {
+        sessionID: userMessage.info.sessionID,
+        type: isFullReminderTurn ? "full" : "sparse",
+        counter: updatedCounter,
+      })
 
       return { messages: updatedMessages, updatedState }
     } catch (e) {

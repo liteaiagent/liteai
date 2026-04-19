@@ -663,6 +663,50 @@ async function runSessionInner(input: {
               })
               break
             }
+            case "plan-stop-correction": {
+              const { correctionCount } = event.payload as { correctionCount: number }
+              log.warn("plan mode stop-drift: injecting correction message", {
+                sessionID,
+                correctionCount,
+              })
+
+              // Strip incomplete thinking parts (same cleanup as loop recovery)
+              if (currentAssistantMessage) {
+                await stripIncompleteThinking({
+                  sessionID,
+                  message: currentAssistantMessage,
+                })
+              }
+
+              const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+              if (lastUser) {
+                await injectCorrectionMessage({
+                  sessionID,
+                  lastUser,
+                  text: [
+                    "<system-correction>",
+                    "STOP. You ended your turn without calling a tool.",
+                    "",
+                    "You are in PLAN MODE. Implementation is BLOCKED until you call `plan_exit` and the user approves your plan.",
+                    "You CANNOT start building, creating files, or implementing — approval via `plan_exit` is MANDATORY.",
+                    "",
+                    "End your turn with one of these tool calls:",
+                    "- `plan_exit` — if your plan is written and ready for user review",
+                    "- `question` — if you need clarification from the user first",
+                    "",
+                    "Do NOT end your turn with just text or reasoning. Call a tool now.",
+                    "</system-correction>",
+                  ].join("\n"),
+                  msgsBuffer,
+                })
+              }
+
+              // Clean up instruction prompt before next turn
+              if (currentAssistantMessage) {
+                await InstructionPrompt.clear(currentAssistantMessage.id)
+              }
+              break
+            }
             case "stop": {
               return
             }

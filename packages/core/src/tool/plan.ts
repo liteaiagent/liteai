@@ -86,6 +86,7 @@ export const PlanExitTool = Tool.define("plan_exit", {
           active: false,
           turnsSincePlanReminder: 0,
           planText: params.plan,
+          workflowType: undefined,
         }))
 
         return {
@@ -189,6 +190,7 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           ...s,
           active: true,
           turnsSincePlanReminder: 0,
+          workflowType: params.interviewMode ? "interview" : "5phase",
         }))
 
         // ── Load workflow instructions (ADR-002, FR-003) ──

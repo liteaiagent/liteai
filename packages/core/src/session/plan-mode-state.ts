@@ -14,6 +14,10 @@ export interface PlanModeState {
   planFilePath: string
   /** Turns since last full plan reminder injection. Resets at 5. */
   turnsSincePlanReminder: number
+  /** Which workflow was selected at plan_enter time. Used to select
+   * the correct constraint reinforcement text during active plan mode.
+   * Set by plan_enter, cleared by plan_exit. */
+  workflowType: "interview" | "5phase" | undefined
 }
 
 /** Full plan text injection interval — resets at this value (FR-005). */
@@ -29,6 +33,7 @@ export function createDefaultPlanModeState(session: Session.Info): PlanModeState
     planText: undefined,
     planFilePath: Session.plan(session),
     turnsSincePlanReminder: 0,
+    workflowType: undefined,
   }
 }
 
