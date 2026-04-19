@@ -8438,6 +8438,16 @@
           },
           "raw": {
             "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
           }
         },
         "required": ["status", "input", "raw"]
@@ -9737,7 +9747,8 @@
               "branch": {
                 "type": "string"
               }
-            }
+            },
+            "required": ["branch"]
           }
         },
         "required": ["type", "properties"]

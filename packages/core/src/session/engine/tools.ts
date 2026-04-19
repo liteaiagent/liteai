@@ -66,18 +66,17 @@ export async function resolveTools(input: {
     // biome-ignore lint/suspicious/noExplicitAny: metadata value is opaque provider data
     metadata: async (val: { title?: string; metadata?: any }) => {
       const match = input.processor.partFromToolCall(options.toolCallId)
-      if (match && match.state.status === "running") {
+      if (match && (match.state.status === "running" || match.state.status === "pending")) {
+        if (val.title) (match.state as any).title = val.title
+        if (val.metadata) match.metadata = val.metadata
+
         await Session.updatePart({
           ...match,
           state: {
-            title: val.title,
-            metadata: val.metadata,
-            status: "running",
-            input: args,
-            time: {
-              start: Date.now(),
-            },
+            ...match.state,
+            title: val.title ?? (match.state as any).title,
           },
+          metadata: val.metadata ?? match.metadata,
         })
       }
     },

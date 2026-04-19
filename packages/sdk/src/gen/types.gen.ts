@@ -504,6 +504,10 @@ export type ToolStatePending = {
         [key: string]: unknown;
     };
     raw: string;
+    title?: string;
+    metadata?: {
+        [key: string]: unknown;
+    };
 };
 
 export type ToolStateRunning = {
@@ -923,7 +927,7 @@ export type EventPlanApprovalRequested = {
 export type EventVcsBranchUpdated = {
     type: 'vcs.branch.updated';
     properties: {
-        branch?: string;
+        branch: string;
     };
 };
 

@@ -48,21 +48,27 @@ export const TaskTool = Tool.define("task", async (ctx) => {
     async execute(params: z.infer<typeof parameters>, ctx) {
       const config = await Config.get()
 
-      // Skip permission check when user explicitly invoked via @ or command subtask
-      if (!ctx.extra?.bypassAgentCheck) {
-        await ctx.ask({
-          permission: "task",
-          patterns: [params.subagent_type],
-          always: ["*"],
-          metadata: {
-            description: params.description,
-            subagent_type: params.subagent_type,
-          },
-        })
-      }
-
       const agent = await Agent.get(params.subagent_type)
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
+
+      const msg = await Message.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
+      if (msg.info.role !== "assistant") throw new Error("Not an assistant message")
+
+      const parent = {
+        modelID: msg.info.modelID,
+        providerID: msg.info.providerID,
+      }
+      const model = await (async () => {
+        if (!agent.model) return parent
+        const valid = await Provider.getModel(agent.model.providerID, agent.model.modelID).catch(() => undefined)
+        if (valid) return agent.model
+        log.warn("agent model not available, falling back to parent model", {
+          agent: agent.name,
+          configured: `${agent.model.providerID}/${agent.model.modelID}`,
+          fallback: `${parent.providerID}/${parent.modelID}`,
+        })
+        return parent
+      })()
 
       const hasTaskPermission = agent.permission.some((rule) => rule.permission === "task")
 
@@ -103,24 +109,6 @@ export const TaskTool = Tool.define("task", async (ctx) => {
           ],
         })
       })
-      const msg = await Message.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
-      if (msg.info.role !== "assistant") throw new Error("Not an assistant message")
-
-      const parent = {
-        modelID: msg.info.modelID,
-        providerID: msg.info.providerID,
-      }
-      const model = await (async () => {
-        if (!agent.model) return parent
-        const valid = await Provider.getModel(agent.model.providerID, agent.model.modelID).catch(() => undefined)
-        if (valid) return agent.model
-        log.warn("agent model not available, falling back to parent model", {
-          agent: agent.name,
-          configured: `${agent.model.providerID}/${agent.model.modelID}`,
-          fallback: `${parent.providerID}/${parent.modelID}`,
-        })
-        return parent
-      })()
 
       ctx.metadata({
         title: params.description,
@@ -129,6 +117,19 @@ export const TaskTool = Tool.define("task", async (ctx) => {
           model,
         },
       })
+
+      // Skip permission check when user explicitly invoked via @ or command subtask
+      if (!ctx.extra?.bypassAgentCheck) {
+        await ctx.ask({
+          permission: "task",
+          patterns: [params.subagent_type],
+          always: ["*"],
+          metadata: {
+            description: params.description,
+            subagent_type: params.subagent_type,
+          },
+        })
+      }
 
       const messageID = MessageID.ascending()
 

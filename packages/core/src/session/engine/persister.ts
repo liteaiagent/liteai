@@ -255,8 +255,13 @@ export class EventPersister {
               const part = await Session.updatePart({
                 ...match,
                 tool: event.toolName,
-                state: { status: "running", input: event.input, time: { start: Date.now() } },
-                metadata: event.metadata,
+                state: {
+                  status: "running",
+                  input: event.input,
+                  time: { start: Date.now() },
+                  title: "title" in match.state ? match.state.title : undefined,
+                },
+                metadata: event.metadata ?? match.metadata,
               })
               this.toolcalls[event.id] = part as Message.ToolPart
               this.upsertPart(part as Message.Part)

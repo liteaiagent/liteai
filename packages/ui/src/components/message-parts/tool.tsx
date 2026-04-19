@@ -23,8 +23,9 @@ export function ToolPartDisplay(props: MessagePartProps) {
   const emptyMetadata: Record<string, unknown> = {}
 
   const input = () => part().state?.input ?? emptyInput
-  // @ts-expect-error
-  const partMetadata = () => part().state?.metadata ?? emptyMetadata
+  const partMetadata = createMemo(() => {
+    return part().metadata ?? part().state.metadata ?? {}
+  })
   const taskId = createMemo(() => {
     if (part().tool !== "task") return
     const value = partMetadata().sessionId
