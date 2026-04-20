@@ -1,6 +1,7 @@
 import type { Session } from "@liteai/sdk/client"
 import type { ChatController, ProjectInfo, SessionController } from "@liteai/ui/panes"
 import { produce } from "solid-js/store"
+import { useGlobalSDK } from "../context/global-sdk"
 import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
 import { useProviders } from "../hooks/use-providers"
@@ -15,6 +16,7 @@ import { useProviders } from "../hooks/use-providers"
 export function createWebChatController(): ChatController {
   const sync = useSync()
   const sdk = useSDK()
+  const globalSdk = useGlobalSDK()
   const providers = useProviders()
 
   return {
@@ -84,6 +86,15 @@ export function createWebChatController(): ChatController {
     },
     hasPaidProviders() {
       return providers.paid().length > 0
+    },
+    events: {
+      subscribe(eventType: string, callback: (payload: unknown) => void) {
+        return globalSdk.event.on(sdk.directory, (payload: { type?: string; properties?: unknown }) => {
+          if (payload.type === eventType) {
+            callback(payload.properties)
+          }
+        })
+      },
     },
   }
 }

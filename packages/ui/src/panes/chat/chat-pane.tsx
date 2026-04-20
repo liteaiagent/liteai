@@ -14,6 +14,8 @@ import {
   Switch,
 } from "solid-js"
 import { createStore } from "solid-js/store"
+import { AgentPanel, AgentPanelContext, createAgentPanelState } from "../../components/agent-panel/agent-panel"
+import type { AgentEntry } from "../../components/agent-panel/agent-row"
 import { PlanApprovalDock } from "../../components/plan-approval-dock"
 import { useChatController } from "../controllers"
 import { useLanguage } from "../shared/language"
@@ -154,6 +156,8 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
   const [isApprovalPending, setApprovalPending] = createSignal(false)
   const [planText, setPlanText] = createSignal("")
 
+  const [agentPanelState, setAgentPanelState] = createAgentPanelState()
+
   createEffect(() => {
     const id = sessionID()
     if (!id || !controller.events) return
@@ -176,6 +180,95 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
     onCleanup(() => {
       unsubState()
       unsubApproval()
+    })
+  })
+
+  createEffect(() => {
+    const id = sessionID()
+    if (!id || !controller.events) return
+
+    /** Narrow unknown payload to a property-accessible record (runtime guards follow). */
+    const asRecord = (v: unknown): Record<string, unknown> | null =>
+      v != null && typeof v === "object" ? (v as Record<string, unknown>) : null
+
+    const unsubSpawned = controller.events.subscribe("agent.spawned", (payload: unknown) => {
+      const p = asRecord(payload)
+      if (!p || typeof p.agentId !== "string" || typeof p.agentType !== "string" || typeof p.parentId !== "string") {
+        console.error("Malformed agent.spawned payload", p)
+        return
+      }
+      if (p.parentId !== id) return
+
+      setAgentPanelState("agents", p.agentId, {
+        agentId: p.agentId,
+        agentType: p.agentType,
+        parentId: p.parentId,
+        isAsync: !!p.isAsync,
+        status: "running",
+      })
+      if (Object.keys(agentPanelState.agents).length === 1 && !agentPanelState.drawerOpen) {
+        setAgentPanelState("drawerOpen", true)
+      }
+    })
+
+    const unsubProgress = controller.events.subscribe("agent.progress", (payload: unknown) => {
+      const p = asRecord(payload)
+      if (!p || typeof p.agentId !== "string" || typeof p.activity !== "string") {
+        console.error("Malformed agent.progress payload", p)
+        return
+      }
+      if (agentPanelState.agents[p.agentId]) {
+        setAgentPanelState("agents", p.agentId, "activity", p.activity)
+      }
+    })
+
+    const unsubCompleted = controller.events.subscribe("agent.completed", (payload: unknown) => {
+      const p = asRecord(payload)
+      if (
+        !p ||
+        typeof p.agentId !== "string" ||
+        typeof p.status !== "string" ||
+        !["completed", "failed", "killed"].includes(p.status)
+      ) {
+        console.error("Malformed agent.completed payload", p)
+        return
+      }
+      if (agentPanelState.agents[p.agentId]) {
+        setAgentPanelState("agents", p.agentId, "status", p.status as "completed" | "failed" | "killed")
+        if (typeof p.duration === "number") setAgentPanelState("agents", p.agentId, "duration", p.duration)
+        const usage = asRecord(p.usage)
+        if (usage && typeof usage.totalTokens === "number")
+          setAgentPanelState("agents", p.agentId, "usage", usage as unknown as NonNullable<AgentEntry["usage"]>)
+      }
+    })
+
+    const unsubTerminal = controller.events.subscribe("agent.terminal_notification", (payload: unknown) => {
+      const p = asRecord(payload)
+      if (
+        !p ||
+        typeof p.agentId !== "string" ||
+        typeof p.status !== "string" ||
+        !["completed", "failed", "killed"].includes(p.status)
+      ) {
+        console.error("Malformed agent.terminal_notification payload", p)
+        return
+      }
+      if (agentPanelState.agents[p.agentId]) {
+        setAgentPanelState("agents", p.agentId, "status", p.status as "completed" | "failed" | "killed")
+        if (typeof p.error === "string") setAgentPanelState("agents", p.agentId, "error", p.error)
+        const usage = asRecord(p.usage)
+        if (usage && typeof usage.totalTokens === "number")
+          setAgentPanelState("agents", p.agentId, "usage", usage as unknown as NonNullable<AgentEntry["usage"]>)
+        if (typeof p.partialResult === "string")
+          setAgentPanelState("agents", p.agentId, "partialResult", p.partialResult)
+      }
+    })
+
+    onCleanup(() => {
+      unsubSpawned()
+      unsubProgress()
+      unsubCompleted()
+      unsubTerminal()
     })
   })
 
@@ -346,105 +439,108 @@ export const ChatPane: Component<ChatPaneProps> = (props) => {
   // ─── Render ───
 
   return (
-    <div class="relative bg-background-base size-full overflow-hidden flex flex-col">
-      <div class="flex-1 min-h-0 flex flex-col">
-        <div class="flex-1 min-h-0 overflow-hidden">
-          <Switch>
-            <Match when={sessionID()}>
-              <Show when={lastUserMessage()}>
-                <MessageTimeline
-                  mobileChanges={false}
-                  mobileFallback={<div />}
-                  actions={props.actions ?? {}}
-                  scroll={ui.scroll}
-                  onResumeScroll={resumeScroll}
-                  setScrollRef={setScrollRef}
-                  onScheduleScrollState={scheduleScrollState}
-                  onAutoScrollHandleScroll={autoScroll.handleScroll}
-                  onMarkScrollGesture={() => {}}
-                  hasScrollGesture={() => false}
-                  onUserScroll={() => {}}
-                  onTurnBackfillScroll={historyWindow.onScrollerScroll}
-                  onAutoScrollInteraction={autoScroll.handleInteraction}
-                  centered={true}
-                  setContentRef={(el) => {
-                    content = el
-                    autoScroll.contentRef(el)
-                    const root = scroller
-                    if (root) scheduleScrollState(root)
-                  }}
-                  turnStart={historyWindow.turnStart()}
-                  historyMore={historyMore()}
-                  historyLoading={historyLoading()}
-                  onLoadEarlier={() => {
-                    void historyWindow.loadAndReveal()
-                  }}
-                  renderedUserMessages={historyWindow.renderedUserMessages()}
-                  anchor={anchor}
-                  sessionID={sessionID() || ""}
-                  projectID={projectID()}
-                  sessionKey={`${projectID() ?? ""}:${sessionID() ?? ""}`}
-                  onNavigateSession={props.onNavigateSession}
-                  onNavigateSessionList={props.onNavigateSessionList}
-                  contextUsage={props.contextUsage}
-                  isPlanModeActive={isPlanModeActive()}
-                />
-              </Show>
-            </Match>
-            <Match when={true}>
-              <ChatNewSession worktree={props.worktree} />
-            </Match>
-          </Switch>
-        </div>
+    <AgentPanelContext.Provider value={[agentPanelState, setAgentPanelState]}>
+      <div class="relative bg-background-base size-full overflow-hidden flex flex-col">
+        <div class="flex-1 min-h-0 flex flex-col">
+          <div class="flex-1 min-h-0 overflow-hidden">
+            <Switch>
+              <Match when={sessionID()}>
+                <Show when={lastUserMessage()}>
+                  <MessageTimeline
+                    mobileChanges={false}
+                    mobileFallback={<div />}
+                    actions={props.actions ?? {}}
+                    scroll={ui.scroll}
+                    onResumeScroll={resumeScroll}
+                    setScrollRef={setScrollRef}
+                    onScheduleScrollState={scheduleScrollState}
+                    onAutoScrollHandleScroll={autoScroll.handleScroll}
+                    onMarkScrollGesture={() => {}}
+                    hasScrollGesture={() => false}
+                    onUserScroll={() => {}}
+                    onTurnBackfillScroll={historyWindow.onScrollerScroll}
+                    onAutoScrollInteraction={autoScroll.handleInteraction}
+                    centered={true}
+                    setContentRef={(el) => {
+                      content = el
+                      autoScroll.contentRef(el)
+                      const root = scroller
+                      if (root) scheduleScrollState(root)
+                    }}
+                    turnStart={historyWindow.turnStart()}
+                    historyMore={historyMore()}
+                    historyLoading={historyLoading()}
+                    onLoadEarlier={() => {
+                      void historyWindow.loadAndReveal()
+                    }}
+                    renderedUserMessages={historyWindow.renderedUserMessages()}
+                    anchor={anchor}
+                    sessionID={sessionID() || ""}
+                    projectID={projectID()}
+                    sessionKey={`${projectID() ?? ""}:${sessionID() ?? ""}`}
+                    onNavigateSession={props.onNavigateSession}
+                    onNavigateSessionList={props.onNavigateSessionList}
+                    contextUsage={props.contextUsage}
+                    isPlanModeActive={isPlanModeActive()}
+                  />
+                </Show>
+              </Match>
+              <Match when={true}>
+                <ChatNewSession worktree={props.worktree} />
+              </Match>
+            </Switch>
+          </div>
 
-        {/* Prompt input dock */}
-        <div
-          ref={(el) => {
-            promptDock = el
-          }}
-          class="mt-auto px-3 pb-3"
-        >
-          {props.promptDocks}
-          <Show when={isApprovalPending()}>
-            <PlanApprovalDock
-              description={planText()}
-              onApprove={() => {
-                setApprovalPending(false)
-                props.onApprovePlan?.()
-              }}
-              onReject={() => {
-                setApprovalPending(false)
-                props.onRejectPlan?.()
-              }}
-            />
-          </Show>
-          <ChatPromptInput
-            ref={props.inputRef}
-            sessionID={sessionID()}
-            handler={props.handler}
-            onSubmit={() => {
-              resumeScroll()
-              props.onSubmit?.()
+          {/* Prompt input dock */}
+          <div
+            ref={(el) => {
+              promptDock = el
             }}
-            searchFiles={props.searchFiles}
-            recentFiles={props.recentFiles}
-            onManageModels={props.onManageModels}
-            onConnectProvider={props.onConnectProvider}
-            keybind={props.keybind}
-            commands={props.commands}
-            commentActions={props.commentActions}
-            onOpenComment={props.onOpenComment}
-            shouldQueue={props.shouldQueue}
-            onQueue={props.onQueue}
-            onAbort={props.onAbort}
-            edit={props.edit}
-            onEditLoaded={props.onEditLoaded}
-            isApprovalPending={isApprovalPending()}
-          />
-        </div>
+            class="mt-auto px-3 pb-3"
+          >
+            {props.promptDocks}
+            <Show when={isApprovalPending()}>
+              <PlanApprovalDock
+                description={planText()}
+                onApprove={() => {
+                  setApprovalPending(false)
+                  props.onApprovePlan?.()
+                }}
+                onReject={() => {
+                  setApprovalPending(false)
+                  props.onRejectPlan?.()
+                }}
+              />
+            </Show>
+            <ChatPromptInput
+              ref={props.inputRef}
+              sessionID={sessionID()}
+              handler={props.handler}
+              onSubmit={() => {
+                resumeScroll()
+                props.onSubmit?.()
+              }}
+              searchFiles={props.searchFiles}
+              recentFiles={props.recentFiles}
+              onManageModels={props.onManageModels}
+              onConnectProvider={props.onConnectProvider}
+              keybind={props.keybind}
+              commands={props.commands}
+              commentActions={props.commentActions}
+              onOpenComment={props.onOpenComment}
+              shouldQueue={props.shouldQueue}
+              onQueue={props.onQueue}
+              onAbort={props.onAbort}
+              edit={props.edit}
+              onEditLoaded={props.onEditLoaded}
+              isApprovalPending={isApprovalPending()}
+            />
+          </div>
 
-        {props.footer}
+          {props.footer}
+        </div>
+        <AgentPanel state={agentPanelState} setState={setAgentPanelState} />
       </div>
-    </div>
+    </AgentPanelContext.Provider>
   )
 }

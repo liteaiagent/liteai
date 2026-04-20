@@ -49,9 +49,7 @@ export async function resolveTools(input: {
   onInject?: (msg: Message.WithParts) => void
 }) {
   const tools: Record<string, AITool> = {}
-
-  // biome-ignore lint/suspicious/noExplicitAny: AI SDK execute() callback provides untyped args
-  const context = (args: any, options: ToolCallOptions): Tool.Context => ({
+  const context = (options: ToolCallOptions): Tool.Context => ({
     sessionID: input.session.id,
     abort: options.abortSignal ?? new AbortController().signal,
     messageID: input.processor.message.id,
@@ -67,14 +65,14 @@ export async function resolveTools(input: {
     metadata: async (val: { title?: string; metadata?: any }) => {
       const match = input.processor.partFromToolCall(options.toolCallId)
       if (match && (match.state.status === "running" || match.state.status === "pending")) {
-        if (val.title) (match.state as any).title = val.title
+        if (val.title) (match.state as { title?: string }).title = val.title
         if (val.metadata) match.metadata = val.metadata
 
         await Session.updatePart({
           ...match,
           state: {
             ...match.state,
-            title: val.title ?? (match.state as any).title,
+            title: val.title ?? (match.state as { title?: string }).title,
           },
           metadata: val.metadata ?? match.metadata,
         })
@@ -103,7 +101,7 @@ export async function resolveTools(input: {
       // biome-ignore lint/suspicious/noExplicitAny: AI SDK jsonSchema() accepts opaque schema objects
       inputSchema: jsonSchema(schema as any),
       async execute(args, options) {
-        const ctx = context(args, options)
+        const ctx = context(options)
         const pre = await Hook.dispatch("PreToolUse", {
           session_id: ctx.sessionID,
           cwd: Instance.directory,
@@ -215,7 +213,7 @@ export async function resolveTools(input: {
     item.inputSchema = jsonSchema(transformed)
     // Wrap execute to add plugin hooks and format output
     item.execute = async (args, opts) => {
-      const ctx = context(args, opts)
+      const ctx = context(opts)
 
       const pre = await Hook.dispatch("PreToolUse", {
         session_id: ctx.sessionID,
