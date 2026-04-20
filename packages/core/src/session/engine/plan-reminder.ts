@@ -219,7 +219,7 @@ export async function injectActivePlanReminder(input: {
         // ── Sparse one-liner reminder (between full injections) ──
         reminderText = [
           `PLAN MODE ACTIVE. Implementation is BLOCKED until you call \`plan_exit\` and the user approves.`,
-          `Read-only except plan file (${relativePath}). End every turn with \`question\` or \`plan_exit\`. Do NOT start building.`,
+          `Read-only except plan file (${relativePath}). End every turn with \`ask_user\` or \`plan_exit\`. Do NOT start building.`,
         ].join(" ")
         updatedCounter = planModeState.turnsSincePlanReminder + 1
         span.setAttribute("plan_active_reminder.type", "sparse")

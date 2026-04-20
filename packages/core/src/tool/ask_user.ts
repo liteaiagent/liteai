@@ -1,9 +1,9 @@
 import z from "zod"
-import DESCRIPTION from "../bundled/prompts/tools/question.txt"
+import DESCRIPTION from "../bundled/prompts/tools/ask_user.txt"
 import { Question } from "../question"
 import { Tool } from "./tool"
 
-export const QuestionTool = Tool.define("question", {
+export const AskUserTool = Tool.define("ask_user", {
   description: DESCRIPTION,
   parameters: z.object({
     questions: z.array(Question.Info.omit({ custom: true })).describe("Questions to ask"),

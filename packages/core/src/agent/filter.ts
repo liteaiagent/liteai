@@ -1,16 +1,7 @@
 import type { TranscriptMessage } from "../session/transcript"
 import type { Agent } from "./agent"
 
-const ALL_AGENT_DISALLOWED_TOOLS = [
-  "task_output",
-  "plan_exit",
-  "plan_enter",
-  // task is allowed for subagents according to liteai_cli_mvp if user is ant, removing it from global disallow usually.
-  // Actually, we'll keep our implementation of custom agent disallowed tools
-  "question",
-  "task_stop",
-  "workflow",
-]
+const ALL_AGENT_DISALLOWED_TOOLS = ["plan_exit", "plan_enter", "ask_user"]
 
 const ASYNC_AGENT_ALLOWED_TOOLS = [
   "read",
@@ -26,7 +17,6 @@ const ASYNC_AGENT_ALLOWED_TOOLS = [
   "write",
   "multiedit",
   "skill",
-  "synthetic_output",
   "tool_search",
   "enter_worktree",
   "exit_worktree",
@@ -44,6 +34,7 @@ const ALL_LITEAI_TOOLS = new Set([
   "todoread",
   "apply_patch", // If it exists
   "batch",
+  "yield_turn",
 ])
 
 export function filterToolsForAgent(tools: string[], isCustomAgent: boolean, isAsync: boolean): string[] {

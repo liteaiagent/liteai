@@ -63,6 +63,7 @@ export namespace Agent {
         .optional(),
       variant: z.string().optional(),
       prompt: z.string().optional(),
+      toolChoice: z.enum(["auto", "required", "none"]).optional(),
       options: z.record(z.string(), z.any()),
       steps: z.number().int().positive().optional(),
 
@@ -165,9 +166,6 @@ export namespace Agent {
         "*": "ask",
         ...Object.fromEntries(whitelistedDirs.map((dir) => [dir, "allow"])),
       },
-      question: "deny",
-      plan_enter: "deny",
-      plan_exit: "deny",
       // mirrors github.com/github/gitignore Node.gitignore pattern for .env files
       read: {
         "*": "allow",
@@ -191,6 +189,7 @@ export namespace Agent {
         options: {},
         prompt: value.prompt,
         description: value.description,
+        toolChoice: value.toolChoice,
         temperature: value.temperature,
         topP: value.top_p,
         hidden: value.hidden,
@@ -251,6 +250,7 @@ export namespace Agent {
       item.variant = value.variant ?? item.variant
       item.prompt = value.prompt ?? item.prompt
       item.description = value.description ?? item.description
+      item.toolChoice = value.toolChoice ?? item.toolChoice
       item.temperature = value.temperature ?? item.temperature
       item.topP = value.top_p ?? item.topP
       item.mode = value.mode ?? item.mode

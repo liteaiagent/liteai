@@ -548,7 +548,7 @@ export const GithubRunCommand = cmd({
         session = await Session.create({
           permission: [
             {
-              permission: "question",
+              permission: "ask_user",
               action: "deny",
               pattern: "*",
             },

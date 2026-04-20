@@ -1,0 +1,9 @@
+Call this tool ONLY when you have fully completed the user's request, answered their question, or have no further actions to take.
+
+This tool signals that your turn is complete and yields control back to the user.
+
+IMPORTANT:
+- Do NOT call this tool if you still have pending work, unfinished tasks, or unanswered questions.
+- Do NOT call this tool if the user asked you to perform an action and you haven't attempted it yet.
+- If you need information from the user, use `ask_user` instead.
+- The summary parameter is displayed to the user, so make it informative and concise.

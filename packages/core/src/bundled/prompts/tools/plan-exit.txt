@@ -13,7 +13,7 @@ Ensure your plan is complete and unambiguous:
 - If you have unresolved questions about requirements or approach, use the question tool first (in earlier phases)
 - Once your plan is finalized, use THIS tool to request approval
 
-**Important:** Do NOT use the question tool to ask "Is this plan okay?" or "Should I proceed?" - that's exactly what THIS tool does. plan_exit inherently requests user approval of your plan.
+**Important:** Do NOT use the `ask_user` tool to ask "Is this plan okay?" or "Should I proceed?". The `plan_exit` tool explicitly requests user feedback on its own. Using both creates duplicate prompts.
 
 ## Examples
 

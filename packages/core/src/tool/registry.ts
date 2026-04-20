@@ -5,6 +5,7 @@ import { Config } from "../config/config"
 import type { ModelID, ProviderID } from "../provider/schema"
 import { Log } from "../util/log"
 import { ApplyPatchTool } from "./apply_patch"
+import { AskUserTool } from "./ask_user"
 import { BatchTool } from "./batch"
 import { CommandStatusTool } from "./command_status"
 import { EditTool } from "./edit"
@@ -14,7 +15,6 @@ import { InvalidTool } from "./invalid"
 import { ListTool } from "./ls"
 import { MultiEditTool } from "./multiedit"
 import { PlanEnterTool, PlanExitTool } from "./plan"
-import { QuestionTool } from "./question"
 import { ReadTool } from "./read"
 import { RunCommandTool } from "./run_command"
 import { SendCommandInputTool } from "./send_command_input"
@@ -26,6 +26,7 @@ import type { Tool } from "./tool"
 import { WebFetchTool } from "./webfetch"
 import { WebSearchTool } from "./websearch"
 import { WriteTool } from "./write"
+import { YieldTurnTool } from "./yield_turn"
 
 export namespace ToolRegistry {
   const tracer = trace.getTracer("liteai")
@@ -36,7 +37,8 @@ export namespace ToolRegistry {
 
     const result: Tool.Info[] = [
       InvalidTool,
-      ...(question ? [QuestionTool] : []),
+      ...(question ? [AskUserTool] : []),
+      YieldTurnTool,
       RunCommandTool,
       CommandStatusTool,
       SendCommandInputTool,

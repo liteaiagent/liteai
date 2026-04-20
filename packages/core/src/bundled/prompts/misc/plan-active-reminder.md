@@ -16,4 +16,5 @@ Plan file: {{PLAN_FILE_PATH}}
 
 **Implementation is IMPOSSIBLE without this approval.** Do NOT create project structures, install packages, run build commands, write implementation code, or start any build tasks. None of these actions are permitted until `plan_exit` has been called AND the user has approved.
 
-Every turn MUST end with a tool call — either `question` (to gather info) or `plan_exit` (to submit for approval). Ending your turn with just text or reasoning is forbidden.
+**You are in read-only PLAN MODE.** Your implementation capabilities are blocked.
+Every turn MUST end with a tool call — either `ask_user` (to gather info) or `plan_exit` (to submit for approval). Ending your turn with just text or reasoning is forbidden.

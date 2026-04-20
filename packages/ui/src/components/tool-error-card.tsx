@@ -39,7 +39,7 @@ export function ToolErrorCard(props: ToolErrorCardProps) {
       codesearch: "ui.tool.codesearch",
       run_command: "ui.tool.shell",
       apply_patch: "ui.tool.patch",
-      question: "ui.tool.questions",
+      ask_user: "ui.tool.questions",
     }
     const key = map[split.tool]
     if (!key) return split.tool

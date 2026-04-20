@@ -44,9 +44,9 @@ liteai acp
 liteai acp --cwd /path/to/project
 ```
 
-### Question Tool Opt-In
+### AskUser Tool Opt-In
 
-ACP excludes `QuestionTool` by default.
+ACP excludes `AskUserTool` by default.
 
 ```bash
 LITEAI_ENABLE_QUESTION_TOOL=1 liteai acp

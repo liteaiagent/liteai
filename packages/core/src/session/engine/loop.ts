@@ -692,7 +692,7 @@ async function runSessionInner(input: {
                     "",
                     "End your turn with one of these tool calls:",
                     "- `plan_exit` — if your plan is written and ready for user review",
-                    "- `question` — if you need clarification from the user first",
+                    "- `ask_user` — if you need clarification from the user first",
                     "",
                     "Do NOT end your turn with just text or reasoning. Call a tool now.",
                     "</system-correction>",
@@ -702,6 +702,46 @@ async function runSessionInner(input: {
               }
 
               // Clean up instruction prompt before next turn
+              if (currentAssistantMessage) {
+                await InstructionPrompt.clear(currentAssistantMessage.id)
+              }
+              break
+            }
+            case "stop-drift-correction": {
+              const { correctionCount } = event.payload as { correctionCount: number }
+              log.warn("general stop-drift: injecting correction message", {
+                sessionID,
+                correctionCount,
+              })
+
+              if (currentAssistantMessage) {
+                await stripIncompleteThinking({
+                  sessionID,
+                  message: currentAssistantMessage,
+                })
+              }
+
+              const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+              if (lastUser) {
+                await injectCorrectionMessage({
+                  sessionID,
+                  lastUser,
+                  text: [
+                    "<system-correction>",
+                    "STOP. You ended your turn without calling any tool.",
+                    "",
+                    "You MUST call a tool to complete your turn:",
+                    "- Use `yield_turn` if you have completed the user's request",
+                    "- Use `ask_user` if you need information from the user",
+                    "- Use any other tool to continue working on the task",
+                    "",
+                    "Do NOT end your turn with just text or reasoning. Call a tool now.",
+                    "</system-correction>",
+                  ].join("\n"),
+                  msgsBuffer,
+                })
+              }
+
               if (currentAssistantMessage) {
                 await InstructionPrompt.clear(currentAssistantMessage.id)
               }

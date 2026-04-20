@@ -165,7 +165,7 @@ export function getToolInfo(tool: string, input: Record<string, unknown> = {}): 
         icon: "checklist",
         title: i18n.t("ui.tool.todos.read"),
       }
-    case "question":
+    case "ask_user":
       return {
         icon: "bubble-5",
         title: i18n.t("ui.tool.questions"),
@@ -296,7 +296,7 @@ function index<T extends { id: string }>(items: readonly T[]) {
 function renderable(part: PartType, showReasoningSummaries = true) {
   if (part.type === "tool") {
     if (HIDDEN_TOOLS.has(part.tool)) return false
-    if (part.tool === "question") return part.state.status !== "pending" && part.state.status !== "running"
+    if (part.tool === "ask_user") return part.state.status !== "pending" && part.state.status !== "running"
     return true
   }
   if (part.type === "text") return !!part.text?.trim()

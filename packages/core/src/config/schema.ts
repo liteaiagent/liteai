@@ -183,6 +183,10 @@ export const Agent = z
     prompt: z.string().optional(),
     disable: z.boolean().nullable().optional(),
     description: z.string().optional().describe("Description of when to use the agent"),
+    toolChoice: z
+      .enum(["auto", "required", "none"])
+      .optional()
+      .describe("Force the agent to call tools (required), decide (auto), or prevent tools (none)"),
     mode: z.enum(["subagent", "primary", "all"]).optional(),
     hidden: z
       .boolean()
@@ -255,6 +259,7 @@ export const Agent = z
       "variant",
       "prompt",
       "description",
+      "toolChoice",
       "temperature",
       "top_p",
       "mode",

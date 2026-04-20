@@ -103,7 +103,7 @@ const hidden = new Set(["todowrite", "todoread"])
 function partState(part: PartType, showReasoningSummaries: boolean) {
   if (part.type === "tool") {
     if (hidden.has(part.tool)) return
-    if (part.tool === "question" && (part.state.status === "pending" || part.state.status === "running")) return
+    if (part.tool === "ask_user" && (part.state.status === "pending" || part.state.status === "running")) return
     return "visible" as const
   }
   if (part.type === "text") return part.text?.trim() ? ("visible" as const) : undefined

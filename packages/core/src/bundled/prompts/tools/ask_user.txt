@@ -1,4 +1,5 @@
-Use this tool when you need to ask the user questions during execution. This allows you to:
+Use this tool to ask the user a question. Execution will pause until the user responds.
+This allows you to:
 1. Gather user preferences or requirements
 2. Clarify ambiguous instructions
 3. Get decisions on implementation choices as you work

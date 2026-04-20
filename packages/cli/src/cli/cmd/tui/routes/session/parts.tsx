@@ -161,7 +161,7 @@ function ToolPartView(props: { last: boolean; part: ToolPart; message: Assistant
         <Match when={props.part.tool === "todowrite"}>
           <TodoWrite {...toolprops} />
         </Match>
-        <Match when={props.part.tool === "question"}>
+        <Match when={props.part.tool === "ask_user"}>
           <Question {...toolprops} />
         </Match>
         <Match when={props.part.tool === "skill"}>

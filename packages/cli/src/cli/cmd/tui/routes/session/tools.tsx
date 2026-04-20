@@ -1,11 +1,11 @@
 import path from "node:path"
 import { Global } from "@liteai/core/global/index"
 import type { ApplyPatchTool } from "@liteai/core/tool/apply_patch"
+import type { AskUserTool } from "@liteai/core/tool/ask_user"
 import type { EditTool } from "@liteai/core/tool/edit"
 import type { GlobTool } from "@liteai/core/tool/glob"
 import type { GrepTool } from "@liteai/core/tool/grep"
 import type { ListTool } from "@liteai/core/tool/ls"
-import type { QuestionTool } from "@liteai/core/tool/question"
 import type { ReadTool } from "@liteai/core/tool/read"
 import type { RunCommandTool } from "@liteai/core/tool/run_command"
 import type { SkillTool } from "@liteai/core/tool/skill"
@@ -667,7 +667,7 @@ export function TodoWrite(props: ToolProps<typeof TodoWriteTool>) {
   )
 }
 
-export function Question(props: ToolProps<typeof QuestionTool>) {
+export function Question(props: ToolProps<typeof AskUserTool>) {
   const { theme } = useTheme()
   const count = createMemo(() => props.input.questions?.length ?? 0)
 

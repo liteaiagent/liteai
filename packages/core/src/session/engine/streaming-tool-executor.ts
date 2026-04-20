@@ -195,6 +195,13 @@ export class StreamingToolExecutor {
   }
 
   /**
+   * Returns true if a specific tool name was called during this turn.
+   */
+  hasToolCall(toolName: string): boolean {
+    return this.tools.some((t) => t.toolName === toolName)
+  }
+
+  /**
    * Returns true if any tool has produced a sibling-fatal error.
    */
   hasSiblingError(): boolean {

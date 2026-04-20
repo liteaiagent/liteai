@@ -17,7 +17,7 @@ export function ToolPartDisplay(props: MessagePartProps) {
   if (part().tool === "todowrite" || part().tool === "todoread") return null
 
   const hideQuestion = createMemo(
-    () => part().tool === "question" && (part().state.status === "pending" || part().state.status === "running"),
+    () => part().tool === "ask_user" && (part().state.status === "pending" || part().state.status === "running"),
   )
 
   const emptyInput: Record<string, unknown> = {}
@@ -80,7 +80,7 @@ export function ToolPartDisplay(props: MessagePartProps) {
           <Match when={part().state.status === "error" && (part().state as { error?: string }).error}>
             {(error) => {
               const cleaned = error().replace("Error: ", "")
-              if (part().tool === "question" && cleaned.includes("dismissed this question")) {
+              if (part().tool === "ask_user" && cleaned.includes("dismissed this question")) {
                 return (
                   <div style="width: 100%; display: flex; justify-content: flex-end;">
                     <span class="text-13-regular text-text-weak cursor-default">

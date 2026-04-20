@@ -356,7 +356,7 @@ export const RunCommand = cmd({
 
     const rules: PermissionNext.Ruleset = [
       {
-        permission: "question",
+        permission: "ask_user",
         action: "deny",
         pattern: "*",
       },

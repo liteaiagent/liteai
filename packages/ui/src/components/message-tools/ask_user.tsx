@@ -6,7 +6,7 @@ import { BasicTool } from "../basic-tool"
 import { ToolRegistry } from "../tool-registry"
 
 ToolRegistry.register({
-  name: "question",
+  name: "ask_user",
   render(props) {
     const i18n = useI18n()
     const questions = createMemo(() => (props.input.questions ?? []) as QuestionInfo[])

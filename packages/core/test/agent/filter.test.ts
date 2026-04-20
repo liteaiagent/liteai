@@ -4,7 +4,7 @@ import { filterToolsForAgent, pruneContext, resolveAgentTools } from "../../src/
 
 describe("filterToolsForAgent", () => {
   test("removes ALL_AGENT_DISALLOWED_TOOLS for all agents", () => {
-    const tools = ["read", "plan_enter", "plan_exit", "task_output", "write"]
+    const tools = ["read", "plan_enter", "plan_exit", "write"]
     const filtered = filterToolsForAgent(tools, false, false)
     expect(filtered).toEqual(["read", "write"])
   })
@@ -24,11 +24,11 @@ describe("filterToolsForAgent", () => {
   })
 
   test("filters core tools for async agents", () => {
-    const tools = ["read", "question", "task", "mcp_tool"]
+    const tools = ["read", "ask_user", "task", "mcp_tool"]
     const filtered = filterToolsForAgent(tools, false, true)
 
     expect(filtered).toContain("read") // async allowed
-    expect(filtered).not.toContain("question") // not async allowed
+    expect(filtered).not.toContain("ask_user") // not async allowed
     expect(filtered).not.toContain("task") // not async allowed
     expect(filtered).toContain("mcp_tool") // MCP tool allowed
   })
@@ -210,7 +210,7 @@ describe("Orphaned Message Filters", () => {
     return filtered.then((res) => {
       expect(res).toHaveLength(2)
       // Only the one containing 'text' part should be kept
-      expect(res[1].content[1].type).toBe("text")
+      expect((res[1].content as Array<{ type: string; text?: string }>)[1].type).toBe("text")
     })
   })
 
@@ -224,7 +224,7 @@ describe("Orphaned Message Filters", () => {
     const filtered = import("../../src/agent/filter").then((m) => m.filterWhitespaceOnlyAssistantMessages(messages))
     return filtered.then((res) => {
       expect(res).toHaveLength(2)
-      expect(res[1].content[0].text).toBe("valid")
+      expect((res[1].content as Array<{ type: string; text?: string }>)[0].text).toBe("valid")
     })
   })
 })

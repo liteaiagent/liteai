@@ -73,8 +73,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
   let structuredOutput: unknown | undefined
   let step = 0
-  const MAX_PLAN_STOP_CORRECTIONS = 2
+  const MAX_PLAN_STOP_CORRECTIONS = 3
   let planStopCorrectionCount = 0
+  const MAX_STOP_CORRECTIONS = 1
+  let stopDriftCorrectionCount = 0
   const telemetryTracker = new TelemetryTracker()
   const autocompactState: AutocompactState = createAutocompactState()
   const loopDetector = new LoopDetectionService(sessionID)
@@ -116,13 +118,13 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       lastUser.id < lastAssistant.id
     ) {
       // ── Plan mode stop-drift recovery ──
-      // When plan mode is active, the model MUST call question or plan_exit.
+      // When plan mode is active, the model MUST call ask_user or plan_exit.
       // A bare "stop" means it drifted. Re-read PlanModeState in case a tool
       // call in this turn mutated it (e.g., plan_exit was approved).
       const currentPlanState = planModeStateRef.get()
       if (currentPlanState.active && planStopCorrectionCount < MAX_PLAN_STOP_CORRECTIONS) {
         planStopCorrectionCount++
-        log.warn("plan mode stop-drift: model stopped without calling question/plan_exit", {
+        log.warn("plan mode stop-drift: model stopped without calling ask_user/plan_exit", {
           sessionID,
           correctionCount: planStopCorrectionCount,
           max: MAX_PLAN_STOP_CORRECTIONS,
@@ -132,6 +134,25 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
           type: "control",
           action: "plan-stop-correction",
           payload: { correctionCount: planStopCorrectionCount },
+        } satisfies EngineEvent.GeneratorResultEvent
+        continue
+      }
+
+      // ── General stop-drift recovery ──
+      // With toolChoice: "required", a bare "stop" without tool calls should
+      // never happen. If it does (provider bug, edge case), retry once.
+      const hasToolCalls = lastAssistant.finish === "tool-calls"
+      if (!hasToolCalls && stopDriftCorrectionCount < MAX_STOP_CORRECTIONS) {
+        stopDriftCorrectionCount++
+        log.warn("general stop-drift: model stopped without tool calls", {
+          sessionID,
+          correctionCount: stopDriftCorrectionCount,
+          finish: lastAssistant.finish,
+        })
+        yield {
+          type: "control",
+          action: "stop-drift-correction",
+          payload: { correctionCount: stopDriftCorrectionCount },
         } satisfies EngineEvent.GeneratorResultEvent
         continue
       }
@@ -413,7 +434,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       ],
       tools,
       model,
-      toolChoice: format.type === "json_schema" ? ("required" as const) : undefined,
+      toolChoice: (agent.toolChoice as "auto" | "required" | "none") ?? "required",
     }
 
     // ── Create streaming tool executor for this turn ──
@@ -513,6 +534,14 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       structuredOutput,
       streamResult,
     } satisfies EngineEvent.TurnEndEvent
+
+    // ── yield_turn detection ──
+    // If the model called yield_turn (and naturally finished streaming), break the loop
+    const calledYieldTurn = toolExecutor.hasToolCall("yield_turn")
+    if (calledYieldTurn) {
+      log.info("queryLoop: yield_turn called, ending session", { sessionID })
+      break
+    }
 
     // ── Exit on fatal error ──
     // After persister classifies a non-retryable error, it sets assistantMessage.error.

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test"
 import * as QuestionModule from "../../src/question"
 import { MessageID, SessionID } from "../../src/session/schema"
-import { QuestionTool } from "../../src/tool/question"
+import { AskUserTool } from "../../src/tool/ask_user"
 
 const ctx = {
   sessionID: SessionID.make("ses_test-session"),
@@ -14,7 +14,7 @@ const ctx = {
   ask: async () => {},
 }
 
-describe("tool.question", () => {
+describe("tool.ask_user", () => {
   let askSpy: ReturnType<typeof spyOn>
 
   beforeEach(() => {
@@ -28,7 +28,7 @@ describe("tool.question", () => {
   })
 
   test("should successfully execute with valid question parameters", async () => {
-    const tool = await QuestionTool.init()
+    const tool = await AskUserTool.init()
     const questions = [
       {
         question: "What is your favorite color?",
@@ -49,7 +49,7 @@ describe("tool.question", () => {
   })
 
   test("should now pass with a header longer than 12 but less than 30 chars", async () => {
-    const tool = await QuestionTool.init()
+    const tool = await AskUserTool.init()
     const questions = [
       {
         question: "What is your favorite animal?",

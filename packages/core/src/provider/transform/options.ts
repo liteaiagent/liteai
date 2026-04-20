@@ -11,7 +11,7 @@ export function temperature(model: Provider.Model) {
   const id = model.id.toLowerCase()
   if (id.includes("qwen")) return 0.55
   if (id.includes("claude")) return undefined
-  if (id.includes("gemini")) return 1.0
+  if (id.includes("gemini")) return 0.3
   if (id.includes("glm-4.6")) return 1.0
   if (id.includes("glm-4.7")) return 1.0
   if (id.includes("minimax-m2")) return 1.0
