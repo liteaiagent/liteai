@@ -185,7 +185,7 @@ export namespace Agent {
       result[key] = {
         name: key,
         mode: value.mode ?? "all",
-        permission: PermissionNext.merge(defaults, PermissionNext.fromConfig(value.permission ?? {}), user),
+        permission: PermissionNext.merge(defaults, user),
         options: {},
         prompt: value.prompt,
         description: value.description,
@@ -286,11 +286,10 @@ export namespace Agent {
 
       // Platform compatibility: map provider-specific fields (e.g., Claude Code's
       // tools/disallowedTools/permissionMode) to LiteAI permission rules.
-      // Applied before LiteAI's `permission` field so explicit `permission` always wins.
+      // Agent-level `permission` in YAML is deprecated — tool visibility is now
+      // handled by tools/disallowedTools. Only platform compat transforms survive.
       const compat = profile?.permissionTransform?.(value)
       if (compat) item.permission = PermissionNext.merge(item.permission, compat)
-
-      item.permission = PermissionNext.merge(item.permission, PermissionNext.fromConfig(value.permission ?? {}))
     }
 
     // Ensure Truncate.GLOB is allowed unless explicitly configured

@@ -3,7 +3,6 @@ import type { Effect } from "effect"
 import type { Config } from "@/config/config"
 import { runtime } from "@/effect/runtime"
 import { fn } from "@/util/fn"
-import { Wildcard } from "@/util/wildcard"
 import type {
   Action as ActionType,
   PermissionError,
@@ -76,18 +75,5 @@ export namespace PermissionNext {
 
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     return S.evaluate(permission, pattern, ...rulesets)
-  }
-
-  const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
-
-  export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
-    const result = new Set<string>()
-    for (const tool of tools) {
-      const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-      const rule = ruleset.findLast((rule) => Wildcard.match(permission, rule.permission))
-      if (!rule) continue
-      if (rule.pattern === "*" && rule.action === "deny") result.add(tool)
-    }
-    return result
   }
 }

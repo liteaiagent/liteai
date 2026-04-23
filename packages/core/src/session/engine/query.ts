@@ -404,7 +404,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
     // ── Build system prompt ──
     const { parts: providerParts, boundary } = await SystemPrompt.resolveSystemPromptSections(model, agent)
-    const skills = await SystemPrompt.skills(agent)
+    const enabledToolNames = new Set(Object.keys(tools))
+    const skills = await SystemPrompt.skills(agent, enabledToolNames)
     const system = [...providerParts, ...(skills ? [skills] : []), ...(await InstructionPrompt.system())]
     if (format.type === "json_schema") {
       system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)

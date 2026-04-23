@@ -2,17 +2,18 @@
 name: explore
 mode: subagent
 description: "Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. \"src/components/**/*.tsx\"), search code for keywords (eg. \"API endpoints\"), or answer questions about the codebase (eg. \"how do API endpoints work?\"). When calling this agent, specify the desired thoroughness level: \"quick\" for basic searches, \"medium\" for moderate exploration, or \"very thorough\" for comprehensive analysis across multiple locations and naming conventions."
-permission:
-  "*": deny
-  grep: allow
-  glob: allow
-  list: allow
-  bash: allow
-  webfetch: allow
-  websearch: allow
-  codesearch: allow
-  read: allow
-  external_directory: ask
+tools:
+  - grep
+  - glob
+  - list
+  - read
+  - run_command
+  - command_status
+  - send_command_input
+  - webfetch
+  - websearch
+  - codesearch
+  - lsp
 ---
 You are a file search specialist. You excel at thoroughly navigating and exploring codebases.
 

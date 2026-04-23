@@ -2,10 +2,8 @@
 name: build
 mode: primary
 description: "The default root agent (LiteAI). Full tool access, can invoke subagents and plan mode."
-permission:
-  edit: ask
-  question: allow
-  plan_enter: allow
+tools:
+  - "*"
 # ──────────────────────────────────────────────────────────────
 # SYSTEM PROMPT: This agent's system prompt comes from system.md
 # (bundled/prompts/system/system.md), injected by the session engine.

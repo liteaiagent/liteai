@@ -81,6 +81,8 @@ export function resolveAgentTools(
   }
 
   if (normalizedSpecs.length === 0) {
+    // No tools defined = wildcard (all tools). Matches MVP behavior where
+    // undefined tools means "allow everything after disallowedTools filtering".
     for (const t of availableTools) {
       set.add(t)
     }

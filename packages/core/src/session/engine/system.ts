@@ -1,7 +1,6 @@
 import path from "node:path"
 import type { Agent } from "@/agent/agent"
 import { Bundled } from "@/bundled"
-import { PermissionNext } from "@/permission/next"
 import type { Provider } from "@/provider/provider"
 import { Shell } from "@/shell/shell"
 import { Skill } from "@/skill"
@@ -35,8 +34,10 @@ export namespace SystemPrompt {
     ]
   }
 
-  export async function skills(agent: Agent.Info) {
-    if (PermissionNext.disabled(["skill"], agent.permission).has("skill")) return
+  export async function skills(agent: Agent.Info, enabledTools?: ReadonlySet<string>) {
+    // Follow MVP pattern: check resolved tool set, not permission rules.
+    // If enabledTools is provided and "skill" is not in it, skip skill injection.
+    if (enabledTools && !enabledTools.has("skill")) return
 
     const list = await Skill.available(agent, "model")
 

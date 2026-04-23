@@ -16,7 +16,6 @@ import type { Agent } from "@/agent/agent"
 
 import { Hook } from "@/hook"
 import { Installation } from "@/installation"
-import { PermissionNext } from "@/permission/next"
 import { Plugin } from "@/plugin"
 import { Provider } from "@/provider/provider"
 import { ProviderTransform } from "@/provider/transform"
@@ -276,12 +275,8 @@ export namespace LLM {
   }
 
   async function resolveTools(input: Pick<StreamInput, "tools" | "agent" | "user">) {
-    const disabled = PermissionNext.disabled(Object.keys(input.tools), input.agent.permission)
-    for (const tool of Object.keys(input.tools)) {
-      if (disabled.has(tool)) {
-        delete input.tools[tool]
-      }
-    }
+    // Tool visibility is handled by the schema layer (tools/disallowedTools in resolveAgentTools).
+    // Runtime permission (ask/allow/deny) is handled by ctx.ask() against session-level rules.
     return input.tools
   }
 
