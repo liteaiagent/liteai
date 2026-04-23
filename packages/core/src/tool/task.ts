@@ -5,7 +5,6 @@ import { iife } from "@/util/iife"
 import { Log } from "@/util/log"
 import { Agent } from "../agent/agent"
 import DESCRIPTION from "../bundled/prompts/tools/task.txt"
-import { Config } from "../config/config"
 import { Provider } from "../provider/provider"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/engine"
@@ -46,8 +45,6 @@ export const TaskTool = Tool.define("task", async (ctx) => {
     description,
     parameters,
     async execute(params: z.infer<typeof parameters>, ctx) {
-      const config = await Config.get()
-
       const agent = await Agent.get(params.subagent_type)
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
 
@@ -70,8 +67,6 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         return parent
       })()
 
-      const hasTaskPermission = agent.permission.some((rule) => rule.permission === "task")
-
       const session = await iife(async () => {
         if (params.task_id) {
           const found = await Session.get(SessionID.make(params.task_id)).catch(() => {})
@@ -81,32 +76,6 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         return await Session.create({
           parentID: ctx.sessionID,
           title: `${params.description} (@${agent.name} subagent)`,
-          permission: [
-            {
-              permission: "todowrite",
-              pattern: "*",
-              action: "deny",
-            },
-            {
-              permission: "todoread",
-              pattern: "*",
-              action: "deny",
-            },
-            ...(hasTaskPermission
-              ? []
-              : [
-                  {
-                    permission: "task" as const,
-                    pattern: "*" as const,
-                    action: "deny" as const,
-                  },
-                ]),
-            ...(config.experimental?.primary_tools?.map((t) => ({
-              pattern: "*",
-              action: "allow" as const,
-              permission: t,
-            })) ?? []),
-          ],
         })
       })
 
@@ -151,13 +120,18 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         parts: promptParts,
       })
 
-      const text = (result.parts.findLast((x) => x.type === "text") as { text?: string })?.text ?? ""
+      const textPart = (result.parts.findLast((x) => x.type === "text") as { text?: string })?.text ?? ""
+      const yieldTurnPart = result.parts.findLast((x) => x.type === "tool" && x.tool === "yield_turn") as
+        | { args?: { summary?: string } }
+        | undefined
+
+      const taskResultContent = yieldTurnPart?.args?.summary ? `[Yield] ${yieldTurnPart.args.summary}` : textPart
 
       const output = [
         `task_id: ${session.id} (for resuming to continue this task if needed)`,
         "",
         "<task_result>",
-        text,
+        taskResultContent,
         "</task_result>",
       ].join("\n")
 
