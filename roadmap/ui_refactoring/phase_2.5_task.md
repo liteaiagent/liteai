@@ -1,0 +1,13 @@
+- [x] Fix `Byline.tsx`
+- [x] Fix `Divider.tsx`
+- [x] Fix `ListItem.tsx`
+- [x] Fix `LoadingState.tsx`
+- [x] Fix `ProgressBar.tsx`
+- [x] Fix `StatusIcon.tsx`
+- [x] Fix `Tabs.tsx`
+- [x] Fix `ui/fuzzy-picker.tsx`
+- [x] Fix `ui/dialog.tsx`
+- [x] Run `bun turbo typecheck --filter=@liteai/cli` and `bun lint`
+- [x] Fix residual `any` casts in `fuzzy-picker.tsx` and `dialog.tsx`
+- [x] Fix discriminated union typing for `ThemedText` inside Ink components
+- [x] Validate all color keys match `ThemeColors` (e.g., changing 'suggestion' to 'info')

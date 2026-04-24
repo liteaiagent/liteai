@@ -6,6 +6,8 @@ import { useEffect, useState } from "react"
 import { Byline } from "../components/design-system/Byline"
 import { KeyboardShortcutHint } from "../components/design-system/KeyboardShortcutHint"
 import { Pane } from "../components/design-system/Pane"
+import ThemedBox from "../components/design-system/ThemedBox.tsx"
+import ThemedText from "../components/design-system/ThemedText.tsx"
 
 type PickerAction<T> = {
   action: string
@@ -129,11 +131,11 @@ export function FuzzyPicker<T>({
   const emptyText = typeof emptyMessage === "function" ? emptyMessage(query) : emptyMessage
 
   const searchBox = (
-    <Box flexDirection="row" borderStyle="round" paddingX={1} borderColor="ansi:blue">
+    <ThemedBox flexDirection="row" borderStyle="round" paddingX={1} borderColor="info">
       <Text dim>🔎 </Text>
       <Text>{query || <Text dim>{placeholder}</Text>}</Text>
       <Text>█</Text>
-    </Box>
+    </ThemedBox>
   )
 
   const listBlock =
@@ -147,9 +149,9 @@ export function FuzzyPicker<T>({
           const actualIndex = windowStart + i
           const isFocused = actualIndex === focusedIndex
           return (
-            <Pane key={getKey(item)} color={isFocused ? "ansi:blue" : undefined}>
+            <Pane key={getKey(item)} color={isFocused ? "info" : undefined}>
               <Box flexDirection="row" paddingX={1}>
-                <Text color={isFocused ? "ansi:blue" : undefined}>{isFocused ? "❯ " : "  "}</Text>
+                <ThemedText color={isFocused ? "info" : undefined}>{isFocused ? "❯ " : "  "}</ThemedText>
                 {renderItem(item, isFocused)}
               </Box>
             </Pane>
@@ -186,11 +188,11 @@ export function FuzzyPicker<T>({
   const compact = false
 
   return (
-    <Pane color="ansi:blue">
+    <Pane color="info">
       <Box flexDirection="column" gap={1}>
-        <Text bold color="ansi:blue">
+        <ThemedText bold color="info">
           {title}
-        </Text>
+        </ThemedText>
         {inputAbove && searchBox}
         {listGroup}
         {!inputAbove && searchBox}

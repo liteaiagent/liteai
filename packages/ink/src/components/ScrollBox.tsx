@@ -64,6 +64,7 @@ export type ScrollBoxHandle = {
 
 export type ScrollBoxProps = Except<Styles, 'textWrap' | 'overflow' | 'overflowX' | 'overflowY'> & {
   ref?: Ref<ScrollBoxHandle>
+  key?: React.Key
   /**
    * When true, automatically pins scroll position to the bottom when content
    * grows. Unset manually via scrollTo/scrollBy to break the stickiness.

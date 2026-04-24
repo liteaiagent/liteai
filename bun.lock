@@ -46,6 +46,7 @@
         "clipboardy": "4.0.0",
         "diff": "catalog:",
         "effect": "catalog:",
+        "figures": "6.1.0",
         "fuzzysort": "3.1.0",
         "gray-matter": "4.0.3",
         "hono": "catalog:",

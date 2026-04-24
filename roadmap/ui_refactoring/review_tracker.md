@@ -125,10 +125,62 @@ Post-implementation code review log for each phase of the SolidJS → React migr
 
 ---
 
-## Phase 2.5: Components
+## Phase 2.5: Components (Batch 1 — Design System)
 
-**Reviewed:** —  
-**Verdict:** Pending implementation
+**Reviewed:** 2026-04-25  
+**Verdict:** ⚠️ 7 issues found → 1 fixed, 2 deferred, 4 accepted
+
+### Scope Discrepancy
+
+> [!WARNING]
+> The walkthrough (`phase_2.5_walkthrough.md`) claims "All batches planned in the Phase 2.5 Refactoring RFC have been successfully implemented and merged!" — **this is incorrect**. Only **Batch 1** (12 design system components) was completed. Batches 2–4 (rendering components, prompt input, app-specific dialogs) are entirely absent from the filesystem. The walkthrough must be corrected, and the remaining batches tracked as future work.
+
+### Issues Found & Resolved
+
+| # | Severity | File | Issue | Resolution |
+|---|----------|------|-------|------------|
+| D1 | 🟡 Minor | `Divider.tsx` L53 | Docstring example uses `color="suggestion"` — "suggestion" was remapped to "info" during Phase 2.5 color key cleanup. Stale doc. | ✅ Fixed: updated docstring to use `color="info"`. |
+| T1 | 🟡 Info | `ThemedBox.tsx` L76 | `{...(rest as unknown as BoxProps)}` double cast. Caused by Ink's discriminated union (bold/dim) bleeding through Omit. | ✅ Accepted — structural limitation of Ink's type system. Cast is through `unknown` (not `any`), narrow scope. |
+| T2 | 🟡 Info | `ThemedText.tsx` L47 | Same `as unknown as TextProps` pattern as T1. | ✅ Accepted — same rationale as T1. |
+| B1 | 🟡 Info | `Byline.tsx` L49 | `@ts-expect-error - React.Fragment key is fine`. Fragment does accept `key`; suppression is from version-specific React types. | ✅ Accepted — low risk, correctly scoped suppress. |
+| F1 | 🟠 Major | `fuzzy-picker.tsx` L115–118 | `useEffect` includes `onQueryChange` in deps. If consumer doesn't memoize callback, triggers infinite re-render loop. | ⏳ Deferred — requires either stable callback contract in docs or internal `useRef` stabilization. Track for Batch 2/3 integration. |
+| F2 | 🟡 Minor | `fuzzy-picker.tsx` L125–127 | Same unmemoized-callback risk with `onFocus` in `useEffect` deps. | ⏳ Deferred — same class as F1. |
+| F3 | 🟡 Info | `fuzzy-picker.tsx` L152 | Each list item wrapped in `<Pane>` (which adds Divider + padding). Heavyweight for a picker list, but produces correct visual output. | ✅ Accepted — visual design decision, not a bug. |
+
+### Post-Fix File Status
+
+| File | Status |
+|------|--------|
+| `components/design-system/ThemedBox.tsx` | ✅ Clean (cast accepted) |
+| `components/design-system/ThemedText.tsx` | ✅ Clean (cast accepted) |
+| `components/design-system/Byline.tsx` | ✅ Clean (suppress accepted) |
+| `components/design-system/Divider.tsx` | ✅ Fixed (stale docstring) |
+| `components/design-system/ListItem.tsx` | ✅ Clean |
+| `components/design-system/LoadingState.tsx` | ✅ Clean |
+| `components/design-system/ProgressBar.tsx` | ✅ Clean |
+| `components/design-system/StatusIcon.tsx` | ✅ Clean |
+| `components/design-system/Tabs.tsx` | ✅ Clean |
+| `components/design-system/Pane.tsx` | ✅ Clean |
+| `components/design-system/KeyboardShortcutHint.tsx` | ✅ Clean |
+| `components/design-system/Ratchet.tsx` | ✅ Clean |
+| `ui/fuzzy-picker.tsx` | ⚠️ Callback memoization risk (deferred F1, F2) |
+| `ui/dialog.tsx` | ✅ Clean |
+| `ui/spinner.tsx` | ✅ Clean |
+| `ui/toast.tsx` | ✅ Clean |
+
+### Positive Findings
+
+- ✅ Zero `as any` casts across all Phase 2.5 scope
+- ✅ Zero React Compiler `$[n]` artifacts in ported code
+- ✅ Zero SolidJS remnants (`createSignal`, `@opentui/core`)
+- ✅ Zero `console.log` debug statements
+- ✅ Zero `@ts-ignore` directives
+- ✅ Zero `biome-ignore` directives
+- ✅ All 12 design system components properly import from `@liteai/ink`
+- ✅ All theme colors typed as `keyof ThemeColors`
+- ✅ Phase 2.4 fixes (toast `useRef`, spinner mode, dialog-alert Enter) confirmed intact
+
+**Gates:** `bun typecheck` ✅ | `bun lint` ✅
 
 ---
 

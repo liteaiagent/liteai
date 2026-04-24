@@ -1,16 +1,19 @@
 /** @jsxImportSource react */
-import { Box, type Color, Text, useInput } from "@liteai/ink"
+
+import type { ScrollBoxHandle } from "@liteai/ink"
+import { Box, Text, useInput } from "@liteai/ink"
 import React, { createContext, type RefObject, useContext } from "react"
 import { Byline } from "../components/design-system/Byline"
 import { KeyboardShortcutHint } from "../components/design-system/KeyboardShortcutHint"
 import { Pane } from "../components/design-system/Pane"
 import { useKeybind } from "../context/keybind"
+import type { ThemeColors } from "../context/theme.tsx"
 
 // --- Modal Context ---
 type ModalCtx = {
   rows: number
   columns: number
-  scrollRef: RefObject<unknown> | null
+  scrollRef: RefObject<ScrollBoxHandle> | null
 }
 export const ModalContext = createContext<ModalCtx | null>(null)
 
@@ -23,7 +26,7 @@ export function useModalOrTerminalSize(fallback: { rows: number; columns: number
   return ctx ? { rows: ctx.rows, columns: ctx.columns } : fallback
 }
 
-export function useModalScrollRef(): RefObject<unknown> | null {
+export function useModalScrollRef(): RefObject<ScrollBoxHandle> | null {
   return useContext(ModalContext)?.scrollRef ?? null
 }
 
@@ -33,7 +36,7 @@ type DialogProps = {
   subtitle?: React.ReactNode
   children: React.ReactNode
   onCancel?: () => void
-  color?: Color
+  color?: keyof ThemeColors
   hideInputGuide?: boolean
   hideBorder?: boolean
   inputGuide?: React.ReactNode
@@ -45,7 +48,7 @@ export function Dialog({
   subtitle,
   children,
   onCancel,
-  color = "ansi:blue",
+  color = "info",
   hideInputGuide,
   hideBorder,
   inputGuide,
