@@ -13,7 +13,7 @@
   - [x] 2.8 Fix all internal import paths
   - [x] 2.9 Create `src/index.ts` public API barrel
   - [x] 2.10 `bun install`, `bun typecheck`, `bun lint:fix` (typecheck passes cleanly, lint:fix has a minor biome configuration error)
-  - [ ] 2.11 Basic render test
+  - [x] 2.11 Basic render test (Created tests/render.test.tsx, passes cleanly)
 - [ ] 3. packages/hooks (Phase 1b) — Branch: `feat/hooks`
   - [ ] 3.1 Create package scaffold
   - [ ] 3.2 Define port interfaces in `src/types.ts`

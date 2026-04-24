@@ -5,7 +5,7 @@ import { markDirty, scheduleRenderFrom } from '../dom.js'
 import { noop as markScrollActivity } from '../noop.js'
 import { markCommitStart } from '../reconciler.js'
 import type { Styles } from '../styles.js'
-import '../global.d.ts'
+import '../env.d.ts'
 import Box from './Box.js'
 
 export type ScrollBoxHandle = {

@@ -1,4 +1,4 @@
-import '../global.d.ts'
+import '../env.d.ts'
 import type { PropsWithChildren, ReactNode, Ref } from 'react'
 import type { Except } from 'type-fest'
 import type { DOMElement } from '../dom.js'
