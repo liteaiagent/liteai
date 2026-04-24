@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@liteai/ink",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./events/*": "./src/events/*.ts",
+    "./design-system": "./src/design-system/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "check": "tsgo --noEmit",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "test": "bun test --timeout 30000"
+  },
+  "dependencies": {
+    "@alcalzone/ansi-tokenize": "latest",
+    "auto-bind": "latest",
+    "bidi-js": "latest",
+    "chalk": "latest",
+    "cli-boxes": "4.0.1",
+    "cli-truncate": "4.0.0",
+    "code-excerpt": "4.0.0",
+    "emoji-regex": "latest",
+    "figures": "latest",
+    "get-east-asian-width": "latest",
+    "indent-string": "5.0.0",
+    "react": "latest",
+    "react-reconciler": "latest",
+    "semver": "7.7.4",
+    "signal-exit": "latest",
+    "stack-utils": "latest",
+    "strip-ansi": "7.1.2",
+    "supports-hyperlinks": "4.4.0",
+    "usehooks-ts": "3.1.1",
+    "widest-line": "5.0.0",
+    "wrap-ansi": "9.0.0"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-reconciler": "0.33.0",
+    "@types/semver": "7.7.1",
+    "@types/stack-utils": "2.0.3",
+    "@typescript/native-preview": "catalog:",
+    "type-fest": "latest",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}

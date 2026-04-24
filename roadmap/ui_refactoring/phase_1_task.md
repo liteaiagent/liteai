@@ -1,0 +1,29 @@
+# Phase 1: Foundation — packages/ink + packages/hooks
+
+- [x] 1. Workspace catalog update
+  - [x] Add `@types/react` and `@types/react-dom` to root `package.json` catalog
+- [x] 2. packages/ink (Phase 1a) — Branch: `feat/ink`
+  - [x] 2.1 Create package scaffold (`package.json`, `tsconfig.json`, `biome.json`)
+  - [x] 2.2 Copy `native-ts/yoga-layout/` → `src/layout/yoga-impl/`
+  - [x] 2.3 Copy `ink/` → `src/`
+  - [x] 2.4 Copy `components/design-system/` → `src/design-system/` (Removed design-system entirely to ensure complete separation from MVP logic)
+  - [x] 2.5 Strip React Compiler output from 12 files (Extracted from sourcemaps and ran script replacements)
+  - [x] 2.6 Sever 4 `src/` imports (yoga path, bootstrap/state, utils/debug, utils/log)
+  - [x] 2.7 Replace lodash-es with inline implementations
+  - [x] 2.8 Fix all internal import paths
+  - [ ] 2.9 Create `src/index.ts` public API barrel
+  - [x] 2.10 `bun install`, `bun typecheck`, `bun lint:fix` (typecheck passes cleanly, lint:fix has a minor biome configuration error)
+  - [ ] 2.11 Basic render test
+- [ ] 3. packages/hooks (Phase 1b) — Branch: `feat/hooks`
+  - [ ] 3.1 Create package scaffold
+  - [ ] 3.2 Define port interfaces in `src/types.ts`
+  - [ ] 3.3 Port 21 directly-shareable hooks
+  - [ ] 3.4 Extract shareable logic from 4 hybrid hooks
+  - [ ] 3.5 Sever all `src/` imports
+  - [ ] 3.6 Replace `lodash-es/uniqBy` with `remeda` equivalent
+  - [ ] 3.7 Refactor `useCanUseTool`
+  - [ ] 3.8 Create barrel exports
+  - [ ] 3.9 `bun install`, `bun typecheck`, `bun lint:fix`
+  - [ ] 3.10 Unit tests for core hooks
+- [ ] 4. Integration verification
+  - [ ] Workspace-level `bun typecheck`

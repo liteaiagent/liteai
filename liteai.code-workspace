@@ -38,6 +38,9 @@
 		},
 		{
 			"path": "packages/storybook"
+		},
+		{
+			"path": "packages/ink"
 		}
 	],
 	"settings": {
