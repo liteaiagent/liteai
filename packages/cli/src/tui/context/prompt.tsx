@@ -1,11 +1,7 @@
 /** @jsxImportSource react */
 import { useMemo, useState } from "react"
+import type { PromptInfo } from "../types"
 import { createSimpleContext } from "./helper"
-
-export type PromptInfo = {
-  input: string
-  parts: unknown[]
-}
 
 export type PromptRef = {
   focused: boolean

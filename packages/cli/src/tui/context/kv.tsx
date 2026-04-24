@@ -17,7 +17,10 @@ export const { use: useKV, provider: KVProvider } = createSimpleContext({
         .then((x) => {
           setStore(x)
         })
-        .catch(() => {})
+        .catch((err: unknown) => {
+          // First-run: kv.json may not exist yet. Log but don't throw.
+          console.error("[KV] Failed to read store:", err)
+        })
         .finally(() => {
           setReady(true)
         })
@@ -41,36 +44,14 @@ export const { use: useKV, provider: KVProvider } = createSimpleContext({
       [store],
     )
 
-    const signal = useCallback(
-      <T,>(name: string, defaultValue: T) => {
-        if (store[name] === undefined) {
-          set(name, defaultValue)
-        }
-
-        return [
-          () => store[name] as T,
-          (next: T | ((prev: T) => T)) => {
-            if (typeof next === "function") {
-              // @ts-expect-error
-              set(name, next(store[name] as T))
-            } else {
-              set(name, next)
-            }
-          },
-        ] as const
-      },
-      [store, set],
-    )
-
     return useMemo(
       () => ({
         ready,
         store,
         get,
         set,
-        signal,
       }),
-      [ready, store, get, set, signal],
+      [ready, store, get, set],
     )
   },
 })

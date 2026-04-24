@@ -20,6 +20,8 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     events?: EventSource
   }) => {
     const [workspaceID, setWorkspaceID] = useState<string | undefined>()
+    // Bumped on workspace switch to force SDK client recreation (fresh abort controller)
+    const [sdkVersion, setSdkVersion] = useState(0)
 
     // Use refs for values that should persist across renders but don't need to trigger them
     const abortControllerRef = useRef(new AbortController())
@@ -29,13 +31,19 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     const lastFlushRef = useRef(0)
 
     const sdk = useMemo(() => {
+      // Replace the global abort controller on each SDK recreation
+      abortControllerRef.current.abort()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
       return createLiteaiClient({
         baseUrl: props.url,
-        signal: abortControllerRef.current.signal,
+        signal: controller.signal,
         fetch: props.fetch,
         headers: props.headers,
       })
-    }, [props.url, props.fetch, props.headers])
+      // sdkVersion forces recreation on workspace switch
+    }, [props.url, props.fetch, props.headers, sdkVersion])
 
     const emitter = useMemo(() => {
       return createEventEmitter<{
@@ -129,6 +137,8 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
         setWorkspace(next?: string) {
           if (workspaceID === next) return
           setWorkspaceID(next)
+          // Bump version to trigger SDK client recreation (mirrors SolidJS sdk = createSDK())
+          setSdkVersion((v) => v + 1)
           props.events?.setWorkspace?.(next)
           if (!props.events) startSSE()
         },

@@ -1,11 +1,7 @@
 /** @jsxImportSource react */
 import { useMemo, useState } from "react"
+import type { PromptInfo } from "../types"
 import { createSimpleContext } from "./helper"
-
-export type PromptInfo = {
-  input: string
-  parts: unknown[]
-}
 
 export type HomeRoute = {
   type: "home"
@@ -41,7 +37,6 @@ export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
           return route
         },
         navigate(next: Route) {
-          console.log("navigate", next)
           setRoute(next)
         },
       }),

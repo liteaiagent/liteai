@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { useApp } from "@liteai/ink"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { win32FlushInputBuffer } from "../../cli/cmd/tui/win32"
 import { FormatError, FormatUnknownError } from "../../cli/error"
 import { createSimpleContext } from "./helper"
@@ -18,12 +18,17 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
   init: (input: { onExit?: () => Promise<void> }) => {
     const { exit: inkExit } = useApp()
     const [message, setMessage] = useState<string | undefined>()
-    const [isExiting, setIsExiting] = useState(false)
+
+    // Synchronous ref guard prevents double-exit races that useState cannot catch
+    const exitingRef = useRef(false)
+    // Keep message in a ref so the exit callback reads the latest value
+    const messageRef = useRef<string | undefined>(undefined)
+    messageRef.current = message
 
     const exitFn = useCallback(
       async (reason?: unknown) => {
-        if (isExiting) return
-        setIsExiting(true)
+        if (exitingRef.current) return
+        exitingRef.current = true
 
         // Reset window title before exiting
         if (process.platform === "win32") {
@@ -42,13 +47,14 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
           }
         }
 
-        if (message) {
-          process.stdout.write(`${message}\n`)
+        const text = messageRef.current
+        if (text) {
+          process.stdout.write(`${text}\n`)
         }
 
         await input.onExit?.()
       },
-      [isExiting, inkExit, message, input.onExit],
+      [inkExit, input.onExit],
     )
 
     const store = useMemo(
