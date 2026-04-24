@@ -56,7 +56,7 @@ function stringWidthJavaScript(str: string): number {
   if (!needsSegmentation(str)) {
     let width = 0
     for (const char of str) {
-      const codePoint = char.codePointAt(0)!
+      const codePoint = char.codePointAt(0) ?? 0
       if (!isZeroWidth(codePoint)) {
         width += eastAsianWidth(codePoint, { ambiguousAsWide: false })
       }
@@ -78,7 +78,7 @@ function stringWidthJavaScript(str: string): number {
     // For grapheme clusters (like Devanagari conjuncts with virama+ZWJ), only count
     // the first non-zero-width character's width since the cluster renders as one glyph
     for (const char of grapheme) {
-      const codePoint = char.codePointAt(0)!
+      const codePoint = char.codePointAt(0) ?? 0
       if (!isZeroWidth(codePoint)) {
         width += eastAsianWidth(codePoint, { ambiguousAsWide: false })
         break
@@ -91,7 +91,7 @@ function stringWidthJavaScript(str: string): number {
 
 function needsSegmentation(str: string): boolean {
   for (const char of str) {
-    const cp = char.codePointAt(0)!
+    const cp = char.codePointAt(0) ?? 0
     // Emoji ranges
     if (cp >= 0x1f300 && cp <= 0x1faff) return true
     if (cp >= 0x2600 && cp <= 0x27bf) return true
@@ -105,7 +105,7 @@ function needsSegmentation(str: string): boolean {
 
 function getEmojiWidth(grapheme: string): number {
   // Regional indicators: single = 1, pair = 2
-  const first = grapheme.codePointAt(0)!
+  const first = grapheme.codePointAt(0) ?? 0
   if (first >= 0x1f1e6 && first <= 0x1f1ff) {
     let count = 0
     for (const _ of grapheme) count++

@@ -22,7 +22,7 @@ export class CharPool {
     if (char.length === 1) {
       const code = char.charCodeAt(0)
       if (code < 128) {
-        const cached = this.ascii[code]!
+        const cached = this.ascii[code] ?? -1
         if (cached !== -1) return cached
         const index = this.strings.length
         this.strings.push(char)
@@ -532,11 +532,11 @@ export function migrateScreenPools(screen: Screen, charPool: CharPool, hyperlink
   // Re-intern chars and hyperlinks in a single pass, stride by 2
   for (let ci = 0; ci < size << 1; ci += 2) {
     // Re-intern charId (word0)
-    const oldCharId = cells[ci]!
+    const oldCharId = cells[ci] ?? 0
     cells[ci] = charPool.intern(oldCharPool.get(oldCharId))
 
     // Re-intern hyperlinkId (packed in word1)
-    const word1 = cells[ci + 1]!
+    const word1 = cells[ci + 1] ?? 0
     const oldHyperlinkId = (word1 >>> HYPERLINK_SHIFT) & HYPERLINK_MASK
     if (oldHyperlinkId !== 0) {
       const oldStr = oldHyperlinkPool.get(oldHyperlinkId)
@@ -566,11 +566,11 @@ export function cellAt(screen: Screen, x: number, y: number): Cell | undefined {
  */
 export function cellAtIndex(screen: Screen, index: number): Cell {
   const ci = index << 1
-  const word1 = screen.cells[ci + 1]!
+  const word1 = screen.cells[ci + 1] ?? 0
   const hid = (word1 >>> HYPERLINK_SHIFT) & HYPERLINK_MASK
   return {
     // Unwritten cells have charIndex=0 (EMPTY_CHAR_INDEX); charPool.get(0) returns ' '
-    char: screen.charPool.get(screen.cells[ci]!),
+    char: screen.charPool.get(screen.cells[ci] ?? 0),
     styleId: word1 >>> STYLE_SHIFT,
     width: word1 & WIDTH_MASK,
     hyperlink: hid === 0 ? undefined : screen.hyperlinkPool.get(hid),
@@ -594,9 +594,9 @@ export function visibleCellAtIndex(
   lastRenderedStyleId: number,
 ): Cell | undefined {
   const ci = index << 1
-  const charId = cells[ci]!
+  const charId = cells[ci] ?? 0
   if (charId === 1) return undefined // spacer
-  const word1 = cells[ci + 1]!
+  const word1 = cells[ci + 1] ?? 0
   // For spaces: 0x3fffc masks bits 2-17 (hyperlinkId + styleId visibility
   // bit). If zero, the space has no hyperlink and at most a fg-only style.
   // Then word1 >>> STYLE_SHIFT is the foreground style — skip if it's zero
@@ -620,8 +620,8 @@ export function visibleCellAtIndex(
  */
 function cellAtCI(screen: Screen, ci: number, out: Cell): void {
   const w1 = ci | 1
-  const word1 = screen.cells[w1]!
-  out.char = screen.charPool.get(screen.cells[ci]!)
+  const word1 = screen.cells[w1] ?? 0
+  out.char = screen.charPool.get(screen.cells[ci] ?? 0)
   out.styleId = word1 >>> STYLE_SHIFT
   out.width = word1 & WIDTH_MASK
   const hid = (word1 >>> HYPERLINK_SHIFT) & HYPERLINK_MASK
@@ -631,7 +631,7 @@ function cellAtCI(screen: Screen, ci: number, out: Cell): void {
 export function charInCellAt(screen: Screen, x: number, y: number): string | undefined {
   if (x < 0 || y < 0 || x >= screen.width || y >= screen.height) return undefined
   const ci = (y * screen.width + x) << 1
-  return screen.charPool.get(screen.cells[ci]!)
+  return screen.charPool.get(screen.cells[ci] ?? 0)
 }
 /**
  * Set a cell, optionally creating a spacer for wide characters.
@@ -658,12 +658,12 @@ export function setCellAt(screen: Screen, x: number, y: number, cell: Cell): voi
   // When a Wide char is overwritten by a Narrow char, its SpacerTail remains
   // as a ghost cell that the diff/render pipeline skips, causing stale content
   // to leak through from previous frames.
-  const prevWidth = cells[ci + 1]! & WIDTH_MASK
+  const prevWidth = (cells[ci + 1] ?? 0) & WIDTH_MASK
   if (prevWidth === CellWidth.Wide && cell.width !== CellWidth.Wide) {
     const spacerX = x + 1
     if (spacerX < screen.width) {
       const spacerCI = ci + 2
-      if ((cells[spacerCI + 1]! & WIDTH_MASK) === CellWidth.SpacerTail) {
+      if (((cells[spacerCI + 1] ?? 0) & WIDTH_MASK) === CellWidth.SpacerTail) {
         cells[spacerCI] = EMPTY_CHAR_INDEX
         cells[spacerCI + 1] = packWord1(screen.emptyStyleId, 0, CellWidth.Narrow)
       }
@@ -677,7 +677,7 @@ export function setCellAt(screen: Screen, x: number, y: number, cell: Cell): voi
     // to still render it with width 2, desyncing the cursor model.
     if (x > 0) {
       const wideCI = ci - 2
-      if ((cells[wideCI + 1]! & WIDTH_MASK) === CellWidth.Wide) {
+      if (((cells[wideCI + 1] ?? 0) & WIDTH_MASK) === CellWidth.Wide) {
         cells[wideCI] = EMPTY_CHAR_INDEX
         cells[wideCI + 1] = packWord1(screen.emptyStyleId, 0, CellWidth.Narrow)
         clearedWideX = x - 1
@@ -723,9 +723,9 @@ export function setCellAt(screen: Screen, x: number, y: number, cell: Cell): voi
       // rule prevents clearing whatever prev content was at that column.
       // Scenario: [a, 💻, spacer] → [本, spacer, ORPHAN spacer] when
       // yoga squishes a💻 to height 0 and 本 renders at the same y.
-      if ((cells[spacerCI + 1]! & WIDTH_MASK) === CellWidth.Wide) {
+      if (((cells[spacerCI + 1] ?? 0) & WIDTH_MASK) === CellWidth.Wide) {
         const orphanCI = spacerCI + 2
-        if (spacerX + 1 < screen.width && (cells[orphanCI + 1]! & WIDTH_MASK) === CellWidth.SpacerTail) {
+        if (spacerX + 1 < screen.width && ((cells[orphanCI + 1] ?? 0) & WIDTH_MASK) === CellWidth.SpacerTail) {
           cells[orphanCI] = EMPTY_CHAR_INDEX
           cells[orphanCI + 1] = packWord1(screen.emptyStyleId, 0, CellWidth.Narrow)
         }
@@ -751,7 +751,7 @@ export function setCellStyleId(screen: Screen, x: number, y: number, styleId: nu
   if (x < 0 || y < 0 || x >= screen.width || y >= screen.height) return
   const ci = (y * screen.width + x) << 1
   const cells = screen.cells
-  const word1 = cells[ci + 1]!
+  const word1 = cells[ci + 1] ?? 0
   const width = word1 & WIDTH_MASK
   // Skip spacer cells — inverse on the head cell visually covers both columns
   if (width === CellWidth.SpacerTail || width === CellWidth.SpacerHead) return
@@ -857,7 +857,7 @@ export function blitRegion(
     let dstSpacerCI = (regionY * dst.width + maxX) << 1
     let wroteSpacerOutsideRegion = false
     for (let y = regionY; y < maxY; y++) {
-      if ((srcCells[srcLastCI + 1]! & WIDTH_MASK) === CellWidth.Wide) {
+      if (((srcCells[srcLastCI + 1] ?? 0) & WIDTH_MASK) === CellWidth.Wide) {
         dstCells[dstSpacerCI] = SPACER_CHAR_INDEX
         dstCells[dstSpacerCI + 1] = packWord1(dst.emptyStyleId, 0, CellWidth.SpacerTail)
         wroteSpacerOutsideRegion = true
@@ -920,10 +920,10 @@ export function clearRegion(
       // at startX-1 (outside the region) will be orphaned. Clear it.
       if (checkLeft) {
         // leftEdge points to word0 of cell at startX; +1 is its word1
-        if ((cells[leftEdge + 1]! & WIDTH_MASK) === CellWidth.SpacerTail) {
+        if (((cells[leftEdge + 1] ?? 0) & WIDTH_MASK) === CellWidth.SpacerTail) {
           // word1 of cell at startX-1 is leftEdge-1; word0 is leftEdge-2
           const prevW1 = leftEdge - 1
-          if ((cells[prevW1]! & WIDTH_MASK) === CellWidth.Wide) {
+          if (((cells[prevW1] ?? 0) & WIDTH_MASK) === CellWidth.Wide) {
             cells[prevW1 - 1] = EMPTY_CHAR_INDEX
             cells[prevW1] = packWord1(screen.emptyStyleId, 0, CellWidth.Narrow)
             damageMinX = startX - 1
@@ -935,10 +935,10 @@ export function clearRegion(
       // (outside the region) will be orphaned. Clear it.
       if (checkRight) {
         // rightEdge points to word0 of cell at maxX-1; +1 is its word1
-        if ((cells[rightEdge + 1]! & WIDTH_MASK) === CellWidth.Wide) {
+        if (((cells[rightEdge + 1] ?? 0) & WIDTH_MASK) === CellWidth.Wide) {
           // word1 of cell at maxX is rightEdge+3 (+2 to next word0, +1 to word1)
           const nextW1 = rightEdge + 3
-          if ((cells[nextW1]! & WIDTH_MASK) === CellWidth.SpacerTail) {
+          if (((cells[nextW1] ?? 0) & WIDTH_MASK) === CellWidth.SpacerTail) {
             cells[nextW1 - 1] = EMPTY_CHAR_INDEX
             cells[nextW1] = packWord1(screen.emptyStyleId, 0, CellWidth.Narrow)
             damageMaxX = maxX + 1

@@ -62,12 +62,16 @@ export function applySearchHighlight(screen: Screen, query: string, stylePool: S
     let pos = text.indexOf(lq)
     while (pos >= 0) {
       applied = true
-      const startCi = codeUnitToCell[pos]!
-      const endCi = codeUnitToCell[pos + qlen - 1]!
-      for (let ci = startCi; ci <= endCi; ci++) {
-        const col = colOf[ci]!
-        const cell = cellAtIndex(screen, rowOff + col)
-        setCellStyleId(screen, col, row, stylePool.withInverse(cell.styleId))
+      const startCi = codeUnitToCell[pos]
+      const endCi = codeUnitToCell[pos + qlen - 1]
+      if (startCi !== undefined && endCi !== undefined) {
+        for (let ci = startCi; ci <= endCi; ci++) {
+          const col = colOf[ci]
+          if (col !== undefined) {
+            const cell = cellAtIndex(screen, rowOff + col)
+            setCellStyleId(screen, col, row, stylePool.withInverse(cell.styleId))
+          }
+        }
       }
       // Non-overlapping advance (less/vim/grep/Ctrl+F). pos+1 would find
       // 'aa' at 0 AND 1 in 'aaa' → double-invert cell 1.

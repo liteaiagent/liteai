@@ -78,17 +78,15 @@ export function renderToScreen(el: ReactElement, width: number): { screen: Scree
   const height = Math.ceil(root.yogaNode?.getComputedHeight() ?? 0)
   const t2 = performance.now()
 
+  if (!stylePool || !charPool || !hyperlinkPool || !container) {
+    throw new Error('renderToScreen: shared pools or container not initialized')
+  }
+
   // Paint to a fresh Screen. Width = given, height = yoga's natural.
   // No alt-screen, no prevScreen (every call is fresh).
-  const screen = createScreen(
-    width,
-    Math.max(1, height), // avoid 0-height Screen (createScreen may choke)
-    stylePool!,
-    charPool!,
-    hyperlinkPool!,
-  )
+  const screen = createScreen(width, Math.max(1, height), stylePool, charPool, hyperlinkPool)
   if (!output) {
-    output = new Output({ width, height, stylePool: stylePool!, screen })
+    output = new Output({ width, height, stylePool, screen })
   } else {
     output.reset(width, height, screen)
   }
@@ -167,11 +165,16 @@ export function scanPositions(screen: Screen, query: string): MatchPosition[] {
     // Non-overlapping — same advance as applySearchHighlight.
     let pos = text.indexOf(lq)
     while (pos >= 0) {
-      const startCi = codeUnitToCell[pos]!
-      const endCi = codeUnitToCell[pos + qlen - 1]!
-      const col = colOf[startCi]!
-      const endCol = colOf[endCi]! + 1
-      positions.push({ row, col, len: endCol - col })
+      const startCi = codeUnitToCell[pos]
+      const endCi = codeUnitToCell[pos + qlen - 1]
+      if (startCi !== undefined && endCi !== undefined) {
+        const col = colOf[startCi]
+        const endColIdx = colOf[endCi]
+        if (col !== undefined && endColIdx !== undefined) {
+          const endCol = endColIdx + 1
+          positions.push({ row, col, len: endCol - col })
+        }
+      }
       pos = text.indexOf(lq, pos + qlen)
     }
   }
@@ -197,7 +200,8 @@ export function applyPositionedHighlight(
   currentIdx: number,
 ): boolean {
   if (currentIdx < 0 || currentIdx >= positions.length) return false
-  const p = positions[currentIdx]!
+  const p = positions[currentIdx]
+  if (!p) return false
   const row = p.row + rowOffset
   if (row < 0 || row >= screen.height) return false
   const transform = (id: number) => stylePool.withCurrentMatch(id)

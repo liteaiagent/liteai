@@ -33,8 +33,8 @@ import { isEnvTruthy } from './utils/envUtils.js'
 if (process.env.NODE_ENV === 'development') {
   try {
     void import('./devtools.js')
-  } catch (error: any) {
-    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+  } catch (error: unknown) {
+    if ((error as { code?: string }).code === 'ERR_MODULE_NOT_FOUND') {
       console.warn(
         `${`
 The environment variable DEV is set to true, so Ink tried to import \`react-devtools-core\`,

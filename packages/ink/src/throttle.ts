@@ -1,11 +1,11 @@
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number,
   options: { leading?: boolean; trailing?: boolean } = {},
 ): T {
   let timeout: ReturnType<typeof setTimeout> | null = null
   let previous = 0
-  return function (this: any, ...args: Parameters<T>) {
+  return function (this: unknown, ...args: Parameters<T>) {
     const now = Date.now()
     if (!previous && options.leading === false) previous = now
     const remaining = wait - (now - previous)
