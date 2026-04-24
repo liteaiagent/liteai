@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { createSimpleContext } from "./helper"
 
 export type ToastVariant = "info" | "success" | "warning" | "error"
@@ -21,23 +21,19 @@ export const { use: useToast, provider: ToastProvider } = createSimpleContext({
   name: "Toast",
   init: () => {
     const [currentToast, setCurrentToast] = useState<ToastOptions | null>(null)
-    const [timeoutHandle, setTimeoutHandle] = useState<NodeJS.Timeout | null>(null)
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-    const show = useCallback(
-      (options: ToastOptions) => {
-        const duration = options.duration ?? 3000
-        setCurrentToast(options)
+    const show = useCallback((options: ToastOptions) => {
+      const duration = options.duration ?? 3000
+      setCurrentToast(options)
 
-        if (timeoutHandle) clearTimeout(timeoutHandle)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
 
-        const handle = setTimeout(() => {
-          setCurrentToast(null)
-        }, duration)
-
-        setTimeoutHandle(handle)
-      },
-      [timeoutHandle],
-    )
+      timeoutRef.current = setTimeout(() => {
+        setCurrentToast(null)
+        timeoutRef.current = null
+      }, duration)
+    }, [])
 
     const error = useCallback(
       (err: unknown) => {

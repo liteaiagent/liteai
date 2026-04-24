@@ -32,6 +32,12 @@ export function Spinner({ reducedMotion = false }: SpinnerProps): React.ReactNod
   )
 }
 
+const MODE_MESSAGES: Record<SpinnerMode, string> = {
+  thinking: "Thinking…",
+  working: "Working…",
+  reading: "Reading…",
+}
+
 type SpinnerWithVerbProps = {
   mode: SpinnerMode
   message?: string
@@ -40,15 +46,17 @@ type SpinnerWithVerbProps = {
 }
 
 export function SpinnerWithVerb({
-  mode: _mode,
-  message = "Working…",
+  mode,
+  message,
   color = "ansi:blue",
   reducedMotion = false,
 }: SpinnerWithVerbProps): React.ReactNode {
+  const displayMessage = message ?? MODE_MESSAGES[mode]
+
   return (
     <Box flexDirection="row" gap={1}>
       <Spinner reducedMotion={reducedMotion} />
-      <Text color={color}>{message}</Text>
+      <Text color={color}>{displayMessage}</Text>
     </Box>
   )
 }
