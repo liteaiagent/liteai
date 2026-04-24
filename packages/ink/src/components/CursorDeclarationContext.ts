@@ -20,13 +20,8 @@ export type CursorDeclaration = {
  * node check, a newly-unfocused item's clear could clobber a
  * newly-focused sibling's set depending on layout-effect order.
  */
-export type CursorDeclarationSetter = (
-  declaration: CursorDeclaration | null,
-  clearIfNode?: DOMElement | null,
-) => void
+export type CursorDeclarationSetter = (declaration: CursorDeclaration | null, clearIfNode?: DOMElement | null) => void
 
-const CursorDeclarationContext = createContext<CursorDeclarationSetter>(
-  () => {},
-)
+const CursorDeclarationContext = createContext<CursorDeclarationSetter>(() => {})
 
 export default CursorDeclarationContext

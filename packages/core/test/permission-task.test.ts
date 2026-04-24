@@ -67,8 +67,6 @@ describe("PermissionNext.evaluate for permission.task", () => {
   })
 })
 
-
-
 // Integration tests that load permissions from real config files
 describe("permission.task with real config files", () => {
   test("loads task permissions from settings.json config", async () => {

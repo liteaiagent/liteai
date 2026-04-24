@@ -1,17 +1,3 @@
-import Yoga, {
-  Align,
-  Direction,
-  Display,
-  Edge,
-  FlexDirection,
-  Gutter,
-  Justify,
-  MeasureMode,
-  Overflow,
-  PositionType,
-  Wrap,
-  type Node as YogaNode,
-} from './yoga-impl/index.js'
 import {
   type LayoutAlign,
   LayoutDisplay,
@@ -26,6 +12,20 @@ import {
   type LayoutPositionType,
   type LayoutWrap,
 } from './node.js'
+import Yoga, {
+  Align,
+  Direction,
+  Display,
+  Edge,
+  FlexDirection,
+  Gutter,
+  Justify,
+  MeasureMode,
+  Overflow,
+  PositionType,
+  Wrap,
+  type Node as YogaNode,
+} from './yoga-impl/index.js'
 
 // --
 // Edge/Gutter mapping
@@ -245,15 +245,11 @@ export class YogaLayoutNode implements LayoutNode {
   }
 
   getDisplay(): LayoutDisplay {
-    return this.yoga.getDisplay() === Display.None
-      ? LayoutDisplay.None
-      : LayoutDisplay.Flex
+    return this.yoga.getDisplay() === Display.None ? LayoutDisplay.None : LayoutDisplay.Flex
   }
 
   setPositionType(type: LayoutPositionType): void {
-    this.yoga.setPositionType(
-      type === 'absolute' ? PositionType.Absolute : PositionType.Relative,
-    )
+    this.yoga.setPositionType(type === 'absolute' ? PositionType.Absolute : PositionType.Relative)
   }
 
   setPosition(edge: LayoutEdge, value: number): void {

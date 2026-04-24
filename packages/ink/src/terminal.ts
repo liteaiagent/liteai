@@ -1,5 +1,5 @@
+import type { Writable } from 'node:stream'
 import { coerce, gte } from 'semver'
-import type { Writable } from 'stream'
 import { getClearTerminalSequence } from './clearTerminal.js'
 import type { Diff } from './frame.js'
 import { cursorMove, cursorTo, eraseLines } from './termio/csi.js'
@@ -33,11 +33,7 @@ export function isProgressReportingAvailable(): boolean {
   }
 
   // ConEmu supports OSC 9;4 for progress (all versions)
-  if (
-    process.env.ConEmuANSI ||
-    process.env.ConEmuPID ||
-    process.env.ConEmuTask
-  ) {
+  if (process.env.ConEmuANSI || process.env.ConEmuPID || process.env.ConEmuTask) {
     return true
   }
 
@@ -151,19 +147,15 @@ export function isXtermJs(): boolean {
 // in xterm.js-based terminals like VS Code). tmux is allowlisted because it
 // accepts modifyOtherKeys and doesn't forward the kitty sequence to the outer
 // terminal.
-const EXTENDED_KEYS_TERMINALS = [
-  'iTerm.app',
-  'kitty',
-  'WezTerm',
-  'ghostty',
-  'tmux',
-  'windows-terminal',
-]
+const EXTENDED_KEYS_TERMINALS = ['iTerm.app', 'kitty', 'WezTerm', 'ghostty', 'tmux', 'windows-terminal']
 
 /** True if this terminal correctly handles extended key reporting
  *  (Kitty keyboard protocol + xterm modifyOtherKeys). */
 export function supportsExtendedKeys(): boolean {
-  return EXTENDED_KEYS_TERMINALS.includes(process.env.TERM_PROGRAM ?? '') || EXTENDED_KEYS_TERMINALS.includes(process.env.TERM ?? '')
+  return (
+    EXTENDED_KEYS_TERMINALS.includes(process.env.TERM_PROGRAM ?? '') ||
+    EXTENDED_KEYS_TERMINALS.includes(process.env.TERM ?? '')
+  )
 }
 
 /** True if the terminal scrolls the viewport when it receives cursor-up
@@ -185,11 +177,7 @@ export type Terminal = {
   stderr: Writable
 }
 
-export function writeDiffToTerminal(
-  terminal: Terminal,
-  diff: Diff,
-  skipSyncMarkers = false,
-): void {
+export function writeDiffToTerminal(terminal: Terminal, diff: Diff, skipSyncMarkers = false): void {
   // No output if there are no patches
   if (diff.length === 0) {
     return

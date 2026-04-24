@@ -1,14 +1,8 @@
-import React, {
-  type PropsWithChildren,
-  type Ref,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from 'react'
+import React, { type PropsWithChildren, type Ref, useImperativeHandle, useRef, useState } from 'react'
 import type { Except } from 'type-fest'
-import { noop as markScrollActivity } from '../noop.js'
 import type { DOMElement } from '../dom.js'
 import { markDirty, scheduleRenderFrom } from '../dom.js'
+import { noop as markScrollActivity } from '../noop.js'
 import { markCommitStart } from '../reconciler.js'
 import type { Styles } from '../styles.js'
 import '../global.d.ts'
@@ -68,10 +62,7 @@ export type ScrollBoxHandle = {
   setClampBounds: (min: number | undefined, max: number | undefined) => void
 }
 
-export type ScrollBoxProps = Except<
-  Styles,
-  'textWrap' | 'overflow' | 'overflowX' | 'overflowY'
-> & {
+export type ScrollBoxProps = Except<Styles, 'textWrap' | 'overflow' | 'overflowX' | 'overflowY'> & {
   ref?: Ref<ScrollBoxHandle>
   /**
    * When true, automatically pins scroll position to the bottom when content
@@ -90,12 +81,7 @@ export type ScrollBoxProps = Except<
  *
  * Works best inside a fullscreen (constrained-height root) Ink tree.
  */
-function ScrollBox({
-  children,
-  ref,
-  stickyScroll,
-  ...style
-}: PropsWithChildren<ScrollBoxProps>): React.ReactNode {
+function ScrollBox({ children, ref, stickyScroll, ...style }: PropsWithChildren<ScrollBoxProps>): React.ReactNode {
   const domRef = useRef<DOMElement>(null)
   // scrollTo/scrollBy bypass React: they mutate scrollTop on the DOM node,
   // mark it dirty, and call the root's throttled scheduleRender directly.
@@ -170,7 +156,7 @@ function ScrollBox({
         el.stickyScroll = true
         markDirty(el)
         notify()
-        forceRender(n => n + 1)
+        forceRender((n) => n + 1)
       },
       getScrollTop() {
         return domRef.current?.scrollTop ?? 0
@@ -186,11 +172,7 @@ function ScrollBox({
       },
       getFreshScrollHeight() {
         const content = domRef.current?.childNodes[0] as DOMElement | undefined
-        return (
-          content?.yogaNode?.getComputedHeight() ??
-          domRef.current?.scrollHeight ??
-          0
-        )
+        return content?.yogaNode?.getComputedHeight() ?? domRef.current?.scrollHeight ?? 0
       },
       getViewportHeight() {
         return domRef.current?.scrollViewportHeight ?? 0
@@ -201,7 +183,7 @@ function ScrollBox({
       isSticky() {
         const el = domRef.current
         if (!el) return false
-        return el.stickyScroll ?? Boolean(el.attributes['stickyScroll'])
+        return el.stickyScroll ?? Boolean(el.attributes.stickyScroll)
       },
       subscribe(listener: () => void) {
         listenersRef.current.add(listener)
@@ -218,7 +200,7 @@ function ScrollBox({
     // refs + imports — stable. Empty deps avoids rebuilding the handle on
     // every render (which re-registers the ref = churn).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [notify, scrollMutated],
   )
 
   // Structure: outer viewport (overflow:scroll, constrained height) >

@@ -1,1 +1,1 @@
-export type PasteEvent = { text: string; }
+export type PasteEvent = { text: string }

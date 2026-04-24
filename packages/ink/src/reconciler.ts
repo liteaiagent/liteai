@@ -1,8 +1,7 @@
 /* eslint-disable custom-rules/no-top-level-side-effects */
 
-import { appendFileSync } from 'fs'
+import { appendFileSync } from 'node:fs'
 import createReconciler from 'react-reconciler'
-import { getYogaCounters } from './layout/yoga-impl/index.js'
 import {
   appendChildNode,
   clearYogaNodeReferences,
@@ -24,6 +23,7 @@ import { Dispatcher } from './events/dispatcher.js'
 import { EVENT_HANDLER_PROPS } from './events/event-handlers.js'
 import { getFocusManager, getRootNode } from './focus.js'
 import { LayoutDisplay } from './layout/node.js'
+import { getYogaCounters } from './layout/yoga-impl/index.js'
 import applyStyles, { type Styles, type TextStyles } from './styles.js'
 
 // --
@@ -235,10 +235,7 @@ const reconciler = createReconciler<
       _createCount = 0
       if (now - _lastLog > 1000) {
         // eslint-disable-next-line custom-rules/no-sync-fs -- debug instrumentation
-        appendFileSync(
-          COMMIT_LOG,
-          `${now.toFixed(1)} commits=${_commits}/s maxGap=${_maxGapMs.toFixed(1)}ms\n`,
-        )
+        appendFileSync(COMMIT_LOG, `${now.toFixed(1)} commits=${_commits}/s maxGap=${_maxGapMs.toFixed(1)}ms\n`)
         _commits = 0
         _maxGapMs = 0
         _lastLog = now
@@ -277,20 +274,13 @@ const reconciler = createReconciler<
       const renderMs = performance.now() - _tr
       if (renderMs > 10) {
         // eslint-disable-next-line custom-rules/no-sync-fs -- debug instrumentation
-        appendFileSync(
-          COMMIT_LOG,
-          `${_tr.toFixed(1)} SLOW_PAINT ${renderMs.toFixed(1)}ms\n`,
-        )
+        appendFileSync(COMMIT_LOG, `${_tr.toFixed(1)} SLOW_PAINT ${renderMs.toFixed(1)}ms\n`)
       }
     }
   },
-  getChildHostContext(
-    parentHostContext: HostContext,
-    type: ElementNames,
-  ): HostContext {
+  getChildHostContext(parentHostContext: HostContext, type: ElementNames): HostContext {
     const previousIsInsideText = parentHostContext.isInsideText
-    const isInsideText =
-      type === 'ink-text' || type === 'ink-virtual-text' || type === 'ink-link'
+    const isInsideText = type === 'ink-text' || type === 'ink-virtual-text' || type === 'ink-link'
 
     if (previousIsInsideText === isInsideText) {
       return parentHostContext
@@ -310,10 +300,7 @@ const reconciler = createReconciler<
       throw new Error(`<Box> can't be nested inside <Text> component`)
     }
 
-    const type =
-      originalType === 'ink-text' && hostContext.isInsideText
-        ? 'ink-virtual-text'
-        : originalType
+    const type = originalType === 'ink-text' && hostContext.isInsideText ? 'ink-virtual-text' : originalType
 
     const node = createNode(type)
     if (COMMIT_LOG) _createCount++
@@ -328,15 +315,9 @@ const reconciler = createReconciler<
 
     return node
   },
-  createTextInstance(
-    text: string,
-    _root: DOMElement,
-    hostContext: HostContext,
-  ): TextNode {
+  createTextInstance(text: string, _root: DOMElement, hostContext: HostContext): TextNode {
     if (!hostContext.isInsideText) {
-      throw new Error(
-        `Text string "${text}" must be rendered inside <Text> component`,
-      )
+      throw new Error(`Text string "${text}" must be rendered inside <Text> component`)
     }
 
     return createTextNode(text)
@@ -362,12 +343,8 @@ const reconciler = createReconciler<
   appendInitialChild: appendChildNode,
   appendChild: appendChildNode,
   insertBefore: insertBeforeNode,
-  finalizeInitialChildren(
-    _node: DOMElement,
-    _type: ElementNames,
-    props: Props,
-  ): boolean {
-    return props['autoFocus'] === true
+  finalizeInitialChildren(_node: DOMElement, _type: ElementNames, props: Props): boolean {
+    return props.autoFocus === true
   },
   commitMount(node: DOMElement): void {
     getFocusManager(node).handleAutoFocus(node)
@@ -394,14 +371,9 @@ const reconciler = createReconciler<
     getFocusManager(node).handleNodeRemoved(removeNode, node)
   },
   // React 19 commitUpdate receives old and new props directly instead of an updatePayload
-  commitUpdate(
-    node: DOMElement,
-    _type: ElementNames,
-    oldProps: Props,
-    newProps: Props,
-  ): void {
+  commitUpdate(node: DOMElement, _type: ElementNames, oldProps: Props, newProps: Props): void {
     const props = diff(oldProps, newProps)
-    const style = diff(oldProps['style'] as Styles, newProps['style'] as Styles)
+    const style = diff(oldProps.style as Styles, newProps.style as Styles)
 
     if (props) {
       for (const [key, value] of Object.entries(props)) {
@@ -425,7 +397,7 @@ const reconciler = createReconciler<
     }
 
     if (style && node.yogaNode) {
-      applyStyles(node.yogaNode, style, newProps['style'] as Styles)
+      applyStyles(node.yogaNode, style, newProps.style as Styles)
     }
   },
   commitTextUpdate(node: TextNode, _oldText: string, newText: string): void {
@@ -436,7 +408,7 @@ const reconciler = createReconciler<
     cleanupYogaNode(removeNode)
     if (removeNode.nodeName !== '#text') {
       const root = getRootNode(node)
-      root.focusManager!.handleNodeRemoved(removeNode, root)
+      root.focusManager?.handleNodeRemoved(removeNode, root)
     }
   },
   // React 19 required methods

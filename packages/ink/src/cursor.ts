@@ -1,1 +1,1 @@
-export type Cursor = { x: number; y: number; visible: boolean; }
+export type Cursor = { x: number; y: number; visible: boolean }

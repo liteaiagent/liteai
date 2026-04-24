@@ -14,7 +14,7 @@
  * also lacks bidi. We enable bidi reordering when running on Windows or
  * inside Windows Terminal (covers WSL).
  */
-// @ts-ignore
+// @ts-expect-error
 import bidiFactory from 'bidi-js'
 
 type ClusteredChar = {
@@ -31,8 +31,8 @@ function needsBidi(): boolean {
   if (needsSoftwareBidi === undefined) {
     needsSoftwareBidi =
       process.platform === 'win32' ||
-      typeof process.env['WT_SESSION'] === 'string' || // WSL in Windows Terminal
-      process.env['TERM_PROGRAM'] === 'vscode' // VS Code integrated terminal (xterm.js)
+      typeof process.env.WT_SESSION === 'string' || // WSL in Windows Terminal
+      process.env.TERM_PROGRAM === 'vscode' // VS Code integrated terminal (xterm.js)
   }
   return needsSoftwareBidi
 }
@@ -57,7 +57,7 @@ export function reorderBidi(characters: ClusteredChar[]): ClusteredChar[] {
   }
 
   // Build a plain string from the clustered chars to run through bidi
-  const plainText = characters.map(c => c.value).join('')
+  const plainText = characters.map((c) => c.value).join('')
 
   // Check if there are any RTL characters — skip bidi if pure LTR
   if (!hasRTLCharacters(plainText)) {
@@ -73,7 +73,7 @@ export function reorderBidi(characters: ClusteredChar[]): ClusteredChar[] {
   let offset = 0
   for (let i = 0; i < characters.length; i++) {
     charLevels.push(levels[offset]!)
-    offset += characters[i]!.value.length
+    offset += characters[i]?.value.length
   }
 
   // Get reorder segments from bidi-js, but we need to work at the

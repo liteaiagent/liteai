@@ -1,1 +1,1 @@
-export type ResizeEvent = { width: number; height: number; }
+export type ResizeEvent = { width: number; height: number }

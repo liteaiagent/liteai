@@ -4,7 +4,7 @@
  * Uses the termio tokenizer for escape sequence boundary detection,
  * then interprets sequences as keypresses.
  */
-import { Buffer } from 'buffer'
+import { Buffer } from 'node:buffer'
 import { PASTE_END, PASTE_START } from './termio/csi.js'
 import { createTokenizer, type Tokenizer } from './termio/tokenize.js'
 
@@ -176,7 +176,7 @@ function parseTerminalResponse(s: string): TerminalResponse | null {
 
 function splitNumericParams(params: string): number[] {
   if (!params) return []
-  return params.split(';').map(p => parseInt(p, 10))
+  return params.split(';').map((p) => parseInt(p, 10))
 }
 
 export type KeyParseState = {
@@ -197,7 +197,7 @@ function inputToString(input: Buffer | string): string {
   if (Buffer.isBuffer(input)) {
     if (input[0]! > 127 && input[1] === undefined) {
       ;(input[0] as unknown as number) -= 128
-      return '\x1b' + String(input)
+      return `\x1b${String(input)}`
     } else {
       return String(input)
     }
@@ -259,10 +259,7 @@ export function parseMultipleKeypresses(
     } else if (token.type === 'text') {
       if (inPaste) {
         pasteBuffer += token.value
-      } else if (
-        /^\[<\d+;\d+;\d+[Mm]$/.test(token.value) ||
-        /^\[M[\x60-\x7f][\x20-\uffff]{2}$/.test(token.value)
-      ) {
+      } else if (/^\[<\d+;\d+;\d+[Mm]$/.test(token.value) || /^\[M[\x60-\x7f][\x20-\uffff]{2}$/.test(token.value)) {
         // Orphaned SGR/X10 mouse tail (fullscreen only — mouse tracking is off
         // otherwise). A heavy render blocked the event loop past App's 50ms
         // flush timer, so the buffered ESC was flushed as a lone Escape and
@@ -274,7 +271,7 @@ export function parseMultipleKeypresses(
         // range would match typed input like `[MAX]` batched into one read
         // and silently drop it as a phantom click. Click/drag orphans leak
         // as visible garbage instead; deletable garbage beats silent loss.
-        const resynthesized = '\x1b' + token.value
+        const resynthesized = `\x1b${token.value}`
         const mouse = parseMouseEvent(resynthesized)
         keys.push(mouse ?? parseKeypress(resynthesized))
       } else {
@@ -408,7 +405,7 @@ const keyName: Record<string, string> = {
 export const nonAlphanumericKeys = [
   // Filter out single-character values (digits, operators from numpad) since
   // those are printable characters that should produce input
-  ...Object.values(keyName).filter(v => v.length > 1),
+  ...Object.values(keyName).filter((v) => v.length > 1),
   // escape and backspace are assigned directly in parseKeypress (not via the
   // keyName map), so the spread above misses them. Without these, ctrl+escape
   // via Kitty/modifyOtherKeys leaks the literal word "escape" as input text
@@ -421,36 +418,11 @@ export const nonAlphanumericKeys = [
 ]
 
 const isShiftKey = (code: string): boolean => {
-  return [
-    '[a',
-    '[b',
-    '[c',
-    '[d',
-    '[e',
-    '[2$',
-    '[3$',
-    '[5$',
-    '[6$',
-    '[7$',
-    '[8$',
-    '[Z',
-  ].includes(code)
+  return ['[a', '[b', '[c', '[d', '[e', '[2$', '[3$', '[5$', '[6$', '[7$', '[8$', '[Z'].includes(code)
 }
 
 const isCtrlKey = (code: string): boolean => {
-  return [
-    'Oa',
-    'Ob',
-    'Oc',
-    'Od',
-    'Oe',
-    '[2^',
-    '[3^',
-    '[5^',
-    '[6^',
-    '[7^',
-    '[8^',
-  ].includes(code)
+  return ['Oa', 'Ob', 'Oc', 'Od', 'Oe', '[2^', '[3^', '[5^', '[6^', '[7^', '[8^'].includes(code)
 }
 
 /**
@@ -740,9 +712,7 @@ function parseKeypress(s: string = ''): ParsedKey {
       key.option = true
     }
 
-    const code = [parts[1], parts[2], parts[4], parts[6]]
-      .filter(Boolean)
-      .join('')
+    const code = [parts[1], parts[2], parts[4], parts[6]].filter(Boolean).join('')
 
     const modifier = ((parts[3] || parts[5] || 1) as number) - 1
 

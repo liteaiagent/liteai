@@ -1,11 +1,11 @@
-import React, { PureComponent, type ReactNode } from 'react'
-import { noop as updateLastInteractionTime } from '../noop.js'
+import { PureComponent, type ReactNode } from 'react'
 import { logForDebugging } from '../debug.js'
-// imports removed
-import { logError } from '../log.js'
 import { EventEmitter } from '../events/emitter.js'
 import { InputEvent } from '../events/input-event.js'
 import { TerminalFocusEvent } from '../events/terminal-focus-event.js'
+// imports removed
+import { logError } from '../log.js'
+import { noop as updateLastInteractionTime } from '../noop.js'
 import {
   INITIAL_STATE,
   type ParsedInput,
@@ -14,21 +14,9 @@ import {
   parseMultipleKeypresses,
 } from '../parse-keypress.js'
 import reconciler from '../reconciler.js'
-import {
-  finishSelection,
-  hasSelection,
-  type SelectionState,
-  startSelection,
-} from '../selection.js'
-import {
-  isXtermJs,
-  setXtversionName,
-  supportsExtendedKeys,
-} from '../terminal.js'
-import {
-  getTerminalFocused,
-  setTerminalFocused,
-} from '../terminal-focus-state.js'
+import { finishSelection, hasSelection, type SelectionState, startSelection } from '../selection.js'
+import { isXtermJs, setXtversionName, supportsExtendedKeys } from '../terminal.js'
+import { getTerminalFocused, setTerminalFocused } from '../terminal-focus-state.js'
 import { TerminalQuerier, xtversion } from '../terminal-querier.js'
 import {
   DISABLE_KITTY_KEYBOARD,
@@ -38,20 +26,10 @@ import {
   FOCUS_IN,
   FOCUS_OUT,
 } from '../termio/csi.js'
-import {
-  DBP,
-  DFE,
-  DISABLE_MOUSE_TRACKING,
-  EBP,
-  EFE,
-  HIDE_CURSOR,
-  SHOW_CURSOR,
-} from '../termio/dec.js'
+import { DBP, DFE, DISABLE_MOUSE_TRACKING, EBP, EFE, HIDE_CURSOR, SHOW_CURSOR } from '../termio/dec.js'
 import AppContext from './AppContext.js'
 import { ClockProvider } from './ClockContext.js'
-import CursorDeclarationContext, {
-  type CursorDeclarationSetter,
-} from './CursorDeclarationContext.js'
+import CursorDeclarationContext, { type CursorDeclarationSetter } from './CursorDeclarationContext.js'
 import ErrorOverview from './ErrorOverview.js'
 import StdinContext from './StdinContext.js'
 import { TerminalFocusProvider } from './TerminalFocusContext.js'
@@ -215,14 +193,8 @@ export default class App extends PureComponent<Props, State> {
           >
             <TerminalFocusProvider>
               <ClockProvider>
-                <CursorDeclarationContext.Provider
-                  value={this.props.onCursorDeclaration ?? (() => {})}
-                >
-                  {this.state.error ? (
-                    <ErrorOverview error={this.state.error as Error} />
-                  ) : (
-                    this.props.children
-                  )}
+                <CursorDeclarationContext.Provider value={this.props.onCursorDeclaration ?? (() => {})}>
+                  {this.state.error ? <ErrorOverview error={this.state.error as Error} /> : this.props.children}
                 </CursorDeclarationContext.Provider>
               </ClockProvider>
             </TerminalFocusProvider>
@@ -234,10 +206,7 @@ export default class App extends PureComponent<Props, State> {
 
   override componentDidMount() {
     // In accessibility mode, keep the native cursor visible for screen magnifiers and other tools
-    if (
-      this.props.stdout.isTTY &&
-      process.env.LITEAI_ACCESSIBILITY !== '1'
-    ) {
+    if (this.props.stdout.isTTY && process.env.LITEAI_ACCESSIBILITY !== '1') {
       this.props.stdout.write(HIDE_CURSOR)
     }
   }
@@ -316,10 +285,7 @@ export default class App extends PureComponent<Props, State> {
         // init sequence completes — avoids interleaving with alt-screen/mouse
         // tracking enable writes that may happen in the same render cycle.
         setImmediate(() => {
-          void Promise.all([
-            this.querier.send(xtversion()),
-            this.querier.flush(),
-          ]).then(([r]) => {
+          void Promise.all([this.querier.send(xtversion()), this.querier.flush()]).then(([r]) => {
             if (r) {
               setXtversionName(r.name)
               logForDebugging(`XTVERSION: terminal identified as "${r.name}"`)
@@ -365,10 +331,7 @@ export default class App extends PureComponent<Props, State> {
     // drain stdin next and clear this timer. Prevents both the spurious
     // Escape key and the lost scroll event.
     if (this.props.stdin.readableLength > 0) {
-      this.incompleteEscapeTimer = setTimeout(
-        this.flushIncomplete,
-        this.NORMAL_TIMEOUT,
-      )
+      this.incompleteEscapeTimer = setTimeout(this.flushIncomplete, this.NORMAL_TIMEOUT)
       return
     }
 
@@ -389,13 +352,7 @@ export default class App extends PureComponent<Props, State> {
     // This batches all state updates from handleInput and all useInput
     // listeners together within one high-priority update context.
     if (keys.length > 0) {
-      reconciler.discreteUpdates(
-        processKeysInBatch,
-        this,
-        keys,
-        undefined,
-        undefined,
-      )
+      reconciler.discreteUpdates(processKeysInBatch, this, keys, undefined, undefined)
     }
 
     // If we have incomplete escape sequences, set a timer to flush them
@@ -406,9 +363,7 @@ export default class App extends PureComponent<Props, State> {
       }
       this.incompleteEscapeTimer = setTimeout(
         this.flushIncomplete,
-        this.keyParseState.mode === 'IN_PASTE'
-          ? this.PASTE_TIMEOUT
-          : this.NORMAL_TIMEOUT,
+        this.keyParseState.mode === 'IN_PASTE' ? this.PASTE_TIMEOUT : this.NORMAL_TIMEOUT,
       )
     }
   }
@@ -440,14 +395,8 @@ export default class App extends PureComponent<Props, State> {
       // Bun may remove the listener after an error; without this,
       // the session freezes permanently (stdin reader dead, event loop alive).
       const { stdin } = this.props
-      if (
-        this.rawModeEnabledCount > 0 &&
-        !stdin.listeners('readable').includes(this.handleReadable)
-      ) {
-        logForDebugging(
-          'handleReadable: re-attaching stdin readable listener after error recovery',
-          { level: 'warn' },
-        )
+      if (this.rawModeEnabledCount > 0 && !stdin.listeners('readable').includes(this.handleReadable)) {
+        logForDebugging('handleReadable: re-attaching stdin readable listener after error recovery', { level: 'warn' })
         stdin.addListener('readable', this.handleReadable)
       }
     }
@@ -534,12 +483,7 @@ export default class App extends PureComponent<Props, State> {
 
 // Helper to process all keys within a single discrete update context.
 // discreteUpdates expects (fn, a, b, c, d) -> fn(a, b, c, d)
-function processKeysInBatch(
-  app: App,
-  items: ParsedInput[],
-  _unused1: undefined,
-  _unused2: undefined,
-): void {
+function processKeysInBatch(app: App, items: ParsedInput[], _unused1: undefined, _unused2: undefined): void {
   // Update interaction time for notification timeout tracking.
   // This is called from the central input handler to avoid having multiple
   // stdin listeners that can cause race conditions and dropped input.
@@ -547,12 +491,7 @@ function processKeysInBatch(
   // Mode-1003 no-button motion is also excluded — passive cursor drift is
   // not engagement (would suppress idle notifications + defer housekeeping).
   if (
-    items.some(
-      i =>
-        i.kind === 'key' ||
-        (i.kind === 'mouse' &&
-          !((i.button & 0x20) !== 0 && (i.button & 0x03) === 3)),
-    )
+    items.some((i) => i.kind === 'key' || (i.kind === 'mouse' && !((i.button & 0x20) !== 0 && (i.button & 0x03) === 3)))
   ) {
     updateLastInteractionTime()
   }

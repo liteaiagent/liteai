@@ -19,7 +19,7 @@
       "correctness": {
         "noUnusedImports": "error"
       },
-      "nursery": {
+      "style": {
         "noRestrictedImports": {
           "level": "error",
           "options": {
