@@ -513,7 +513,7 @@ function styledCharsWithGraphemeClustering(chars: StyledChar[], stylePool: Style
 
   const result: ClusteredChar[] = []
   const bufferChars: string[] = []
-  let bufferStyles: AnsiCode[] = chars[0]?.styles
+  let bufferStyles: AnsiCode[] = chars[0]?.styles ?? []
 
   for (let i = 0; i < charCount; i++) {
     const char = chars[i]!

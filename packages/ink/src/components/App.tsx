@@ -1,11 +1,11 @@
 import { PureComponent, type ReactNode } from 'react'
+import { updateLastInteractionTime } from '../bootstrap/state.js'
 import { logForDebugging } from '../debug.js'
 import { EventEmitter } from '../events/emitter.js'
 import { InputEvent } from '../events/input-event.js'
 import { TerminalFocusEvent } from '../events/terminal-focus-event.js'
 // imports removed
 import { logError } from '../log.js'
-import { noop as updateLastInteractionTime } from '../noop.js'
 import {
   INITIAL_STATE,
   type ParsedInput,
@@ -27,6 +27,9 @@ import {
   FOCUS_OUT,
 } from '../termio/csi.js'
 import { DBP, DFE, DISABLE_MOUSE_TRACKING, EBP, EFE, HIDE_CURSOR, SHOW_CURSOR } from '../termio/dec.js'
+import { stopCapturingEarlyInput } from '../utils/earlyInput.js'
+import { isEnvTruthy } from '../utils/envUtils.js'
+import { isMouseClicksDisabled } from '../utils/fullscreen.js'
 import AppContext from './AppContext.js'
 import { ClockProvider } from './ClockContext.js'
 import CursorDeclarationContext, { type CursorDeclarationSetter } from './CursorDeclarationContext.js'
@@ -206,7 +209,7 @@ export default class App extends PureComponent<Props, State> {
 
   override componentDidMount() {
     // In accessibility mode, keep the native cursor visible for screen magnifiers and other tools
-    if (this.props.stdout.isTTY && process.env.LITEAI_ACCESSIBILITY !== '1') {
+    if (this.props.stdout.isTTY && !isEnvTruthy(process.env.LITEAI_ACCESSIBILITY)) {
       this.props.stdout.write(HIDE_CURSOR)
     }
   }
@@ -259,6 +262,7 @@ export default class App extends PureComponent<Props, State> {
         // Both use the same stdin 'readable' + read() pattern, so they can't
         // coexist -- our handler would drain stdin before Ink's can see it.
         // The buffered text is preserved for REPL.tsx via consumeEarlyInput().
+        stopCapturingEarlyInput()
 
         stdin.ref()
         stdin.setRawMode(true)
@@ -562,7 +566,7 @@ function processKeysInBatch(app: App, items: ParsedInput[], _unused1: undefined,
 export function handleMouseEvent(app: App, m: ParsedMouse): void {
   // Allow disabling click handling while keeping wheel scroll (which goes
   // through the keybinding system as 'wheelup'/'wheeldown', not here).
-  if (process.env.LITEAI_DISABLE_MOUSE === '1') return
+  if (isMouseClicksDisabled()) return
 
   const sel = app.props.selection
   // Terminal coords are 1-indexed; screen buffer is 0-indexed

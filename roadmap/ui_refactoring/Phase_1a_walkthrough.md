@@ -22,12 +22,8 @@ We successfully ported the foundational components of the custom Ink renderer fr
 ## Implementation Details & Differences from MVP
 To decouple the renderer, several deliberate deviations from the MVP's original logic were made:
 
-1. **Direct Code Deviations (Logic Replacement)**
-   - Replaced the custom `isEnvTruthy(process.env.X)` wrapper function with direct raw string comparisons (e.g., `process.env.LITEAI_ACCESSIBILITY !== '1'`).
-   - Stubbed and removed `updateLastInteractionTime()` and `stopCapturingEarlyInput()` entirely, as these belong to a higher-level REPL/CLI loop rather than the UI renderer itself.
-   - Replaced dynamic application state checks (like `isMouseClicksDisabled()`) with static environment variable checks (`process.env.LITEAI_DISABLE_MOUSE === '1'`).
-   - Completely stripped React DevTools connection logic and `import('./devtools.js')` from the reconciler to prevent broken dynamic imports and reduce package weight.
-   - Replaced the MVP's `execa`-based clipboard fallback in `osc.ts` with pure standard Node `child_process.execFile` wrapped in `util.promisify`, dropping the heavy dependency.
+1. **Direct Code Deviations (Reconciled & Mocked)**
+   - *Note: The initial deviations have been reconciled to match MVP interfaces. However, to keep the UI renderer pure, `updateLastInteractionTime()` and `stopCapturingEarlyInput()` are implemented as local stubs (mocks) inside the `@liteai/ink` package. They no longer reach into a global CLI state or stdin stream. In future phases, these will either remain safe no-ops or be refactored to accept real implementations via callback props from the `cli` package.*
 
 2. **Automated Script Replacements (Blind Modifications)**
    To resolve thousands of compilation errors rapidly, automated script replacements were executed without line-by-line file analysis:

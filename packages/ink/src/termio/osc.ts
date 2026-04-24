@@ -3,18 +3,7 @@
  */
 
 import { Buffer } from 'node:buffer'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-
-const execFileAsync = promisify(execFile)
-const execFileNoThrow = async (cmd: string, args: string[], opts: any) => {
-  try {
-    await execFileAsync(cmd, args, opts)
-    return { code: 0 }
-  } catch {
-    return { code: 1 }
-  }
-}
+import { execFileNoThrow } from '../utils/execFileNoThrow.js'
 
 import { BEL, ESC, ESC_TYPE, SEP } from './ansi.js'
 import type { Action, Color, TabStatusAction } from './types.js'
@@ -102,7 +91,6 @@ export async function tmuxLoadBuffer(text: string): Promise<boolean> {
   const args = process.env.LC_TERMINAL === 'iTerm2' ? ['load-buffer', '-'] : ['load-buffer', '-w', '-']
   const { code } = await execFileNoThrow('tmux', args, {
     input: text,
-    useCwd: false,
     timeout: 2000,
   })
   return code === 0
@@ -176,7 +164,7 @@ let linuxCopy: 'wl-copy' | 'xclip' | 'xsel' | null | undefined
  * Fire-and-forget: failures are silent since OSC 52 may have succeeded.
  */
 function copyNative(text: string): void {
-  const opts = { input: text, useCwd: false, timeout: 2000 }
+  const opts = { input: text, timeout: 2000 }
   switch (process.platform) {
     case 'darwin':
       void execFileNoThrow('pbcopy', [], opts)
@@ -196,17 +184,17 @@ function copyNative(text: string): void {
         return
       }
       // First call: probe wl-copy (Wayland) then xclip/xsel (X11), cache winner.
-      void execFileNoThrow('wl-copy', [], opts).then((r: any) => {
+      void execFileNoThrow('wl-copy', [], opts).then((r) => {
         if (r.code === 0) {
           linuxCopy = 'wl-copy'
           return
         }
-        void execFileNoThrow('xclip', ['-selection', 'clipboard'], opts).then((r2: any) => {
+        void execFileNoThrow('xclip', ['-selection', 'clipboard'], opts).then((r2) => {
           if (r2.code === 0) {
             linuxCopy = 'xclip'
             return
           }
-          void execFileNoThrow('xsel', ['--clipboard', '--input'], opts).then((r3: any) => {
+          void execFileNoThrow('xsel', ['--clipboard', '--input'], opts).then((r3) => {
             linuxCopy = r3.code === 0 ? 'xsel' : null
           })
         })

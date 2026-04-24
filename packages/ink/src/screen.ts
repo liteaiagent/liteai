@@ -1035,9 +1035,10 @@ export function filterOutHyperlinkStyles(styles: AnsiCode[]): AnsiCode[] {
  */
 export function diff(prev: Screen, next: Screen): [point: Point, removed: Cell | undefined, added: Cell | undefined][] {
   const output: [Point, Cell | undefined, Cell | undefined][] = []
-  diffEach(prev, next, (x, y, removed, added) => {
+  diffEach(prev, next, (x, y, removed, added): boolean | undefined => {
     // Copy cells since diffEach reuses the objects
     output.push([{ x, y }, removed ? { ...removed } : undefined, added ? { ...added } : undefined])
+    return undefined
   })
   return output
 }

@@ -25,6 +25,35 @@ import { getFocusManager, getRootNode } from './focus.js'
 import { LayoutDisplay } from './layout/node.js'
 import { getYogaCounters } from './layout/yoga-impl/index.js'
 import applyStyles, { type Styles, type TextStyles } from './styles.js'
+import { isEnvTruthy } from './utils/envUtils.js'
+
+// We need to conditionally perform devtools connection to avoid
+// accidentally breaking other third-party code.
+// See https://github.com/vadimdemedes/ink/issues/384
+if (process.env.NODE_ENV === 'development') {
+  try {
+    // eslint-disable-next-line custom-rules/no-top-level-dynamic-import -- dev-only; NODE_ENV check is DCE'd in production
+    void import('./devtools.js')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    if (error.code === 'ERR_MODULE_NOT_FOUND') {
+      // biome-ignore lint/suspicious/noConsole: intentional warning
+      console.warn(
+        `
+The environment variable DEV is set to true, so Ink tried to import \`react-devtools-core\`,
+but this failed as it was not installed. Debugging with React Devtools requires it.
+
+To install use this command:
+
+$ bun add --save-dev react-devtools-core
+				`.trim() + '\n',
+      )
+    } else {
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
+      throw error
+    }
+  }
+}
 
 // --
 
@@ -150,7 +179,7 @@ export function getOwnerChain(fiber: unknown): string[] {
 let debugRepaints: boolean | undefined
 export function isDebugRepaintsEnabled(): boolean {
   if (debugRepaints === undefined) {
-    debugRepaints = process.env.LITEAI_DEBUG_INK === '1'
+    debugRepaints = isEnvTruthy(process.env.LITEAI_DEBUG_INK)
   }
   return debugRepaints
 }

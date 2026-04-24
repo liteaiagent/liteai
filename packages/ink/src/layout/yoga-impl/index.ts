@@ -2060,7 +2060,7 @@ function resolveFlexibleLengths(
     } else if (remaining < 0 && totalShrinkScaled > 0) {
       let totalShrink = 0
       for (let i = 0; i < n; i++) {
-        if (!frozen[i]) totalShrink += children[i]?.style.flexShrink
+        if (!frozen[i]) totalShrink += children[i]?.style.flexShrink ?? 0
       }
       if (totalShrink < 1) {
         const scaled = initialFree * totalShrink
@@ -2089,7 +2089,7 @@ function resolveFlexibleLengths(
     let anyFrozen = false
     for (let i = 0; i < n; i++) {
       if (frozen[i]) continue
-      const v = children[i]?._mainSize - unclamped[i]!
+      const v = (children[i]?._mainSize ?? 0) - (unclamped[i] ?? 0)
       if ((totalViolation > 0 && v > 0) || (totalViolation < 0 && v < 0)) {
         frozen[i] = true
         anyFrozen = true

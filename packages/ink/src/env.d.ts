@@ -10,4 +10,3 @@ declare module 'react' {
     }
   }
 }
-declare module 'bidi-js'

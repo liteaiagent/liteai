@@ -72,8 +72,8 @@ function styleBorderLine(line: string, color: Color | undefined, dim: boolean | 
 
 const renderBorder = (x: number, y: number, node: DOMNode, output: Output): void => {
   if (node.style.borderStyle) {
-    const width = Math.floor(node.yogaNode?.getComputedWidth())
-    const height = Math.floor(node.yogaNode?.getComputedHeight())
+    const width = Math.floor(node.yogaNode?.getComputedWidth() ?? 0)
+    const height = Math.floor(node.yogaNode?.getComputedHeight() ?? 0)
     const box =
       typeof node.style.borderStyle === 'string'
         ? (CUSTOM_BORDER_STYLES[node.style.borderStyle as keyof typeof CUSTOM_BORDER_STYLES] ??

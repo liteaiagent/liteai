@@ -1,7 +1,21 @@
-import { useEffect, useLayoutEffect } from 'react'
-import { useEventCallback } from 'usehooks-ts'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import type { InputEvent, Key } from '../events/input-event.js'
 import useStdin from './use-stdin.js'
+
+/**
+ * Stable-reference callback that always invokes the latest closure.
+ * Inlined from usehooks-ts to drop the external dependency.
+ * Syncs via useLayoutEffect so it's React Compiler safe.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: generic callback wrapper requires any[] for arbitrary signatures
+function useEventCallback<T extends (...args: any[]) => unknown>(fn: T): T {
+  const ref = useRef(fn)
+  useLayoutEffect(() => {
+    ref.current = fn
+  })
+  // biome-ignore lint/suspicious/noExplicitAny: forwarding arbitrary args
+  return useCallback((...args: any[]) => ref.current(...args), []) as T
+}
 
 type Handler = (input: string, key: Key, event: InputEvent) => void
 

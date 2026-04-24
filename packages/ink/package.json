@@ -9,8 +9,7 @@
     ".": "./src/index.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
-    "./events/*": "./src/events/*.ts",
-    "./design-system": "./src/design-system/index.ts"
+    "./events/*": "./src/events/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -28,6 +27,7 @@
     "cli-truncate": "4.0.0",
     "code-excerpt": "4.0.0",
     "emoji-regex": "latest",
+    "execa": "9.6.1",
     "figures": "latest",
     "get-east-asian-width": "latest",
     "indent-string": "5.0.0",
@@ -38,7 +38,6 @@
     "stack-utils": "latest",
     "strip-ansi": "7.1.2",
     "supports-hyperlinks": "4.4.0",
-    "usehooks-ts": "3.1.1",
     "widest-line": "5.0.0",
     "wrap-ansi": "9.0.0"
   },
@@ -50,6 +49,7 @@
     "@types/semver": "7.7.1",
     "@types/stack-utils": "2.0.3",
     "@typescript/native-preview": "catalog:",
+    "react-devtools-core": "7.0.1",
     "type-fest": "latest",
     "typescript": "catalog:"
   },

@@ -176,7 +176,7 @@ function wrapWithOsc8Link(text: string, url: string): string {
 function buildCharToSegmentMap(segments: StyledSegment[]): number[] {
   const map: number[] = []
   for (let i = 0; i < segments.length; i++) {
-    const len = segments[i]?.text.length
+    const len = segments[i]?.text.length ?? 0
     for (let j = 0; j < len; j++) {
       map.push(i)
     }

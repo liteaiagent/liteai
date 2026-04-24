@@ -14,7 +14,6 @@
  * also lacks bidi. We enable bidi reordering when running on Windows or
  * inside Windows Terminal (covers WSL).
  */
-// @ts-expect-error
 import bidiFactory from 'bidi-js'
 
 type ClusteredChar = {
@@ -72,8 +71,8 @@ export function reorderBidi(characters: ClusteredChar[]): ClusteredChar[] {
   const charLevels: number[] = []
   let offset = 0
   for (let i = 0; i < characters.length; i++) {
-    charLevels.push(levels[offset]!)
-    offset += characters[i]?.value.length
+    charLevels.push(levels[offset] ?? 0)
+    offset += characters[i]?.value.length ?? 0
   }
 
   // Get reorder segments from bidi-js, but we need to work at the
@@ -86,10 +85,10 @@ export function reorderBidi(characters: ClusteredChar[]): ClusteredChar[] {
   for (let level = maxLevel; level >= 1; level--) {
     let i = 0
     while (i < reordered.length) {
-      if (charLevels[i]! >= level) {
+      if ((charLevels[i] ?? 0) >= level) {
         // Find the end of this run
         let j = i + 1
-        while (j < reordered.length && charLevels[j]! >= level) {
+        while (j < reordered.length && (charLevels[j] ?? 0) >= level) {
           j++
         }
         // Reverse the run in both arrays
@@ -107,8 +106,9 @@ export function reorderBidi(characters: ClusteredChar[]): ClusteredChar[] {
 
 function reverseRange<T>(arr: T[], start: number, end: number): void {
   while (start < end) {
-    const temp = arr[start]!
-    arr[start] = arr[end]!
+    // Bounds guaranteed by caller (start/end within array); swap in-place
+    const temp = arr[start] as T
+    arr[start] = arr[end] as T
     arr[end] = temp
     start++
     end--
@@ -117,8 +117,8 @@ function reverseRange<T>(arr: T[], start: number, end: number): void {
 
 function reverseRangeNumbers(arr: number[], start: number, end: number): void {
   while (start < end) {
-    const temp = arr[start]!
-    arr[start] = arr[end]!
+    const temp = arr[start] as number
+    arr[start] = arr[end] as number
     arr[end] = temp
     start++
     end--

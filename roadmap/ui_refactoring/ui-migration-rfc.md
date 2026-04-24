@@ -342,9 +342,10 @@ Steps:
 4. Port MVP input components → `src/tui/input/`
 5. Rewrite `attach.ts` and `thread.ts` to use React+Ink
 6. Wire TUI components to `@liteai/hooks`
-7. `bun typecheck`
-8. `bun lint:fix`
-9. Test: `liteai thread` starts interactive TUI, `liteai serve` + non-TUI commands still work
+7. Resolve mocked dependencies in `@liteai/ink` (inject real implementations for `updateLastInteractionTime` and `stopCapturingEarlyInput` into the React root or handle via wrappers)
+8. `bun typecheck`
+9. `bun lint:fix`
+10. Test: `liteai thread` starts interactive TUI, `liteai serve` + non-TUI commands still work
 
 **Validation**: `bun typecheck`, `bun test test/`, manual TUI testing.
 
