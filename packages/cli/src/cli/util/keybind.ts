@@ -18,15 +18,18 @@ export namespace Keybind {
   }
 
   /**
-   * Convert OpenTUI's ParsedKey to our Keybind.Info format.
-   * This helper ensures all required fields are present and avoids manual object creation.
+   * Convert ParsedKey to our Keybind.Info format.
+   * Supports both @opentui/core and @liteai/ink ParsedKey variations.
    */
-  export function fromParsedKey(key: ParsedKey, leader = false): Info {
+  export function fromParsedKey(
+    key: { name?: string; ctrl?: boolean; meta?: boolean; shift?: boolean; super?: boolean },
+    leader = false,
+  ): Info {
     return {
-      name: key.name === " " ? "space" : key.name,
-      ctrl: key.ctrl,
-      meta: key.meta,
-      shift: key.shift,
+      name: key.name === " " ? "space" : (key.name ?? ""),
+      ctrl: key.ctrl ?? false,
+      meta: key.meta ?? false,
+      shift: key.shift ?? false,
       super: key.super ?? false,
       leader,
     }

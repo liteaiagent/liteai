@@ -92,11 +92,19 @@ export function cursorPosition(): TerminalQuery<CursorPosResponse> {
 }
 
 /** OSC dynamic color query (e.g. OSC 11 for bg color, OSC 10 for fg).
- *  The `?` data slot asks the terminal to reply with the current value. */
-export function oscColor(code: number): TerminalQuery<OscResponse> {
+ *  The `?` data slot asks the terminal to reply with the current value.
+ *  When querying the palette (OSC 4), provide the color index. */
+export function oscColor(code: number, index?: number): TerminalQuery<OscResponse> {
   return {
-    request: osc(code, '?'),
-    match: (r): r is OscResponse => r.type === 'osc' && r.code === code,
+    request: index !== undefined ? osc(code, index, '?') : osc(code, '?'),
+    match: (r): r is OscResponse => {
+      if (r.type !== 'osc' || r.code !== code) return false
+      if (index !== undefined) {
+        // OSC 4 response includes the index: "index;rgb:..."
+        return r.data.startsWith(`${index};`)
+      }
+      return true
+    },
   }
 }
 

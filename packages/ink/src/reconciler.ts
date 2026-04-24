@@ -179,6 +179,9 @@ export function isDebugRepaintsEnabled(): boolean {
   }
   return debugRepaints
 }
+export function setDebugRepaintsEnabled(enabled: boolean): void {
+  debugRepaints = enabled
+}
 
 export const dispatcher = new Dispatcher()
 

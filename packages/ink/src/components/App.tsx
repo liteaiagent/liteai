@@ -1,9 +1,11 @@
 import { PureComponent, type ReactNode } from 'react'
 import { updateLastInteractionTime } from '../bootstrap/state.js'
 import { logForDebugging } from '../debug.js'
+import type { DOMElement } from '../dom.js'
 import { EventEmitter } from '../events/emitter.js'
 import { InputEvent } from '../events/input-event.js'
 import { TerminalFocusEvent } from '../events/terminal-focus-event.js'
+import type { FocusManager } from '../focus.js'
 // imports removed
 import { logError } from '../log.js'
 import {
@@ -13,7 +15,7 @@ import {
   type ParsedMouse,
   parseMultipleKeypresses,
 } from '../parse-keypress.js'
-import reconciler from '../reconciler.js'
+import reconciler, { isDebugRepaintsEnabled, setDebugRepaintsEnabled } from '../reconciler.js'
 import { finishSelection, hasSelection, type SelectionState, startSelection } from '../selection.js'
 import { isXtermJs, setXtversionName, supportsExtendedKeys } from '../terminal.js'
 import { getTerminalFocused, setTerminalFocused } from '../terminal-focus-state.js'
@@ -30,10 +32,11 @@ import { DBP, DFE, DISABLE_MOUSE_TRACKING, EBP, EFE, HIDE_CURSOR, SHOW_CURSOR } 
 import { stopCapturingEarlyInput } from '../utils/earlyInput.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 import { isMouseClicksDisabled } from '../utils/fullscreen.js'
-import AppContext from './AppContext.js'
+import AppContext, { type TerminalColors } from './AppContext.js'
 import { ClockProvider } from './ClockContext.js'
 import CursorDeclarationContext, { type CursorDeclarationSetter } from './CursorDeclarationContext.js'
 import ErrorOverview from './ErrorOverview.js'
+import FocusContext from './FocusContext.js'
 import StdinContext from './StdinContext.js'
 import { TerminalFocusProvider } from './TerminalFocusContext.js'
 import { TerminalSizeContext } from './TerminalSizeContext.js'
@@ -100,6 +103,13 @@ type Props = {
   // Dispatch a keyboard event through the DOM tree. Called for each
   // parsed key alongside the legacy EventEmitter path.
   readonly dispatchKeyboardEvent: (parsedKey: ParsedKey) => void
+  // Focus manager instance from Ink
+  readonly focusManager: FocusManager
+  readonly focusNext: () => void
+  readonly focusPrevious: () => void
+  // Full-screen mode toggle (AlternateScreen)
+  readonly isAltScreenActive: boolean
+  readonly setAltScreenActive: (isActive: boolean) => void
 }
 
 // Multi-click detection thresholds. 500ms is the macOS default; a small
@@ -109,6 +119,7 @@ const MULTI_CLICK_DISTANCE = 1
 
 type State = {
   readonly error?: Error
+  readonly activeElement: DOMElement | null
 }
 
 // Root component for all Ink apps
@@ -121,8 +132,9 @@ export default class App extends PureComponent<Props, State> {
     return { error }
   }
 
-  override state = {
+  override state: State = {
     error: undefined,
+    activeElement: null,
   }
 
   // Count how many components enabled raw mode to avoid disabling
@@ -180,6 +192,12 @@ export default class App extends PureComponent<Props, State> {
         <AppContext.Provider
           value={{
             exit: this.handleExit,
+            getPalette: this.getPalette,
+            clearPaletteCache: this.clearPaletteCache,
+            suspend: this.handleSuspend,
+            resume: this.handleResumeAction,
+            toggleDebugOverlay: this.toggleDebugOverlay,
+            toggleConsole: this.toggleConsole,
           }}
         >
           <StdinContext.Provider
@@ -197,7 +215,16 @@ export default class App extends PureComponent<Props, State> {
             <TerminalFocusProvider>
               <ClockProvider>
                 <CursorDeclarationContext.Provider value={this.props.onCursorDeclaration ?? (() => {})}>
-                  {this.state.error ? <ErrorOverview error={this.state.error as Error} /> : this.props.children}
+                  <FocusContext.Provider
+                    value={{
+                      focusManager: this.props.focusManager,
+                      activeElement: this.state.activeElement,
+                      focusNext: this.props.focusNext,
+                      focusPrevious: this.props.focusPrevious,
+                    }}
+                  >
+                    {this.state.error ? <ErrorOverview error={this.state.error as Error} /> : this.props.children}
+                  </FocusContext.Provider>
                 </CursorDeclarationContext.Provider>
               </ClockProvider>
             </TerminalFocusProvider>
@@ -212,11 +239,22 @@ export default class App extends PureComponent<Props, State> {
     if (this.props.stdout.isTTY && !isEnvTruthy(process.env.LITEAI_ACCESSIBILITY)) {
       this.props.stdout.write(HIDE_CURSOR)
     }
+
+    // Subscribe to focus changes
+    const { focusManager } = this.props
+    this.unsubscribeFocus = focusManager.subscribe(() => {
+      this.setState({ activeElement: focusManager.activeElement })
+    })
   }
 
   override componentWillUnmount() {
     if (this.props.stdout.isTTY) {
       this.props.stdout.write(SHOW_CURSOR)
+    }
+
+    // Unsubscribe from focus changes
+    if (this.unsubscribeFocus) {
+      this.unsubscribeFocus()
     }
 
     // Clear any pending timers
@@ -483,6 +521,63 @@ export default class App extends PureComponent<Props, State> {
 
     process.on('SIGCONT', resumeHandler)
     process.kill(process.pid, 'SIGSTOP')
+  }
+
+  private unsubscribeFocus?: () => void
+
+  private paletteCache: TerminalColors | null = null
+
+  getPalette = async (options: { size: number }): Promise<TerminalColors> => {
+    if (this.paletteCache) return this.paletteCache
+
+    const { oscColor } = await import('../terminal-querier.js')
+
+    const queries = []
+    // Query bg (11) and fg (10)
+    queries.push(this.querier.send(oscColor(11)))
+    queries.push(this.querier.send(oscColor(10)))
+
+    // Query palette 0-15
+    for (let i = 0; i < Math.min(options.size, 16); i++) {
+      queries.push(this.querier.send(oscColor(4, i)))
+    }
+
+    await this.querier.flush()
+
+    const results = await Promise.all(queries)
+    const bg = results[0]?.type === 'osc' ? results[0].data : undefined
+    const fg = results[1]?.type === 'osc' ? results[1].data : undefined
+    const palette = results.slice(2).map((r) => (r?.type === 'osc' ? r.data : undefined))
+
+    this.paletteCache = {
+      defaultBackground: bg,
+      defaultForeground: fg,
+      palette,
+    }
+
+    return this.paletteCache
+  }
+
+  clearPaletteCache = (): void => {
+    this.paletteCache = null
+  }
+
+  handleResumeAction = (): void => {
+    // This is the manual resume after a suspend handoff (e.g. git editor)
+    // Same logic as exitAlternateScreen in ink.tsx, but Ink.tsx owns the
+    // stdout/stderr handles. App.tsx can only re-assert its own state.
+    this.internal_eventEmitter.emit('resume')
+  }
+
+  toggleDebugOverlay = (): void => {
+    if (setDebugRepaintsEnabled) {
+      setDebugRepaintsEnabled(!isDebugRepaintsEnabled())
+      this.forceUpdate()
+    }
+  }
+
+  toggleConsole = (): void => {
+    // Placeholder - console overlay not yet implemented in @liteai/ink
   }
 }
 

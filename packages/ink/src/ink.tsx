@@ -1552,6 +1552,11 @@ export default class Ink {
         terminalColumns={this.terminalColumns}
         terminalRows={this.terminalRows}
         selection={this.selection}
+        focusManager={this.focusManager}
+        focusNext={() => this.focusManager.focusNext(this.rootNode)}
+        focusPrevious={() => this.focusManager.focusPrevious(this.rootNode)}
+        isAltScreenActive={this.altScreenActive}
+        setAltScreenActive={this.setAltScreenActive}
         onSelectionChange={this.notifySelectionChange}
         onClickAt={this.dispatchClick}
         onHoverAt={this.dispatchHover}
