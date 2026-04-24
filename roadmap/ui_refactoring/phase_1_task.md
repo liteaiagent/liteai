@@ -11,7 +11,7 @@
   - [x] 2.6 Sever 4 `src/` imports (yoga path, bootstrap/state, utils/debug, utils/log)
   - [x] 2.7 Replace lodash-es with inline implementations
   - [x] 2.8 Fix all internal import paths
-  - [ ] 2.9 Create `src/index.ts` public API barrel
+  - [x] 2.9 Create `src/index.ts` public API barrel
   - [x] 2.10 `bun install`, `bun typecheck`, `bun lint:fix` (typecheck passes cleanly, lint:fix has a minor biome configuration error)
   - [ ] 2.11 Basic render test
 - [ ] 3. packages/hooks (Phase 1b) — Branch: `feat/hooks`
