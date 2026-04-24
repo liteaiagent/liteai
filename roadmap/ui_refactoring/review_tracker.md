@@ -184,6 +184,57 @@ Post-implementation code review log for each phase of the SolidJS → React migr
 
 ---
 
+## Phase 2.5: Components (Batch 2 — Rendering Components)
+
+**Reviewed:** 2026-04-25  
+**Verdict:** ⚠️ 9 issues found → 5 fixed, 4 deferred/accepted
+
+### Issues Found & Resolved
+
+| # | Severity | File | Issue | Resolution |
+|---|----------|------|-------|------------|
+| C1 | 🔴 Critical | `status-line.tsx` L27, `tool-use-loader.tsx` L20 | `as any` casts to pass theme hex colors to Ink `<Text color>`. Ink's `Color` type is `HexColor \| RGBColor \| ...` but theme values are plain `string`. | ✅ Fixed: replaced `as any` with `as Color` (imported from `@liteai/ink`). Narrow type assertion, not an escape hatch. |
+| C2 | 🔴 Critical | `markdown-table.tsx` L318 | ~43KB base64 sourcemap blob (`//# sourceMappingURL=data:...`) from MVP transpilation included in source file. | ✅ Fixed: removed build artifact. |
+| M1 | 🟠 Major | `structured-diff.tsx` L54 | `_gutterSpace` variable computed but never consumed. It was used for content-width constraining in word-level diff highlighting (not ported). §3 violation — prefixed with `_` without justification. | ✅ Fixed: removed dead code, added TODO comment noting deferred word-level diffing. |
+| M2 | 🟠 Major | `markdown-table.tsx` L43-57 | `wrapText` function is a stub — accepts `hard` option but ignores it. Only splits on `\n`, doesn't actually wrap long text. Original MVP used `wrapAnsi()` for ANSI-aware wrapping. Tables with long cell content won't wrap. | ⏳ Deferred — needs dependency evaluation (`wrapAnsi` availability in new stack). |
+| M3 | 🟠 Major | `structured-diff.tsx` L17-28 | `diffCache` is an unbounded `Map<string, Map<...>>` with no eviction policy. Long sessions will leak memory. Compare with `markdown.tsx` which has `TOKEN_CACHE_MAX = 500` with LRU. | ⏳ Deferred — pre-existing MVP pattern, not a regression. |
+| m1 | 🟡 Minor | `markdown.tsx` L81,89 | Elements pushed to array in `useMemo` lacked React `key` props. Causes React reconciliation warnings. | ✅ Fixed: added `key={`ansi-${keyCounter++}`}` and `key={`table-${keyCounter++}`}` pattern. |
+| m2 | 🟡 Minor | `tool-use-loader.tsx` L13 | `useTheme` import separated from main import block (line 13 instead of top). MVP port artifact. | ✅ Fixed: moved to top-level import block. |
+| m3 | 🟡 Info | `status-line.tsx` L19 | Hardcoded model fallback `"claude-3-5-sonnet-20241022"`. Comment acknowledges "Dummy data fallback for MVP parity for now". | ✅ Accepted — explicitly temporary, will wire to config. |
+| m4 | 🟡 Info | `markdown.tsx` L53 | Settings mock `{ syntaxHighlightingDisabled: false }` — dead conditional. | ✅ Accepted — clearly documented placeholder for config integration. |
+
+### Post-Fix File Status
+
+| File | Status |
+|------|--------|
+| `components/markdown.tsx` | ✅ Fixed (React keys) |
+| `components/markdown-table.tsx` | ⚠️ Fixed (sourcemap removed), wrapText stub deferred |
+| `components/structured-diff.tsx` | ✅ Fixed (dead variable removed), cache eviction deferred |
+| `components/status-line.tsx` | ✅ Fixed (`as any` → `as Color`) |
+| `components/tool-use-loader.tsx` | ✅ Fixed (`as any` → `as Color`, import consolidated) |
+| `util/cliHighlight.ts` | ✅ Clean |
+| `util/diff.ts` | ✅ Clean |
+| `util/hash.ts` | ✅ Clean |
+| `util/markdown.ts` | ✅ Clean |
+| `hooks/useBlink.ts` | ✅ Clean |
+
+### Positive Findings
+
+- ✅ Zero `as any` casts remaining (2 removed this review)
+- ✅ Zero `biome-ignore` directives remaining (2 removed this review)
+- ✅ Zero SolidJS remnants (`createSignal`, `@opentui/core`)
+- ✅ Zero React Compiler `$[n]` artifacts
+- ✅ Zero `console.log` debug statements
+- ✅ Zero `@ts-ignore` directives
+- ✅ `Suspense` + `use()` for async highlight loading is clean
+- ✅ `memo()` on StatusLine is appropriate
+- ✅ Token LRU cache in markdown.tsx has bounded size
+- ✅ All components correctly import from `@liteai/ink` and use `useTheme()`
+
+**Gates:** `bun typecheck` ✅ | `bun lint` ✅
+
+---
+
 ## Phase 2.6: Routes & App Shell
 
 **Reviewed:** —  

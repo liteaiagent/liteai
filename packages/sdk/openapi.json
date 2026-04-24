@@ -10197,6 +10197,11 @@
             "description": "Description of when to use the agent",
             "type": "string"
           },
+          "toolChoice": {
+            "description": "Force the agent to call tools (required), decide (auto), or prevent tools (none)",
+            "type": "string",
+            "enum": ["auto", "required", "none"]
+          },
           "mode": {
             "type": "string",
             "enum": ["subagent", "primary", "all"]
@@ -12506,6 +12511,10 @@
           },
           "prompt": {
             "type": "string"
+          },
+          "toolChoice": {
+            "type": "string",
+            "enum": ["auto", "required", "none"]
           },
           "options": {
             "type": "object",

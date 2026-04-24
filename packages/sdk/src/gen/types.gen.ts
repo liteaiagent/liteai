@@ -1052,6 +1052,10 @@ export type AgentConfig = {
      * Description of when to use the agent
      */
     description?: string;
+    /**
+     * Force the agent to call tools (required), decide (auto), or prevent tools (none)
+     */
+    toolChoice?: 'auto' | 'required' | 'none';
     mode?: 'subagent' | 'primary' | 'all';
     /**
      * Hide this subagent from the @ autocomplete menu (default: false, only applies to mode: subagent)
@@ -1151,7 +1155,7 @@ export type AgentConfig = {
      * Docker image for remote isolation
      */
     containerImage?: string;
-    [key: string]: unknown | string | number | boolean | null | 'subagent' | 'primary' | 'all' | boolean | {
+    [key: string]: unknown | string | number | boolean | null | 'auto' | 'required' | 'none' | 'subagent' | 'primary' | 'all' | boolean | {
         [key: string]: unknown;
     } | number | PermissionConfig | string | Array<string> | {
         [key: string]: boolean;
@@ -1987,6 +1991,7 @@ export type Agent = {
     };
     variant?: string;
     prompt?: string;
+    toolChoice?: 'auto' | 'required' | 'none';
     options: {
         [key: string]: unknown;
     };
