@@ -6,6 +6,6 @@ addons.register("liteai/theme-toggle", () => {
     type: types.TOOL,
     title: "Theme",
     match: ({ viewMode }) => viewMode === "story" || viewMode === "docs",
-    render: ThemeTool,
+    render: ThemeTool as never,
   })
 })

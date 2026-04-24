@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsup'
 import babel from 'esbuild-plugin-babel'
+import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -14,14 +14,9 @@ export default defineConfig({
   esbuildPlugins: [
     babel({
       config: {
-        presets: [
-          ['@babel/preset-react', { runtime: 'automatic' }],
-          '@babel/preset-typescript'
-        ],
-        plugins: [
-          ['babel-plugin-react-compiler', { target: '19' }]
-        ]
-      }
-    })
-  ]
+        presets: [['@babel/preset-react', { runtime: 'automatic' }], '@babel/preset-typescript'],
+        plugins: [['babel-plugin-react-compiler', { target: '19' }]],
+      },
+    }),
+  ],
 })

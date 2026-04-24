@@ -29,5 +29,5 @@
   - [x] 3.8 Create barrel exports
   - [x] 3.9 `bun install`, `bun typecheck`, `bun lint:fix` (Typecheck passes cleanly; skipping lint for now per user request)
   - [x] 3.10 Unit tests for core hooks
-- [ ] 4. Integration verification
-  - [ ] Workspace-level `bun typecheck`
+- [x] 4. Integration verification
+  - [x] Workspace-level `bun typecheck`

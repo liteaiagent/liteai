@@ -1,1 +1,1 @@
-declare module 'esbuild-plugin-babel';
+declare module 'esbuild-plugin-babel'

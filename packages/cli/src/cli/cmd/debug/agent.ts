@@ -76,13 +76,10 @@ async function getAvailableTools(agent: Agent.Info) {
 }
 
 async function resolveTools(agent: Agent.Info, availableTools: Awaited<ReturnType<typeof getAvailableTools>>) {
-  const disabled = PermissionNext.disabled(
-    availableTools.map((tool) => tool.id),
-    agent.permission,
-  )
   const resolved: Record<string, boolean> = {}
   for (const tool of availableTools) {
-    resolved[tool.id] = !disabled.has(tool.id)
+    const rule = PermissionNext.evaluate("tool", tool.id, agent.permission ?? [])
+    resolved[tool.id] = rule.action !== "deny"
   }
   return resolved
 }
