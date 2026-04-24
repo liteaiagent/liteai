@@ -1,0 +1,8 @@
+- [x] Port `src/tui/ui/dialog.tsx` and `modalContext.tsx` from MVP natively.
+- [x] Port `src/tui/ui/toast.tsx` from MVP cleanly without legacy API shims.
+- [x] Port `src/tui/ui/fuzzy-picker.tsx` from MVP natively.
+- [x] Port `src/tui/ui/spinner.tsx` from MVP (uncompiled source).
+- [x] Port `dialog-alert.tsx`, `dialog-confirm.tsx`, `dialog-prompt.tsx`, `dialog-select.tsx`, `dialog-export-options.tsx`, `dialog-help.tsx` as native React components built directly on top of the newly ported MVP `Dialog` primitive.
+- [x] Verify `bun typecheck` is clean.
+- [x] Verify `bun lint:fix` is clean.
+- [x] Resolve linting errors and type-checking issues (e.g. `Color` and `dimColor` attributes).
