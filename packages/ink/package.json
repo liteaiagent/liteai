@@ -6,12 +6,18 @@
   "type": "module",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
     "./events/*": "./src/events/*.ts"
   },
   "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "check": "tsgo --noEmit",
     "lint": "biome check",
@@ -42,6 +48,9 @@
     "wrap-ansi": "9.0.0"
   },
   "devDependencies": {
+    "@babel/core": "7.29.0",
+    "@babel/preset-react": "7.28.5",
+    "@babel/preset-typescript": "7.28.5",
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
     "@types/react": "catalog:",
@@ -49,7 +58,10 @@
     "@types/semver": "7.7.1",
     "@types/stack-utils": "2.0.3",
     "@typescript/native-preview": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
+    "esbuild-plugin-babel": "0.2.3",
     "react-devtools-core": "7.0.1",
+    "tsup": "8.5.1",
     "type-fest": "latest",
     "typescript": "catalog:"
   },

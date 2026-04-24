@@ -14,6 +14,10 @@
   - [x] 2.9 Create `src/index.ts` public API barrel
   - [x] 2.10 `bun install`, `bun typecheck`, `bun lint:fix` (typecheck passes cleanly, lint:fix has a minor biome configuration error)
   - [x] 2.11 Basic render test (Created tests/render.test.tsx, passes cleanly)
+  - [x] 2.12 Add `tsup` build pipeline with React Compiler support
+  - [x] 2.13 Configure `babel-plugin-react-compiler` in `tsup.config.ts` (using esbuild-plugin-babel)
+  - [x] 2.14 Update `package.json` exports to point to `dist/`
+  - [x] 2.15 Verify build output and run tests
 - [ ] 3. packages/hooks (Phase 1b) — Branch: `feat/hooks`
   - [ ] 3.1 Create package scaffold
   - [ ] 3.2 Define port interfaces in `src/types.ts`
