@@ -29,7 +29,7 @@ export function edges(a: number, b?: number, c?: number, d?: number): Edges {
   if (c === undefined) {
     return { top: a, right: b, bottom: a, left: b }
   }
-  return { top: a, right: b, bottom: c, left: d! }
+  return { top: a, right: b, bottom: c, left: d ?? b }
 }
 
 /** Add two edge values */

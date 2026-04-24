@@ -8,18 +8,17 @@ import { Buffer } from 'node:buffer'
 import { PASTE_END, PASTE_START } from './termio/csi.js'
 import { createTokenizer, type Tokenizer } from './termio/tokenize.js'
 
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const META_KEY_CODE_RE = /^(?:\x1b)([a-zA-Z0-9])$/
 
-// eslint-disable-next-line no-control-regex
 const FN_KEY_RE =
-  // eslint-disable-next-line no-control-regex
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
   /^(?:\x1b+)(O|N|\[|\[\[)(?:(\d+)(?:;(\d+))?([~^$])|(?:1;)?(\d+)?([a-zA-Z]))/
 
 // CSI u (kitty keyboard protocol): ESC [ codepoint [; modifier] u
 // Example: ESC[13;2u = Shift+Enter, ESC[27u = Escape (no modifiers)
 // Modifier is optional - when absent, defaults to 1 (no modifiers)
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const CSI_U_RE = /^\x1b\[(\d+)(?:;(\d+))?u/
 
 // xterm modifyOtherKeys: ESC [ 27 ; modifier ; keycode ~
@@ -27,41 +26,41 @@ const CSI_U_RE = /^\x1b\[(\d+)(?:;(\d+))?u/
 // modifyOtherKeys=2 is active or via user keybinds, typically over SSH where
 // TERM sniffing misses Ghostty and we never push Kitty keyboard mode.
 // Note param order is reversed vs CSI u (modifier first, keycode second).
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const MODIFY_OTHER_KEYS_RE = /^\x1b\[27;(\d+);(\d+)~/
 
 // -- Terminal response patterns (inbound sequences from the terminal itself) --
 // DECRPM: CSI ? Ps ; Pm $ y  — response to DECRQM (request mode)
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const DECRPM_RE = /^\x1b\[\?(\d+);(\d+)\$y$/
 // DA1: CSI ? Ps ; ... c  — primary device attributes response
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const DA1_RE = /^\x1b\[\?([\d;]*)c$/
 // DA2: CSI > Ps ; ... c  — secondary device attributes response
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const DA2_RE = /^\x1b\[>([\d;]*)c$/
 // Kitty keyboard flags: CSI ? flags u  — response to CSI ? u query
 // (private ? marker distinguishes from CSI u key events)
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const KITTY_FLAGS_RE = /^\x1b\[\?(\d+)u$/
 // DECXCPR cursor position: CSI ? row ; col R
 // The ? marker disambiguates from modified F3 keys (Shift+F3 = CSI 1;2 R,
 // Ctrl+F3 = CSI 1;5 R, etc.) — plain CSI row;col R is genuinely ambiguous.
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const CURSOR_POSITION_RE = /^\x1b\[\?(\d+);(\d+)R$/
 // OSC response: OSC code ; data (BEL|ST)
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const OSC_RESPONSE_RE = /^\x1b\](\d+);(.*?)(?:\x07|\x1b\\)$/s
 // XTVERSION: DCS > | name ST  — terminal name/version string (answer to CSI > 0 q).
 // xterm.js replies "xterm.js(X.Y.Z)"; Ghostty, kitty, iTerm2, etc. reply with
 // their own name. Unlike TERM_PROGRAM, this survives SSH since the query/reply
 // goes through the pty, not the environment.
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const XTVERSION_RE = /^\x1bP>\|(.*?)(?:\x07|\x1b\\)$/s
 // SGR mouse event: CSI < button ; col ; row M (press) or m (release)
 // Button codes: 64=wheel-up, 65=wheel-down (0x40 | wheel-bit).
 // Button 32=left-drag (0x20 | motion-bit). Plain 0/1/2 = left/mid/right click.
-// eslint-disable-next-line no-control-regex
+// biome-ignore lint/suspicious/noControlCharactersInRegex: terminal escape sequences contain control characters
 const SGR_MOUSE_RE = /^\x1b\[<(\d+);(\d+);(\d+)([Mm])$/
 
 function createPasteKey(content: string): ParsedKey {
@@ -124,31 +123,40 @@ function parseTerminalResponse(s: string): TerminalResponse | null {
   if (s.startsWith('\x1b[')) {
     let m: RegExpExecArray | null
 
-    if ((m = DECRPM_RE.exec(s))) {
+    m = DECRPM_RE.exec(s)
+    if (m) {
+      const mode = m[1] ?? '0'
+      const status = m[2] ?? '0'
       return {
         type: 'decrpm',
-        mode: parseInt(m[1]!, 10),
-        status: parseInt(m[2]!, 10),
+        mode: parseInt(mode, 10),
+        status: parseInt(status, 10),
       }
     }
 
-    if ((m = DA1_RE.exec(s))) {
-      return { type: 'da1', params: splitNumericParams(m[1]!) }
+    m = DA1_RE.exec(s)
+    if (m) {
+      return { type: 'da1', params: splitNumericParams(m[1] ?? '') }
     }
 
-    if ((m = DA2_RE.exec(s))) {
-      return { type: 'da2', params: splitNumericParams(m[1]!) }
+    m = DA2_RE.exec(s)
+    if (m) {
+      return { type: 'da2', params: splitNumericParams(m[1] ?? '') }
     }
 
-    if ((m = KITTY_FLAGS_RE.exec(s))) {
-      return { type: 'kittyKeyboard', flags: parseInt(m[1]!, 10) }
+    m = KITTY_FLAGS_RE.exec(s)
+    if (m) {
+      return { type: 'kittyKeyboard', flags: parseInt(m[1] ?? '0', 10) }
     }
 
-    if ((m = CURSOR_POSITION_RE.exec(s))) {
+    m = CURSOR_POSITION_RE.exec(s)
+    if (m) {
+      const row = m[1] ?? '0'
+      const col = m[2] ?? '0'
       return {
         type: 'cursorPosition',
-        row: parseInt(m[1]!, 10),
-        col: parseInt(m[2]!, 10),
+        row: parseInt(row, 10),
+        col: parseInt(col, 10),
       }
     }
 
@@ -159,7 +167,9 @@ function parseTerminalResponse(s: string): TerminalResponse | null {
   if (s.startsWith('\x1b]')) {
     const m = OSC_RESPONSE_RE.exec(s)
     if (m) {
-      return { type: 'osc', code: parseInt(m[1]!, 10), data: m[2]! }
+      const code = m[1] ?? '0'
+      const data = m[2] ?? ''
+      return { type: 'osc', code: parseInt(code, 10), data }
     }
   }
 
@@ -167,7 +177,7 @@ function parseTerminalResponse(s: string): TerminalResponse | null {
   if (s.startsWith('\x1bP')) {
     const m = XTVERSION_RE.exec(s)
     if (m) {
-      return { type: 'xtversion', name: m[1]! }
+      return { type: 'xtversion', name: m[1] ?? '' }
     }
   }
 
@@ -195,7 +205,8 @@ export const INITIAL_STATE: KeyParseState = {
 
 function inputToString(input: Buffer | string): string {
   if (Buffer.isBuffer(input)) {
-    if (input[0]! > 127 && input[1] === undefined) {
+    const firstByte = input[0]
+    if (firstByte !== undefined && firstByte > 127 && input[1] === undefined) {
       ;(input[0] as unknown as number) -= 128
       return `\x1b${String(input)}`
     } else {
@@ -566,7 +577,7 @@ export type ParsedInput = ParsedKey | ParsedMouse | ParsedResponse
 function parseMouseEvent(s: string): ParsedMouse | null {
   const match = SGR_MOUSE_RE.exec(s)
   if (!match) return null
-  const button = parseInt(match[1]!, 10)
+  const button = parseInt(match[1] ?? '0', 10)
   // Wheel events (bit 6 set, low bits 0/1 for up/down) stay as ParsedKey
   // so the keybinding system can route them to scroll handlers.
   if ((button & 0x40) !== 0) return null
@@ -574,14 +585,14 @@ function parseMouseEvent(s: string): ParsedMouse | null {
     kind: 'mouse',
     button,
     action: match[4] === 'M' ? 'press' : 'release',
-    col: parseInt(match[2]!, 10),
-    row: parseInt(match[3]!, 10),
+    col: parseInt(match[2] ?? '0', 10),
+    row: parseInt(match[3] ?? '0', 10),
     sequence: s,
   }
 }
 
 function parseKeypress(s: string = ''): ParsedKey {
-  let parts
+  let parts: RegExpExecArray | null
 
   const key: ParsedKey = {
     kind: 'key',
@@ -602,8 +613,9 @@ function parseKeypress(s: string = ''): ParsedKey {
   // Handle CSI u (kitty keyboard protocol): ESC [ codepoint [; modifier] u
   // Example: ESC[13;2u = Shift+Enter, ESC[27u = Escape (no modifiers)
   let match: RegExpExecArray | null
-  if ((match = CSI_U_RE.exec(s))) {
-    const codepoint = parseInt(match[1]!, 10)
+  match = CSI_U_RE.exec(s)
+  if (match) {
+    const codepoint = parseInt(match[1] ?? '0', 10)
     // Modifier defaults to 1 (no modifiers) when not present
     const modifier = match[2] ? parseInt(match[2], 10) : 1
     const mods = decodeModifier(modifier)
@@ -626,9 +638,10 @@ function parseKeypress(s: string = ''): ParsedKey {
   // Handle xterm modifyOtherKeys: ESC [ 27 ; modifier ; keycode ~
   // Must run before FN_KEY_RE — FN_KEY_RE only allows 2 params before ~ and
   // would leave the tail as garbage if it partially matched.
-  if ((match = MODIFY_OTHER_KEYS_RE.exec(s))) {
-    const mods = decodeModifier(parseInt(match[1]!, 10))
-    const name = keycodeToName(parseInt(match[2]!, 10))
+  match = MODIFY_OTHER_KEYS_RE.exec(s)
+  if (match) {
+    const mods = decodeModifier(parseInt(match[1] ?? '1', 10))
+    const name = keycodeToName(parseInt(match[2] ?? '0', 10))
     return {
       kind: 'key',
       name,
@@ -650,8 +663,9 @@ function parseKeypress(s: string = ''): ParsedKey {
   // + direction while ignoring modifier bits (Shift=0x04, Meta=0x08,
   // Ctrl=0x10) — modified wheel events (e.g. Ctrl+scroll, button=80)
   // should still be recognized as wheelup/wheeldown.
-  if ((match = SGR_MOUSE_RE.exec(s))) {
-    const button = parseInt(match[1]!, 10)
+  match = SGR_MOUSE_RE.exec(s)
+  if (match) {
+    const button = parseInt(match[1] ?? '0', 10)
     if ((button & 0x43) === 0x40) return createNavKey(s, 'wheelup', false)
     if ((button & 0x43) === 0x41) return createNavKey(s, 'wheeldown', false)
     // Shouldn't reach here (parseMouseEvent catches non-wheel) but be safe
@@ -702,29 +716,35 @@ function parseKeypress(s: string = ''): ParsedKey {
   } else if (s.length === 1 && s >= 'A' && s <= 'Z') {
     key.name = s.toLowerCase()
     key.shift = true
-  } else if ((parts = META_KEY_CODE_RE.exec(s))) {
-    key.meta = true
-    key.shift = /^[A-Z]$/.test(parts[1]!)
-  } else if ((parts = FN_KEY_RE.exec(s))) {
-    const segs = [...s]
+  } else {
+    parts = META_KEY_CODE_RE.exec(s)
+    if (parts) {
+      key.meta = true
+      key.shift = /^[A-Z]$/.test(parts[1] ?? '')
+    } else {
+      parts = FN_KEY_RE.exec(s)
+      if (parts) {
+        const segs = [...s]
 
-    if (segs[0] === '\u001b' && segs[1] === '\u001b') {
-      key.option = true
+        if (segs[0] === '\u001b' && segs[1] === '\u001b') {
+          key.option = true
+        }
+
+        const code = [parts[1], parts[2], parts[4], parts[6]].filter(Boolean).join('')
+
+        const modifier = ((parts[3] || parts[5] || 1) as number) - 1
+
+        key.ctrl = !!(modifier & 4)
+        key.meta = !!(modifier & 2)
+        key.super = !!(modifier & 8)
+        key.shift = !!(modifier & 1)
+        key.code = code
+
+        key.name = keyName[code]
+        key.shift = isShiftKey(code) || key.shift
+        key.ctrl = isCtrlKey(code) || key.ctrl
+      }
     }
-
-    const code = [parts[1], parts[2], parts[4], parts[6]].filter(Boolean).join('')
-
-    const modifier = ((parts[3] || parts[5] || 1) as number) - 1
-
-    key.ctrl = !!(modifier & 4)
-    key.meta = !!(modifier & 2)
-    key.super = !!(modifier & 8)
-    key.shift = !!(modifier & 1)
-    key.code = code
-
-    key.name = keyName[code]
-    key.shift = isShiftKey(code) || key.shift
-    key.ctrl = isCtrlKey(code) || key.ctrl
   }
 
   // iTerm in natural text editing mode

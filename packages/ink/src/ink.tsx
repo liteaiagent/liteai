@@ -330,6 +330,7 @@ export default class Ink {
     )
 
     // @ts-expect-error statically replaced
+    // biome-ignore lint/correctness/noConstantCondition: statically replaced
     if ('production' === 'development') {
       reconciler.injectIntoDevTools({
         bundleType: 0,
@@ -1701,7 +1702,6 @@ export default class Ink {
   }
 
   patchConsole(): () => void {
-    // biome-ignore lint/suspicious/noConsole: intentionally patching global console
     const con = console
     const originals: Partial<Record<keyof Console, Console[keyof Console]>> = {}
     const toDebug = (...args: unknown[]) => logForDebugging(`console.log: ${format(...args)}`)

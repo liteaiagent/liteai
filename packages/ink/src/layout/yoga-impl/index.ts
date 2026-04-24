@@ -111,7 +111,7 @@ function isDefined(n: number): boolean {
 
 // NaN-safe equality for layout-cache input comparison
 function sameFloat(a: number, b: number): boolean {
-  return a === b || (a !== a && b !== b)
+  return a === b || (Number.isNaN(a) && Number.isNaN(b))
 }
 
 // --
@@ -209,21 +209,21 @@ function resolveEdge(
   allowAuto = false,
 ): number {
   // Precedence: specific edge > horizontal/vertical > all
-  let v = edges[physicalEdge]!
+  let v = edges[physicalEdge] ?? UNDEFINED_VALUE
   if (v.unit === Unit.Undefined) {
     if (physicalEdge === EDGE_LEFT || physicalEdge === EDGE_RIGHT) {
-      v = edges[Edge.Horizontal]!
+      v = edges[Edge.Horizontal] ?? UNDEFINED_VALUE
     } else {
-      v = edges[Edge.Vertical]!
+      v = edges[Edge.Vertical] ?? UNDEFINED_VALUE
     }
   }
   if (v.unit === Unit.Undefined) {
-    v = edges[Edge.All]!
+    v = edges[Edge.All] ?? UNDEFINED_VALUE
   }
   // Start/End map to Left/Right for LTR (Ink is always LTR)
   if (v.unit === Unit.Undefined) {
-    if (physicalEdge === EDGE_LEFT) v = edges[Edge.Start]!
-    if (physicalEdge === EDGE_RIGHT) v = edges[Edge.End]!
+    if (physicalEdge === EDGE_LEFT) v = edges[Edge.Start] ?? UNDEFINED_VALUE
+    if (physicalEdge === EDGE_RIGHT) v = edges[Edge.End] ?? UNDEFINED_VALUE
   }
   if (v.unit === Unit.Undefined) return 0
   if (v.unit === Unit.Auto) return allowAuto ? NaN : 0
@@ -231,18 +231,18 @@ function resolveEdge(
 }
 
 function resolveEdgeRaw(edges: Value[], physicalEdge: number): Value {
-  let v = edges[physicalEdge]!
+  let v = edges[physicalEdge] ?? UNDEFINED_VALUE
   if (v.unit === Unit.Undefined) {
     if (physicalEdge === EDGE_LEFT || physicalEdge === EDGE_RIGHT) {
-      v = edges[Edge.Horizontal]!
+      v = edges[Edge.Horizontal] ?? UNDEFINED_VALUE
     } else {
-      v = edges[Edge.Vertical]!
+      v = edges[Edge.Vertical] ?? UNDEFINED_VALUE
     }
   }
-  if (v.unit === Unit.Undefined) v = edges[Edge.All]!
+  if (v.unit === Unit.Undefined) v = edges[Edge.All] ?? UNDEFINED_VALUE
   if (v.unit === Unit.Undefined) {
-    if (physicalEdge === EDGE_LEFT) v = edges[Edge.Start]!
-    if (physicalEdge === EDGE_RIGHT) v = edges[Edge.End]!
+    if (physicalEdge === EDGE_LEFT) v = edges[Edge.Start] ?? UNDEFINED_VALUE
+    if (physicalEdge === EDGE_RIGHT) v = edges[Edge.End] ?? UNDEFINED_VALUE
   }
   return v
 }
@@ -268,35 +268,35 @@ function hasAnyDefinedEdge(edges: Value[]): boolean {
 // allocating a fresh 4-array on every layoutNode() call.
 function resolveEdges4Into(edges: Value[], ownerSize: number, out: [number, number, number, number]): void {
   // Hoist fallbacks once — the 4 per-edge chains share these reads.
-  const eH = edges[6]! // Edge.Horizontal
-  const eV = edges[7]! // Edge.Vertical
-  const eA = edges[8]! // Edge.All
-  const eS = edges[4]! // Edge.Start
-  const eE = edges[5]! // Edge.End
+  const eH = edges[6] ?? UNDEFINED_VALUE // Edge.Horizontal
+  const eV = edges[7] ?? UNDEFINED_VALUE // Edge.Vertical
+  const eA = edges[8] ?? UNDEFINED_VALUE // Edge.All
+  const eS = edges[4] ?? UNDEFINED_VALUE // Edge.Start
+  const eE = edges[5] ?? UNDEFINED_VALUE // Edge.End
   const pctDenom = Number.isNaN(ownerSize) ? NaN : ownerSize / 100
 
   // Left: edges[0] → Horizontal → All → Start
-  let v = edges[0]!
+  let v = edges[0] ?? UNDEFINED_VALUE
   if (v.unit === 0) v = eH
   if (v.unit === 0) v = eA
   if (v.unit === 0) v = eS
   out[0] = v.unit === 1 ? v.value : v.unit === 2 ? v.value * pctDenom : 0
 
   // Top: edges[1] → Vertical → All
-  v = edges[1]!
+  v = edges[1] ?? UNDEFINED_VALUE
   if (v.unit === 0) v = eV
   if (v.unit === 0) v = eA
   out[1] = v.unit === 1 ? v.value : v.unit === 2 ? v.value * pctDenom : 0
 
   // Right: edges[2] → Horizontal → All → End
-  v = edges[2]!
+  v = edges[2] ?? UNDEFINED_VALUE
   if (v.unit === 0) v = eH
   if (v.unit === 0) v = eA
   if (v.unit === 0) v = eE
   out[2] = v.unit === 1 ? v.value : v.unit === 2 ? v.value * pctDenom : 0
 
   // Bottom: edges[3] → Vertical → All
-  v = edges[3]!
+  v = edges[3] ?? UNDEFINED_VALUE
   if (v.unit === 0) v = eV
   if (v.unit === 0) v = eA
   out[3] = v.unit === 1 ? v.value : v.unit === 2 ? v.value * pctDenom : 0
@@ -527,7 +527,7 @@ export class Node {
     }
   }
   getChild(index: number): Node {
-    return this.children[index]!
+    return this.children[index] as Node
   }
   getChildCount(): number {
     return this.children.length
@@ -633,13 +633,13 @@ export class Node {
     }
   }
   getComputedBorder(edge: Edge): number {
-    return this.layout.border[physicalEdge(edge)]!
+    return this.layout.border[physicalEdge(edge)] ?? 0
   }
   getComputedPadding(edge: Edge): number {
-    return this.layout.padding[physicalEdge(edge)]!
+    return this.layout.padding[physicalEdge(edge)] ?? 0
   }
   getComputedMargin(edge: Edge): number {
-    return this.layout.margin[physicalEdge(edge)]!
+    return this.layout.margin[physicalEdge(edge)] ?? 0
   }
 
   // -- Style setters: dimensions
@@ -983,16 +983,19 @@ function cacheWrite(
   if (node._cN < CACHE_SLOTS) node._cN = node._cWr
   const o = i * 8
   const cIn = node._cIn
-  cIn[o] = aW
-  cIn[o + 1] = aH
-  cIn[o + 2] = wM
-  cIn[o + 3] = hM
-  cIn[o + 4] = oW
-  cIn[o + 5] = oH
-  cIn[o + 6] = fW ? 1 : 0
-  cIn[o + 7] = fH ? 1 : 0
-  node._cOut![i * 2] = node.layout.width
-  node._cOut![i * 2 + 1] = node.layout.height
+  const cOut = node._cOut
+  if (cIn && cOut) {
+    cIn[o] = aW
+    cIn[o + 1] = aH
+    cIn[o + 2] = wM
+    cIn[o + 3] = hM
+    cIn[o + 4] = oW
+    cIn[o + 5] = oH
+    cIn[o + 6] = fW ? 1 : 0
+    cIn[o + 7] = fH ? 1 : 0
+    cOut[i * 2] = node.layout.width
+    cOut[i * 2 + 1] = node.layout.height
+  }
   node._cGen = _generation
 }
 
@@ -1096,8 +1099,8 @@ function layoutNode(
     // Same-generation check covers fresh-mounted (dirty) nodes during
     // virtual scroll — the dirty chain invokes them ≥2^depth times, first
     // call writes cache, rest hit: 105k visits → ~10k for 1593-node tree.
-    if (node._cN > 0 && (sameGen || !node.isDirty_)) {
-      const cIn = node._cIn!
+    if (node._cN > 0 && node._cIn && (sameGen || !node.isDirty_)) {
+      const cIn = node._cIn
       for (let i = 0; i < node._cN; i++) {
         const o = i * 8
         if (
@@ -1105,13 +1108,13 @@ function layoutNode(
           cIn[o + 3] === heightMode &&
           cIn[o + 6] === (forceWidth ? 1 : 0) &&
           cIn[o + 7] === (forceHeight ? 1 : 0) &&
-          sameFloat(cIn[o]!, availableWidth) &&
-          sameFloat(cIn[o + 1]!, availableHeight) &&
-          sameFloat(cIn[o + 4]!, ownerWidth) &&
-          sameFloat(cIn[o + 5]!, ownerHeight)
+          sameFloat(cIn[o] ?? NaN, availableWidth) &&
+          sameFloat(cIn[o + 1] ?? NaN, availableHeight) &&
+          sameFloat(cIn[o + 4] ?? NaN, ownerWidth) &&
+          sameFloat(cIn[o + 5] ?? NaN, ownerHeight)
         ) {
-          layout.width = node._cOut?.[i * 2]!
-          layout.height = node._cOut?.[i * 2 + 1]!
+          layout.width = node._cOut?.[i * 2] ?? 0
+          layout.height = node._cOut?.[i * 2 + 1] ?? 0
           _yogaCacheHits++
           return
         }
@@ -1330,7 +1333,8 @@ function layoutNode(
     let lineStart = 0
     let lineLen = 0
     for (let i = 0; i < flowChildren.length; i++) {
-      const c = flowChildren[i]!
+      const c = flowChildren[i]
+      if (!c) continue
       const hypo = boundAxis(c.style, isMainRow, c._flexBasis, ownerW, ownerH)
       const outer = Math.max(0, hypo) + childMarginForAxis(c, mainAxis, ownerW)
       const withGap = i > lineStart ? gapMain : 0
@@ -1358,7 +1362,8 @@ function layoutNode(
   let maxLineMain = 0
   let totalLinesCross = 0
   for (let li = 0; li < lineCount; li++) {
-    const line = lines[li]!
+    const line = lines[li]
+    if (!line) continue
     const lineGap = line.length > 1 ? gapMain * (line.length - 1) : 0
     let lineBasis = lineGap
     for (const c of line) {
@@ -1456,7 +1461,7 @@ function layoutNode(
     let consumed = lineGap
     for (const c of line) {
       const cm = c.layout.margin
-      consumed += c._mainSize + cm[mainLead]! + cm[mainTrail]!
+      consumed += c._mainSize + (cm[mainLead] ?? 0) + (cm[mainTrail] ?? 0)
     }
     lineConsumedMain[li] = consumed
     lineCrossSizes[li] = lineCross
@@ -1518,7 +1523,7 @@ function layoutNode(
   const crossTrailEdgePhys = isMainRow ? EDGE_BOTTOM : EDGE_RIGHT
   const reversed = isReverse(mainAxis)
   const mainContainerSize = isMainRow ? node.layout.width : node.layout.height
-  const crossLead = pad[crossLeadEdgePhys]! + bor[crossLeadEdgePhys]!
+  const crossLead = (pad[crossLeadEdgePhys] ?? 0) + (bor[crossLeadEdgePhys] ?? 0)
 
   // Align-content: distribute free cross space among lines. Single-line
   // containers use the full cross size for the one line (align-items handles
@@ -1542,7 +1547,7 @@ function layoutNode(
       case Align.Stretch:
         if (lineCount > 0 && remCross > 0) {
           const add = remCross / lineCount
-          for (let i = 0; i < lineCount; i++) lineCrossSizes[i]! += add
+          for (let i = 0; i < lineCount; i++) lineCrossSizes[i] = (lineCrossSizes[i] ?? 0) + add
         }
         break
       case Align.SpaceBetween:
@@ -1571,9 +1576,10 @@ function layoutNode(
   const crossContainerSize = isMainRow ? node.layout.height : node.layout.width
   let lineCrossPos = lineCrossOffset
   for (let li = 0; li < lineCount; li++) {
-    const line = lines[li]!
-    const lineCross = lineCrossSizes[li]!
-    const consumedMain = lineConsumedMain[li]!
+    const line = lines[li]
+    if (!line) continue
+    const lineCross = lineCrossSizes[li] ?? 0
+    const consumedMain = lineConsumedMain[li] ?? 0
     const n = line.length
 
     // Re-stretch children whose cross is auto and align is stretch, now that
@@ -1616,7 +1622,7 @@ function layoutNode(
     }
 
     // Justify-content + auto margins for this line
-    let mainOffset = pad[mainLeadEdgePhys]! + bor[mainLeadEdgePhys]!
+    let mainOffset = (pad[mainLeadEdgePhys] ?? 0) + (bor[mainLeadEdgePhys] ?? 0)
     let betweenMain = gapMain
     let numAutoMarginsMain = 0
     for (const c of line) {
@@ -1679,16 +1685,16 @@ function layoutNode(
         autoMainTrail = isMarginAuto(cMargin, mainTrailEdgePhys)
         autoCrossLead = isMarginAuto(cMargin, crossLeadEdgePhys)
         autoCrossTrail = isMarginAuto(cMargin, crossTrailEdgePhys)
-        mMainLead = autoMainLead ? autoMarginMainSize : cLayoutMargin[mainLeadEdgePhys]!
-        mMainTrail = autoMainTrail ? autoMarginMainSize : cLayoutMargin[mainTrailEdgePhys]!
-        mCrossLead = autoCrossLead ? 0 : cLayoutMargin[crossLeadEdgePhys]!
-        mCrossTrail = autoCrossTrail ? 0 : cLayoutMargin[crossTrailEdgePhys]!
+        mMainLead = autoMainLead ? autoMarginMainSize : (cLayoutMargin[mainLeadEdgePhys] ?? 0)
+        mMainTrail = autoMainTrail ? autoMarginMainSize : (cLayoutMargin[mainTrailEdgePhys] ?? 0)
+        mCrossLead = autoCrossLead ? 0 : (cLayoutMargin[crossLeadEdgePhys] ?? 0)
+        mCrossTrail = autoCrossTrail ? 0 : (cLayoutMargin[crossTrailEdgePhys] ?? 0)
       } else {
         // Fast path: no auto margins — read resolved values directly.
-        mMainLead = cLayoutMargin[mainLeadEdgePhys]!
-        mMainTrail = cLayoutMargin[mainTrailEdgePhys]!
-        mCrossLead = cLayoutMargin[crossLeadEdgePhys]!
-        mCrossTrail = cLayoutMargin[crossTrailEdgePhys]!
+        mMainLead = cLayoutMargin[mainLeadEdgePhys] ?? 0
+        mMainTrail = cLayoutMargin[mainTrailEdgePhys] ?? 0
+        mCrossLead = cLayoutMargin[crossLeadEdgePhys] ?? 0
+        mCrossTrail = cLayoutMargin[crossTrailEdgePhys] ?? 0
       }
 
       const mainPos = reversed ? mainContainerSize - (pos + mMainLead) - c._mainSize : pos + mMainLead
@@ -1719,7 +1725,7 @@ function layoutNode(
             // the child's baseline aligns with the line's max ascent. Per
             // yoga: top = currentLead + maxAscent - childBaseline + leadingPosition.
             if (isBaseline) {
-              crossPos = effectiveLineCrossPos + lineMaxAscent[li]! - calculateBaseline(c)
+              crossPos = effectiveLineCrossPos + (lineMaxAscent[li] ?? 0) - calculateBaseline(c)
             }
             break
           default:
@@ -2020,7 +2026,8 @@ function resolveFlexibleLengths(
   const initialFree = isDefined(availableInnerMain) ? availableInnerMain - totalFlexBasis : 0
   // Freeze inflexible items at their clamped basis
   for (let i = 0; i < n; i++) {
-    const c = children[i]!
+    const c = children[i]
+    if (!c) continue
     const clamped = boundAxis(c.style, isMainRow, c._flexBasis, ownerW, ownerH)
     const inflexible =
       !isDefined(availableInnerMain) || (initialFree >= 0 ? c.style.flexGrow === 0 : c.style.flexShrink === 0)
@@ -2041,7 +2048,8 @@ function resolveFlexibleLengths(
     let totalShrinkScaled = 0
     let unfrozenCount = 0
     for (let i = 0; i < n; i++) {
-      const c = children[i]!
+      const c = children[i]
+      if (!c) continue
       if (frozen[i]) {
         frozenDelta += c._mainSize - c._flexBasis
       } else {
@@ -2071,7 +2079,8 @@ function resolveFlexibleLengths(
     let totalViolation = 0
     for (let i = 0; i < n; i++) {
       if (frozen[i]) continue
-      const c = children[i]!
+      const c = children[i]
+      if (!c) continue
       let t = c._flexBasis
       if (remaining > 0 && totalGrow > 0) {
         t += (remaining * c.style.flexGrow) / totalGrow
@@ -2149,8 +2158,8 @@ function childMarginForAxis(child: Node, axis: FlexDirection, ownerWidth: number
 }
 
 function resolveGap(style: Style, gutter: Gutter, ownerSize: number): number {
-  let v = style.gap[gutter]!
-  if (v.unit === Unit.Undefined) v = style.gap[Gutter.All]!
+  let v = style.gap[gutter] ?? UNDEFINED_VALUE
+  if (v.unit === Unit.Undefined) v = style.gap[Gutter.All] ?? UNDEFINED_VALUE
   const r = resolveValue(v, ownerSize)
   return isDefined(r) ? Math.max(0, r) : 0
 }
@@ -2172,13 +2181,13 @@ function boundAxis(style: Style, isWidth: boolean, value: number, ownerWidth: nu
     if (v > maxV.value) v = maxV.value
   } else if (maxU === 2) {
     const m = (maxV.value * owner) / 100
-    if (m === m && v > m) v = m
+    if (!Number.isNaN(m) && v > m) v = m
   }
   if (minU === 1) {
     if (v < minV.value) v = minV.value
   } else if (minU === 2) {
     const m = (minV.value * owner) / 100
-    if (m === m && v < m) v = m
+    if (!Number.isNaN(m) && v < m) v = m
   }
   return v
 }

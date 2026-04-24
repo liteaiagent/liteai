@@ -1,5 +1,5 @@
 import '../global.d.ts'
-import React, { type PropsWithChildren, type Ref } from 'react'
+import type { PropsWithChildren, ReactNode, Ref } from 'react'
 import type { Except } from 'type-fest'
 import type { DOMElement } from '../dom.js'
 import type { ClickEvent } from '../events/click-event.js'
@@ -67,7 +67,7 @@ function Box({
   onKeyDown,
   onKeyDownCapture,
   ...style
-}: PropsWithChildren<Props>): React.ReactNode {
+}: PropsWithChildren<Props>): ReactNode {
   // Warn if spacing values are not integers to prevent fractional layout dimensions
   warn.ifNotInteger(style.margin, 'margin')
   warn.ifNotInteger(style.marginX, 'marginX')
@@ -88,6 +88,7 @@ function Box({
   warn.ifNotInteger(style.rowGap, 'rowGap')
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: ink custom element
     <ink-box
       ref={ref}
       tabIndex={tabIndex}

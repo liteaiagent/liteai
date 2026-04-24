@@ -52,7 +52,7 @@ export const Ansi = React.memo(function Ansi({ children, dimColor }: Props): Rea
     }
   }
 
-  const content = spans.map((span, i) => {
+  const content = spans.map((span) => {
     const hyperlink = span.props.hyperlink
     // When dimColor is forced, override the span's dim prop
     if (dimColor) {
@@ -62,7 +62,7 @@ export const Ansi = React.memo(function Ansi({ children, dimColor }: Props): Rea
 
     if (hyperlink) {
       return hasTextProps ? (
-        <Link key={i} url={hyperlink}>
+        <Link key={span.id} url={hyperlink}>
           <StyledText
             color={span.props.color}
             backgroundColor={span.props.backgroundColor}
@@ -77,7 +77,7 @@ export const Ansi = React.memo(function Ansi({ children, dimColor }: Props): Rea
           </StyledText>
         </Link>
       ) : (
-        <Link key={i} url={hyperlink}>
+        <Link key={span.id} url={hyperlink}>
           {span.text}
         </Link>
       )
@@ -85,7 +85,7 @@ export const Ansi = React.memo(function Ansi({ children, dimColor }: Props): Rea
 
     return hasTextProps ? (
       <StyledText
-        key={i}
+        key={span.id}
         color={span.props.color}
         backgroundColor={span.props.backgroundColor}
         dim={span.props.dim}
@@ -98,7 +98,7 @@ export const Ansi = React.memo(function Ansi({ children, dimColor }: Props): Rea
         {span.text}
       </StyledText>
     ) : (
-      span.text
+      <React.Fragment key={span.id}>{span.text}</React.Fragment>
     )
   })
 
@@ -106,6 +106,7 @@ export const Ansi = React.memo(function Ansi({ children, dimColor }: Props): Rea
 })
 
 type Span = {
+  id: string
   text: string
   props: SpanProps
 }
@@ -144,7 +145,7 @@ function parseToSpans(input: string): Span[] {
       if (lastSpan && propsEqual(lastSpan.props, props)) {
         lastSpan.text += text
       } else {
-        spans.push({ text, props })
+        spans.push({ id: String(spans.length), text, props })
       }
     }
   }

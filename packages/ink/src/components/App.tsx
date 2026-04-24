@@ -383,8 +383,9 @@ export default class App extends PureComponent<Props, State> {
     }
     this.lastStdinTime = now
     try {
-      let chunk
-      while ((chunk = this.props.stdin.read() as string | null) !== null) {
+      while (true) {
+        const chunk = this.props.stdin.read() as string | null
+        if (chunk === null) break
         // Process the input chunk
         this.processInput(chunk)
       }
@@ -393,7 +394,7 @@ export default class App extends PureComponent<Props, State> {
       // permanently wedge the stream: data stays buffered and 'readable'
       // never re-emits. Catching here ensures the stream stays healthy so
       // subsequent keystrokes are still delivered.
-      logError(error as any)
+      logError(error as Error)
 
       // Re-attach the listener in case the exception detached it.
       // Bun may remove the listener after an error; without this,

@@ -68,7 +68,8 @@ export class FocusManager {
 
     // Restore focus to the most recent still-mounted element
     while (this.focusStack.length > 0) {
-      const candidate = this.focusStack.pop()!
+      const candidate = this.focusStack.pop()
+      if (!candidate) break
       if (isInTree(candidate, root)) {
         this.activeElement = candidate
         this.dispatchFocusEvent(candidate, new FocusEvent('focus', removed))
@@ -171,5 +172,9 @@ export function getRootNode(node: DOMElement): DOMElement {
  * Like browser's `node.ownerDocument` — focus belongs to the root.
  */
 export function getFocusManager(node: DOMElement): FocusManager {
-  return getRootNode(node).focusManager!
+  const root = getRootNode(node)
+  if (!root.focusManager) {
+    throw new Error('FocusManager not found on root node')
+  }
+  return root.focusManager
 }

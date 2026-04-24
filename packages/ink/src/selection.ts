@@ -298,12 +298,14 @@ export function findPlainTextUrlAt(screen: Screen, col: number, row: number): st
   const schemeRe = /(?:https?|file):\/\//g
   let urlStart = -1
   let urlEnd = token.length
-  for (let m; (m = schemeRe.exec(token)); ) {
+  let m = schemeRe.exec(token)
+  while (m) {
     if (m.index > clickIdx) {
       urlEnd = m.index
       break
     }
     urlStart = m.index
+    m = schemeRe.exec(token)
   }
   if (urlStart < 0) return undefined
   let url = token.slice(urlStart, urlEnd)

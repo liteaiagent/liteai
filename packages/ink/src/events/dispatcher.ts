@@ -100,7 +100,7 @@ function processDispatchQueue(listeners: DispatchListener[], event: TerminalEven
     try {
       handler(event)
     } catch (error) {
-      logError(error as any)
+      logError(error instanceof Error ? error : String(error))
     }
 
     previousNode = node

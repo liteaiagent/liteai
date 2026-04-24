@@ -14,10 +14,13 @@ const cleanupPath = (path: string | undefined): string | undefined => {
 
 let stackUtils: StackUtils | undefined
 function getStackUtils(): StackUtils {
-  return (stackUtils ??= new StackUtils({
-    cwd: process.cwd(),
-    internals: StackUtils.nodeInternals(),
-  }))
+  if (!stackUtils) {
+    stackUtils = new StackUtils({
+      cwd: process.cwd(),
+      internals: StackUtils.nodeInternals(),
+    })
+  }
+  return stackUtils
 }
 
 /* eslint-enable custom-rules/no-process-cwd */
@@ -28,7 +31,7 @@ type Props = {
 
 export default function ErrorOverview({ error }: Props) {
   const stack = error.stack ? error.stack.split('\n').slice(1) : undefined
-  const origin = stack ? getStackUtils().parseLine(stack[0]!) : undefined
+  const origin = stack?.[0] ? getStackUtils().parseLine(stack[0]) : undefined
   const filePath = cleanupPath(origin?.file)
   let excerpt: CodeExcerpt[] | undefined
   let lineWidth = 0

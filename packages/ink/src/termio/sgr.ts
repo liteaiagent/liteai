@@ -78,14 +78,14 @@ function parseExtendedColor(
 
   if (p.colon && p.subparams.length >= 1) {
     if (p.subparams[0] === 5 && p.subparams.length >= 2) {
-      return { index: p.subparams[1]! }
+      return { index: p.subparams[1] ?? 0 }
     }
     if (p.subparams[0] === 2 && p.subparams.length >= 4) {
       const off = p.subparams.length >= 5 ? 1 : 0
       return {
-        r: p.subparams[1 + off]!,
-        g: p.subparams[2 + off]!,
-        b: p.subparams[3 + off]!,
+        r: p.subparams[1 + off] ?? 0,
+        g: p.subparams[2 + off] ?? 0,
+        b: p.subparams[3 + off] ?? 0,
       }
     }
   }
@@ -93,7 +93,7 @@ function parseExtendedColor(
   const next = params[idx + 1]
   if (!next) return null
   if (next.value === 5 && params[idx + 2]?.value !== null && params[idx + 2]?.value !== undefined) {
-    return { index: params[idx + 2]?.value! }
+    return { index: params[idx + 2]?.value ?? 0 }
   }
   if (next.value === 2) {
     const r = params[idx + 2]?.value
@@ -112,7 +112,8 @@ export function applySGR(paramStr: string, style: TextStyle): TextStyle {
   let i = 0
 
   while (i < params.length) {
-    const p = params[i]!
+    const p = params[i]
+    if (!p) break
     const code = p.value ?? 0
 
     if (code === 0) {
@@ -136,7 +137,7 @@ export function applySGR(paramStr: string, style: TextStyle): TextStyle {
       continue
     }
     if (code === 4) {
-      s.underline = p.colon ? (UNDERLINE_STYLES[p.subparams[0]!] ?? 'single') : 'single'
+      s.underline = p.colon ? (UNDERLINE_STYLES[p.subparams[0] ?? 0] ?? 'single') : 'single'
       i++
       continue
     }
@@ -213,7 +214,7 @@ export function applySGR(paramStr: string, style: TextStyle): TextStyle {
     }
 
     if (code >= 30 && code <= 37) {
-      s.fg = { type: 'named', name: NAMED_COLORS[code - 30]! }
+      s.fg = { type: 'named', name: NAMED_COLORS[code - 30] ?? 'white' }
       i++
       continue
     }
@@ -223,7 +224,7 @@ export function applySGR(paramStr: string, style: TextStyle): TextStyle {
       continue
     }
     if (code >= 40 && code <= 47) {
-      s.bg = { type: 'named', name: NAMED_COLORS[code - 40]! }
+      s.bg = { type: 'named', name: NAMED_COLORS[code - 40] ?? 'black' }
       i++
       continue
     }
@@ -233,12 +234,12 @@ export function applySGR(paramStr: string, style: TextStyle): TextStyle {
       continue
     }
     if (code >= 90 && code <= 97) {
-      s.fg = { type: 'named', name: NAMED_COLORS[code - 90 + 8]! }
+      s.fg = { type: 'named', name: NAMED_COLORS[code - 90 + 8] ?? 'white' }
       i++
       continue
     }
     if (code >= 100 && code <= 107) {
-      s.bg = { type: 'named', name: NAMED_COLORS[code - 100 + 8]! }
+      s.bg = { type: 'named', name: NAMED_COLORS[code - 100 + 8] ?? 'black' }
       i++
       continue
     }

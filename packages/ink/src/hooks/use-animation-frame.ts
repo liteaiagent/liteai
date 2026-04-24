@@ -37,13 +37,13 @@ export function useAnimationFrame(
   const active = isVisible && intervalMs !== null
 
   useEffect(() => {
-    if (!clock || !active) return
+    if (!clock || !active || intervalMs === null) return
 
     let lastUpdate = clock.now()
 
     const onChange = (): void => {
       const now = clock.now()
-      if (now - lastUpdate >= intervalMs!) {
+      if (now - lastUpdate >= intervalMs) {
         lastUpdate = now
         setTime(now)
       }

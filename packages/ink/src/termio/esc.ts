@@ -14,7 +14,8 @@ import type { Action } from './types.js'
 export function parseEsc(chars: string): Action | null {
   if (chars.length === 0) return null
 
-  const first = chars[0]!
+  const first = chars[0]
+  if (!first) return null
 
   // Full reset (RIS)
   if (first === 'c') {

@@ -380,7 +380,7 @@ export default class Output {
             if (clipHorizontally) {
               const width = widestLine(text)
 
-              if (x + width <= clip.x1! || x >= clip.x2!) {
+              if (x + width <= (clip.x1 ?? 0) || x >= (clip.x2 ?? 0)) {
                 continue
               }
             }
@@ -388,16 +388,16 @@ export default class Output {
             if (clipVertically) {
               const height = lines.length
 
-              if (y + height <= clip.y1! || y >= clip.y2!) {
+              if (y + height <= (clip.y1 ?? 0) || y >= (clip.y2 ?? 0)) {
                 continue
               }
             }
 
             if (clipHorizontally) {
               lines = lines.map((line) => {
-                const from = x < clip.x1! ? clip.x1! - x : 0
+                const from = x < (clip.x1 ?? 0) ? (clip.x1 ?? 0) - x : 0
                 const width = stringWidth(line)
-                const to = x + width > clip.x2! ? clip.x2! - x : width
+                const to = x + width > (clip.x2 ?? 0) ? (clip.x2 ?? 0) - x : width
                 let sliced = sliceAnsi(line, from, to)
                 // Wide chars (CJK, emoji) occupy 2 cells. When `to` lands
                 // on the first cell of a wide char, sliceAnsi includes the
@@ -411,29 +411,29 @@ export default class Output {
                 return sliced
               })
 
-              if (x < clip.x1!) {
-                x = clip.x1!
+              if (x < (clip.x1 ?? 0)) {
+                x = clip.x1 ?? 0
               }
             }
 
             if (clipVertically) {
-              const from = y < clip.y1! ? clip.y1! - y : 0
+              const from = y < (clip.y1 ?? 0) ? (clip.y1 ?? 0) - y : 0
               const height = lines.length
-              const to = y + height > clip.y2! ? clip.y2! - y : height
+              const to = y + height > (clip.y2 ?? 0) ? (clip.y2 ?? 0) - y : height
 
               // If the first visible line is a soft-wrap continuation, we
               // need the clipped previous line's content end so
               // screen.softWrap[lineY] correctly records the join point
               // even though that line's cells were never written.
               if (softWrap && from > 0 && softWrap[from] === true) {
-                prevContentEnd = x + stringWidth(lines[from - 1]!)
+                prevContentEnd = x + stringWidth(lines[from - 1] ?? '')
               }
 
               lines = lines.slice(from, to)
               swFrom = from
 
-              if (y < clip.y1!) {
-                y = clip.y1!
+              if (y < (clip.y1 ?? 0)) {
+                y = clip.y1 ?? 0
               }
             }
           }
@@ -516,7 +516,8 @@ function styledCharsWithGraphemeClustering(chars: StyledChar[], stylePool: Style
   let bufferStyles: AnsiCode[] = chars[0]?.styles ?? []
 
   for (let i = 0; i < charCount; i++) {
-    const char = chars[i]!
+    const char = chars[i]
+    if (!char) continue
     const styles = char.styles
 
     // Different styles means we need to flush and start new buffer
@@ -591,7 +592,8 @@ function writeLineToScreen(
   let offsetX = x
 
   for (let charIdx = 0; charIdx < characters.length; charIdx++) {
-    const character = characters[charIdx]!
+    const character = characters[charIdx]
+    if (!character) continue
     const codePoint = character.value.codePointAt(0)
 
     // Handle C0 control characters (0x00-0x1F) that cause cursor movement

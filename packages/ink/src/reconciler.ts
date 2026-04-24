@@ -32,24 +32,20 @@ import { isEnvTruthy } from './utils/envUtils.js'
 // See https://github.com/vadimdemedes/ink/issues/384
 if (process.env.NODE_ENV === 'development') {
   try {
-    // eslint-disable-next-line custom-rules/no-top-level-dynamic-import -- dev-only; NODE_ENV check is DCE'd in production
     void import('./devtools.js')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      // biome-ignore lint/suspicious/noConsole: intentional warning
       console.warn(
-        `
+        `${`
 The environment variable DEV is set to true, so Ink tried to import \`react-devtools-core\`,
 but this failed as it was not installed. Debugging with React Devtools requires it.
 
 To install use this command:
 
 $ bun add --save-dev react-devtools-core
-				`.trim() + '\n',
+				`.trim()}\n`,
       )
     } else {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw error
     }
   }

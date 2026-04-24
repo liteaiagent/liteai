@@ -95,14 +95,14 @@ function parseCSI(rawSequence: string): Action | null {
   let paramStr = beforeFinal
   let intermediate = ''
 
-  if (beforeFinal.length > 0 && '?>='.includes(beforeFinal[0]!)) {
-    privateMode = beforeFinal[0]!
+  if (beforeFinal.length > 0 && '?>='.includes(beforeFinal[0] ?? '')) {
+    privateMode = beforeFinal[0] ?? ''
     paramStr = beforeFinal.slice(1)
   }
 
   const intermediateMatch = paramStr.match(/([^0-9;:]+)$/)
   if (intermediateMatch) {
-    intermediate = intermediateMatch[1]!
+    intermediate = intermediateMatch[1] ?? ''
     paramStr = paramStr.slice(0, -intermediate.length)
   }
 
@@ -193,7 +193,7 @@ function parseCSI(rawSequence: string): Action | null {
 
   // Cursor style
   if (finalByte === CSI.DECSCUSR && intermediate === ' ') {
-    const styleInfo = CURSOR_STYLES[p0] ?? CURSOR_STYLES[0]!
+    const styleInfo = CURSOR_STYLES[p0] ?? CURSOR_STYLES[0] ?? { style: 'block', blinking: true }
     return { type: 'cursor', action: { type: 'style', ...styleInfo } }
   }
 
