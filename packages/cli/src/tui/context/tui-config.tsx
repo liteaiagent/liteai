@@ -1,0 +1,10 @@
+/** @jsxImportSource react */
+import type { TuiConfig } from "../../cli/config/tui"
+import { createSimpleContext } from "./helper"
+
+export const { use: useTuiConfig, provider: TuiConfigProvider } = createSimpleContext({
+  name: "TuiConfig",
+  init: (props: { config: TuiConfig.Info }) => {
+    return props.config
+  },
+})
