@@ -137,9 +137,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     const state = useStore(store)
 
     const syncWorkspaces = async () => {
-      const result = await sdk.client.project.experimental.workspace
-        .list({ projectID: sdk.projectID })
-        .catch(() => undefined)
+      const result = await sdk.client.project.experimental.workspace.list({ projectID: sdk.projectID }).catch((err) => {
+        Log.Default.error("[tui:sync] Failed to list workspaces", { error: err })
+        return undefined
+      })
       if (!result?.data) return
       store.setState((state) => {
         state.workspaceList = result.data as Workspace[]

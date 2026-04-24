@@ -60,8 +60,28 @@ Post-implementation code review log for each phase of the SolidJS → React migr
 
 ## Phase 2.3: Complex Contexts
 
-**Reviewed:** —  
-**Verdict:** Pending implementation
+**Reviewed:** 2026-04-24  
+**Verdict:** ⚠️ 4 issues found → 2 fixed, 2 accepted as-is
+
+### Issues Found & Resolved
+
+| # | Severity | File | Issue | Fix Applied |
+|---|----------|------|-------|-------------|
+| 1 | 🔴 Critical | `theme.tsx`, `local.tsx` | 80+ RGBA references from `@opentui/core` remained. `ThemeColors` typed as `RGBA`, `SyntaxStyle` imported from legacy. Spec required hex strings. | Fully migrated: all colors now `string`, `SyntaxStyle` defined locally, `RGBA`/`@opentui/core` imports removed. `color.ts` utilities used for `fromInts`, `parseHex`, `tint`. |
+| 2 | 🟡 Minor | `phase_2.3_task.md` | `use-renderer.ts` listed as completed but file doesn't exist (merged into `useApp()`). | Annotated task entry with strikethrough and merge note. |
+| 3 | 🟡 Info | `App.tsx` | `toggleConsole` is a placeholder. | Accepted — deferred to Phase 2.6 by design. |
+| 4 | 🟡 Medium | `sync.tsx` | `.catch(() => undefined)` silently swallowed workspace list errors (§5 violation). | Replaced with error-logging catch: `Log.Default.error("[tui:sync] Failed to list workspaces", ...)`. |
+
+### Post-Fix File Status
+
+| File | Status |
+|------|--------|
+| `src/tui/context/theme.tsx` | ✅ Fixed (RGBA→hex migration) |
+| `src/tui/context/local.tsx` | ✅ Fixed (RGBA import removed) |
+| `src/tui/context/sync.tsx` | ✅ Fixed (silent catch → logged) |
+| `src/tui/context/keybind.tsx` | ✅ Clean (no changes needed) |
+
+**Gates:** `bun typecheck` ✅ | `bun lint:fix` ✅
 
 ---
 

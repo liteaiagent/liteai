@@ -4,7 +4,7 @@ import { Global } from "@liteai/core/global/index"
 import { Provider } from "@liteai/core/provider/provider"
 import { Filesystem } from "@liteai/core/util/filesystem"
 import type { Agent } from "@liteai/sdk"
-import { RGBA } from "@opentui/core"
+// Removed RGBA import
 import { useCallback, useEffect, useMemo } from "react"
 import { uniqueBy } from "remeda"
 import { useStore } from "zustand"
@@ -36,7 +36,7 @@ export interface LocalActions {
     current: () => Agent | undefined
     set: (name: string) => void
     move: (direction: 1 | -1) => void
-    color: (name: string) => RGBA
+    color: (name: string) => string
   }
   model: {
     current: () => { providerID: string; modelID: string } | undefined
@@ -225,8 +225,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           if (index === -1) return colors[0]
           const a = visibleAgents[index]
           if (a?.color) {
-            if (a.color.startsWith("#")) return RGBA.fromHex(a.color)
-            return theme[a.color as keyof typeof theme] as RGBA
+            if (a.color.startsWith("#")) return a.color
+            return theme[a.color as keyof typeof theme] as string
           }
           return colors[index % colors.length]
         },

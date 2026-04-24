@@ -5,7 +5,7 @@
     - [x] Modify `packages/ink/src/components/AppContext.ts`
     - [x] Modify `packages/ink/src/components/App.tsx` (implement new APIs)
     - [x] Create `packages/ink/src/hooks/use-focus.ts`
-    - [x] Create `packages/ink/src/hooks/use-renderer.ts`
+    - [x] ~~Create `packages/ink/src/hooks/use-renderer.ts`~~ *(merged into `useApp()` / `AppContext` — no standalone file)*
 - [x] Port Contexts to `@liteai/cli`
     - [x] Port `packages/cli/src/tui/context/sync.tsx`
     - [x] Port `packages/cli/src/tui/context/theme.tsx`

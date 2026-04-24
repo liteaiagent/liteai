@@ -4,7 +4,28 @@ import { Global } from "@liteai/core/global/index"
 import { Filesystem } from "@liteai/core/util/filesystem"
 import { Glob } from "@liteai/core/util/glob"
 import { type TerminalColors as InkTerminalColors, useApp } from "@liteai/ink"
-import { RGBA, SyntaxStyle } from "@opentui/core"
+import * as color from "../util/color"
+import { fromInts, parseHex } from "../util/color"
+
+export type TextStyle = {
+  foreground?: string
+  background?: string
+  bold?: boolean
+  italic?: boolean
+}
+
+export type SyntaxRule = {
+  scope: string[]
+  style: TextStyle
+}
+
+export class SyntaxStyle {
+  constructor(public rules: SyntaxRule[]) {}
+  static fromTheme(rules: SyntaxRule[]) {
+    return new SyntaxStyle(rules)
+  }
+}
+
 import { useEffect, useMemo, useState } from "react"
 import { createSimpleContext } from "./helper"
 import { useKV } from "./kv"
@@ -44,58 +65,58 @@ import zenburn from "./theme/zenburn.json" with { type: "json" }
 import { useTuiConfig } from "./tui-config"
 
 export type ThemeColors = {
-  primary: RGBA
-  secondary: RGBA
-  accent: RGBA
-  error: RGBA
-  warning: RGBA
-  success: RGBA
-  info: RGBA
-  text: RGBA
-  textMuted: RGBA
-  selectedListItemText: RGBA
-  background: RGBA
-  backgroundPanel: RGBA
-  backgroundElement: RGBA
-  backgroundMenu: RGBA
-  border: RGBA
-  borderActive: RGBA
-  borderSubtle: RGBA
-  diffAdded: RGBA
-  diffRemoved: RGBA
-  diffContext: RGBA
-  diffHunkHeader: RGBA
-  diffHighlightAdded: RGBA
-  diffHighlightRemoved: RGBA
-  diffAddedBg: RGBA
-  diffRemovedBg: RGBA
-  diffContextBg: RGBA
-  diffLineNumber: RGBA
-  diffAddedLineNumberBg: RGBA
-  diffRemovedLineNumberBg: RGBA
-  markdownText: RGBA
-  markdownHeading: RGBA
-  markdownLink: RGBA
-  markdownLinkText: RGBA
-  markdownCode: RGBA
-  markdownBlockQuote: RGBA
-  markdownEmph: RGBA
-  markdownStrong: RGBA
-  markdownHorizontalRule: RGBA
-  markdownListItem: RGBA
-  markdownListEnumeration: RGBA
-  markdownImage: RGBA
-  markdownImageText: RGBA
-  markdownCodeBlock: RGBA
-  syntaxComment: RGBA
-  syntaxKeyword: RGBA
-  syntaxFunction: RGBA
-  syntaxVariable: RGBA
-  syntaxString: RGBA
-  syntaxNumber: RGBA
-  syntaxType: RGBA
-  syntaxOperator: RGBA
-  syntaxPunctuation: RGBA
+  primary: string
+  secondary: string
+  accent: string
+  error: string
+  warning: string
+  success: string
+  info: string
+  text: string
+  textMuted: string
+  selectedListItemText: string
+  background: string
+  backgroundPanel: string
+  backgroundElement: string
+  backgroundMenu: string
+  border: string
+  borderActive: string
+  borderSubtle: string
+  diffAdded: string
+  diffRemoved: string
+  diffContext: string
+  diffHunkHeader: string
+  diffHighlightAdded: string
+  diffHighlightRemoved: string
+  diffAddedBg: string
+  diffRemovedBg: string
+  diffContextBg: string
+  diffLineNumber: string
+  diffAddedLineNumberBg: string
+  diffRemovedLineNumberBg: string
+  markdownText: string
+  markdownHeading: string
+  markdownLink: string
+  markdownLinkText: string
+  markdownCode: string
+  markdownBlockQuote: string
+  markdownEmph: string
+  markdownStrong: string
+  markdownHorizontalRule: string
+  markdownListItem: string
+  markdownListEnumeration: string
+  markdownImage: string
+  markdownImageText: string
+  markdownCodeBlock: string
+  syntaxComment: string
+  syntaxKeyword: string
+  syntaxFunction: string
+  syntaxVariable: string
+  syntaxString: string
+  syntaxNumber: string
+  syntaxType: string
+  syntaxOperator: string
+  syntaxPunctuation: string
 }
 
 export type Theme = ThemeColors & {
@@ -103,16 +124,17 @@ export type Theme = ThemeColors & {
   thinkingOpacity: number
 }
 
-export function selectedForeground(theme: Theme, bg?: RGBA): RGBA {
+export function selectedForeground(theme: Theme, bg?: string): string {
   if (theme._hasSelectedListItemText) {
     return theme.selectedListItemText
   }
 
-  if (theme.background.a === 0) {
+  const { a } = parseHex(theme.background)
+  if (a === 0) {
     const targetColor = bg ?? theme.primary
-    const { r, g, b } = targetColor
+    const { r, g, b } = parseHex(targetColor)
     const luminance = 0.299 * r + 0.587 * g + 0.114 * b
-    return luminance > 0.5 ? RGBA.fromInts(0, 0, 0) : RGBA.fromInts(255, 255, 255)
+    return luminance > 127.5 ? "#000000" : "#ffffff"
   }
 
   return theme.background
@@ -124,7 +146,7 @@ type Variant = {
   dark: HexColor | RefName
   light: HexColor | RefName
 }
-type ColorValue = HexColor | RefName | Variant | RGBA
+type ColorValue = HexColor | RefName | Variant | string
 type ThemeJson = {
   $schema?: string
   defs?: Record<string, HexColor | RefName>
@@ -173,17 +195,16 @@ export const DEFAULT_THEMES: Record<string, ThemeJson> = {
 
 function resolveTheme(theme: ThemeJson, mode: "dark" | "light"): Theme {
   const defs = theme.defs ?? {}
-  function resolveColor(c: ColorValue): RGBA {
-    if (c instanceof RGBA) return c
+  function resolveColor(c: ColorValue): string {
     if (typeof c === "string") {
-      if (c === "transparent" || c === "none") return RGBA.fromInts(0, 0, 0, 0)
-      if (c.startsWith("#")) return RGBA.fromHex(c)
+      if (c === "transparent" || c === "none") return fromInts(0, 0, 0, 0)
+      if (c.startsWith("#")) return c
       if (defs[c] != null) return resolveColor(defs[c])
       const ref = theme.theme[c as keyof ThemeColors]
       if (ref !== undefined) return resolveColor(ref)
       throw new Error(`Color reference "${c}" not found in defs or theme`)
     }
-    if (typeof c === "number") return ansiToRgba(c)
+    if (typeof c === "number") return ansiToHex(c)
     return resolveColor(c[mode])
   }
 
@@ -197,12 +218,12 @@ function resolveTheme(theme: ThemeJson, mode: "dark" | "light"): Theme {
   const hasSelectedListItemText = selectedText !== undefined
   resolved.selectedListItemText = hasSelectedListItemText
     ? resolveColor(selectedText)
-    : (resolved.background ?? RGBA.fromInts(0, 0, 0))
+    : (resolved.background ?? fromInts(0, 0, 0))
 
   resolved.backgroundMenu =
     theme.theme.backgroundMenu !== undefined
       ? resolveColor(theme.theme.backgroundMenu)
-      : (resolved.backgroundElement ?? RGBA.fromInts(0, 0, 0))
+      : (resolved.backgroundElement ?? fromInts(0, 0, 0))
 
   const thinkingOpacity = theme.theme.thinkingOpacity ?? 0.6
 
@@ -213,7 +234,7 @@ function resolveTheme(theme: ThemeJson, mode: "dark" | "light"): Theme {
   } as Theme
 }
 
-function ansiToRgba(code: number): RGBA {
+function ansiToHex(code: number): string {
   if (code < 16) {
     const ansiColors = [
       "#000000",
@@ -233,7 +254,7 @@ function ansiToRgba(code: number): RGBA {
       "#00ffff",
       "#ffffff",
     ]
-    return RGBA.fromHex(ansiColors[code] ?? "#000000")
+    return ansiColors[code] ?? "#000000"
   }
   if (code < 232) {
     const index = code - 16
@@ -241,13 +262,13 @@ function ansiToRgba(code: number): RGBA {
     const g = Math.floor(index / 6) % 6
     const r = Math.floor(index / 36)
     const val = (x: number) => (x === 0 ? 0 : x * 40 + 55)
-    return RGBA.fromInts(val(r), val(g), val(b))
+    return fromInts(val(r), val(g), val(b))
   }
   if (code < 256) {
     const gray = (code - 232) * 10 + 8
-    return RGBA.fromInts(gray, gray, gray)
+    return fromInts(gray, gray, gray)
   }
-  return RGBA.fromInts(0, 0, 0)
+  return fromInts(0, 0, 0)
 }
 
 export type ThemeContextValue = {
@@ -376,22 +397,24 @@ async function getCustomThemes() {
   return result
 }
 
-export function tint(base: RGBA, overlay: RGBA, alpha: number): RGBA {
-  const r = base.r + (overlay.r - base.r) * alpha
-  const g = base.g + (overlay.g - base.g) * alpha
-  const b = base.b + (overlay.b - base.b) * alpha
-  return RGBA.fromInts(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255))
+export function tint(base: string, overlay: string, alpha: number): string {
+  const bColors = parseHex(base)
+  const oColors = parseHex(overlay)
+  const r = bColors.r + (oColors.r - bColors.r) * alpha
+  const g = bColors.g + (oColors.g - bColors.g) * alpha
+  const b = bColors.b + (oColors.b - bColors.b) * alpha
+  return fromInts(Math.round(r), Math.round(g), Math.round(b))
 }
 
 function generateSystem(colors: InkTerminalColors, mode: "dark" | "light"): ThemeJson {
-  const bg = RGBA.fromHex(colors.defaultBackground ?? colors.palette[0] ?? "#000000")
-  const fg = RGBA.fromHex(colors.defaultForeground ?? colors.palette[7] ?? "#c0c0c0")
-  const transparent = RGBA.fromInts(0, 0, 0, 0)
+  const bg = colors.defaultBackground ?? colors.palette[0] ?? "#000000"
+  const fg = colors.defaultForeground ?? colors.palette[7] ?? "#c0c0c0"
+  const transparent = fromInts(0, 0, 0, 0)
   const isDark = mode === "dark"
 
   const col = (i: number) => {
     const value = colors.palette[i]
-    return value ? RGBA.fromHex(value) : ansiToRgba(i)
+    return value ? value : ansiToHex(i)
   }
 
   const grays = generateGrayScale(bg, isDark)
@@ -474,11 +497,9 @@ function generateSystem(colors: InkTerminalColors, mode: "dark" | "light"): Them
   }
 }
 
-function generateGrayScale(bg: RGBA, isDark: boolean): Record<number, RGBA> {
-  const grays: Record<number, RGBA> = {}
-  const bgR = bg.r * 255,
-    bgG = bg.g * 255,
-    bgB = bg.b * 255
+function generateGrayScale(bg: string, isDark: boolean): Record<number, string> {
+  const grays: Record<number, string> = {}
+  const { r: bgR, g: bgG, b: bgB } = parseHex(bg)
   const luminance = 0.299 * bgR + 0.587 * bgG + 0.114 * bgB
 
   for (let i = 1; i <= 12; i++) {
@@ -509,20 +530,21 @@ function generateGrayScale(bg: RGBA, isDark: boolean): Record<number, RGBA> {
         newB = Math.max(bgB * ratio, 0)
       }
     }
-    grays[i] = RGBA.fromInts(Math.floor(newR), Math.floor(newG), Math.floor(newB))
+    grays[i] = fromInts(Math.floor(newR), Math.floor(newG), Math.floor(newB))
   }
   return grays
 }
 
-function generateMutedTextColor(bg: RGBA, isDark: boolean): RGBA {
-  const bgLum = (0.299 * bg.r + 0.587 * bg.g + 0.114 * bg.b) * 255
+function generateMutedTextColor(bg: string, isDark: boolean): string {
+  const { r, g, b } = parseHex(bg)
+  const bgLum = 0.299 * r + 0.587 * g + 0.114 * b
   let grayValue: number
   if (isDark) {
     grayValue = bgLum < 10 ? 180 : Math.min(Math.floor(160 + bgLum * 0.3), 200)
   } else {
     grayValue = bgLum > 245 ? 75 : Math.max(Math.floor(100 - (255 - bgLum) * 0.2), 60)
   }
-  return RGBA.fromInts(grayValue, grayValue, grayValue)
+  return fromInts(grayValue, grayValue, grayValue)
 }
 
 function generateSyntax(theme: Theme) {
@@ -539,12 +561,7 @@ function generateSubtleSyntax(theme: Theme) {
           ...rule,
           style: {
             ...rule.style,
-            foreground: RGBA.fromInts(
-              Math.round(fg.r * 255),
-              Math.round(fg.g * 255),
-              Math.round(fg.b * 255),
-              Math.round(theme.thinkingOpacity * 255),
-            ),
+            foreground: color.withAlpha(fg, theme.thinkingOpacity),
           },
         }
       }
