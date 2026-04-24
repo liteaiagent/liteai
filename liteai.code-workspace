@@ -41,6 +41,9 @@
 		},
 		{
 			"path": "packages/ink"
+		},
+		{
+			"path": "packages/hooks"
 		}
 	],
 	"settings": {
