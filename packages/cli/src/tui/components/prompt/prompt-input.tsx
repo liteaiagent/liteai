@@ -43,7 +43,9 @@ import { useArrowKeyHistory } from "../../hooks/use-arrow-key-history"
 import { useDoublePress } from "../../hooks/use-double-press"
 import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
+import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
+import { detectInputHighlights } from "../../util/text-highlighting"
 import { TextInput } from "../text-input"
 import VimTextInput from "../vim-text-input"
 import { getModeFromInput, getValueFromInput } from "./input-modes"
@@ -350,6 +352,27 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
     return theme.border as Color
   }, [mode, theme])
 
+  // ── Highlights & Ghost Text ─────────────────────────────────────────────
+  const knownCommands = useMemo(() => sync.command.map((cmd) => cmd.name), [sync.command])
+
+  const highlights = useMemo(() => {
+    if (mode !== "prompt" || searchState.isSearching) return []
+    return detectInputHighlights(input, knownCommands)
+  }, [input, mode, knownCommands, searchState.isSearching])
+
+  const inlineGhostText = useSlashSuggestion(searchState.isSearching ? "" : input, cursorOffset, knownCommands)
+
+  const onTab = useMemo(() => {
+    if (!inlineGhostText) return undefined
+    return () => {
+      const before = input.slice(0, inlineGhostText.insertPosition)
+      const after = input.slice(inlineGhostText.insertPosition)
+      const newText = `${before}${inlineGhostText.text} ${after}`
+      trackAndSetInput(newText)
+      setCursorOffset(inlineGhostText.insertPosition + inlineGhostText.text.length + 1)
+    }
+  }, [inlineGhostText, input, trackAndSetInput, setCursorOffset])
+
   // ── Render ──────────────────────────────────────────────────────────────
   const baseProps: BaseTextInputProps = {
     multiline: true,
@@ -375,6 +398,9 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
     },
     focus: !searchState.isSearching,
     showCursor: !searchState.isSearching,
+    highlights,
+    inlineGhostText,
+    onTab,
   }
 
   const displayInput = searchState.isSearching && searchState.match ? searchState.match.display : input

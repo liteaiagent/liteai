@@ -1,3 +1,11 @@
+import {
+  type AnsiCode,
+  ansiCodesToString,
+  reduceAnsiCodes,
+  type Token,
+  tokenize,
+  undoAnsiCodes,
+} from "@alcalzone/ansi-tokenize"
 import type { ThemeColors } from "../context/theme"
 
 /**
@@ -29,8 +37,8 @@ export type TextSegment = {
  * Segments text into highlighted and non-highlighted regions.
  * Handles overlapping highlights by respecting priority ordering.
  *
- * This is a simplified version that does not depend on ansi-tokenize.
- * Instead, it segments based on character positions in the raw text.
+ * This version properly handles ANSI escape sequences in the raw text,
+ * so the highlight indices apply to the visible characters, not the raw string length.
  */
 export function segmentTextByHighlights(text: string, highlights: TextHighlight[]): TextSegment[] {
   if (highlights.length === 0) {
@@ -61,36 +69,166 @@ export function segmentTextByHighlights(text: string, highlights: TextHighlight[
     }
   }
 
-  // Build segments from resolved highlights
-  const segments: TextSegment[] = []
-  let currentPos = 0
+  return new HighlightSegmenter(text).segment(resolvedHighlights)
+}
 
-  for (const highlight of resolvedHighlights.sort((a, b) => a.start - b.start)) {
-    // Add unhighlighted text before this highlight
-    if (highlight.start > currentPos) {
-      segments.push({
-        text: text.slice(currentPos, highlight.start),
-        start: currentPos,
-      })
+class HighlightSegmenter {
+  private readonly tokens: Token[]
+  // Two position systems: "visible" (what the user sees, excluding ANSI codes)
+  // and "string" (raw positions including ANSI codes for substring extraction)
+  private visiblePos = 0
+  private stringPos = 0
+  private tokenIdx = 0
+  private charIdx = 0 // offset within current text token (for partial consumption)
+  private codes: AnsiCode[] = []
+
+  constructor(private readonly text: string) {
+    this.tokens = tokenize(text)
+  }
+
+  segment(highlights: TextHighlight[]): TextSegment[] {
+    const segments: TextSegment[] = []
+
+    for (const highlight of highlights) {
+      const before = this.segmentTo(highlight.start)
+      if (before) segments.push(before)
+
+      const highlighted = this.segmentTo(highlight.end)
+      if (highlighted) {
+        highlighted.highlight = highlight
+        segments.push(highlighted)
+      }
     }
 
-    // Add highlighted text
-    segments.push({
-      text: text.slice(highlight.start, highlight.end),
-      start: highlight.start,
-      highlight,
-    })
+    const after = this.segmentTo(Infinity)
+    if (after) segments.push(after)
 
-    currentPos = highlight.end
+    return segments
   }
 
-  // Add remaining unhighlighted text
-  if (currentPos < text.length) {
-    segments.push({
-      text: text.slice(currentPos),
-      start: currentPos,
+  private segmentTo(targetVisiblePos: number): TextSegment | null {
+    if (this.tokenIdx >= this.tokens.length || targetVisiblePos <= this.visiblePos) {
+      return null
+    }
+
+    const visibleStart = this.visiblePos
+
+    // Consume leading ANSI codes before first visible char
+    while (this.tokenIdx < this.tokens.length) {
+      const token = this.tokens[this.tokenIdx]
+      if (!token || token.type !== "ansi") break
+      this.codes.push(token)
+      this.stringPos += token.code.length
+      this.tokenIdx++
+    }
+
+    const stringStart = this.stringPos
+    const codesStart = [...this.codes]
+
+    // Advance through tokens until we reach target
+    while (this.visiblePos < targetVisiblePos && this.tokenIdx < this.tokens.length) {
+      const token = this.tokens[this.tokenIdx]
+      if (!token) break
+
+      if (token.type === "ansi") {
+        this.codes.push(token)
+        this.stringPos += token.code.length
+        this.tokenIdx++
+      } else {
+        const tokenStr = "value" in token ? String(token.value) : "code" in token ? String(token.code) : ""
+        const charsNeeded = targetVisiblePos - this.visiblePos
+        const charsAvailable = tokenStr.length - this.charIdx
+        const charsToTake = Math.min(charsNeeded, charsAvailable)
+
+        this.stringPos += charsToTake
+        this.visiblePos += charsToTake
+        this.charIdx += charsToTake
+
+        if (this.charIdx >= tokenStr.length) {
+          this.tokenIdx++
+          this.charIdx = 0
+        }
+      }
+    }
+
+    // Empty segment (can occur when only trailing ANSI codes remain)
+    if (this.stringPos === stringStart) {
+      return null
+    }
+
+    const prefixCodes = reduceCodes(codesStart)
+    const suffixCodes = reduceCodes(this.codes)
+    this.codes = suffixCodes
+
+    const prefix = ansiCodesToString(prefixCodes)
+    const suffix = ansiCodesToString(undoAnsiCodes(suffixCodes))
+
+    return {
+      text: prefix + this.text.substring(stringStart, this.stringPos) + suffix,
+      start: visibleStart,
+    }
+  }
+}
+
+function reduceCodes(codes: AnsiCode[]): AnsiCode[] {
+  return reduceAnsiCodes(codes).filter((c: AnsiCode) => c.code !== c.endCode)
+}
+
+/**
+ * Find all /command patterns in text for highlighting.
+ * Returns array of {start, end} positions.
+ * Requires whitespace or start-of-string before the slash to avoid
+ * matching paths like /usr/bin.
+ */
+export function detectSlashHighlights(text: string, knownCommands: string[]): TextHighlight[] {
+  const highlights: TextHighlight[] = []
+  const regex = /(^|[\s])(\/[a-zA-Z][a-zA-Z0-9:\-_]*)/g
+  const matches = [...text.matchAll(regex)]
+  for (const match of matches) {
+    if (match.index === undefined) continue
+    const precedingChar = match[1] ?? ""
+    const commandWithSlash = match[2] ?? ""
+    const commandName = commandWithSlash.slice(1) // Remove leading slash
+
+    if (knownCommands.includes(commandName)) {
+      const start = match.index + precedingChar.length
+      highlights.push({
+        start,
+        end: start + commandWithSlash.length,
+        color: "accent",
+        priority: 5,
+      })
+    }
+  }
+  return highlights
+}
+
+/**
+ * Find all @mention patterns in text for highlighting.
+ * Matches @ followed by word characters, dots, slashes, hyphens, or hashes.
+ */
+export function detectMentionHighlights(text: string): TextHighlight[] {
+  const highlights: TextHighlight[] = []
+  const regex = /(^|[\s])(@[\w./\-#]+)/g
+  const matches = [...text.matchAll(regex)]
+  for (const match of matches) {
+    if (match.index === undefined) continue
+    const precedingChar = match[1] ?? ""
+    const mentionToken = match[2] ?? ""
+    const start = match.index + precedingChar.length
+    highlights.push({
+      start,
+      end: start + mentionToken.length,
+      color: "info",
+      priority: 5,
     })
   }
+  return highlights
+}
 
-  return segments
+/**
+ * Combined detection for all prompt input highlights.
+ */
+export function detectInputHighlights(text: string, knownCommands: string[]): TextHighlight[] {
+  return [...detectSlashHighlights(text, knownCommands), ...detectMentionHighlights(text)]
 }

@@ -73,6 +73,8 @@ export type UseTextInputProps = {
   showToast?: (message: string, durationMs?: number) => void
   /** Optional callback to add input to command history */
   addToHistory?: (value: string) => void
+  /** Optional callback when Tab is pressed */
+  onTab?: () => void
 }
 
 export function useTextInput({
@@ -100,6 +102,7 @@ export function useTextInput({
   dim,
   showToast,
   addToHistory,
+  onTab,
 }: UseTextInputProps): TextInputState {
   const offset = externalOffset
   const setOffset = onOffsetChange
@@ -337,7 +340,13 @@ export function useTextInput({
       case key.meta:
         return handleMeta
       case key.tab:
-        return () => cursor
+        return () => {
+          if (onTab) {
+            onTab()
+            return undefined
+          }
+          return cursor
+        }
       case key.upArrow && !key.shift:
         return upOrHistoryUp
       case key.downArrow && !key.shift:

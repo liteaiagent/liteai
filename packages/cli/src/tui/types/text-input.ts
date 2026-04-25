@@ -32,6 +32,12 @@ export type BaseTextInputProps = {
   readonly onHistoryDown?: () => void
 
   /**
+   * Optional callback when Tab is pressed.
+   * If provided and returns true, default Tab behavior is ignored.
+   */
+  readonly onTab?: () => void
+
+  /**
    * Text to display when `value` is empty.
    */
   readonly placeholder?: string

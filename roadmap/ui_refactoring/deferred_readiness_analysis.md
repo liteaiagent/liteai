@@ -17,6 +17,8 @@ Assessment of all 21 deferred items from `deferred_features.md` and `review_trac
 | **#10** | FuzzyPicker Fuzzy Matching | Integrated `fuzzysort` via `getSearchString` prop. |
 | **#12 / #2** | DialogHelp Dynamic Keybindings / Help Menu | Replaced hardcoded text in `dialog-help.tsx` with dynamic keybind registry. |
 | **#3** | History Search (Ctrl+R) | Built `useHistorySearch` + `HistorySearchInput` with cross-session sqlite queries and `fuzzysort`. |
+| **#8** | Text Highlighting (Slash/Chips) | Reintroduced ANSI-aware highlighting logic via `@alcalzone/ansi-tokenize`. |
+| **#19** | Prompt Suggestion / Speculation | Implemented `useSlashSuggestion` for inline ghost text autocomplete with Tab acceptance. |
 
 ---
 
@@ -27,9 +29,7 @@ Could start now, but require more planning/effort.
 | # | Feature | Effort | Notes |
 |---|---------|--------|-------|
 | **#1** | Autocomplete / Suggestions Panel | ~1-2 days | `fuzzysort` available, overlay patterns proven by dialog-select. Needs custom positioning relative to cursor and command registry integration. |
-| **#8** | Text Highlighting (Slash/Chips) | ~1-2 days | Requires custom rendering pass in `base-text-input.tsx` to support highlight spans. Non-trivial but no external blockers. |
 | **#7** | Prompt Editor ($EDITOR) | ~1 day | Requires `child_process.spawn` with `stdio: 'inherit'` + Ink's `exitTemporarily()` pattern to suspend TUI. Feasible but touches process lifecycle. |
-| **#19** | Prompt Suggestion / Speculation | ~1-2 days | Needs streaming suggestion source + custom text rendering for greyed-out predicted text. |
 
 ---
 

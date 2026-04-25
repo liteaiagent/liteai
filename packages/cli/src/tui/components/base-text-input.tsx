@@ -12,9 +12,10 @@
 
 import { Ansi, Box, Text, useInput } from "@liteai/ink"
 import type React from "react"
+import { useTheme } from "../context/theme"
 import { renderPlaceholder } from "../hooks/render-placeholder"
 import type { BaseInputState, BaseTextInputProps } from "../types/text-input"
-import type { TextHighlight } from "../util/text-highlighting"
+import { segmentTextByHighlights, type TextHighlight } from "../util/text-highlighting"
 
 type BaseTextInputComponentProps = BaseTextInputProps & {
   inputState: BaseInputState
@@ -37,6 +38,7 @@ export function BaseTextInput({
   ...props
 }: BaseTextInputComponentProps): React.ReactNode {
   const { onInput, renderedValue } = inputState
+  const { theme } = useTheme()
 
   // Register input handler — only active when focused
   useInput(
@@ -91,11 +93,25 @@ export function BaseTextInput({
   ) : null
 
   if (hasHighlights) {
-    // When highlights are active, render the raw text with ANSI highlighting
-    // HighlightedInput component will be ported in Sub-batch 3.4
+    const segments = segmentTextByHighlights(renderedValue, filteredHighlights ?? [])
+
     return (
       <Box>
-        <Ansi>{renderedValue}</Ansi>
+        <Text wrap="truncate-end" dim={props.dimColor ?? false}>
+          {segments.map((segment, index) => (
+            <Text
+              // @ts-expect-error - Ink Text types miss 'key'
+              key={index}
+              color={
+                segment.highlight?.color ? (theme[segment.highlight.color] as import("@liteai/ink").Color) : undefined
+              }
+              dim={segment.highlight?.dimColor ?? false}
+              inverse={segment.highlight?.inverse ?? false}
+            >
+              <Ansi>{segment.text}</Ansi>
+            </Text>
+          ))}
+        </Text>
         {argumentHintElement}
         {children}
       </Box>

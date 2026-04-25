@@ -53,6 +53,7 @@ export default function VimTextInput(props: Props): React.ReactNode {
     dim: chalk.dim,
     onModeChange: props.onModeChange,
     onUndo: props.onUndo,
+    onTab: props.onTab,
   })
 
   return (

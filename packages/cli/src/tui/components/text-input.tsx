@@ -57,6 +57,7 @@ export function TextInput(props: TextInputProps): React.ReactNode {
     inputFilter: props.inputFilter,
     inlineGhostText: props.inlineGhostText,
     dim: chalk.dim,
+    onTab: props.onTab,
   })
 
   return (

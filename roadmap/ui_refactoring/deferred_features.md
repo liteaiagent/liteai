@@ -67,16 +67,6 @@ Switch session (similar to Ctlr+R), without stopping the current session, so use
 
 ---
 
-### 8. Text Highlighting (Slash Commands, @mentions, Chips)
-**MVP Sources:**
-- [textHighlighting.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/utils/textHighlighting.ts) — highlight spans
-- [findSlashCommandPositions](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/utils/suggestions/commandSuggestions.ts) — slash command detection
-- Image pill rendering in PromptInput.tsx lines ~1700-1900
-
-**Why Deferred:** The basic TextInput renders plain text. Syntax highlighting requires highlight spans + custom rendering.
-
----
-
 ## Deferred Technical Debt (from Review Tracker)
 
 ### 13. Toast Positioning (Phase 2.4 m3)
@@ -103,15 +93,6 @@ A new `permissionMode` field on `session.prompt()` or `session.update()` is need
 ---
 
 ## Deferred Prompt Input Features (from prompt-input.tsx audit)
-
-### 19. Prompt Suggestion / Speculation
-**MVP Sources:**
-- `usePromptSuggestion.ts` — prompt speculation/completion logic
-- Inline suggestion rendering in `PromptInput.tsx`
-
-**Why Deferred:** Distinct from autocomplete (#1). Speculation renders greyed-out predicted text ahead of cursor. Requires streaming suggestion source + custom text rendering.
-
----
 
 ### 20. Footer Pill Navigation
 **MVP Sources:**
