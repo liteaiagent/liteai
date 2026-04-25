@@ -35,7 +35,7 @@ export const PART_MAPPING: Record<string, React.FC<any>> = {
   reasoning: ReasoningPartView,
 }
 
-function ReasoningPartView({ last, part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
+function ReasoningPartView({ part }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
   const content = useMemo(() => {
@@ -59,9 +59,8 @@ function ReasoningPartView({ last, part, message }: { last: boolean; part: Reaso
   )
 }
 
-function TextPartView({ last, part, message }: { last: boolean; part: TextPart; message: AssistantMessage }) {
-  const ctx = useSessionContext()
-  const { theme } = useTheme()
+function TextPartView({ part }: { last: boolean; part: TextPart; message: AssistantMessage }) {
+  const _ctx = useSessionContext()
 
   if (!part.text.trim()) return null
 
@@ -72,7 +71,7 @@ function TextPartView({ last, part, message }: { last: boolean; part: TextPart; 
   )
 }
 
-function ToolPartView({ last, part, message }: { last: boolean; part: ToolPart; message: AssistantMessage }) {
+function ToolPartView({ part, message }: { last: boolean; part: ToolPart; message: AssistantMessage }) {
   const ctx = useSessionContext()
   const sync = useSync()
 

@@ -68,14 +68,13 @@ function VirtualItem({
 }: VirtualItemProps) {
   const ref = measureRef(k)
 
-  const bg = expanded ? "backgroundPanel" : undefined
+  const bg = expanded || hovered ? "backgroundPanel" : undefined
   const pb = expanded ? 1 : undefined
 
   const onClick = clickable ? () => onClickK(msg, false) : undefined
   const onEnter = clickable ? () => onEnterK(k) : undefined
   const onLeave = clickable ? () => onLeaveK(k) : undefined
 
-  const hoverColor = hovered && !expanded ? "text" : undefined
   const rendered = renderItem(msg, idx)
 
   return (
@@ -334,7 +333,7 @@ function StickyTracker({
     setStickyPrompt({
       text: collapsed,
       scrollTo: () => {
-        setStickyPrompt(null as any) // "clicked" hack not needed if we clear
+        setStickyPrompt(null) // "clicked" hack not needed if we clear
         suppress.current = "armed"
         const el = getItemElement(capturedIdx)
         if (el) {

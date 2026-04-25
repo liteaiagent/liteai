@@ -1,6 +1,6 @@
 import type { Color } from "@liteai/ink"
 import { Box, ScrollBox, Text } from "@liteai/ink"
-import React, { useMemo } from "react"
+import { useMemo } from "react"
 import { Divider } from "../../components/design-system/Divider"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import ThemedText from "../../components/design-system/ThemedText"

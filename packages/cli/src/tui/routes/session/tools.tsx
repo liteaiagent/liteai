@@ -2,22 +2,19 @@ import path from "node:path"
 import { Global } from "@liteai/core/global/index"
 import type { Tool } from "@liteai/core/tool/tool"
 import { Filesystem } from "@liteai/core/util/filesystem"
-import { Locale } from "@liteai/core/util/locale"
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type { ToolPart } from "@liteai/sdk"
 import type React from "react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import stripAnsi from "strip-ansi"
 import ThemedBox from "../../components/design-system/ThemedBox"
-import ThemedText from "../../components/design-system/ThemedText"
-import { Markdown } from "../../components/markdown"
 import { StructuredDiff } from "../../components/structured-diff"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { Spinner } from "../../ui/spinner"
 import { useSessionContext } from "./ctx"
-import { filetype, formatInput, normalizePath } from "./utils"
+import { formatInput, normalizePath } from "./utils"
 
 // ---------------------------------------------------------------------------
 // Per-tool input/metadata shape interfaces
@@ -224,7 +221,7 @@ function InlineTool(props: {
   const { theme } = useTheme()
   const ctx = useSessionContext()
   const sync = useSync()
-  const [hover, setHover] = useState(false)
+  const [hover, _setHover] = useState(false)
 
   const permission = useMemo(() => {
     const permissions = sync.permission[ctx.sessionID] ?? []
@@ -271,7 +268,7 @@ function BlockTool(props: {
   spinner?: boolean
 }) {
   const { theme } = useTheme()
-  const [hover, setHover] = useState(false)
+  const [_hover, _setHover] = useState(false)
   const error = props.part?.state.status === "error" ? props.part.state.error : undefined
 
   return (
@@ -428,7 +425,6 @@ export function Read(props: ToolProps) {
 }
 
 export function Edit(props: ToolProps) {
-  const { theme } = useTheme()
   const input = typed<EditInput>(props.input as Record<string, unknown>)
   const metadata = typed<EditMetadata>(props.metadata as Record<string, unknown>)
 

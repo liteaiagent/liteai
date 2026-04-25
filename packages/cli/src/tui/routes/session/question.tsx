@@ -1,7 +1,7 @@
 import type { Color } from "@liteai/ink"
 import { Box, Text, useInput } from "@liteai/ink"
 import type { QuestionRequest } from "@liteai/sdk"
-import React, { useMemo, useState } from "react"
+import { useState } from "react"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import { useSDK } from "../../context/sdk"
 import { useTheme } from "../../context/theme"

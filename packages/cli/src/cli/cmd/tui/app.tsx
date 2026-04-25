@@ -1,17 +1,8 @@
 import { render } from "@liteai/ink"
-import { App as ReactApp } from "../../../tui/app"
+import { type AppProps, App as ReactApp } from "../../../tui/app"
 import { win32DisableProcessedInput, win32InstallCtrlCGuard } from "./win32"
 
-export async function tui(input: {
-  url: string
-  args: any
-  config: any
-  directory?: string
-  projectID?: string
-  fetch?: typeof fetch
-  headers?: RequestInit["headers"]
-  events?: any
-}) {
+export async function tui(input: AppProps) {
   const unguard = win32InstallCtrlCGuard()
   win32DisableProcessedInput()
 

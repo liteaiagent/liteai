@@ -1,18 +1,16 @@
 import type { Color } from "@liteai/ink"
 import { Box, Text, useInput } from "@liteai/ink"
 import type { PermissionRequest } from "@liteai/sdk"
-import React, { useMemo, useState } from "react"
+import { useState } from "react"
 import ThemedBox from "../../components/design-system/ThemedBox"
-import ThemedText from "../../components/design-system/ThemedText"
 import { useSDK } from "../../context/sdk"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
-import { useSessionContext } from "./ctx"
 import { normalizePath } from "./utils"
 
 export function PermissionPrompt({ request }: { request: PermissionRequest }) {
   const sdk = useSDK()
-  const sync = useSync()
+  const _sync = useSync()
   const { theme } = useTheme()
   const [selected, setSelected] = useState<"once" | "always" | "reject">("once")
 

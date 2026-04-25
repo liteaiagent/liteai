@@ -9,8 +9,8 @@ import { SessionRoute } from "./routes/session"
 
 export type AppProps = {
   url: string
-  args: any
-  config: any
+  args: Record<string, unknown>
+  config: Record<string, unknown>
   directory?: string
   projectID?: string
   fetch?: typeof fetch

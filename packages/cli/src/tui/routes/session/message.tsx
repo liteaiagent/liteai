@@ -2,7 +2,7 @@ import { Locale } from "@liteai/core/util/locale"
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as UserMessageInfo } from "@liteai/sdk"
-import React, { useMemo } from "react"
+import { useMemo } from "react"
 import { useKeybind } from "../../context/keybind"
 import { useLocal } from "../../context/local"
 import { useSync } from "../../context/sync"
@@ -15,7 +15,6 @@ export function UserMessageContent({
   message,
   parts,
   index,
-  pending,
 }: {
   message: UserMessageInfo
   parts: Part[]
@@ -47,7 +46,7 @@ export function UserMessageContent({
           <Text color={theme.text as Color}>{textPart?.type === "text" ? textPart.text : ""}</Text>
           {files.length > 0 && (
             <Box flexDirection="row" gap={1} flexWrap="wrap" marginTop={1}>
-              {files.map((file: any, i: number) => {
+              {files.map((file: Extract<Part, { type: "file" }>, i: number) => {
                 const bg = file.mime.startsWith("image/")
                   ? theme.accent
                   : file.mime === "application/pdf"

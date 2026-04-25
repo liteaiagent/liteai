@@ -149,12 +149,12 @@ export function useVirtualScroll(
     const arr = offsetsRef.current.arr.length >= n + 1 ? offsetsRef.current.arr : new Float64Array(n + 1)
     arr[0] = 0
     for (let i = 0; i < n; i++) {
-      arr[i + 1] = arr[i]! + (heightCache.current.get(itemKeys[i]!) ?? DEFAULT_ESTIMATE)
+      arr[i + 1] = (arr[i] as number) + (heightCache.current.get(itemKeys[i] as string) ?? DEFAULT_ESTIMATE)
     }
     offsetsRef.current = { arr, version: offsetVersionRef.current, n }
   }
   const offsets = offsetsRef.current.arr
-  const totalHeight = offsets[n]!
+  const totalHeight = offsets[n] as number
 
   let start: number
   let end: number
@@ -170,7 +170,7 @@ export function useVirtualScroll(
     if (isSticky) {
       const budget = viewportH + OVERSCAN_ROWS
       start = n
-      while (start > 0 && totalHeight - offsets[start - 1]! < budget) {
+      while (start > 0 && totalHeight - (offsets[start - 1] as number) < budget) {
         start--
       }
       end = n
@@ -191,7 +191,7 @@ export function useVirtualScroll(
         let r = n
         while (l < r) {
           const m = (l + r) >> 1
-          if (offsets[m + 1]! <= lo) l = m + 1
+          if ((offsets[m + 1] as number) <= lo) l = m + 1
           else r = m
         }
         start = l
@@ -201,7 +201,7 @@ export function useVirtualScroll(
         const p = prevRangeRef.current
         if (p && p[0] < start) {
           for (let i = p[0]; i < Math.min(start, p[1]); i++) {
-            const k = itemKeys[i]!
+            const k = itemKeys[i] as string
             if (itemRefs.current.has(k) && !heightCache.current.has(k)) {
               start = i
               break
@@ -214,8 +214,8 @@ export function useVirtualScroll(
       const maxEnd = Math.min(n, start + MAX_MOUNTED_ITEMS)
       let coverage = 0
       end = start
-      while (end < maxEnd && (coverage < needed || offsets[end]! < effHi + viewportH + OVERSCAN_ROWS)) {
-        coverage += heightCache.current.get(itemKeys[end]!) ?? PESSIMISTIC_HEIGHT
+      while (end < maxEnd && (coverage < needed || (offsets[end] as number) < effHi + viewportH + OVERSCAN_ROWS)) {
+        coverage += heightCache.current.get(itemKeys[end] as string) ?? PESSIMISTIC_HEIGHT
         end++
       }
     }
@@ -224,11 +224,11 @@ export function useVirtualScroll(
     const minStart = Math.max(0, end - MAX_MOUNTED_ITEMS)
     let coverage = 0
     for (let i = start; i < end; i++) {
-      coverage += heightCache.current.get(itemKeys[i]!) ?? PESSIMISTIC_HEIGHT
+      coverage += heightCache.current.get(itemKeys[i] as string) ?? PESSIMISTIC_HEIGHT
     }
     while (start > minStart && coverage < needed) {
       start--
-      coverage += heightCache.current.get(itemKeys[start]!) ?? PESSIMISTIC_HEIGHT
+      coverage += heightCache.current.get(itemKeys[start] as string) ?? PESSIMISTIC_HEIGHT
     }
 
     const prev = prevRangeRef.current
@@ -261,7 +261,7 @@ export function useVirtualScroll(
     effEnd = end
   }
   if (effEnd - effStart > MAX_MOUNTED_ITEMS) {
-    const mid = (offsets[effStart]! + offsets[effEnd]!) / 2
+    const mid = ((offsets[effStart] as number) + (offsets[effEnd] as number)) / 2
     if (scrollTop - listOriginRef.current < mid) {
       effEnd = effStart + MAX_MOUNTED_ITEMS
     } else {
@@ -270,9 +270,10 @@ export function useVirtualScroll(
   }
 
   const listOrigin = listOriginRef.current
-  const effTopSpacer = offsets[effStart]!
+  const effTopSpacer = offsets[effStart] as number
   const clampMin = effStart === 0 ? 0 : effTopSpacer + listOrigin
-  const clampMax = effEnd === n ? Infinity : Math.max(effTopSpacer, offsets[effEnd]! - viewportH) + listOrigin
+  const clampMax =
+    effEnd === n ? Infinity : Math.max(effTopSpacer, (offsets[effEnd] as number) - viewportH) + listOrigin
 
   useLayoutEffect(() => {
     if (isSticky) {
@@ -335,25 +336,28 @@ export function useVirtualScroll(
 
   const getItemTop = useCallback(
     (index: number) => {
-      const yoga = itemRefs.current.get(itemKeys[index]!)?.yogaNode
+      const yoga = itemRefs.current.get(itemKeys[index] as string)?.yogaNode
       if (!yoga || yoga.getComputedWidth() === 0) return -1
       return yoga.getComputedTop()
     },
     [itemKeys],
   )
 
-  const getItemElement = useCallback((index: number) => itemRefs.current.get(itemKeys[index]!) ?? null, [itemKeys])
-  const getItemHeight = useCallback((index: number) => heightCache.current.get(itemKeys[index]!), [itemKeys])
+  const getItemElement = useCallback(
+    (index: number) => itemRefs.current.get(itemKeys[index] as string) ?? null,
+    [itemKeys],
+  )
+  const getItemHeight = useCallback((index: number) => heightCache.current.get(itemKeys[index] as string), [itemKeys])
   const scrollToIndex = useCallback(
     (i: number) => {
       const o = offsetsRef.current
       if (i < 0 || i >= o.n) return
-      scrollRef.current?.scrollTo(o.arr[i]! + listOriginRef.current)
+      scrollRef.current?.scrollTo((o.arr[i] as number) + listOriginRef.current)
     },
     [scrollRef],
   )
 
-  const effBottomSpacer = totalHeight - offsets[effEnd]!
+  const effBottomSpacer = totalHeight - (offsets[effEnd] as number)
 
   return {
     range: [effStart, effEnd],
