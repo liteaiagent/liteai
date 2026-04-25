@@ -3,7 +3,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import solidPlugin from "@opentui/solid/bun-plugin"
+
 import { $ } from "bun"
 
 const __filename = fileURLToPath(import.meta.url)
@@ -233,27 +233,19 @@ console.log("\n▶ Step: build")
 await $`rm -rf dist`
 
 if (!skipInstall) {
-  await $`bun install --os="*" --cpu="*" @opentui/core@${pkg.dependencies["@opentui/core"]}`
   await $`bun install --os="*" --cpu="*" @parcel/watcher@${corePkg.dependencies["@parcel/watcher"]}`
 }
 for (const name of names()) {
   console.log(`building ${name}`)
   await $`mkdir -p dist/${name}/bin`
 
-  const localPath = path.resolve(dir, "node_modules/@opentui/core/parser.worker.js")
-  const rootPath = path.resolve(dir, "../../node_modules/@opentui/core/parser.worker.js")
-  const parserWorker = fs.realpathSync(fs.existsSync(localPath) ? localPath : rootPath)
-  const workerPath = "./src/cli/cmd/tui/worker.ts"
-
-  // Use platform-specific bunfs root path based on target OS
   const item = targets[names().indexOf(name)]
-  const bunfsRoot = item.os === "win32" ? "B:/~BUN/root/" : "/$bunfs/root/"
-  const workerRelativePath = path.relative(dir, parserWorker).replaceAll("\\", "/")
+  const workerPath = "./src/cli/cmd/tui/worker.ts"
 
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
-    plugins: [solidPlugin, rawPlugin],
+    plugins: [rawPlugin],
     compile: {
       autoloadBunfig: false,
       autoloadDotenv: false,
@@ -272,11 +264,11 @@ for (const name of names()) {
         copyright: "Copyright (c)",
       },
     },
-    entrypoints: ["./src/index.ts", parserWorker, workerPath],
+    entrypoints: ["./src/index.ts", workerPath],
     define: {
       LITEAI_VERSION: `'${Script.version}'`,
       LITEAI_MIGRATIONS: JSON.stringify(migrations),
-      OTUI_TREE_SITTER_WORKER_PATH: bunfsRoot + workerRelativePath,
+
       LITEAI_WORKER_PATH: workerPath,
       LITEAI_CHANNEL: `'${Script.channel}'`,
       LITEAI_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",

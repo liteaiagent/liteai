@@ -1,5 +1,3 @@
-/** @jsxImportSource react */
-
 import { Box, type Color, Text, useAnimationFrame } from "@liteai/ink"
 import type React from "react"
 

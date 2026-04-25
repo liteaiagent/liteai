@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { createSimpleContext } from "./helper"
 
 export interface Args {

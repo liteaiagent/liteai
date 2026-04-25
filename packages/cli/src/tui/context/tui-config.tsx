@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import type { TuiConfig } from "../../cli/config/tui"
 import { createSimpleContext } from "./helper"
 

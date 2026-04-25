@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 /**
  * Session context — manages the active session lifecycle for the CLI TUI.
  *

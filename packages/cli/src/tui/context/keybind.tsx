@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { type DOMElement, type ParsedKey, useFocus, useInput } from "@liteai/ink"
 import { useMemo, useRef, useState } from "react"
 import { mapValues, pipe } from "remeda"

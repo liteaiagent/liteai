@@ -5,12 +5,12 @@ import type { useTuiConfig } from "../../context/tui-config"
 export const SessionContext = createContext<{
   width: number
   sessionID: string
-  conceal: () => boolean
-  showThinking: () => boolean
-  showTimestamps: () => boolean
-  showDetails: () => boolean
-  showGenericToolOutput: () => boolean
-  diffWrapMode: () => "word" | "none"
+  conceal: boolean
+  showThinking: boolean
+  showTimestamps: boolean
+  showDetails: boolean
+  showGenericToolOutput: boolean
+  diffWrapMode: "word" | "none"
   sync: ReturnType<typeof useSync>
   tui: ReturnType<typeof useTuiConfig>
 } | null>(null)

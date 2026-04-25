@@ -41,7 +41,6 @@ export function Tips() {
       </Box>
       <Box flexDirection="row" flexWrap="wrap" flexShrink={1}>
         {parts.map((part, i) => (
-          // @ts-expect-error: Ink/React key prop typing conflict
           <Text key={i} color={(part.highlight ? theme.text : theme.textMuted) as Color}>
             {part.text}
           </Text>

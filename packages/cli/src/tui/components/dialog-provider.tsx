@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { Box, type Color, Text } from "@liteai/ink"
 import type { ProviderAuthAuthorization } from "@liteai/sdk"
 import { useEffect, useMemo, useState } from "react"
@@ -230,7 +229,7 @@ export function DialogProvider() {
   const keybinds = useMemo(
     () => [
       {
-        keybind: { name: "d", ctrl: true, meta: false, shift: false, leader: false },
+        keybind: { name: "d", ctrl: true, meta: false, shift: false, super: false, leader: false },
         title: "disconnect",
         disabled: false,
         onTrigger: (option: DialogSelectOption<string>) => {

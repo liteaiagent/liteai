@@ -1,6 +1,11 @@
 import path from "node:path"
 import { LANGUAGE_EXTENSIONS } from "@liteai/core/lsp/language"
-import type { ScrollAcceleration } from "@opentui/core"
+
+/** Scroll speed strategy for virtual scroll containers. */
+interface ScrollAcceleration {
+  tick(now?: number): number
+  reset(): void
+}
 
 export const MIME_BADGE: Record<string, string> = {
   "text/plain": "txt",

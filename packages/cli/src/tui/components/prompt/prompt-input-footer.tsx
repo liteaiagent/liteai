@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 /**
  * Prompt input footer — the row below the text input.
  * Adapted port from MVP `PromptInput/PromptInputFooter.tsx`.

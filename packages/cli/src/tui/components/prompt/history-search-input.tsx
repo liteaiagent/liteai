@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { Box, type Color, stringWidth, Text } from "@liteai/ink"
 import { useTheme } from "../../context/theme"
 import { TextInput } from "../text-input"

@@ -20,7 +20,10 @@ export function Sidebar({ sessionID, overlay }: Props) {
   const messages = useMemo(() => sync.message[sessionID] ?? [], [sync.message, sessionID])
 
   const cost = useMemo(() => {
-    const total = messages.reduce((sum, x) => sum + (x.role === "assistant" ? (x as any).cost || 0 : 0), 0)
+    const total = messages.reduce(
+      (sum, x) => sum + (x.role === "assistant" ? ((x as { cost?: number }).cost ?? 0) : 0),
+      0,
+    )
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -62,7 +65,6 @@ export function Sidebar({ sessionID, overlay }: Props) {
           <Box flexDirection="column">
             <Text color={theme.textMuted as Color}>MCP Servers</Text>
             {Object.entries(sync.mcp).map(([name, status]) => (
-              // @ts-expect-error: key prop
               <Box key={name} justifyContent="space-between">
                 <Text color={theme.textMuted as Color}>{name}</Text>
                 <Text color={(status.status === "connected" ? theme.success : theme.error) as Color}>

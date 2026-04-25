@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import type { ProjectSkillListResponse } from "@liteai/sdk"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"

@@ -1,5 +1,3 @@
-/** @jsxImportSource react */
-
 import type { ScrollBoxHandle } from "@liteai/ink"
 import { Box, Text, useInput } from "@liteai/ink"
 import React, { createContext, type RefObject, useContext } from "react"

@@ -24,7 +24,6 @@ export function Logo() {
 
       if (markerIndex === -1) {
         elements.push(
-          // @ts-expect-error: key prop handled by React
           <Text key={i} color={fg as Color} bold={bold}>
             {rest}
           </Text>,
@@ -34,7 +33,6 @@ export function Logo() {
 
       if (markerIndex > 0) {
         elements.push(
-          // @ts-expect-error: key prop handled by React
           <Text key={i} color={fg as Color} bold={bold}>
             {rest.slice(0, markerIndex)}
           </Text>,
@@ -45,7 +43,6 @@ export function Logo() {
       switch (marker) {
         case "_":
           elements.push(
-            // @ts-expect-error: key prop handled by React
             <Text key={`${i}m`} color={fg as Color} backgroundColor={theme.backgroundElement as Color} bold={bold}>
               {" "}
             </Text>,
@@ -53,7 +50,6 @@ export function Logo() {
           break
         case "^":
           elements.push(
-            // @ts-expect-error: key prop handled by React
             <Text key={`${i}m`} color={fg as Color} backgroundColor={theme.backgroundElement as Color} bold={bold}>
               ▀
             </Text>,
@@ -61,7 +57,6 @@ export function Logo() {
           break
         case "~":
           elements.push(
-            // @ts-expect-error: key prop handled by React
             <Text key={`${i}m`} color={theme.textMuted as Color} bold={bold}>
               ▀
             </Text>,
@@ -78,7 +73,6 @@ export function Logo() {
   return (
     <Box flexDirection="column">
       {logo.left.map((line, index) => (
-        // @ts-expect-error: key prop handled by React
         <Box key={index} flexDirection="row" gap={1}>
           <Box flexDirection="row">{renderLine(line, theme.textMuted, false)}</Box>
           <Box flexDirection="row">{renderLine(logo.right[index], theme.text, true)}</Box>

@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 /**
  * Prompt input mode indicator component.
  * Adapted port from MVP `PromptInput/PromptInputModeIndicator.tsx`.

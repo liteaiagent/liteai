@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { useMemo } from "react"
 import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"

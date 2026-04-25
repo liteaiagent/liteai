@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { useApp } from "@liteai/ink"
 import { useCallback, useMemo, useRef, useState } from "react"
 import { win32FlushInputBuffer } from "../../cli/cmd/tui/win32"

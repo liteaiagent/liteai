@@ -1,8 +1,7 @@
-import { Box, useInput } from "@liteai/ink"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { Box, type ScrollBoxHandle, TerminalSizeContext, useInput } from "@liteai/ink"
+import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import { SessionLayout } from "../../components/session-layout"
 import { useKeybind } from "../../context/keybind"
-import { useSDK } from "../../context/sdk"
 import { useSync } from "../../context/sync"
 import { SessionProvider } from "./ctx"
 import { SessionHeader } from "./header"
@@ -10,33 +9,32 @@ import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
 import { Sidebar } from "./sidebar"
-import type { CustomSpeedScroll } from "./utils"
 
 export function SessionRoute({ sessionID }: { sessionID: string }) {
-  const sdk = useSDK()
   const sync = useSync()
   const keybind = useKeybind()
+  const terminalSize = useContext(TerminalSizeContext)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showThinking, setShowThinking] = useState(true)
-  const [showTimestamps, setShowTimestamps] = useState(false)
-  const [showDetails, setShowDetails] = useState(true)
-  const [showGenericToolOutput, setShowGenericToolOutput] = useState(false)
+  // TODO: Wire to keybindings (session_timestamps_toggle, session_details_toggle, session_generic_toggle)
+  const [showTimestamps, _setShowTimestamps] = useState(false)
+  const [showDetails, _setShowDetails] = useState(true)
+  const [showGenericToolOutput, _setShowGenericToolOutput] = useState(false)
 
-  const scrollRef = useRef<CustomSpeedScroll>(null)
+  const scrollRef = useRef<ScrollBoxHandle>(null)
 
   // Sync session on mount
   useEffect(() => {
     sync.session.sync(sessionID)
   }, [sessionID, sync.session])
 
-  // Keybindings
-  const config = sync.config // or useTuiConfig if available
-  useInput((input, key) => {
-    const k = { ...key, kind: "char", name: input, sequence: input, option: false, super: false } as any
-    if (keybind.match("session_sidebar_toggle", k)) {
+  // Keybindings — use event.keypress (ParsedKey) directly instead of fabricating one
+  useInput((_input, _key, event) => {
+    if (!event) return
+    if (keybind.match("session_sidebar_toggle", event.keypress)) {
       setSidebarOpen((v) => !v)
     }
-    if (keybind.match("session_thinking_toggle", k)) {
+    if (keybind.match("session_thinking_toggle", event.keypress)) {
       setShowThinking((v) => !v)
     }
   })
@@ -53,15 +51,15 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     <SessionProvider
       value={{
         sessionID,
-        width: 0,
-        conceal: () => false,
-        showThinking: () => showThinking,
-        showTimestamps: () => showTimestamps,
-        showDetails: () => showDetails,
-        showGenericToolOutput: () => showGenericToolOutput,
-        diffWrapMode: () => "none",
+        width: terminalSize?.columns ?? 80,
+        conceal: false,
+        showThinking,
+        showTimestamps,
+        showDetails,
+        showGenericToolOutput,
+        diffWrapMode: "none",
         sync,
-        tui: config as any,
+        tui: sync.config,
       }}
     >
       <Box flexDirection="row" width="100%" height="100%">
@@ -70,7 +68,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
             scrollable={<Messages scrollRef={scrollRef} />}
             bottom={
               <Box paddingLeft={1}>
-                <SessionHeader sessionID={sessionID} />
+                <SessionHeader />
               </Box>
             }
             overlay={

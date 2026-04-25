@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { useInput } from "@liteai/ink"
 import type React from "react"
 import { createContext, useContext, useMemo, useRef, useState } from "react"

@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { useEffect, useMemo, useRef } from "react"
 import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"

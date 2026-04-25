@@ -154,10 +154,10 @@ bun lint:fix
 
 ## Review Checklist
 
-- [ ] Session route renders (messages, header, sidebar)
-- [ ] Home route renders
-- [ ] App root provider tree matches existing order
-- [ ] `tui()` function signature matches existing
-- [ ] `attach.ts` and `thread.ts` imports updated
-- [ ] `bun typecheck` clean
-- [ ] `bun lint:fix` clean
+- [x] Session route renders (messages, header, sidebar)
+- [x] Home route renders
+- [x] App root provider tree matches existing order
+- [x] `tui()` function signature matches existing
+- [x] `attach.ts` and `thread.ts` imports updated
+- [x] `bun typecheck` clean
+- [x] `bun lint:fix` clean

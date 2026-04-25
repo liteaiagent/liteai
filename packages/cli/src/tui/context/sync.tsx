@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import type { Snapshot } from "@liteai/core/snapshot/index"
 import { Log } from "@liteai/core/util/log"
 import type {

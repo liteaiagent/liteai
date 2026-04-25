@@ -53,16 +53,15 @@ export function PermissionPrompt({ request }: { request: PermissionRequest }) {
       <Box paddingLeft={2} flexDirection="column">
         <Text color={theme.text as Color}>
           {request.permission === "bash"
-            ? `Run command: ${(request.metadata as any).command}`
+            ? `Run command: ${(request.metadata as { command?: string }).command}`
             : request.permission === "edit"
-              ? `Edit file: ${normalizePath((request.metadata as any).filepath)}`
+              ? `Edit file: ${normalizePath((request.metadata as { filepath?: string }).filepath)}`
               : `Allow tool: ${request.permission}`}
         </Text>
       </Box>
 
       <Box gap={2} marginTop={1}>
         {options.map((opt) => (
-          // @ts-expect-error: key prop
           <Box key={opt} paddingX={1} backgroundColor={selected === opt ? (theme.warning as Color) : undefined}>
             <Text color={(selected === opt ? theme.background : theme.textMuted) as Color}>
               {opt === "once" ? "Allow once" : opt === "always" ? "Allow always" : "Reject"}

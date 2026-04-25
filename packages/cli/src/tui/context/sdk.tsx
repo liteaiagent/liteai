@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { createLiteaiClient, type Event } from "@liteai/sdk"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createEventEmitter } from "../util/event-emitter"

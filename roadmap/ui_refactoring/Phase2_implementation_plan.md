@@ -38,12 +38,13 @@ This migration draws from **two sources** for different layers:
 > [!IMPORTANT]
 > **Do NOT transliterate old SolidJS components to React.** The visual layer comes from the MVP. The existing SolidJS components in `src/cli/cmd/tui/component/` and `src/cli/cmd/tui/routes/` are only a reference for understanding what features/commands exist — the actual React code is ported from the MVP.
 
-## Current State (Phase 1 Complete)
+## Current State (Phase 2 Complete)
 
 | Package | Status | Contents |
 |---------|--------|----------|
 | `packages/ink` | ✅ Done | 52 files, React Compiler pipeline, typecheck+lint clean |
 | `packages/hooks` | ✅ Done | 4 hooks + utilities ported |
+| `packages/cli` | ✅ Done | TUI migrated to React/Ink, SolidJS removed, typecheck+lint clean |
 
 ## Source References
 

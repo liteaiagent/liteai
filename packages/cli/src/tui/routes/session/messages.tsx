@@ -1,3 +1,4 @@
+import type { ScrollBoxHandle } from "@liteai/ink"
 import type { Message } from "@liteai/sdk"
 import type React from "react"
 import { useCallback } from "react"
@@ -6,7 +7,7 @@ import { useSync } from "../../context/sync"
 import { useSessionContext } from "./ctx"
 import { MessageRow } from "./message-row"
 
-export function Messages({ scrollRef }: { scrollRef: React.RefObject<any> }) {
+export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHandle | null> }) {
   const ctx = useSessionContext()
   const sync = useSync()
   const messages = sync.message[ctx.sessionID] ?? []
@@ -16,10 +17,7 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<any> }) {
   const renderItem = useCallback(
     (msg: Message, index: number) => {
       const parts = sync.part[msg.id] ?? []
-      return (
-        // @ts-expect-error: key prop
-        <MessageRow key={msg.id} message={msg} parts={parts} index={index} last={index === messages.length - 1} />
-      )
+      return <MessageRow key={msg.id} message={msg} parts={parts} index={index} last={index === messages.length - 1} />
     },
     [sync.part, messages.length],
   )

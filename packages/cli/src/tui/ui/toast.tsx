@@ -1,5 +1,3 @@
-/** @jsxImportSource react */
-
 import { Box, type Color, Text } from "@liteai/ink"
 import type React from "react"
 import { type ToastVariant, useToast } from "../context/toast"

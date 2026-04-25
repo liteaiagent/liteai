@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { useCallback, useMemo, useState } from "react"
 import { createSimpleContext } from "./helper"
 

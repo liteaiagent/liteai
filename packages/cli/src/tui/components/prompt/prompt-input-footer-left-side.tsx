@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 /**
  * Footer left-side component.
  * Adapted port from MVP `PromptInput/PromptInputFooterLeftSide.tsx`.

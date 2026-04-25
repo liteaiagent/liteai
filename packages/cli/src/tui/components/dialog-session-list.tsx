@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { Locale } from "@liteai/core/util/locale"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"

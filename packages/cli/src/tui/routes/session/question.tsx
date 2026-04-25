@@ -48,7 +48,6 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
 
       <Box flexDirection="column" marginTop={1}>
         {options.map((opt, i) => (
-          // @ts-expect-error: key prop
           <Box key={i} gap={1}>
             <Text color={(selectedIdx === i ? theme.secondary : theme.textMuted) as Color}>
               {selectedIdx === i ? "→" : " "} {i + 1}.

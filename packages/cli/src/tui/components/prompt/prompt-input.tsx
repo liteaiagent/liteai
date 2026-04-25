@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 /**
  * PromptInput orchestrator — the main user input component.
  * Adapted port from MVP `PromptInput/PromptInput.tsx`.

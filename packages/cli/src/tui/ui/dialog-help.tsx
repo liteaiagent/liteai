@@ -1,5 +1,3 @@
-/** @jsxImportSource react */
-
 import { Box, Text } from "@liteai/ink"
 import type React from "react"
 import { useDialog } from "../context/dialog"

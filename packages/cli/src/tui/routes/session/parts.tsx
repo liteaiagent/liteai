@@ -28,6 +28,7 @@ import {
   Write,
 } from "./tools"
 
+// biome-ignore lint/suspicious/noExplicitAny: Part subtype narrowing happens at call site via discriminated union; the mapping boundary intentionally accepts the broad Part type
 export const PART_MAPPING: Record<string, React.FC<any>> = {
   text: TextPartView,
   tool: ToolPartView,
@@ -41,7 +42,7 @@ function ReasoningPartView({ last, part, message }: { last: boolean; part: Reaso
     return part.text.replace("[REDACTED]", "").trim()
   }, [part.text])
 
-  if (!content || !ctx.showThinking()) return null
+  if (!content || !ctx.showThinking) return null
 
   return (
     <Box
@@ -76,7 +77,7 @@ function ToolPartView({ last, part, message }: { last: boolean; part: ToolPart; 
   const sync = useSync()
 
   const hidden = useMemo(() => {
-    if (ctx.showDetails()) return false
+    if (ctx.showDetails) return false
     if (part.state.status !== "completed") return false
     return true
   }, [ctx, part.state.status])

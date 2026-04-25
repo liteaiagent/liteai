@@ -80,7 +80,6 @@ function MarkdownBody({ children, dimColor, highlight }: Props & { highlight: Cl
     function flushNonTableContent(): void {
       if (nonTableContent) {
         elements.push(
-          // @ts-expect-error: Ink/React typings conflict on key prop
           <Ansi key={`ansi-${keyCounter++}`} dimColor={dimColor}>
             {nonTableContent.trim()}
           </Ansi>,
@@ -93,7 +92,6 @@ function MarkdownBody({ children, dimColor, highlight }: Props & { highlight: Cl
       if (token.type === "table") {
         flushNonTableContent()
         elements.push(
-          // @ts-expect-error: Ink/React typings conflict on key prop
           <MarkdownTable key={`table-${keyCounter++}`} token={token as Tokens.Table} highlight={highlight} />,
         )
       } else {

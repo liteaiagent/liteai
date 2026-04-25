@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import path from "node:path"
 import { Global } from "@liteai/core/global/index"
 import { Provider } from "@liteai/core/provider/provider"

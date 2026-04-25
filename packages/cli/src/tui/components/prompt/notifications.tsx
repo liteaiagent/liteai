@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 /**
  * Notifications component (right side of prompt footer).
  * Adapted port from MVP `PromptInput/Notifications.tsx`.

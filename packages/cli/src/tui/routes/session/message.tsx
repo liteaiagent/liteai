@@ -54,7 +54,6 @@ export function UserMessageContent({
                     ? theme.primary
                     : theme.secondary
                 return (
-                  // @ts-expect-error: key prop
                   <Text key={i}>
                     <Text backgroundColor={bg as Color} color={theme.background as Color}>
                       {" "}
@@ -69,7 +68,7 @@ export function UserMessageContent({
               })}
             </Box>
           )}
-          {ctx.showTimestamps() && (
+          {ctx.showTimestamps && (
             <Text color={theme.textMuted as Color}>{Locale.todayTimeOrDateTime(message.time.created)}</Text>
           )}
         </Box>
@@ -130,7 +129,7 @@ export function AssistantMessageContent({
           marginTop={1}
           borderColor={theme.error as Color}
         >
-          <Text color={theme.textMuted as Color}>{(message.error.data as any).message as string}</Text>
+          <Text color={theme.textMuted as Color}>{(message.error.data as { message?: string })?.message ?? ""}</Text>
         </Box>
       )}
 

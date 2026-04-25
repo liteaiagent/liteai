@@ -100,7 +100,6 @@ export function BaseTextInput({
         <Text wrap="truncate-end" dim={props.dimColor ?? false}>
           {segments.map((segment, index) => (
             <Text
-              // @ts-expect-error - Ink Text types miss 'key'
               key={index}
               color={
                 segment.highlight?.color ? (theme[segment.highlight.color] as import("@liteai/ink").Color) : undefined

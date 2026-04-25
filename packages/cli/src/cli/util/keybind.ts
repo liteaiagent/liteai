@@ -1,4 +1,4 @@
-import type { ParsedKey } from "@opentui/core"
+import type { ParsedKey } from "@liteai/ink"
 import { isDeepEqual } from "remeda"
 
 export namespace Keybind {
@@ -68,6 +68,7 @@ export namespace Keybind {
         ctrl: false,
         meta: false,
         shift: false,
+        super: false,
         leader: false,
         name: "",
       }

@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import fuzzysort from "fuzzysort"
 import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"

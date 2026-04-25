@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { Box, type Color, Text } from "@liteai/ink"
 import { useMemo } from "react"
 import { useSync } from "../context/sync"

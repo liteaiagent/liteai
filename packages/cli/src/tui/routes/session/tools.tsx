@@ -19,6 +19,152 @@ import { Spinner } from "../../ui/spinner"
 import { useSessionContext } from "./ctx"
 import { filetype, formatInput, normalizePath } from "./utils"
 
+// ---------------------------------------------------------------------------
+// Per-tool input/metadata shape interfaces
+//
+// The SDK's ToolPart.state.input is typed as Record<string, unknown>.
+// These interfaces document the expected shape for each tool and enable
+// type-safe access via the `typed()` helper below.
+// ---------------------------------------------------------------------------
+
+interface RunCommandInput {
+  command?: string
+  cwd?: string
+  description?: string
+}
+interface RunCommandMetadata {
+  output?: string
+}
+
+interface WriteInput {
+  filePath?: string
+  content?: string
+}
+interface WriteMetadata {
+  diagnostics?: Record<string, unknown[]>
+}
+
+interface EditInput {
+  filePath?: string
+  replaceAll?: boolean
+}
+interface EditMetadata {
+  diff?: string
+  diagnostics?: Record<string, unknown[]>
+}
+
+interface ReadInput {
+  filePath?: string
+}
+interface ReadMetadata {
+  loaded?: string[]
+}
+
+interface GlobInput {
+  pattern?: string
+  path?: string
+}
+interface GlobMetadata {
+  count?: number
+}
+
+interface GrepInput {
+  pattern?: string
+  path?: string
+}
+interface GrepMetadata {
+  matches?: number
+}
+
+interface ListInput {
+  path?: string
+}
+
+interface WebFetchInput {
+  url?: string
+}
+
+interface CodeSearchInput {
+  query?: string
+}
+interface CodeSearchMetadata {
+  results?: number
+}
+
+interface WebSearchInput {
+  query?: string
+}
+interface WebSearchMetadata {
+  numResults?: number
+}
+
+interface TaskInput {
+  description?: string
+}
+interface TaskMetadata {
+  sessionId?: string
+}
+
+interface QuestionInput {
+  questions?: Array<{ question: string }>
+}
+interface QuestionMetadata {
+  answers?: string[][]
+}
+
+interface SkillInput {
+  name?: string
+}
+
+interface CommandStatusInput {
+  CommandId?: string
+}
+interface CommandStatusMetadata {
+  commandId?: string
+  output?: string
+  status?: string
+}
+
+interface SendCommandInputInput {
+  CommandId?: string
+  Terminate?: boolean
+}
+interface SendCommandInputMetadata {
+  commandId?: string
+  output?: string
+}
+
+interface ApplyPatchFile {
+  type: string
+  relativePath: string
+  diff?: string
+  deletions?: number
+}
+interface ApplyPatchMetadata {
+  files?: ApplyPatchFile[]
+}
+
+interface TodoItem {
+  status: string
+  content: string
+}
+interface TodoWriteMetadata {
+  todos?: TodoItem[]
+}
+
+/**
+ * Single-point type assertion for tool input/metadata.
+ * Isolates the unavoidable cast from Record<string, unknown> to a concrete
+ * shape into one location, keeping all call sites type-safe.
+ */
+function typed<T>(obj: Record<string, unknown> | undefined): T {
+  return (obj ?? {}) as T
+}
+
+// ---------------------------------------------------------------------------
+// ToolProps — base props for all tool render components
+// ---------------------------------------------------------------------------
+
 export type ToolProps<T extends Tool.Info = Tool.Info> = {
   input: Partial<Tool.InferParameters<T>>
   metadata: Partial<Tool.InferMetadata<T>>
@@ -41,10 +187,10 @@ export function GenericTool(props: ToolProps) {
     return [...lines.slice(0, max), "…"].join("\n")
   }, [expanded, overflow, output, lines])
 
-  if (props.output && ctx.showGenericToolOutput()) {
+  if (props.output && ctx.showGenericToolOutput) {
     return (
       <BlockTool
-        title={`# ${props.tool} ${formatInput(props.input as any)}`}
+        title={`# ${props.tool} ${formatInput(props.input as Record<string, unknown>)}`}
         part={props.part}
         onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
       >
@@ -60,7 +206,7 @@ export function GenericTool(props: ToolProps) {
 
   return (
     <InlineTool icon="⚙" pending="Writing command..." complete={true} part={props.part}>
-      {props.tool} {formatInput(props.input as any)}
+      {props.tool} {formatInput(props.input as Record<string, unknown>)}
     </InlineTool>
   )
 }
@@ -144,12 +290,17 @@ function BlockTool(props: {
   )
 }
 
-function Diagnostics({ diagnostics, filePath }: { diagnostics?: Record<string, any[]>; filePath: string }) {
+function Diagnostics({ diagnostics, filePath }: { diagnostics?: Record<string, unknown[]>; filePath: string }) {
   const { theme } = useTheme()
   const errors = useMemo(() => {
     const normalized = Filesystem.normalizePath(filePath)
     const arr = diagnostics?.[normalized] ?? []
-    return arr.filter((x) => x.severity === 1).slice(0, 3)
+    return arr
+      .filter(
+        (x): x is { severity: number; range: { start: { line: number; character: number } }; message: string } =>
+          typeof x === "object" && x !== null && "severity" in x && (x as { severity: number }).severity === 1,
+      )
+      .slice(0, 3)
   }, [diagnostics, filePath])
 
   if (!errors.length) return null
@@ -157,7 +308,6 @@ function Diagnostics({ diagnostics, filePath }: { diagnostics?: Record<string, a
   return (
     <Box flexDirection="column">
       {errors.map((diagnostic, i) => (
-        // @ts-expect-error: key prop
         <Text key={i} color={theme.error as Color}>
           Error [{diagnostic.range.start.line + 1}:{diagnostic.range.start.character + 1}] {diagnostic.message}
         </Text>
@@ -169,8 +319,10 @@ function Diagnostics({ diagnostics, filePath }: { diagnostics?: Record<string, a
 export function RunCommand(props: ToolProps) {
   const { theme } = useTheme()
   const sync = useSync()
+  const input = typed<RunCommandInput>(props.input as Record<string, unknown>)
+  const metadata = typed<RunCommandMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
-  const output = useMemo(() => stripAnsi((props.metadata as any).output?.trim() ?? ""), [props.metadata])
+  const output = useMemo(() => stripAnsi(metadata.output?.trim() ?? ""), [metadata])
   const [expanded, setExpanded] = useState(false)
   const lines = useMemo(() => output.split("\n"), [output])
   const overflow = lines.length > 10
@@ -180,26 +332,26 @@ export function RunCommand(props: ToolProps) {
   }, [expanded, overflow, output, lines])
 
   const dir = useMemo(() => {
-    const workdir = (props.input as any).cwd
+    const workdir = input.cwd
     if (!workdir || workdir === ".") return undefined
     const base = sync.path.directory
     if (!base) return undefined
-    const absolute = path.resolve(base, workdir as string)
+    const absolute = path.resolve(base, workdir)
     if (absolute === base) return undefined
     const home = Global.Path.home
     if (!home) return absolute
     const match = absolute === home || absolute.startsWith(home + path.sep)
     return match ? absolute.replace(home, "~") : absolute
-  }, [(props.input as any).cwd, sync.path.directory])
+  }, [input.cwd, sync.path.directory])
 
   const title = useMemo(() => {
-    const desc = (props.input as any).description ?? "Shell"
+    const desc = input.description ?? "Shell"
     const wd = dir
     if (!wd) return `# ${desc}`
     return `# ${desc} in ${wd}`
-  }, [props.input, dir])
+  }, [input, dir])
 
-  if ((props.metadata as any).output !== undefined) {
+  if (metadata.output !== undefined) {
     return (
       <BlockTool
         title={title}
@@ -208,7 +360,7 @@ export function RunCommand(props: ToolProps) {
         onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
       >
         <Box flexDirection="column" gap={1}>
-          <Text color={theme.text as Color}>$ {(props.input as any).command}</Text>
+          <Text color={theme.text as Color}>$ {input.command}</Text>
           {output && <Text color={theme.text as Color}>{limited}</Text>}
           {overflow && (
             <Text color={theme.textMuted as Color}>{expanded ? "Click to collapse" : "Click to expand"}</Text>
@@ -219,57 +371,54 @@ export function RunCommand(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="$" pending="Writing command..." complete={(props.input as any).command} part={props.part}>
-      {(props.input as any).command}
+    <InlineTool icon="$" pending="Writing command..." complete={input.command} part={props.part}>
+      {input.command}
     </InlineTool>
   )
 }
 
 export function Write(props: ToolProps) {
   const { theme } = useTheme()
-  const code = (props.input as any).content ?? ""
+  const input = typed<WriteInput>(props.input as Record<string, unknown>)
+  const metadata = typed<WriteMetadata>(props.metadata as Record<string, unknown>)
+  const code = input.content ?? ""
 
-  if ((props.metadata as any).diagnostics !== undefined) {
+  if (metadata.diagnostics !== undefined) {
     return (
-      <BlockTool title={`# Wrote ${normalizePath((props.input as any).filePath)}`} part={props.part}>
+      <BlockTool title={`# Wrote ${normalizePath(input.filePath)}`} part={props.part}>
         <Box flexDirection="column">
           <Text color={theme.text as Color}>{code}</Text>
         </Box>
-        <Diagnostics diagnostics={(props.metadata as any).diagnostics} filePath={(props.input as any).filePath ?? ""} />
+        <Diagnostics diagnostics={metadata.diagnostics} filePath={input.filePath ?? ""} />
       </BlockTool>
     )
   }
 
   return (
-    <InlineTool icon="←" pending="Preparing write..." complete={(props.input as any).filePath} part={props.part}>
-      Write {normalizePath((props.input as any).filePath)}
+    <InlineTool icon="←" pending="Preparing write..." complete={input.filePath} part={props.part}>
+      Write {normalizePath(input.filePath)}
     </InlineTool>
   )
 }
 
 export function Read(props: ToolProps) {
   const { theme } = useTheme()
+  const input = typed<ReadInput>(props.input as Record<string, unknown>)
+  const metadata = typed<ReadMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
   const loaded = useMemo(() => {
     if (props.part.state.status !== "completed") return []
-    const value = (props.metadata as any).loaded
+    const value = metadata.loaded
     if (!value || !Array.isArray(value)) return []
     return value.filter((p): p is string => typeof p === "string")
-  }, [props.part.state.status, props.metadata])
+  }, [props.part.state.status, metadata])
 
   return (
     <Box flexDirection="column">
-      <InlineTool
-        icon="→"
-        pending="Reading file..."
-        complete={(props.input as any).filePath}
-        spinner={running}
-        part={props.part}
-      >
-        Read {normalizePath((props.input as any).filePath)} {formatInput(props.input as any, ["filePath"])}
+      <InlineTool icon="→" pending="Reading file..." complete={input.filePath} spinner={running} part={props.part}>
+        Read {normalizePath(input.filePath)} {formatInput({ ...props.input } as Record<string, unknown>, ["filePath"])}
       </InlineTool>
       {loaded.map((filepath, i) => (
-        // @ts-expect-error: key prop
         <Box key={i} paddingLeft={6}>
           <Text color={theme.textMuted as Color}>↳ Loaded {normalizePath(filepath)}</Text>
         </Box>
@@ -280,95 +429,94 @@ export function Read(props: ToolProps) {
 
 export function Edit(props: ToolProps) {
   const { theme } = useTheme()
+  const input = typed<EditInput>(props.input as Record<string, unknown>)
+  const metadata = typed<EditMetadata>(props.metadata as Record<string, unknown>)
 
-  if ((props.metadata as any).diff !== undefined) {
+  if (metadata.diff !== undefined) {
     return (
-      <BlockTool title={`← Edit ${normalizePath((props.input as any).filePath)}`} part={props.part}>
+      <BlockTool title={`← Edit ${normalizePath(input.filePath)}`} part={props.part}>
         <Box paddingLeft={1}>
-          {/* @ts-expect-error: key prop handled by React */}
-          <StructuredDiff key={props.part.id} modifiedContent={(props.metadata as any).diff} />
+          <StructuredDiff key={props.part.id} modifiedContent={metadata.diff} />
         </Box>
-        <Diagnostics diagnostics={(props.metadata as any).diagnostics} filePath={(props.input as any).filePath ?? ""} />
+        <Diagnostics diagnostics={metadata.diagnostics} filePath={input.filePath ?? ""} />
       </BlockTool>
     )
   }
 
   return (
-    <InlineTool icon="←" pending="Preparing edit..." complete={(props.input as any).filePath} part={props.part}>
-      Edit {normalizePath((props.input as any).filePath)}{" "}
-      {formatInput({ replaceAll: (props.input as any).replaceAll } as any)}
+    <InlineTool icon="←" pending="Preparing edit..." complete={input.filePath} part={props.part}>
+      Edit {normalizePath(input.filePath)} {formatInput({ replaceAll: input.replaceAll } as Record<string, unknown>)}
     </InlineTool>
   )
 }
 
 export function Glob(props: ToolProps) {
+  const input = typed<GlobInput>(props.input as Record<string, unknown>)
+  const metadata = typed<GlobMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="✱" pending="Finding files..." complete={(props.input as any).pattern} part={props.part}>
-      Glob "{(props.input as any).pattern}"{" "}
-      {(props.input as any).path ? `in ${normalizePath((props.input as any).path)}` : ""}
-      {(props.metadata as any).count !== undefined &&
-        ` (${(props.metadata as any).count} ${(props.metadata as any).count === 1 ? "match" : "matches"})`}
+    <InlineTool icon="✱" pending="Finding files..." complete={input.pattern} part={props.part}>
+      Glob "{input.pattern}" {input.path ? `in ${normalizePath(input.path)}` : ""}
+      {metadata.count !== undefined && ` (${metadata.count} ${metadata.count === 1 ? "match" : "matches"})`}
     </InlineTool>
   )
 }
 
 export function Grep(props: ToolProps) {
+  const input = typed<GrepInput>(props.input as Record<string, unknown>)
+  const metadata = typed<GrepMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="✱" pending="Searching content..." complete={(props.input as any).pattern} part={props.part}>
-      Grep "{(props.input as any).pattern}"{" "}
-      {(props.input as any).path ? `in ${normalizePath((props.input as any).path)}` : ""}
-      {(props.metadata as any).matches !== undefined &&
-        ` (${(props.metadata as any).matches} ${(props.metadata as any).matches === 1 ? "match" : "matches"})`}
+    <InlineTool icon="✱" pending="Searching content..." complete={input.pattern} part={props.part}>
+      Grep "{input.pattern}" {input.path ? `in ${normalizePath(input.path)}` : ""}
+      {metadata.matches !== undefined && ` (${metadata.matches} ${metadata.matches === 1 ? "match" : "matches"})`}
     </InlineTool>
   )
 }
 
 export function List(props: ToolProps) {
-  const dir = (props.input as any).path ? normalizePath((props.input as any).path) : ""
+  const input = typed<ListInput>(props.input as Record<string, unknown>)
+  const dir = input.path ? normalizePath(input.path) : ""
   return (
-    <InlineTool
-      icon="→"
-      pending="Listing directory..."
-      complete={(props.input as any).path !== undefined}
-      part={props.part}
-    >
+    <InlineTool icon="→" pending="Listing directory..." complete={input.path !== undefined} part={props.part}>
       List {dir}
     </InlineTool>
   )
 }
 
 export function WebFetch(props: ToolProps) {
+  const input = typed<WebFetchInput>(props.input as Record<string, unknown>)
   return (
-    <InlineTool icon="%" pending="Fetching from the web..." complete={(props.input as any).url} part={props.part}>
-      WebFetch {(props.input as any).url}
+    <InlineTool icon="%" pending="Fetching from the web..." complete={input.url} part={props.part}>
+      WebFetch {input.url}
     </InlineTool>
   )
 }
 
 export function CodeSearch(props: ToolProps) {
-  const inp = props.input as any
-  const meta = props.metadata as any
+  const input = typed<CodeSearchInput>(props.input as Record<string, unknown>)
+  const metadata = typed<CodeSearchMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="◇" pending="Searching code..." complete={inp.query} part={props.part}>
-      Code Search "{inp.query}" {meta.results !== undefined && `(${meta.results} results)`}
+    <InlineTool icon="◇" pending="Searching code..." complete={input.query} part={props.part}>
+      Code Search "{input.query}" {metadata.results !== undefined && `(${metadata.results} results)`}
     </InlineTool>
   )
 }
 
 export function WebSearch(props: ToolProps) {
-  const inp = props.input as any
-  const meta = props.metadata as any
+  const input = typed<WebSearchInput>(props.input as Record<string, unknown>)
+  const metadata = typed<WebSearchMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="◈" pending="Searching web..." complete={inp.query} part={props.part}>
-      Web Search "{inp.query}" {meta.numResults !== undefined && `(${meta.numResults} results)`}
+    <InlineTool icon="◈" pending="Searching web..." complete={input.query} part={props.part}>
+      Web Search "{input.query}" {metadata.numResults !== undefined && `(${metadata.numResults} results)`}
     </InlineTool>
   )
 }
 
 export function Task(props: ToolProps) {
   const sync = useSync()
+  const input = typed<TaskInput>(props.input as Record<string, unknown>)
+  const metadata = typed<TaskMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
-  const sessionID = (props.metadata as any).sessionId
+  const sessionID = metadata.sessionId
 
   useEffect(() => {
     if (sessionID && !sync.message[sessionID]?.length) {
@@ -382,29 +530,24 @@ export function Task(props: ToolProps) {
   }, [messages, sync.part])
 
   return (
-    <InlineTool
-      icon="│"
-      spinner={running}
-      complete={(props.input as any).description}
-      pending="Delegating..."
-      part={props.part}
-    >
-      Task {(props.input as any).description} {toolCount > 0 && `(${toolCount} toolcalls)`}
+    <InlineTool icon="│" spinner={running} complete={input.description} pending="Delegating..." part={props.part}>
+      Task {input.description} {toolCount > 0 && `(${toolCount} toolcalls)`}
     </InlineTool>
   )
 }
 
 export function Question(props: ToolProps) {
   const { theme } = useTheme()
-  const questions = (props.input as any).questions ?? []
-  const answers = (props.metadata as any).answers
+  const input = typed<QuestionInput>(props.input as Record<string, unknown>)
+  const metadata = typed<QuestionMetadata>(props.metadata as Record<string, unknown>)
+  const questions = input.questions ?? []
+  const answers = metadata.answers
 
   if (answers) {
     return (
       <BlockTool title="# Questions" part={props.part}>
         <Box flexDirection="column" gap={1}>
-          {questions.map((q: any, i: number) => (
-            // @ts-expect-error: key prop
+          {questions.map((q, i) => (
             <Box key={i} flexDirection="column">
               <Text color={theme.textMuted as Color}>{q.question}</Text>
               <Text color={theme.text as Color}>{answers[i]?.join(", ") || "(no answer)"}</Text>
@@ -423,16 +566,18 @@ export function Question(props: ToolProps) {
 }
 
 export function Skill(props: ToolProps) {
+  const input = typed<SkillInput>(props.input as Record<string, unknown>)
   return (
-    <InlineTool icon="→" pending="Loading skill..." complete={(props.input as any).name} part={props.part}>
-      Skill "{(props.input as any).name}"
+    <InlineTool icon="→" pending="Loading skill..." complete={input.name} part={props.part}>
+      Skill "{input.name}"
     </InlineTool>
   )
 }
 
 export function CommandStatus(props: ToolProps) {
   const { theme } = useTheme()
-  const metadata = props.metadata as any
+  const input = typed<CommandStatusInput>(props.input as Record<string, unknown>)
+  const metadata = typed<CommandStatusMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
   const output = stripAnsi((props.output || metadata.output || "") as string)
   const [expanded, setExpanded] = useState(false)
@@ -443,7 +588,7 @@ export function CommandStatus(props: ToolProps) {
   if (metadata.output !== undefined || props.output) {
     return (
       <BlockTool
-        title={`# Status: ${metadata.commandId || (props.input as any).CommandId || "unknown"}`}
+        title={`# Status: ${metadata.commandId || input.CommandId || "unknown"}`}
         part={props.part}
         spinner={running}
         onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
@@ -460,19 +605,20 @@ export function CommandStatus(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="⚙" pending="Checking status..." complete={(props.input as any).CommandId} part={props.part}>
-      Status: {metadata.commandId || (props.input as any).CommandId || "unknown"}
+    <InlineTool icon="⚙" pending="Checking status..." complete={input.CommandId} part={props.part}>
+      Status: {metadata.commandId || input.CommandId || "unknown"}
     </InlineTool>
   )
 }
 
 export function SendCommandInput(props: ToolProps) {
   const { theme } = useTheme()
-  const metadata = props.metadata as any
+  const input = typed<SendCommandInputInput>(props.input as Record<string, unknown>)
+  const metadata = typed<SendCommandInputMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
   const output = stripAnsi((props.output || metadata.output || "") as string)
 
-  const text = (props.input as any).Terminate ? "Sending terminate signal" : "Sending input"
+  const text = input.Terminate ? "Sending terminate signal" : "Sending input"
 
   if (metadata.output !== undefined || props.output) {
     return (
@@ -485,20 +631,21 @@ export function SendCommandInput(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="⚙" pending="Sending input..." complete={(props.input as any).CommandId} part={props.part}>
-      {text}: {metadata.commandId || (props.input as any).CommandId || "unknown"}
+    <InlineTool icon="⚙" pending="Sending input..." complete={input.CommandId} part={props.part}>
+      {text}: {metadata.commandId || input.CommandId || "unknown"}
     </InlineTool>
   )
 }
 
 export function ApplyPatch(props: ToolProps) {
   const { theme } = useTheme()
-  const files = (props.metadata as any).files ?? []
+  const metadata = typed<ApplyPatchMetadata>(props.metadata as Record<string, unknown>)
+  const files = metadata.files ?? []
 
   if (files.length > 0) {
     return (
       <Box flexDirection="column">
-        {files.map((file: any, i: number) => (
+        {files.map((file, i) => (
           <BlockTool
             key={i}
             title={
@@ -511,7 +658,7 @@ export function ApplyPatch(props: ToolProps) {
             part={props.part}
           >
             {file.type !== "delete" ? (
-              <StructuredDiff modifiedContent={file.diff} />
+              <StructuredDiff modifiedContent={file.diff ?? ""} />
             ) : (
               <Text color={theme.error as Color}>-{file.deletions} lines</Text>
             )}
@@ -529,13 +676,13 @@ export function ApplyPatch(props: ToolProps) {
 }
 
 export function TodoWrite(props: ToolProps) {
-  const todos = (props.metadata as any).todos ?? []
+  const metadata = typed<TodoWriteMetadata>(props.metadata as Record<string, unknown>)
+  const todos = metadata.todos ?? []
   if (todos.length > 0) {
     return (
       <BlockTool title="# Todos" part={props.part}>
         <Box flexDirection="column">
-          {todos.map((todo: any, i: number) => (
-            // @ts-expect-error: key prop
+          {todos.map((todo, i) => (
             <Box key={i} gap={1}>
               <Text>[{todo.status === "done" ? "x" : " "}]</Text>
               <Text>{todo.content}</Text>

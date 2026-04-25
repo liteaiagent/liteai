@@ -45,10 +45,7 @@ export function Byline({ children }: Props): React.ReactNode {
   return (
     <>
       {validChildren.map((child, index) => (
-        <React.Fragment
-          // @ts-expect-error - React.Fragment key is fine
-          key={isValidElement(child) ? (child.key ?? index) : index}
-        >
+        <React.Fragment key={isValidElement(child) ? (child.key ?? index) : index}>
           {index > 0 && <Text dim> · </Text>}
           {child}
         </React.Fragment>

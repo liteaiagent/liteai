@@ -90,21 +90,21 @@ Remove old dependencies from the lockfile.
 
 ### Regression Checks
 
-- [ ] No `solid-js` imports remain anywhere in `packages/cli/`
-- [ ] No `@opentui/core` imports remain
-- [ ] No `@opentui/solid` imports remain
-- [ ] No `@solid-primitives/*` imports remain
-- [ ] `grep -r "solid" packages/cli/src/` returns zero results (excluding comments/docs)
+- [x] No `solid-js` imports remain anywhere in `packages/cli/`
+- [x] No `@opentui/core` imports remain
+- [x] No `@opentui/solid` imports remain
+- [x] No `@solid-primitives/*` imports remain
+- [x] `grep -r "solid" packages/cli/src/` returns zero results (excluding comments/docs)
 
 ## Review Checklist
 
-- [ ] Old SolidJS files deleted
-- [ ] SolidJS dependencies removed from `package.json`
-- [ ] `bun install` clean
-- [ ] `bun typecheck` clean (all 12 packages)
-- [ ] `bun lint:fix` clean
-- [ ] `bun test test/` passes
-- [ ] Manual testing: `liteai thread` works end-to-end
-- [ ] Manual testing: `liteai serve` unaffected
-- [ ] No SolidJS references remain in codebase
-- [ ] PR ready for merge
+- [x] Old SolidJS files deleted
+- [x] SolidJS dependencies removed from `package.json`
+- [x] `bun install` clean
+- [x] `bun typecheck` clean (all 12 packages)
+- [x] `bun lint:fix` clean
+- [x] `bun test test/` passes
+- [x] Manual testing: `liteai thread` works end-to-end
+- [x] Manual testing: `liteai serve` unaffected
+- [x] No SolidJS references remain in codebase
+- [x] PR ready for merge

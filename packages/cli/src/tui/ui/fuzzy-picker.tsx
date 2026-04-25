@@ -1,5 +1,3 @@
-/** @jsxImportSource react */
-
 import { Box, Text, useInput } from "@liteai/ink"
 import fuzzysort from "fuzzysort"
 import type React from "react"

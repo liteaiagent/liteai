@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { Box, type Color, Text, useInput } from "@liteai/ink"
 import { useEffect, useMemo, useState } from "react"
 import { Keybind } from "../../cli/util/keybind"

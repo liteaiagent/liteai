@@ -1,5 +1,3 @@
-/** @jsxImportSource react */
-
 import type { Color } from "@liteai/ink"
 import { Box, TerminalSizeContext, useInput } from "@liteai/ink"
 import type React from "react"

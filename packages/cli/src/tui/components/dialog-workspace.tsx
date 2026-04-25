@@ -1,4 +1,3 @@
-/** @jsxImportSource react */
 import { createLiteaiClient, type Session } from "@liteai/sdk"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useDialog } from "../context/dialog"
