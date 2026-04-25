@@ -3238,6 +3238,39 @@ export type ProjectSessionStatusResponses = {
 
 export type ProjectSessionStatusResponse = ProjectSessionStatusResponses[keyof ProjectSessionStatusResponses];
 
+export type ProjectSessionHistoryData = {
+    body?: never;
+    path: {
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/history';
+};
+
+export type ProjectSessionHistoryErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+};
+
+export type ProjectSessionHistoryError = ProjectSessionHistoryErrors[keyof ProjectSessionHistoryErrors];
+
+export type ProjectSessionHistoryResponses = {
+    /**
+     * List of history entries
+     */
+    200: Array<{
+        display: string;
+        sessionID: string;
+        timestamp: number;
+    }>;
+};
+
+export type ProjectSessionHistoryResponse = ProjectSessionHistoryResponses[keyof ProjectSessionHistoryResponses];
+
 export type ProjectSessionDeleteData = {
     body?: never;
     path: {

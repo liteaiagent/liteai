@@ -22,6 +22,7 @@
 import { Box, TerminalSizeContext } from "@liteai/ink"
 import { useContext, useMemo } from "react"
 import type { PromptInputMode, VimMode } from "../../types/text-input"
+import { HistorySearchInput } from "./history-search-input"
 import { Notifications } from "./notifications"
 import { PromptInputFooterLeftSide } from "./prompt-input-footer-left-side"
 
@@ -35,6 +36,12 @@ type PromptInputFooterProps = {
   readonly isPasting?: boolean
   readonly isInputWrapped?: boolean
   readonly config: Record<string, unknown>
+  readonly searchState?: {
+    isSearching: boolean
+    query: string
+    setQuery: (q: string) => void
+    hasFailedMatch: boolean
+  }
 }
 
 export function PromptInputFooter({
@@ -47,6 +54,7 @@ export function PromptInputFooter({
   isPasting = false,
   isInputWrapped = false,
   config,
+  searchState,
 }: PromptInputFooterProps) {
   const terminalSize = useContext(TerminalSizeContext)
   const columns = terminalSize?.columns ?? 80
@@ -59,17 +67,25 @@ export function PromptInputFooter({
       paddingX={2}
       gap={isNarrow ? 0 : 1}
     >
-      {/* Left side: exit message / vim mode / hints */}
+      {/* Left side: exit message / vim mode / hints / history search */}
       <Box flexDirection="column" flexShrink={isNarrow ? 0 : 1}>
-        <PromptInputFooterLeftSide
-          exitMessage={exitMessage}
-          vimMode={vimMode}
-          mode={mode}
-          suppressHint={false}
-          isLoading={isLoading}
-          isPasting={isPasting}
-          config={config}
-        />
+        {searchState?.isSearching ? (
+          <HistorySearchInput
+            value={searchState.query}
+            onChange={searchState.setQuery}
+            hasFailedMatch={searchState.hasFailedMatch}
+          />
+        ) : (
+          <PromptInputFooterLeftSide
+            exitMessage={exitMessage}
+            vimMode={vimMode}
+            mode={mode}
+            suppressHint={false}
+            isLoading={isLoading}
+            isPasting={isPasting}
+            config={config}
+          />
+        )}
       </Box>
 
       {/* Right side: model name / debug / toast */}

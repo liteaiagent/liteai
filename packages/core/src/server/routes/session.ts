@@ -93,6 +93,38 @@ export const SessionRoutes = lazy(() =>
       },
     )
     .get(
+      "/history",
+      describeRoute({
+        summary: "Get session history",
+        description:
+          "Retrieve all historical user prompts across all sessions for the current project, deduped and sorted newest first.",
+        operationId: "project.session.history",
+        responses: {
+          200: {
+            description: "List of history entries",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.array(
+                    z.object({
+                      display: z.string(),
+                      sessionID: z.string(),
+                      timestamp: z.number(),
+                    }),
+                  ),
+                ),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      async (c) => {
+        const history = await Session.history({ limit: 500 })
+        return c.json(history)
+      },
+    )
+    .get(
       "/:sessionID",
       describeRoute({
         summary: "Get session",

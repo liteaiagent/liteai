@@ -36,10 +36,12 @@ import type { FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useMemo, useRef, useState } from "react"
 import stripAnsi from "strip-ansi"
 import { useSession } from "../../context/session"
+import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useTuiConfig } from "../../context/tui-config"
 import { useArrowKeyHistory } from "../../hooks/use-arrow-key-history"
 import { useDoublePress } from "../../hooks/use-double-press"
+import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
 import { TextInput } from "../text-input"
@@ -70,6 +72,7 @@ type PromptInputProps = {
 export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
+  const sync = useSync()
   const { theme } = useTheme()
 
   // ── Terminal dimensions ─────────────────────────────────────────────────
@@ -85,6 +88,9 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
   const [vimMode, setVimMode] = useState<VimMode>("INSERT")
   const [pastedContents, setPastedContents] = useState<Record<number, PastedContent>>({})
   const [exitMessage, setExitMessage] = useState<{ show: boolean; key?: string }>({ show: false })
+
+  // ── History search state ────────────────────────────────────────────────
+  const searchState = useHistorySearch()
 
   // ── Paste ID counter ────────────────────────────────────────────────────
   const nextPasteIdRef = useRef(1)
@@ -136,14 +142,30 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
   )
 
   // ── History navigation ──────────────────────────────────────────────────
-  // TODO: wire loadEntries to session message history from sync store
-  const noopLoader = useCallback(async function* (): AsyncGenerator<{
-    display: string
-    pastedContents?: Record<number, unknown>
-  }> {
-    // Placeholder: no history entries yet — future batch will wire this
-    // to sync store session message history.
-  }, [])
+  const loadEntries = useCallback(
+    async function* (): AsyncGenerator<{
+      display: string
+      pastedContents?: Record<number, unknown>
+    }> {
+      const sessionID = session.sessionID
+      if (!sessionID) return
+
+      const messages = sync.message[sessionID] ?? []
+
+      // Iterate reverse to yield newest messages first
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i]
+        if (msg && msg.role === "user") {
+          const parts = sync.part[msg.id] ?? []
+          const textPart = parts.find((p) => p.type === "text")
+          if (textPart && textPart.type === "text" && textPart.text) {
+            yield { display: textPart.text }
+          }
+        }
+      }
+    },
+    [sync.message, sync.part, session.sessionID],
+  )
 
   const { onHistoryUp, onHistoryDown, resetHistory } = useArrowKeyHistory({
     onSetInput: (value: string) => {
@@ -151,7 +173,7 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
     },
     currentInput: input,
     setCursorOffset,
-    loadEntries: noopLoader,
+    loadEntries: loadEntries,
   })
 
   // ── Truncation ──────────────────────────────────────────────────────────
@@ -170,6 +192,15 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
   // ── Submit ──────────────────────────────────────────────────────────────
   const onSubmit = useCallback(
     async (inputParam: string) => {
+      if (searchState.isSearching) {
+        if (searchState.match) {
+          trackAndSetInput(searchState.match.display)
+          setCursorOffset(searchState.match.display.length)
+        }
+        searchState.cancelSearch()
+        return
+      }
+
       const trimmed = inputParam.trimEnd()
       if (trimmed === "" && Object.values(pastedContents).every((c) => c.type !== "image")) {
         return
@@ -196,7 +227,7 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
       setPastedContents({})
       resetHistory()
     },
-    [pastedContents, session, mode, trackAndSetInput, resetHistory],
+    [pastedContents, session, mode, trackAndSetInput, resetHistory, searchState],
   )
 
   // ── Image paste handler ─────────────────────────────────────────────────
@@ -278,9 +309,19 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
     }
   })
 
-  // ── Escape key handler ──────────────────────────────────────────────────
-  useInput((_input, key) => {
+  // ── Global key handler ──────────────────────────────────────────────────
+  useInput((_char, key) => {
+    if (key.ctrl && _char === "r") {
+      searchState.startSearch()
+      return
+    }
+
     if (key.escape) {
+      if (searchState.isSearching) {
+        searchState.cancelSearch()
+        return
+      }
+
       if (isLoading) {
         void session.abort()
         return
@@ -332,14 +373,16 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
     onIsPastingChange: () => {
       // paste state managed by usePasteHandler
     },
-    focus: true,
-    showCursor: true,
+    focus: !searchState.isSearching,
+    showCursor: !searchState.isSearching,
   }
 
+  const displayInput = searchState.isSearching && searchState.match ? searchState.match.display : input
+
   const textInputElement = isVimModeEnabled(config) ? (
-    <VimTextInput {...baseProps} initialMode={vimMode} onModeChange={setVimMode} />
+    <VimTextInput {...baseProps} value={displayInput} initialMode={vimMode} onModeChange={setVimMode} />
   ) : (
-    <TextInput {...baseProps} />
+    <TextInput {...baseProps} value={displayInput} dimColor={searchState.isSearching} />
   )
 
   return (
@@ -371,6 +414,12 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
         isPasting={isPasting}
         isInputWrapped={isInputWrapped}
         config={config}
+        searchState={{
+          isSearching: searchState.isSearching,
+          query: searchState.query,
+          setQuery: searchState.setQuery,
+          hasFailedMatch: searchState.query.length > 0 && !searchState.match,
+        }}
       />
     </Box>
   )

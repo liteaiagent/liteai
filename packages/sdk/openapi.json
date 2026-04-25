@@ -2490,6 +2490,73 @@
         ]
       }
     },
+    "/project/{projectID}/session/history": {
+      "get": {
+        "operationId": "project.session.history",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Get session history",
+        "description": "Retrieve all historical user prompts across all sessions for the current project, deduped and sorted newest first.",
+        "responses": {
+          "200": {
+            "description": "List of history entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "display": {
+                        "type": "string"
+                      },
+                      "sessionID": {
+                        "type": "string"
+                      },
+                      "timestamp": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["display", "sessionID", "timestamp"]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.history({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/project/{projectID}/session/{sessionID}": {
       "get": {
         "operationId": "project.session.get",

@@ -24,7 +24,7 @@ import { Installation } from "../installation"
 import { Plugin } from "../plugin"
 import { Instance } from "../project/instance"
 import { ProjectID } from "../project/schema"
-import { and, Database, desc, eq, gte, isNotNull, isNull, like, NotFoundError } from "../storage/db"
+import { and, Database, desc, eq, gte, isNotNull, isNull, like, NotFoundError, sql } from "../storage/db"
 import { Log } from "../util/log"
 import { SessionPrompt } from "./engine"
 import { Message } from "./message"
@@ -638,6 +638,59 @@ export namespace Session {
         result.push(msg)
       }
       result.reverse()
+      return result
+    },
+  )
+
+  export const history = fn(
+    z.object({
+      limit: z.number().optional().default(500),
+    }),
+    async (input) => {
+      const projectID = Instance.project.id
+      const rows = Database.use((db) =>
+        db
+          .select({
+            sessionID: SessionTable.id,
+            timeCreated: MessageTable.time_created,
+            partData: PartTable.data,
+          })
+          .from(MessageTable)
+          .innerJoin(SessionTable, eq(SessionTable.id, MessageTable.session_id))
+          .innerJoin(PartTable, eq(PartTable.message_id, MessageTable.id))
+          .where(
+            and(
+              eq(SessionTable.project_id, projectID),
+              sql`json_extract(${MessageTable.data}, '$.role') = 'user'`,
+              sql`json_extract(${PartTable.data}, '$.type') = 'text'`,
+            ),
+          )
+          .orderBy(desc(MessageTable.time_created))
+          .limit(input.limit)
+          .all(),
+      )
+
+      const result: Array<{ display: string; sessionID: string; timestamp: number }> = []
+      const seen = new Set<string>()
+
+      for (const row of rows) {
+        // PartData is a discriminated union — the SQL WHERE clause already
+        // filters to type='text' parts, but TypeScript can't narrow from SQL.
+        const partData = row.partData as { type: string; text?: string }
+        const text = partData.text
+        if (typeof text === "string" && text.trim().length > 0) {
+          const display = text.trim()
+          if (!seen.has(display)) {
+            seen.add(display)
+            result.push({
+              display,
+              sessionID: row.sessionID,
+              timestamp: row.timeCreated,
+            })
+          }
+        }
+      }
+
       return result
     },
   )

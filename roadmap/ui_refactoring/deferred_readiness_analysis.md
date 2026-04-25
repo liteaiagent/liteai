@@ -16,16 +16,7 @@ Assessment of all 21 deferred items from `deferred_features.md` and `review_trac
 | **#9** | Multi-Toast Stacking | Refactored `ToastProvider` and `ui/toast.tsx` to handle an array of active toasts. |
 | **#10** | FuzzyPicker Fuzzy Matching | Integrated `fuzzysort` via `getSearchString` prop. |
 | **#12 / #2** | DialogHelp Dynamic Keybindings / Help Menu | Replaced hardcoded text in `dialog-help.tsx` with dynamic keybind registry. |
-
----
-
-## 🟡 Ready to Implement Now (Moderate Scope)
-
-Dependencies satisfied. Require more substantial work but no blockers.
-
-| # | Feature | Effort | Why Ready |
-|---|---------|--------|-----------|
-| **#3** | History Search (Ctrl+R) | ~3-4 hr | `useArrowKeyHistory` hook already exists. Build interactive search on top with `fuzzysort` + inline input. |
+| **#3** | History Search (Ctrl+R) | Built `useHistorySearch` + `HistorySearchInput` with cross-session sqlite queries and `fuzzysort`. |
 
 ---
 
@@ -71,6 +62,5 @@ These depend on features listed in `excluded_features.md` and will never be impl
 
 If you want to start implementing now, here's the suggested order:
 
-1. **#3** — History search (3-4 hr)
-2. **#1** — Autocomplete (1-2 days)
-3. **#8** — Text Highlighting (1-2 days)
+1. **#1** — Autocomplete (1-2 days)
+2. **#8** — Text Highlighting (1-2 days)
