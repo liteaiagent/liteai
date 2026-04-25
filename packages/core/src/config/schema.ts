@@ -395,6 +395,16 @@ export const Info = z
       .optional()
       .describe("Command configuration, see https://liteai.com/docs/commands"),
     skills: Skills.optional().describe("Additional skill folder paths"),
+    skillUsage: z
+      .record(
+        z.string(),
+        z.object({
+          usageCount: z.number(),
+          lastUsedAt: z.number(),
+        })
+      )
+      .optional()
+      .describe("Tracks usage frequency and recency for slash commands"),
     watcher: z
       .object({
         ignore: z.array(z.string()).optional(),

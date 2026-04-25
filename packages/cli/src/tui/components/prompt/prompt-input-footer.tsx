@@ -23,7 +23,9 @@ import { useContext, useMemo } from "react"
 import type { PromptInputMode, VimMode } from "../../types/text-input"
 import { HistorySearchInput } from "./history-search-input"
 import { Notifications } from "./notifications"
+import { PromptCommandSuggestions } from "./prompt-command-suggestions"
 import { PromptInputFooterLeftSide } from "./prompt-input-footer-left-side"
+import type { SuggestionItem } from "./utils/types"
 
 type PromptInputFooterProps = {
   readonly debug: boolean
@@ -42,6 +44,8 @@ type PromptInputFooterProps = {
     hasFailedMatch: boolean
   }
   readonly hint?: React.ReactNode
+  readonly commandSuggestions?: SuggestionItem[]
+  readonly commandSelectedIndex?: number
 }
 
 export function PromptInputFooter({
@@ -56,10 +60,16 @@ export function PromptInputFooter({
   config,
   searchState,
   hint,
+  commandSuggestions,
+  commandSelectedIndex,
 }: PromptInputFooterProps) {
   const terminalSize = useContext(TerminalSizeContext)
   const columns = terminalSize?.columns ?? 80
   const isNarrow = useMemo(() => columns < 80, [columns])
+
+  if (commandSuggestions && commandSuggestions.length > 0) {
+    return <PromptCommandSuggestions suggestions={commandSuggestions} selectedIndex={commandSelectedIndex ?? 0} />
+  }
 
   return (
     <Box

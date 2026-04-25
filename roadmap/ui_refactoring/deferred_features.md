@@ -18,6 +18,7 @@ Switch session (similar to Ctlr+R), without stopping the current session, so use
 - [commandSuggestions.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/utils/suggestions/commandSuggestions.ts) — slash command matching
 
 **Why Deferred:** Requires autocomplete overlay rendering + fuzzy matching infrastructure. Separate sub-batch.
+**Status:** Implemented in Phase 2.6.
 
 ---
 
@@ -26,6 +27,7 @@ Switch session (similar to Ctlr+R), without stopping the current session, so use
 - [PromptInputHelpMenu.tsx](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/components/PromptInput/PromptInputHelpMenu.tsx) — `?` keybind help overlay
 
 **Why Deferred:** Standalone overlay component, no dependencies on prompt input core logic.
+**Status:** Implemented in Phase 2.5.
 
 ---
 
@@ -36,6 +38,7 @@ Switch session (similar to Ctlr+R), without stopping the current session, so use
 - [HistorySearchDialog.tsx](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/components/HistorySearchDialog.tsx) — fullscreen search dialog
 
 **Why Deferred:** Basic up/down arrow history navigation is included. Interactive search is a UX enhancement.
+**Status:** Implemented in Phase 2.6.
 
 ---
 

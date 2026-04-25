@@ -31,9 +31,10 @@
  */
 
 import { Box, type Color, TerminalSizeContext, useInput } from "@liteai/ink"
-import type { FilePartInput } from "@liteai/sdk"
+import type { Command, FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useMemo, useRef, useState } from "react"
 import stripAnsi from "strip-ansi"
+import { useDialog } from "../../context/dialog"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
@@ -44,7 +45,13 @@ import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
+import { DialogHelp } from "../../ui/dialog-help"
 import { detectInputHighlights } from "../../util/text-highlighting"
+import { DialogMcp } from "../dialog-mcp"
+import { DialogModel } from "../dialog-model"
+import { DialogPlugin } from "../dialog-plugin"
+import { DialogStatus } from "../dialog-status"
+import { DialogTheme } from "../dialog-theme"
 import { TextInput } from "../text-input"
 import VimTextInput from "../vim-text-input"
 import { getModeFromInput, getValueFromInput } from "./input-modes"
@@ -52,7 +59,9 @@ import type { PastedContent } from "./input-paste"
 import { maybeTruncateInput } from "./input-paste"
 import { PromptInputFooter } from "./prompt-input-footer"
 import { PromptInputModeIndicator } from "./prompt-input-mode-indicator"
+import { useCommandSuggestions } from "./use-command-suggestions"
 import { isVimModeEnabled } from "./utils"
+import { applyCommandSuggestion } from "./utils/command-suggestions"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -94,6 +103,21 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
 
   // ── History search state ────────────────────────────────────────────────
   const searchState = useHistorySearch()
+
+  const dialog = useDialog()
+
+  const tuiCommands: Command[] = useMemo(
+    () => [
+      { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
+      { name: "models", description: "Change the current AI model", template: "", hints: [] },
+      { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
+      { name: "theme", description: "Change the color theme", template: "", hints: [] },
+      { name: "status", description: "Show system status", template: "", hints: [] },
+    ],
+    [],
+  )
+
+  const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(sync.command ?? []), ...tuiCommands])
 
   // ── Paste ID counter ────────────────────────────────────────────────────
   const nextPasteIdRef = useRef(1)
@@ -179,6 +203,22 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     loadEntries: loadEntries,
   })
 
+  const handleHistoryUp = useCallback(() => {
+    if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
+      commandSuggestions.navigateUp()
+      return
+    }
+    onHistoryUp()
+  }, [commandSuggestions, onHistoryUp])
+
+  const handleHistoryDown = useCallback(() => {
+    if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
+      commandSuggestions.navigateDown()
+      return
+    }
+    onHistoryDown()
+  }, [commandSuggestions, onHistoryDown])
+
   // ── Truncation ──────────────────────────────────────────────────────────
   // Automatically truncate large pasted text into references
   const lastTruncatedRef = useRef("")
@@ -195,6 +235,25 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
   // ── Submit ──────────────────────────────────────────────────────────────
   const onSubmit = useCallback(
     async (inputParam: string) => {
+      if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
+        const selected = commandSuggestions.getSelected()
+        if (selected) {
+          applyCommandSuggestion(
+            selected,
+            true, // shouldExecute
+            [...(sync.command ?? []), ...tuiCommands],
+            input,
+            commandSuggestions.midCommandMatch,
+            (value) => trackAndSetInput(value),
+            setCursorOffset,
+            (value) => {
+              void onSubmit(value)
+            },
+          )
+        }
+        return
+      }
+
       if (searchState.isSearching) {
         if (searchState.match) {
           trackAndSetInput(searchState.match.display)
@@ -205,6 +264,32 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       }
 
       const trimmed = inputParam.trimEnd()
+
+      if (trimmed === "?") {
+        dialog.push(() => <DialogHelp />)
+        trackAndSetInput("")
+        setCursorOffset(0)
+        return
+      }
+
+      const cmdMatch = trimmed.match(/^\/([a-zA-Z0-9_:-]+)$/)
+      if (cmdMatch) {
+        const cmdName = cmdMatch[1]
+        const interceptors: Record<string, () => void> = {
+          mcp: () => dialog.push(() => <DialogMcp />),
+          models: () => dialog.push(() => <DialogModel />),
+          plugins: () => dialog.push(() => <DialogPlugin />),
+          theme: () => dialog.push(() => <DialogTheme />),
+          status: () => dialog.push(() => <DialogStatus />),
+        }
+        if (interceptors[cmdName]) {
+          interceptors[cmdName]()
+          trackAndSetInput("")
+          setCursorOffset(0)
+          return
+        }
+      }
+
       if (trimmed === "" && Object.values(pastedContents).every((c) => c.type !== "image")) {
         return
       }
@@ -364,6 +449,24 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
   const inlineGhostText = useSlashSuggestion(searchState.isSearching ? "" : input, cursorOffset, knownCommands)
 
   const onTab = useMemo(() => {
+    if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
+      return () => {
+        const selected = commandSuggestions.getSelected()
+        if (selected) {
+          applyCommandSuggestion(
+            selected,
+            false,
+            [...(sync.command ?? []), ...tuiCommands],
+            input,
+            commandSuggestions.midCommandMatch,
+            (value) => trackAndSetInput(value),
+            setCursorOffset,
+            () => {},
+          )
+        }
+      }
+    }
+
     if (!inlineGhostText) return undefined
     return () => {
       const before = input.slice(0, inlineGhostText.insertPosition)
@@ -372,7 +475,7 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       trackAndSetInput(newText)
       setCursorOffset(inlineGhostText.insertPosition + inlineGhostText.text.length + 1)
     }
-  }, [inlineGhostText, input, trackAndSetInput, setCursorOffset])
+  }, [inlineGhostText, input, trackAndSetInput, setCursorOffset, commandSuggestions])
 
   // ── Render ──────────────────────────────────────────────────────────────
   const baseProps: BaseTextInputProps = {
@@ -380,8 +483,8 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     onSubmit,
     onChange,
     value: input,
-    onHistoryUp,
-    onHistoryDown,
+    onHistoryUp: handleHistoryUp,
+    onHistoryDown: handleHistoryDown,
     onHistoryReset: resetHistory,
     placeholder: "How can I help you?",
     onExit: () => {
@@ -448,6 +551,8 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
           setQuery: searchState.setQuery,
           hasFailedMatch: searchState.query.length > 0 && !searchState.match,
         }}
+        commandSuggestions={commandSuggestions.suggestions}
+        commandSelectedIndex={commandSuggestions.selectedIndex}
       />
     </Box>
   )
