@@ -6,8 +6,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "bun run --conditions=browser ./src/index.ts",
-    "dev:serve": "bun --watch run --conditions=browser ./src/index.ts serve",
+    "dev": "bun run ./src/index.ts",
+    "dev:serve": "bun --watch run ./src/index.ts serve",
     "build:exe": "bun run script/build.ts --single",
     "build:exe:all": "bun run script/build.ts",
     "preview": "bun run script/release.ts --preview",

@@ -243,7 +243,6 @@ for (const name of names()) {
   const workerPath = "./src/cli/cmd/tui/worker.ts"
 
   await Bun.build({
-    conditions: ["browser"],
     tsconfig: "./tsconfig.json",
     plugins: [rawPlugin],
     compile: {

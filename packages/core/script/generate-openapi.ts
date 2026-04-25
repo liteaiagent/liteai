@@ -6,7 +6,7 @@
  * (e.g. SDK build) can pipe it without depending on the full CLI.
  *
  * Usage:
- *   bun run --conditions=browser script/generate-openapi.ts
+ *   bun run script/generate-openapi.ts
  */
 import { Server } from "../src/server/server"
 

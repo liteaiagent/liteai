@@ -129,7 +129,6 @@ for (const item of targets) {
   await Bun.$`mkdir -p dist/${name}/bin`
 
   await Bun.build({
-    conditions: ["browser"],
     tsconfig: "./tsconfig.json",
     plugins: [solidPlugin, rawPlugin],
     compile: {
