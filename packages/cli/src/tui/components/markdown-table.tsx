@@ -1,4 +1,4 @@
-import { Ansi, stringWidth, TerminalSizeContext } from "@liteai/ink"
+import { Ansi, stringWidth, TerminalSizeContext, wrapAnsi } from "@liteai/ink"
 import type { Token, Tokens } from "marked"
 import type React from "react"
 import { useContext } from "react"
@@ -43,7 +43,7 @@ type Props = {
 function wrapText(
   text: string,
   width: number,
-  _options?: {
+  options?: {
     hard?: boolean
   },
 ): string[] {
@@ -52,7 +52,14 @@ function wrapText(
   // formatToken() adds EOL to paragraphs and other token types,
   // which would otherwise create extra blank lines in table cells.
   const trimmedText = text.trimEnd()
-  const lines = trimmedText.split("\n")
+
+  const wrapped = wrapAnsi(trimmedText, width, {
+    hard: options?.hard ?? false,
+    trim: false,
+    wordWrap: true,
+  })
+
+  const lines = wrapped.split("\n")
   return lines.length > 0 ? lines : [""]
 }
 

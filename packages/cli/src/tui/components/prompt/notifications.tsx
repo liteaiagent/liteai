@@ -6,7 +6,7 @@
  * Displays (right side of footer):
  * 1. Model name — from `useLocal().model.parsed()`
  * 2. Debug indicator — when verbose/debug mode is active
- * 3. Toast message — from `useToast().currentToast` with variant-based colors
+ * 3. Toast messages — from `useToast().toasts` with variant-based colors
  *
  * Stripped:
  * - All feature-flag gated code (VOICE_MODE, KAIROS, KAIROS_BRIEF)
@@ -64,12 +64,12 @@ export function Notifications({ debug, verbose, isNarrow }: NotificationsProps) 
 
   return (
     <Box flexDirection="column" alignItems={alignItems} flexShrink={0} overflowX="hidden">
-      {/* Toast message */}
-      {toast.currentToast && (
-        <Text color={variantColor(toast.currentToast.variant, theme)} wrap="truncate">
-          {toast.currentToast.message}
+      {/* Toast messages */}
+      {toast.toasts.map((t) => (
+        <Text key={t.id} color={variantColor(t.variant, theme)} wrap="truncate">
+          {t.message}
         </Text>
-      )}
+      ))}
 
       {/* Debug mode indicator */}
       {debug && (

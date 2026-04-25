@@ -27,10 +27,21 @@ const diffCache = new Map<
   >
 >()
 
+const DIFF_CACHE_MAX = 100
+const INNER_CACHE_MAX = 10
+
 function renderColorDiff(original: string, modified: string, width: number, theme: ThemeColors, dim: boolean): string {
   let innerCache = diffCache.get(original)
   if (!innerCache) {
+    if (diffCache.size >= DIFF_CACHE_MAX) {
+      const first = diffCache.keys().next().value
+      if (first !== undefined) diffCache.delete(first)
+    }
     innerCache = new Map()
+    diffCache.set(original, innerCache)
+  } else {
+    // Refresh LRU order for outer cache
+    diffCache.delete(original)
     diffCache.set(original, innerCache)
   }
 
@@ -104,12 +115,18 @@ function renderColorDiff(original: string, modified: string, width: number, them
 
   rendered = rendered.trimEnd()
 
-  innerCache?.set(modified, {
-    rendered,
-    width,
-    theme,
-    dim,
-  })
+  if (innerCache) {
+    if (innerCache.size >= INNER_CACHE_MAX) {
+      const firstInner = innerCache.keys().next().value
+      if (firstInner !== undefined) innerCache.delete(firstInner)
+    }
+    innerCache.set(modified, {
+      rendered,
+      width,
+      theme,
+      dim,
+    })
+  }
 
   return rendered
 }

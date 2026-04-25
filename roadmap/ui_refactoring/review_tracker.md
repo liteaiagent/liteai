@@ -96,12 +96,12 @@ Post-implementation code review log for each phase of the SolidJS → React migr
 |---|----------|------|-------|------------|
 | C1 | ~~🔴 Critical~~ | `dialog.tsx` | No dialog stack manager (`push`/`pop`/`replace`). | ✅ **Not a defect.** Intentional design decision per approved impl plan — native React patterns (conditional rendering per consumer) replace the SolidJS stack manager. |
 | C2 | 🔴 Critical | `context/toast.tsx` | Stale closure race condition: `timeoutHandle` stored as `useState` — rapid `show()` calls fail to clear previous timeout because callback captures stale value. | ✅ Fixed: replaced `useState` with `useRef` for the timeout handle. Callback now has stable `[]` deps. |
-| C3 | 🟠 Major | `context/toast.tsx`, `ui/toast.tsx` | Spec requires multi-toast stacking; implementation only supports single `currentToast: T \| null`. | ⏳ Deferred — moderate scope, tracked for future enhancement. |
-| M1 | 🟠 Major | `fuzzy-picker.tsx` | Despite name, no fuzzy matching algorithm. All filtering delegated to consumers via `onQueryChange`. No match highlights, no category grouping. | ⏳ Deferred — larger scope, possibly Phase 2.5. |
-| M2 | 🟠 Major | `dialog-select.tsx` | Search box renders but `onQueryChange` is a no-op — typing does nothing. Dependent on M1. | ⏳ Deferred — blocked on M1. |
+| C3 | 🟠 Major | `context/toast.tsx`, `ui/toast.tsx` | Spec requires multi-toast stacking; implementation only supports single `currentToast: T \| null`. | ✅ Fixed: Implemented `toasts` array and auto-dismiss logic. |
+| M1 | 🟠 Major | `fuzzy-picker.tsx` | Despite name, no fuzzy matching algorithm. All filtering delegated to consumers via `onQueryChange`. No match highlights, no category grouping. | ✅ Fixed: Added `getSearchString` prop and `fuzzysort` integration. |
+| M2 | 🟠 Major | `dialog-select.tsx` | Search box renders but `onQueryChange` is a no-op — typing does nothing. Dependent on M1. | ✅ Fixed: Full rewrite with `fuzzysort` in Batch 4. |
 | M3 | 🟠 Major | `spinner.tsx` | `mode` prop destructured as `_mode` and ignored. Should drive default message text per `SpinnerMode` type. Violates mandate §3 (unused variable analysis). | ✅ Fixed: added `MODE_MESSAGES` record mapping `SpinnerMode` → default text. `mode` now drives `displayMessage` when `message` is not explicitly provided. |
 | m1 | 🟡 Minor | `dialog-alert.tsx` | No Enter key handler — alert only dismissible via Escape. | ✅ Fixed: added `useInput` handler for `return` key. |
-| m2 | 🟡 Minor | `dialog-help.tsx` | Static stub — hardcoded help text, doesn't list keybindings dynamically. `onCancel` is no-op. | ⏳ Deferred — Phase 2.5 scope. |
+| m2 | 🟡 Minor | `dialog-help.tsx` | Static stub — hardcoded help text, doesn't list keybindings dynamically. `onCancel` is no-op. | ✅ Fixed: Dynamic rendering using `useKeybind()`. |
 | m3 | 🟡 Minor | `ui/toast.tsx` | Toast renders inline with `marginTop={1}`, no absolute positioning. Spec says "position at bottom of terminal". | ⏳ Deferred — depends on layout architecture decisions. |
 | m4 | 🟡 Minor | `ui/toast.tsx` | Color map typed as `Record<string, Color>` — loses exhaustiveness. Used `\|\|` fallback and `as Color` cast. | ✅ Fixed: changed to `Record<ToastVariant, Color>`, removed `\|\|` fallback and `as Color` cast. |
 
@@ -110,8 +110,8 @@ Post-implementation code review log for each phase of the SolidJS → React migr
 | File | Status |
 |------|--------|
 | `src/tui/ui/dialog.tsx` | ✅ Clean (design-acknowledged) |
-| `src/tui/ui/fuzzy-picker.tsx` | ⚠️ Functional but missing fuzzy matching (deferred) |
-| `src/tui/ui/toast.tsx` | ✅ Fixed (type safety) |
+| `src/tui/ui/fuzzy-picker.tsx` | ✅ Fixed (fuzzy matching added) |
+| `src/tui/ui/toast.tsx` | ✅ Fixed (multi-toast stacking) |
 | `src/tui/ui/spinner.tsx` | ✅ Fixed (mode wiring) |
 | `src/tui/ui/dialog-alert.tsx` | ✅ Fixed (Enter handler) |
 | `src/tui/ui/dialog-confirm.tsx` | ✅ Clean |

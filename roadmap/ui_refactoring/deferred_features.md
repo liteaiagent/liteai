@@ -2,6 +2,10 @@
 
 Consolidated register of all features intentionally excluded or deferred during the Phase 2.5 component migration. Each entry includes the MVP/SolidJS source path for future re-analysis.
 
+## New UI Features
+
+Switch session (similar to Ctlr+R), without stopping the current session, so user can work on multiple sessions
+
 ---
 
 ## Deferred UI Features (Prompt Input System)
@@ -54,15 +58,6 @@ Consolidated register of all features intentionally excluded or deferred during 
 
 ---
 
-### 6. Model Picker / Fast Mode Picker
-**MVP Sources:**
-- [ModelPicker.tsx](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/components/ModelPicker.tsx) — model selection dialog
-- [FastModePicker.tsx](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/commands/fast/fast.tsx) — fast mode toggle
-- [fastMode.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/utils/fastMode.ts) — fast mode state
-
-**Why Deferred:** `useLocal().model.cycle()` already exists. Picker dialog is a separate overlay. **Note:** ModelPicker is being ported in Batch 4 using the SolidJS `dialog-model.tsx` as the primary reference.
-
----
 
 ### 7. Prompt Editor (External $EDITOR)
 **MVP Sources:**
@@ -84,59 +79,10 @@ Consolidated register of all features intentionally excluded or deferred during 
 
 ## Deferred Technical Debt (from Review Tracker)
 
-### 9. Multi-Toast Stacking (Phase 2.4 C3)
-**File:** `src/tui/context/toast.tsx`, `src/tui/ui/toast.tsx`
-**Issue:** Spec requires multi-toast stacking; implementation only supports single `currentToast: T | null`.
-**Why Deferred:** Moderate scope. Current single-toast is functional for MVP.
-
----
-
-### 10. FuzzyPicker — No Actual Fuzzy Matching (Phase 2.4 M1)
-**File:** `src/tui/ui/fuzzy-picker.tsx`
-**Issue:** Despite name, no fuzzy matching algorithm. All filtering delegated to consumers via `onQueryChange`. No match highlights, no category grouping.
-**Why Deferred:** Larger scope, requires `fuzzysort` integration or equivalent.
-
----
-
-### 11. DialogSelect Search Non-Functional (Phase 2.4 M2)
-**File:** `src/tui/ui/dialog-select.tsx`
-**Issue:** Search box renders but `onQueryChange` is a no-op — typing does nothing. Dependent on M1 (fuzzy matching).
-**Why Deferred:** Blocked on #10 (fuzzy matching).
-
----
-
-### 12. DialogHelp Static Stub (Phase 2.4 m2)
-**File:** `src/tui/ui/dialog-help.tsx`
-**Issue:** Static stub — hardcoded help text, doesn't list keybindings dynamically. `onCancel` is no-op.
-**Why Deferred:** Phase 2.5+ scope.
-
----
-
 ### 13. Toast Positioning (Phase 2.4 m3)
 **File:** `src/tui/ui/toast.tsx`
 **Issue:** Toast renders inline with `marginTop={1}`, no absolute positioning. Spec says "position at bottom of terminal".
 **Why Deferred:** Depends on layout architecture decisions in Phase 2.6.
-
----
-
-### 14. FuzzyPicker Callback Memoization Risk (Phase 2.5 F1/F2)
-**File:** `src/tui/ui/fuzzy-picker.tsx` L115-127
-**Issue:** `useEffect` includes `onQueryChange` and `onFocus` in deps. If consumer doesn't memoize callbacks, triggers infinite re-render loop.
-**Why Deferred:** Requires either stable callback contract in docs or internal `useRef` stabilization.
-
----
-
-### 15. Markdown Table wrapText Stub (Phase 2.5 Batch 2 M2)
-**File:** `src/tui/components/markdown-table.tsx` L43-57
-**Issue:** `wrapText` function is a stub — accepts `hard` option but ignores it. Tables with long cell content won't wrap. Original MVP used `wrapAnsi()`.
-**Why Deferred:** Needs dependency evaluation (`wrapAnsi` availability). `wrapAnsi` is exported from `@liteai/ink`.
-
----
-
-### 16. Diff Cache Unbounded (Phase 2.5 Batch 2 M3)
-**File:** `src/tui/components/structured-diff.tsx` L17-28
-**Issue:** `diffCache` is an unbounded `Map<string, Map<...>>` with no eviction policy. Long sessions will leak memory.
-**Why Deferred:** Pre-existing MVP pattern, not a regression.
 
 ---
 
@@ -169,10 +115,14 @@ A new `permissionMode` field on `session.prompt()` or `session.update()` is need
 
 ### 20. Footer Pill Navigation
 **MVP Sources:**
-- Footer pills in `PromptInput.tsx` (tasks indicator, teams status, bridge pill, tmux pill)
-- `TungstenPill`, `TeamStatus`, `BridgeStatusIndicator` components
+- `PromptInputFooterLeftSide.tsx` — pill container layout, mode indicator, task/team/PR pills
+- `PromptInputFooter.tsx` — footer orchestrator, `BridgeStatusIndicator`
+- `TeamStatus.tsx` — team member status pill (runtime-gated via `isAgentSwarmsEnabled()`)
+- `BackgroundTaskStatus` — running task pill (live, no gate)
+- `PrBadge.tsx` — PR review status pill (runtime config-gated)
+- `TungstenPill` — tmux session pill (compile-time dead: `"external" === 'ant'`)
 
-**Why Deferred:** Individual features behind the pills are either permanently excluded (bridge, tmux, swarms — see `excluded_features.md`) or not yet relevant. The pill container/layout pattern may be reused when new footer indicators are needed.
+**Why Deferred:** The pill container/layout and several pills (`TeamStatus`, `BackgroundTaskStatus`, `PrBadge`) are **live runtime code** in the MVP — not dead. `TungstenPill` and `BridgeStatusIndicator` are compile-time dead in external builds. Porting requires the backing infrastructure (Swarms/Teams in core, task system) to be available first.
 
 ---
 

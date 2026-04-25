@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { createSimpleContext } from "./helper"
 
 export type ToastVariant = "info" | "success" | "warning" | "error"
@@ -11,27 +11,27 @@ export type ToastOptions = {
   duration?: number
 }
 
+export type ToastItem = ToastOptions & { id: string }
+
 export type ToastContextValue = {
   show: (options: ToastOptions) => void
   error: (err: unknown) => void
-  currentToast: ToastOptions | null
+  toasts: ToastItem[]
 }
 
 export const { use: useToast, provider: ToastProvider } = createSimpleContext({
   name: "Toast",
   init: () => {
-    const [currentToast, setCurrentToast] = useState<ToastOptions | null>(null)
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const [toasts, setToasts] = useState<ToastItem[]>([])
 
     const show = useCallback((options: ToastOptions) => {
       const duration = options.duration ?? 3000
-      setCurrentToast(options)
+      const id = Math.random().toString(36).substring(2, 9)
 
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      setToasts((prev) => [...prev, { ...options, id }])
 
-      timeoutRef.current = setTimeout(() => {
-        setCurrentToast(null)
-        timeoutRef.current = null
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id))
       }, duration)
     }, [])
 
@@ -55,9 +55,9 @@ export const { use: useToast, provider: ToastProvider } = createSimpleContext({
       () => ({
         show,
         error,
-        currentToast,
+        toasts,
       }),
-      [show, error, currentToast],
+      [show, error, toasts],
     )
   },
 })

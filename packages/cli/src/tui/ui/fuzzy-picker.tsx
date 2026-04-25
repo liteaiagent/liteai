@@ -1,8 +1,9 @@
 /** @jsxImportSource react */
 
 import { Box, Text, useInput } from "@liteai/ink"
+import fuzzysort from "fuzzysort"
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Byline } from "../components/design-system/Byline"
 import { KeyboardShortcutHint } from "../components/design-system/KeyboardShortcutHint"
 import { Pane } from "../components/design-system/Pane"
@@ -20,6 +21,7 @@ type Props<T> = {
   initialQuery?: string
   items: readonly T[]
   getKey: (item: T) => string
+  getSearchString?: (item: T) => string
   renderItem: (item: T, isFocused: boolean) => React.ReactNode
   renderPreview?: (item: T) => React.ReactNode
   previewPosition?: "bottom" | "right"
@@ -45,6 +47,7 @@ export function FuzzyPicker<T>({
   initialQuery = "",
   items,
   getKey,
+  getSearchString,
   renderItem,
   renderPreview,
   previewPosition = "bottom",
@@ -64,8 +67,16 @@ export function FuzzyPicker<T>({
   const [query, setQuery] = useState(initialQuery)
   const [focusedIndex, setFocusedIndex] = useState(0)
 
+  const filteredItems = useMemo(() => {
+    if (!getSearchString || !query.trim()) return items
+    const results = fuzzysort.go(query, items, {
+      key: getSearchString,
+    })
+    return results.map((r) => r.obj)
+  }, [items, query, getSearchString])
+
   const step = (delta: 1 | -1) => {
-    setFocusedIndex((i) => Math.max(0, Math.min(i + delta, items.length - 1)))
+    setFocusedIndex((i) => Math.max(0, Math.min(i + delta, filteredItems.length - 1)))
   }
 
   useInput((input, _key, event) => {
@@ -84,12 +95,12 @@ export function FuzzyPicker<T>({
       return
     }
     if (keyName === "return") {
-      const selected = items[focusedIndex]
+      const selected = filteredItems[focusedIndex]
       if (selected) onSelect(selected)
       return
     }
     if (keyName === "tab") {
-      const selected = items[focusedIndex]
+      const selected = filteredItems[focusedIndex]
       if (!selected) return
       const tabAction = isShift ? (onShiftTab ?? onTab) : onTab
       if (tabAction) {
@@ -112,22 +123,33 @@ export function FuzzyPicker<T>({
     }
   })
 
+  const onQueryChangeRef = useRef(onQueryChange)
   useEffect(() => {
-    onQueryChange(query)
+    onQueryChangeRef.current = onQueryChange
+  }, [onQueryChange])
+
+  useEffect(() => {
+    onQueryChangeRef.current(query)
     setFocusedIndex(0)
-  }, [query, onQueryChange])
+  }, [query])
 
   useEffect(() => {
-    setFocusedIndex((i) => Math.max(0, Math.min(i, items.length - 1)))
-  }, [items.length])
+    setFocusedIndex((i) => Math.max(0, Math.min(i, filteredItems.length - 1)))
+  }, [filteredItems.length])
 
-  const focused = items[focusedIndex]
+  const focused = filteredItems[focusedIndex]
+
+  const onFocusRef = useRef(onFocus)
   useEffect(() => {
-    if (onFocus) onFocus(focused)
-  }, [focused, onFocus])
+    onFocusRef.current = onFocus
+  }, [onFocus])
 
-  const windowStart = Math.max(0, Math.min(focusedIndex - visibleCount + 1, items.length - visibleCount))
-  const visible = items.slice(windowStart, windowStart + visibleCount)
+  useEffect(() => {
+    if (onFocusRef.current) onFocusRef.current(focused)
+  }, [focused])
+
+  const windowStart = Math.max(0, Math.min(focusedIndex - visibleCount + 1, filteredItems.length - visibleCount))
+  const visible = filteredItems.slice(windowStart, windowStart + visibleCount)
   const emptyText = typeof emptyMessage === "function" ? emptyMessage(query) : emptyMessage
 
   const searchBox = (
