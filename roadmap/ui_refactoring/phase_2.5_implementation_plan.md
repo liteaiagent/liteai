@@ -23,17 +23,20 @@ Port the Markdown and Diff rendering components:
 - `components/status-line.tsx` (from MVP `StatusLine.tsx`)
 - `components/tool-use-loader.tsx` (from MVP `ToolUseLoader.tsx`)
 
-### Batch 3: Prompt Input System [IN PROGRESS]
+### Batch 3: Prompt Input System [DONE]
 Port the prompt input directory:
 - `components/prompt/` (from MVP `PromptInput/`)
 - `components/text-input.tsx`, `components/vim-text-input.tsx`, `components/base-text-input.tsx`
 - *Adaptation*: Wire the prompt to submit via our `useSDK()` context instead of MVP's `useReplBridge`.
+- *Docs*: Implementation plan, task list, and sub-batch 3.4 plan archived to `done/`.
 
-### Batch 4: App-Specific Dialogs
-Port the 13 app-specific dialogs:
-- Dialogs with MVP equivalents: `ModelPicker`, `ThemePicker`, `QuickOpenDialog`.
-- Dialogs without MVP equivalents: `dialog-agent.tsx`, `dialog-mcp.tsx`, `dialog-session-list.tsx`, etc.
-- *Adaptation*: Build using Phase 2.4 primitives (`Dialog`, `FuzzyPicker`) and wire to our context hooks.
+### Batch 4: App-Specific Dialogs [IN PROGRESS]
+Port the 13 app-specific dialogs from existing **SolidJS source** (`cli/cmd/tui/component/dialog-*.tsx`):
+- **Simple dialogs:** `dialog-agent`, `dialog-theme`, `dialog-session-rename`, `dialog-skill`
+- **Medium dialogs:** `dialog-model`, `dialog-session-list`, `dialog-stash`, `dialog-status`, `dialog-command`
+- **Complex dialogs:** `dialog-mcp`, `dialog-provider`, `dialog-plugin`, `dialog-workspace`
+- *Adaptation*: Convert SolidJS reactivity (createSignal/createMemo/createResource) to React (useState/useMemo/useEffect+state). Replace `@opentui/core`/`@opentui/solid` with `@liteai/ink`. Wire to existing TUI contexts.
+- *See*: `phase_2.5_b4_implementation_plan.md` for detailed plan.
 
 ## Verification Plan
 

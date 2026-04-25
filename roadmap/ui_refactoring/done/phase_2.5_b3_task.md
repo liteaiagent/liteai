@@ -29,11 +29,31 @@
 - `[x]` Run `bun lint:fix` — ✅ PASS
 
 ## Sub-batch 3.4: PromptInput Orchestrator
-- `[ ]` Port `PromptInput/PromptInput.tsx` → `src/tui/components/prompt/prompt-input.tsx`
-- `[ ]` Port `PromptInput/PromptInputFooter.tsx` → `src/tui/components/prompt/prompt-input-footer.tsx`
-- `[ ]` Port `PromptInput/PromptInputModeIndicator.tsx` → `src/tui/components/prompt/prompt-input-mode-indicator.tsx`
-- `[ ]` Port `PromptInput/Notifications.tsx` → `src/tui/components/prompt/notifications.tsx`
-- `[ ]` Port `PromptInput/inputModes.ts` → `src/tui/components/prompt/input-modes.ts`
-- `[ ]` Port `PromptInput/utils.ts` → `src/tui/components/prompt/utils.ts`
-- `[ ]` Run `bun typecheck` — gate
-- `[ ]` Run `bun lint:fix` — gate
+
+### Phase 1: Utilities (no dependencies)
+- `[x]` Port `PromptInput/inputModes.ts` → `src/tui/components/prompt/input-modes.ts` — ✅ DONE
+- `[x]` Port `PromptInput/utils.ts` → `src/tui/components/prompt/utils.ts` — ✅ DONE
+- `[x]` Run `bun typecheck` — ✅ PASS
+- `[x]` Run `bun lint:fix` — ✅ PASS
+
+### Phase 2: Paste System (depends on Phase 1)
+- `[x]` Port `utils/imagePaste.ts` → `src/tui/util/image-paste.ts` — ✅ DONE
+- `[x]` Port `PromptInput/inputPaste.ts` → `src/tui/components/prompt/input-paste.ts` — ✅ DONE
+- `[x]` Port `hooks/usePasteHandler.ts` → `src/tui/hooks/use-paste-handler.ts` — ✅ DONE
+
+### Phase 3: Sub-Components (parallel with Phase 2)
+- `[x]` Port `PromptInput/PromptInputModeIndicator.tsx` → `src/tui/components/prompt/prompt-input-mode-indicator.tsx` — ✅ DONE
+- `[x]` Port `PromptInput/Notifications.tsx` → `src/tui/components/prompt/notifications.tsx` — ✅ DONE
+- `[x]` Create `session.tsx` → `src/tui/context/session.tsx` — ✅ DONE
+- `[x]` Run `bun typecheck` — ✅ PASS
+- `[x]` Run `bun lint:fix` — ✅ PASS
+
+### Phase 4: Footer (depends on Phases 2+3)
+- `[x]` Port `PromptInput/PromptInputFooterLeftSide.tsx` → `src/tui/components/prompt/prompt-input-footer-left-side.tsx` — ✅ DONE
+- `[x]` Port `PromptInput/PromptInputFooter.tsx` → `src/tui/components/prompt/prompt-input-footer.tsx` — ✅ DONE
+
+### Phase 5: Orchestrator (depends on all above)
+- `[x]` Port `PromptInput/PromptInput.tsx` → `src/tui/components/prompt/prompt-input.tsx` — ✅ DONE
+- `[x]` Run `bun typecheck` — ✅ PASS
+- `[x]` Run `bun lint:fix` — ✅ PASS
+
