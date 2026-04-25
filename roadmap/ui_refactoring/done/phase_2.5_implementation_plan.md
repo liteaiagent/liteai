@@ -30,7 +30,7 @@ Port the prompt input directory:
 - *Adaptation*: Wire the prompt to submit via our `useSDK()` context instead of MVP's `useReplBridge`.
 - *Docs*: Implementation plan, task list, and sub-batch 3.4 plan archived to `done/`.
 
-### Batch 4: App-Specific Dialogs [IN PROGRESS]
+### Batch 4: App-Specific Dialogs [DONE]
 Port the 13 app-specific dialogs from existing **SolidJS source** (`cli/cmd/tui/component/dialog-*.tsx`):
 - **Simple dialogs:** `dialog-agent`, `dialog-theme`, `dialog-session-rename`, `dialog-skill`
 - **Medium dialogs:** `dialog-model`, `dialog-session-list`, `dialog-stash`, `dialog-status`, `dialog-command`

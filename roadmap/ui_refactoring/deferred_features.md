@@ -153,32 +153,41 @@ The MVP's Shift+Tab permission mode cycling (`cyclePermissionMode`, `getNextPerm
 ### 18. Permission Mode Set via API
 A new `permissionMode` field on `session.prompt()` or `session.update()` is needed in `packages/core`. Deferred to a focused core-change PR.
 
+
 ---
 
-## Permanently Excluded (MVP Feature-Flagged)
+## Deferred Prompt Input Features (from prompt-input.tsx audit)
 
-These are **never** being ported. Listed for completeness.
+### 19. Prompt Suggestion / Speculation
+**MVP Sources:**
+- `usePromptSuggestion.ts` — prompt speculation/completion logic
+- Inline suggestion rendering in `PromptInput.tsx`
 
-| Feature | MVP Source | Reason |
-|---|---|---|
-| Voice Mode | `hooks/useVoiceEnabled.ts`, `context/voice.ts`, `VoiceIndicator.tsx` | `feature('VOICE_MODE')` |
-| Coordinator Mode | `coordinator/coordinatorMode.ts`, `CoordinatorAgentStatus.tsx` | `feature('COORDINATOR_MODE')` |
-| Bridge Mode | `bridge/`, `BridgeDialog.tsx`, `BridgeStatusIndicator` | `feature('BRIDGE_MODE')` |
-| Proactive/Kairos | `proactive/index.ts`, `ProactiveCountdown` | `feature('PROACTIVE')` / `feature('KAIROS')` |
-| Transcript Classifier (auto mode) | `utils/permissions/PermissionMode.ts` line 80-90 | `feature('TRANSCRIPT_CLASSIFIER')` |
-| Native Clipboard Image | `utils/imagePaste.ts` lines 101-116 | `feature('NATIVE_CLIPBOARD_IMAGE')` |
-| Agent Swarms | `utils/agentSwarmsEnabled.ts`, `TeamStatus.tsx`, `TeamsDialog.tsx` | `isAgentSwarmsEnabled()` |
-| Tungsten/Tmux | `TungstenPill`, tmux session state | `"external" === 'ant'` |
-| PR Badge | `PrBadge.tsx`, `usePrStatus.ts` | `isPrStatusEnabled()` |
-| Undercover mode | `utils/undercover.ts` | Ant-internal |
-| Auto-updater | `utils/autoUpdater.ts`, `AutoUpdaterWrapper.tsx` | MVP auto-update system |
-| IDE integration | `IdeStatusIndicator.tsx`, `useIdeAtMentioned.ts` | MVP IDE coupling |
-| GrowthBook feature flags | `services/analytics/growthbook.ts` | MVP analytics |
-| Background Task Status | `BackgroundTaskStatus` component | Coordinator/teammate-specific |
-| API Key Status Display | `ApiKeyStatus` inline component | MVP-specific key verification |
-| MCP Server Connection Display | `MCPServerConnection` inline component | MVP-specific MCP status |
-| Fullscreen Overlay System | `isFullscreenEnvEnabled()` branches | xterm.js fullscreen mode |
-| Selection Hints | `useHasSelection` / selection hints | Fullscreen xterm.js selection |
+**Why Deferred:** Distinct from autocomplete (#1). Speculation renders greyed-out predicted text ahead of cursor. Requires streaming suggestion source + custom text rendering.
+
+---
+
+### 20. Footer Pill Navigation
+**MVP Sources:**
+- Footer pills in `PromptInput.tsx` (tasks indicator, teams status, bridge pill, tmux pill)
+- `TungstenPill`, `TeamStatus`, `BridgeStatusIndicator` components
+
+**Why Deferred:** Individual features behind the pills are either permanently excluded (bridge, tmux, swarms — see `excluded_features.md`) or not yet relevant. The pill container/layout pattern may be reused when new footer indicators are needed.
+
+---
+
+### 21. Agent Color / Teammate View Routing
+**MVP Sources:**
+- `AgentColorIndicator` component
+- `useAgentColor.ts` — per-agent color assignment
+- Teammate-specific view routing in `PromptInput.tsx`
+
+**Why Deferred:** Depends on multi-agent/teammate infrastructure (Agent Swarms excluded, Coordinator excluded). Single-agent mode has no need for color differentiation or view routing.
+
+---
+
+> [!NOTE]
+> Permanently excluded features (MVP feature-flagged items that are **never** being ported) are documented separately in [excluded_features.md](file:///c:/Users/aghassan/Documents/workspace/liteai/roadmap/ui_refactoring/excluded_features.md).
 
 ---
 

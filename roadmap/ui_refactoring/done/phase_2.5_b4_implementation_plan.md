@@ -20,28 +20,14 @@ Port all 13 app-specific dialogs from the **SolidJS source** (`cli/cmd/tui/compo
 > - `@opentui/core` `TextAttributes.BOLD` → `bold` prop on `<Text>`
 > - `@opentui/core` `RGBA` → hex string via theme
 
-## Open Questions
+## Resolved Questions
 
-> [!IMPORTANT]
-> **`dialog-command.tsx` architecture:** The SolidJS version creates a `CommandProvider` context with `register()` for dynamically registering commands from route-level components. This is a **cross-cutting concern** used by Phase 2.6 (routes). Should we:
-> - **(A)** Port `CommandProvider` fully now as infrastructure for Batch 4 + Phase 2.6?
-> - **(B)** Port only the `DialogCommand` view component now, defer `CommandProvider` to Phase 2.6?
+> [!NOTE]
+> **`dialog-command.tsx` architecture:** Proceeding with **(A)**. We will port `CommandProvider` fully now as infrastructure for Batch 4 + Phase 2.6.
 >
-> I recommend **(A)** since `dialog-command.tsx` is meaningless without the registration system.
-
-> [!IMPORTANT]
-> **`dialog-stash.tsx` dependency:** This dialog depends on `usePromptStash()` from `cli/cmd/tui/component/prompt/stash.tsx`. This is a prompt-level stash feature. The stash hook was listed as deferred in Batch 3. Should we:
-> - **(A)** Port `usePromptStash()` now as part of Batch 4?
-> - **(B)** Defer `dialog-stash.tsx` entirely?
+> **`dialog-stash.tsx` dependency:** Proceeding with **(B)**. We will defer `dialog-stash.tsx` entirely since stashing is a deferred feature (see deferred_features.md #4).
 >
-> I recommend **(B)** since stashing is a deferred feature (see deferred_features.md #4).
-
-> [!IMPORTANT]
-> **`dialog-workspace-list.tsx` scope:** At 336 lines, this is the most complex dialog. It imports `createLiteaiClient` directly, manages workspace creation (with retry loops), delegates to a nested `DialogSessionList` in the `workspace/` subdirectory, and has `openWorkspace` orchestration logic. It's effectively a **mini-application**. Should this be:
-> - **(A)** Ported in Batch 4 as-is?
-> - **(B)** Deferred to Phase 2.6 (routes) since it's more of a navigation concern?
->
-> I recommend **(A)** — it's still a dialog, just a complex one.
+> **`dialog-workspace-list.tsx` scope:** Proceeding with **(A)**. It will be ported in Batch 4 as-is.
 
 ---
 

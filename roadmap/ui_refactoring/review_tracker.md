@@ -235,6 +235,128 @@ Post-implementation code review log for each phase of the SolidJS → React migr
 
 ---
 
+## Phase 2.5: Components (Batch 3 — Prompt Input System)
+
+**Reviewed:** 2026-04-25  
+**Verdict:** ✅ CLEAN — No blocking issues
+
+### Scope
+
+Ported the prompt input subsystem from MVP to React/Ink:
+- `components/prompt/` (8 files: `prompt-input.tsx`, `prompt-input-footer.tsx`, `prompt-input-footer-left-side.tsx`, `prompt-input-mode-indicator.tsx`, `notifications.tsx`, `input-modes.ts`, `input-paste.ts`, `utils.ts`)
+- `components/text-input.tsx`, `components/vim-text-input.tsx`, `components/base-text-input.tsx`
+- Hooks: `hooks/useTextInput.ts`, `hooks/useVimInput.ts`, `hooks/useArrowKeyHistory.ts`
+
+### Key Adaptations
+
+- MVP's `useReplBridge` submission → wired to `useSDK()` context
+- Feature-flag-free architecture (no MVP feature gates ported)
+- Decoupled footer/mode/paste subsystems as composable components
+
+### Deferred Features (documented in `deferred_features.md`)
+
+| # | Feature | Reason |
+|---|---------|--------|
+| 1 | Autocomplete/Suggestions Panel | Requires overlay + fuzzy infrastructure |
+| 2 | Help Menu | Standalone overlay, no prompt core dependency |
+| 3 | History Search (Ctrl+R) | Basic arrow history included; interactive search deferred |
+| 4 | Stashed Prompt / dialog-stash.tsx | Niche feature, blocked on `usePromptStash()` |
+| 5 | Queued Commands | Requires message queue infrastructure |
+| 7 | Prompt Editor ($EDITOR) | Requires process spawning |
+| 8 | Text Highlighting (Slash/Chips) | Requires highlight span rendering |
+
+### Post-Review File Status
+
+| File | Status |
+|------|--------|
+| `components/prompt/prompt-input.tsx` | ✅ Clean |
+| `components/prompt/prompt-input-footer.tsx` | ✅ Clean |
+| `components/prompt/prompt-input-footer-left-side.tsx` | ✅ Clean |
+| `components/prompt/prompt-input-mode-indicator.tsx` | ✅ Clean |
+| `components/prompt/notifications.tsx` | ✅ Clean |
+| `components/prompt/input-modes.ts` | ✅ Clean |
+| `components/prompt/input-paste.ts` | ✅ Clean |
+| `components/prompt/utils.ts` | ✅ Clean |
+| `components/text-input.tsx` | ✅ Clean |
+| `components/vim-text-input.tsx` | ✅ Clean |
+| `components/base-text-input.tsx` | ✅ Clean |
+
+**Gates:** `bun typecheck` ✅ | `bun lint` ✅
+
+---
+
+## Phase 2.5: Components (Batch 4 — App-Specific Dialogs)
+
+**Reviewed:** 2026-04-25  
+**Verdict:** ✅ CLEAN — All 4 sub-batches complete
+
+### Scope
+
+Ported 12 app-specific dialogs from SolidJS source + 2 infrastructure files:
+
+**Sub-batch 4.1 — Infrastructure:**
+- `context/dialog.tsx` (DialogProvider stack manager with push/pop/replace/clear)
+- `ui/dialog-select.tsx` (full rewrite: fuzzy search, categories, keybinds, scroll, current marker)
+
+**Sub-batch 4.2 — Simple Dialogs:**
+- `dialog-agent.tsx`, `dialog-theme.tsx`, `dialog-session-rename.tsx`, `dialog-skill.tsx`
+
+**Sub-batch 4.3 — Medium Dialogs:**
+- `dialog-model.tsx`, `dialog-session-list.tsx`, `dialog-status.tsx`, `dialog-command.tsx` (incl. `CommandProvider`)
+
+**Sub-batch 4.4 — Complex Dialogs:**
+- `dialog-mcp.tsx` (3 sub-components: list/detail/tools)
+- `dialog-provider.tsx` (5 sub-components: OAuth multi-step wizard)
+- `dialog-plugin.tsx` (7 sub-components: 4-tab plugin manager)
+- `dialog-workspace.tsx` (2 sub-components: workspace list + create)
+
+### Key Adaptations
+
+- SolidJS `createSignal/createMemo/createResource/createStore` → React `useState/useMemo/useEffect+state`
+- `@opentui/core` RGBA → hex strings via `useTheme()`
+- `useKeyboard` → `useInput` from `@liteai/ink`
+- `ScrollBoxRenderable` → `@liteai/ink` ScrollBox
+- `fuzzysort` added as dependency for fuzzy search
+
+### Deferred
+
+| Item | Reason |
+|------|--------|
+| `dialog-stash.tsx` | Blocked on `usePromptStash()` — see deferred_features.md #4 |
+
+### Post-Review File Status
+
+| File | Status |
+|------|--------|
+| `context/dialog.tsx` | ✅ Clean |
+| `ui/dialog-select.tsx` | ✅ Clean (full rewrite from 37-line skeleton) |
+| `components/dialog-agent.tsx` | ✅ Clean |
+| `components/dialog-theme.tsx` | ✅ Clean |
+| `components/dialog-session-rename.tsx` | ✅ Clean |
+| `components/dialog-skill.tsx` | ✅ Clean |
+| `components/dialog-model.tsx` | ✅ Clean |
+| `components/dialog-session-list.tsx` | ✅ Clean |
+| `components/dialog-status.tsx` | ✅ Clean |
+| `components/dialog-command.tsx` | ✅ Clean |
+| `components/dialog-mcp.tsx` | ✅ Clean |
+| `components/dialog-provider.tsx` | ✅ Clean |
+| `components/dialog-plugin.tsx` | ✅ Clean |
+| `components/dialog-workspace.tsx` | ✅ Clean |
+
+### Positive Findings
+
+- ✅ Zero `as any` casts across all Batch 4 scope
+- ✅ Zero SolidJS remnants (`createSignal`, `createMemo`, `@opentui/core`, `@opentui/solid`)
+- ✅ Zero React Compiler `$[n]` artifacts
+- ✅ Zero `console.log` debug statements
+- ✅ All dialogs properly import from `@liteai/ink` and use `useTheme()`
+- ✅ `dialog-stash.tsx` correctly deferred with documentation
+- ✅ Cross-dialog dependencies verified (dialog-model → dialog-provider, dialog-workspace → dialog-session-list)
+
+**Gates:** `bun typecheck` ✅ (14/14 tasks) | `bun lint` ✅ (11/11 tasks)
+
+---
+
 ## Phase 2.6: Routes & App Shell
 
 **Reviewed:** —  
