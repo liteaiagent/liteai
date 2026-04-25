@@ -11,19 +11,19 @@ This plan details the process for porting visual components from the MVP codebas
 
 I will execute the porting in the following batches. After each batch, I will run typecheck and linting to ensure no regressions.
 
-### Batch 1: Design System Components
+### Batch 1: Design System Components [DONE]
 Port the 12 standalone design system components from MVP to `src/tui/components/design-system/`:
 - `ThemedBox.tsx`, `ThemedText.tsx`, `Tabs.tsx`, `ListItem.tsx`, `Pane.tsx`, `ProgressBar.tsx`, `StatusIcon.tsx`, `Divider.tsx`, `Byline.tsx`, `KeyboardShortcutHint.tsx`, `LoadingState.tsx`, `Ratchet.tsx`
 - *Adaptation*: Update imports to `@liteai/ink` and wire theme access to `useTheme()`.
 
-### Batch 2: Rendering Components
+### Batch 2: Rendering Components [DONE]
 Port the Markdown and Diff rendering components:
 - `components/markdown.tsx` (from MVP `Markdown.tsx`)
 - `components/structured-diff.tsx` (merging/porting MVP `StructuredDiff.tsx` and `FileEditToolDiff.tsx`)
 - `components/status-line.tsx` (from MVP `StatusLine.tsx`)
 - `components/tool-use-loader.tsx` (from MVP `ToolUseLoader.tsx`)
 
-### Batch 3: Prompt Input System
+### Batch 3: Prompt Input System [IN PROGRESS]
 Port the prompt input directory:
 - `components/prompt/` (from MVP `PromptInput/`)
 - `components/text-input.tsx`, `components/vim-text-input.tsx`, `components/base-text-input.tsx`

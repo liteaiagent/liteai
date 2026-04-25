@@ -36,9 +36,6 @@ Port the 12 design system components from the MVP codebase to the new React-base
 
 | Batch | Scope | Status |
 |-------|-------|--------|
-| Batch 2 | Rendering: `markdown.tsx`, `structured-diff.tsx`, `status-line.tsx`, `tool-use-loader.tsx` | ❌ Not started |
-| Batch 3 | Prompt input: `components/prompt/`, `text-input.tsx`, `vim-text-input.tsx`, `base-text-input.tsx` | ❌ Not started |
+| Batch 2 | Rendering: `markdown.tsx`, `structured-diff.tsx`, `status-line.tsx`, `tool-use-loader.tsx` | ✅ Done |
+| Batch 3 | Prompt input: `components/prompt/`, `text-input.tsx`, `vim-text-input.tsx`, `base-text-input.tsx` | 🚧 In Progress |
 | Batch 4 | App-specific dialogs: 13 `dialog-*.tsx` files | ❌ Not started |
-
-## Review Findings
-Reviewed 2026-04-25 — 7 issues found: 1 fixed (stale docstring in `Divider.tsx`), 2 deferred (`FuzzyPicker` callback memoization risks), 4 accepted (justified `as unknown` casts, `@ts-expect-error` suppress). Full details in `review_tracker.md`.

@@ -48,3 +48,5 @@ export { createRoot, default as render, renderSync } from './root.js'
 export { stringWidth } from './stringWidth.js'
 // Styles
 export type { Color, Styles, TextStyles } from './styles.js'
+// Utilities
+export { wrapAnsi } from './wrapAnsi.js'
