@@ -2,7 +2,7 @@ import path from "node:path"
 import { Global } from "@liteai/core/global/index"
 import { Filesystem } from "@liteai/core/util/filesystem"
 import { Glob } from "@liteai/core/util/glob"
-import { type TerminalColors as InkTerminalColors, useApp } from "@liteai/ink"
+import { type TerminalColors as InkTerminalColors, useApp, useStdin } from "@liteai/ink"
 import * as color from "../util/color"
 import { fromInts, parseHex } from "../util/color"
 
@@ -288,6 +288,7 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
     const config = useTuiConfig()
     const kv = useKV()
     const { getPalette, clearPaletteCache } = useApp()
+    const { setRawMode } = useStdin()
 
     const [themes, setThemes] = useState<Record<string, ThemeJson>>(DEFAULT_THEMES)
     const [mode, setModeState] = useState<"dark" | "light">(kv.get("theme_mode", props.mode) as "dark" | "light")
@@ -331,19 +332,25 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
     }
 
     useEffect(() => {
-      init()
+      setRawMode(true)
+      init().finally(() => setRawMode(false))
     }, [])
 
     useEffect(() => {
       const handler = async () => {
         clearPaletteCache()
-        await init()
+        setRawMode(true)
+        try {
+          await init()
+        } finally {
+          setRawMode(false)
+        }
       }
       process.on("SIGUSR2", handler)
       return () => {
         process.off("SIGUSR2", handler)
       }
-    }, [clearPaletteCache])
+    }, [clearPaletteCache, setRawMode])
 
     const values = useMemo(() => {
       return resolveTheme(themes[active] ?? themes.liteai, mode)

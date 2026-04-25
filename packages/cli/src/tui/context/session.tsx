@@ -103,6 +103,43 @@ export const { use: useSession, provider: SessionProvider } = createSimpleContex
         const model = local.model.current()
         const agent = local.agent.current()
 
+        // ── Slash command routing ──────────────────────────────────────
+        // If the user typed "/command args", route to the dedicated command
+        // endpoint instead of sending it as a text prompt to the LLM.
+        if (mode === "prompt" && input.trimStart().startsWith("/")) {
+          const trimmed = input.trimStart()
+          const spaceIndex = trimmed.indexOf(" ")
+          const cmdName = spaceIndex === -1 ? trimmed.slice(1) : trimmed.slice(1, spaceIndex)
+          const cmdArgs = spaceIndex === -1 ? "" : trimmed.slice(spaceIndex + 1)
+
+          const matched = sync.command.find((c) => c.name === cmdName)
+          if (matched) {
+            try {
+              await sdk.client.project.session.command({
+                sessionID: activeSessionID,
+                projectID: sdk.projectID,
+                command: cmdName,
+                arguments: cmdArgs,
+                agent: agent?.name,
+                model: model ? `${model.providerID}/${model.modelID}` : undefined,
+                variant: local.model.variant.current(),
+                parts: attachments?.map((a) => ({
+                  type: "file" as const,
+                  mime: a.mime,
+                  url: a.url,
+                  filename: a.filename,
+                })),
+              })
+            } catch (e) {
+              Log.Default.error("[session] Failed to execute command", { error: e, command: cmdName })
+              toast.error(e)
+            }
+            return
+          }
+          // No match — fall through to regular prompt (user may have typed a file path)
+        }
+
+        // ── Regular prompt / bash ──────────────────────────────────────
         // Build message parts
         const parts: Array<TextPartInput | FilePartInput> = [{ type: "text", text: input }]
         if (attachments) {
@@ -110,33 +147,20 @@ export const { use: useSession, provider: SessionProvider } = createSimpleContex
         }
 
         try {
-          if (mode === "bash") {
-            // Bash mode: send as a shell command via prompt with the bash prefix
-            await sdk.client.project.session.prompt({
-              sessionID: activeSessionID,
-              projectID: sdk.projectID,
-              parts,
-              model: model ? { providerID: model.providerID, modelID: model.modelID } : undefined,
-              agent: agent?.name,
-              variant: local.model.variant.current(),
-            })
-          } else {
-            // Prompt mode: standard message
-            await sdk.client.project.session.prompt({
-              sessionID: activeSessionID,
-              projectID: sdk.projectID,
-              parts,
-              model: model ? { providerID: model.providerID, modelID: model.modelID } : undefined,
-              agent: agent?.name,
-              variant: local.model.variant.current(),
-            })
-          }
+          await sdk.client.project.session.prompt({
+            sessionID: activeSessionID,
+            projectID: sdk.projectID,
+            parts,
+            model: model ? { providerID: model.providerID, modelID: model.modelID } : undefined,
+            agent: agent?.name,
+            variant: local.model.variant.current(),
+          })
         } catch (e) {
           Log.Default.error("[session] Failed to submit prompt", { error: e })
           toast.error(e)
         }
       },
-      [ensureSession, sdk, local, toast],
+      [ensureSession, sdk, local, toast, sync.command],
     )
 
     // ── Abort ─────────────────────────────────────────────────────────────

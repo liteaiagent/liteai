@@ -235,7 +235,7 @@
         "figures": "latest",
         "get-east-asian-width": "latest",
         "indent-string": "5.0.0",
-        "react": "latest",
+        "react": "catalog:",
         "react-reconciler": "latest",
         "semver": "7.7.4",
         "signal-exit": "latest",

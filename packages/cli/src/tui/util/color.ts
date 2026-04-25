@@ -16,6 +16,25 @@ export interface RGBA {
  * Parses a hex string into RGBA components (0-255).
  */
 export function parseHex(hex: string): RGBA {
+  const rgbMatch = hex.match(/rgb:(.+)/)
+  if (rgbMatch) {
+    const parts = rgbMatch[1]?.split("/")
+    if (parts.length === 3) {
+      const parsePart = (p: string) => {
+        if (!p) return 0
+        if (p.length === 1) return Number.parseInt(p + p, 16)
+        if (p.length === 2) return Number.parseInt(p, 16)
+        return Math.round((Number.parseInt(p.slice(0, 4).padEnd(4, "0"), 16) / 65535) * 255)
+      }
+      return {
+        r: parsePart(parts[0] || ""),
+        g: parsePart(parts[1] || ""),
+        b: parsePart(parts[2] || ""),
+        a: 255,
+      }
+    }
+  }
+
   const cleanHex = hex.replace("#", "")
 
   let r = 0
@@ -24,9 +43,9 @@ export function parseHex(hex: string): RGBA {
   let a = 255
 
   if (cleanHex.length === 3) {
-    r = Number.parseInt(cleanHex[0] + cleanHex[0], 16)
-    g = Number.parseInt(cleanHex[1] + cleanHex[1], 16)
-    b = Number.parseInt(cleanHex[2] + cleanHex[2], 16)
+    r = Number.parseInt(cleanHex.charAt(0) + cleanHex.charAt(0), 16)
+    g = Number.parseInt(cleanHex.charAt(1) + cleanHex.charAt(1), 16)
+    b = Number.parseInt(cleanHex.charAt(2) + cleanHex.charAt(2), 16)
   } else if (cleanHex.length === 6) {
     r = Number.parseInt(cleanHex.slice(0, 2), 16)
     g = Number.parseInt(cleanHex.slice(2, 4), 16)

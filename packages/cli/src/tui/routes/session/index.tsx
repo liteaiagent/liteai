@@ -1,7 +1,10 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext, useInput } from "@liteai/ink"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { PromptInput } from "../../components/prompt/prompt-input"
+import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { useKeybind } from "../../context/keybind"
+import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { SessionProvider } from "./ctx"
 import { SessionHeader } from "./header"
@@ -12,6 +15,7 @@ import { Sidebar } from "./sidebar"
 
 export function SessionRoute({ sessionID }: { sessionID: string }) {
   const sync = useSync()
+  const session = useSession()
   const keybind = useKeybind()
   const terminalSize = useContext(TerminalSizeContext)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -65,10 +69,14 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
       <Box flexDirection="row" width="100%" height="100%">
         <Box flexGrow={1} flexDirection="column">
           <SessionLayout
+            scrollRef={scrollRef}
             scrollable={<Messages scrollRef={scrollRef} />}
             bottom={
-              <Box paddingLeft={1}>
-                <SessionHeader />
+              <Box flexDirection="column" width="100%">
+                <PromptInput debug={false} verbose={false} isLoading={session.isLoading} />
+                <Box paddingLeft={1}>
+                  <SessionHeader />
+                </Box>
               </Box>
             }
             overlay={
@@ -81,6 +89,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
         </Box>
         {sidebarOpen && <Sidebar sessionID={sessionID} />}
       </Box>
+      <ScrollHandler scrollRef={scrollRef} />
     </SessionProvider>
   )
 }
