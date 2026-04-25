@@ -42,6 +42,7 @@ type PromptInputFooterProps = {
     setQuery: (q: string) => void
     hasFailedMatch: boolean
   }
+  readonly hint?: React.ReactNode
 }
 
 export function PromptInputFooter({
@@ -55,6 +56,7 @@ export function PromptInputFooter({
   isInputWrapped = false,
   config,
   searchState,
+  hint,
 }: PromptInputFooterProps) {
   const terminalSize = useContext(TerminalSizeContext)
   const columns = terminalSize?.columns ?? 80
@@ -84,6 +86,7 @@ export function PromptInputFooter({
             isLoading={isLoading}
             isPasting={isPasting}
             config={config}
+            hint={hint}
           />
         )}
       </Box>

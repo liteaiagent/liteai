@@ -67,11 +67,13 @@ type PromptInputProps = {
   readonly debug: boolean
   readonly verbose: boolean
   readonly isLoading: boolean
+  readonly hint?: React.ReactNode
+  readonly workspaceID?: string
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
+export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
   const sync = useSync()
@@ -440,6 +442,7 @@ export function PromptInput({ debug, verbose, isLoading }: PromptInputProps) {
         isPasting={isPasting}
         isInputWrapped={isInputWrapped}
         config={config}
+        hint={hint}
         searchState={{
           isSearching: searchState.isSearching,
           query: searchState.query,

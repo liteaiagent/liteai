@@ -35,6 +35,7 @@ type PromptInputFooterLeftSideProps = {
   readonly isLoading: boolean
   readonly isPasting?: boolean
   readonly config: Record<string, unknown>
+  readonly hint?: React.ReactNode
 }
 
 export function PromptInputFooterLeftSide({
@@ -45,6 +46,7 @@ export function PromptInputFooterLeftSide({
   isLoading,
   isPasting,
   config,
+  hint,
 }: PromptInputFooterLeftSideProps) {
   if (exitMessage.show) {
     return (
@@ -71,6 +73,8 @@ export function PromptInputFooterLeftSide({
           -- INSERT --
         </Text>
       ) : null}
+
+      {hint && <Box key="external-hint">{hint}</Box>}
 
       {!suppressHint && !showVim && <FooterHint mode={mode} isLoading={isLoading} />}
     </Box>
