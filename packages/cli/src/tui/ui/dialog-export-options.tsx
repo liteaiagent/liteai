@@ -37,11 +37,8 @@ export function DialogExportOptions({
   type ActiveField = "filename" | "thinking" | "toolDetails" | "assistantMetadata" | "openWithoutSaving"
   const [active, setActive] = useState<ActiveField>("filename")
 
-  useInput((char, _key, event) => {
-    if (!event) return
-    const keyName = event.keypress.name
-
-    if (keyName === "return") {
+  useInput((char, _key) => {
+    if (_key.return) {
       onConfirm?.({
         filename,
         thinking,
@@ -52,17 +49,17 @@ export function DialogExportOptions({
       return
     }
 
-    if (keyName === "tab" || keyName === "down" || keyName === "up") {
+    if (_key.tab || _key.downArrow || _key.upArrow) {
       const order: ActiveField[] = ["filename", "thinking", "toolDetails", "assistantMetadata", "openWithoutSaving"]
       const currentIndex = order.indexOf(active)
-      let nextIndex = currentIndex + (keyName === "up" ? -1 : 1)
+      let nextIndex = currentIndex + (_key.upArrow ? -1 : 1)
       if (nextIndex < 0) nextIndex = order.length - 1
       if (nextIndex >= order.length) nextIndex = 0
       setActive(order[nextIndex] as ActiveField)
       return
     }
 
-    if (keyName === "space" || char === " ") {
+    if (char === " ") {
       if (active === "thinking") setThinking(!thinking)
       if (active === "toolDetails") setToolDetails(!toolDetails)
       if (active === "assistantMetadata") setAssistantMetadata(!assistantMetadata)
@@ -71,7 +68,7 @@ export function DialogExportOptions({
     }
 
     if (active === "filename") {
-      if (keyName === "backspace") {
+      if (_key.backspace || _key.delete) {
         setFilename((prev) => prev.slice(0, -1))
       } else if (char) {
         setFilename((prev) => prev + char)

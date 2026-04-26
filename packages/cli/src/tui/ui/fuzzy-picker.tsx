@@ -80,24 +80,23 @@ export function FuzzyPicker<T>({
   useInput((input, _key, event) => {
     if (!event) return
 
-    const keyName = event.keypress.name
     const isCtrl = event.keypress.ctrl
     const isShift = event.keypress.shift
 
-    if (keyName === "up" || (isCtrl && keyName === "p")) {
+    if (_key.upArrow || (isCtrl && event.keypress.name === "p")) {
       step(direction === "up" ? 1 : -1)
       return
     }
-    if (keyName === "down" || (isCtrl && keyName === "n")) {
+    if (_key.downArrow || (isCtrl && event.keypress.name === "n")) {
       step(direction === "up" ? -1 : 1)
       return
     }
-    if (keyName === "return") {
+    if (_key.return) {
       const selected = filteredItems[focusedIndex]
       if (selected) onSelect(selected)
       return
     }
-    if (keyName === "tab") {
+    if (_key.tab) {
       const selected = filteredItems[focusedIndex]
       if (!selected) return
       const tabAction = isShift ? (onShiftTab ?? onTab) : onTab
@@ -108,11 +107,11 @@ export function FuzzyPicker<T>({
       }
       return
     }
-    if (keyName === "escape" || (isCtrl && keyName === "c")) {
+    if (_key.escape || (isCtrl && event.keypress.name === "c")) {
       onCancel()
       return
     }
-    if (keyName === "backspace") {
+    if (_key.backspace || _key.delete) {
       setQuery((q) => q.slice(0, -1))
       return
     }

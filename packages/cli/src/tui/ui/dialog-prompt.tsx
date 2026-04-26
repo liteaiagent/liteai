@@ -22,19 +22,16 @@ export function DialogPrompt({
 }: DialogPromptProps): React.ReactNode {
   const [input, setInput] = useState(value)
 
-  useInput((char, _key, event) => {
-    if (!event) return
-    const keyName = event.keypress.name
-
-    if (keyName === "return") {
+  useInput((char, _key) => {
+    if (_key.return) {
       onConfirm?.(input)
       return
     }
-    if (keyName === "escape") {
+    if (_key.escape) {
       onCancel?.()
       return
     }
-    if (keyName === "backspace") {
+    if (_key.backspace || _key.delete) {
       setInput((prev) => prev.slice(0, -1))
       return
     }

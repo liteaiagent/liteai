@@ -86,6 +86,14 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
   const session = useSession()
   const sync = useSync()
   const { theme } = useTheme()
+  const dialog = useDialog()
+
+  // ── Dialog-aware focus ──────────────────────────────────────────────────
+  // When a dialog (e.g., /models, /theme) is open, all prompt input handling
+  // must be disabled so arrow keys, Enter, and character input only reach the
+  // active dialog. Without this gate, both the dialog and the prompt's text
+  // input process the same keystrokes simultaneously.
+  const isDialogOpen = dialog.stack.length > 0
 
   // ── Terminal dimensions ─────────────────────────────────────────────────
   const terminalSize = useContext(TerminalSizeContext)
@@ -103,8 +111,6 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
 
   // ── History search state ────────────────────────────────────────────────
   const searchState = useHistorySearch()
-
-  const dialog = useDialog()
 
   const tuiCommands: Command[] = useMemo(
     () => [
@@ -315,7 +321,19 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       setPastedContents({})
       resetHistory()
     },
-    [pastedContents, session, mode, trackAndSetInput, resetHistory, searchState],
+    [
+      pastedContents,
+      session,
+      mode,
+      trackAndSetInput,
+      resetHistory,
+      searchState,
+      commandSuggestions,
+      input,
+      sync.command,
+      tuiCommands,
+      dialog,
+    ],
   )
 
   // ── Image paste handler ─────────────────────────────────────────────────
@@ -398,37 +416,40 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
   })
 
   // ── Global key handler ──────────────────────────────────────────────────
-  useInput((_char, key) => {
-    if (key.ctrl && _char === "r") {
-      searchState.startSearch()
-      return
-    }
-
-    if (key.escape) {
-      if (searchState.isSearching) {
-        searchState.cancelSearch()
+  useInput(
+    (_char, key) => {
+      if (key.ctrl && _char === "r") {
+        searchState.startSearch()
         return
       }
 
-      if (isLoading) {
-        void session.abort()
-        return
+      if (key.escape) {
+        if (searchState.isSearching) {
+          searchState.cancelSearch()
+          return
+        }
+
+        if (isLoading) {
+          void session.abort()
+          return
+        }
+
+        if (input.length > 0) {
+          trackAndSetInput("")
+          setCursorOffset(0)
+          setPastedContents({})
+          return
+        }
+
+        doublePressEsc()
       }
 
-      if (input.length > 0) {
-        trackAndSetInput("")
-        setCursorOffset(0)
-        setPastedContents({})
-        return
+      if (key.return && exitMessage.show) {
+        setExitMessage({ show: false })
       }
-
-      doublePressEsc()
-    }
-
-    if (key.return && exitMessage.show) {
-      setExitMessage({ show: false })
-    }
-  })
+    },
+    { isActive: !isDialogOpen },
+  )
 
   // ── Border color ────────────────────────────────────────────────────────
   const borderColor = useMemo((): Color => {
@@ -500,8 +521,8 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     onIsPastingChange: () => {
       // paste state managed by usePasteHandler
     },
-    focus: !searchState.isSearching,
-    showCursor: !searchState.isSearching,
+    focus: !searchState.isSearching && !isDialogOpen,
+    showCursor: !searchState.isSearching && !isDialogOpen,
     highlights,
     inlineGhostText,
     onTab,

@@ -401,7 +401,7 @@ export const Info = z
         z.object({
           usageCount: z.number(),
           lastUsedAt: z.number(),
-        })
+        }),
       )
       .optional()
       .describe("Tracks usage frequency and recency for slash commands"),

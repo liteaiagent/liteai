@@ -156,43 +156,43 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   useInput((input, _key, event) => {
     if (!event) return
 
-    const keyName = event.keypress.name
     const isCtrl = event.keypress.ctrl
 
-    if (keyName === "up" || (isCtrl && keyName === "p")) {
+    if (_key.upArrow || (isCtrl && event.keypress.name === "p")) {
       move(-1)
       return
     }
-    if (keyName === "down" || (isCtrl && keyName === "n")) {
+    if (_key.downArrow || (isCtrl && event.keypress.name === "n")) {
       move(1)
       return
     }
-    if (keyName === "pageup") {
+    if (_key.pageUp) {
       move(-10)
       return
     }
-    if (keyName === "pagedown") {
+    if (_key.pageDown) {
       move(10)
       return
     }
-    if (keyName === "home") {
+    if (_key.home) {
       setSelectedIndex(0)
       return
     }
-    if (keyName === "end") {
+    if (_key.end) {
       setSelectedIndex(flatOptions.length - 1)
       return
     }
-    if (keyName === "return" && selectedOption) {
+    if (_key.return && selectedOption) {
+      if (selectedOption.disabled) return
       selectedOption.onSelect?.(dialog)
       props.onSelect?.(selectedOption)
       return
     }
-    if (keyName === "escape") {
+    if (_key.escape) {
       dialog.clear()
       return
     }
-    if (keyName === "backspace") {
+    if (_key.backspace || _key.delete) {
       setQuery((q) => q.slice(0, -1))
       return
     }

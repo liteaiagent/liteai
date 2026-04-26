@@ -13,17 +13,14 @@ export type DialogConfirmProps = {
 export function DialogConfirm({ title, message, onConfirm, onCancel }: DialogConfirmProps): React.ReactNode {
   const [active, setActive] = useState<"confirm" | "cancel">("confirm")
 
-  useInput((_input, _key, event) => {
-    if (!event) return
-    const keyName = event.keypress.name
-
-    if (keyName === "return") {
+  useInput((_input, _key) => {
+    if (_key.return) {
       if (active === "confirm") onConfirm?.()
       else onCancel?.()
       return
     }
 
-    if (keyName === "left" || keyName === "right") {
+    if (_key.leftArrow || _key.rightArrow) {
       setActive((a) => (a === "confirm" ? "cancel" : "confirm"))
     }
   })
