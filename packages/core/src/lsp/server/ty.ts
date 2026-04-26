@@ -1,6 +1,6 @@
 import path from "node:path"
+import { which } from "@liteai/util/which"
 import { Filesystem } from "../../util/filesystem"
-import { which } from "../../util/which"
 import type { Info } from "./types"
 import { log, NearestRoot, spawn } from "./util"
 

@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url"
 import type { ToolKind } from "@agentclientprotocol/sdk"
+import { Log } from "@liteai/util/log"
 import { applyPatch } from "diff"
-import { Log } from "../util/log"
 
 const log = Log.create({ service: "acp-mapper" })
 

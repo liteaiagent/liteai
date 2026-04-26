@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import { Flag } from "../flag/flag"
 import type { TranscriptMessage } from "../session/transcript"
-import { Log } from "../util/log"
 
 const logger = Log.create({ service: "agent:fork" })
 

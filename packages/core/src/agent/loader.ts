@@ -1,5 +1,7 @@
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Glob } from "@liteai/util/glob"
+import { Log } from "@liteai/util/log"
 import type z from "zod"
 import { Brand } from "@/brand"
 import { Bus } from "@/bus"
@@ -12,9 +14,7 @@ import * as Platform from "@/platform"
 import { Instance } from "@/project/instance"
 import { Session } from "@/session"
 import { Filesystem } from "@/util/filesystem"
-import { Glob } from "@/util/glob"
 import { lazy } from "@/util/lazy"
-import { Log } from "@/util/log"
 export namespace AgentLoader {
   const log = Log.create({ service: "agent:loader" })
 

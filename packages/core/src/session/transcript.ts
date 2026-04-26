@@ -1,6 +1,6 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import { Log } from "@/util/log"
+import { Log } from "@liteai/util/log"
 
 const logger = Log.create({ service: "sidechain-transcript" })
 

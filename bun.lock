@@ -365,10 +365,17 @@
       "name": "@liteai/util",
       "version": "1.0.0",
       "dependencies": {
+        "@opentelemetry/api-logs": "0.214.0",
+        "glob": "13.0.5",
+        "mime-types": "3.0.2",
+        "minimatch": "10.0.3",
+        "which": "6.0.1",
         "zod": "catalog:",
       },
       "devDependencies": {
         "@types/bun": "catalog:",
+        "@types/mime-types": "3.0.1",
+        "@types/which": "3.0.4",
         "typescript": "catalog:",
       },
     },

@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import { Project } from "../../src/project/project"
 import { Server } from "../../src/server/server"
 import { Session } from "../../src/session"
 import type { Message } from "../../src/session/message"
 import { MessageID, PartID, type SessionID } from "../../src/session/schema"
-import { Log } from "../../src/util/log"
 
 const root = path.join(__dirname, "../..")
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 async function fill(sessionID: SessionID, count: number, time = (i: number) => Date.now() + i) {
   const ids = [] as MessageID[]

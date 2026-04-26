@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import type { BackgroundTaskRegistry } from "@/command/background"
-import { Log } from "@/util/log"
 import { Tool } from "./tool"
 
 const log = Log.create({ service: "send-command-input-tool" })

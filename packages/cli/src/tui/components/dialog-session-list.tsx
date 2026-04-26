@@ -1,4 +1,4 @@
-import { Locale } from "@liteai/core/util/locale"
+import { Locale } from "@liteai/util/locale"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useKeybind } from "../context/keybind"

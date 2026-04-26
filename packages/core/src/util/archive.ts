@@ -1,5 +1,5 @@
 import path from "node:path"
-import { Process } from "./process"
+import { Process } from "@liteai/util/process"
 
 export namespace Archive {
   export async function extractZip(zipPath: string, destDir: string) {

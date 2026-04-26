@@ -1,5 +1,5 @@
+import { Log } from "@liteai/util/log"
 import { Flag } from "@/flag/flag"
-import { Log } from "@/util/log"
 import type { PlatformProfile } from "./profile"
 import { claude } from "./profiles/claude"
 import { codex } from "./profiles/codex"

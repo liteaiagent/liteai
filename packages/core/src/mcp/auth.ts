@@ -1,8 +1,8 @@
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import { Global } from "../global"
 import { Filesystem } from "../util/filesystem"
-import { Log } from "../util/log"
 
 export namespace McpAuth {
   export const Tokens = z.object({

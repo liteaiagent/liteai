@@ -1,3 +1,4 @@
+import { Log } from "@liteai/util/log"
 import { Deferred, Effect, Layer, Schema, ServiceMap } from "effect"
 import z from "zod"
 import { AgentExecutionContext } from "@/agent/context"
@@ -9,7 +10,6 @@ import { MessageID, SessionID } from "@/session/schema"
 import { PermissionTable } from "@/session/session.sql"
 import { Database, eq } from "@/storage/db"
 import { InstanceState } from "@/util/instance-state"
-import { Log } from "@/util/log"
 import { Wildcard } from "@/util/wildcard"
 import { PermissionID } from "./schema"
 

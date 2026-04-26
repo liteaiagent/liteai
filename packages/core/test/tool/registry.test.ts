@@ -1,9 +1,9 @@
 import { describe, expect, spyOn, test } from "bun:test"
+import { Log } from "@liteai/util/log"
 import type { Agent } from "../../src/agent/agent"
 import { Instance } from "../../src/project/instance"
 import type { ModelID, ProviderID } from "../../src/provider/schema"
 import { ToolRegistry } from "../../src/tool/registry"
-import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
 describe("ToolRegistry (T051)", () => {

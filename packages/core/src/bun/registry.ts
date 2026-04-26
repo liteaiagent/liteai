@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
 import semver from "semver"
-import { Log } from "../util/log"
-import { Process } from "../util/process"
 
 export namespace PackageRegistry {
   const log = Log.create({ service: "bun" })

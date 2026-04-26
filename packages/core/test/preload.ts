@@ -60,11 +60,7 @@ beforeAll(async () => {
   await fs.writeFile(path.join(cacheDir, "version"), "14")
 
   const { Log } = await import("../src/util/log")
-  await Log.init({
-    print: false,
-    dev: true,
-    level: "DEBUG",
-  })
+  await Log.init({ dir: require("node:os").tmpdir(), print: false, dev: true, level: "DEBUG" })
 
   const { Project } = await import("../src/project/project")
   await Project.fromDirectory(path.join(import.meta.dir, ".."))

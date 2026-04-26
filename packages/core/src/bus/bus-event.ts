@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import type { ZodType } from "zod"
 import z from "zod"
-import { Log } from "../util/log"
 
 export namespace BusEvent {
   const _log = Log.create({ service: "event" })

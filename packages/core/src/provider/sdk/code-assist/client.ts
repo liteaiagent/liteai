@@ -3,8 +3,8 @@
 
 import * as readline from "node:readline"
 import { Readable } from "node:stream"
+import { Log } from "@liteai/util/log"
 import type { AuthClient } from "google-auth-library"
-import { Log } from "@/util/log"
 import type {
   CAGenerateContentRequest,
   CAGenerateContentResponse,

@@ -1,4 +1,4 @@
-import { which } from "../../util/which"
+import { which } from "@liteai/util/which"
 import type { Info } from "./types"
 import { NearestRoot, output, spawn } from "./util"
 

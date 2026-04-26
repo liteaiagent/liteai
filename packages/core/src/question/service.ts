@@ -1,10 +1,10 @@
+import { Log } from "@liteai/util/log"
 import { Deferred, Effect, Layer, Schema, ServiceMap } from "effect"
 import z from "zod"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { MessageID, SessionID } from "@/session/schema"
 import { InstanceState } from "@/util/instance-state"
-import { Log } from "@/util/log"
 import { QuestionID } from "./schema"
 
 const log = Log.create({ service: "question" })

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { Log } from "@/util/log"
+import { Log } from "@liteai/util/log"
 import type { EngineEvent } from "../events"
 import { ThinkingLoopDetector } from "./thinking-loop-detector"
 

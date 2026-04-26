@@ -1,9 +1,9 @@
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { FileWatcher } from "@/file/watcher"
 import { git } from "@/util/git"
-import { Log } from "@/util/log"
 import { Instance } from "./instance"
 
 const log = Log.create({ service: "vcs" })

@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import { Message } from "../../src/session/message"
 import { MessageID, PartID } from "../../src/session/schema"
-import { Log } from "../../src/util/log"
 
 const projectRoot = path.join(__dirname, "../..")
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 describe("session.started event", () => {
   test("should emit session.started event when session is created", async () => {

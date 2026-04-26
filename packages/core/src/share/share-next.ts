@@ -1,4 +1,5 @@
 import type * as SDK from "@liteai/sdk"
+import { Log } from "@liteai/util/log"
 import { Account } from "@/account"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"
@@ -8,7 +9,6 @@ import { Session } from "@/session"
 import { Message } from "@/session/message"
 import type { SessionID } from "@/session/schema"
 import { Database, eq } from "@/storage/db"
-import { Log } from "@/util/log"
 import { SessionShareTable } from "./share.sql"
 
 export namespace ShareNext {

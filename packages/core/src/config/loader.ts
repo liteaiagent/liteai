@@ -2,6 +2,7 @@ import { existsSync } from "node:fs"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import {
   applyEdits,
   type ParseError as JsoncParseError,
@@ -21,7 +22,6 @@ import { Global } from "../global"
 import { Instance } from "../project/instance"
 import { Event } from "../server/event"
 import { lazy } from "../util/lazy"
-import { Log } from "../util/log"
 import { ConfigPaths } from "./paths"
 import { defaultConfig, Info, schema } from "./schema"
 

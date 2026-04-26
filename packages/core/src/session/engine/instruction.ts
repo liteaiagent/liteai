@@ -1,13 +1,13 @@
 import os from "node:os"
 import path from "node:path"
+import { Glob } from "@liteai/util/glob"
+import { Log } from "@liteai/util/log"
 import { Flag } from "@/flag/flag"
 import * as Platform from "@/platform"
 import { Config } from "../../config/config"
 import { Global } from "../../global"
 import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
-import { Glob } from "../../util/glob"
-import { Log } from "../../util/log"
 import type { Message } from "../message"
 
 const log = Log.create({ service: "session.instruction" })

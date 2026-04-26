@@ -1,6 +1,6 @@
 import { type McpServer, RequestError } from "@agentclientprotocol/sdk"
 import type { LiteaiClient } from "@liteai/sdk"
-import { Log } from "@/util/log"
+import { Log } from "@liteai/util/log"
 import type { ACPSessionState } from "./types"
 
 const log = Log.create({ service: "acp-session-manager" })

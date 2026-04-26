@@ -1,5 +1,5 @@
 import { createConnection } from "node:net"
-import { Log } from "../util/log"
+import { Log } from "@liteai/util/log"
 import { OAUTH_CALLBACK_PATH, OAUTH_CALLBACK_PORT } from "./oauth-provider"
 
 const log = Log.create({ service: "mcp.oauth-callback" })

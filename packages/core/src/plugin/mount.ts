@@ -6,9 +6,9 @@
  */
 
 import fs from "node:fs/promises"
+import { Log } from "@liteai/util/log"
 import { mergeDeep } from "remeda"
 import type { Config } from "@/config/config"
-import { Log } from "@/util/log"
 import { vars } from "./env"
 import type { Loaded } from "./loader"
 

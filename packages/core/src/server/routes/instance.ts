@@ -1,3 +1,4 @@
+import { Log } from "@liteai/util/log"
 import { Hono } from "hono"
 import { streamSSE } from "hono/streaming"
 import { describeRoute, resolver } from "hono-openapi"
@@ -13,7 +14,6 @@ import { Project } from "../../project/project"
 import { Vcs } from "../../project/vcs"
 import { Skill } from "../../skill/skill"
 import { lazy } from "../../util/lazy"
-import { Log } from "../../util/log"
 import { HEARTBEAT_INTERVAL_MS } from "../constants"
 import { Event } from "../event"
 

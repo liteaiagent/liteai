@@ -4,6 +4,7 @@
 // https://github.com/cline/cline/blob/main/evals/diff-edits/diff-apply/diff-06-26-25.ts
 
 import * as path from "node:path"
+import { Log } from "@liteai/util/log"
 import { createTwoFilesPatch, diffLines } from "diff"
 import z from "zod"
 import type { Snapshot } from "@/snapshot"
@@ -16,7 +17,6 @@ import { Format } from "../format"
 import { LSP } from "../lsp"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
-import { Log } from "../util/log"
 import { assertExternalDirectory } from "./external-directory"
 import { Tool } from "./tool"
 

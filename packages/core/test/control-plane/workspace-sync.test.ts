@@ -1,4 +1,5 @@
 import { afterEach, describe, mock, test } from "bun:test"
+import { Log } from "@liteai/util/log"
 import { GlobalBus } from "../../src/bus/global"
 import * as adaptors from "../../src/control-plane/adaptors"
 import { WorkspaceID } from "../../src/control-plane/schema"
@@ -6,7 +7,6 @@ import type { Adaptor } from "../../src/control-plane/types"
 import { WorkspaceTable } from "../../src/control-plane/workspace.sql"
 import { Project } from "../../src/project/project"
 import { Database } from "../../src/storage/db"
-import { Log } from "../../src/util/log"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
 
@@ -15,7 +15,7 @@ afterEach(async () => {
   await resetDatabase()
 }, 10_000)
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 const remote = { type: "testing", name: "remote-a" } as unknown as typeof WorkspaceTable.$inferInsert
 

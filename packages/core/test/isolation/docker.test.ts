@@ -2,10 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, spyOn } from "bun:test"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
+import { Process } from "@liteai/util/process"
 import { Global } from "@/global/index"
 import { DockerIsolation } from "@/isolation/docker"
 import { IsolationArtifactRegistry } from "@/isolation/registry"
-import { Process } from "@/util/process"
 
 describe("Docker Isolation Mode", () => {
   let tempDir: string

@@ -1,3 +1,4 @@
+import { Log } from "@liteai/util/log"
 import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js"
 import type {
   OAuthClientInformation,
@@ -5,7 +6,6 @@ import type {
   OAuthClientMetadata,
   OAuthTokens,
 } from "@modelcontextprotocol/sdk/shared/auth.js"
-import { Log } from "../util/log"
 import { McpAuth } from "./auth"
 
 const log = Log.create({ service: "mcp.oauth" })

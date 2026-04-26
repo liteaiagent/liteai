@@ -1,4 +1,4 @@
-import { Glob } from "../util/glob"
+import { Glob } from "@liteai/util/glob"
 
 export namespace FileIgnore {
   const FOLDERS = new Set([

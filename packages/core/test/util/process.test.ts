@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { Process } from "../../src/util/process"
+import { Process } from "@liteai/util/process"
 import { tmpdir } from "../fixture/fixture"
 
 function node(script: string) {

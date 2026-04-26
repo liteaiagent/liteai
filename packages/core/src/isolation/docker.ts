@@ -2,9 +2,9 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
 import z from "zod"
-import { Log } from "@/util/log"
-import { Process } from "@/util/process"
 
 const log = Log.create({ service: "isolation:docker" })
 

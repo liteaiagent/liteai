@@ -14,8 +14,8 @@
  * 6. Message history — for `useArrowKeyHistory` from sync store
  */
 
-import { Log } from "@liteai/core/util/log"
 import type { FilePartInput, TextPartInput } from "@liteai/sdk"
+import { Log } from "@liteai/util/log"
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { PromptInputMode } from "../types/text-input"
 import { createSimpleContext } from "./helper"

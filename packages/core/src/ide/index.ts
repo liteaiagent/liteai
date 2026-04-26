@@ -1,8 +1,8 @@
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
 import { spawn } from "bun"
 import z from "zod"
 import { BusEvent } from "@/bus/bus-event"
-import { Log } from "../util/log"
 
 const SUPPORTED_IDES = [
   { name: "Windsurf" as const, cmd: "windsurf" },

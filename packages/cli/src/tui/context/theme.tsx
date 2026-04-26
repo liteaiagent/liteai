@@ -1,8 +1,8 @@
 import path from "node:path"
 import { Global } from "@liteai/core/global/index"
-import { Filesystem } from "@liteai/core/util/filesystem"
-import { Glob } from "@liteai/core/util/glob"
 import { type TerminalColors as InkTerminalColors, useApp, useStdin } from "@liteai/ink"
+import { Fs as Filesystem } from "@liteai/util/fs"
+import { Glob } from "@liteai/util/glob"
 import * as color from "../util/color"
 import { fromInts, parseHex } from "../util/color"
 

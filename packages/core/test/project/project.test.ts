@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, mock, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { $ } from "bun"
 import { GlobalBus } from "../../src/bus/global"
 import { Project } from "../../src/project/project"
 import { ProjectID } from "../../src/project/schema"
 import { Filesystem } from "../../src/util/filesystem"
-import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 const gitModule = await import("../../src/util/git")
 const originalGit = gitModule.git

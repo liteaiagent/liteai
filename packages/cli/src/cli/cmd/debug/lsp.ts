@@ -1,7 +1,7 @@
 import { EOL } from "node:os"
 import { setTimeout as sleep } from "node:timers/promises"
 import { LSP } from "@liteai/core/lsp/index"
-import { Log } from "@liteai/core/util/log"
+import { Log } from "@liteai/util/log"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 

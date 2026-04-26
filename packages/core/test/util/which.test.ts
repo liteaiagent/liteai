@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
-import { which } from "../../src/util/which"
+import { which } from "@liteai/util/which"
 import { tmpdir } from "../fixture/fixture"
 
 async function cmd(dir: string, name: string, exec = true) {

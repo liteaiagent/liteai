@@ -1,7 +1,7 @@
-import { Locale } from "@liteai/core/util/locale"
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as UserMessageInfo } from "@liteai/sdk"
+import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
 import { useKeybind } from "../../context/keybind"
 import { useLocal } from "../../context/local"

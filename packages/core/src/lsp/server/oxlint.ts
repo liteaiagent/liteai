@@ -1,9 +1,9 @@
 import path from "node:path"
 import { text } from "node:stream/consumers"
+import { Process } from "@liteai/util/process"
+import { which } from "@liteai/util/which"
 import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
-import { Process } from "../../util/process"
-import { which } from "../../util/which"
 import type { Info } from "./types"
 import { log, NearestRoot, spawn } from "./util"
 

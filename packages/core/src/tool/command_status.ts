@@ -1,7 +1,7 @@
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import type { BackgroundTaskRegistry } from "@/command/background"
 import { interpretCommandResult } from "@/command/semantics"
-import { Log } from "@/util/log"
 import { Tool } from "./tool"
 
 const log = Log.create({ service: "command-status-tool" })

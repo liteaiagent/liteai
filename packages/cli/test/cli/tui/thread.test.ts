@@ -16,7 +16,7 @@ mock.module("../../../src/cli/cmd/tui/app", () => ({
   },
 }))
 
-mock.module("@liteai/core/util/rpc", () => ({
+mock.module("@liteai/util/rpc", () => ({
   Rpc: {
     client: () => ({
       call: async () => ({ url: "http://127.0.0.1" }),
@@ -31,7 +31,7 @@ mock.module("../../../src/cli/ui", () => ({
   },
 }))
 
-mock.module("@liteai/core/util/log", () => ({
+mock.module("@liteai/util/log", () => ({
   Log: {
     init: async () => {},
     create: () => ({
@@ -50,7 +50,7 @@ mock.module("@liteai/core/util/log", () => ({
   },
 }))
 
-mock.module("@liteai/core/util/timeout", () => ({
+mock.module("@liteai/util/timeout", () => ({
   withTimeout: <T>(input: Promise<T>) => input,
 }))
 

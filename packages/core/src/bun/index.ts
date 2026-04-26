@@ -1,12 +1,12 @@
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
 import z from "zod"
 import { proxied } from "@/util/proxied"
 import { Global } from "../global"
 import { Filesystem } from "../util/filesystem"
 import { Lock } from "../util/lock"
-import { Log } from "../util/log"
-import { Process } from "../util/process"
 import { PackageRegistry } from "./registry"
 
 export namespace BunProc {

@@ -1,4 +1,5 @@
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
 import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api"
 import type { ErrorHandler, MiddlewareHandler } from "hono"
 import { basicAuth } from "hono/basic-auth"
@@ -16,7 +17,6 @@ import { Project } from "../project/project"
 import { ProjectID } from "../project/schema"
 import { Provider } from "../provider/provider"
 import { NotFoundError } from "../storage/db"
-import { Log } from "../util/log"
 
 // ---------------------------------------------------------------------------
 // Error handler

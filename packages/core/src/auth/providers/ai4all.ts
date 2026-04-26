@@ -1,7 +1,7 @@
+import { Log } from "@liteai/util/log"
 import { Auth } from "@/auth"
 import { Env } from "@/env"
 import { Installation } from "@/installation"
-import { Log } from "@/util/log"
 import type { AuthProvider } from "../provider"
 
 const log = Log.create({ service: "auth.ai4all" })

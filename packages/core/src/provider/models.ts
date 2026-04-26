@@ -1,11 +1,11 @@
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import { lazy } from "@/util/lazy"
 import { Flag } from "../flag/flag"
 import { Global } from "../global"
 import { Installation } from "../installation"
 import { Filesystem } from "../util/filesystem"
-import { Log } from "../util/log"
 
 // Try to import bundled snapshot (generated at build time)
 // Falls back to undefined in dev mode when snapshot doesn't exist

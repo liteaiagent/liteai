@@ -1,10 +1,10 @@
 import { text } from "node:stream/consumers"
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
+import { which } from "@liteai/util/which"
 import { BunProc } from "../bun"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
-import { Log } from "../util/log"
-import { Process } from "../util/process"
-import { which } from "../util/which"
 
 const log = Log.create({ service: "formatter" })
 

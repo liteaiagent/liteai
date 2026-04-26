@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import { initializeAuthProviders } from "@/auth/registry"
 import { ShareNext } from "@/share/share-next"
-import { Log } from "@/util/log"
 import { Bus } from "../bus"
 import { Capabilities } from "../capabilities"
 import { Command } from "../command"

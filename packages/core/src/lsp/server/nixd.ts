@@ -1,5 +1,5 @@
+import { which } from "@liteai/util/which"
 import { Instance } from "../../project/instance"
-import { which } from "../../util/which"
 import type { Info } from "./types"
 import { log, NearestRoot, spawn } from "./util"
 

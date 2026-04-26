@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import { ModelID, ProviderID } from "../../src/provider/schema"
 import { Session } from "../../src/session"
 import { SessionPrompt } from "../../src/session/engine"
 import { Message } from "../../src/session/message"
-import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 describe("session.prompt missing file", () => {
   test("does not fail the prompt when a file part is missing", async () => {

@@ -1,4 +1,4 @@
-import { Log } from "@/util/log"
+import { Log } from "@liteai/util/log"
 import type { EngineEvent } from "../events"
 
 const log = Log.create({ service: "session.streaming-tool-executor" })

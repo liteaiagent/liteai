@@ -1,16 +1,16 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import { ModelID, ProviderID } from "../../src/provider/schema"
 import { Session } from "../../src/session"
 import type { Message } from "../../src/session/message"
 import { SessionRevert } from "../../src/session/revert"
 import { MessageID, PartID } from "../../src/session/schema"
-import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
 const _projectRoot = path.join(__dirname, "../..")
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 describe("revert + compact workflow", () => {
   test("should properly handle compact command after revert", async () => {

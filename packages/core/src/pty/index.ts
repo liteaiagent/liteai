@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process"
 import { lazy } from "@liteai/util/lazy"
+import { Log } from "@liteai/util/log"
 import type { IPty } from "bun-pty"
 import z from "zod"
 import { Bus } from "@/bus"
@@ -7,7 +8,6 @@ import { BusEvent } from "@/bus/bus-event"
 import { Plugin } from "@/plugin"
 import { Shell } from "@/shell/shell"
 import { Instance } from "../project/instance"
-import { Log } from "../util/log"
 import { PtyID } from "./schema"
 
 export namespace Pty {

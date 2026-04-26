@@ -14,8 +14,8 @@
  * - `getPlatform()` → `process.platform` directly
  */
 
-import { Log } from "@liteai/core/util/log"
 import type { InputEvent, Key } from "@liteai/ink"
+import { Log } from "@liteai/util/log"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ImageDimensions } from "../util/image-paste"
 import { getImageFromClipboard, isImageFilePath, PASTE_THRESHOLD, tryReadImageFromPath } from "../util/image-paste"

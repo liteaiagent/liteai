@@ -1,3 +1,4 @@
+import { Log } from "@liteai/util/log"
 import { Hono } from "hono"
 import { type BunWebSocketData, websocket } from "hono/bun"
 import { describeRoute, generateSpecs, openAPIRouteHandler, resolver, validator } from "hono-openapi"
@@ -5,7 +6,6 @@ import z from "zod"
 import { lazy } from "@/util/lazy"
 import { WorkspaceRouterMiddleware } from "../control-plane/workspace-router-middleware"
 import { Project } from "../project/project"
-import { Log } from "../util/log"
 import { API_INFO } from "./constants"
 import { MDNS } from "./mdns"
 import {

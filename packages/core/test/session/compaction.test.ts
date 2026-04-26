@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import type { Provider } from "../../src/provider/provider"
 import { Session } from "../../src/session"
 import { SessionCompaction } from "../../src/session/tasks/compaction"
-import { Log } from "../../src/util/log"
 import { Token } from "../../src/util/token"
 import { tmpdir } from "../fixture/fixture"
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 function createModel(opts: {
   context: number

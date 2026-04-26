@@ -1,10 +1,10 @@
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
+import { which } from "@liteai/util/which"
 import { Flag } from "../../flag/flag"
 import { Global } from "../../global"
 import { Filesystem } from "../../util/filesystem"
-import { which } from "../../util/which"
 import type { Info } from "./types"
 import { log, NearestRoot, pathExists, run, spawn } from "./util"
 

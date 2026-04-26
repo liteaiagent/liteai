@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { GlobalBus } from "../../src/bus/global"
 import { InstanceBootstrap } from "../../src/project/bootstrap"
 import { Instance } from "../../src/project/instance"
 import { Server } from "../../src/server/server"
 import { Snapshot } from "../../src/snapshot"
 import { Filesystem } from "../../src/util/filesystem"
-import { Log } from "../../src/util/log"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 afterEach(async () => {
   await resetDatabase()

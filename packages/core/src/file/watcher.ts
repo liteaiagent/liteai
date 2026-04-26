@@ -1,5 +1,7 @@
 import { readdir } from "node:fs/promises"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
+import { withTimeout } from "@liteai/util/timeout"
 import type ParcelWatcher from "@parcel/watcher"
 // @ts-expect-error
 import { createWrapper } from "@parcel/watcher/wrapper"
@@ -9,10 +11,8 @@ import { BusEvent } from "@/bus/bus-event"
 import { Flag } from "@/flag/flag"
 import { git } from "@/util/git"
 import { lazy } from "@/util/lazy"
-import { withTimeout } from "@/util/timeout"
 import { Config } from "../config/config"
 import { Instance } from "../project/instance"
-import { Log } from "../util/log"
 import { FileIgnore } from "./ignore"
 import { Protected } from "./protected"
 

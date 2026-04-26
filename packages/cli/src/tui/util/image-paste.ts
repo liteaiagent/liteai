@@ -15,7 +15,7 @@ import { execFile } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { readFileSync } from "node:fs"
 import { basename, extname, isAbsolute, join } from "node:path"
-import { Log } from "@liteai/core/util/log"
+import { Log } from "@liteai/util/log"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

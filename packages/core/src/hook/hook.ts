@@ -1,6 +1,5 @@
+import { Log } from "@liteai/util/log"
 import z from "zod"
-
-import { Log } from "@/util/log"
 
 import { command as exec } from "./command"
 import { http } from "./http"

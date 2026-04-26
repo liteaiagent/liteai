@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import { Provider } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
-import { Log } from "../util/log"
 import type { ACPConfig } from "./types"
 
 const log = Log.create({ service: "acp-model" })

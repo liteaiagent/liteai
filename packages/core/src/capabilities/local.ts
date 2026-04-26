@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, statSync } from "node:fs"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname } from "node:path"
-import { Process } from "../util/process"
+import { Process } from "@liteai/util/process"
 import type {
   FileEntry,
   FileStat,

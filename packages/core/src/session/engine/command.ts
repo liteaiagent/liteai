@@ -49,7 +49,7 @@ export type CommandInput = z.infer<typeof CommandInput>
  */
 
 export async function command(input: CommandInput) {
-  const log = (await import("../../util/log")).Log.create({ service: "session.prompt.command" })
+  const log = (await import("@liteai/util/log")).Log.create({ service: "session.prompt.command" })
   log.info("command", input)
   const cmd = await Command.get(input.command)
   const agentName = cmd.agent ?? input.agent ?? (await Agent.defaultAgent())

@@ -1,10 +1,10 @@
 import { spawn as launch } from "node:child_process"
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
 import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
-import { Log } from "../../util/log"
-import { Process } from "../../util/process"
 
 export const spawn = ((cmd, args, opts) => {
   const proc = Array.isArray(args)

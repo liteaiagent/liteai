@@ -1,6 +1,8 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
 import z from "zod"
 import { BusEvent } from "@/bus/bus-event"
 import { GlobalBus } from "@/bus/global"
@@ -13,8 +15,6 @@ import type { ProjectID } from "../project/schema"
 import { Database, eq } from "../storage/db"
 import { fn } from "../util/fn"
 import { git } from "../util/git"
-import { Log } from "../util/log"
-import { Process } from "../util/process"
 
 export namespace Worktree {
   const log = Log.create({ service: "worktree" })

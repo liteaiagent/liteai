@@ -1,6 +1,6 @@
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
 import z from "zod"
-import { Log } from "@/util/log"
 import type { TranscriptMessage } from "../session/transcript"
 
 const logger = Log.create({ service: "permission:classifier" })

@@ -1,4 +1,4 @@
-import { Log } from "@/util/log"
+import { Log } from "@liteai/util/log"
 import type { AuthProvider } from "./provider"
 import { Ai4allAuth } from "./providers/ai4all"
 import { CodeAssistAuth } from "./providers/code-assist"

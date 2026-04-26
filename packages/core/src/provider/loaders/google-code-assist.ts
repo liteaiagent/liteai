@@ -1,4 +1,4 @@
-import { Log } from "@/util/log"
+import { Log } from "@liteai/util/log"
 import type { Provider } from "../provider"
 import { ModelID, ProviderID } from "../schema"
 import { CA_ENDPOINT } from "../sdk/code-assist/client"

@@ -1,5 +1,5 @@
+import { Log } from "@liteai/util/log"
 import { Instance } from "../project/instance"
-import { Log } from "../util/log"
 
 export namespace Scheduler {
   const log = Log.create({ service: "scheduler" })

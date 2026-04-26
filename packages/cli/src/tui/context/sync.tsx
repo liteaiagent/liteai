@@ -1,5 +1,4 @@
 import type { Snapshot } from "@liteai/core/snapshot/index"
-import { Log } from "@liteai/core/util/log"
 import type {
   Agent,
   Command,
@@ -21,6 +20,7 @@ import type {
   Workspace,
 } from "@liteai/sdk"
 import { Binary } from "@liteai/util/binary"
+import { Log } from "@liteai/util/log"
 import { useEffect, useMemo, useRef } from "react"
 import { useStore } from "zustand"
 import { immer } from "zustand/middleware/immer"

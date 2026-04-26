@@ -1,11 +1,6 @@
-import { createWriteStream, existsSync, realpathSync, statSync } from "node:fs"
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname, join, resolve as pathResolve, relative } from "node:path"
-import { Readable } from "node:stream"
-import { pipeline } from "node:stream/promises"
-import { lookup } from "mime-types"
+import type { Readable } from "node:stream"
+import { Fs as NativeFs } from "@liteai/util/fs"
 import { Capabilities } from "../capabilities/context"
-import { Glob } from "./glob"
 
 export namespace Filesystem {
   // Fast sync version for metadata checks
@@ -13,75 +8,41 @@ export namespace Filesystem {
     if (Capabilities.ready() && Capabilities.isHosted()) {
       return Capabilities.get().fs.exists(p)
     }
-    return existsSync(p)
+    return NativeFs.exists(p)
   }
 
-  export async function isDir(p: string): Promise<boolean> {
-    try {
-      return statSync(p).isDirectory()
-    } catch {
-      return false
-    }
-  }
-
-  export function stat(p: string): ReturnType<typeof statSync> | undefined {
-    return statSync(p, { throwIfNoEntry: false }) ?? undefined
-  }
-
-  export async function size(p: string): Promise<number> {
-    const s = stat(p)?.size ?? 0
-    return typeof s === "bigint" ? Number(s) : s
-  }
+  export const isDir = NativeFs.isDir
+  export const stat = NativeFs.stat
+  export const size = NativeFs.size
 
   export async function readText(p: string): Promise<string> {
     if (Capabilities.ready() && Capabilities.isHosted()) {
       return Capabilities.get().fs.readFile(p)
     }
-    return readFile(p, "utf-8")
+    return NativeFs.readText(p)
   }
 
   export async function readJson<T = unknown>(p: string): Promise<T> {
-    return JSON.parse(await readFile(p, "utf-8"))
+    return JSON.parse(await readText(p))
   }
 
   export async function readBytes(p: string): Promise<Buffer> {
     if (Capabilities.ready() && Capabilities.isHosted()) {
       return Capabilities.get().fs.readFileBytes(p)
     }
-    return readFile(p)
+    return NativeFs.readBytes(p)
   }
 
   export async function readArrayBuffer(p: string): Promise<ArrayBuffer> {
-    const buf = await readFile(p)
+    const buf = await readBytes(p)
     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
-  }
-
-  function isEnoent(e: unknown): e is { code: "ENOENT" } {
-    return typeof e === "object" && e !== null && "code" in e && (e as { code: string }).code === "ENOENT"
   }
 
   export async function write(p: string, content: string | Buffer | Uint8Array, mode?: number): Promise<void> {
     if (Capabilities.ready() && Capabilities.isHosted() && !mode) {
       return Capabilities.get().fs.writeFile(p, content)
     }
-    try {
-      if (mode) {
-        await writeFile(p, content, { mode })
-      } else {
-        await writeFile(p, content)
-      }
-    } catch (e) {
-      if (isEnoent(e)) {
-        await mkdir(dirname(p), { recursive: true })
-        if (mode) {
-          await writeFile(p, content, { mode })
-        } else {
-          await writeFile(p, content)
-        }
-        return
-      }
-      throw e
-    }
+    return NativeFs.write(p, content, mode)
   }
 
   export async function writeJson(p: string, data: unknown, mode?: number): Promise<void> {
@@ -93,85 +54,25 @@ export namespace Filesystem {
     stream: ReadableStream<Uint8Array> | Readable,
     mode?: number,
   ): Promise<void> {
-    const dir = dirname(p)
-    if (!existsSync(dir)) {
-      await mkdir(dir, { recursive: true })
-    }
-
-    const nodeStream =
-      stream instanceof ReadableStream
-        ? Readable.fromWeb(stream as unknown as import("stream/web").ReadableStream)
-        : stream
-    const writeStream = createWriteStream(p)
-    await pipeline(nodeStream, writeStream)
-
-    if (mode) {
-      await chmod(p, mode)
-    }
+    // Hosted write stream not supported yet, fallback to Native
+    return NativeFs.writeStream(p, stream, mode)
   }
 
-  export function mimeType(p: string): string {
-    return lookup(p) || "application/octet-stream"
-  }
-
-  /**
-   * On Windows, normalize a path to its canonical casing using the filesystem.
-   * This is needed because Windows paths are case-insensitive but LSP servers
-   * may return paths with different casing than what we send them.
-   */
-  export function normalizePath(p: string): string {
-    if (process.platform !== "win32") return p
-    try {
-      return realpathSync.native(p)
-    } catch {
-      return p
-    }
-  }
-
-  // We cannot rely on path.resolve() here because git.exe may come from Git Bash, Cygwin, or MSYS2, so we need to translate these paths at the boundary.
-  // Also resolves symlinks so that callers using the result as a cache key
-  // always get the same canonical path for a given physical directory.
-  export function resolve(p: string): string {
-    const resolved = pathResolve(windowsPath(p))
-    try {
-      return normalizePath(realpathSync(resolved))
-    } catch (e) {
-      if (isEnoent(e)) return normalizePath(resolved)
-      throw e
-    }
-  }
-
-  export function windowsPath(p: string): string {
-    if (process.platform !== "win32") return p
-    return (
-      p
-        .replace(/^\/([a-zA-Z]):(?:[\\/]|$)/, (_, drive) => `${drive.toUpperCase()}:/`)
-        // Git Bash for Windows paths are typically /<drive>/...
-        .replace(/^\/([a-zA-Z])(?:\/|$)/, (_, drive) => `${drive.toUpperCase()}:/`)
-        // Cygwin git paths are typically /cygdrive/<drive>/...
-        .replace(/^\/cygdrive\/([a-zA-Z])(?:\/|$)/, (_, drive) => `${drive.toUpperCase()}:/`)
-        // WSL paths are typically /mnt/<drive>/...
-        .replace(/^\/mnt\/([a-zA-Z])(?:\/|$)/, (_, drive) => `${drive.toUpperCase()}:/`)
-    )
-  }
-  export function overlaps(a: string, b: string) {
-    const relA = relative(a, b)
-    const relB = relative(b, a)
-    return !relA || !relA.startsWith("..") || !relB || !relB.startsWith("..")
-  }
-
-  export function contains(parent: string, child: string) {
-    return !relative(parent, child).startsWith("..")
-  }
+  export const mimeType = NativeFs.mimeType
+  export const normalizePath = NativeFs.normalizePath
+  export const resolve = NativeFs.resolve
+  export const windowsPath = NativeFs.windowsPath
+  export const overlaps = NativeFs.overlaps
+  export const contains = NativeFs.contains
 
   export async function findUp(target: string, start: string, stop?: string) {
     let current = start
     const result = []
     while (true) {
-      const search = join(current, target)
+      const search = NativeFs.resolve(NativeFs.windowsPath(`${current}/${target}`))
       if (await exists(search)) result.push(search)
       if (stop === current) break
-      const parent = dirname(current)
+      const parent = NativeFs.resolve(NativeFs.windowsPath(`${current}/..`))
       if (parent === current) break
       current = parent
     }
@@ -183,36 +84,15 @@ export namespace Filesystem {
     let current = start
     while (true) {
       for (const target of targets) {
-        const search = join(current, target)
+        const search = NativeFs.resolve(NativeFs.windowsPath(`${current}/${target}`))
         if (await exists(search)) yield search
       }
       if (stop === current) break
-      const parent = dirname(current)
+      const parent = NativeFs.resolve(NativeFs.windowsPath(`${current}/..`))
       if (parent === current) break
       current = parent
     }
   }
 
-  export async function globUp(pattern: string, start: string, stop?: string) {
-    let current = start
-    const result = []
-    while (true) {
-      try {
-        const matches = await Glob.scan(pattern, {
-          cwd: current,
-          absolute: true,
-          include: "file",
-          dot: true,
-        })
-        result.push(...matches)
-      } catch {
-        // Skip invalid glob patterns
-      }
-      if (stop === current) break
-      const parent = dirname(current)
-      if (parent === current) break
-      current = parent
-    }
-    return result
-  }
+  export const globUp = NativeFs.globUp
 }

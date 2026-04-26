@@ -15,8 +15,8 @@
 
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { $ } from "bun"
-import { Log } from "@/util/log"
 import { dir as cacheDir } from "./cache"
 import type { PluginEntry, PluginSource } from "./marketplace"
 import { dir as marketDir } from "./marketplace"

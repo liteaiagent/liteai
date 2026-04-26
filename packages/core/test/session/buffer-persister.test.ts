@@ -15,6 +15,7 @@
  */
 
 import { describe, expect, test } from "bun:test"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import { ProjectTable } from "../../src/project/project.sql"
 import type { Provider } from "../../src/provider/provider"
@@ -24,10 +25,9 @@ import { Message } from "../../src/session/message"
 import { MessageID, SessionID } from "../../src/session/schema"
 import { MessageTable, SessionTable } from "../../src/session/session.sql"
 import { Database } from "../../src/storage/db"
-import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

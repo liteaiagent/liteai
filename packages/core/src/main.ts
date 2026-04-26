@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { Log } from "@liteai/util/log"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 /**
@@ -12,7 +13,6 @@ import { Instance } from "./project/instance"
 import { Server } from "./server/server"
 import { Database } from "./storage/db"
 import { initializeTelemetry, shutdownTelemetry } from "./telemetry/instrumentation"
-import { Log } from "./util/log"
 
 const args = await yargs(hideBin(process.argv))
   .scriptName("liteai-core")
@@ -80,7 +80,10 @@ if (args.csrfToken) {
   process.env.LITEAI_SERVER_CSRF_TOKEN = args.csrfToken
 }
 
+const { Global } = await import("./global/index")
+
 await Log.init({
+  dir: Global.Path.log,
   print: args.printLogs,
   dev: Installation.isLocal(),
   level: args.debug ? "DEBUG" : "INFO",

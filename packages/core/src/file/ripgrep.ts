@@ -4,15 +4,15 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { text } from "node:stream/consumers"
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
+import { Process } from "@liteai/util/process"
+import { which } from "@liteai/util/which"
 import { BlobReader, BlobWriter, ZipReader } from "@zip.js/zip.js"
 import z from "zod"
 import { Brand } from "@/brand"
-import { Log } from "@/util/log"
 import { Global } from "../global"
 import { Filesystem } from "../util/filesystem"
 import { lazy } from "../util/lazy"
-import { Process } from "../util/process"
-import { which } from "../util/which"
 
 export namespace Ripgrep {
   const log = Log.create({ service: "ripgrep" })

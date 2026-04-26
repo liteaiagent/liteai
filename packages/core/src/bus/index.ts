@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import { Instance } from "../project/instance"
-import { Log } from "../util/log"
 import { BusEvent } from "./bus-event"
 import { GlobalBus } from "./global"
 

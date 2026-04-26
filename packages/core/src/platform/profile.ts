@@ -1,6 +1,6 @@
+import { Log } from "@liteai/util/log"
 import type { Config } from "@/config/config"
 import type { PermissionNext } from "@/permission/next"
-import { Log } from "@/util/log"
 
 /**
  * A platform profile defines the directory conventions, file patterns,

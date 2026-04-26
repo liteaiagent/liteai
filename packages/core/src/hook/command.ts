@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
+import { which } from "@liteai/util/which"
 import { Instance } from "@/project/instance"
 import { Filesystem } from "@/util/filesystem"
-import { Log } from "@/util/log"
-import { which } from "@/util/which"
 import type { Input, Result } from "./hook"
 
 const log = Log.create({ service: "hook.command" })

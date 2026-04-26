@@ -1,11 +1,11 @@
 import { type ChildProcess, spawn } from "node:child_process"
 import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
+import { Log } from "@liteai/util/log"
+import { which } from "@liteai/util/which"
 import { Flag } from "@/flag/flag"
 import { Filesystem } from "@/util/filesystem"
 import { lazy } from "@/util/lazy"
-import { Log } from "@/util/log"
-import { which } from "@/util/which"
 
 const log = Log.create({ service: "shell" })
 

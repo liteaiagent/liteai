@@ -1,5 +1,5 @@
+import { Log } from "@liteai/util/log"
 import { Config } from "@/config/config"
-import { Log } from "@/util/log"
 import { type Handler, Schema } from "./hook"
 
 const log = Log.create({ service: "hook:loader" })

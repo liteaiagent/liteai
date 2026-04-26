@@ -1,13 +1,13 @@
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Glob } from "@liteai/util/glob"
+import { Log } from "@liteai/util/log"
 import type z from "zod"
 import { Brand } from "@/brand"
 import { Bus } from "@/bus"
 import { ConfigMarkdown } from "@/config/markdown"
 import { ConfigPaths } from "@/config/paths"
 import { Command } from "@/config/schema"
-import { Glob } from "@/util/glob"
-import { Log } from "@/util/log"
 
 export namespace CommandLoader {
   const log = Log.create({ service: "command:loader" })

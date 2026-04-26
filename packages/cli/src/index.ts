@@ -3,8 +3,8 @@ import { Installation } from "@liteai/core/installation/index"
 import { Instance } from "@liteai/core/project/instance"
 import { Server } from "@liteai/core/server/server"
 import { Database } from "@liteai/core/storage/db"
-import { Log } from "@liteai/core/util/log"
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import { ConsoleCommand } from "./cli/cmd/account"
@@ -86,7 +86,10 @@ let cli = yargs(hideBin(process.argv))
       process.env.LITEAI_PLUGIN_DIR = pluginDirs.join(",")
     }
 
+    const { Global } = await import("@liteai/core/global/index")
+
     await Log.init({
+      dir: Global.Path.log,
       print: process.argv.includes("--print-logs"),
       dev: Installation.isLocal(),
       level: (() => {

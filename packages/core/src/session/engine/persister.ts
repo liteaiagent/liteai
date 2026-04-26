@@ -1,3 +1,4 @@
+import { Log } from "@liteai/util/log"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"
 import { PermissionNext } from "@/permission/next"
@@ -5,7 +6,6 @@ import { Plugin } from "@/plugin"
 import type { Provider } from "@/provider/provider"
 import { Question } from "@/question"
 import { Snapshot } from "@/snapshot"
-import { Log } from "@/util/log"
 
 import type { EngineEvent } from "../events"
 import { Session } from "../index"

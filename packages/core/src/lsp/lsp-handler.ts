@@ -1,3 +1,4 @@
+import { Log } from "@liteai/util/log"
 import { generateText } from "ai"
 import {
   createConnection,
@@ -9,7 +10,6 @@ import {
 } from "vscode-languageserver/node"
 import { TextDocument } from "vscode-languageserver-textdocument"
 import { Provider } from "../provider/provider"
-import { Log } from "../util/log"
 import { LANGUAGE_EXTENSIONS } from "./language"
 
 const log = Log.create({ service: "lsp.handler" })

@@ -1,6 +1,6 @@
 import * as net from "node:net"
+import { Log } from "@liteai/util/log"
 import { type Credentials, OAuth2Client } from "google-auth-library"
-import { Log } from "@/util/log"
 import { Auth } from "../index"
 import type { AuthProvider } from "../provider"
 import { OAUTH_DUMMY_KEY } from "../service"

@@ -1,8 +1,8 @@
+import { Log } from "@liteai/util/log"
 import type { Agent } from "@/agent/agent"
 import { McpConnectionError } from "@/agent/errors"
 import { isRestrictedToPluginOnly } from "@/agent/policy"
 import type { Config } from "@/config/config"
-import { Log } from "@/util/log"
 import { MCP } from "./index"
 
 const log = Log.create({ service: "agent:mcp" })

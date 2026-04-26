@@ -1,5 +1,5 @@
-import { Log } from "@liteai/core/util/log"
 import { Box, type Color, Text, useInput } from "@liteai/ink"
+import { Log } from "@liteai/util/log"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useKeybind } from "../context/keybind"

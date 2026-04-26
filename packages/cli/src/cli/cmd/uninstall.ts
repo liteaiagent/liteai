@@ -5,7 +5,7 @@ import * as prompts from "@clack/prompts"
 import { Brand } from "@liteai/core/brand"
 import { Global } from "@liteai/core/global/index"
 import { Installation } from "@liteai/core/installation/index"
-import { Filesystem } from "@liteai/core/util/filesystem"
+import { Fs as Filesystem } from "@liteai/util/fs"
 import type { Argv } from "yargs"
 import { UI } from "../ui"
 

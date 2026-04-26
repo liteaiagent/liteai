@@ -1,8 +1,8 @@
 import path from "node:path"
 import { Global } from "@liteai/core/global/index"
 import { Provider } from "@liteai/core/provider/provider"
-import { Filesystem } from "@liteai/core/util/filesystem"
 import type { Agent } from "@liteai/sdk"
+import { Fs as Filesystem } from "@liteai/util/fs"
 // Removed RGBA import
 import { useCallback, useEffect, useMemo } from "react"
 import { uniqueBy } from "remeda"

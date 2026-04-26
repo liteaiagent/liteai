@@ -9,9 +9,9 @@
  */
 
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Config } from "@/config/config"
 import { Global } from "@/global"
-import { Log } from "@/util/log"
 import { type Loaded, load } from "./loader"
 import { type Mounted, all as mountAll } from "./mount"
 

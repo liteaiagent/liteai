@@ -14,10 +14,17 @@
     "lint:fix": "biome check --write"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "glob": "13.0.5",
+    "minimatch": "10.0.3",
+    "which": "6.0.1",
+    "@opentelemetry/api-logs": "0.214.0",
+    "mime-types": "3.0.2"
   },
   "devDependencies": {
     "typescript": "catalog:",
-    "@types/bun": "catalog:"
+    "@types/bun": "catalog:",
+    "@types/which": "3.0.4",
+    "@types/mime-types": "3.0.1"
   }
 }

@@ -1,17 +1,19 @@
 import { GlobalBus } from "@liteai/core/bus/global"
 import { Config } from "@liteai/core/config/config"
 import { Flag } from "@liteai/core/flag/flag"
+import { Global } from "@liteai/core/global/index"
 import { Installation } from "@liteai/core/installation/index"
 import { InstanceBootstrap } from "@liteai/core/project/bootstrap"
 import { Instance } from "@liteai/core/project/instance"
 import { Server } from "@liteai/core/server/server"
-import { Log } from "@liteai/core/util/log"
-import { Rpc } from "@liteai/core/util/rpc"
 import { NamedError } from "@liteai/util/error"
+import { Log } from "@liteai/util/log"
+import { Rpc } from "@liteai/util/rpc"
 import type { BunWebSocketData } from "hono/bun"
 import { upgrade } from "../../upgrade"
 
 await Log.init({
+  dir: Global.Path.log,
   print: process.argv.includes("--print-logs"),
   dev: Installation.isLocal(),
   level: (() => {

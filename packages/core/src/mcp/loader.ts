@@ -12,8 +12,8 @@
  *   { "<name>": { type: "local", command: string, args: string[], env: Record<string, string> } | { type: "remote", url, headers } }
  */
 
+import { Log } from "@liteai/util/log"
 import { Filesystem } from "@/util/filesystem"
-import { Log } from "@/util/log"
 
 const log = Log.create({ service: "config.mcp-json" })
 

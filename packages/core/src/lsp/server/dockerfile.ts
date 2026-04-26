@@ -1,11 +1,11 @@
 import path from "node:path"
+import { Process } from "@liteai/util/process"
+import { which } from "@liteai/util/which"
 import { BunProc } from "../../bun"
 import { Flag } from "../../flag/flag"
 import { Global } from "../../global"
 import { Instance } from "../../project/instance"
 import { Filesystem } from "../../util/filesystem"
-import { Process } from "../../util/process"
-import { which } from "../../util/which"
 import type { Info } from "./types"
 import { spawn } from "./util"
 

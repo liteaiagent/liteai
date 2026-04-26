@@ -1,6 +1,6 @@
 import path from "node:path"
 import { Global } from "@liteai/core/global/index"
-import { Filesystem } from "@liteai/core/util/filesystem"
+import { Fs as Filesystem } from "@liteai/util/fs"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { createSimpleContext } from "./helper"
 

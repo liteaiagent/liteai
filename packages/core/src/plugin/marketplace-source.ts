@@ -15,9 +15,9 @@
 
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { $ } from "bun"
 import { Filesystem } from "@/util/filesystem"
-import { Log } from "@/util/log"
 import type { Manifest, MarketplaceRef, PluginSource } from "./marketplace"
 import { add as addKnown, dir as marketDir, parse } from "./marketplace"
 

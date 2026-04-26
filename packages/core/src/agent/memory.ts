@@ -1,9 +1,9 @@
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Config } from "@/config/config"
 import { Global } from "@/global"
 import { Instance } from "@/project/instance"
-import { Log } from "@/util/log"
 
 const logger = Log.create({ service: "agent:memory" })
 

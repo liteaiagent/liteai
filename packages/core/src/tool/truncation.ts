@@ -1,12 +1,12 @@
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Glob } from "@liteai/util/glob"
 import type { Agent } from "../agent/agent"
 import { Global } from "../global"
 import { Identifier } from "../id/id"
 import { PermissionNext } from "../permission/next"
 import { Scheduler } from "../scheduler"
 import { Filesystem } from "../util/filesystem"
-import { Glob } from "../util/glob"
 import { ToolID } from "./schema"
 
 export namespace Truncate {

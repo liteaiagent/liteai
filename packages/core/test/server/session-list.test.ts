@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
-import { Log } from "../../src/util/log"
 import { tmpdir } from "../fixture/fixture"
 
 const projectRoot = path.join(__dirname, "../..")
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 describe("Session.list", () => {
   test("filters by directory", async () => {

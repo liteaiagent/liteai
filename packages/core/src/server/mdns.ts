@@ -1,5 +1,5 @@
+import { Log } from "@liteai/util/log"
 import { Bonjour } from "bonjour-service"
-import { Log } from "@/util/log"
 
 const log = Log.create({ service: "server.mdns" })
 

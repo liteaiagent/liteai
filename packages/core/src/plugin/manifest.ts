@@ -12,9 +12,9 @@
  */
 
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import { Filesystem } from "@/util/filesystem"
-import { Log } from "@/util/log"
 
 const log = Log.create({ service: "plugin:manifest" })
 

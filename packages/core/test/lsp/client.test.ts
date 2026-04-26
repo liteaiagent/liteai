@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { LSPClient } from "../../src/lsp/client"
 import type { LSPServer } from "../../src/lsp/server"
 import { Instance } from "../../src/project/instance"
-import { Log } from "../../src/util/log"
 
 // Minimal fake LSP server that speaks JSON-RPC over stdio
 function spawnFakeServer() {
@@ -18,7 +18,7 @@ function spawnFakeServer() {
 
 describe("LSPClient interop", () => {
   beforeEach(async () => {
-    await Log.init({ print: false })
+    await Log.init({ dir: require("node:os").tmpdir(), print: false })
   })
 
   test("handles workspace/workspaceFolders request", async () => {

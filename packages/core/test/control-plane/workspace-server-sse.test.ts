@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test"
+import { Log } from "@liteai/util/log"
 import { GlobalBus } from "../../src/bus/global"
 import { parseSSE } from "../../src/control-plane/sse"
 import { WorkspaceServer } from "../../src/control-plane/workspace-server/server"
 import { Instance } from "../../src/project/instance"
-import { Log } from "../../src/util/log"
 import { resetDatabase } from "../fixture/db"
 import { tmpdir } from "../fixture/fixture"
 
@@ -11,7 +11,7 @@ afterEach(async () => {
   await resetDatabase()
 }, 10_000)
 
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 describe("control-plane/workspace-server SSE", () => {
   test("streams GlobalBus events and parseSSE reads them", async () => {

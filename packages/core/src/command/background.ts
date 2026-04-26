@@ -1,7 +1,7 @@
 import type { ChildProcess } from "node:child_process"
 import { randomBytes } from "node:crypto"
+import { Log } from "@liteai/util/log"
 import { Shell } from "@/shell/shell"
-import { Log } from "@/util/log"
 
 const log = Log.create({ service: "background-task" })
 

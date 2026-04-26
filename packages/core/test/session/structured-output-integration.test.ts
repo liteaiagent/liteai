@@ -1,13 +1,13 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import { SessionPrompt } from "../../src/session/engine"
 import { Message } from "../../src/session/message"
-import { Log } from "../../src/util/log"
 
 const projectRoot = path.join(__dirname, "../..")
-Log.init({ print: false })
+Log.init({ dir: require("node:os").tmpdir(), print: false })
 
 // Skip tests if no API key is available
 const hasApiKey = !!process.env.ANTHROPIC_API_KEY

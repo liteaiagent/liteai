@@ -1,14 +1,13 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import { NamedError } from "@liteai/util/error"
+import { Glob } from "@liteai/util/glob"
+import { Log } from "@liteai/util/log"
 import z from "zod"
-
 import { Global } from "../global"
 import { Filesystem } from "../util/filesystem"
-import { Glob } from "../util/glob"
 import { lazy } from "../util/lazy"
 import { Lock } from "../util/lock"
-import { Log } from "../util/log"
 
 export namespace Storage {
   const log = Log.create({ service: "storage" })

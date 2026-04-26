@@ -1,14 +1,13 @@
 import { type ChildProcess, spawn, spawnSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { Log } from "@liteai/util/log"
 import z from "zod"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
-
 import { Config } from "../config/config"
 import { Instance } from "../project/instance"
 import { Filesystem } from "../util/filesystem"
-import { Log } from "../util/log"
 import { LSPClient } from "./client"
 import { LSPServer } from "./server"
 

@@ -58,7 +58,7 @@ if (version !== CACHE_VERSION) {
       ),
     )
   } catch (error) {
-    const logModule = await import("../util/log")
+    const logModule = await import("@liteai/util/log")
     if (logModule?.Log) {
       logModule.Log.create({ service: "global" }).warn("Failed to clear cache:", { error })
     }

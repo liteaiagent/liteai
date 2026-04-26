@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
-import { Glob } from "../../src/util/glob"
+import { Glob } from "@liteai/util/glob"
 import { tmpdir } from "../fixture/fixture"
 
 describe("Glob", () => {

@@ -1,7 +1,7 @@
 import { Flag } from "@liteai/core/flag/flag"
 import { Instance } from "@liteai/core/project/instance"
 import { Server } from "@liteai/core/server/server"
-import { Log } from "@liteai/core/util/log"
+import { Log } from "@liteai/util/log"
 import { resolveNetworkOptions, withNetworkOptions } from "../network"
 import { cmd } from "./cmd"
 

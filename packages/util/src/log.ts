@@ -4,7 +4,6 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { logs, SeverityNumber } from "@opentelemetry/api-logs"
 import z from "zod"
-import { Global } from "../global"
 import { Glob } from "./glob"
 
 export namespace Log {
@@ -81,11 +80,13 @@ export namespace Log {
   export const SUPPRESSED = ["http", "permission"] as const
 
   export interface Options {
+    dir: string
     print: boolean
     dev?: boolean
     level?: Level
   }
 
+  let logdir = ""
   let logpath = ""
   export function file() {
     return logpath
@@ -141,10 +142,11 @@ export namespace Log {
 
   export async function init(options: Options) {
     if (options.level) level = options.level
-    cleanup(Global.Path.log)
+    logdir = options.dir
+    cleanup(options.dir)
 
     logpath = path.join(
-      Global.Path.log,
+      options.dir,
       options.dev ? "liteai.log" : `${new Date().toISOString().split(".")[0].replace(/:/g, "")}.log`,
     )
     await fs.truncate(logpath).catch(() => {})
@@ -163,7 +165,7 @@ export namespace Log {
 
     // Set up per-channel log files
     for (const ch of CHANNELS) {
-      const file = path.join(Global.Path.log, `${ch}.log`)
+      const file = path.join(options.dir, `${ch}.log`)
       await fs.truncate(file).catch(() => {})
       const s = createWriteStream(file, { flags: "a" })
       channels.set(ch, streamWriter(s))
@@ -172,7 +174,7 @@ export namespace Log {
 
   /** Returns paths to all active channel log files */
   export function channelFiles() {
-    return [...channels.keys()].map((ch) => path.join(Global.Path.log, `${ch}.log`))
+    return [...channels.keys()].map((ch) => path.join(logdir, `${ch}.log`))
   }
 
   async function cleanup(dir: string) {

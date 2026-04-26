@@ -1,7 +1,7 @@
 import { Installation } from "@liteai/core/installation/index"
-import { Locale } from "@liteai/core/util/locale"
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
+import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
 import { Logo } from "../../components/logo"
 import { PromptInput } from "../../components/prompt/prompt-input"

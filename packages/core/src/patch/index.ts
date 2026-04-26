@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs"
 import * as fs from "node:fs/promises"
 import * as path from "node:path"
+import { Log } from "@liteai/util/log"
 import z from "zod"
-import { Log } from "../util/log"
 
 export namespace Patch {
   const log = Log.create({ service: "patch" })
