@@ -218,12 +218,14 @@ export namespace Server {
       try {
         return Bun.serve({ ...args, port })
       } catch (e) {
-        log.warn("server bind failed", { port, error: e })
+        log.error("server bind failed", { port, error: e })
         return undefined
       }
     }
     const server = tryServe(opts.port)
-    if (!server) throw new Error(`Failed to start server on port ${opts.port}`)
+    if (!server) {
+      process.exit(1)
+    }
 
     publishedMDNS =
       !!opts.mdns &&

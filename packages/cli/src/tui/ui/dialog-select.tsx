@@ -47,6 +47,8 @@ export interface DialogSelectProps<T> {
   current?: T
   header?: React.ReactNode
   footerContent?: React.ReactNode
+  /** When provided, called on Escape instead of dialog.clear(). Enables stacked dialog pop navigation. */
+  onEscape?: () => void
 }
 
 export function DialogSelect<T>(props: DialogSelectProps<T>) {
@@ -189,7 +191,11 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       return
     }
     if (_key.escape) {
-      dialog.clear()
+      if (props.onEscape) {
+        props.onEscape()
+      } else {
+        dialog.clear()
+      }
       return
     }
     if (_key.backspace || _key.delete) {

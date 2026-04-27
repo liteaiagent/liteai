@@ -50,6 +50,7 @@ import { detectInputHighlights } from "../../util/text-highlighting"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogModel } from "../dialog-model"
 import { DialogPlugin } from "../dialog-plugin"
+import { DialogSettings } from "../dialog-settings"
 import { DialogStatus } from "../dialog-status"
 import { DialogTheme } from "../dialog-theme"
 import { TextInput } from "../text-input"
@@ -117,6 +118,7 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
       { name: "models", description: "Change the current AI model", template: "", hints: [] },
       { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
+      { name: "settings", description: "Open settings", template: "", hints: [] },
       { name: "theme", description: "Change the color theme", template: "", hints: [] },
       { name: "status", description: "Show system status", template: "", hints: [] },
     ],
@@ -239,11 +241,43 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
   }
 
   // ── Submit ──────────────────────────────────────────────────────────────
+  // ── TUI-only command interceptors ────────────────────────────────────
+  // These commands are handled entirely client-side (open a dialog).
+  // Extracted so both the suggestion branch and direct-input branch can use them.
+  const tuiInterceptors: Record<string, () => void> = useMemo(
+    () => ({
+      mcp: () => dialog.push(() => <DialogMcp />),
+      models: () => dialog.push(() => <DialogModel />),
+      plugins: () => dialog.push(() => <DialogPlugin />),
+      settings: () => dialog.push(() => <DialogSettings />),
+      theme: () => dialog.push(() => <DialogTheme />),
+      status: () => dialog.push(() => <DialogStatus />),
+    }),
+    [dialog],
+  )
+
   const onSubmit = useCallback(
     async (inputParam: string) => {
       if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
         const selected = commandSuggestions.getSelected()
         if (selected) {
+          const selectedCmdName = selected.id
+
+          // Check TUI interceptors first — dispatch directly to avoid recursion.
+          // applyCommandSuggestion calls onSubmit recursively, which re-enters
+          // the suggestion branch (suggestions are still active in the closure)
+          // and causes an infinite loop. TUI commands don't need formatting or
+          // server submission, so we short-circuit here.
+          const interceptor = tuiInterceptors[selectedCmdName]
+          if (interceptor) {
+            interceptor()
+            trackAndSetInput("")
+            setCursorOffset(0)
+            return
+          }
+
+          // For server-side commands, apply the suggestion and submit directly
+          // without re-entering this handler (avoids the recursion bug).
           applyCommandSuggestion(
             selected,
             true, // shouldExecute
@@ -252,8 +286,14 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
             commandSuggestions.midCommandMatch,
             (value) => trackAndSetInput(value),
             setCursorOffset,
-            (value) => {
-              void onSubmit(value)
+            async (value) => {
+              const trimmedCmd = value.trimEnd()
+              if (trimmedCmd === "" || trimmedCmd === "/") return
+              await session.submit(trimmedCmd, mode, undefined)
+              trackAndSetInput("")
+              setCursorOffset(0)
+              setPastedContents({})
+              resetHistory()
             },
           )
         }
@@ -281,15 +321,9 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       const cmdMatch = trimmed.match(/^\/([a-zA-Z0-9_:-]+)$/)
       if (cmdMatch) {
         const cmdName = cmdMatch[1]
-        const interceptors: Record<string, () => void> = {
-          mcp: () => dialog.push(() => <DialogMcp />),
-          models: () => dialog.push(() => <DialogModel />),
-          plugins: () => dialog.push(() => <DialogPlugin />),
-          theme: () => dialog.push(() => <DialogTheme />),
-          status: () => dialog.push(() => <DialogStatus />),
-        }
-        if (interceptors[cmdName]) {
-          interceptors[cmdName]()
+        const interceptor = tuiInterceptors[cmdName]
+        if (interceptor) {
+          interceptor()
           trackAndSetInput("")
           setCursorOffset(0)
           return
@@ -332,6 +366,7 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       input,
       sync.command,
       tuiCommands,
+      tuiInterceptors,
       dialog,
     ],
   )
@@ -460,7 +495,10 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
   }, [mode, theme])
 
   // ── Highlights & Ghost Text ─────────────────────────────────────────────
-  const knownCommands = useMemo(() => sync.command.map((cmd) => cmd.name), [sync.command])
+  const knownCommands = useMemo(
+    () => [...sync.command.map((cmd) => cmd.name), ...tuiCommands.map((cmd) => cmd.name)],
+    [sync.command, tuiCommands],
+  )
 
   const highlights = useMemo(() => {
     if (mode !== "prompt" || searchState.isSearching) return []

@@ -59,7 +59,7 @@ beforeAll(async () => {
   await fs.mkdir(cacheDir, { recursive: true })
   await fs.writeFile(path.join(cacheDir, "version"), "14")
 
-  const { Log } = await import("../src/util/log")
+  const { Log } = await import("@liteai/util/log")
   await Log.init({ dir: require("node:os").tmpdir(), print: false, dev: true, level: "DEBUG" })
 
   const { Project } = await import("../src/project/project")

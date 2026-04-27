@@ -332,6 +332,7 @@ export namespace Project {
       time_created: result.time.created,
       time_updated: result.time.updated,
       time_initialized: result.time.initialized,
+      time_archived: null,
       sandboxes: result.sandboxes,
       commands: result.commands,
     }
@@ -343,6 +344,7 @@ export namespace Project {
       icon_color: result.icon?.color,
       time_updated: result.time.updated,
       time_initialized: result.time.initialized,
+      time_archived: null,
       sandboxes: result.sandboxes,
       commands: result.commands,
     }
@@ -406,15 +408,41 @@ export namespace Project {
   }
 
   export function list() {
-    const result = Database.use((db) =>
+    const all = Database.use((db) =>
       db
         .select()
         .from(ProjectTable)
         .all()
         .map((row) => fromRow(row)),
     )
-    log.info("list", { count: result.length, ids: result.map((p) => p.id).join(",") })
-    return result
+
+    const valid: Info[] = []
+
+    Database.transaction((tx) => {
+      const now = Date.now()
+      for (const project of all) {
+        if (!project.time.archived && !existsSync(project.worktree)) {
+          log.info("auto-archiving missing project", { id: project.id, worktree: project.worktree })
+          tx.update(ProjectTable)
+            .set({ time_archived: now })
+            .where(eq(ProjectTable.id, project.id))
+            .run()
+
+          project.time.archived = now
+
+          GlobalBus.emit("event", {
+            payload: {
+              type: Event.Updated.type,
+              properties: project,
+            },
+          })
+        }
+        valid.push(project)
+      }
+    })
+
+    log.info("list", { count: valid.length, ids: valid.map((p) => p.id).join(",") })
+    return valid
   }
 
   export function get(id: ProjectID): Info | undefined {

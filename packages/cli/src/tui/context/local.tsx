@@ -16,6 +16,8 @@ import { useSync } from "./sync"
 import { useTheme } from "./theme"
 import { useToast } from "./toast"
 
+export type ModelVisibility = "show" | "hide"
+
 export interface LocalState {
   agent: {
     current: string
@@ -26,6 +28,7 @@ export interface LocalState {
     recent: { providerID: string; modelID: string }[]
     favorite: { providerID: string; modelID: string }[]
     variant: Record<string, string | undefined>
+    visibility: { providerID: string; modelID: string; state: ModelVisibility }[]
   }
 }
 
@@ -47,6 +50,8 @@ export interface LocalActions {
     cycleFavorite: (direction: 1 | -1) => void
     set: (model: { providerID: string; modelID: string }, options?: { recent?: boolean }) => void
     toggleFavorite: (model: { providerID: string; modelID: string }) => void
+    visible: (model: { providerID: string; modelID: string }) => boolean
+    setVisibility: (model: { providerID: string; modelID: string }, state: boolean) => void
     variant: {
       current: () => string | undefined
       list: () => string[]
@@ -83,6 +88,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             recent: [],
             favorite: [],
             variant: {},
+            visibility: [],
           },
         })),
       )
@@ -98,6 +104,7 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         recent: s.recent,
         favorite: s.favorite,
         variant: s.variant,
+        visibility: s.visibility,
       })
     }, [store, modelFilePath])
 
@@ -106,12 +113,14 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         recent?: { providerID: string; modelID: string }[]
         favorite?: { providerID: string; modelID: string }[]
         variant?: Record<string, string | undefined>
+        visibility?: { providerID: string; modelID: string; state: ModelVisibility }[]
       }>(modelFilePath)
         .then((x) => {
           store.setState((s) => {
             if (Array.isArray(x.recent)) s.model.recent = x.recent
             if (Array.isArray(x.favorite)) s.model.favorite = x.favorite
             if (typeof x.variant === "object" && x.variant !== null) s.model.variant = x.variant
+            if (Array.isArray(x.visibility)) s.model.visibility = x.visibility
             s.model.ready = true
           })
         })
@@ -313,6 +322,24 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
               )
             } else {
               s.model.favorite.unshift(m)
+            }
+          })
+          saveModel()
+        },
+        visible: (m: { providerID: string; modelID: string }) => {
+          const entry = state.model.visibility.find((x) => x.providerID === m.providerID && x.modelID === m.modelID)
+          // Default: all models visible when no explicit visibility entry exists
+          if (!entry) return true
+          return entry.state === "show"
+        },
+        setVisibility: (m: { providerID: string; modelID: string }, visible: boolean) => {
+          store.setState((s) => {
+            const index = s.model.visibility.findIndex((x) => x.providerID === m.providerID && x.modelID === m.modelID)
+            const newState: ModelVisibility = visible ? "show" : "hide"
+            if (index >= 0) {
+              s.model.visibility[index].state = newState
+            } else {
+              s.model.visibility.push({ ...m, state: newState })
             }
           })
           saveModel()

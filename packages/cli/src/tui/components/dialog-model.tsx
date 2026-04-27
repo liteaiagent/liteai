@@ -1,3 +1,4 @@
+import { type Color, Text } from "@liteai/ink"
 import fuzzysort from "fuzzysort"
 import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
@@ -5,6 +6,7 @@ import { useDialog } from "../context/dialog"
 import { useKeybind } from "../context/keybind"
 import { useLocal } from "../context/local"
 import { useSync } from "../context/sync"
+import { useTheme } from "../context/theme"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 import { DialogProvider, useDialogProviderOptions } from "./dialog-provider"
@@ -23,6 +25,7 @@ export function DialogModel(props: { providerID?: string }) {
   const sync = useSync()
   const dialog = useDialog()
   const keybind = useKeybind()
+  const { theme } = useTheme()
   const [query, setQuery] = useState("")
 
   const connected = useConnected()
@@ -36,6 +39,9 @@ export function DialogModel(props: { providerID?: string }) {
     const favorites = connected ? local.model.favorite() : []
     const recents = local.model.recent()
 
+    const favoriteSet = new Set(favorites.map((item) => `${item.providerID}:${item.modelID}`))
+    const recentSet = new Set(recents.map((item) => `${item.providerID}:${item.modelID}`))
+
     function toOptions(items: typeof favorites, category: string) {
       if (!showSections) return []
       return items.flatMap((item) => {
@@ -43,6 +49,8 @@ export function DialogModel(props: { providerID?: string }) {
         if (!provider) return []
         const model = provider.models[item.modelID]
         if (!model) return []
+        // Respect visibility — hidden models don't appear in picker
+        if (!local.model.visible({ providerID: provider.id, modelID: model.id })) return []
         return [
           {
             value: { providerID: provider.id, modelID: model.id },
@@ -79,31 +87,31 @@ export function DialogModel(props: { providerID?: string }) {
           Object.entries(provider.models),
           filter(([_, info]) => info.status !== "deprecated"),
           filter(([_, _info]) => (props.providerID ? provider.id === props.providerID : true)),
+          // Respect visibility — hidden models don't appear in picker
+          filter(([modelID]) => local.model.visible({ providerID: provider.id, modelID })),
           map(
             ([model, info]) =>
               ({
                 value: { providerID: provider.id, modelID: model },
                 title: info.name ?? model,
-                description: favorites.some((item) => item.providerID === provider.id && item.modelID === model)
-                  ? "(Favorite)"
-                  : undefined,
+                // Show ★ for favorites, ↺ for recents in the provider section
+                description: favoriteSet.has(`${provider.id}:${model}`) ? "★" : undefined,
                 category: connected ? provider.name : undefined,
                 disabled: false,
                 footer: info.cost?.input === 0 && provider.id === "google-code-assist" ? "Free" : undefined,
+                // Gutter indicator for recent models in provider section
+                gutter: recentSet.has(`${provider.id}:${model}`) ? (
+                  <Text color={theme.textMuted as Color}>↺</Text>
+                ) : undefined,
                 onSelect() {
                   dialog.clear()
                   local.model.set({ providerID: provider.id, modelID: model }, { recent: true })
                 },
               }) as DialogSelectOption<{ providerID: string; modelID: string }>,
           ),
-          filter((x) => {
-            if (!showSections) return true
-            if (favorites.some((item) => item.providerID === x.value.providerID && item.modelID === x.value.modelID))
-              return false
-            if (recents.some((item) => item.providerID === x.value.providerID && item.modelID === x.value.modelID))
-              return false
-            return true
-          }),
+          // Bug 1 fix: Do NOT filter out models that appear in favorites/recents.
+          // They now appear in BOTH their provider section AND the special sections,
+          // with ★/↺ indicators to show their status.
           sortBy(
             (x) => (x.footer !== "Free" ? 1 : 0),
             (x) => x.title,
@@ -130,7 +138,7 @@ export function DialogModel(props: { providerID?: string }) {
     }
 
     return [...favoriteOptions, ...recentOptions, ...providerOptions, ...popularProviders]
-  }, [query, showExtra, connected, local.model, sync.provider, props.providerID, providers, dialog])
+  }, [query, showExtra, connected, local.model, sync.provider, props.providerID, providers, dialog, theme])
 
   const provider = props.providerID ? sync.provider.find((x) => x.id === props.providerID) : null
   const title = provider?.name ?? "Select model"
@@ -156,10 +164,10 @@ export function DialogModel(props: { providerID?: string }) {
         },
       ]}
       onFilter={setQuery}
-      flat={true}
       skipFilter={true}
       title={title}
       current={local.model.current()}
+      footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · /settings to manage</Text>}
     />
   )
 }
