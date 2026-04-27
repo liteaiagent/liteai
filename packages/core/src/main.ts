@@ -7,6 +7,7 @@ import { hideBin } from "yargs/helpers"
  * Starts the LiteAI server without TUI or CLI chrome.
  */
 import { Capabilities, createHostedCapabilities, createLocalCapabilities } from "./capabilities"
+import { Installation } from "./installation"
 import { Runtime } from "./runtime"
 import { Server } from "./server/server"
 import { Database } from "./storage/db"
@@ -77,7 +78,8 @@ if (args.csrfToken) {
   process.env.LITEAI_SERVER_CSRF_TOKEN = args.csrfToken
 }
 
-const { Global } = await import("./global/index")
+// Import for initialization side-effects
+await import("./global/index")
 
 await Runtime.boot({
   printLogs: args.printLogs,

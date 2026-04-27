@@ -257,17 +257,15 @@ test("disallowedTools as array denies tools", async () => {
   })
 })
 
-// --- explicit permission overrides ccPermission ---
+// --- tools overrides permissionMode ---
 
-test("explicit permission overrides permissionMode", async () => {
+test("tools overrides permissionMode", async () => {
   await using tmp = await tmpdir({
     config: {
       agent: {
         my_agent: {
           permissionMode: "plan",
-          permission: {
-            edit: "allow",
-          },
+          tools: ["Edit"],
           description: "plan with edit override",
         },
       },
@@ -278,7 +276,7 @@ test("explicit permission overrides permissionMode", async () => {
     fn: async () => {
       const agent = await Agent.get("my_agent")
       expect(agent).toBeDefined()
-      // permissionMode:plan normally denies edit, but explicit permission overrides
+      // permissionMode:plan normally denies edit, but tools adds edit to allowed
       expect(evalPerm(agent, "edit")).toBe("allow")
       // Other plan-denied tools should still be denied
       expect(evalPerm(agent, "bash")).toBe("deny")

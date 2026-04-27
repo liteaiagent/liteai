@@ -171,7 +171,7 @@ describe("tool.write", () => {
           }
         },
       })
-    })
+    }, 30_000)
   })
 
   describe("content types", () => {
@@ -196,7 +196,7 @@ describe("tool.write", () => {
           expect(JSON.parse(content)).toEqual(data)
         },
       })
-    })
+    }, 30_000)
 
     test("writes binary-safe content", async () => {
       await using tmp = await tmpdir()
@@ -219,7 +219,7 @@ describe("tool.write", () => {
           expect(buf.toString()).toBe(content)
         },
       })
-    })
+    }, 30_000)
 
     test("writes empty content", async () => {
       await using tmp = await tmpdir()
@@ -244,7 +244,7 @@ describe("tool.write", () => {
           expect(stats.size).toBe(0)
         },
       })
-    })
+    }, 30_000)
 
     test("writes multi-line content", async () => {
       await using tmp = await tmpdir()

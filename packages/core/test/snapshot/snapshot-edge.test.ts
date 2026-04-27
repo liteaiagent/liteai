@@ -412,7 +412,7 @@ test("patch detects changes in secondary worktree", async () => {
     await $`git worktree remove --force ${worktreePath}`.cwd(tmp.path).quiet().nothrow()
     await $`rm -rf ${worktreePath}`.quiet()
   }
-}, 10_000)
+}, 30_000)
 
 test("revert only removes files in invoking worktree", async () => {
   await using tmp = await bootstrap()

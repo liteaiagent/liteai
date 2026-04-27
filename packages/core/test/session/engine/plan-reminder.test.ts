@@ -73,24 +73,25 @@ function createTestMessages(overrides?: {
 function createPlanState(overrides?: Partial<PlanModeState>): PlanModeState {
   return {
     // Default to build-phase state (active=false + planText set) — reminders
-    // must fire in build phase after a plan has been approved (ADR-003).
+    // must fire in build phase after a plan has been approved.
     active: false,
     planText: "Approved plan",
     planFilePath: path.join(os.tmpdir(), `test-plan-${crypto.randomUUID()}.md`),
     turnsSincePlanReminder: 0,
+    workflowType: "5phase",
     ...overrides,
   }
 }
 
-describe("injectPlanAttachment (ADR-003 build-phase reminders)", () => {
-  // ── No-op conditions: reminders must NOT fire ──
-  describe("no-op conditions", () => {
-    test("returns messages unchanged when plan mode is ACTIVE (plan phase — no reminders)", async () => {
+describe("injectPlanAttachment", () => {
+  // ── Active plan mode: MVP reminder injection ──
+  describe("active plan mode", () => {
+    test("injects active plan reminder when plan mode is ACTIVE", async () => {
       await Instance.provide({
         directory: projectRoot,
         fn: async () => {
           const messages = createTestMessages()
-          // active=true: we are in plan phase — reminders must NOT fire
+          // active=true: we are in plan phase — must inject MVP reminder
           const state = createPlanState({ active: true, planText: "Some plan" })
           const result = await injectPlanAttachment({
             messages,
@@ -98,12 +99,23 @@ describe("injectPlanAttachment (ADR-003 build-phase reminders)", () => {
             session: {} as Parameters<typeof injectPlanAttachment>[0]["session"],
           })
 
-          expect(result.messages).toBe(messages) // same reference — no copy
-          expect(result.updatedState).toBe(state) // same reference — no mutation
+          const lastUser = result.messages.findLast((m) => m.info.role === "user")
+          expect(lastUser).toBeDefined()
+          expect(lastUser?.parts.length).toBe(2) // original + attachment
+
+          const attachment = lastUser?.parts[1]
+          expect(attachment?.type).toBe("text")
+          expect((attachment as { text?: string }).text).toContain("PLAN MODE ACTIVE")
+          expect((attachment as { synthetic?: boolean }).synthetic).toBe(true)
+
+          expect(result.updatedState.turnsSincePlanReminder).toBe(1)
         },
       })
     })
+  })
 
+  // ── No-op conditions: reminders must NOT fire ──
+  describe("no-op conditions", () => {
     test("returns messages unchanged when planText is falsy (no approved plan yet)", async () => {
       await Instance.provide({
         directory: projectRoot,
