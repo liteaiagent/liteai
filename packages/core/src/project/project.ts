@@ -423,10 +423,7 @@ export namespace Project {
       for (const project of all) {
         if (!project.time.archived && !existsSync(project.worktree)) {
           log.info("auto-archiving missing project", { id: project.id, worktree: project.worktree })
-          tx.update(ProjectTable)
-            .set({ time_archived: now })
-            .where(eq(ProjectTable.id, project.id))
-            .run()
+          tx.update(ProjectTable).set({ time_archived: now }).where(eq(ProjectTable.id, project.id)).run()
 
           project.time.archived = now
 

@@ -9,31 +9,35 @@ import { tmpdir } from "../fixture/fixture"
 const wintest = process.platform === "win32" ? test : test.skip
 
 describe("file fsmonitor", () => {
-  wintest("status does not start fsmonitor for readonly git checks", async () => {
-    await using tmp = await tmpdir({ git: true })
-    const target = path.join(tmp.path, "tracked.txt")
+  wintest(
+    "status does not start fsmonitor for readonly git checks",
+    async () => {
+      await using tmp = await tmpdir({ git: true })
+      const target = path.join(tmp.path, "tracked.txt")
 
-    await fs.writeFile(target, "base\n")
-    await $`git add tracked.txt`.cwd(tmp.path).quiet()
-    await $`git commit -m init`.cwd(tmp.path).quiet()
-    await $`git config core.fsmonitor true`.cwd(tmp.path).quiet()
-    await $`git fsmonitor--daemon stop`.cwd(tmp.path).quiet().nothrow()
-    await fs.writeFile(target, "next\n")
-    await fs.writeFile(path.join(tmp.path, "new.txt"), "new\n")
+      await fs.writeFile(target, "base\n")
+      await $`git add tracked.txt`.cwd(tmp.path).quiet()
+      await $`git commit -m init`.cwd(tmp.path).quiet()
+      await $`git config core.fsmonitor true`.cwd(tmp.path).quiet()
+      await $`git fsmonitor--daemon stop`.cwd(tmp.path).quiet().nothrow()
+      await fs.writeFile(target, "next\n")
+      await fs.writeFile(path.join(tmp.path, "new.txt"), "new\n")
 
-    const before = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
-    expect(before.exitCode).not.toBe(0)
+      const before = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
+      expect(before.exitCode).not.toBe(0)
 
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        await File.status()
-      },
-    })
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
+          await File.status()
+        },
+      })
 
-    const after = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
-    expect(after.exitCode).not.toBe(0)
-  }, 30000)
+      const after = await $`git fsmonitor--daemon status`.cwd(tmp.path).quiet().nothrow()
+      expect(after.exitCode).not.toBe(0)
+    },
+    30000,
+  )
 
   wintest(
     "read does not start fsmonitor for git diffs",

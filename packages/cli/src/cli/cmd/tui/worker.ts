@@ -1,39 +1,18 @@
 import { GlobalBus } from "@liteai/core/bus/global"
 import { Config } from "@liteai/core/config/config"
 import { Flag } from "@liteai/core/flag/flag"
-import { Global } from "@liteai/core/global/index"
-import { Installation } from "@liteai/core/installation/index"
 import { InstanceBootstrap } from "@liteai/core/project/bootstrap"
 import { Instance } from "@liteai/core/project/instance"
+import { Runtime } from "@liteai/core/runtime"
 import { Server } from "@liteai/core/server/server"
-import { NamedError } from "@liteai/util/error"
 import { Log } from "@liteai/util/log"
 import { Rpc } from "@liteai/util/rpc"
 import type { BunWebSocketData } from "hono/bun"
 import { upgrade } from "../../upgrade"
 
-await Log.init({
-  dir: Global.Path.log,
-  print: process.argv.includes("--print-logs"),
-  dev: Installation.isLocal(),
-  level: (() => {
-    if (Installation.isLocal()) return "DEBUG"
-    return "INFO"
-  })(),
-})
-
-function serializeError(e: unknown) {
-  if (e instanceof NamedError) return { ...e.toObject(), stack: e.stack }
-  if (e instanceof Error) return { name: e.name, message: e.message, stack: e.stack, cause: e.cause }
-  return { value: e }
-}
-
-process.on("unhandledRejection", (e) => {
-  Log.Default.error("rejection", serializeError(e))
-})
-
-process.on("uncaughtException", (e) => {
-  Log.Default.error("exception", serializeError(e))
+await Runtime.boot({
+  printLogs: process.argv.includes("--print-logs"),
+  debug: false,
 })
 
 // Forward global bus events to the main thread via RPC.
@@ -90,8 +69,8 @@ export const rpc = {
   },
   async shutdown() {
     Log.Default.info("worker shutting down")
-    await Instance.disposeAll()
     if (server) server.stop(true)
+    await Runtime.shutdown()
   },
 }
 

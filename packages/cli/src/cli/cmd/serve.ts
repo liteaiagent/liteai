@@ -1,5 +1,5 @@
 import { Flag } from "@liteai/core/flag/flag"
-import { Instance } from "@liteai/core/project/instance"
+import { Runtime } from "@liteai/core/runtime"
 import { Server } from "@liteai/core/server/server"
 import { Log } from "@liteai/util/log"
 import { resolveNetworkOptions, withNetworkOptions } from "../network"
@@ -13,6 +13,9 @@ export const ServeCommand = cmd({
     if (!Flag.LITEAI_SERVER_PASSWORD) {
       console.log("Warning: LITEAI_SERVER_PASSWORD is not set; server is unsecured.")
     }
+
+    await Runtime.boot()
+
     const opts = await resolveNetworkOptions(args)
     const server = Server.listen(opts)
     console.log(`liteai server listening on http://${server.hostname}:${server.port}`)
@@ -25,7 +28,7 @@ export const ServeCommand = cmd({
         })
       }
     })
-    await Instance.disposeAll()
     await server.stop(true)
+    await Runtime.shutdown()
   },
 })

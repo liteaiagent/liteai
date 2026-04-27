@@ -7,12 +7,9 @@ import { hideBin } from "yargs/helpers"
  * Starts the LiteAI server without TUI or CLI chrome.
  */
 import { Capabilities, createHostedCapabilities, createLocalCapabilities } from "./capabilities"
-import { getGlobal } from "./config/loader"
-import { Installation } from "./installation"
-import { Instance } from "./project/instance"
+import { Runtime } from "./runtime"
 import { Server } from "./server/server"
 import { Database } from "./storage/db"
-import { initializeTelemetry, shutdownTelemetry } from "./telemetry/instrumentation"
 
 const args = await yargs(hideBin(process.argv))
   .scriptName("liteai-core")
@@ -82,46 +79,12 @@ if (args.csrfToken) {
 
 const { Global } = await import("./global/index")
 
-await Log.init({
-  dir: Global.Path.log,
-  print: args.printLogs,
-  dev: Installation.isLocal(),
-  level: args.debug ? "DEBUG" : "INFO",
+await Runtime.boot({
+  printLogs: args.printLogs,
+  debug: args.debug,
 })
 
 const log = Log.create({ service: "main" })
-
-// ─── Unhandled Rejection Guard ──────────────────────────────────────────────
-// When a user aborts during the reasoning/thinking phase, the Vercel AI SDK's
-// internal `recordSpan(...)` call inside DefaultStreamTextResult is invoked
-// fire-and-forget (no .catch()). If the stream closes with zero completed steps
-// (which always happens during thinking, since no finish-step event is emitted
-// until after reasoning concludes), the SDK rejects that floating promise with
-// NoOutputGeneratedError. There is no way for user code to catch it — the
-// promise is never exposed on the StreamTextResult object.
-//
-// We handle the exposed properties in processor.ts via .catch(() => {}), but
-// this global handler catches the SDK-internal rejection and converts it from
-// a process crash into a log entry. Filtering by error name prevents abort
-// noise from polluting real error alerting.
-process.on("unhandledRejection", (reason) => {
-  log.error("CRITICAL: Unhandled Promise Rejection detected!", {
-    reason: reason instanceof Error ? reason.message : String(reason),
-    stack: reason instanceof Error ? reason.stack : undefined,
-    reasonObj: reason,
-  })
-})
-
-await getGlobal()
-await initializeTelemetry()
-
-log.info("@liteai/core starting", {
-  telemetry: process.env.LITEAI_TELEMETRY_DISABLED === "1" ? "disabled (opt-out)" : "enabled (default)",
-  traces: `LangfuseSpanProcessor → ${process.env.LANGFUSE_BASEURL || "disabled"}`,
-  metrics: process.env.OTEL_METRICS_EXPORTER || "disabled",
-  logs: process.env.OTEL_LOGS_EXPORTER || "disabled",
-  perfetto: process.env.LITEAI_PERFETTO_TRACE === "1" ? "enabled" : "disabled",
-})
 
 // ─── Initialize capabilities ────────────────────────────────────────────────
 
@@ -171,9 +134,7 @@ if (args.lsp) {
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.on(signal, async () => {
     log.info("received signal, shutting down", { signal })
-    await shutdownTelemetry().catch((e) => log.error("telemetry shutdown failed", { error: e }))
-    Server.shutdown()
-    await Instance.disposeAll().catch(() => {})
+    await Runtime.shutdown()
     process.exit(0)
   })
 }
