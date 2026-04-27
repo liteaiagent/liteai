@@ -1,6 +1,8 @@
-Call this tool ONLY when you have fully completed the user's request, answered their question, or have no further actions to take.
+Call this tool when you want to explicitly signal turn completion with a summary message.
 
-This tool signals that your turn is complete and yields control back to the user.
+This tool yields control back to the user with a structured summary of what you accomplished.
+
+NOTE: You do NOT need to call this tool to end your turn. Simply finishing your response without tool calls will naturally end your turn. Use this tool only when you want to provide an explicit completion summary.
 
 IMPORTANT:
 - Do NOT call this tool if you still have pending work, unfinished tasks, or unanswered questions.

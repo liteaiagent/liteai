@@ -22,6 +22,7 @@ import { InstructionPrompt } from "./instruction"
 import { LoopDetectionService } from "./loop-detection"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { injectPlanAttachment } from "./plan-reminder"
+import { StopDriftService } from "./stop-drift"
 import { StreamingToolExecutor } from "./streaming-tool-executor"
 import { SystemPrompt } from "./system"
 import { TelemetryTracker } from "./telemetry"
@@ -73,13 +74,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
 
   let structuredOutput: unknown | undefined
   let step = 0
-  const MAX_PLAN_STOP_CORRECTIONS = 3
-  let planStopCorrectionCount = 0
-  const MAX_STOP_CORRECTIONS = 1
-  let stopDriftCorrectionCount = 0
   const telemetryTracker = new TelemetryTracker()
   const autocompactState: AutocompactState = createAutocompactState()
   const loopDetector = new LoopDetectionService(sessionID)
+  const stopDriftService = new StopDriftService(sessionID, planModeStateRef)
 
   while (true) {
     if (abort.aborted) {
@@ -118,44 +116,29 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       lastUser.id < lastAssistant.id
     ) {
       // ── Plan mode stop-drift recovery ──
-      // When plan mode is active, the model MUST call ask_user or plan_exit.
-      // A bare "stop" means it drifted. Re-read PlanModeState in case a tool
-      // call in this turn mutated it (e.g., plan_exit was approved).
-      const currentPlanState = planModeStateRef.get()
-      if (currentPlanState.active && planStopCorrectionCount < MAX_PLAN_STOP_CORRECTIONS) {
-        planStopCorrectionCount++
+      // With toolChoice: "auto", a bare stop is normal behavior.
+      // Only plan mode still requires tool calls (plan_exit / ask_user).
+      const driftResult = stopDriftService.check(lastAssistant)
+      if (driftResult.drifted) {
         log.warn("plan mode stop-drift: model stopped without calling ask_user/plan_exit", {
           sessionID,
-          correctionCount: planStopCorrectionCount,
-          max: MAX_PLAN_STOP_CORRECTIONS,
+          correctionCount: driftResult.correctionCount,
           finish: lastAssistant.finish,
         })
         yield {
           type: "control",
           action: "plan-stop-correction",
-          payload: { correctionCount: planStopCorrectionCount },
+          payload: {
+            correctionCount: driftResult.correctionCount,
+            correctionText: driftResult.correctionText,
+          },
         } satisfies EngineEvent.GeneratorResultEvent
         continue
       }
 
-      // ── General stop-drift recovery ──
-      // With toolChoice: "required", a bare "stop" without tool calls should
-      // never happen. If it does (provider bug, edge case), retry once.
-      const hasToolCalls = lastAssistant.finish === "tool-calls"
-      if (!hasToolCalls && stopDriftCorrectionCount < MAX_STOP_CORRECTIONS) {
-        stopDriftCorrectionCount++
-        log.warn("general stop-drift: model stopped without tool calls", {
-          sessionID,
-          correctionCount: stopDriftCorrectionCount,
-          finish: lastAssistant.finish,
-        })
-        yield {
-          type: "control",
-          action: "stop-drift-correction",
-          payload: { correctionCount: stopDriftCorrectionCount },
-        } satisfies EngineEvent.GeneratorResultEvent
-        continue
-      }
+      // ── Normal stop: model finished naturally ──
+      // With toolChoice: "auto", the model can stop by returning text without
+      // tool calls. This is expected behavior (matches Gemini CLI, Claude Code).
       log.info("queryLoop exiting: model finished", { sessionID, finish: lastAssistant.finish })
       break
     }
@@ -435,7 +418,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       ],
       tools,
       model,
-      toolChoice: (agent.toolChoice as "auto" | "required" | "none") ?? "required",
+      toolChoice: (agent.toolChoice as "auto" | "required" | "none") ?? "auto",
     }
 
     // ── Create streaming tool executor for this turn ──

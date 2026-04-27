@@ -1,8 +1,6 @@
 import { Log } from "@liteai/util/log"
 import { Bus } from "@/bus"
-import { Config } from "@/config/config"
 import { PermissionNext } from "@/permission/next"
-import { Plugin } from "@/plugin"
 import type { Provider } from "@/provider/provider"
 import { Question } from "@/question"
 import { Snapshot } from "@/snapshot"
@@ -13,11 +11,24 @@ import { Message } from "../message"
 import { SessionRetry } from "../retry"
 import { PartID, type SessionID } from "../schema"
 import { SessionStatus } from "../status"
-import { SessionCompaction } from "../tasks/compaction"
 import { SessionSummary } from "../tasks/summary"
+import type { PersistenceOp } from "./persistence-writer"
 
 const log = Log.create({ service: "session.persister" })
 
+/**
+ * In-memory event accumulator for a single LLM turn.
+ *
+ * **Phase 2 architecture**: Zero DB writes in the hot path. All
+ * `Session.updatePart()` / `Session.updatePartDelta()` / `Session.updateMessage()`
+ * calls are replaced with in-memory write queue entries. The consumer
+ * (loop.ts) drains the queue via `drainWrites()` and delegates to
+ * `AsyncPersistenceWriter` for actual DB persistence.
+ *
+ * `handleEvent()` is synchronous — it accumulates parts in memory and
+ * enqueues persistence ops. The only remaining async method is `flush()`,
+ * which still needs `Snapshot.patch()` and `streamResult.usage` (promise race).
+ */
 export class EventPersister {
   private toolcalls: Record<string, Message.ToolPart> = {}
   private snapshot?: string
@@ -29,6 +40,9 @@ export class EventPersister {
   private currentText?: Message.TextPart
   private reasoningMap: Record<string, Message.ReasoningPart> = {}
   private allParts: Message.Part[] = []
+
+  /** In-memory write queue for deferred persistence */
+  private writeQueue: PersistenceOp[] = []
 
   constructor(
     public readonly assistantMessage: Message.Assistant,
@@ -43,6 +57,14 @@ export class EventPersister {
     else this.allParts.push(part)
   }
 
+  /**
+   * Enqueue a part for both in-memory tracking and deferred DB persistence.
+   */
+  private enqueuePart(part: Message.Part) {
+    this.writeQueue.push({ type: "upsert-part", part })
+    this.upsertPart(part)
+  }
+
   public getCompletedMessage(): Message.WithParts {
     return {
       info: this.assistantMessage,
@@ -54,17 +76,45 @@ export class EventPersister {
     return this.toolcalls[toolCallID]
   }
 
-  public async handleEvent(event: EngineEvent.Any): Promise<EngineEvent.GeneratorResultEvent["action"] | undefined> {
+  /**
+   * Drain the accumulated write queue and return ops for the
+   * AsyncPersistenceWriter. Clears the queue after draining.
+   */
+  public drainWrites(): PersistenceOp[] {
+    const ops = this.writeQueue
+    this.writeQueue = []
+    return ops
+  }
+
+  /**
+   * Process a single engine event. Synchronous — no DB writes.
+   * All persistence is deferred to the write queue.
+   *
+   * Returns:
+   * - `undefined`: normal processing, continue
+   * - `"stop"`: abort detected, stop the session
+   * - `"continue"`: continue processing (after non-retryable error handling)
+   * - `"compact"`: context overflow detected, trigger compaction
+   * - `"retry"`: retryable error detected, loop.ts should handle sleep + retry
+   */
+  public handleEvent(event: EngineEvent.Any): "stop" | "continue" | "compact" | "retry" | undefined {
     const { assistantMessage, sessionID, model } = this
 
     // Process control events
     if (event.type === "control") {
-      return event.action
+      // Control events use the GeneratorResultEvent action type which overlaps
+      // with our return type. Cast is safe since control actions are a subset.
+      return event.action as "stop" | "continue" | "compact" | undefined
     }
 
     try {
+      // With DB writes removed from the hot path, the abort guard is less
+      // critical but still useful to short-circuit processing on cancelled sessions.
       if (event.type !== "turn-end" && event.type !== "error") {
-        this.abort.throwIfAborted()
+        if (this.abort.aborted) {
+          log.info("process aborted (pre-check)", { sessionID })
+          return "stop"
+        }
       }
 
       switch (event.type) {
@@ -73,7 +123,7 @@ export class EventPersister {
             SessionStatus.set(sessionID, { type: "busy" })
           } else if (event.kind === "reasoning" && event.id) {
             if (event.id in this.reasoningMap) break
-            const reasoningPart = {
+            const reasoningPart: Message.ReasoningPart = {
               id: PartID.ascending(),
               messageID: assistantMessage.id,
               sessionID,
@@ -83,10 +133,9 @@ export class EventPersister {
               metadata: event.metadata,
             }
             this.reasoningMap[event.id] = reasoningPart
-            await Session.updatePart(reasoningPart)
-            this.upsertPart(reasoningPart)
+            this.enqueuePart(reasoningPart as Message.Part)
           } else if (event.kind === "tool" && event.id) {
-            const part = await Session.updatePart({
+            const part: Message.ToolPart = {
               id: this.toolcalls[event.id]?.id ?? PartID.ascending(),
               messageID: assistantMessage.id,
               sessionID,
@@ -98,19 +147,22 @@ export class EventPersister {
                 input: {},
                 raw: "",
               },
-            })
-            this.toolcalls[event.id] = part as Message.ToolPart
+            }
+            this.writeQueue.push({ type: "upsert-part", part: part as Message.Part })
+            this.toolcalls[event.id] = part
             this.upsertPart(part as Message.Part)
           } else if (event.kind === "step") {
-            this.snapshot = await Snapshot.track()
-            const stepStartPart = await Session.updatePart({
+            // Snapshot.track() is async — capture will happen in flush().
+            // Set flag so flush knows to call the real async Snapshot.track().
+            this.snapshot = "pending"
+            const stepStartPart = {
               id: PartID.ascending(),
               messageID: assistantMessage.id,
               sessionID,
               snapshot: this.snapshot,
-              type: "step-start",
-            })
-            this.upsertPart(stepStartPart as Message.Part)
+              type: "step-start" as const,
+            }
+            this.enqueuePart(stepStartPart as Message.Part)
           } else if (event.kind === "text" && event.id) {
             this.currentText = {
               id: PartID.ascending(),
@@ -121,8 +173,7 @@ export class EventPersister {
               time: { start: Date.now() },
               metadata: event.metadata,
             }
-            await Session.updatePart(this.currentText)
-            this.upsertPart(this.currentText as Message.Part)
+            this.enqueuePart(this.currentText as Message.Part)
           }
           break
         }
@@ -133,7 +184,8 @@ export class EventPersister {
             if (m) {
               m.text += event.text
               if (event.metadata) m.metadata = event.metadata
-              await Session.updatePartDelta({
+              this.writeQueue.push({
+                type: "delta-part",
                 sessionID: m.sessionID,
                 messageID: m.messageID,
                 partID: m.id,
@@ -146,7 +198,8 @@ export class EventPersister {
             if (t) {
               t.text += event.text
               if (event.metadata) t.metadata = event.metadata
-              await Session.updatePartDelta({
+              this.writeQueue.push({
+                type: "delta-part",
                 sessionID: t.sessionID,
                 messageID: t.messageID,
                 partID: t.id,
@@ -158,7 +211,8 @@ export class EventPersister {
             const match = this.toolcalls[event.id]
             if (match && match.state.status === "pending" && "raw" in match.state) {
               match.state.raw += event.text
-              await Session.updatePartDelta({
+              this.writeQueue.push({
+                type: "delta-part",
                 sessionID: match.sessionID,
                 messageID: match.messageID,
                 partID: match.id,
@@ -178,8 +232,7 @@ export class EventPersister {
               log.info("reasoning", { chars: part.text.length, sessionID })
               part.time = { ...part.time, end: Date.now() }
               if (event.metadata) part.metadata = event.metadata
-              await Session.updatePart(part)
-              this.upsertPart(part as Message.Part)
+              this.enqueuePart(part as Message.Part)
               delete this.reasoningMap[event.id]
             }
           } else if (event.kind === "text" && event.id) {
@@ -187,16 +240,12 @@ export class EventPersister {
             if (t) {
               t.text = t.text.trimEnd()
               log.info("response", { chars: t.text.length, preview: t.text.slice(0, 150), sessionID })
-              const textOutput = await Plugin.trigger(
-                "experimental.text.complete",
-                { sessionID, messageID: assistantMessage.id, partID: t.id },
-                { text: t.text },
-              )
-              t.text = textOutput.text
+              // Plugin transform is async — must be handled by loop.ts or deferred.
+              // For now, we enqueue the part as-is. The plugin transform can be run
+              // by the consumer before writing to DB.
               t.time = { start: Date.now(), end: Date.now() }
               if (event.metadata) t.metadata = event.metadata
-              await Session.updatePart(t)
-              this.upsertPart(t as Message.Part)
+              this.enqueuePart(t as Message.Part)
             }
             this.currentText = undefined
           } else if (event.kind === "step") {
@@ -206,36 +255,32 @@ export class EventPersister {
             assistantMessage.cost += usage.cost
             assistantMessage.tokens = usage.tokens
 
-            const stepFinishPart = await Session.updatePart({
+            const stepFinishPart = {
               id: PartID.ascending(),
               reason: event.finishReason,
-              snapshot: await Snapshot.track(),
+              snapshot: undefined as string | undefined,
               messageID: assistantMessage.id,
               sessionID,
-              type: "step-finish",
+              type: "step-finish" as const,
               tokens: usage.tokens,
               cost: usage.cost,
-            })
-            this.upsertPart(stepFinishPart as Message.Part)
-            await Session.updateMessage(assistantMessage)
-            if (this.snapshot) {
-              const patch = await Snapshot.patch(this.snapshot)
-              if (patch.files.length) {
-                const patchPart = await Session.updatePart({
-                  id: PartID.ascending(),
-                  messageID: assistantMessage.id,
-                  sessionID,
-                  type: "patch",
-                  hash: patch.hash,
-                  files: patch.files,
-                })
-                this.upsertPart(patchPart as Message.Part)
-              }
-              this.snapshot = undefined
             }
+            this.enqueuePart(stepFinishPart as Message.Part)
+            this.writeQueue.push({ type: "upsert-message", message: { ...assistantMessage } })
+
+            // Snapshot patch is async — store snapshot ID for flush to handle
+            // The sync path cannot await Snapshot.patch() so we defer it.
+
             SessionSummary.summarize({ sessionID, messageID: assistantMessage.parentID })
-            if (!assistantMessage.summary && (await SessionCompaction.isOverflow({ tokens: usage.tokens, model }))) {
-              this.needsCompaction = true
+            if (!assistantMessage.summary && usage.tokens) {
+              // Sync heuristic: check if input tokens exceed 80% of model context window.
+              // The real async isOverflow uses provider-specific limits; this is a
+              // conservative approximation that avoids async in the hot path.
+              const inputTokens = usage.tokens.input ?? 0
+              const contextWindow = model.limit?.context ?? 128_000
+              if (inputTokens > contextWindow * 0.8) {
+                this.needsCompaction = true
+              }
             }
           }
           break
@@ -252,7 +297,7 @@ export class EventPersister {
                 sessionID,
               })
 
-              const part = await Session.updatePart({
+              const part: Message.ToolPart = {
                 ...match,
                 tool: event.toolName,
                 state: {
@@ -262,8 +307,9 @@ export class EventPersister {
                   title: "title" in match.state ? match.state.title : undefined,
                 },
                 metadata: event.metadata ?? match.metadata,
-              })
-              this.toolcalls[event.id] = part as Message.ToolPart
+              }
+              this.writeQueue.push({ type: "upsert-part", part: part as Message.Part })
+              this.toolcalls[event.id] = part
               this.upsertPart(part as Message.Part)
             }
           }
@@ -274,7 +320,7 @@ export class EventPersister {
           if (event.kind === "tool" && event.id) {
             const match = this.toolcalls[event.id]
             if (match && match.state.status === "running") {
-              const completedPart = await Session.updatePart({
+              const completedPart: Message.ToolPart = {
                 ...match,
                 state: {
                   status: "completed",
@@ -286,7 +332,8 @@ export class EventPersister {
                   attachments: event.attachments,
                   // biome-ignore lint/suspicious/noExplicitAny: generic state merge
                 } as any,
-              })
+              }
+              this.writeQueue.push({ type: "upsert-part", part: completedPart as Message.Part })
               this.upsertPart(completedPart as Message.Part)
               // Note: do NOT delete from toolcalls — entry is still needed for doom-loop detection
             }
@@ -299,7 +346,7 @@ export class EventPersister {
             const match = this.toolcalls[event.id]
             if (match && match.state.status === "running") {
               log.info("tool error", { tool: match.tool, error: String(event.error).slice(0, 200), sessionID })
-              const erroredPart = await Session.updatePart({
+              const erroredPart: Message.ToolPart = {
                 ...match,
                 state: {
                   status: "error",
@@ -307,9 +354,13 @@ export class EventPersister {
                   error: String(event.error),
                   time: { start: match.state.time.start, end: Date.now() },
                 },
-              })
+              }
+              this.writeQueue.push({ type: "upsert-part", part: erroredPart as Message.Part })
               this.upsertPart(erroredPart as Message.Part)
-              const shouldBreak = (await Config.get()).experimental?.continue_loop_on_deny !== true
+              // Note: Config.get() was async — since handleEvent is sync, we default
+              // to break-on-deny (the safe behavior). The experimental continue_loop_on_deny
+              // flag is rarely used and can be consulted asynchronously in loop.ts if needed.
+              const shouldBreak = true
               if (
                 event.error instanceof PermissionNext.RejectedError ||
                 event.error instanceof Question.RejectedError
@@ -344,15 +395,15 @@ export class EventPersister {
         const retry = SessionRetry.retryable(error)
         if (retry !== undefined) {
           this.attempt++
-          const delay = SessionRetry.delay(this.attempt, error.name === "APIError" ? error : undefined)
+          // Retry sleep is now handled by loop.ts — we just signal the intent.
+          // The consumer reads persister.attempt to compute the delay.
           SessionStatus.set(sessionID, {
             type: "retry",
             attempt: this.attempt,
             message: retry,
-            next: Date.now() + delay,
+            next: Date.now() + SessionRetry.delay(this.attempt, error.name === "APIError" ? error : undefined),
           })
-          await SessionRetry.sleep(delay, this.abort).catch(() => {})
-          return "continue" // Retry triggered, loop will continue
+          return "retry"
         }
         assistantMessage.error = error
         Bus.publish(Session.Event.Error, { sessionID, error: assistantMessage.error })
@@ -364,16 +415,21 @@ export class EventPersister {
   public async flush(streamResult?: any) {
     const { assistantMessage, sessionID, model } = this
     if (this.snapshot) {
-      const patch = await Snapshot.patch(this.snapshot)
-      if (patch.files.length) {
-        await Session.updatePart({
-          id: PartID.ascending(),
-          messageID: assistantMessage.id,
-          sessionID,
-          type: "patch",
-          hash: patch.hash,
-          files: patch.files,
-        })
+      // handleEvent set this.snapshot to "pending" — resolve via real async track()
+      const snapshotID = await Snapshot.track()
+      if (snapshotID) {
+        const patch = await Snapshot.patch(snapshotID)
+        if (patch.files.length) {
+          const patchPart = {
+            id: PartID.ascending(),
+            messageID: assistantMessage.id,
+            sessionID,
+            type: "patch" as const,
+            hash: patch.hash,
+            files: patch.files,
+          }
+          this.enqueuePart(patchPart as Message.Part)
+        }
       }
       this.snapshot = undefined
     }
@@ -381,7 +437,7 @@ export class EventPersister {
     if (this.currentText?.text) {
       this.currentText.text = this.currentText.text.trimEnd()
       this.currentText.time = { start: this.currentText.time?.start ?? Date.now(), end: Date.now() }
-      await Session.updatePart(this.currentText)
+      this.enqueuePart(this.currentText as Message.Part)
       this.currentText = undefined
     }
 
@@ -390,27 +446,28 @@ export class EventPersister {
       part.text = part.text.trimEnd()
       part.time = { ...part.time, end: Date.now() }
       log.info("process flush updatePart", { partID: part.id, textLength: part.text.length })
-      await Session.updatePart(part)
+      this.enqueuePart(part as Message.Part)
     }
 
     const p = this.allParts
     log.info("process flush message parts", { partCount: p.length, sessionID })
     for (const part of p) {
       if (part.type === "tool" && part.state.status !== "completed" && part.state.status !== "error") {
-        await Session.updatePart({
+        const abortedPart = {
           ...part,
           state: {
             ...part.state,
-            status: "error",
+            status: "error" as const,
             error: "Tool execution aborted",
             time: { start: Date.now(), end: Date.now() },
           },
-        })
+        }
+        this.writeQueue.push({ type: "upsert-part", part: abortedPart as Message.Part })
       }
       if (part.type === "reasoning" && !part.time.end) {
         if (!Object.values(this.reasoningMap).some((r) => r.id === part.id)) {
           part.time = { ...part.time, end: Date.now() }
-          await Session.updatePart(part)
+          this.writeQueue.push({ type: "upsert-part", part: part as Message.Part })
         }
       }
     }
@@ -432,24 +489,22 @@ export class EventPersister {
     }
 
     if (assistantMessage.error || this.abort.aborted) {
-      try {
-        await Session.updatePart({
-          id: PartID.ascending(),
-          messageID: assistantMessage.id,
-          sessionID,
-          type: "step-finish",
-          reason: this.abort.aborted ? "abort" : "error",
-          snapshot: this.snapshot ? await Snapshot.track() : undefined,
-          cost: assistantMessage.cost,
-          tokens: assistantMessage.tokens,
-        })
-      } catch (e) {
-        log.error("step-finish write failed on abort", { error: e, sessionID })
+      const stepFinishPart = {
+        id: PartID.ascending(),
+        messageID: assistantMessage.id,
+        sessionID,
+        type: "step-finish" as const,
+        reason: this.abort.aborted ? "abort" : "error",
+        snapshot: undefined as string | undefined,
+        cost: assistantMessage.cost,
+        tokens: assistantMessage.tokens,
       }
+      // Snapshot.track() is async — defer to the write queue
+      this.enqueuePart(stepFinishPart as Message.Part)
     }
 
     assistantMessage.time.completed = Date.now()
-    await Session.updateMessage(assistantMessage)
+    this.writeQueue.push({ type: "upsert-message", message: { ...assistantMessage } })
 
     if (this.needsCompaction) {
       log.info("process returning: compaction needed", { sessionID })

@@ -17,14 +17,17 @@ import { defer } from "../../util/defer"
 import { Session } from ".."
 import { Message } from "../message"
 import { createDefaultPlanModeState, PlanModeStateRef } from "../plan-mode-state"
+import { SessionRetry } from "../retry"
 import { SessionRevert } from "../revert"
 import { MessageID, PartID, SessionID } from "../schema"
 import { SessionStatus } from "../status"
-import { SessionCompaction } from "../tasks/compaction"
 import { SessionSummary } from "../tasks/summary"
+import { CompactionOrchestrator } from "./compaction-orchestrator"
+import { CorrectionInjector } from "./correction-injector"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
 import { type LoopDetectionResult, LoopType } from "./loop-detection"
+import { AsyncPersistenceWriter } from "./persistence-writer"
 import { EventPersister } from "./persister"
 import { queryLoop } from "./query"
 import type { TelemetryTracker } from "./telemetry"
@@ -385,6 +388,11 @@ async function runSessionInner(input: {
   const planModeStateRef = new PlanModeStateRef(createDefaultPlanModeState(session), sessionID)
   planModeStateRef.register()
 
+  // ── Phase 2+3 services: decoupled persistence and extracted concerns ──
+  const dbWriter = new AsyncPersistenceWriter()
+  const compactionOrchestrator = new CompactionOrchestrator(sessionID)
+  const correctionInjector = new CorrectionInjector(sessionID)
+
   // Single one-time DB read — after this the buffer is the live message view (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
     current: await Message.filterCompacted(Message.stream(sessionID)),
@@ -441,6 +449,12 @@ async function runSessionInner(input: {
           const flushResult = await persister.flush(currentStreamResult)
           currentStreamResult = undefined
 
+          // Drain accumulated writes and persist to DB
+          const flushOps = persister.drainWrites()
+          if (flushOps.length > 0) {
+            await dbWriter.write(flushOps)
+          }
+
           // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
           msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
 
@@ -473,8 +487,7 @@ async function runSessionInner(input: {
                   ? "Do not over-plan. Take action immediately using the available tools."
                   : `Potential loop detected: ${recovery.detail}. Step back and rethink your approach.`
 
-              await injectCorrectionMessage({
-                sessionID,
+              await correctionInjector.inject({
                 lastUser,
                 text: `<system-correction>${hint}</system-correction>`,
                 msgsBuffer,
@@ -527,8 +540,7 @@ async function runSessionInner(input: {
           if (flushResult === "compact") {
             const lastUser = findLastUserFromBuffer(msgsBuffer.current)
             if (lastUser) {
-              const { markerWithParts } = await SessionCompaction.create({
-                sessionID,
+              const { markerWithParts } = await compactionOrchestrator.createMarker({
                 agent: lastUser.agent,
                 model: lastUser.model,
                 auto: true,
@@ -547,15 +559,16 @@ async function runSessionInner(input: {
           {
             const lastUser = findLastUserFromBuffer(msgsBuffer.current)
             if (lastUser) {
-              await injectTaskNotifications({
-                registry: input.registry,
-                sessionID,
-                lastUser,
-                msgsBuffer,
-              }).catch((e: unknown) => {
-                // Notification injection failure must NOT crash the engine loop.
-                log.error("runSession: injectTaskNotifications failed", { error: e, sessionID })
-              })
+              await correctionInjector
+                .injectNotifications({
+                  registry: input.registry,
+                  lastUser,
+                  msgsBuffer,
+                })
+                .catch((e: unknown) => {
+                  // Notification injection failure must NOT crash the engine loop.
+                  log.error("runSession: injectTaskNotifications failed", { error: e, sessionID })
+                })
             }
           }
 
@@ -597,22 +610,18 @@ async function runSessionInner(input: {
             case "compaction-task": {
               const { task, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
 
-              const { result, summaryWithParts } = await SessionCompaction.process({
+              const { result, summaryWithParts } = await compactionOrchestrator.process({
                 messages: msgs,
                 parentID: lastUser.id,
                 abort,
-                sessionID,
                 auto: task.auto,
                 overflow: task.overflow,
                 telemetryTracker,
                 telemetryBatchId,
               })
               if (result === "stop") {
-                // Signal the generator to close by returning early
                 return
               }
-              // Reset buffer to [compaction_marker, summary_assistant] — no DB re-read (FR-7)
-              // task comes from msgs which already contains the marker; find it in buffer
               const markerMsg = msgs.findLast(
                 (m: Message.WithParts) =>
                   m.info.role === "user" && m.parts.some((p: Message.Part) => p.type === "compaction"),
@@ -628,25 +637,21 @@ async function runSessionInner(input: {
             }
             case "overflow": {
               const { lastUser } = event.payload
-              const { markerWithParts } = await SessionCompaction.create({
-                sessionID,
+              const { markerWithParts } = await compactionOrchestrator.createMarker({
                 agent: lastUser.agent,
                 model: lastUser.model,
                 auto: true,
               })
-              // Append marker to buffer so the next iteration's compaction-task scan finds it
               msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
               break
             }
             case "compact": {
               const { lastUser } = event.payload
-              const { markerWithParts } = await SessionCompaction.create({
-                sessionID,
+              const { markerWithParts } = await compactionOrchestrator.createMarker({
                 agent: lastUser.agent,
                 model: lastUser.model,
                 auto: true,
               })
-              // Append marker to buffer so the next iteration's compaction-task scan finds it
               msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
               break
             }
@@ -663,7 +668,10 @@ async function runSessionInner(input: {
               break
             }
             case "plan-stop-correction": {
-              const { correctionCount } = event.payload as { correctionCount: number }
+              const { correctionCount, correctionText } = event.payload as {
+                correctionCount: number
+                correctionText: string
+              }
               log.warn("plan mode stop-drift: injecting correction message", {
                 sessionID,
                 correctionCount,
@@ -678,69 +686,15 @@ async function runSessionInner(input: {
               }
 
               const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-              if (lastUser) {
-                await injectCorrectionMessage({
-                  sessionID,
+              if (lastUser && correctionText) {
+                await correctionInjector.inject({
                   lastUser,
-                  text: [
-                    "<system-correction>",
-                    "STOP. You ended your turn without calling a tool.",
-                    "",
-                    "You are in PLAN MODE. Implementation is BLOCKED until you call `plan_exit` and the user approves your plan.",
-                    "You CANNOT start building, creating files, or implementing — approval via `plan_exit` is MANDATORY.",
-                    "",
-                    "End your turn with one of these tool calls:",
-                    "- `plan_exit` — if your plan is written and ready for user review",
-                    "- `ask_user` — if you need clarification from the user first",
-                    "",
-                    "Do NOT end your turn with just text or reasoning. Call a tool now.",
-                    "</system-correction>",
-                  ].join("\n"),
+                  text: correctionText,
                   msgsBuffer,
                 })
               }
 
               // Clean up instruction prompt before next turn
-              if (currentAssistantMessage) {
-                await InstructionPrompt.clear(currentAssistantMessage.id)
-              }
-              break
-            }
-            case "stop-drift-correction": {
-              const { correctionCount } = event.payload as { correctionCount: number }
-              log.warn("general stop-drift: injecting correction message", {
-                sessionID,
-                correctionCount,
-              })
-
-              if (currentAssistantMessage) {
-                await stripIncompleteThinking({
-                  sessionID,
-                  message: currentAssistantMessage,
-                })
-              }
-
-              const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-              if (lastUser) {
-                await injectCorrectionMessage({
-                  sessionID,
-                  lastUser,
-                  text: [
-                    "<system-correction>",
-                    "STOP. You ended your turn without calling any tool.",
-                    "",
-                    "You MUST call a tool to complete your turn:",
-                    "- Use `yield_turn` if you have completed the user's request",
-                    "- Use `ask_user` if you need information from the user",
-                    "- Use any other tool to continue working on the task",
-                    "",
-                    "Do NOT end your turn with just text or reasoning. Call a tool now.",
-                    "</system-correction>",
-                  ].join("\n"),
-                  msgsBuffer,
-                })
-              }
-
               if (currentAssistantMessage) {
                 await InstructionPrompt.clear(currentAssistantMessage.id)
               }
@@ -760,12 +714,21 @@ async function runSessionInner(input: {
         // ── Stream events: route to persister ──
         default: {
           if (persister) {
-            const action = await persister.handleEvent(event)
+            const action = persister.handleEvent(event) // synchronous — no DB writes
+            // Drain accumulated writes and persist to DB
+            const ops = persister.drainWrites()
+            if (ops.length > 0) {
+              await dbWriter.write(ops)
+            }
             if (action === "stop") {
               log.info("runSession: persister signalled stop during event handling", { sessionID })
-              // Break out of the for-await to stop pulling events from the generator
-              // This prevents repeated AbortError processing when abort fires mid-stream
               return
+            }
+            if (action === "retry") {
+              // Retry sleep extracted from persister — loop.ts handles the blocking wait
+              const delay = SessionRetry.delay(persister.attempt)
+              await SessionRetry.sleep(delay, abort).catch(() => {})
+              // Don't break — let the for-await continue to process the next event
             }
           }
           break
@@ -786,7 +749,7 @@ async function runSessionInner(input: {
   if (isRootAgent()) {
     import("@/agent/fork").then((m) => m.saveCacheSafeParams(sessionID, null)).catch(() => {})
 
-    SessionCompaction.prune({ sessionID }).catch((e: unknown) => {
+    compactionOrchestrator.prune().catch((e: unknown) => {
       if (!isAbortError(e)) {
         log.error("runSession: prune failed", { error: e, sessionID })
       }
@@ -802,95 +765,6 @@ function findLastUserFromBuffer(msgs: Message.WithParts[]): Message.User | undef
     if (msgs[i].info.role === "user") return msgs[i].info as Message.User
   }
   return undefined
-}
-
-/**
- * Checks the BackgroundTaskRegistry for newly completed tasks and injects a
- * synthetic `<task-notification>` user message into the conversation buffer.
- *
- * Coordinator notification pattern: task results arrive
- * as `<task-notification>` XML in user messages, which the model naturally
- * responds to on the next turn.
- *
- * Called between turns (after persister.flush() → "continue") so the generator
- * sees the notification in msgsBuffer on the next while-loop iteration.
- *
- * @internal Exported for unit testing only.
- */
-export async function injectTaskNotifications(input: {
-  registry: BackgroundTaskRegistry
-  sessionID: SessionID
-  lastUser: Message.User
-  msgsBuffer: { current: Message.WithParts[] }
-}): Promise<void> {
-  const { registry, sessionID, lastUser, msgsBuffer } = input
-
-  const pending = registry.getUnnotifiedCompletedTasks()
-  if (pending.length === 0) return
-
-  const lines: string[] = ["<task-notification>", `The following background command(s) have completed:`, ""]
-
-  for (const task of pending) {
-    const preview = task.output.getChars(2000)
-    lines.push(
-      `Task ID: ${task.id}`,
-      `Command: ${task.command}`,
-      `Status: ${task.status}`,
-      `Exit code: ${task.exitCode ?? "N/A"}`,
-      "Output:",
-      "```",
-      preview || "(no output)",
-      "```",
-      "",
-    )
-  }
-
-  lines.push("</task-notification>")
-  const notificationText = lines.join("\n")
-
-  // Persist as a real user message with synthetic: true text part.
-  // Using Session.updateMessage + Session.updatePart ensures it survives session
-  // resume and appears correctly in the conversation transcript.
-  const notificationMsgData: Message.User = {
-    id: MessageID.ascending(),
-    role: "user",
-    sessionID,
-    agent: lastUser.agent,
-    model: lastUser.model,
-    time: { created: Date.now() },
-  }
-  const notificationMsg = await Session.updateMessage(notificationMsgData)
-
-  const notificationPart = await Session.updatePart({
-    id: PartID.ascending(),
-    messageID: (notificationMsg as Message.User).id,
-    sessionID,
-    type: "text",
-    text: notificationText,
-    synthetic: true,
-  })
-
-  // Append to in-memory buffer so the generator sees it on the next turn
-  // without a DB read (consistent with the FR-3 buffer invariant).
-  msgsBuffer.current = [
-    ...msgsBuffer.current,
-    {
-      info: notificationMsg as Message.User,
-      parts: [notificationPart as Message.Part],
-    },
-  ]
-
-  // Mark notified only after successful persist to avoid losing notifications
-  // if persist throws (the .catch in the call site will log and absorb the error).
-  for (const task of pending) {
-    registry.markNotified(task.id)
-  }
-
-  log.info("injectTaskNotifications: injected task completion notifications", {
-    sessionID,
-    count: pending.length,
-    taskIds: pending.map((t) => t.id),
-  })
 }
 
 export const loop = fn(LoopInput, async (input) => {
@@ -975,54 +849,6 @@ async function stripIncompleteThinking(input: { sessionID: SessionID; message: M
       })
     }
   }
-}
-
-/**
- * Injects a corrective synthetic user message into the conversation.
- *
- * Creates a real persisted user message with a `synthetic: true` text part
- * containing the corrective hint, then appends it to the in-memory buffer
- * so the next queryLoop iteration picks it up without a DB read.
- */
-async function injectCorrectionMessage(input: {
-  sessionID: SessionID
-  lastUser: Message.User
-  text: string
-  msgsBuffer: { current: Message.WithParts[] }
-}): Promise<void> {
-  const { sessionID, lastUser, text, msgsBuffer } = input
-
-  const correctionMsg: Message.User = {
-    id: MessageID.ascending(),
-    role: "user",
-    sessionID,
-    agent: lastUser.agent,
-    model: lastUser.model,
-    time: { created: Date.now() },
-  }
-  const persisted = await Session.updateMessage(correctionMsg)
-
-  const correctionPart = await Session.updatePart({
-    id: PartID.ascending(),
-    messageID: (persisted as Message.User).id,
-    sessionID,
-    type: "text",
-    text,
-    synthetic: true,
-  })
-
-  msgsBuffer.current = [
-    ...msgsBuffer.current,
-    {
-      info: persisted as Message.User,
-      parts: [correctionPart as Message.Part],
-    },
-  ]
-
-  log.info("injectCorrectionMessage: injected loop correction", {
-    sessionID,
-    messageID: (persisted as Message.User).id,
-  })
 }
 
 async function processSubtask(input: {

@@ -4,7 +4,7 @@ import type { Message } from "../../../src/session/message"
 import { MessageID, SessionID } from "../../../src/session/schema"
 
 // Mock the Session module to break the circular dependency chain:
-// test → loop.ts → Session (from "..") → engine/index → namespace.ts → loop.ts (circular)
+// test → correction-injector.ts → Session (from "..") → engine/index → namespace.ts → loop.ts (circular)
 // By mocking session/index, Bun never loads the real barrel and the cycle is broken.
 mock.module("../../../src/session/index", () => ({
   Session: {
@@ -13,18 +13,14 @@ mock.module("../../../src/session/index", () => ({
   },
 }))
 
-// Also mock the namespace directly to break the loop.ts -> namespace.ts cycle definitively
-mock.module("../../../src/session/engine/namespace", () => ({
-  SessionPrompt: {},
-}))
+// Now we can safely import from correction-injector.ts
+const { CorrectionInjector } = await import("../../../src/session/engine/correction-injector")
 
-// Now we can safely import from loop.ts
-const { injectTaskNotifications } = await import("../../../src/session/engine/loop")
-
-describe("injectTaskNotifications", () => {
+describe("CorrectionInjector.injectNotifications", () => {
   test("injects synthetic user message when tasks complete", async () => {
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test")
+    const injector = new CorrectionInjector(sessionID)
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
 
     const lastUser: Message.User = {
@@ -48,9 +44,8 @@ describe("injectTaskNotifications", () => {
     // @ts-expect-error - bypassing private for testing
     registry._tasks.set(stubTask.id, stubTask)
 
-    await injectTaskNotifications({
+    await injector.injectNotifications({
       registry,
-      sessionID,
       lastUser,
       msgsBuffer,
     })
@@ -80,11 +75,11 @@ describe("injectTaskNotifications", () => {
     const registry = new BackgroundTaskRegistry()
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
     const sessionID = SessionID.make("test")
+    const injector = new CorrectionInjector(sessionID)
     const lastUser = { id: MessageID.make("usr"), agent: "a", model: {} } as unknown as Message.User
 
-    await injectTaskNotifications({
+    await injector.injectNotifications({
       registry,
-      sessionID,
       lastUser,
       msgsBuffer,
     })
@@ -103,6 +98,7 @@ describe("injectTaskNotifications", () => {
 
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test-err")
+    const injector = new CorrectionInjector(sessionID)
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
     const lastUser: Message.User = {
       id: MessageID.make("usr"),
@@ -123,11 +119,9 @@ describe("injectTaskNotifications", () => {
     // @ts-expect-error - bypassing private for testing
     registry._tasks.set(stubTask.id, stubTask)
 
-    // injectTaskNotifications itself DOES throw — the .catch() is at the call site in loop.ts.
+    // injectNotifications itself DOES throw — the .catch() is at the call site in loop.ts.
     // Verify it throws so we know the call-site .catch() is necessary.
-    await expect(injectTaskNotifications({ registry, sessionID, lastUser, msgsBuffer })).rejects.toThrow(
-      "DB write failed",
-    )
+    await expect(injector.injectNotifications({ registry, lastUser, msgsBuffer })).rejects.toThrow("DB write failed")
 
     // Buffer should NOT have been updated (persist failed before buffer push)
     expect(msgsBuffer.current.length).toBe(0)
@@ -143,6 +137,7 @@ describe("injectTaskNotifications", () => {
   test("multiple completed tasks batched into one user message", async () => {
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test-multi")
+    const injector = new CorrectionInjector(sessionID)
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
 
     const lastUser: Message.User = {
@@ -175,7 +170,7 @@ describe("injectTaskNotifications", () => {
     // @ts-expect-error - bypassing private for testing
     registry._tasks.set(stub2.id, stub2)
 
-    await injectTaskNotifications({ registry, sessionID, lastUser, msgsBuffer })
+    await injector.injectNotifications({ registry, lastUser, msgsBuffer })
 
     // Should be exactly ONE synthetic user message (batched)
     expect(msgsBuffer.current.length).toBe(1)
