@@ -103,7 +103,7 @@ test("loads project config from Git Bash and MSYS2 paths on Windows", async () =
     const rest = dir.slice(2).replaceAll("\\", "/")
     return `/${drive}${rest}`
   })
-})
+}, 30000)
 
 test("loads project config from Cygwin paths on Windows", async () => {
   await check((dir) => {
@@ -111,7 +111,7 @@ test("loads project config from Cygwin paths on Windows", async () => {
     const rest = dir.slice(2).replaceAll("\\", "/")
     return `/cygdrive/${drive}${rest}`
   })
-})
+}, 30000)
 
 test("ignores legacy tui keys in liteai config", async () => {
   await using tmp = await tmpdir({

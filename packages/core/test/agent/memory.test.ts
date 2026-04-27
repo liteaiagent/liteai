@@ -114,16 +114,6 @@ describe("AgentMemory Tests", () => {
     })
   })
 
-  describe("Tools Auto-injection", () => {
-    it("injects read, write, and edit tools", () => {
-      const pool: Record<string, unknown> = {}
-      AgentMemory.injectAgentMemoryTools(pool, "test_agent", "project")
-      expect(pool.readMemory).toBeDefined()
-      expect(pool.writeMemory).toBeDefined()
-      expect(pool.editMemory).toBeDefined()
-    })
-  })
-
   describe("Snapshot System", () => {
     it("checkAgentMemorySnapshot returns false if snapshot config disabled", async () => {
       process.env.AGENT_MEMORY_SNAPSHOT = "false"

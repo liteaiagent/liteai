@@ -183,9 +183,9 @@ describe("runAgentByName", () => {
   })
 
   it("delegates to runAgent when agent is found", async () => {
-    // We use the builtin 'plan-explore' agent and mock MCP status appropriately since we don't need test-server
-    // 'plan-explore' naturally exists.
-    const result = await runAgentByName("plan-explore", "sess_1" as SessionID)
+    // We use the builtin 'explore' agent and mock MCP status appropriately since we don't need test-server
+    // 'explore' naturally exists.
+    const result = await runAgentByName("explore", "sess_1" as SessionID)
     expect(result.status).toBe("completed")
     expect(result.result).toBe("Mock output")
   })

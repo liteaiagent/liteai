@@ -48,7 +48,6 @@ describe("Bundled", () => {
     "build",
     "general",
     "explore",
-    "plan-explore",
     "compaction",
     "title",
     "summary",
