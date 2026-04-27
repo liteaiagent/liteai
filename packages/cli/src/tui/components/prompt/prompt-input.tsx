@@ -35,6 +35,7 @@ import type { Command, FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useMemo, useRef, useState } from "react"
 import stripAnsi from "strip-ansi"
 import { useDialog } from "../../context/dialog"
+import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
@@ -50,6 +51,7 @@ import { detectInputHighlights } from "../../util/text-highlighting"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogModel } from "../dialog-model"
 import { DialogPlugin } from "../dialog-plugin"
+import { DialogSessionList } from "../dialog-session-list"
 import { DialogSettings } from "../dialog-settings"
 import { DialogStatus } from "../dialog-status"
 import { DialogTheme } from "../dialog-theme"
@@ -85,6 +87,7 @@ type PromptInputProps = {
 export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
+  const route = useRoute()
   const sync = useSync()
   const { theme } = useTheme()
   const dialog = useDialog()
@@ -117,7 +120,9 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     () => [
       { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
       { name: "models", description: "Change the current AI model", template: "", hints: [] },
+      { name: "new", description: "Start a new conversation session", template: "", hints: [] },
       { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
+      { name: "sessions", description: "List and switch between sessions", template: "", hints: [] },
       { name: "settings", description: "Open settings", template: "", hints: [] },
       { name: "theme", description: "Change the color theme", template: "", hints: [] },
       { name: "status", description: "Show system status", template: "", hints: [] },
@@ -248,12 +253,14 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     () => ({
       mcp: () => dialog.push(() => <DialogMcp />),
       models: () => dialog.push(() => <DialogModel />),
+      new: () => route.navigate({ type: "home" }),
       plugins: () => dialog.push(() => <DialogPlugin />),
+      sessions: () => dialog.push(() => <DialogSessionList />),
       settings: () => dialog.push(() => <DialogSettings />),
       theme: () => dialog.push(() => <DialogTheme />),
       status: () => dialog.push(() => <DialogStatus />),
     }),
-    [dialog],
+    [dialog, route],
   )
 
   const onSubmit = useCallback(

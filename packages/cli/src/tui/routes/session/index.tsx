@@ -1,9 +1,12 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext, useInput } from "@liteai/ink"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
+import { DialogSessionList } from "../../components/dialog-session-list"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
+import { useDialog } from "../../context/dialog"
 import { useKeybind } from "../../context/keybind"
+import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { SessionProvider } from "./ctx"
@@ -17,6 +20,8 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const sync = useSync()
   const session = useSession()
   const keybind = useKeybind()
+  const dialog = useDialog()
+  const route = useRoute()
   const terminalSize = useContext(TerminalSizeContext)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showThinking, setShowThinking] = useState(true)
@@ -40,6 +45,12 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     }
     if (keybind.match("session_thinking_toggle", event.keypress)) {
       setShowThinking((v) => !v)
+    }
+    if (keybind.match("session_new", event.keypress)) {
+      route.navigate({ type: "home" })
+    }
+    if (keybind.match("session_list", event.keypress)) {
+      dialog.push(() => <DialogSessionList />)
     }
   })
 

@@ -59,15 +59,15 @@ export function App(props: AppProps) {
                   <ToastProvider>
                     <SyncProvider>
                       <LocalProvider>
-                        <DialogProvider>
-                          <RouteProvider>
+                        <RouteProvider>
+                          <DialogProvider>
                             <SessionProvider>
                               <AlternateScreen>
                                 <AppContent />
                               </AlternateScreen>
                             </SessionProvider>
-                          </RouteProvider>
-                        </DialogProvider>
+                          </DialogProvider>
+                        </RouteProvider>
                       </LocalProvider>
                     </SyncProvider>
                   </ToastProvider>

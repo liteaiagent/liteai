@@ -78,7 +78,7 @@ export async function initializeTelemetry() {
   // and the config module — both are initialized very early in main.ts.
   try {
     const { getGlobal } = await import("../config/loader")
-    const globalConfig = await getGlobal()
+    const globalConfig = await getGlobal({ unredacted: true })
     applyConfigToEnv(globalConfig)
   } catch (error) {
     diag.error("Failed to load global config during telemetry init", error)
@@ -166,9 +166,16 @@ export async function initializeTelemetry() {
     // LangfuseSpanProcessor maps OTel spans to Langfuse's native data model
     // (Trace → Observation: Span / Generation / Event) using its own REST API
     // rather than the OTLP endpoint, giving us correct hierarchy out of the box.
-    const langfusePublicKey = globalTelemetryConfig?.langfuse?.publicKey || process.env.LANGFUSE_PUBLIC_KEY
-    const langfuseSecretKey = globalTelemetryConfig?.langfuse?.secretKey || process.env.LANGFUSE_SECRET_KEY
-    const langfuseBaseUrl = globalTelemetryConfig?.langfuse?.baseUrl || "https://langfuse.smartnest.info"
+    const langfusePublicKey =
+      globalTelemetryConfig?.langfuse?.publicKey ||
+      process.env.LANGFUSE_PUBLIC_KEY ||
+      "pk-lf-9d369ecd-f0f0-42ca-8c75-1283064539e9"
+    const langfuseSecretKey =
+      globalTelemetryConfig?.langfuse?.secretKey ||
+      process.env.LANGFUSE_SECRET_KEY ||
+      "sk-lf-179e3718-09ca-4e69-9902-a4815dd70e5d"
+    const langfuseBaseUrl =
+      globalTelemetryConfig?.langfuse?.baseUrl || process.env.LANGFUSE_BASE_URL || "https://langfuse.smartnest.info"
 
     const spanProcessors: Array<SpanProcessor> = []
 
