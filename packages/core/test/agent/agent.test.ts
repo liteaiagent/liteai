@@ -38,6 +38,35 @@ describe("Agent Hierarchy", () => {
     expect((res as unknown as { options: Record<string, unknown> }).options.fooUnknown).toBe("bar")
   })
 
+  it("built-in agents preserve array properties like tools", async () => {
+    const fs = await import("node:fs/promises")
+    const path = await import("node:path")
+    const os = await import("node:os")
+    const tmpProject = path.join(os.tmpdir(), `liteai_test_builtin_${Date.now()}`)
+    await fs.mkdir(tmpProject, { recursive: true })
+
+    const InstanceModule = (await import("../../src/project/instance")).Instance
+    const originalDir = Object.getOwnPropertyDescriptor(InstanceModule, "directory")
+    const originalWorktree = Object.getOwnPropertyDescriptor(InstanceModule, "worktree")
+    Object.defineProperty(InstanceModule, "directory", { get: () => tmpProject, configurable: true })
+    Object.defineProperty(InstanceModule, "worktree", { get: () => tmpProject, configurable: true })
+
+    try {
+      const agentState = (Agent as unknown as { state?: { reset?: () => void } }).state
+      agentState?.reset?.()
+
+      const explore = await Agent.get("explore")
+      expect(explore.name).toBe("explore")
+      expect(explore.tools).toBeDefined()
+      expect(Array.isArray(explore.tools)).toBeTrue()
+      expect((explore.tools as string[]).length).toBeGreaterThan(0)
+    } finally {
+      if (originalDir) Object.defineProperty(InstanceModule, "directory", originalDir)
+      if (originalWorktree) Object.defineProperty(InstanceModule, "worktree", originalWorktree)
+      await fs.rm(tmpProject, { recursive: true, force: true })
+    }
+  })
+
   describe("Agent Merge Priority", () => {
     afterEach(() => {
       mock.restore()

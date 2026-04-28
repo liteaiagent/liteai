@@ -49,6 +49,7 @@
     "@octokit/graphql": "9.0.2",
     "@octokit/rest": "catalog:",
     "@octokit/webhooks-types": "7.6.1",
+    "@parcel/watcher": "2.5.1",
     "chalk": "5.6.2",
     "cli-highlight": "2.1.11",
     "clipboardy": "4.0.0",
