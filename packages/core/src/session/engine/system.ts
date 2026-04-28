@@ -7,6 +7,7 @@ import { Skill } from "@/skill"
 
 import { Flag } from "../../flag/flag"
 import { Instance } from "../../project/instance"
+import { Config } from "../../config/config"
 
 export namespace SystemPrompt {
   export async function environment(model: Provider.Model) {
@@ -15,6 +16,15 @@ export namespace SystemPrompt {
     const shellName = (
       process.platform === "win32" ? path.win32.basename(shell, ".exe") : path.basename(shell)
     ).toLowerCase()
+    const additionalDirs = await Config.directories()
+    const directoriesBlock = additionalDirs.length > 0
+      ? [
+          `<directories>`,
+          ...additionalDirs.map(d => `  - ${d}`),
+          `</directories>`,
+        ].join("\n")
+      : ""
+
     return [
       [
         `You are powered by the model named ${model.api.id}. The exact model ID is ${model.providerID}/${model.api.id}`,
@@ -27,10 +37,8 @@ export namespace SystemPrompt {
         `  Shell: ${shellName}`,
         `  Today's date: ${new Date().toDateString()}`,
         `</env>`,
-        `<directories>`,
-        `  `,
-        `</directories>`,
-      ].join("\n"),
+        directoriesBlock,
+      ].filter(Boolean).join("\n"),
     ]
   }
 
@@ -125,10 +133,21 @@ export namespace SystemPrompt {
     const parts: string[] = []
     let staticBoundary = 0
 
+    if (agent?.prompt) {
+      parts.push(agent.prompt)
+      staticBoundary = parts.length
+    }
+
     const entries = SectionRegistry.all()
 
     for (const entry of entries) {
       const { section } = entry
+      
+      // Default behavior: if the agent provides its own prompt, skip the global static system.md sections
+      if (agent?.prompt && section.scope === "static") {
+        continue
+      }
+
       if (section.providers === "all" || section.providers.has(tag)) {
         const content = await SectionRegistry.resolve(section.name, model)
         parts.push(content)
@@ -136,10 +155,6 @@ export namespace SystemPrompt {
           staticBoundary = parts.length
         }
       }
-    }
-
-    if (agent?.prompt) {
-      parts.push(agent.prompt)
     }
 
     return { parts, boundary: staticBoundary }

@@ -69,7 +69,6 @@ export namespace LLM {
     })
 
     const system: string[] = []
-    if (input.agent.prompt) system.push(input.agent.prompt)
 
     let boundaryString: string | undefined
     if (input.systemBoundary && input.systemBoundary > 0 && input.systemBoundary <= input.system.length) {

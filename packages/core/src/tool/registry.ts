@@ -127,6 +127,21 @@ export namespace ToolRegistry {
       }
     }
 
+    if (agent?.tools) {
+      let allowedNames: Set<string> | null = null
+      if (typeof agent.tools === "string" && agent.tools !== "*") {
+        allowedNames = new Set([agent.tools])
+      } else if (Array.isArray(agent.tools) && !agent.tools.includes("*")) {
+        allowedNames = new Set(agent.tools)
+      } else if (typeof agent.tools === "object" && !Array.isArray(agent.tools)) {
+        allowedNames = new Set(Object.keys(agent.tools).filter(k => (agent.tools as Record<string, boolean>)[k] === true))
+      }
+
+      if (allowedNames) {
+        availableTools = availableTools.filter((t) => allowedNames!.has(t.id))
+      }
+    }
+
     if (agent?.disallowedTools && agent.disallowedTools.length > 0) {
       const availableToolIds = new Set(availableTools.map((t) => t.id))
       for (const disallowed of agent.disallowedTools) {
