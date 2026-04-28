@@ -10,27 +10,6 @@ Switch session (similar to Ctlr+R), without stopping the current session, so use
 
 ## Deferred UI Features (Prompt Input System)
 
-### 1. Autocomplete / Suggestions Panel
-**MVP Sources:**
-- [PromptInputFooterSuggestions.tsx](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/components/PromptInput/PromptInputFooterSuggestions.tsx) — renders suggestion dropdown
-- [useTypeahead.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/hooks/useTypeahead.ts) — typeahead logic
-- [usePromptSuggestion.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/hooks/usePromptSuggestion.ts) — prompt suggestion service
-- [commandSuggestions.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/utils/suggestions/commandSuggestions.ts) — slash command matching
-
-**Why Deferred:** Requires autocomplete overlay rendering + fuzzy matching infrastructure. Separate sub-batch.
-**Status:** Implemented in Phase 2.6.
-
----
-
-### 2. Help Menu
-**MVP Sources:**
-- [PromptInputHelpMenu.tsx](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/components/PromptInput/PromptInputHelpMenu.tsx) — `?` keybind help overlay
-
-**Why Deferred:** Standalone overlay component, no dependencies on prompt input core logic.
-**Status:** Implemented in Phase 2.5.
-
----
-
 ### 3. History Search (Ctrl+R)
 **MVP Sources:**
 - [useHistorySearch.ts](file:///C:/Users/aghassan/Documents/workspace/liteai_cli_mvp/hooks/useHistorySearch.ts) — fuzzy search through history

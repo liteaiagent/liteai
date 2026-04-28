@@ -127,8 +127,10 @@ export function AssistantMessageContent({
           paddingLeft={2}
           marginTop={1}
           borderColor={theme.error as Color}
+          flexDirection="column"
         >
           <Text color={theme.textMuted as Color}>{(message.error.data as { message?: string })?.message ?? ""}</Text>
+          <ErrorRecoveryHint error={message.error} />
         </Box>
       )}
 
@@ -155,4 +157,58 @@ export function AssistantMessageContent({
       )}
     </Box>
   )
+}
+
+// ─── Error Recovery Hints ─────────────────────────────────────────────────
+
+type MessageError = NonNullable<AssistantMessageInfo["error"]>
+
+/**
+ * Renders a contextual recovery hint below error messages.
+ * Each error type gets a specific, actionable suggestion.
+ */
+function ErrorRecoveryHint({ error }: { error: MessageError }) {
+  const { theme } = useTheme()
+
+  const hint = getRecoveryHint(error)
+  if (!hint) return null
+
+  return (
+    <Box marginTop={1}>
+      <Text color={theme.textMuted as Color}>
+        {hint.icon} {hint.text}
+      </Text>
+    </Box>
+  )
+}
+
+function getRecoveryHint(error: MessageError): { icon: string; text: string } | null {
+  switch (error.name) {
+    case "ContextOverflowError":
+      return { icon: "⚠", text: "Context exhausted — type /compact to compact and retry" }
+
+    case "APIError": {
+      const data = error.data as { isRetryable?: boolean; message?: string }
+      if (data.isRetryable) {
+        return { icon: "⚠", text: "Request failed — will retry automatically" }
+      }
+      return { icon: "✗", text: `Request failed — ${data.message ?? "non-retryable error"}` }
+    }
+
+    case "ProviderAuthError":
+      return { icon: "⚠", text: "Auth failed — type /provider to configure" }
+
+    case "MessageOutputLengthError":
+      return { icon: "⚠", text: "Output truncated — the response exceeded max output length" }
+
+    case "StructuredOutputError":
+      return { icon: "⚠", text: "Structured output parsing failed" }
+
+    case "UnknownError":
+    case "MessageAbortedError":
+      return null
+
+    default:
+      return null
+  }
 }

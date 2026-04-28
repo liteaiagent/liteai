@@ -2,7 +2,7 @@ import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage, ReasoningPart, TextPart, ToolPart } from "@liteai/sdk"
 import type React from "react"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Markdown } from "../../components/markdown"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme.tsx"
@@ -35,15 +35,35 @@ export const PART_MAPPING: Record<string, React.FC<any>> = {
   reasoning: ReasoningPartView,
 }
 
-function ReasoningPartView({ part }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
+function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
+  // _setExpanded: Reserved for Phase 3.4 cursor-based message navigation.
+  // Per-message expand will be wired when cursor actions enable selecting individual reasoning blocks.
+  const [expanded, _setExpanded] = useState(false)
+
   const content = useMemo(() => {
     return part.text.replace("[REDACTED]", "").trim()
   }, [part.text])
 
+  // Master override: global showThinking gates all rendering
   if (!content || !ctx.showThinking) return null
 
+  const tokenCount = message.tokens.reasoning
+  const formattedTokens = tokenCount > 0 ? tokenCount.toLocaleString() : "…"
+
+  // Collapsed one-liner — show token count from parent message
+  if (!expanded) {
+    return (
+      <Box paddingLeft={2} marginTop={1}>
+        <Text color={theme.textMuted as Color} italic>
+          ▶ Thinking ({formattedTokens} tokens)
+        </Text>
+      </Box>
+    )
+  }
+
+  // Expanded — full reasoning text
   return (
     <Box
       paddingLeft={2}
@@ -52,8 +72,13 @@ function ReasoningPartView({ part }: { last: boolean; part: ReasoningPart; messa
       borderStyle="single"
       borderColor={theme.backgroundElement as Color}
     >
+      <Box>
+        <Text color={theme.textMuted as Color} italic>
+          ▼ Thinking ({formattedTokens} tokens)
+        </Text>
+      </Box>
       <Text color={theme.textMuted as Color} italic>
-        Thinking: {content}
+        {content}
       </Text>
     </Box>
   )

@@ -144,6 +144,7 @@ export const Keybinds = z
     terminal_suspend: z.string().optional().default("ctrl+z").describe("Suspend terminal"),
     terminal_title_toggle: z.string().optional().default("none").describe("Toggle terminal title"),
     tips_toggle: z.string().optional().default("<leader>h").describe("Toggle tips on home screen"),
+    session_retry: z.string().optional().default("<leader>r").describe("Retry last failed message"),
     display_thinking: z.string().optional().default("none").describe("Toggle thinking blocks visibility"),
   })
   .strict()
