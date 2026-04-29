@@ -37,12 +37,15 @@
 			"path": "packages/cli"
 		},
 		{
+			"name": "storybook",
 			"path": "packages/storybook"
 		},
 		{
+			"name": "ink",
 			"path": "packages/ink"
 		},
 		{
+			"name": "hooks",
 			"path": "packages/hooks"
 		}
 	],

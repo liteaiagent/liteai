@@ -95,24 +95,28 @@ export function SessionLayout({
   const padCollapsed = sticky != null && overlay == null
 
   return (
-    <Box flexGrow={1} flexDirection="column" overflow="hidden">
-      {headerPrompt && <StickyPromptHeader text={headerPrompt.text} onClick={headerPrompt.scrollTo} />}
-      <ScrollBox
-        ref={scrollRef}
-        flexGrow={1}
-        flexDirection="column"
-        paddingTop={padCollapsed ? 0 : 1}
-        stickyScroll={true}
-      >
-        <ScrollChromeContext.Provider value={chromeCtx}>{scrollable}</ScrollChromeContext.Provider>
-        {overlay}
-      </ScrollBox>
-      {!hidePill && pillVisible && overlay == null && <NewMessagesPill count={newMessageCount} onClick={onPillClick} />}
-      {bottomFloat != null && (
-        <Box position="absolute" bottom={0} right={0} opaque={true}>
-          {bottomFloat}
-        </Box>
-      )}
+    <>
+      <Box flexGrow={1} flexShrink={1} flexDirection="column" overflow="hidden">
+        {headerPrompt && <StickyPromptHeader text={headerPrompt.text} onClick={headerPrompt.scrollTo} />}
+        <ScrollBox
+          ref={scrollRef}
+          flexGrow={1}
+          flexDirection="column"
+          paddingTop={padCollapsed ? 0 : 1}
+          stickyScroll={true}
+        >
+          <ScrollChromeContext.Provider value={chromeCtx}>{scrollable}</ScrollChromeContext.Provider>
+          {overlay}
+        </ScrollBox>
+        {!hidePill && pillVisible && overlay == null && (
+          <NewMessagesPill count={newMessageCount} onClick={onPillClick} />
+        )}
+        {bottomFloat != null && (
+          <Box position="absolute" bottom={0} right={0} opaque={true}>
+            {bottomFloat}
+          </Box>
+        )}
+      </Box>
       <Box flexDirection="column" flexShrink={0} width="100%" maxHeight="50%">
         {/* TOAST OVERLAY ZONE (Absolute) */}
         <Box position="absolute" bottom="100%" left={0} right={0} opaque={true} flexDirection="column" />
@@ -147,6 +151,6 @@ export function SessionLayout({
           </Box>
         </ModalContext.Provider>
       )}
-    </Box>
+    </>
   )
 }

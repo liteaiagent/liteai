@@ -160,6 +160,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     ]
   }, [getLastAssistantText, getRetryInfo, showThinking])
 
+
   return (
     <SessionProvider
       value={{
@@ -175,30 +176,25 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
         tui: sync.config,
       }}
     >
-      <Box flexDirection="row" width="100%" height="100%">
-        <Box flexGrow={1} flexDirection="column">
-          <SessionLayout
-            scrollRef={scrollRef}
-            scrollable={<Messages scrollRef={scrollRef} />}
-            bottom={
-              <Box flexDirection="column" width="100%">
-                <MessageActionsBar actions={messageActions} />
-                <PromptInput debug={false} verbose={false} isLoading={session.isLoading} />
-                <Box paddingLeft={1}>
-                  <SessionHeader />
-                </Box>
-              </Box>
-            }
-            overlay={
-              <Box flexDirection="column">
-                {permissionRequest && <PermissionPrompt request={permissionRequest} />}
-                {questionRequest && <QuestionPrompt request={questionRequest} />}
-              </Box>
-            }
-          />
-        </Box>
-        {sidebarOpen && <Sidebar sessionID={sessionID} />}
-      </Box>
+      <SessionLayout
+        scrollRef={scrollRef}
+        scrollable={<Messages scrollRef={scrollRef} />}
+        bottom={
+          <Box flexDirection="column" width="100%" flexShrink={0}>
+            <MessageActionsBar actions={messageActions} />
+            <PromptInput debug={false} verbose={false} isLoading={session.isLoading} />
+            <Box paddingLeft={1}>
+              <SessionHeader />
+            </Box>
+          </Box>
+        }
+        overlay={
+          <Box flexDirection="column">
+            {permissionRequest && <PermissionPrompt request={permissionRequest} />}
+            {questionRequest && <QuestionPrompt request={questionRequest} />}
+          </Box>
+        }
+      />
       <ScrollHandler scrollRef={scrollRef} />
     </SessionProvider>
   )
