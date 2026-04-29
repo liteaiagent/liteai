@@ -4,10 +4,9 @@ import { Bundled } from "@/bundled"
 import type { Provider } from "@/provider/provider"
 import { Shell } from "@/shell/shell"
 import { Skill } from "@/skill"
-
+import { Config } from "../../config/config"
 import { Flag } from "../../flag/flag"
 import { Instance } from "../../project/instance"
-import { Config } from "../../config/config"
 
 export namespace SystemPrompt {
   export async function environment(model: Provider.Model) {
@@ -17,13 +16,10 @@ export namespace SystemPrompt {
       process.platform === "win32" ? path.win32.basename(shell, ".exe") : path.basename(shell)
     ).toLowerCase()
     const additionalDirs = await Config.directories()
-    const directoriesBlock = additionalDirs.length > 0
-      ? [
-          `<directories>`,
-          ...additionalDirs.map(d => `  - ${d}`),
-          `</directories>`,
-        ].join("\n")
-      : ""
+    const directoriesBlock =
+      additionalDirs.length > 0
+        ? [`<directories>`, ...additionalDirs.map((d) => `  - ${d}`), `</directories>`].join("\n")
+        : ""
 
     return [
       [
@@ -38,7 +34,9 @@ export namespace SystemPrompt {
         `  Today's date: ${new Date().toDateString()}`,
         `</env>`,
         directoriesBlock,
-      ].filter(Boolean).join("\n"),
+      ]
+        .filter(Boolean)
+        .join("\n"),
     ]
   }
 
@@ -142,7 +140,7 @@ export namespace SystemPrompt {
 
     for (const entry of entries) {
       const { section } = entry
-      
+
       // Default behavior: if the agent provides its own prompt, skip the global static system.md sections
       if (agent?.prompt && section.scope === "static") {
         continue

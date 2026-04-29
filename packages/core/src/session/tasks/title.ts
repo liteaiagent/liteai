@@ -53,7 +53,7 @@ export async function ensureTitle(input: {
   const result = await LLM.stream({
     agent,
     user: firstRealUser.info as Message.User,
-    system: [],
+    system: agent.prompt ? [agent.prompt] : [],
     small: true,
     tools: {},
     model,

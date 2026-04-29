@@ -28,7 +28,7 @@ export const ExportCommand = cmd({
         })
 
         const sessions = []
-        for await (const session of Session.list()) {
+        for await (const session of Session.list({ roots: true })) {
           sessions.push(session)
         }
 

@@ -160,7 +160,6 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     ]
   }, [getLastAssistantText, getRetryInfo, showThinking])
 
-
   return (
     <SessionProvider
       value={{

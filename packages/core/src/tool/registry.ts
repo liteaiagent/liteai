@@ -134,7 +134,9 @@ export namespace ToolRegistry {
       } else if (Array.isArray(agent.tools) && !agent.tools.includes("*")) {
         allowedNames = new Set(agent.tools)
       } else if (typeof agent.tools === "object" && !Array.isArray(agent.tools)) {
-        allowedNames = new Set(Object.keys(agent.tools).filter(k => (agent.tools as Record<string, boolean>)[k] === true))
+        allowedNames = new Set(
+          Object.keys(agent.tools).filter((k) => (agent.tools as Record<string, boolean>)[k] === true),
+        )
       }
 
       if (allowedNames) {
