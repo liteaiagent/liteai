@@ -3,10 +3,10 @@ import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as UserMessageInfo } from "@liteai/sdk"
 import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
-import { useKeybind } from "../../context/keybind"
 import { useLocal } from "../../context/local"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { useKeybindingContext } from "../../keybindings/keybinding-context"
 import { useSessionContext } from "./ctx"
 import { PART_MAPPING } from "./parts"
 import { MIME_BADGE } from "./utils"
@@ -88,7 +88,7 @@ export function AssistantMessageContent({
   const local = useLocal()
   const { theme } = useTheme()
   const sync = useSync()
-  const keybind = useKeybind()
+  const keybindContext = useKeybindingContext()
 
   const final = message.finish && !["tool-calls", "unknown"].includes(message.finish)
 
@@ -111,7 +111,7 @@ export function AssistantMessageContent({
       {parts.some((x) => x.type === "tool" && x.tool === "task") && (
         <Box paddingTop={1} paddingLeft={3}>
           <Text color={theme.text as Color}>
-            {keybind.print("session_child_first")}
+            {keybindContext.getDisplayText("footer:openSelected", "Footer") || "Enter"}
             <Text color={theme.textMuted as Color}> view subagents</Text>
           </Text>
         </Box>

@@ -1,9 +1,9 @@
 import { Box, type Color, Text, useInput } from "@liteai/ink"
 import { useEffect, useMemo, useState } from "react"
-import { Keybind } from "../../cli/util/keybind"
 import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { DialogPrompt } from "../ui/dialog-prompt"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 
@@ -314,15 +314,9 @@ function DiscoverTab(props: {
           setInstalling(null)
           props.onInstall()
         }}
-        keybind={[
-          {
-            title: "back",
-            keybind: Keybind.parse("escape")[0],
-            onTrigger: () => {
-              if (selectedMarketplace) setSelectedMarketplace(null)
-            },
-          },
-        ]}
+        onEscape={() => {
+          if (selectedMarketplace) setSelectedMarketplace(null)
+        }}
       />
     </Box>
   )
@@ -352,26 +346,22 @@ function InstalledTab(props: {
     [props.plugins, props.theme],
   )
 
-  const keybinds = useMemo(
-    () => [
-      {
-        title: "toggle",
-        keybind: Keybind.parse("space")[0],
-        onTrigger: (opt: DialogSelectOption<string>) => {
-          const plugin = props.plugins.find((p) => p.id === opt.value)
-          if (!plugin) return
-          props.onToggle(plugin.id, !plugin.enabled)
-        },
+  const [selectedOption, setSelectedOption] = useState<any>()
+
+  useKeybindings(
+    {
+      "select:toggle": () => {
+        if (!selectedOption) return
+        const plugin = props.plugins.find((p) => p.id === selectedOption.value)
+        if (!plugin) return
+        props.onToggle(plugin.id, !plugin.enabled)
       },
-      {
-        title: "uninstall",
-        keybind: Keybind.parse("d")[0],
-        onTrigger: (opt: DialogSelectOption<string>) => {
-          props.onUninstall(opt.value as string)
-        },
+      "select:delete": () => {
+        if (!selectedOption) return
+        props.onUninstall(selectedOption.value as string)
       },
-    ],
-    [props.plugins, props.onToggle, props.onUninstall],
+    },
+    { context: "Select" },
   )
 
   if (props.plugins.length === 0) {
@@ -387,8 +377,10 @@ function InstalledTab(props: {
       title="Installed plugins"
       placeholder="Search..."
       options={options}
-      footerContent={<Text color={props.theme.textMuted as Color}>Space to toggle · d to uninstall · Esc to back</Text>}
-      keybind={keybinds}
+      footerContent={
+        <Text color={props.theme.textMuted as Color}>Space to toggle · ctrl+d to uninstall · Esc to back</Text>
+      }
+      onMove={setSelectedOption}
       onSelect={() => {}}
     />
   )
@@ -428,53 +420,47 @@ function MarketplacesTab(props: {
     [props.marketplaces],
   )
 
-  const keybinds = useMemo(
-    () => [
-      {
-        title: "remove",
-        keybind: Keybind.parse("delete")[0],
-        onTrigger: (opt: DialogSelectOption<string>) => {
-          if (opt.value === "__add__") return
-          const m = props.marketplaces.find((mx) => mx.id === opt.value)
-          if (!m) return
-          props.dialog.push(() => (
-            <RemoveMarketplaceDialog
-              name={m.name}
-              id={m.id}
-              sdk={props.sdk}
-              theme={props.theme}
-              onDone={() => {
-                props.dialog.pop()
-                props.onRemoved()
-              }}
-              onCancel={() => props.dialog.pop()}
-            />
-          ))
-        },
+  const [selectedOption, setSelectedOption] = useState<any>()
+
+  useKeybindings(
+    {
+      "select:delete": () => {
+        if (!selectedOption || selectedOption.value === "__add__") return
+        const m = props.marketplaces.find((mx) => mx.id === selectedOption.value)
+        if (!m) return
+        props.dialog.push(() => (
+          <RemoveMarketplaceDialog
+            name={m.name}
+            id={m.id}
+            sdk={props.sdk}
+            theme={props.theme}
+            onDone={() => {
+              props.dialog.pop()
+              props.onRemoved()
+            }}
+            onCancel={() => props.dialog.pop()}
+          />
+        ))
       },
-      {
-        title: "update",
-        keybind: Keybind.parse("u")[0],
-        onTrigger: async (opt: DialogSelectOption<string>) => {
-          if (opt.value === "__add__") return
-          const m = props.marketplaces.find((mx) => mx.id === opt.value)
-          if (!m) return
-          const srcStr =
-            typeof m.source === "string"
-              ? m.source
-              : "repo" in m.source
-                ? (m.source as { repo: string }).repo
-                : (m.source as { url: string }).url
-          await props.sdk.fetch(`${props.sdk.url}/plugin/marketplace`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ source: srcStr }),
-          })
-          props.onAdded()
-        },
+      "select:update": async () => {
+        if (!selectedOption || selectedOption.value === "__add__") return
+        const m = props.marketplaces.find((mx) => mx.id === selectedOption.value)
+        if (!m) return
+        const srcStr =
+          typeof m.source === "string"
+            ? m.source
+            : "repo" in m.source
+              ? (m.source as { repo: string }).repo
+              : (m.source as { url: string }).url
+        await props.sdk.fetch(`${props.sdk.url}/plugin/marketplace`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source: srcStr }),
+        })
+        props.onAdded()
       },
-    ],
-    [props.marketplaces, props.dialog, props.sdk, props.theme, props.onRemoved, props.onAdded],
+    },
+    { context: "Select" },
   )
 
   return (
@@ -484,10 +470,10 @@ function MarketplacesTab(props: {
       options={options}
       footerContent={
         <Text color={props.theme.textMuted as Color}>
-          Enter to select · u to update · Del to remove · Esc to go back
+          Enter to select · ctrl+u to update · Del to remove · Esc to go back
         </Text>
       }
-      keybind={keybinds}
+      onMove={setSelectedOption}
       onSelect={(opt) => {
         if (opt.value === "__add__") {
           props.dialog.push(() => (

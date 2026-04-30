@@ -6,6 +6,7 @@ import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { DialogPrompt } from "../ui/dialog-prompt"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
@@ -163,6 +164,7 @@ export function DialogProvider() {
   const { theme } = useTheme()
   const toast = useToast()
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [selectedOption, setSelectedOption] = useState<any>()
 
   const connectedSet = useMemo(() => new Set(sync.provider_next?.connected || []), [sync.provider_next?.connected])
 
@@ -226,26 +228,22 @@ export function DialogProvider() {
     }
   }
 
-  const keybinds = useMemo(
-    () => [
-      {
-        keybind: { name: "d", ctrl: true, meta: false, shift: false, super: false, leader: false },
-        title: "disconnect",
-        disabled: false,
-        onTrigger: (option: DialogSelectOption<string>) => {
-          if (!connectedSet.has(option.value)) return
-          disconnect(option.value, option.title)
-        },
+  useKeybindings(
+    {
+      "select:delete": () => {
+        if (!selectedOption) return
+        if (!connectedSet.has(selectedOption.value)) return
+        disconnect(selectedOption.value, selectedOption.title)
       },
-    ],
-    [connectedSet],
+    },
+    { context: "Select" },
   )
 
   return (
     <DialogSelect
       title="Providers"
       options={allOptions}
-      keybind={keybinds}
+      onMove={setSelectedOption}
       footerContent={
         connectedOptions.length > 0 ? (
           <Text color={theme.textMuted as Color}>↑↓ navigate · Enter connect · ctrl+d disconnect</Text>

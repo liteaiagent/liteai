@@ -1,18 +1,18 @@
 import { Box, Text } from "@liteai/ink"
 import type React from "react"
 import { useDialog } from "../context/dialog"
-import { useKeybind } from "../context/keybind"
+import { useKeybindingContext } from "../keybindings/keybinding-context"
 import { Dialog } from "./dialog"
 
 export function DialogHelp(): React.ReactNode {
   const dialog = useDialog()
-  const keybind = useKeybind()
+  const keybindingContext = useKeybindingContext()
 
-  const entries = Object.keys(keybind.all)
-    .filter((action) => keybind.all[action]?.length)
-    .map((action) => ({
-      action,
-      shortcut: keybind.print(action),
+  const entries = keybindingContext.bindings
+    .filter((binding) => binding.action !== null)
+    .map((binding) => ({
+      action: binding.action as string,
+      shortcut: keybindingContext.getDisplayText(binding.action as string, binding.context) ?? "",
     }))
 
   return (

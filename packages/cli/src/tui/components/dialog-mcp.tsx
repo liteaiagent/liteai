@@ -1,13 +1,13 @@
-import { Box, type Color, Text, useInput } from "@liteai/ink"
+import { Box, type Color, Text } from "@liteai/ink"
 import { Log } from "@liteai/util/log"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
-import { useKeybind } from "../context/keybind"
 import { useLocal } from "../context/local"
 import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { useKeybindings } from "../keybindings/use-keybinding"
+import { DialogSelect } from "../ui/dialog-select"
 
 function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean }) {
   const { theme } = useTheme()
@@ -37,8 +37,8 @@ export function DialogMcp() {
   const sdk = useSDK()
   const dialog = useDialog()
   const { theme } = useTheme()
-  const keybind = useKeybind()
   const [loading, setLoading] = useState<string | null>(null)
+  const [selectedOption, setSelectedOption] = useState<any>()
 
   const options = useMemo(() => {
     const mcpData = sync.mcp
@@ -64,35 +64,36 @@ export function DialogMcp() {
     })
   }, [sync.mcp, local.mcp, loading])
 
-  const keybinds = useMemo(
-    () => [
-      {
-        keybind: keybind.all.space?.[0] || "space",
-        title: "toggle",
-        onTrigger: async (option: DialogSelectOption<string>) => {
-          if (loading !== null) return
-          setLoading(option.value)
-          try {
-            await local.mcp.toggle(option.value)
-            await sdk.client.project.mcp.status({ projectID: sdk.projectID })
-          } catch (error) {
-            Log.Default.error("Failed to toggle MCP:", { error })
-          } finally {
-            setLoading(null)
-          }
-        },
+  useKeybindings(
+    {
+      "select:toggle": async () => {
+        if (!selectedOption) return
+        if (loading !== null) return
+        setLoading(selectedOption.value)
+        try {
+          await local.mcp.toggle(selectedOption.value)
+          await sdk.client.project.mcp.status({ projectID: sdk.projectID })
+        } catch (error) {
+          Log.Default.error("Failed to toggle MCP:", { error })
+        } finally {
+          setLoading(null)
+        }
       },
-    ],
-    [keybind.all.space, loading, local.mcp, sdk],
+    },
+    { context: "Select" },
   )
 
   return (
     <DialogSelect
       title="Manage MCP servers"
       header={<Text color={theme.textMuted as Color}>{Object.keys(sync.mcp ?? {}).length} servers</Text>}
-      footerContent={<Text color={theme.textMuted as Color}>↑↓ to navigate · Enter to confirm · Esc to cancel</Text>}
+      footerContent={
+        <Text color={theme.textMuted as Color}>
+          ↑↓ to navigate · Enter to confirm · Space to toggle · Esc to cancel
+        </Text>
+      }
       options={options}
-      keybind={keybinds}
+      onMove={setSelectedOption}
       onSelect={(option) => {
         dialog.push(() => <McpDetail name={option.value} />)
       }}
@@ -214,7 +215,6 @@ function McpDetail(props: { name: string }) {
       header={header()}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ to navigate · Enter to select</Text>}
       options={options}
-      keybind={[]}
       onSelect={async (option) => {
         if (option.value === "toggle") {
           if (loading !== null) return
@@ -288,11 +288,12 @@ function McpToolsList(props: { name: string; onBack: () => void }) {
     }
   }, [sdk, props.name])
 
-  useInput((_char, _key, event) => {
-    if (event?.keypress?.name === "escape") {
-      props.onBack()
-    }
-  })
+  useKeybindings(
+    {
+      "select:cancel": props.onBack,
+    },
+    { context: "Select" },
+  )
 
   const options = useMemo(() => {
     return tools.map((t) => ({
@@ -306,7 +307,6 @@ function McpToolsList(props: { name: string; onBack: () => void }) {
       title={`${props.name} Tools`}
       options={options}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ to navigate · Esc to back</Text>}
-      keybind={[]}
     />
   )
 }

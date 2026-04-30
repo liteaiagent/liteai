@@ -3,10 +3,10 @@ import fuzzysort from "fuzzysort"
 import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
 import { useDialog } from "../context/dialog"
-import { useKeybind } from "../context/keybind"
 import { useLocal } from "../context/local"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 import { DialogProvider, useDialogProviderOptions } from "./dialog-provider"
@@ -24,9 +24,9 @@ export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
   const sync = useSync()
   const dialog = useDialog()
-  const keybind = useKeybind()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
+  const [selectedOption, setSelectedOption] = useState<any>()
 
   const connected = useConnected()
   const providers = useDialogProviderOptions()
@@ -143,31 +143,31 @@ export function DialogModel(props: { providerID?: string }) {
   const provider = props.providerID ? sync.provider.find((x) => x.id === props.providerID) : null
   const title = provider?.name ?? "Select model"
 
+  useKeybindings(
+    {
+      "model:providerList": () => {
+        dialog.replace(() => <DialogProvider />)
+      },
+      "model:favoriteToggle": () => {
+        if (selectedOption && connected) {
+          local.model.toggleFavorite(selectedOption.value)
+        }
+      },
+    },
+    { context: "Select" },
+  )
+
   return (
     <DialogSelect<{ providerID: string; modelID: string }>
       options={options}
-      keybind={[
-        {
-          keybind: keybind.all.model_provider_list?.[0],
-          title: connected ? "Connect provider" : "View all providers",
-          onTrigger() {
-            dialog.replace(() => <DialogProvider />)
-          },
-        },
-        {
-          keybind: keybind.all.model_favorite_toggle?.[0],
-          title: "Favorite",
-          disabled: !connected,
-          onTrigger: (option) => {
-            local.model.toggleFavorite(option.value)
-          },
-        },
-      ]}
       onFilter={setQuery}
       skipFilter={true}
       title={title}
       current={local.model.current()}
-      footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · /settings to manage</Text>}
+      onMove={setSelectedOption}
+      footerContent={
+        <Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+a providers · ctrl+f favorite</Text>
+      }
     />
   )
 }

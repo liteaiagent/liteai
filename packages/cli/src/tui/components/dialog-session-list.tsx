@@ -1,11 +1,12 @@
+import { Text } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
-import { useKeybind } from "../context/keybind"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { DialogSelect } from "../ui/dialog-select"
 import { Spinner } from "../ui/spinner"
 import { DialogSessionRename } from "./dialog-session-rename"
@@ -27,12 +28,12 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   const dialog = useDialog()
   const route = useRoute()
   const sync = useSync()
-  const keybind = useKeybind()
   const { theme } = useTheme()
   const sdk = useSDK()
 
   const [toDelete, setToDelete] = useState<string | undefined>()
   const [search, setSearch] = useState("")
+  const [selectedOption, setSelectedOption] = useState<any>()
   const debouncedSearch = useDebounce(search, 150)
 
   const [searchResults, setSearchResults] = useState<import("@liteai/sdk").Session[] | undefined>()
@@ -85,7 +86,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         const status = sync.session_status?.[x.id]
         const isWorking = status?.type === "busy"
         return {
-          title: isDeleting ? `Press ${keybind.print("session_delete")} again to confirm` : x.title,
+          title: isDeleting ? `Press ctrl+d again to confirm` : x.title,
           bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
@@ -93,7 +94,29 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
           gutter: isWorking ? <Spinner /> : undefined,
         }
       })
-  }, [sessions, toDelete, sync.session_status, keybind, theme.error])
+  }, [sessions, toDelete, sync.session_status, theme.error])
+
+  useKeybindings(
+    {
+      "select:delete": () => {
+        if (!selectedOption) return
+        if (toDelete === selectedOption.value) {
+          sdk.client.project.session.delete({
+            projectID: sdk.projectID,
+            sessionID: selectedOption.value,
+          })
+          setToDelete(undefined)
+          return
+        }
+        setToDelete(selectedOption.value)
+      },
+      "select:rename": () => {
+        if (!selectedOption) return
+        dialog.replace(() => <DialogSessionRename session={selectedOption.value} />)
+      },
+    },
+    { context: "Select" },
+  )
 
   useEffect(() => {
     dialog.setSize("large")
@@ -106,8 +129,9 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
       skipFilter={true}
       current={currentSessionID}
       onFilter={setSearch}
-      onMove={() => {
+      onMove={(option) => {
         setToDelete(undefined)
+        setSelectedOption(option)
       }}
       onSelect={(option) => {
         route.navigate({
@@ -116,30 +140,9 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         })
         dialog.clear()
       }}
-      keybind={[
-        {
-          keybind: keybind.all.session_delete?.[0],
-          title: "delete",
-          onTrigger: async (option) => {
-            if (toDelete === option.value) {
-              sdk.client.project.session.delete({
-                projectID: sdk.projectID,
-                sessionID: option.value,
-              })
-              setToDelete(undefined)
-              return
-            }
-            setToDelete(option.value)
-          },
-        },
-        {
-          keybind: keybind.all.session_rename?.[0],
-          title: "rename",
-          onTrigger: async (option) => {
-            dialog.replace(() => <DialogSessionRename session={option.value} />)
-          },
-        },
-      ]}
+      footerContent={
+        <Text color={theme.textMuted as any}>↑↓ navigate · Enter select · ctrl+d delete · ctrl+r rename</Text>
+      }
     />
   )
 }

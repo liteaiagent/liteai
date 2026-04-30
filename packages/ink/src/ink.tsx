@@ -312,7 +312,6 @@ export default class Ink {
         recordYogaMs(ms)
         const c = getYogaCounters()
         this.lastYogaCounters = { ms, ...c }
-
       }
     }
 

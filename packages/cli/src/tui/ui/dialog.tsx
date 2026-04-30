@@ -1,11 +1,12 @@
 import type { ScrollBoxHandle } from "@liteai/ink"
-import { Box, Text, useInput } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import React, { createContext, type RefObject, useContext } from "react"
 import { Byline } from "../components/design-system/Byline"
 import { KeyboardShortcutHint } from "../components/design-system/KeyboardShortcutHint"
 import { Pane } from "../components/design-system/Pane"
-import { useKeybind } from "../context/keybind"
 import type { ThemeColors } from "../context/theme.tsx"
+import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
+import { useKeybinding } from "../keybindings/use-keybinding"
 
 // --- Modal Context ---
 type ModalCtx = {
@@ -52,14 +53,14 @@ export function Dialog({
   inputGuide,
   isCancelActive = true,
 }: DialogProps): React.ReactNode {
-  const keybind = useKeybind()
-
-  useInput((_input, _key, event) => {
-    if (!isCancelActive || !onCancel || !event) return
-    if (keybind.match("cancel", event.keypress) || keybind.match("escape", event.keypress)) {
-      onCancel()
-    }
-  })
+  useRegisterKeybindingContext("Confirmation", isCancelActive && !!onCancel)
+  useKeybinding(
+    "confirm:no",
+    () => {
+      onCancel?.()
+    },
+    { context: "Confirmation", isActive: isCancelActive && !!onCancel },
+  )
 
   const defaultInputGuide = (
     <Byline>

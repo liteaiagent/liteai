@@ -8,8 +8,8 @@
 
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
-import { useKeybind } from "../context/keybind"
 import { useTheme } from "../context/theme"
+import { useKeybindingContext } from "../keybindings/keybinding-context"
 
 export type MessageAction = {
   /** Keybind name (from tui-schema) used to render the key hint */
@@ -26,7 +26,7 @@ type Props = {
 
 export function MessageActionsBar({ actions }: Props) {
   const { theme } = useTheme()
-  const keybind = useKeybind()
+  const keybindContext = useKeybindingContext()
 
   const visibleActions = actions.filter((a) => a.available)
   if (visibleActions.length === 0) return null
@@ -34,7 +34,7 @@ export function MessageActionsBar({ actions }: Props) {
   return (
     <Box paddingLeft={1} gap={1}>
       {visibleActions.map((action, i) => {
-        const keyLabel = keybind.print(action.keybindName)
+        const keyLabel = keybindContext.getDisplayText(action.keybindName, "Chat") || action.keybindName
         return (
           <Box key={action.keybindName} gap={0}>
             {i > 0 && <Text color={theme.textMuted as Color}> · </Text>}

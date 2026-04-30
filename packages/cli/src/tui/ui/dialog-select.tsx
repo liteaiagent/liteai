@@ -3,13 +3,11 @@ import { Box, TerminalSizeContext, Text, useInput } from "@liteai/ink"
 import fuzzysort from "fuzzysort"
 import type React from "react"
 import { useContext, useEffect, useImperativeHandle, useMemo, useState } from "react"
-import { Keybind } from "../../cli/util/keybind"
-import { Byline } from "../components/design-system/Byline"
-import { KeyboardShortcutHint } from "../components/design-system/KeyboardShortcutHint"
 import type { DialogContextType } from "../context/dialog"
 import { useDialog } from "../context/dialog"
-import { useKeybind } from "../context/keybind"
 import { useTheme } from "../context/theme"
+import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
+import { useKeybindings } from "../keybindings/use-keybinding"
 
 export interface DialogSelectOption<T = unknown> {
   title: string
@@ -38,12 +36,7 @@ export interface DialogSelectProps<T> {
   onFilter?: (query: string) => void
   onSelect?: (option: DialogSelectOption<T>) => void
   skipFilter?: boolean
-  keybind?: {
-    keybind?: Keybind.Info
-    title: string
-    disabled?: boolean
-    onTrigger: (option: DialogSelectOption<T>) => void
-  }[]
+
   current?: T
   header?: React.ReactNode
   footerContent?: React.ReactNode
@@ -54,7 +47,7 @@ export interface DialogSelectProps<T> {
 export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const { theme } = useTheme()
   const dialog = useDialog()
-  const keybindContext = useKeybind()
+  useRegisterKeybindingContext("Select")
   const terminalSize = useContext(TerminalSizeContext)
 
   const [query, setQuery] = useState("")
@@ -155,64 +148,37 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     })
   }
 
+  useKeybindings(
+    {
+      "select:previous": () => move(-1),
+      "select:next": () => move(1),
+      "select:pageUp": () => move(-10),
+      "select:pageDown": () => move(10),
+      "select:home": () => setSelectedIndex(0),
+      "select:end": () => setSelectedIndex(flatOptions.length - 1),
+      "select:accept": () => {
+        if (selectedOption && !selectedOption.disabled) {
+          selectedOption.onSelect?.(dialog)
+          props.onSelect?.(selectedOption)
+        }
+      },
+      "select:cancel": () => {
+        if (props.onEscape) {
+          props.onEscape()
+        } else {
+          dialog.clear()
+        }
+      },
+    },
+    { context: "Select" },
+  )
+
   useInput((input, _key, event) => {
     if (!event) return
 
-    const isCtrl = event.keypress.ctrl
-
-    if (_key.upArrow || (isCtrl && event.keypress.name === "p")) {
-      move(-1)
-      return
-    }
-    if (_key.downArrow || (isCtrl && event.keypress.name === "n")) {
-      move(1)
-      return
-    }
-    if (_key.pageUp) {
-      move(-10)
-      return
-    }
-    if (_key.pageDown) {
-      move(10)
-      return
-    }
-    if (_key.home) {
-      setSelectedIndex(0)
-      return
-    }
-    if (_key.end) {
-      setSelectedIndex(flatOptions.length - 1)
-      return
-    }
-    if (_key.return && selectedOption) {
-      if (selectedOption.disabled) return
-      selectedOption.onSelect?.(dialog)
-      props.onSelect?.(selectedOption)
-      return
-    }
-    if (_key.escape) {
-      if (props.onEscape) {
-        props.onEscape()
-      } else {
-        dialog.clear()
-      }
-      return
-    }
     if (_key.backspace || _key.delete) {
       setQuery((q) => q.slice(0, -1))
       return
-    }
-
-    // Custom keybinds
-    if (props.keybind) {
-      for (const kb of props.keybind) {
-        if (kb.disabled || !kb.keybind) continue
-        const parsedKey = keybindContext.parse(event.keypress)
-        if (Keybind.match(kb.keybind, parsedKey) && selectedOption) {
-          kb.onTrigger(selectedOption)
-          return
-        }
-      }
     }
 
     if (input) {
@@ -294,8 +260,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   )
   const visibleRows = renderRows.slice(windowStart, windowStart + maxListHeight)
 
-  const keybinds = props.keybind?.filter((x) => !x.disabled && x.keybind) ?? []
-
   return (
     <Box flexDirection="column" gap={1} paddingBottom={1}>
       {/* Header section */}
@@ -337,18 +301,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
         </Box>
       )}
 
-      {/* Footer */}
-      {(props.footerContent || keybinds.length > 0) && (
+      {props.footerContent && (
         <Box paddingRight={2} paddingLeft={4} flexDirection="row" gap={2} flexShrink={0} paddingTop={1}>
-          {props.footerContent ? (
-            props.footerContent
-          ) : (
-            <Byline>
-              {keybinds.map((kb, idx) => (
-                <KeyboardShortcutHint key={idx} shortcut={Keybind.format(kb.keybind)} action={kb.title} />
-              ))}
-            </Byline>
-          )}
+          {props.footerContent}
         </Box>
       )}
     </Box>

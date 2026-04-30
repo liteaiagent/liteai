@@ -75,7 +75,6 @@ export function DialogManageModels(props: { onBack?: () => void }) {
       options={options}
       skipFilter={true}
       onFilter={setQuery}
-      keybind={[]}
       onEscape={props.onBack}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter toggle · Esc back</Text>}
     />

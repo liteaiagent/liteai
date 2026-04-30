@@ -1,11 +1,13 @@
+import { Text } from "@liteai/ink"
 import { createLiteaiClient, type Session } from "@liteai/sdk"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useDialog } from "../context/dialog"
-import { useKeybind } from "../context/keybind"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
+import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { DialogSessionList } from "./dialog-session-list"
 
@@ -147,8 +149,9 @@ export function DialogWorkspaceList() {
   const sync = useSync()
   const sdk = useSDK()
   const toast = useToast()
-  const keybind = useKeybind()
+  const { theme } = useTheme()
   const [toDelete, setToDelete] = useState<string | undefined>()
+  const [selectedOption, setSelectedOption] = useState<any>()
   const [counts, setCounts] = useState<Record<string, number | null | undefined>>({})
 
   const open = (workspaceID: string, forceCreate?: boolean) =>
@@ -251,10 +254,7 @@ export function DialogWorkspaceList() {
         ...sync.workspaceList.map((workspace) => {
           const count = counts[workspace.id]
           return {
-            title:
-              toDelete === workspace.id
-                ? `Delete ${workspace.id}? Press ${keybind.print("session_delete")} again`
-                : workspace.id,
+            title: toDelete === workspace.id ? `Delete ${workspace.id}? Press ctrl+d again` : workspace.id,
             value: workspace.id,
             category: workspace.type,
             description: workspace.branch ? `Branch ${workspace.branch}` : undefined,
@@ -273,7 +273,7 @@ export function DialogWorkspaceList() {
           description: "Create a new workspace",
         },
       ] as DialogSelectOption<string>[],
-    [sync.workspaceList, counts, localCount, toDelete, keybind],
+    [sync.workspaceList, counts, localCount, toDelete],
   )
 
   useEffect(() => {
@@ -281,48 +281,35 @@ export function DialogWorkspaceList() {
     void sync.workspace.sync()
   }, [dialog, sync.workspace])
 
-  const keybinds = useMemo(() => {
-    const bind = keybind.all.session_delete?.[0]
-    if (!bind) return []
-    return [
-      {
-        keybind: bind,
-        title: "delete",
-        onTrigger: async (option: DialogSelectOption<string>) => {
-          if (option.value === "__create__" || option.value === "__local__") return
-          if (toDelete !== option.value) {
-            setToDelete(option.value)
-            return
-          }
-          const result = await sdk.client.project.experimental.workspace
-            .remove({ id: option.value, projectID: "$UNKNOWN" })
-            .catch(() => undefined)
-          setToDelete(undefined)
-          if (result?.error) {
-            toast.show({
-              message: "Failed to delete workspace",
-              variant: "error",
-            })
-            return
-          }
-          if (currentWorkspaceID === option.value) {
-            route.navigate({
-              type: "home",
-            })
-          }
-          await sync.workspace.sync()
-        },
+  useKeybindings(
+    {
+      "select:delete": async () => {
+        if (!selectedOption || selectedOption.value === "__create__" || selectedOption.value === "__local__") return
+        if (toDelete !== selectedOption.value) {
+          setToDelete(selectedOption.value)
+          return
+        }
+        const result = await sdk.client.project.experimental.workspace
+          .remove({ id: selectedOption.value, projectID: "$UNKNOWN" })
+          .catch(() => undefined)
+        setToDelete(undefined)
+        if (result?.error) {
+          toast.show({
+            message: "Failed to delete workspace",
+            variant: "error",
+          })
+          return
+        }
+        if (currentWorkspaceID === selectedOption.value) {
+          route.navigate({
+            type: "home",
+          })
+        }
+        await sync.workspace.sync()
       },
-    ]
-  }, [
-    keybind.all.session_delete,
-    toDelete,
-    sdk.client.project.experimental.workspace,
-    toast,
-    currentWorkspaceID,
-    route,
-    sync.workspace,
-  ])
+    },
+    { context: "Select" },
+  )
 
   return (
     <DialogSelect
@@ -330,8 +317,9 @@ export function DialogWorkspaceList() {
       skipFilter={true}
       options={options}
       current={currentWorkspaceID}
-      onMove={() => {
+      onMove={(option) => {
         setToDelete(undefined)
+        setSelectedOption(option)
       }}
       onSelect={(option) => {
         setToDelete(undefined)
@@ -341,7 +329,7 @@ export function DialogWorkspaceList() {
         }
         void selectWorkspace(option.value)
       }}
-      keybind={keybinds}
+      footerContent={<Text color={theme.textMuted as any}>↑↓ navigate · Enter select · ctrl+d delete</Text>}
     />
   )
 }

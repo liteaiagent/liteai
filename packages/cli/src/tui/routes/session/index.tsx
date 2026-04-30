@@ -1,4 +1,4 @@
-import { Box, type ScrollBoxHandle, TerminalSizeContext, useInput } from "@liteai/ink"
+import { Box, type ScrollBoxHandle, TerminalSizeContext } from "@liteai/ink"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { DialogSessionList } from "../../components/dialog-session-list"
 import { MessageActionsBar } from "../../components/message-actions-bar"
@@ -6,27 +6,27 @@ import { PromptInput } from "../../components/prompt/prompt-input"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { useDialog } from "../../context/dialog"
-import { useKeybind } from "../../context/keybind"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { useClipboard } from "../../hooks/use-clipboard"
+import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
+import { useKeybindings } from "../../keybindings/use-keybinding"
 import { SessionProvider } from "./ctx"
 import { SessionHeader } from "./header"
 import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
-import { Sidebar } from "./sidebar"
 
 export function SessionRoute({ sessionID }: { sessionID: string }) {
   const sync = useSync()
   const session = useSession()
-  const keybind = useKeybind()
+  useRegisterKeybindingContext("Chat")
   const dialog = useDialog()
   const route = useRoute()
   const { copy } = useClipboard()
   const terminalSize = useContext(TerminalSizeContext)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [_sidebarOpen, setSidebarOpen] = useState(false)
   const [showThinking, setShowThinking] = useState(true)
   // TODO: Wire to keybindings (session_timestamps_toggle, session_details_toggle, session_generic_toggle)
   const [showTimestamps, _setShowTimestamps] = useState(false)
@@ -78,54 +78,35 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     return null
   }, [sync.message, sessionID])
 
-  // ── Keybindings ────────────────────────────────────────────────────────
-  // Use event.keypress (ParsedKey) directly instead of fabricating one
-
-  useInput((_input, _key, event) => {
-    if (!event) return
-
-    // Schema key: sidebar_toggle (was incorrectly session_sidebar_toggle)
-    if (keybind.match("sidebar_toggle", event.keypress)) {
-      setSidebarOpen((v) => !v)
-    }
-
-    // Schema key: display_thinking (was incorrectly session_thinking_toggle)
-    if (keybind.match("display_thinking", event.keypress)) {
-      setShowThinking((v) => !v)
-    }
-
-    if (keybind.match("session_new", event.keypress)) {
-      route.navigate({ type: "home" })
-    }
-
-    if (keybind.match("session_list", event.keypress)) {
-      dialog.push(() => <DialogSessionList />)
-    }
-
-    // Copy last assistant message to clipboard
-    if (keybind.match("messages_copy", event.keypress)) {
-      const text = getLastAssistantText()
-      if (text) {
-        void copy(text)
-      }
-    }
-
-    // Retry last failed message
-    if (keybind.match("session_retry", event.keypress)) {
-      const retryInfo = getRetryInfo()
-      if (retryInfo?.isRetryable) {
-        // Find the user message text and re-submit
-        const userMsg = (sync.message[sessionID] ?? []).find((m) => m.id === retryInfo.userMessageID)
-        if (userMsg) {
-          const parts = sync.part[userMsg.id] ?? []
-          const textPart = parts.find((p) => p.type === "text" && "text" in p)
-          if (textPart && "text" in textPart) {
-            void session.submit(textPart.text, "prompt")
+  useKeybindings(
+    {
+      "chat:sidebarToggle": () => setSidebarOpen((v) => !v),
+      "chat:thinkingToggle": () => setShowThinking((v) => !v),
+      "chat:newSession": () => route.navigate({ type: "home" }),
+      "chat:sessionList": () => dialog.push(() => <DialogSessionList />),
+      "chat:messageCopy": () => {
+        const text = getLastAssistantText()
+        if (text) {
+          void copy(text)
+        }
+      },
+      "chat:retry": () => {
+        const retryInfo = getRetryInfo()
+        if (retryInfo?.isRetryable) {
+          // Find the user message text and re-submit
+          const userMsg = (sync.message[sessionID] ?? []).find((m) => m.id === retryInfo.userMessageID)
+          if (userMsg) {
+            const parts = sync.part[userMsg.id] ?? []
+            const textPart = parts.find((p) => p.type === "text" && "text" in p)
+            if (textPart && "text" in textPart) {
+              void session.submit(textPart.text, "prompt")
+            }
           }
         }
-      }
-    }
-  })
+      },
+    },
+    { context: "Chat" },
+  )
 
   const permissionRequest = useMemo(() => {
     return (sync.permission[sessionID] ?? [])[0]
@@ -143,17 +124,17 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
 
     return [
       {
-        keybindName: "messages_copy",
+        keybindName: "chat:messageCopy",
         label: "copy",
         available: hasAssistantText,
       },
       {
-        keybindName: "session_retry",
+        keybindName: "chat:retry",
         label: "retry",
         available: retryInfo?.isRetryable === true,
       },
       {
-        keybindName: "display_thinking",
+        keybindName: "chat:thinkingToggle",
         label: showThinking ? "hide thinking" : "show thinking",
         available: true,
       },

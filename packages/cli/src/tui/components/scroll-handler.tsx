@@ -2,8 +2,9 @@ import type { ScrollBoxHandle } from "@liteai/ink"
 import { useInput } from "@liteai/ink"
 import type React from "react"
 import { useRef } from "react"
-import { useKeybind } from "../context/keybind"
 import { useTuiConfig } from "../context/tui-config"
+import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
+import { useKeybindings } from "../keybindings/use-keybinding"
 
 // ─── Wheel Acceleration ─────────────────────────────────────────────
 //
@@ -239,7 +240,7 @@ type Props = {
  * - Half-page and line scroll via keybinds
  */
 export function ScrollHandler({ scrollRef }: Props): null {
-  const keybind = useKeybind()
+  useRegisterKeybindingContext("Scroll")
   const config = useTuiConfig()
 
   // Lazy-init wheel acceleration state so TERM_PROGRAM probe has settled
@@ -275,59 +276,60 @@ export function ScrollHandler({ scrollRef }: Props): null {
       } else {
         scrollUp(s, step)
       }
-      return
-    }
-
-    const kp = event.keypress
-
-    // ─── Keyboard Scroll (via keybinds) ───
-
-    // Page up/down — half viewport
-    if (keybind.match("messages_page_up", kp)) {
-      const delta = -Math.max(1, Math.floor(s.getViewportHeight() / 2))
-      jumpBy(s, delta)
-      return
-    }
-    if (keybind.match("messages_page_down", kp)) {
-      const delta = Math.max(1, Math.floor(s.getViewportHeight() / 2))
-      jumpBy(s, delta)
-      return
-    }
-
-    // Half page
-    if (keybind.match("messages_half_page_up", kp)) {
-      const delta = -Math.max(1, Math.floor(s.getViewportHeight() / 2))
-      jumpBy(s, delta)
-      return
-    }
-    if (keybind.match("messages_half_page_down", kp)) {
-      const delta = Math.max(1, Math.floor(s.getViewportHeight() / 2))
-      jumpBy(s, delta)
-      return
-    }
-
-    // Line scroll
-    if (keybind.match("messages_line_up", kp)) {
-      scrollUp(s, 1)
-      return
-    }
-    if (keybind.match("messages_line_down", kp)) {
-      scrollDown(s, 1)
-      return
-    }
-
-    // Top/bottom
-    if (keybind.match("messages_first", kp)) {
-      s.scrollTo(0)
-      return
-    }
-    if (keybind.match("messages_last", kp)) {
-      const max = Math.max(0, s.getScrollHeight() - s.getViewportHeight())
-      s.scrollTo(max)
-      s.scrollToBottom()
-      return
     }
   })
+
+  useKeybindings(
+    {
+      "scroll:pageUp": () => {
+        const s = scrollRef.current
+        if (!s) return
+        const delta = -Math.max(1, Math.floor(s.getViewportHeight() / 2))
+        jumpBy(s, delta)
+      },
+      "scroll:pageDown": () => {
+        const s = scrollRef.current
+        if (!s) return
+        const delta = Math.max(1, Math.floor(s.getViewportHeight() / 2))
+        jumpBy(s, delta)
+      },
+      "scroll:halfPageUp": () => {
+        const s = scrollRef.current
+        if (!s) return
+        const delta = -Math.max(1, Math.floor(s.getViewportHeight() / 2))
+        jumpBy(s, delta)
+      },
+      "scroll:halfPageDown": () => {
+        const s = scrollRef.current
+        if (!s) return
+        const delta = Math.max(1, Math.floor(s.getViewportHeight() / 2))
+        jumpBy(s, delta)
+      },
+      "scroll:lineUp": () => {
+        const s = scrollRef.current
+        if (!s) return
+        scrollUp(s, 1)
+      },
+      "scroll:lineDown": () => {
+        const s = scrollRef.current
+        if (!s) return
+        scrollDown(s, 1)
+      },
+      "scroll:top": () => {
+        const s = scrollRef.current
+        if (!s) return
+        s.scrollTo(0)
+      },
+      "scroll:bottom": () => {
+        const s = scrollRef.current
+        if (!s) return
+        const max = Math.max(0, s.getScrollHeight() - s.getViewportHeight())
+        s.scrollTo(max)
+        s.scrollToBottom()
+      },
+    },
+    { context: "Scroll" },
+  )
 
   return null
 }

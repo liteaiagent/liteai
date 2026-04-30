@@ -74,7 +74,6 @@ export function DialogSettings() {
       title="Settings"
       placeholder="Search settings..."
       options={options}
-      keybind={[]}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter open · Esc close</Text>}
     />
   )

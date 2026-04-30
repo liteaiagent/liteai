@@ -3,7 +3,6 @@ import type { TuiConfig } from "../cli/config/tui"
 import { type Args, ArgsProvider } from "./context/args"
 import { DialogProvider } from "./context/dialog"
 import { ExitProvider } from "./context/exit"
-import { KeybindProvider } from "./context/keybind"
 import { KVProvider } from "./context/kv"
 import { LocalProvider } from "./context/local"
 import { RouteProvider, useRoute } from "./context/route"
@@ -13,6 +12,7 @@ import { SyncProvider } from "./context/sync"
 import { ThemeProvider } from "./context/theme"
 import { ToastProvider } from "./context/toast"
 import { TuiConfigProvider } from "./context/tui-config"
+import { KeybindingSetup } from "./keybindings/keybinding-setup"
 import { HomeRoute } from "./routes/home"
 import { SessionRoute } from "./routes/session"
 
@@ -46,7 +46,7 @@ export function App(props: AppProps) {
       <TuiConfigProvider config={props.config}>
         <KVProvider>
           <ThemeProvider mode="dark">
-            <KeybindProvider>
+            <KeybindingSetup>
               <SDKProvider
                 url={props.url}
                 directory={props.directory}
@@ -73,7 +73,7 @@ export function App(props: AppProps) {
                   </ToastProvider>
                 </ArgsProvider>
               </SDKProvider>
-            </KeybindProvider>
+            </KeybindingSetup>
           </ThemeProvider>
         </KVProvider>
       </TuiConfigProvider>
