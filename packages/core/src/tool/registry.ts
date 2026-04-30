@@ -140,7 +140,7 @@ export namespace ToolRegistry {
       }
 
       if (allowedNames) {
-        availableTools = availableTools.filter((t) => allowedNames!.has(t.id))
+        availableTools = availableTools.filter((t) => allowedNames?.has(t.id))
       }
     }
 

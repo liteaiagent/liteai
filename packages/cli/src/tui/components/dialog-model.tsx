@@ -26,7 +26,9 @@ export function DialogModel(props: { providerID?: string }) {
   const dialog = useDialog()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<
+    DialogSelectOption<{ providerID: string; modelID: string }> | undefined
+  >()
 
   const connected = useConnected()
   const providers = useDialogProviderOptions()

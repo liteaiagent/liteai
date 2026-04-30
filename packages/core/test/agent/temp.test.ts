@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from "bun:test"
+import { describe, expect, it } from "bun:test"
 import { Agent } from "../../src/agent/agent"
 
 describe("Agent Hierarchy", () => {

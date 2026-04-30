@@ -1,4 +1,4 @@
-import { Text } from "@liteai/ink"
+import { type Color, Text } from "@liteai/ink"
 import { createLiteaiClient, type Session } from "@liteai/sdk"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useDialog } from "../context/dialog"
@@ -151,7 +151,7 @@ export function DialogWorkspaceList() {
   const toast = useToast()
   const { theme } = useTheme()
   const [toDelete, setToDelete] = useState<string | undefined>()
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
   const [counts, setCounts] = useState<Record<string, number | null | undefined>>({})
 
   const open = (workspaceID: string, forceCreate?: boolean) =>
@@ -329,7 +329,7 @@ export function DialogWorkspaceList() {
         }
         void selectWorkspace(option.value)
       }}
-      footerContent={<Text color={theme.textMuted as any}>↑↓ navigate · Enter select · ctrl+d delete</Text>}
+      footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+d delete</Text>}
     />
   )
 }

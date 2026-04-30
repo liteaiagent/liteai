@@ -346,7 +346,7 @@ function InstalledTab(props: {
     [props.plugins, props.theme],
   )
 
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
   useKeybindings(
     {
@@ -420,7 +420,7 @@ function MarketplacesTab(props: {
     [props.marketplaces],
   )
 
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
   useKeybindings(
     {

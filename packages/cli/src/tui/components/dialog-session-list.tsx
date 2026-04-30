@@ -1,4 +1,4 @@
-import { Text } from "@liteai/ink"
+import { type Color, Text } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
@@ -7,7 +7,7 @@ import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
-import { DialogSelect } from "../ui/dialog-select"
+import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { Spinner } from "../ui/spinner"
 import { DialogSessionRename } from "./dialog-session-rename"
 
@@ -33,7 +33,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
 
   const [toDelete, setToDelete] = useState<string | undefined>()
   const [search, setSearch] = useState("")
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
   const debouncedSearch = useDebounce(search, 150)
 
   const [searchResults, setSearchResults] = useState<import("@liteai/sdk").Session[] | undefined>()
@@ -141,7 +141,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         dialog.clear()
       }}
       footerContent={
-        <Text color={theme.textMuted as any}>↑↓ navigate · Enter select · ctrl+d delete · ctrl+r rename</Text>
+        <Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+d delete · ctrl+r rename</Text>
       }
     />
   )

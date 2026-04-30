@@ -7,7 +7,7 @@ import { useSDK } from "../context/sdk"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
-import { DialogSelect } from "../ui/dialog-select"
+import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 
 function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean }) {
   const { theme } = useTheme()
@@ -38,7 +38,7 @@ export function DialogMcp() {
   const dialog = useDialog()
   const { theme } = useTheme()
   const [loading, setLoading] = useState<string | null>(null)
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
   const options = useMemo(() => {
     const mcpData = sync.mcp

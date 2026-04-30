@@ -164,7 +164,7 @@ export function DialogProvider() {
   const { theme } = useTheme()
   const toast = useToast()
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
-  const [selectedOption, setSelectedOption] = useState<any>()
+  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
   const connectedSet = useMemo(() => new Set(sync.provider_next?.connected || []), [sync.provider_next?.connected])
 
