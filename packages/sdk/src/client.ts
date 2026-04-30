@@ -1,8 +1,8 @@
-export * from "./gen/types.gen.js"
+export * from "./gen/types.gen"
 
-import { createClient } from "./gen/client/client.gen.js"
-import type { Config } from "./gen/client/types.gen.js"
-import { LiteaiClient } from "./gen/sdk.gen.js"
+import { createClient } from "./gen/client/client.gen"
+import type { Config } from "./gen/client/types.gen"
+import { LiteaiClient } from "./gen/sdk.gen"
 export { type Config as LiteaiClientConfig, LiteaiClient }
 
 export function createLiteaiClient(config?: Config & { experimental_workspaceID?: string; client?: string }) {

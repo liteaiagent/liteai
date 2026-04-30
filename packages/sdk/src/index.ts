@@ -1,9 +1,9 @@
-export * from "./client.js"
-export * from "./server.js"
+export * from "./client"
+export * from "./server"
 
-import { createLiteaiClient } from "./client.js"
-import type { ServerOptions } from "./server.js"
-import { createLiteaiServer } from "./server.js"
+import { createLiteaiClient } from "./client"
+import type { ServerOptions } from "./server"
+import { createLiteaiServer } from "./server"
 
 export async function createLiteai(options?: ServerOptions) {
   const server = await createLiteaiServer({
