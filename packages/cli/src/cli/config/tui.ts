@@ -8,7 +8,8 @@ import { Instance } from "@liteai/core/project/instance"
 import { Log } from "@liteai/util/log"
 import { mergeDeep, unique } from "remeda"
 import type z from "zod"
-import { Keybinds, TuiInfo } from "./tui-schema"
+import type { KeybindingContextName } from "../../tui/keybindings/types"
+import { TuiInfo } from "./tui-schema"
 
 export namespace TuiConfig {
   const log = Log.create({ service: "config.tui" })
@@ -18,7 +19,26 @@ export namespace TuiConfig {
   export type Info = z.output<typeof Info>
 
   function mergeInfo(target: Info, source: Info): Info {
-    return mergeDeep(target, source)
+    const result = mergeDeep(target, source)
+    if (target.keybinds && source.keybinds) {
+      const byContext = new Map<string, Record<string, string | null>>()
+      for (const kb of target.keybinds) {
+        byContext.set(kb.context, { ...kb.bindings })
+      }
+      for (const kb of source.keybinds) {
+        const existing = byContext.get(kb.context) || {}
+        byContext.set(kb.context, { ...existing, ...kb.bindings })
+      }
+      result.keybinds = Array.from(byContext.entries()).map(([context, bindings]) => ({
+        context: context as KeybindingContextName,
+        bindings,
+      }))
+    } else if (target.keybinds) {
+      result.keybinds = target.keybinds
+    } else if (source.keybinds) {
+      result.keybinds = source.keybinds
+    }
+    return result
   }
 
   function customPath() {
@@ -53,8 +73,6 @@ export namespace TuiConfig {
         result = mergeInfo(result, await loadFile(file))
       }
     }
-
-    result.keybinds = Keybinds.parse(result.keybinds ?? {})
 
     return {
       config: result,

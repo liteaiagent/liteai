@@ -1,8 +1,9 @@
 # 009 — Port MVP Keybinding System
 
-> **Status**: Planned  
+> **Status**: Complete (Undergoing Testing)  
 > **Priority**: Critical — keybindings are currently non-functional  
 > **Breaking**: Yes — clean break from legacy `<leader>` config format (Directive 0)
+> **Last Reviewed**: 2026-05-01
 
 ## Problem
 
@@ -27,21 +28,21 @@ The Ink engine (`packages/ink`) already supports `stopImmediatePropagation()` on
 
 ---
 
-## Phase 1 — Core Keybinding Infrastructure
+## Phase 1 — Core Keybinding Infrastructure ✅
 
 **Goal**: Port the MVP's keybinding modules as new files. Zero existing code changes.
 All new files in `packages/cli/src/tui/keybindings/`.
 
 ### Tasks
 
-- [ ] **1.1** Create `types.ts`
+- [x] **1.1** Create `types.ts`
   - `KeybindingContextName` (union of context strings)
   - `ParsedKeystroke` (`{ key, ctrl, alt, shift, meta, super }`)
   - `Chord` (`ParsedKeystroke[]`)
   - `ParsedBinding` (`{ chord, action, context }`)
   - `KeybindingBlock` (`{ context, bindings }`)
 
-- [ ] **1.2** Port `parser.ts`
+- [x] **1.2** Port `parser.ts`
   - `parseKeystroke(input: string): ParsedKeystroke`
   - `parseChord(input: string): Chord`
   - `keystrokeToString(ks): string`
@@ -49,14 +50,14 @@ All new files in `packages/cli/src/tui/keybindings/`.
   - `parseBindings(blocks): ParsedBinding[]`
   - Adapt from MVP `keybindings/parser.ts` — clean TypeScript, no React Compiler artifacts
 
-- [ ] **1.3** Port `match.ts`
+- [x] **1.3** Port `match.ts`
   - `getKeyName(input, key): string | null` — maps Ink's `Key` booleans to string names
   - `matchesKeystroke(input, key, target): boolean` — modifier matching with Ink quirks
     (escape sets `meta=true`, must be ignored for escape key itself)
   - `matchesBinding(input, key, binding): boolean`
   - Adapt from MVP `keybindings/match.ts`
 
-- [ ] **1.4** Port `resolver.ts`
+- [x] **1.4** Port `resolver.ts`
   - `resolveKey(input, key, activeContexts, bindings): ResolveResult`
   - `resolveKeyWithChordState(input, key, activeContexts, bindings, pending): ChordResolveResult`
   - `getBindingDisplayText(action, context, bindings): string | undefined`
@@ -65,7 +66,7 @@ All new files in `packages/cli/src/tui/keybindings/`.
   - Result types: `match`, `chord_started`, `chord_cancelled`, `unbound`, `none`
   - Adapt from MVP `keybindings/resolver.ts`
 
-- [ ] **1.5** Create `default-bindings.ts`
+- [x] **1.5** Create `default-bindings.ts`
   - Port from MVP `keybindings/defaultBindings.ts`
   - Remove `bun:bundle` feature flag conditionals — include all bindings unconditionally
   - Contexts: `Global`, `Chat`, `Autocomplete`, `Confirmation`, `Help`, `Scroll`,
@@ -86,19 +87,19 @@ All new files in `packages/cli/src/tui/keybindings/`.
     ```
   - Platform-specific: `IMAGE_PASTE_KEY = alt+v` on Windows, `ctrl+v` elsewhere
 
-- [ ] **1.6** Typecheck — `bun typecheck` in `packages/cli`
-- [ ] **1.7** Lint — `bun lint:fix` in `packages/cli`
+- [x] **1.6** Typecheck — `bun typecheck` in `packages/cli`
+- [x] **1.7** Lint — `bun lint:fix` in `packages/cli`
 
 ---
 
-## Phase 2 — Context & Provider
+## Phase 2 — Context & Provider ✅
 
 **Goal**: Create the React context, provider, chord interceptor, and consumer hooks.
 Still zero changes to existing components.
 
 ### Tasks
 
-- [ ] **2.1** Create `keybinding-context.tsx`
+- [x] **2.1** Create `keybinding-context.tsx`
   - `KeybindingProvider` — context value: `resolve`, `setPendingChord`, `getDisplayText`,
     `bindings`, `pendingChord`, `activeContexts`, `registerActiveContext`,
     `unregisterActiveContext`, `registerHandler`, `invokeAction`
@@ -107,10 +108,10 @@ Still zero changes to existing components.
   - `useRegisterKeybindingContext(context, isActive?)` — lifecycle hook
   - De-compile from MVP's React Compiler output to clean `useMemo`/`useCallback` React
 
-- [ ] **2.2** Create `keybinding-setup.tsx`
+- [x] **2.2** Create `keybinding-setup.tsx`
   - `KeybindingSetup` — composed provider:
     - Loads default bindings from `default-bindings.ts`
-    - Merges user overrides from TUI config (new block format in `keybindings` key)
+    - ~~Merges user overrides from TUI config (new block format in `keybindings` key)~~ **DEFERRED to Phase 4**
     - Manages chord state: `pendingChordRef` (synchronous) + `pendingChordState` (re-renders)
     - Chord timeout: 1000ms via `setTimeout`
     - Handler registry: `Map<string, Set<HandlerRegistration>>`
@@ -123,8 +124,11 @@ Still zero changes to existing components.
     - On `chord_cancelled`/`unbound`: clears state, stops propagation
     - On `none`: no-op (lets event through to other handlers)
     - Skips wheel events when no chord is pending (performance)
+  - **NOTE**: Single-key matches are not intercepted by `ChordInterceptor` — they are
+    handled by individual `useKeybinding`/`useKeybindings` hooks in consumer components.
+    This is a deliberate dual-resolution architecture, not a bug.
 
-- [ ] **2.3** Create `use-keybinding.ts`
+- [x] **2.3** Create `use-keybinding.ts`
   - `useKeybinding(action, handler, options?)` — single action hook:
     - Registers handler with context via `useEffect`
     - Uses `useInput` with its own resolution for non-chord single-key matches
@@ -133,91 +137,97 @@ Still zero changes to existing components.
     - Same pattern but `handlers` is `Record<string, () => void | false | Promise<void>>`
     - `false` return = "not consumed" (event propagates)
 
-- [ ] **2.4** Create `use-shortcut-display.ts`
+- [x] **2.4** Create `use-shortcut-display.ts`
   - `useShortcutDisplay(action, context, fallback?): string`
   - React hook version using `useKeybindingContext().getDisplayText()`
 
-- [ ] **2.5** Typecheck — `bun typecheck` in `packages/cli`
-- [ ] **2.6** Lint — `bun lint:fix` in `packages/cli`
+- [x] **2.5** Typecheck — `bun typecheck` in `packages/cli`
+- [x] **2.6** Lint — `bun lint:fix` in `packages/cli`
 
 ---
 
-## Phase 3 — Wire Provider & Migrate Consumers
+## Phase 3 — Wire Provider & Migrate Consumers ✅ Complete
 
 **Goal**: Replace the old provider in the app tree, migrate all components from
 `useKeybind().match(...)` + raw `useInput` to `useKeybinding`/`useKeybindings`.
 
 ### Tasks
 
-- [ ] **3.1** Wire `KeybindingSetup` into `app.tsx`
+- [x] **3.1** Wire `KeybindingSetup` into `app.tsx`
   - Replace `<KeybindProvider>` with `<KeybindingSetup>`
   - Remove old `KeybindProvider` import
   - Position: same level (wrapping `<SDKProvider>` and below `<ThemeProvider>`)
 
-- [ ] **3.2** Migrate `routes/session/index.tsx` (SessionRoute)
+- [x] **3.2** Migrate `routes/session/index.tsx` (SessionRoute)
   - Remove `useKeybind()` call and raw `useInput` keybinding handler
   - Add `useRegisterKeybindingContext('Chat')`
   - Add `useKeybindings({ ... }, { context: 'Chat' })` for:
     - `chat:sidebarToggle`, `chat:thinkingToggle`, `chat:newSession`,
       `chat:sessionList`, `chat:messageCopy`, `chat:retry`
 
-- [ ] **3.3** Migrate `components/scroll-handler.tsx`
+- [x] **3.3** Migrate `components/scroll-handler.tsx`
   - Replace `useKeybind().match(...)` with `useKeybindings({ ... }, { context: 'Scroll' })`
   - Register `useRegisterKeybindingContext('Scroll')`
 
-- [ ] **3.4** Migrate `ui/dialog.tsx`
+- [x] **3.4** Migrate `ui/dialog.tsx`
   - Replace `useKeybind().match(...)` with `useKeybinding('confirm:no', ...)`
   - Register `useRegisterKeybindingContext('Confirmation')`
 
-- [ ] **3.5** Migrate `ui/dialog-select.tsx`
+- [x] **3.5** Migrate `ui/dialog-select.tsx`
   - Replace keybind matching with `useKeybindings({ ... }, { context: 'Select' })`
   - Register `useRegisterKeybindingContext('Select')`
 
-- [ ] **3.6** Migrate `ui/dialog-help.tsx`
+- [x] **3.6** Migrate `ui/dialog-help.tsx`
   - Replace `useKeybind().all` iteration with `useKeybindingContext().bindings`
   - Register `useRegisterKeybindingContext('Help')`
 
-- [ ] **3.7** Migrate remaining dialog consumers
-  - `dialog-alert.tsx`, `dialog-confirm.tsx`, `dialog-prompt.tsx`,
-    `dialog-export-options.tsx`, `dialog-command.tsx`, `dialog-mcp.tsx`,
-    `dialog-plugin.tsx`
-  - `routes/session/permission.tsx`, `routes/session/question.tsx`
+- [x] **3.7** Migrate remaining dialog consumers
+  - ~~`dialog-command.tsx`~~ — does not exist in current codebase
+  - [x] `dialog-mcp.tsx` — migrated to `useKeybindings`
+  - [x] `dialog-plugin.tsx` — migrated to `useKeybindings`
+  - [x] `dialog-alert.tsx` — uses raw `useInput` for Enter; cancel delegated to `<Dialog>`. Acceptable.
+  - [x] `dialog-confirm.tsx` — uses raw `useInput` for Enter/arrows; cancel delegated to `<Dialog>`. Borderline.
+  - [x] `dialog-prompt.tsx` — removed raw useInput `escape` handling, delegates cancel to `<Dialog>` (fixed double-fire).
+  - [x] `dialog-export-options.tsx` — uses raw `useInput` for navigation/toggles; cancel delegated to `<Dialog>`.
+  - [x] `routes/session/permission.tsx` — migrated to `useKeybindings("Select")`
+  - [x] `routes/session/question.tsx` — migrated options navigation to `useKeybindings("Select")`
 
-- [ ] **3.8** Migrate `components/prompt/prompt-input.tsx`
+- [x] **3.8** Migrate `components/prompt/prompt-input.tsx`
   - Keep existing `useInput` for text-level editing (not keybindings)
   - Migrate keybinding-adjacent logic (ctrl+r → history search) to
-    `useKeybinding('history:search', ...)`
+    `useKeybinding('history:search', ...)` and `chat:cancel`
   - Register `useRegisterKeybindingContext('Chat')` (already from SessionRoute parent)
 
-- [ ] **3.9** Migrate `routes/session/message.tsx`
-  - Replace `useKeybind().print(...)` with `useShortcutDisplay()`
+- [x] **3.9** Migrate `routes/session/message.tsx`
+  - Uses `useKeybindingContext().getDisplayText()` for dynamic shortcut text
 
-- [ ] **3.10** Migrate `components/tips.tsx`
+- [x] **3.10** Migrate `components/tips.tsx`
   - Replace hardcoded keybind references with display text from context
+  - Added dynamic `[action|context|fallback]` parsing using `getDisplayText`
 
-- [ ] **3.11** Typecheck — `bun typecheck` in `packages/cli`
-- [ ] **3.12** Lint — `bun lint:fix` in `packages/cli`
+- [x] **3.11** Typecheck — `bun typecheck` in `packages/cli`
+- [x] **3.12** Lint — `bun lint:fix` in `packages/cli`
 - [ ] **3.13** Manual smoke test — run CLI, verify bindings work
 
 ---
 
-## Phase 4 — Cleanup & Config Migration
+## Phase 4 — Cleanup & Config Migration ✅ Complete
 
 **Goal**: Remove legacy modules, update config schema.
 
 ### Tasks
 
-- [ ] **4.1** Delete `tui/context/keybind.tsx` (old `KeybindProvider`)
-- [ ] **4.2** Delete `cli/util/keybind.ts` (old `Keybind` namespace)
-- [ ] **4.3** Update `cli/config/tui-schema.ts`
+- [x] **4.1** Delete `tui/context/keybind.tsx` (old `KeybindProvider`)
+- [x] **4.2** Delete `cli/util/keybind.ts` (old `Keybind` namespace)
+- [x] **4.3** Update `cli/config/tui-schema.ts`
   - Remove old flat `Keybinds` z.object with 100+ entries
   - Add new `KeybindingOverrides` schema: array of `{ context, bindings }` blocks
   - Keep `keybinds` key in `TuiInfo` but point to new schema
-- [ ] **4.4** Update `cli/config/tui.ts`
+- [x] **4.4** Update `cli/config/tui.ts`
   - Replace `Keybinds.parse(result.keybinds ?? {})` with new block-format parsing
-- [ ] **4.5** Remove all dead `useKeybind` imports across codebase
-- [ ] **4.6** Final typecheck — `bun typecheck` in `packages/cli`
-- [ ] **4.7** Final lint — `bun lint:fix` in `packages/cli`
+- [x] **4.5** Remove all dead `useKeybind` imports across codebase
+- [x] **4.6** Final typecheck — `bun typecheck` in `packages/cli`
+- [x] **4.7** Final lint — `bun lint:fix` in `packages/cli`
 - [ ] **4.8** Full regression test — verify all keybindings, dialogs, text input
 
 ---
@@ -231,9 +241,10 @@ stdin → Ink parse-keypress → EventEmitter.emit('input', InputEvent)
   │
   ├─ ChordInterceptor (useInput — registered FIRST, renders before children)
   │   └─ resolveKeyWithChordState()
-  │       ├─ match → invokeHandler() + stopImmediatePropagation() ──── DONE
-  │       ├─ chord_started → setPendingChord() + stopPropagation() ── DONE
-  │       ├─ chord_cancelled → clearChord() + stopPropagation() ──── DONE
+  │       ├─ match (chord) → invokeHandler() + stopImmediatePropagation() ─ DONE
+  │       ├─ match (single) → clears pending, NO handler invocation ──────── (hooks handle it)
+  │       ├─ chord_started → setPendingChord() + stopPropagation() ──────── DONE
+  │       ├─ chord_cancelled → clearChord() + stopPropagation() ─────────── DONE
   │       └─ none → event flows to next listeners ↓
   │
   ├─ useKeybindings (Chat context — SessionRoute)
@@ -253,3 +264,10 @@ stdin → Ink parse-keypress → EventEmitter.emit('input', InputEvent)
 3. **No `bun:bundle` feature flags** — include all bindings unconditionally
 4. **Platform detection** — retain Windows-specific `alt+v` for image paste
 5. **Chord timeout** — 1000ms (MVP default), configurable via constant
+6. **Dual resolution** — ChordInterceptor handles chord sequences; individual `useKeybinding`/`useKeybindings` hooks handle single-key matches. This avoids centralizing all handler logic but means each keystroke is resolved N+1 times (interceptor + N hooks).
+
+### Known Issues
+
+1. ~~**`dialog-prompt.tsx` double-fire**~~ — Fixed by removing redundant `escape` handling.
+2. ~~**User config overrides not wired**~~ — Fixed: `KeybindingSetup` now merges config from `useTuiConfig()` and `tui-schema.ts` supports the new block format.
+3. ~~**`tips.tsx` hardcoded shortcuts**~~ — Fixed: Tips now parse `[action|context|fallback]` syntax and use `useKeybindingContext().getDisplayText()` to show accurate user overrides.

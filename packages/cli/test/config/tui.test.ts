@@ -117,9 +117,15 @@ test("project config takes precedence over LITEAI_TUI_CONFIG (matches LITEAI_CON
 test("merges keybind overrides across precedence layers", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
-      await Bun.write(path.join(Global.Path.config, "tui.json"), JSON.stringify({ keybinds: { app_exit: "ctrl+q" } }))
+      await Bun.write(
+        path.join(Global.Path.config, "tui.json"),
+        JSON.stringify({ keybinds: [{ context: "Global", bindings: { app_exit: "ctrl+q" } }] }),
+      )
       await fs.mkdir(path.join(dir, ".liteai"), { recursive: true })
-      await Bun.write(path.join(dir, ".liteai", "tui.json"), JSON.stringify({ keybinds: { theme_list: "ctrl+k" } }))
+      await Bun.write(
+        path.join(dir, ".liteai", "tui.json"),
+        JSON.stringify({ keybinds: [{ context: "Global", bindings: { theme_list: "ctrl+k" } }] }),
+      )
     },
   })
 
@@ -127,8 +133,9 @@ test("merges keybind overrides across precedence layers", async () => {
     directory: tmp.path,
     fn: async () => {
       const config = await TuiConfig.get()
-      expect(config.keybinds?.app_exit).toBe("ctrl+q")
-      expect(config.keybinds?.theme_list).toBe("ctrl+k")
+      const globalBindings = config.keybinds?.find((k) => k.context === "Global")?.bindings
+      expect(globalBindings?.app_exit).toBe("ctrl+q")
+      expect(globalBindings?.theme_list).toBe("ctrl+k")
     },
   })
 })
@@ -184,7 +191,7 @@ test("applies env and file substitutions in tui.json", async () => {
           path.join(dir, ".liteai", "tui.json"),
           JSON.stringify({
             theme: "{env:TUI_THEME_TEST}",
-            keybinds: { app_exit: "{file:keybind.txt}" },
+            keybinds: [{ context: "Global", bindings: { app_exit: "{file:keybind.txt}" } }],
           }),
         )
       },
@@ -195,7 +202,8 @@ test("applies env and file substitutions in tui.json", async () => {
       fn: async () => {
         const config = await TuiConfig.get()
         expect(config.theme).toBe("env-theme")
-        expect(config.keybinds?.app_exit).toBe("ctrl+q")
+        const globalBindings = config.keybinds?.find((k) => k.context === "Global")?.bindings
+        expect(globalBindings?.app_exit).toBe("ctrl+q")
       },
     })
   } finally {
@@ -277,7 +285,7 @@ test("gracefully falls back when tui.json has invalid JSON", async () => {
     fn: async () => {
       const config = await TuiConfig.get()
       expect(config.theme).toBe("managed-fallback")
-      expect(config.keybinds).toBeDefined()
+      expect(config.keybinds).toBeUndefined()
     },
   })
 })

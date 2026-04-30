@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "biomejs.biome",
+        "oven.bun-vscode",
+        "dsznajder.es7-react-js-snippets",
+        "ecmel.vscode-html-css",
+        "mermaidchart.vscode-mermaid-chart"
+    ]
+}

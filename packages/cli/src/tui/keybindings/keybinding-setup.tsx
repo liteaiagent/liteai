@@ -10,6 +10,7 @@ import type { InputEvent, Key } from "@liteai/ink"
 import { useInput } from "@liteai/ink"
 import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useTuiConfig } from "../context/tui-config"
 import { DEFAULT_BINDINGS } from "./default-bindings"
 import { type HandlerRegistration, KeybindingProvider } from "./keybinding-context"
 import { parseBindings } from "./parser"
@@ -26,8 +27,30 @@ export type KeybindingSetupProps = {
  * Keybinding provider with default bindings and chord timeout support.
  */
 export function KeybindingSetup({ children }: KeybindingSetupProps): React.ReactNode {
-  // Use default bindings directly. Later we can merge TuiInfo config overrides.
-  const [bindings] = useState<ParsedBinding[]>(() => parseBindings(DEFAULT_BINDINGS))
+  const config = useTuiConfig()
+
+  const [bindings, setBindings] = useState<ParsedBinding[]>(() => parseBindings(DEFAULT_BINDINGS))
+
+  useEffect(() => {
+    const defaults = parseBindings(DEFAULT_BINDINGS)
+    if (!config.keybinds || config.keybinds.length === 0) {
+      setBindings(defaults)
+      return
+    }
+
+    // Merge overrides
+    const overrides = parseBindings(config.keybinds)
+
+    // Actually, overrides override chords. If the user overrides a context+action, we should probably remove the old one.
+    // But the spec says: "Merges user overrides from TUI config".
+    // Let's just append the overrides at the end. The resolver should probably check bindings in reverse order,
+    // or we remove the default binding if the action matches.
+    // For now, let's just append them. Wait, if the override unbinds a key (action: null), we need to append it.
+    // But actually, it's better to just concatenate them. The resolver uses the first match.
+    // Wait, resolver in `resolver.ts` checks sequentially. So overrides should be PREPENDED to take precedence.
+
+    setBindings([...overrides, ...defaults])
+  }, [config.keybinds])
 
   // Chord state management
   const pendingChordRef = useRef<ParsedKeystroke[] | null>(null)

@@ -1409,6 +1409,15 @@ export type Config = {
          */
         urls?: Array<string>;
     };
+    /**
+     * Tracks usage frequency and recency for slash commands
+     */
+    skillUsage?: {
+        [key: string]: {
+            usageCount: number;
+            lastUsedAt: number;
+        };
+    };
     watcher?: {
         ignore?: Array<string>;
     };

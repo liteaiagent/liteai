@@ -1,13 +1,14 @@
 import type { Color } from "@liteai/ink"
-import { Box, Text, useInput } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import type { PermissionRequest } from "@liteai/sdk"
 import { useState } from "react"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import { useSDK } from "../../context/sdk"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
+import { useKeybindings } from "../../keybindings/use-keybinding"
 import { normalizePath } from "./utils"
-
 export function PermissionPrompt({ request }: { request: PermissionRequest }) {
   const sdk = useSDK()
   const _sync = useSync()
@@ -16,30 +17,34 @@ export function PermissionPrompt({ request }: { request: PermissionRequest }) {
 
   const options = ["once", "always", "reject"] as const
 
-  useInput((input, key) => {
-    if (key.leftArrow || input === "h") {
-      const idx = options.indexOf(selected)
-      setSelected(options[(idx - 1 + options.length) % options.length])
-    }
-    if (key.rightArrow || input === "l") {
-      const idx = options.indexOf(selected)
-      setSelected(options[(idx + 1) % options.length])
-    }
-    if (key.return) {
-      sdk.client.project.permission.reply({
-        projectID: sdk.projectID,
-        reply: selected,
-        requestID: request.id,
-      })
-    }
-    if (key.escape) {
-      sdk.client.project.permission.reply({
-        projectID: sdk.projectID,
-        reply: "reject",
-        requestID: request.id,
-      })
-    }
-  })
+  useRegisterKeybindingContext("Select")
+  useKeybindings(
+    {
+      "select:previous": () => {
+        const idx = options.indexOf(selected)
+        setSelected(options[(idx - 1 + options.length) % options.length])
+      },
+      "select:next": () => {
+        const idx = options.indexOf(selected)
+        setSelected(options[(idx + 1) % options.length])
+      },
+      "select:accept": () => {
+        sdk.client.project.permission.reply({
+          projectID: sdk.projectID,
+          reply: selected,
+          requestID: request.id,
+        })
+      },
+      "select:cancel": () => {
+        sdk.client.project.permission.reply({
+          projectID: sdk.projectID,
+          reply: "reject",
+          requestID: request.id,
+        })
+      },
+    },
+    { context: "Select" },
+  )
 
   return (
     <ThemedBox borderStyle="single" borderColor={theme.warning as Color} padding={1} flexDirection="column" gap={1}>

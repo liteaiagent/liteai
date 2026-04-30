@@ -6,6 +6,8 @@ import ThemedBox from "../../components/design-system/ThemedBox"
 import { TextInput } from "../../components/text-input"
 import { useSDK } from "../../context/sdk"
 import { useTheme } from "../../context/theme"
+import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
+import { useKeybindings } from "../../keybindings/use-keybinding"
 
 type InputMode = "options" | "custom"
 
@@ -43,17 +45,14 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
     })
   }, [sdk, request.id])
 
-  // Handle option list navigation — only active when in "options" mode
-  useInput(
-    (_input, key) => {
-      if (mode !== "options") return
-
-      if (key.upArrow || _input === "k") {
+  useRegisterKeybindingContext("Select", mode === "options")
+  useKeybindings(
+    {
+      "select:previous": () => {
         setSelectedIdx((prev) => (prev - 1 + options.length) % options.length)
-      }
-      if (key.downArrow || _input === "j") {
+      },
+      "select:next": () => {
         if (allowCustom) {
-          // Down past last option → switch to custom text input
           setSelectedIdx((prev) => {
             if (prev === options.length - 1) {
               setMode("custom")
@@ -64,18 +63,27 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
         } else {
           setSelectedIdx((prev) => (prev + 1) % options.length)
         }
-      }
-      if (key.return && options.length > 0) {
-        const selected = options[selectedIdx]
-        if (selected) {
-          submitAnswer(selected.label)
+      },
+      "select:accept": () => {
+        if (options.length > 0) {
+          const selected = options[selectedIdx]
+          if (selected) {
+            submitAnswer(selected.label)
+          }
         }
-      }
+      },
+      "select:cancel": () => {
+        reject()
+      },
+    },
+    { context: "Select", isActive: mode === "options" },
+  )
+
+  useInput(
+    (_input, key) => {
+      if (mode !== "options") return
       if (key.tab && allowCustom) {
         setMode("custom")
-      }
-      if (key.escape) {
-        reject()
       }
     },
     { isActive: mode === "options" },

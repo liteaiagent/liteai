@@ -2,6 +2,7 @@ import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import { useMemo } from "react"
 import { useTheme } from "../context/theme.tsx"
+import { useKeybindingContext } from "../keybindings/keybinding-context.tsx"
 
 type TipPart = { text: string; highlight: boolean }
 
@@ -29,10 +30,30 @@ function parse(tip: string): TipPart[] {
 
 export function Tips() {
   const { theme } = useTheme()
+  const { getDisplayText } = useKeybindingContext()
+
+  const tips = useMemo(() => {
+    return TIPS.map((tip) => {
+      return tip.replace(
+        /\[([^|]+)\|([^|]+)\|([^\]]+)\]/g,
+        (
+          // _match is genuinely unused but required by String.prototype.replace callback signature to access capture groups
+          _match,
+          action,
+          context,
+          fallback,
+        ) => {
+          const display = getDisplayText(action, context)
+          return `{highlight}${display || fallback}{/highlight}`
+        },
+      )
+    })
+  }, [getDisplayText])
+
   const parts = useMemo(() => {
-    const tip = TIPS[Math.floor(Math.random() * TIPS.length)]
+    const tip = tips[Math.floor(Math.random() * tips.length)]
     return parse(tip)
-  }, [])
+  }, [tips])
 
   return (
     <Box flexDirection="row">
@@ -58,26 +79,25 @@ const TIPS = [
   "Use {highlight}/redo{/highlight} to restore previously undone messages and file changes",
   "Run {highlight}/share{/highlight} to create a public link to your conversation at liteai.com",
   "Drag and drop images into the terminal to add them as context",
-  "Press {highlight}Ctrl+V{/highlight} to paste images from your clipboard into the prompt",
-  "Press {highlight}Ctrl+X E{/highlight} or {highlight}/editor{/highlight} to compose messages in your external editor",
+  "Press [chat:imagePaste|Chat|Ctrl+V] to paste images from your clipboard into the prompt",
+  "Press [chat:externalEditor|Chat|Ctrl+X E] or {highlight}/editor{/highlight} to compose messages in your external editor",
   "Run {highlight}/init{/highlight} to auto-generate project rules based on your codebase",
-  "Run {highlight}/models{/highlight} or {highlight}Ctrl+X M{/highlight} to see and switch between available AI models",
-  "Press {highlight}Ctrl+X N{/highlight} or {highlight}/new{/highlight} to start a fresh conversation session",
-  "Use {highlight}/sessions{/highlight} or {highlight}Ctrl+X L{/highlight} to list and continue previous conversations",
+  "Run {highlight}/models{/highlight} or [chat:modelPicker|Chat|Ctrl+X M] to see and switch between available AI models",
+  "Press [chat:newSession|Chat|Ctrl+X N] or {highlight}/new{/highlight} to start a fresh conversation session",
+  "Use {highlight}/sessions{/highlight} or [chat:sessionList|Chat|Ctrl+X L] to list and continue previous conversations",
   "Run {highlight}/compact{/highlight} to summarize long sessions near context limits",
   "Press {highlight}Ctrl+X X{/highlight} or {highlight}/export{/highlight} to save the conversation as Markdown",
-  "Press {highlight}Ctrl+X Y{/highlight} to copy the assistant's last message to clipboard",
+  "Press [chat:messageCopy|Chat|Ctrl+X Y] to copy the assistant's last message to clipboard",
   "Press {highlight}Ctrl+P{/highlight} to see all available actions and commands",
   "Run {highlight}/connect{/highlight} to add API keys for 75+ supported LLM providers",
-  "The leader key is {highlight}Ctrl+X{/highlight}; combine with other keys for quick actions",
   "Press {highlight}F2{/highlight} to quickly switch between recently used models",
-  "Press {highlight}Ctrl+X B{/highlight} to show/hide the sidebar panel",
+  "Press [chat:sidebarToggle|Chat|Ctrl+X B] to show/hide the sidebar panel",
   "Use {highlight}PageUp{/highlight}/{highlight}PageDown{/highlight} to navigate through conversation history",
-  "Press {highlight}Ctrl+G{/highlight} or {highlight}Home{/highlight} to jump to the beginning of the conversation",
-  "Press {highlight}Ctrl+Alt+G{/highlight} or {highlight}End{/highlight} to jump to the most recent message",
+  "Press [scroll:top|Scroll|Ctrl+Home] to jump to the beginning of the conversation",
+  "Press [scroll:bottom|Scroll|Ctrl+End] to jump to the most recent message",
   "Press {highlight}Shift+Enter{/highlight} or {highlight}Ctrl+J{/highlight} to add newlines in your prompt",
   "Press {highlight}Ctrl+C{/highlight} when typing to clear the input field",
-  "Press {highlight}Escape{/highlight} to stop the AI mid-response",
+  "Press [chat:cancel|Chat|Escape] to stop the AI mid-response",
   "Switch to {highlight}Plan{/highlight} agent to get suggestions without making actual changes",
   "Use {highlight}@agent-name{/highlight} in prompts to invoke specialized subagents",
   "Press {highlight}Ctrl+X Right/Left{/highlight} to cycle through parent and child sessions",

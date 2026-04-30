@@ -45,6 +45,7 @@ import { useDoublePress } from "../../hooks/use-double-press"
 import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
+import { useKeybinding } from "../../keybindings/use-keybinding"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
 import { DialogHelp } from "../../ui/dialog-help"
 import { detectInputHighlights } from "../../util/text-highlighting"
@@ -457,35 +458,34 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     }
   })
 
+  useKeybinding("history:search", () => {
+    searchState.startSearch()
+  })
+
+  useKeybinding("chat:cancel", () => {
+    if (searchState.isSearching) {
+      searchState.cancelSearch()
+      return
+    }
+
+    if (isLoading) {
+      void session.abort()
+      return
+    }
+
+    if (input.length > 0) {
+      trackAndSetInput("")
+      setCursorOffset(0)
+      setPastedContents({})
+      return
+    }
+
+    doublePressEsc()
+  })
+
   // ── Global key handler ──────────────────────────────────────────────────
   useInput(
     (_char, key) => {
-      if (key.ctrl && _char === "r") {
-        searchState.startSearch()
-        return
-      }
-
-      if (key.escape) {
-        if (searchState.isSearching) {
-          searchState.cancelSearch()
-          return
-        }
-
-        if (isLoading) {
-          void session.abort()
-          return
-        }
-
-        if (input.length > 0) {
-          trackAndSetInput("")
-          setCursorOffset(0)
-          setPastedContents({})
-          return
-        }
-
-        doublePressEsc()
-      }
-
       if (key.return && exitMessage.show) {
         setExitMessage({ show: false })
       }

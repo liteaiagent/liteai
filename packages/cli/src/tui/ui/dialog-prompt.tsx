@@ -27,10 +27,6 @@ export function DialogPrompt({
       onConfirm?.(input)
       return
     }
-    if (_key.escape) {
-      onCancel?.()
-      return
-    }
     if (_key.backspace || _key.delete) {
       setInput((prev) => prev.slice(0, -1))
       return

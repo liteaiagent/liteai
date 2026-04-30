@@ -10937,6 +10937,25 @@
               }
             }
           },
+          "skillUsage": {
+            "description": "Tracks usage frequency and recency for slash commands",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "usageCount": {
+                  "type": "number"
+                },
+                "lastUsedAt": {
+                  "type": "number"
+                }
+              },
+              "required": ["usageCount", "lastUsedAt"]
+            }
+          },
           "watcher": {
             "type": "object",
             "properties": {
