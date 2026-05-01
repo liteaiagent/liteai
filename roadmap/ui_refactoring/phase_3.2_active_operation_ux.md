@@ -1,6 +1,6 @@
 # Phase 3.2: Active Operation UX
 
-> **Status**: 🔲 Not Started
+> **Status**: ✅ Completed
 > **Estimated Effort**: 2 days
 > **Dependencies**: None (can run in parallel with 3.0/3.1)
 > **Scope**: Rich spinner, stall detection, tool execution timing, subagent progress tree
@@ -173,11 +173,11 @@ When a subagent (fork) is active, display a tree-style progress indicator:
 
 ## Verification
 
-- [ ] Spinner shows elapsed time while agent is thinking
-- [ ] After 3s of no tokens, stall intensity begins ramping
-- [ ] After 30s, spinner turns red and shows "Still working…"
-- [ ] Tool calls show elapsed time next to their indicator
-- [ ] Completed tool calls show final duration (not live-counting)
-- [ ] `escape` to cancel hint is shown during active operations
-- [ ] Reduced motion mode shows static `●` indicator
-- [ ] Subagent forks show progress when active
+- [x] Spinner shows elapsed time while agent is thinking
+- [x] After 3s of no tokens, stall intensity begins ramping
+- [x] After 30s, spinner turns red and shows "Still working…"
+- [x] Tool calls show elapsed time next to their indicator
+- [x] Completed tool calls show final duration (not live-counting)
+- [x] `escape` to cancel hint is shown during active operations
+- [x] Reduced motion mode shows static `●` indicator
+- [x] Subagent forks show progress when active

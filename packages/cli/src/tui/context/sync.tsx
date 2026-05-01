@@ -72,6 +72,18 @@ export interface SyncState {
   vcs: VcsInfo | undefined
   path: { home: string; state: string; config: string; worktree: string; directory: string }
   workspaceList: Workspace[]
+  agents: {
+    [agentId: string]: {
+      type: string
+      parentId: string
+      isAsync: boolean
+      activity?: string
+      status: "running" | "completed" | "failed" | "killed"
+      startTime: number
+      duration?: number
+      usage?: { totalTokens: number; toolCalls: number; duration: number }
+    }
+  }
 }
 
 export interface SyncActions {
@@ -128,6 +140,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           vcs: undefined,
           path: { home: "", state: "", config: "", worktree: "", directory: "" },
           workspaceList: [],
+          agents: {},
         })),
       )
     }, [])
@@ -451,6 +464,39 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             case "vcs.branch.updated": {
               store.setState((state) => {
                 state.vcs = { ...state.vcs, branch: event.properties.branch } as VcsInfo
+              })
+              break
+            }
+            case "agent.spawned": {
+              const { agentId, agentType, parentId, isAsync } = event.properties
+              store.setState((state) => {
+                state.agents[agentId] = {
+                  type: agentType,
+                  parentId,
+                  isAsync,
+                  status: "running",
+                  startTime: Date.now(),
+                }
+              })
+              break
+            }
+            case "agent.progress": {
+              const { agentId, activity } = event.properties
+              store.setState((state) => {
+                if (state.agents[agentId]) {
+                  state.agents[agentId].activity = activity
+                }
+              })
+              break
+            }
+            case "agent.completed": {
+              const { agentId, status, duration, usage } = event.properties
+              store.setState((state) => {
+                if (state.agents[agentId]) {
+                  state.agents[agentId].status = status
+                  state.agents[agentId].duration = duration
+                  state.agents[agentId].usage = usage
+                }
               })
               break
             }

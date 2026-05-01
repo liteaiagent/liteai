@@ -12,6 +12,7 @@ import ThemedBox from "../../components/design-system/ThemedBox"
 import { StructuredDiff } from "../../components/structured-diff"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { useElapsedTime } from "../../hooks/use-elapsed-time"
 import { Spinner } from "../../ui/spinner"
 import { useSessionContext } from "./ctx"
 import { formatInput, normalizePath } from "./utils"
@@ -158,6 +159,14 @@ function typed<T>(obj: Record<string, unknown> | undefined): T {
   return (obj ?? {}) as T
 }
 
+function extractToolTiming(part?: ToolPart): { startTime?: number; endTime?: number } {
+  if (!part) return {}
+  if (part.state.status === "running") return { startTime: part.state.time.start }
+  if (part.state.status === "completed" || part.state.status === "error")
+    return { startTime: part.state.time.start, endTime: part.state.time.end }
+  return {}
+}
+
 // ---------------------------------------------------------------------------
 // ToolProps — base props for all tool render components
 // ---------------------------------------------------------------------------
@@ -190,6 +199,7 @@ export function GenericTool(props: ToolProps) {
         title={`# ${props.tool} ${formatInput(props.input as Record<string, unknown>)}`}
         part={props.part}
         onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
+        {...extractToolTiming(props.part)}
       >
         <Box gap={1} flexDirection="column">
           <Text color={theme.text as Color}>{limited}</Text>
@@ -202,7 +212,13 @@ export function GenericTool(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="⚙" pending="Writing command..." complete={true} part={props.part}>
+    <InlineTool
+      icon="⚙"
+      pending="Writing command..."
+      complete={true}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       {props.tool} {formatInput(props.input as Record<string, unknown>)}
     </InlineTool>
   )
@@ -217,11 +233,16 @@ function InlineTool(props: {
   children: React.ReactNode
   part: ToolPart
   onClick?: () => void
+  startTime?: number
+  endTime?: number
 }) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
   const sync = useSync()
   const [hover, _setHover] = useState(false)
+
+  const timing = useElapsedTime({ startTime: props.startTime ?? null, endTime: props.endTime })
+  const timingSuffix = timing.formatted ? ` (${timing.formatted})` : ""
 
   const permission = useMemo(() => {
     const permissions = sync.permission[ctx.sessionID] ?? []
@@ -245,12 +266,16 @@ function InlineTool(props: {
         {props.spinner ? (
           <Box flexDirection="row" gap={1}>
             <Spinner />
-            <Text color={fg as Color}>{props.children}</Text>
+            <Text color={fg as Color}>
+              {props.children}
+              {timingSuffix}
+            </Text>
           </Box>
         ) : (
           <Text color={fg as Color}>
             {props.complete ? <Text color={(props.iconColor || fg) as Color}>{props.icon}</Text> : `~ ${props.pending}`}{" "}
             {props.children}
+            {timingSuffix}
           </Text>
         )}
       </Box>
@@ -266,20 +291,31 @@ function BlockTool(props: {
   part?: ToolPart
   key?: React.Key
   spinner?: boolean
+  startTime?: number
+  endTime?: number
 }) {
   const { theme } = useTheme()
   const [_hover, _setHover] = useState(false)
   const error = props.part?.state.status === "error" ? props.part.state.error : undefined
+
+  const timing = useElapsedTime({ startTime: props.startTime ?? null, endTime: props.endTime })
+  const suffix = timing.formatted ? ` (${props.spinner ? "running… " : ""}${timing.formatted})` : ""
 
   return (
     <ThemedBox borderStyle="single" paddingLeft={2} marginTop={1} flexDirection="column" gap={1}>
       {props.spinner ? (
         <Box flexDirection="row" gap={1}>
           <Spinner />
-          <Text color={theme.textMuted as Color}>{props.title.replace(/^# /, "")}</Text>
+          <Text color={theme.textMuted as Color}>
+            {props.title.replace(/^# /, "")}
+            {suffix}
+          </Text>
         </Box>
       ) : (
-        <Text color={theme.textMuted as Color}>{props.title}</Text>
+        <Text color={theme.textMuted as Color}>
+          {props.title}
+          {suffix}
+        </Text>
       )}
       {props.children}
       {error && <Text color={theme.error as Color}>{error}</Text>}
@@ -355,6 +391,7 @@ export function RunCommand(props: ToolProps) {
         part={props.part}
         spinner={running}
         onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
+        {...extractToolTiming(props.part)}
       >
         <Box flexDirection="column" gap={1}>
           <Text color={theme.text as Color}>$ {input.command}</Text>
@@ -368,7 +405,13 @@ export function RunCommand(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="$" pending="Writing command..." complete={input.command} part={props.part}>
+    <InlineTool
+      icon="$"
+      pending="Writing command..."
+      complete={input.command}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       {input.command}
     </InlineTool>
   )
@@ -382,7 +425,11 @@ export function Write(props: ToolProps) {
 
   if (metadata.diagnostics !== undefined) {
     return (
-      <BlockTool title={`# Wrote ${normalizePath(input.filePath)}`} part={props.part}>
+      <BlockTool
+        title={`# Wrote ${normalizePath(input.filePath)}`}
+        part={props.part}
+        {...extractToolTiming(props.part)}
+      >
         <Box flexDirection="column">
           <Text color={theme.text as Color}>{code}</Text>
         </Box>
@@ -392,7 +439,13 @@ export function Write(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="←" pending="Preparing write..." complete={input.filePath} part={props.part}>
+    <InlineTool
+      icon="←"
+      pending="Preparing write..."
+      complete={input.filePath}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Write {normalizePath(input.filePath)}
     </InlineTool>
   )
@@ -412,7 +465,14 @@ export function Read(props: ToolProps) {
 
   return (
     <Box flexDirection="column">
-      <InlineTool icon="→" pending="Reading file..." complete={input.filePath} spinner={running} part={props.part}>
+      <InlineTool
+        icon="→"
+        pending="Reading file..."
+        complete={input.filePath}
+        spinner={running}
+        part={props.part}
+        {...extractToolTiming(props.part)}
+      >
         Read {normalizePath(input.filePath)} {formatInput({ ...props.input } as Record<string, unknown>, ["filePath"])}
       </InlineTool>
       {loaded.map((filepath, i) => (
@@ -430,7 +490,7 @@ export function Edit(props: ToolProps) {
 
   if (metadata.diff !== undefined) {
     return (
-      <BlockTool title={`← Edit ${normalizePath(input.filePath)}`} part={props.part}>
+      <BlockTool title={`← Edit ${normalizePath(input.filePath)}`} part={props.part} {...extractToolTiming(props.part)}>
         <Box paddingLeft={1}>
           <StructuredDiff key={props.part.id} modifiedContent={metadata.diff} />
         </Box>
@@ -440,7 +500,13 @@ export function Edit(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="←" pending="Preparing edit..." complete={input.filePath} part={props.part}>
+    <InlineTool
+      icon="←"
+      pending="Preparing edit..."
+      complete={input.filePath}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Edit {normalizePath(input.filePath)} {formatInput({ replaceAll: input.replaceAll } as Record<string, unknown>)}
     </InlineTool>
   )
@@ -450,7 +516,13 @@ export function Glob(props: ToolProps) {
   const input = typed<GlobInput>(props.input as Record<string, unknown>)
   const metadata = typed<GlobMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="✱" pending="Finding files..." complete={input.pattern} part={props.part}>
+    <InlineTool
+      icon="✱"
+      pending="Finding files..."
+      complete={input.pattern}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Glob "{input.pattern}" {input.path ? `in ${normalizePath(input.path)}` : ""}
       {metadata.count !== undefined && ` (${metadata.count} ${metadata.count === 1 ? "match" : "matches"})`}
     </InlineTool>
@@ -461,7 +533,13 @@ export function Grep(props: ToolProps) {
   const input = typed<GrepInput>(props.input as Record<string, unknown>)
   const metadata = typed<GrepMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="✱" pending="Searching content..." complete={input.pattern} part={props.part}>
+    <InlineTool
+      icon="✱"
+      pending="Searching content..."
+      complete={input.pattern}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Grep "{input.pattern}" {input.path ? `in ${normalizePath(input.path)}` : ""}
       {metadata.matches !== undefined && ` (${metadata.matches} ${metadata.matches === 1 ? "match" : "matches"})`}
     </InlineTool>
@@ -472,7 +550,13 @@ export function List(props: ToolProps) {
   const input = typed<ListInput>(props.input as Record<string, unknown>)
   const dir = input.path ? normalizePath(input.path) : ""
   return (
-    <InlineTool icon="→" pending="Listing directory..." complete={input.path !== undefined} part={props.part}>
+    <InlineTool
+      icon="→"
+      pending="Listing directory..."
+      complete={input.path !== undefined}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       List {dir}
     </InlineTool>
   )
@@ -481,7 +565,13 @@ export function List(props: ToolProps) {
 export function WebFetch(props: ToolProps) {
   const input = typed<WebFetchInput>(props.input as Record<string, unknown>)
   return (
-    <InlineTool icon="%" pending="Fetching from the web..." complete={input.url} part={props.part}>
+    <InlineTool
+      icon="%"
+      pending="Fetching from the web..."
+      complete={input.url}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       WebFetch {input.url}
     </InlineTool>
   )
@@ -491,7 +581,13 @@ export function CodeSearch(props: ToolProps) {
   const input = typed<CodeSearchInput>(props.input as Record<string, unknown>)
   const metadata = typed<CodeSearchMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="◇" pending="Searching code..." complete={input.query} part={props.part}>
+    <InlineTool
+      icon="◇"
+      pending="Searching code..."
+      complete={input.query}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Code Search "{input.query}" {metadata.results !== undefined && `(${metadata.results} results)`}
     </InlineTool>
   )
@@ -501,7 +597,13 @@ export function WebSearch(props: ToolProps) {
   const input = typed<WebSearchInput>(props.input as Record<string, unknown>)
   const metadata = typed<WebSearchMetadata>(props.metadata as Record<string, unknown>)
   return (
-    <InlineTool icon="◈" pending="Searching web..." complete={input.query} part={props.part}>
+    <InlineTool
+      icon="◈"
+      pending="Searching web..."
+      complete={input.query}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Web Search "{input.query}" {metadata.numResults !== undefined && `(${metadata.numResults} results)`}
     </InlineTool>
   )
@@ -526,7 +628,14 @@ export function Task(props: ToolProps) {
   }, [messages, sync.part])
 
   return (
-    <InlineTool icon="│" spinner={running} complete={input.description} pending="Delegating..." part={props.part}>
+    <InlineTool
+      icon="│"
+      spinner={running}
+      complete={input.description}
+      pending="Delegating..."
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Task {input.description} {toolCount > 0 && `(${toolCount} toolcalls)`}
     </InlineTool>
   )
@@ -541,7 +650,7 @@ export function Question(props: ToolProps) {
 
   if (answers) {
     return (
-      <BlockTool title="# Questions" part={props.part}>
+      <BlockTool title="# Questions" part={props.part} {...extractToolTiming(props.part)}>
         <Box flexDirection="column" gap={1}>
           {questions.map((q, i) => (
             <Box key={i} flexDirection="column">
@@ -555,7 +664,13 @@ export function Question(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="→" pending="Asking questions..." complete={questions.length > 0} part={props.part}>
+    <InlineTool
+      icon="→"
+      pending="Asking questions..."
+      complete={questions.length > 0}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Asked {questions.length} question{questions.length !== 1 ? "s" : ""}
     </InlineTool>
   )
@@ -564,7 +679,13 @@ export function Question(props: ToolProps) {
 export function Skill(props: ToolProps) {
   const input = typed<SkillInput>(props.input as Record<string, unknown>)
   return (
-    <InlineTool icon="→" pending="Loading skill..." complete={input.name} part={props.part}>
+    <InlineTool
+      icon="→"
+      pending="Loading skill..."
+      complete={input.name}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Skill "{input.name}"
     </InlineTool>
   )
@@ -588,6 +709,7 @@ export function CommandStatus(props: ToolProps) {
         part={props.part}
         spinner={running}
         onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
+        {...extractToolTiming(props.part)}
       >
         <Box flexDirection="column" gap={1}>
           <Text color={theme.text as Color}>{metadata.status === "running" ? "Running" : "Completed"}</Text>
@@ -601,7 +723,13 @@ export function CommandStatus(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="⚙" pending="Checking status..." complete={input.CommandId} part={props.part}>
+    <InlineTool
+      icon="⚙"
+      pending="Checking status..."
+      complete={input.CommandId}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Status: {metadata.commandId || input.CommandId || "unknown"}
     </InlineTool>
   )
@@ -618,7 +746,7 @@ export function SendCommandInput(props: ToolProps) {
 
   if (metadata.output !== undefined || props.output) {
     return (
-      <BlockTool title={`# ${text}`} part={props.part} spinner={running}>
+      <BlockTool title={`# ${text}`} part={props.part} spinner={running} {...extractToolTiming(props.part)}>
         <Box flexDirection="column" gap={1}>
           {output && <Text color={theme.text as Color}>{output}</Text>}
         </Box>
@@ -627,7 +755,13 @@ export function SendCommandInput(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="⚙" pending="Sending input..." complete={input.CommandId} part={props.part}>
+    <InlineTool
+      icon="⚙"
+      pending="Sending input..."
+      complete={input.CommandId}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       {text}: {metadata.commandId || input.CommandId || "unknown"}
     </InlineTool>
   )
@@ -652,6 +786,7 @@ export function ApplyPatch(props: ToolProps) {
                   : `← Patched ${file.relativePath}`
             }
             part={props.part}
+            {...extractToolTiming(props.part)}
           >
             {file.type !== "delete" ? (
               <StructuredDiff modifiedContent={file.diff ?? ""} />
@@ -665,7 +800,13 @@ export function ApplyPatch(props: ToolProps) {
   }
 
   return (
-    <InlineTool icon="%" pending="Preparing patch..." complete={false} part={props.part}>
+    <InlineTool
+      icon="%"
+      pending="Preparing patch..."
+      complete={false}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Patch
     </InlineTool>
   )
@@ -676,7 +817,7 @@ export function TodoWrite(props: ToolProps) {
   const todos = metadata.todos ?? []
   if (todos.length > 0) {
     return (
-      <BlockTool title="# Todos" part={props.part}>
+      <BlockTool title="# Todos" part={props.part} {...extractToolTiming(props.part)}>
         <Box flexDirection="column">
           {todos.map((todo, i) => (
             <Box key={i} gap={1}>
@@ -689,7 +830,13 @@ export function TodoWrite(props: ToolProps) {
     )
   }
   return (
-    <InlineTool icon="⚙" pending="Updating todos..." complete={false} part={props.part}>
+    <InlineTool
+      icon="⚙"
+      pending="Updating todos..."
+      complete={false}
+      part={props.part}
+      {...extractToolTiming(props.part)}
+    >
       Updating todos...
     </InlineTool>
   )
