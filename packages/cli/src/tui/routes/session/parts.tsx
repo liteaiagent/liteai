@@ -1,8 +1,9 @@
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
-import type { AssistantMessage, ReasoningPart, TextPart, ToolPart } from "@liteai/sdk"
+import type { AssistantMessage, CompactionPart, ReasoningPart, TextPart, ToolPart } from "@liteai/sdk"
 import type React from "react"
 import { useMemo, useState } from "react"
+import { CompactSummary } from "../../components/compact-summary"
 import { Markdown } from "../../components/markdown"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme.tsx"
@@ -33,6 +34,11 @@ export const PART_MAPPING: Record<string, React.FC<any>> = {
   text: TextPartView,
   tool: ToolPartView,
   reasoning: ReasoningPartView,
+  compaction: CompactionPartView,
+}
+
+function CompactionPartView({ part }: { part: CompactionPart }) {
+  return <CompactSummary auto={part.auto} overflow={part.overflow} />
 }
 
 function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {

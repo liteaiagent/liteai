@@ -54,6 +54,7 @@ import { DialogModel } from "../dialog-model"
 import { DialogPlugin } from "../dialog-plugin"
 import { DialogSessionList } from "../dialog-session-list"
 import { DialogSettings } from "../dialog-settings"
+import { DialogStats } from "../dialog-stats"
 import { DialogStatus } from "../dialog-status"
 import { DialogTheme } from "../dialog-theme"
 import { TextInput } from "../text-input"
@@ -127,6 +128,7 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       { name: "settings", description: "Open settings", template: "", hints: [] },
       { name: "theme", description: "Change the color theme", template: "", hints: [] },
       { name: "status", description: "Show system status", template: "", hints: [] },
+      { name: "stats", description: "Show session statistics and token usage", template: "", hints: [] },
     ],
     [],
   )
@@ -260,8 +262,14 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
       settings: () => dialog.push(() => <DialogSettings />),
       theme: () => dialog.push(() => <DialogTheme />),
       status: () => dialog.push(() => <DialogStatus />),
+      stats: () => {
+        const sid = session.sessionID
+        if (sid) {
+          dialog.push(() => <DialogStats sessionID={sid} />)
+        }
+      },
     }),
-    [dialog, route],
+    [dialog, route, session.sessionID],
   )
 
   const onSubmit = useCallback(

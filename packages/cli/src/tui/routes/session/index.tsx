@@ -5,15 +5,17 @@ import { MessageActionsBar } from "../../components/message-actions-bar"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
+import { StatusLine } from "../../components/status-line"
+import { TokenWarning } from "../../components/token-warning"
 import { useDialog } from "../../context/dialog"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
+import { StatsProvider, useStats } from "../../context/stats"
 import { useSync } from "../../context/sync"
 import { useClipboard } from "../../hooks/use-clipboard"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
 import { SessionProvider } from "./ctx"
-import { SessionHeader } from "./header"
 import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
@@ -142,40 +144,53 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   }, [getLastAssistantText, getRetryInfo, showThinking])
 
   return (
-    <SessionProvider
-      value={{
-        sessionID,
-        width: terminalSize?.columns ?? 80,
-        conceal: false,
-        showThinking,
-        showTimestamps,
-        showDetails,
-        showGenericToolOutput,
-        diffWrapMode: "none",
-        sync,
-        tui: sync.config,
-      }}
-    >
-      <SessionLayout
-        scrollRef={scrollRef}
-        scrollable={<Messages scrollRef={scrollRef} />}
-        bottom={
-          <Box flexDirection="column" width="100%" flexShrink={0}>
-            <MessageActionsBar actions={messageActions} />
-            <PromptInput debug={false} verbose={false} isLoading={session.isLoading} />
-            <Box paddingLeft={1}>
-              <SessionHeader />
+    <StatsProvider>
+      <SessionProvider
+        value={{
+          sessionID,
+          width: terminalSize?.columns ?? 80,
+          conceal: false,
+          showThinking,
+          showTimestamps,
+          showDetails,
+          showGenericToolOutput,
+          diffWrapMode: "none",
+          sync,
+          tui: sync.config,
+        }}
+      >
+        <SessionLayout
+          scrollRef={scrollRef}
+          scrollable={<Messages scrollRef={scrollRef} />}
+          bottom={<SessionBottom sessionID={sessionID} messageActions={messageActions} />}
+          overlay={
+            <Box flexDirection="column">
+              {permissionRequest && <PermissionPrompt request={permissionRequest} />}
+              {questionRequest && <QuestionPrompt request={questionRequest} />}
             </Box>
-          </Box>
-        }
-        overlay={
-          <Box flexDirection="column">
-            {permissionRequest && <PermissionPrompt request={permissionRequest} />}
-            {questionRequest && <QuestionPrompt request={questionRequest} />}
-          </Box>
-        }
-      />
-      <ScrollHandler scrollRef={scrollRef} />
-    </SessionProvider>
+          }
+        />
+        <ScrollHandler scrollRef={scrollRef} />
+      </SessionProvider>
+    </StatsProvider>
+  )
+}
+
+function SessionBottom({
+  sessionID,
+  messageActions,
+}: {
+  sessionID: string
+  messageActions: React.ComponentProps<typeof MessageActionsBar>["actions"]
+}) {
+  const stats = useStats()
+  const session = useSession()
+  return (
+    <Box flexDirection="column" width="100%" flexShrink={0}>
+      <TokenWarning utilization={stats.contextUtilization} onAutoCompact={() => session.submit("/compact", "prompt")} />
+      <MessageActionsBar actions={messageActions} />
+      <PromptInput debug={false} verbose={false} isLoading={session.isLoading} />
+      <StatusLine sessionID={sessionID} />
+    </Box>
   )
 }
