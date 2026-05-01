@@ -2,7 +2,7 @@ import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage, CompactionPart, ReasoningPart, TextPart, ToolPart } from "@liteai/sdk"
 import type React from "react"
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { CompactSummary } from "../../components/compact-summary"
 import { Markdown } from "../../components/markdown"
 import { useSync } from "../../context/sync"
@@ -44,9 +44,6 @@ function CompactionPartView({ part }: { part: CompactionPart }) {
 function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
-  // _setExpanded: Reserved for Phase 3.4 cursor-based message navigation.
-  // Per-message expand will be wired when cursor actions enable selecting individual reasoning blocks.
-  const [expanded, _setExpanded] = useState(false)
 
   const content = useMemo(() => {
     return part.text.replace("[REDACTED]", "").trim()
@@ -58,18 +55,6 @@ function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPa
   const tokenCount = message.tokens.reasoning
   const formattedTokens = tokenCount > 0 ? tokenCount.toLocaleString() : "…"
 
-  // Collapsed one-liner — show token count from parent message
-  if (!expanded) {
-    return (
-      <Box paddingLeft={2} marginTop={1}>
-        <Text color={theme.textMuted as Color} italic>
-          ▶ Thinking ({formattedTokens} tokens)
-        </Text>
-      </Box>
-    )
-  }
-
-  // Expanded — full reasoning text
   return (
     <Box
       paddingLeft={2}

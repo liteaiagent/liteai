@@ -1,50 +1,44 @@
-/**
- * Message actions bar — contextual footer showing available keybinds
- * for message interaction.
- *
- * Renders a single-line bar of keybind hints, only showing actions
- * that are currently available in the session context.
- */
-
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import { useTheme } from "../context/theme"
 import { useKeybindingContext } from "../keybindings/keybinding-context"
-
-export type MessageAction = {
-  /** Keybind name (from tui-schema) used to render the key hint */
-  keybindName: string
-  /** Human-readable label for the action */
-  label: string
-  /** Whether this action is currently available */
-  available: boolean
-}
+import type { MessageActionContext } from "./message-action-registry"
+import { getApplicableActions } from "./message-action-registry"
 
 type Props = {
-  actions: MessageAction[]
+  ctx: MessageActionContext
 }
 
-export function MessageActionsBar({ actions }: Props) {
+export function MessageActionsBar({ ctx }: Props) {
   const { theme } = useTheme()
   const keybindContext = useKeybindingContext()
 
-  const visibleActions = actions.filter((a) => a.available)
-  if (visibleActions.length === 0) return null
+  const actions = getApplicableActions(ctx)
 
   return (
-    <Box paddingLeft={1} gap={1}>
-      {visibleActions.map((action, i) => {
-        const keyLabel = keybindContext.getDisplayText(action.keybindName, "Chat") || action.keybindName
+    <Box paddingLeft={1} gap={1} flexWrap="wrap">
+      {actions.map((action, i) => {
+        const bindName = `messageActions:${action.key}`
+        const keyLabel = keybindContext.getDisplayText(bindName, "MessageActions") || action.key
+        const labelText = typeof action.label === "function" ? action.label(ctx) : action.label
         return (
-          <Box key={action.keybindName} gap={0}>
+          <Box key={action.key} gap={0}>
             {i > 0 && <Text color={theme.textMuted as Color}> · </Text>}
             <Text color={theme.accent as Color} bold>
               {keyLabel}
             </Text>
-            <Text color={theme.textMuted as Color}> {action.label}</Text>
+            <Text color={theme.textMuted as Color}> {labelText}</Text>
           </Box>
         )
       })}
+
+      <Box gap={0}>
+        {actions.length > 0 && <Text color={theme.textMuted as Color}> · </Text>}
+        <Text color={theme.textMuted as Color}>↑↓ navigate</Text>
+      </Box>
+      <Box gap={0}>
+        <Text color={theme.textMuted as Color}> · esc back</Text>
+      </Box>
     </Box>
   )
 }

@@ -1,18 +1,24 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext } from "@liteai/ink"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { DialogSessionList } from "../../components/dialog-session-list"
+import { dispatchMessageAction, type MessageActionCaps } from "../../components/message-action-handlers"
+import type { MessageActionContext } from "../../components/message-action-registry"
 import { MessageActionsBar } from "../../components/message-actions-bar"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
+import { ThinkingToggleDialog } from "../../components/thinking-toggle"
 import { TokenWarning } from "../../components/token-warning"
 import { useDialog } from "../../context/dialog"
+import { MessageCursorContext } from "../../context/message-cursor"
+import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { StatsProvider, useStats } from "../../context/stats"
 import { useSync } from "../../context/sync"
 import { useClipboard } from "../../hooks/use-clipboard"
+import { useMessageCursor } from "../../hooks/use-message-cursor"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
 import { SessionProvider } from "./ctx"
@@ -37,77 +43,95 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
 
   const scrollRef = useRef<ScrollBoxHandle>(null)
 
+  // Cursor state
+  const messages = sync.message[sessionID] ?? []
+  const cursor = useMessageCursor(messages, sync.part)
+  const promptRef = usePromptRef()
+  useRegisterKeybindingContext("MessageActions")
+
   // Sync session on mount
   useEffect(() => {
     sync.session.sync(sessionID)
   }, [sessionID, sync.session])
 
-  // ── Derived state for actions ──────────────────────────────────────────
-
-  /** Get the last assistant message text for copy */
-  const getLastAssistantText = useCallback(() => {
-    const messages = sync.message[sessionID] ?? []
-    // Walk backwards to find last assistant message with text parts
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      if (msg?.role !== "assistant") continue
-      const parts = sync.part[msg.id] ?? []
-      const textParts = parts.filter((p) => p.type === "text" && "text" in p)
-      if (textParts.length > 0) {
-        return textParts.map((p) => ("text" in p ? p.text : "")).join("\n")
-      }
-    }
-    return null
-  }, [sync.message, sync.part, sessionID])
-
-  /** Check if last assistant message has a retryable error */
-  const getRetryInfo = useCallback(() => {
-    const messages = sync.message[sessionID] ?? []
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      if (msg?.role !== "assistant") continue
-      if (!msg.error) return null
-      // Find the user message that triggered this
-      const parentMsg = messages.find((m) => m.id === msg.parentID)
-      if (!parentMsg || parentMsg.role !== "user") return null
-
-      const isRetryable =
-        msg.error.name === "ContextOverflowError" ||
-        (msg.error.name === "APIError" && (msg.error.data as { isRetryable?: boolean }).isRetryable === true)
-
-      return { isRetryable, userMessageID: parentMsg.id }
-    }
-    return null
-  }, [sync.message, sessionID])
-
   useKeybindings(
     {
       "chat:sidebarToggle": () => setSidebarOpen((v) => !v),
-      "chat:thinkingToggle": () => setShowThinking((v) => !v),
+      "chat:thinkingToggle": () => {
+        dialog.push(() => (
+          <ThinkingToggleDialog
+            currentValue={showThinking}
+            onSelect={(enabled: boolean) => {
+              setShowThinking(enabled)
+              dialog.pop()
+            }}
+            onCancel={() => dialog.pop()}
+            isMidConversation={messages.length > 0}
+          />
+        ))
+      },
       "chat:newSession": () => route.navigate({ type: "home" }),
       "chat:sessionList": () => dialog.push(() => <DialogSessionList />),
-      "chat:messageCopy": () => {
-        const text = getLastAssistantText()
-        if (text) {
-          void copy(text)
-        }
-      },
-      "chat:retry": () => {
-        const retryInfo = getRetryInfo()
-        if (retryInfo?.isRetryable) {
-          // Find the user message text and re-submit
-          const userMsg = (sync.message[sessionID] ?? []).find((m) => m.id === retryInfo.userMessageID)
-          if (userMsg) {
-            const parts = sync.part[userMsg.id] ?? []
-            const textPart = parts.find((p) => p.type === "text" && "text" in p)
-            if (textPart && "text" in textPart) {
-              void session.submit(textPart.text, "prompt")
-            }
-          }
-        }
-      },
+      "chat:enterMessageCursor": cursor.enterCursor,
     },
-    { context: "Chat" },
+    { context: "Chat", isActive: !cursor.active },
+  )
+
+  const makeActionCtx = useCallback((): MessageActionContext | null => {
+    if (!cursor.selectedMessage) return null
+    return {
+      message: cursor.selectedMessage,
+      parts: sync.part[cursor.selectedMessage.id] ?? [],
+      isExpanded: cursor.expandedMessages.has(cursor.selectedMessage.id),
+    }
+  }, [cursor.selectedMessage, sync.part, cursor.expandedMessages])
+
+  // Shared capabilities object — single source of truth for all action dispatches.
+  // Each capability is the concrete side-effect; the dispatcher only decides *which* to call.
+  const actionCaps = useMemo(
+    (): MessageActionCaps => ({
+      copy: async (t: string) => await copy(t),
+      retry: (id: string) => {
+        const userMsg = messages.find((m) => m.id === id && m.role === "user")
+        if (!userMsg) return
+        const parts = sync.part[userMsg.id] ?? []
+        const textPart = parts.find((p) => p.type === "text" && "text" in p)
+        if (textPart && "text" in textPart) {
+          cursor.exit()
+          void session.submit(textPart.text, "prompt")
+        }
+      },
+      edit: (text: string) => {
+        cursor.exit()
+        promptRef.current?.prefill(text)
+      },
+    }),
+    [copy, messages, sync.part, cursor, session, promptRef],
+  )
+
+  const dispatchAction = useCallback(
+    (actionKey: string) => {
+      const ctx = makeActionCtx()
+      if (!ctx) return
+      dispatchMessageAction(actionKey, ctx, actionCaps, cursor.toggleExpand)
+    },
+    [makeActionCtx, actionCaps, cursor.toggleExpand],
+  )
+
+  useKeybindings(
+    {
+      "messageActions:prev": cursor.moveUp,
+      "messageActions:next": cursor.moveDown,
+      "messageActions:top": cursor.moveToTop,
+      "messageActions:bottom": cursor.moveToBottom,
+      "messageActions:escape": cursor.exit,
+      "messageActions:ctrlc": cursor.exit,
+      "messageActions:copy": () => dispatchAction("copy"),
+      "messageActions:copyCode": () => dispatchAction("copyCode"),
+      "messageActions:primary": () => dispatchAction("primary"),
+      "messageActions:retry": () => dispatchAction("retry"),
+    },
+    { context: "MessageActions", isActive: cursor.active },
   )
 
   const permissionRequest = useMemo(() => {
@@ -117,31 +141,6 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const questionRequest = useMemo(() => {
     return (sync.question[sessionID] ?? [])[0]
   }, [sync.question, sessionID])
-
-  // ── Action bar state ───────────────────────────────────────────────────
-
-  const messageActions = useMemo(() => {
-    const hasAssistantText = getLastAssistantText() !== null
-    const retryInfo = getRetryInfo()
-
-    return [
-      {
-        keybindName: "chat:messageCopy",
-        label: "copy",
-        available: hasAssistantText,
-      },
-      {
-        keybindName: "chat:retry",
-        label: "retry",
-        available: retryInfo?.isRetryable === true,
-      },
-      {
-        keybindName: "chat:thinkingToggle",
-        label: showThinking ? "hide thinking" : "show thinking",
-        available: true,
-      },
-    ]
-  }, [getLastAssistantText, getRetryInfo, showThinking])
 
   return (
     <StatsProvider>
@@ -161,8 +160,17 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
       >
         <SessionLayout
           scrollRef={scrollRef}
-          scrollable={<Messages scrollRef={scrollRef} />}
-          bottom={<SessionBottom sessionID={sessionID} messageActions={messageActions} />}
+          scrollable={
+            <MessageCursorContext.Provider
+              value={{
+                selectedMessageId: cursor.selectedMessage?.id,
+                isExpanded: (id) => cursor.expandedMessages.has(id),
+              }}
+            >
+              <Messages scrollRef={scrollRef} />
+            </MessageCursorContext.Provider>
+          }
+          bottom={<SessionBottom sessionID={sessionID} cursorContext={makeActionCtx()} />}
           overlay={
             <Box flexDirection="column">
               {permissionRequest && <PermissionPrompt request={permissionRequest} />}
@@ -178,18 +186,18 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
 
 function SessionBottom({
   sessionID,
-  messageActions,
+  cursorContext,
 }: {
   sessionID: string
-  messageActions: React.ComponentProps<typeof MessageActionsBar>["actions"]
+  cursorContext: MessageActionContext | null
 }) {
   const stats = useStats()
   const session = useSession()
   return (
     <Box flexDirection="column" width="100%" flexShrink={0}>
       <TokenWarning utilization={stats.contextUtilization} onAutoCompact={() => session.submit("/compact", "prompt")} />
-      <MessageActionsBar actions={messageActions} />
-      <PromptInput debug={false} verbose={false} isLoading={session.isLoading} />
+      {cursorContext && <MessageActionsBar ctx={cursorContext} />}
+      <PromptInput debug={false} verbose={false} isLoading={session.isLoading} cursorModeActive={!!cursorContext} />
       <StatusLine sessionID={sessionID} />
     </Box>
   )

@@ -27,6 +27,7 @@ export const KEYBINDING_CONTEXTS = [
   "DiffDialog",
   "ModelPicker",
   "MessageSelector",
+  "MessageActions",
   "Attachments",
   "Footer",
 ] as const

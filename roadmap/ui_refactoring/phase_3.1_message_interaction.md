@@ -1,6 +1,6 @@
 # Phase 3.1: Message Interaction Layer
 
-> **Status**: 🔲 Not Started
+> **Status**: ✅ Complete (2026-05-01)
 > **Estimated Effort**: 3 days
 > **Dependencies**: Phase 3.0 (token data for compact suggestions)
 > **Scope**: Keyboard-driven message navigation, actions, thinking toggle, error recovery
@@ -145,12 +145,12 @@ Additionally, the `MessageActionsBar` should appear anchored below the selected 
 
 ## Verification
 
-- [ ] `shift+↑` from prompt enters cursor mode, `escape` exits
-- [ ] `j/k` or `↑/↓` navigate between messages
-- [ ] `c` copies message content to clipboard with toast confirmation
-- [ ] `enter` on tool-call messages toggles expand/collapse (stays in cursor mode)
-- [ ] `r` on error messages retries the request
-- [ ] `alt+t` opens thinking toggle dialog
-- [ ] Selected message has visual indicator (left gutter `▌`)
-- [ ] Action bar shows context-sensitive hints below selected message
-- [ ] Error messages show recovery hints when selected
+- [x] `shift+↑` from prompt enters cursor mode, `escape` exits
+- [x] `j/k` or `↑/↓` navigate between messages
+- [x] `c` copies message content to clipboard with toast confirmation
+- [x] `enter` on tool-call messages toggles expand/collapse (stays in cursor mode)
+- [x] `r` on error messages retries the request
+- [x] `alt+t` opens thinking toggle dialog
+- [x] Selected message has visual indicator (left gutter `▌`)
+- [x] Action bar shows context-sensitive hints below selected message
+- [x] Error messages show recovery hints when selected

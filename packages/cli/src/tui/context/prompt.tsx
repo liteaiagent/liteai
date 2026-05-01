@@ -10,6 +10,8 @@ export type PromptRef = {
   blur(): void
   focus(): void
   submit(): void
+  /** Populate the input with text (used by message edit action) */
+  prefill(text: string): void
 }
 
 export const { use: usePromptRef, provider: PromptRefProvider } = createSimpleContext({

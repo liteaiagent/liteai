@@ -1,10 +1,12 @@
 import type { Color, DOMElement, ScrollBoxHandle } from "@liteai/ink"
-import { Box } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import type { Message, Part, TextPart } from "@liteai/sdk"
 import type React from "react"
 import { useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { useVirtualScroll } from "../../tui/hooks/use-virtual-scroll"
+import { useMessageCursorContext } from "../context/message-cursor"
 import { useSync } from "../context/sync"
+import { useTheme } from "../context/theme"
 import { ScrollChromeContext } from "./session-layout"
 
 export type StickyPrompt = {
@@ -67,8 +69,12 @@ function VirtualItem({
   renderItem,
 }: VirtualItemProps) {
   const ref = measureRef(k)
+  const cursorCtx = useMessageCursorContext()
+  const { theme } = useTheme()
 
-  const bg = expanded || hovered ? "backgroundPanel" : undefined
+  const isSelected = cursorCtx.selectedMessageId === msg.id
+
+  const bg = isSelected ? "backgroundElement" : expanded || hovered ? "backgroundPanel" : undefined
   const pb = expanded ? 1 : undefined
 
   const onClick = clickable ? () => onClickK(msg, false) : undefined
@@ -80,14 +86,19 @@ function VirtualItem({
   return (
     <Box
       ref={ref}
-      flexDirection="column"
+      flexDirection="row"
       backgroundColor={bg as Color}
       paddingBottom={pb}
       onClick={onClick}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
-      {rendered}
+      <Box width={1} flexShrink={0}>
+        {isSelected ? <Text color={theme.accent as Color}>▌</Text> : <Text> </Text>}
+      </Box>
+      <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+        {rendered}
+      </Box>
     </Box>
   )
 }

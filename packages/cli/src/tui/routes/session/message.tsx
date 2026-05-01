@@ -4,6 +4,7 @@ import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as Use
 import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
 import { useLocal } from "../../context/local"
+import { useMessageCursorContext } from "../../context/message-cursor"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useKeybindingContext } from "../../keybindings/keybinding-context"
@@ -130,7 +131,7 @@ export function AssistantMessageContent({
           flexDirection="column"
         >
           <Text color={theme.textMuted as Color}>{(message.error.data as { message?: string })?.message ?? ""}</Text>
-          <ErrorRecoveryHint error={message.error} />
+          <ErrorRecoveryHint error={message.error} messageId={message.id} />
         </Box>
       )}
 
@@ -167,10 +168,14 @@ type MessageError = NonNullable<AssistantMessageInfo["error"]>
  * Renders a contextual recovery hint below error messages.
  * Each error type gets a specific, actionable suggestion.
  */
-function ErrorRecoveryHint({ error }: { error: MessageError }) {
+function ErrorRecoveryHint({ error, messageId }: { error: MessageError; messageId: string }) {
   const { theme } = useTheme()
+  const cursorCtx = useMessageCursorContext()
+  const keybindContext = useKeybindingContext()
 
-  const hint = getRecoveryHint(error)
+  const isSelected = cursorCtx.selectedMessageId === messageId
+  const hint = getRecoveryHint(error, isSelected, keybindContext, theme)
+
   if (!hint) return null
 
   return (
@@ -182,21 +187,45 @@ function ErrorRecoveryHint({ error }: { error: MessageError }) {
   )
 }
 
-function getRecoveryHint(error: MessageError): { icon: string; text: string } | null {
+function getRecoveryHint(
+  error: MessageError,
+  isSelected: boolean,
+  keybindContext: ReturnType<typeof useKeybindingContext>,
+  theme: ReturnType<typeof useTheme>["theme"],
+): { icon: string; text: React.ReactNode } | null {
+  const retryBind = keybindContext.getDisplayText("messageActions:retry", "MessageActions") || "r"
+  const escapeBind = keybindContext.getDisplayText("messageActions:escape", "MessageActions") || "esc"
+
+  const actionText = (key: string, label: string) => (
+    <Text>
+      press{" "}
+      <Text color={theme.accent as Color} bold>
+        {key}
+      </Text>{" "}
+      to {label}
+    </Text>
+  )
+
   switch (error.name) {
     case "ContextOverflowError":
-      return { icon: "⚠", text: "Context exhausted — type /compact to compact and retry" }
+      return isSelected
+        ? { icon: "⚠", text: <Text>Context exhausted — {actionText(escapeBind, "exit")}, then type /compact</Text> }
+        : { icon: "⚠", text: "Context exhausted — type /compact to compact and retry" }
 
     case "APIError": {
       const data = error.data as { isRetryable?: boolean; message?: string }
       if (data.isRetryable) {
-        return { icon: "⚠", text: "Request failed — will retry automatically" }
+        return isSelected
+          ? { icon: "⚠", text: <Text>Request failed — {actionText(retryBind, "retry manually")}</Text> }
+          : { icon: "⚠", text: "Request failed — will retry automatically" }
       }
       return { icon: "✗", text: `Request failed — ${data.message ?? "non-retryable error"}` }
     }
 
     case "ProviderAuthError":
-      return { icon: "⚠", text: "Auth failed — type /provider to configure" }
+      return isSelected
+        ? { icon: "⚠", text: <Text>Auth failed — {actionText(escapeBind, "exit")}, then type /provider</Text> }
+        : { icon: "⚠", text: "Auth failed — type /provider to configure" }
 
     case "MessageOutputLengthError":
       return { icon: "⚠", text: "Output truncated — the response exceeded max output length" }
@@ -205,6 +234,10 @@ function getRecoveryHint(error: MessageError): { icon: string; text: string } | 
       return { icon: "⚠", text: "Structured output parsing failed" }
 
     case "UnknownError":
+      return isSelected
+        ? { icon: "⚠", text: <Text>Unknown error — {actionText(retryBind, "retry manually")}</Text> }
+        : null
+
     case "MessageAbortedError":
       return null
 

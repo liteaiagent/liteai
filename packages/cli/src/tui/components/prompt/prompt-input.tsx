@@ -32,9 +32,10 @@
 
 import { Box, type Color, TerminalSizeContext, useInput } from "@liteai/ink"
 import type { Command, FilePartInput } from "@liteai/sdk"
-import { useCallback, useContext, useMemo, useRef, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import stripAnsi from "strip-ansi"
 import { useDialog } from "../../context/dialog"
+import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
@@ -82,17 +83,20 @@ type PromptInputProps = {
   readonly isLoading: boolean
   readonly hint?: React.ReactNode
   readonly workspaceID?: string
+  /** When true, input is suppressed (cursor mode is active) */
+  readonly cursorModeActive?: boolean
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProps) {
+export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
   const route = useRoute()
   const sync = useSync()
   const { theme } = useTheme()
   const dialog = useDialog()
+  const promptRefCtx = usePromptRef()
 
   // ── Dialog-aware focus ──────────────────────────────────────────────────
   // When a dialog (e.g., /models, /theme) is open, all prompt input handling
@@ -387,6 +391,32 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     ],
   )
 
+  // ── Register PromptRef ──────────────────────────────────────────────────
+  useEffect(() => {
+    promptRefCtx.set({
+      focused: !isDialogOpen && !cursorModeActive,
+      current: { input, parts: [] },
+      set: () => {},
+      reset: () => {
+        trackAndSetInput("")
+        setCursorOffset(0)
+        setPastedContents({})
+      },
+      blur: () => {},
+      focus: () => {},
+      submit: () => {
+        void onSubmit(input)
+      },
+      prefill: (text: string) => {
+        setMode("prompt")
+        trackAndSetInput(text)
+        setCursorOffset(text.length)
+        setPastedContents({})
+      },
+    })
+    return () => promptRefCtx.set(undefined)
+  }, [isDialogOpen, cursorModeActive, mode, input, trackAndSetInput, setCursorOffset, onSubmit, promptRefCtx])
+
   // ── Image paste handler ─────────────────────────────────────────────────
   const onImagePaste = useCallback(
     (base64Image: string, mediaType?: string, filename?: string) => {
@@ -498,7 +528,7 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
         setExitMessage({ show: false })
       }
     },
-    { isActive: !isDialogOpen },
+    { isActive: !isDialogOpen && !cursorModeActive },
   )
 
   // ── Border color ────────────────────────────────────────────────────────
@@ -574,8 +604,8 @@ export function PromptInput({ debug, verbose, isLoading, hint }: PromptInputProp
     onIsPastingChange: () => {
       // paste state managed by usePasteHandler
     },
-    focus: !searchState.isSearching && !isDialogOpen,
-    showCursor: !searchState.isSearching && !isDialogOpen,
+    focus: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
+    showCursor: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
     highlights,
     inlineGhostText,
     onTab,
