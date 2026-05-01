@@ -46,6 +46,9 @@ type PromptInputFooterProps = {
   readonly hint?: React.ReactNode
   readonly commandSuggestions?: SuggestionItem[]
   readonly commandSelectedIndex?: number
+  readonly atSuggestions?: SuggestionItem[]
+  readonly atSelectedIndex?: number
+  readonly atIsLoading?: boolean
 }
 
 export function PromptInputFooter({
@@ -62,10 +65,23 @@ export function PromptInputFooter({
   hint,
   commandSuggestions,
   commandSelectedIndex,
+  atSuggestions,
+  atSelectedIndex,
+  atIsLoading,
 }: PromptInputFooterProps) {
   const terminalSize = useContext(TerminalSizeContext)
   const columns = terminalSize?.columns ?? 80
   const isNarrow = useMemo(() => columns < 80, [columns])
+
+  if (atIsLoading || (atSuggestions && atSuggestions.length > 0)) {
+    return (
+      <PromptCommandSuggestions
+        suggestions={atSuggestions ?? []}
+        selectedIndex={atSelectedIndex ?? 0}
+        isLoading={atIsLoading}
+      />
+    )
+  }
 
   if (commandSuggestions && commandSuggestions.length > 0) {
     return <PromptCommandSuggestions suggestions={commandSuggestions} selectedIndex={commandSelectedIndex ?? 0} />

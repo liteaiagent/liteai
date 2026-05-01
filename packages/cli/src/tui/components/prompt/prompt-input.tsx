@@ -37,16 +37,19 @@ import stripAnsi from "strip-ansi"
 import { useDialog } from "../../context/dialog"
 import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
+import { useSDK } from "../../context/sdk"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useTuiConfig } from "../../context/tui-config"
 import { useArrowKeyHistory } from "../../hooks/use-arrow-key-history"
+import { useAtCompleter } from "../../hooks/use-at-completer"
 import { useDoublePress } from "../../hooks/use-double-press"
 import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import { useKeybinding } from "../../keybindings/use-keybinding"
+import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
 import { DialogHelp } from "../../ui/dialog-help"
 import { detectInputHighlights } from "../../util/text-highlighting"
@@ -65,8 +68,11 @@ import type { PastedContent } from "./input-paste"
 import { maybeTruncateInput } from "./input-paste"
 import { PromptInputFooter } from "./prompt-input-footer"
 import { PromptInputModeIndicator } from "./prompt-input-mode-indicator"
+import { QueuedMessageDisplay } from "./queued-message-display"
 import { useCommandSuggestions } from "./use-command-suggestions"
 import { isVimModeEnabled } from "./utils"
+import { processAtReferences } from "./utils/at-processor"
+import { applyAtCompletion } from "./utils/at-token"
 import { applyCommandSuggestion } from "./utils/command-suggestions"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -97,6 +103,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   const { theme } = useTheme()
   const dialog = useDialog()
   const promptRefCtx = usePromptRef()
+  const sdk = useSDK()
 
   // ── Dialog-aware focus ──────────────────────────────────────────────────
   // When a dialog (e.g., /models, /theme) is open, all prompt input handling
@@ -138,6 +145,21 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   )
 
   const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(sync.command ?? []), ...tuiCommands])
+
+  const atCompleter = useAtCompleter({
+    input,
+    cursorOffset,
+    agents: sync.agent,
+    mcpResources: sync.mcp_resource,
+    projectID: sdk.projectID,
+    sdk: sdk.client,
+    enabled: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
+  })
+
+  const [atSelectedIndex, setAtSelectedIndex] = useState(0)
+  useEffect(() => {
+    setAtSelectedIndex(0)
+  }, [atCompleter.items])
 
   // ── Paste ID counter ────────────────────────────────────────────────────
   const nextPasteIdRef = useRef(1)
@@ -224,20 +246,28 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   })
 
   const handleHistoryUp = useCallback(() => {
+    if (atCompleter.active && atCompleter.items.length > 0) {
+      setAtSelectedIndex((prev) => Math.max(0, prev - 1))
+      return
+    }
     if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
       commandSuggestions.navigateUp()
       return
     }
     onHistoryUp()
-  }, [commandSuggestions, onHistoryUp])
+  }, [atCompleter.active, atCompleter.items.length, commandSuggestions, onHistoryUp])
 
   const handleHistoryDown = useCallback(() => {
+    if (atCompleter.active && atCompleter.items.length > 0) {
+      setAtSelectedIndex((prev) => Math.min(atCompleter.items.length - 1, prev + 1))
+      return
+    }
     if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
       commandSuggestions.navigateDown()
       return
     }
     onHistoryDown()
-  }, [commandSuggestions, onHistoryDown])
+  }, [atCompleter.active, atCompleter.items.length, commandSuggestions, onHistoryDown])
 
   // ── Truncation ──────────────────────────────────────────────────────────
   // Automatically truncate large pasted text into references
@@ -278,6 +308,22 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
 
   const onSubmit = useCallback(
     async (inputParam: string) => {
+      if (atCompleter.active && atCompleter.items.length > 0 && atCompleter.token) {
+        const selected = atCompleter.items[atSelectedIndex]
+        if (selected) {
+          const result = applyAtCompletion(
+            input,
+            cursorOffset,
+            atCompleter.token,
+            selected.displayText,
+            selected.isDirectory,
+          )
+          trackAndSetInput(result.newInput)
+          setCursorOffset(result.newCursorOffset)
+        }
+        return
+      }
+
       if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
         const selected = commandSuggestions.getSelected()
         if (selected) {
@@ -355,7 +401,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
       }
 
       // Build image attachments from pastedContents as data URLs
-      const imageAttachments: FilePartInput[] = Object.values(pastedContents)
+      const imageAttachments = Object.values(pastedContents)
         .filter((c) => c.type === "image")
         .map((c) => {
           const mime = c.mediaType ?? "image/png"
@@ -364,10 +410,33 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
             mime,
             url: `data:${mime};base64,${c.content}`,
             filename: c.filename ?? "image.png",
-          }
+          } as FilePartInput
         })
 
-      await session.submit(trimmed, mode, imageAttachments.length > 0 ? imageAttachments : undefined)
+      if (isLoading && trimmed) {
+        enqueue(trimmed, mode)
+        trackAndSetInput("")
+        setCursorOffset(0)
+        setPastedContents({})
+        return
+      }
+
+      let finalInput = trimmed
+
+      if (trimmed.includes("@")) {
+        const processed = await processAtReferences({
+          input: trimmed,
+          agents: sync.agent,
+          sdk: sdk.client,
+          projectID: sdk.projectID,
+        })
+        finalInput = processed.processedText
+        if (processed.agentNudge) {
+          finalInput += `\n${processed.agentNudge}`
+        }
+      }
+
+      await session.submit(finalInput, mode, imageAttachments.length > 0 ? imageAttachments : undefined)
 
       // Reset input state after submission
       trackAndSetInput("")
@@ -385,9 +454,14 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
       commandSuggestions,
       input,
       sync.command,
+      sync.agent,
+      sdk,
       tuiCommands,
       tuiInterceptors,
       dialog,
+      atCompleter,
+      atSelectedIndex,
+      isLoading,
     ],
   )
 
@@ -501,6 +575,12 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   })
 
   useKeybinding("chat:cancel", () => {
+    const queued = getSnapshot()
+    if (queued.length > 0) {
+      clearQueue()
+      return
+    }
+
     if (searchState.isSearching) {
       searchState.cancelSearch()
       return
@@ -553,6 +633,17 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   const inlineGhostText = useSlashSuggestion(searchState.isSearching ? "" : input, cursorOffset, knownCommands)
 
   const onTab = useMemo(() => {
+    if (atCompleter.active && atCompleter.items.length > 0 && atCompleter.token) {
+      const token = atCompleter.token
+      return () => {
+        const selected = atCompleter.items[atSelectedIndex]
+        if (!selected) return
+        const result = applyAtCompletion(input, cursorOffset, token, selected.displayText, selected.isDirectory)
+        trackAndSetInput(result.newInput)
+        setCursorOffset(result.newCursorOffset)
+      }
+    }
+
     if (commandSuggestions.active && commandSuggestions.suggestions.length > 0) {
       return () => {
         const selected = commandSuggestions.getSelected()
@@ -579,7 +670,16 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
       trackAndSetInput(newText)
       setCursorOffset(inlineGhostText.insertPosition + inlineGhostText.text.length + 1)
     }
-  }, [inlineGhostText, input, trackAndSetInput, setCursorOffset, commandSuggestions])
+  }, [
+    inlineGhostText,
+    input,
+    trackAndSetInput,
+    setCursorOffset,
+    commandSuggestions,
+    atCompleter,
+    atSelectedIndex,
+    cursorOffset,
+  ])
 
   // ── Render ──────────────────────────────────────────────────────────────
   const baseProps: BaseTextInputProps = {
@@ -621,6 +721,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
 
   return (
     <Box flexDirection="column" marginTop={1}>
+      <QueuedMessageDisplay />
       <Box
         flexDirection="row"
         alignItems="flex-start"
@@ -657,6 +758,9 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
         }}
         commandSuggestions={commandSuggestions.suggestions}
         commandSelectedIndex={commandSuggestions.selectedIndex}
+        atSuggestions={atCompleter.active ? atCompleter.items : []}
+        atSelectedIndex={atSelectedIndex}
+        atIsLoading={atCompleter.isLoading}
       />
     </Box>
   )

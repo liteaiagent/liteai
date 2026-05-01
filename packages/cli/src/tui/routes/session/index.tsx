@@ -184,6 +184,8 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   )
 }
 
+import { useQueueProcessor } from "../../hooks/use-queue-processor"
+
 function SessionBottom({
   sessionID,
   cursorContext,
@@ -193,6 +195,13 @@ function SessionBottom({
 }) {
   const stats = useStats()
   const session = useSession()
+  const sync = useSync()
+
+  useQueueProcessor({
+    sessionStatus: sync.session.status(sessionID),
+    submit: session.submit,
+  })
+
   return (
     <Box flexDirection="column" width="100%" flexShrink={0}>
       <TokenWarning utilization={stats.contextUtilization} onAutoCompact={() => session.submit("/compact", "prompt")} />
