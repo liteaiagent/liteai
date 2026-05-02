@@ -324,7 +324,7 @@ Steps:
 
 **Validation**: `bun typecheck` for both packages. Unit tests. No behavioral changes to production code.
 
-> ✅ **Completed** — See [Phase_1a_walkthrough.md](./done/Phase_1a_walkthrough.md) and [phase_1a_review.md](./done/phase_1a_review.md).
+> ✅ **Completed** — See [ui_feature_status.md](../ui_feature_status.md) for implemented feature inventory.
 
 ### Phase 2: CLI Port ✅
 
@@ -353,7 +353,7 @@ Steps:
 
 **Validation**: `bun typecheck`, `bun test test/`, manual TUI testing.
 
-> ✅ **Completed** — CLI TUI is live with React+Ink. Includes Phases 2.1–2.7 infrastructure, contexts, primitives, components, routes, cleanup + Phases 3.0–3.4 critical UX (information layer, message interaction, active operation UX, input productivity, keybinding help) + Phase 4.0–4.6 specialized views (help v2, manual compact, context visualization, diff dialog, rewind viewer, session browser, transcript mode). See [done/](./done/) for all walkthroughs.
+> ✅ **Completed** — CLI TUI is live with React+Ink. Includes Phases 2.1–2.7 infrastructure, contexts, primitives, components, routes, cleanup + Phases 3.0–3.4 critical UX (information layer, message interaction, active operation UX, input productivity, keybinding help) + Phase 4.0–4.6 specialized views (help v2, manual compact, context visualization, diff dialog, rewind viewer, session browser, transcript mode). See [ui_feature_status.md](../ui_feature_status.md) for full feature inventory.
 
 ### Phase 3: Web UI Redesign ❌
 
