@@ -30,6 +30,7 @@ export const KEYBINDING_CONTEXTS = [
   "MessageActions",
   "Attachments",
   "Footer",
+  "Transcript",
 ] as const
 
 export type KeybindingContextName = (typeof KEYBINDING_CONTEXTS)[number]

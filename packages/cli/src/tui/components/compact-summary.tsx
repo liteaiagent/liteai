@@ -18,11 +18,12 @@ export function CompactSummary({ auto, overflow }: Props) {
 
   return (
     <Box flexDirection="column" paddingY={1} alignItems="center" width="100%">
-      <Text color={theme.border as Color}>{"─".repeat(40)}</Text>
-      <Box paddingY={1}>
+      <Text color={theme.border as Color}>{"─".repeat(15)} Summary {"─".repeat(15)}</Text>
+      <Box paddingY={1} flexDirection="column" alignItems="center">
         <Text color={theme.info as Color}>{message}</Text>
+        <Text color={theme.textMuted as Color} italic>(Press ctrl+o to expand history)</Text>
       </Box>
-      <Text color={theme.border as Color}>{"─".repeat(40)}</Text>
+      <Text color={theme.border as Color}>{"─".repeat(39)}</Text>
     </Box>
   )
 }

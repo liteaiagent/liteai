@@ -21,6 +21,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+c": "app:interrupt",
       "ctrl+d": "app:exit",
       "ctrl+l": "app:redraw",
+      "ctrl+o": "app:toggleTranscript",
       "ctrl+t": "app:toggleTodos",
       "ctrl+r": "history:search",
       "meta+j": "app:toggleTerminal",
@@ -163,6 +164,15 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       left: "footer:previous",
       enter: "footer:openSelected",
       escape: "footer:clearSelection",
+    },
+  },
+  {
+    context: "Transcript",
+    bindings: {
+      "ctrl+e": "transcript:toggleShowAll",
+      "ctrl+c": "transcript:exit",
+      escape: "transcript:exit",
+      q: "transcript:exit",
     },
   },
   {

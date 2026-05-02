@@ -349,9 +349,23 @@ function Diagnostics({ diagnostics, filePath }: { diagnostics?: Record<string, u
   )
 }
 
+function computeDiffStats(diff?: string) {
+  if (!diff) return ""
+  let added = 0
+  let removed = 0
+  const lines = diff.split("\n")
+  for (const line of lines) {
+    if (line.startsWith("+") && !line.startsWith("+++")) added++
+    else if (line.startsWith("-") && !line.startsWith("---")) removed++
+  }
+  if (added === 0 && removed === 0) return ""
+  return ` +${added}/-${removed}`
+}
+
 export function RunCommand(props: ToolProps) {
   const { theme } = useTheme()
   const sync = useSync()
+  const ctx = useSessionContext()
   const input = typed<RunCommandInput>(props.input as Record<string, unknown>)
   const metadata = typed<RunCommandMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
@@ -385,6 +399,14 @@ export function RunCommand(props: ToolProps) {
   }, [input, dir])
 
   if (metadata.output !== undefined) {
+    if (!ctx?.showDetails) {
+      return (
+        <InlineTool icon="$" pending="" complete={input.command} part={props.part} {...extractToolTiming(props.part)}>
+          Ran {input.command}
+        </InlineTool>
+      )
+    }
+
     return (
       <BlockTool
         title={title}
@@ -419,11 +441,20 @@ export function RunCommand(props: ToolProps) {
 
 export function Write(props: ToolProps) {
   const { theme } = useTheme()
+  const ctx = useSessionContext()
   const input = typed<WriteInput>(props.input as Record<string, unknown>)
   const metadata = typed<WriteMetadata>(props.metadata as Record<string, unknown>)
   const code = input.content ?? ""
 
   if (metadata.diagnostics !== undefined) {
+    if (!ctx?.showDetails) {
+      return (
+        <InlineTool icon="←" pending="" complete={input.filePath} part={props.part} {...extractToolTiming(props.part)}>
+          Wrote {normalizePath(input.filePath)}
+        </InlineTool>
+      )
+    }
+
     return (
       <BlockTool
         title={`# Wrote ${normalizePath(input.filePath)}`}
@@ -485,10 +516,20 @@ export function Read(props: ToolProps) {
 }
 
 export function Edit(props: ToolProps) {
+  const ctx = useSessionContext()
   const input = typed<EditInput>(props.input as Record<string, unknown>)
   const metadata = typed<EditMetadata>(props.metadata as Record<string, unknown>)
 
   if (metadata.diff !== undefined) {
+    if (!ctx?.showDetails) {
+      const stats = computeDiffStats(metadata.diff)
+      return (
+        <InlineTool icon="←" pending="" complete={input.filePath} part={props.part} {...extractToolTiming(props.part)}>
+          Edit {normalizePath(input.filePath)}{stats}
+        </InlineTool>
+      )
+    }
+
     return (
       <BlockTool title={`← Edit ${normalizePath(input.filePath)}`} part={props.part} {...extractToolTiming(props.part)}>
         <Box paddingLeft={1}>
@@ -701,8 +742,17 @@ export function CommandStatus(props: ToolProps) {
   const lines = output.split("\n")
   const overflow = lines.length > 10
   const limited = expanded || !overflow ? output : [...lines.slice(0, 10), "…"].join("\n")
+  const ctx = useSessionContext()
 
   if (metadata.output !== undefined || props.output) {
+    if (!ctx?.showDetails) {
+      return (
+        <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
+          Status: {metadata.commandId || input.CommandId || "unknown"}
+        </InlineTool>
+      )
+    }
+
     return (
       <BlockTool
         title={`# Status: ${metadata.commandId || input.CommandId || "unknown"}`}
@@ -743,8 +793,17 @@ export function SendCommandInput(props: ToolProps) {
   const output = stripAnsi((props.output || metadata.output || "") as string)
 
   const text = input.Terminate ? "Sending terminate signal" : "Sending input"
+  const ctx = useSessionContext()
 
   if (metadata.output !== undefined || props.output) {
+    if (!ctx?.showDetails) {
+      return (
+        <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
+          {text}: {metadata.commandId || input.CommandId || "unknown"}
+        </InlineTool>
+      )
+    }
+
     return (
       <BlockTool title={`# ${text}`} part={props.part} spinner={running} {...extractToolTiming(props.part)}>
         <Box flexDirection="column" gap={1}>
@@ -769,10 +828,20 @@ export function SendCommandInput(props: ToolProps) {
 
 export function ApplyPatch(props: ToolProps) {
   const { theme } = useTheme()
+  const ctx = useSessionContext()
   const metadata = typed<ApplyPatchMetadata>(props.metadata as Record<string, unknown>)
   const files = metadata.files ?? []
 
   if (files.length > 0) {
+    if (!ctx?.showDetails) {
+      const fileNames = files.map((f) => path.basename(f.relativePath)).join(", ")
+      return (
+        <InlineTool icon="←" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
+          Patched {files.length} file{files.length === 1 ? "" : "s"} ({fileNames})
+        </InlineTool>
+      )
+    }
+
     return (
       <Box flexDirection="column">
         {files.map((file, i) => (

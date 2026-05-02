@@ -4,6 +4,7 @@ import { useLocal } from "../context/local"
 import { useStats } from "../context/stats"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { useSessionContext } from "../routes/session/ctx"
 
 type Props = { sessionID: string }
 
@@ -15,12 +16,20 @@ function buildSegments(
   sync: ReturnType<typeof useSync>,
   theme: ReturnType<typeof useTheme>["theme"],
   sessionID: string,
+  displayMode: "compact" | "transcript",
 ): Segment[] {
   const segments: Segment[] = []
 
   // 1. Model
   const parsed = local.model.parsed()
   segments.push({ priority: 1, text: parsed.model, color: theme.text as string })
+
+  // 1.5. Mode Indicator
+  if (displayMode === "transcript") {
+    segments.push({ priority: 1.5, text: "Transcript (ctrl+o)", color: theme.success as string })
+  } else {
+    segments.push({ priority: 1.5, text: "Compact (ctrl+o)", color: theme.textMuted as string })
+  }
 
   // 2. Context %
   let ctxColor = theme.success
@@ -111,10 +120,11 @@ function StatusLineInner({ sessionID }: Props) {
 
   const columns = terminalSize?.columns ?? 80
   const budget = columns - 2 // paddingX={1} means 1 on each side
+  const ctx = useSessionContext()
 
   const allSegments = useMemo(
-    () => buildSegments(stats, local, sync, theme, sessionID),
-    [stats, local, sync, theme, sessionID],
+    () => buildSegments(stats, local, sync, theme, sessionID, ctx?.displayMode ?? "compact"),
+    [stats, local, sync, theme, sessionID, ctx?.displayMode],
   )
 
   const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])

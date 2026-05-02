@@ -13,6 +13,8 @@ MVP features that are **never** being ported. These were gated behind feature fl
 |---|---|---|
 | Voice Mode | `hooks/useVoiceEnabled.ts`, `context/voice.ts`, `VoiceIndicator.tsx` | `feature('VOICE_MODE')` |
 | Coordinator Mode | `coordinator/coordinatorMode.ts`, `CoordinatorAgentStatus.tsx` | `feature('COORDINATOR_MODE')` |
+| Buddy / Companion | `src/buddy/`, `CompanionSprite.tsx` | `feature('BUDDY')` |
+| Ultraplan Mode | `src/utils/ultraplan/`, `ultraplan.tsx` | `feature('ULTRAPLAN')` |
 | Bridge Mode | `bridge/`, `BridgeDialog.tsx`, `BridgeStatusIndicator` | `feature('BRIDGE_MODE')` |
 | Proactive/Kairos | `proactive/index.ts`, `ProactiveCountdown` | `feature('PROACTIVE')` / `feature('KAIROS')` |
 | Transcript Classifier (auto mode) | `utils/permissions/PermissionMode.ts` line 80-90 | `feature('TRANSCRIPT_CLASSIFIER')` |

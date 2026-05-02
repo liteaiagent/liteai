@@ -41,6 +41,15 @@ function CompactionPartView({ part }: { part: CompactionPart }) {
   return <CompactSummary auto={part.auto} overflow={part.overflow} />
 }
 
+function extractThinkingTitle(text: string, maxLen = 60): string {
+  const cleaned = text.replace("[REDACTED]", "").trim()
+  const match = cleaned.match(/^(.+?[.!?\n])/s)
+  const sentence = match ? match[1].replace(/\n/g, " ").trim() : cleaned
+  return sentence.length > maxLen
+    ? sentence.slice(0, maxLen - 1) + "…"
+    : sentence
+}
+
 function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
@@ -50,10 +59,23 @@ function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPa
   }, [part.text])
 
   // Master override: global showThinking gates all rendering
-  if (!content || !ctx.showThinking) return null
+  if (!content && !part.text.includes("[REDACTED]")) return null
+  if (!ctx.showThinking) return null
 
   const tokenCount = message.tokens.reasoning
   const formattedTokens = tokenCount > 0 ? tokenCount.toLocaleString() : "…"
+
+  if (!ctx.showDetails) {
+    const title = extractThinkingTitle(part.text)
+    const displayTitle = title ? `: ${title}` : ""
+    return (
+      <Box paddingLeft={3} marginTop={1}>
+        <Text color={theme.textMuted as Color} italic>
+          ▼ Thinking{displayTitle} ({formattedTokens} tokens)
+        </Text>
+      </Box>
+    )
+  }
 
   return (
     <Box
@@ -88,16 +110,7 @@ function TextPartView({ part }: { last: boolean; part: TextPart; message: Assist
 }
 
 function ToolPartView({ part, message }: { last: boolean; part: ToolPart; message: AssistantMessage }) {
-  const ctx = useSessionContext()
   const sync = useSync()
-
-  const hidden = useMemo(() => {
-    if (ctx.showDetails) return false
-    if (part.state.status !== "completed") return false
-    return true
-  }, [ctx, part.state.status])
-
-  if (hidden) return null
 
   const toolprops = {
     metadata: part.state.status === "pending" ? {} : (part.state.metadata ?? {}),

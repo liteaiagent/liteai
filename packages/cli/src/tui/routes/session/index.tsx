@@ -21,7 +21,7 @@ import { useClipboard } from "../../hooks/use-clipboard"
 import { useMessageCursor } from "../../hooks/use-message-cursor"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
-import { SessionProvider } from "./ctx"
+import { SessionProvider, type DisplayMode } from "./ctx"
 import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
@@ -38,8 +38,10 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const [showThinking, setShowThinking] = useState(true)
   // TODO: Wire to keybindings (session_timestamps_toggle, session_details_toggle, session_generic_toggle)
   const [showTimestamps, _setShowTimestamps] = useState(false)
-  const [showDetails, _setShowDetails] = useState(true)
-  const [showGenericToolOutput, _setShowGenericToolOutput] = useState(false)
+  
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("compact")
+  const showDetails = displayMode === "transcript"
+  const showGenericToolOutput = displayMode === "transcript"
 
   const scrollRef = useRef<ScrollBoxHandle>(null)
 
@@ -75,6 +77,21 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
       "chat:enterMessageCursor": cursor.enterCursor,
     },
     { context: "Chat", isActive: !cursor.active },
+  )
+
+  useKeybindings(
+    {
+      "app:toggleTranscript": () => setDisplayMode((m) => (m === "compact" ? "transcript" : "compact")),
+    },
+    { context: "Global", isActive: true },
+  )
+
+  useKeybindings(
+    {
+      "transcript:exit": () => setDisplayMode("compact"),
+      "transcript:toggleShowAll": () => {}, // TODO: Expand pre-compaction history
+    },
+    { context: "Transcript", isActive: displayMode === "transcript" },
   )
 
   const makeActionCtx = useCallback((): MessageActionContext | null => {
@@ -151,6 +168,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
           conceal: false,
           showThinking,
           showTimestamps,
+          displayMode,
           showDetails,
           showGenericToolOutput,
           diffWrapMode: "none",

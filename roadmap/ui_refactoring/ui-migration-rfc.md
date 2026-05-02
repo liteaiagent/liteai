@@ -1,10 +1,12 @@
 # RFC: UI Framework Migration — SolidJS → React (Layered Architecture)
 
-> **Status**: Proposed
+> **Status**: Phase 1–2 ✅ Complete · Phase 3–4 ❌ Not Started
 > **Author**: @aghassan
 > **Date**: 2026-04-24
+> **Updated**: 2026-05-02
 > **Scope**: `packages/ink` (NEW), `packages/hooks` (NEW), `packages/cli`, `packages/ui`, `packages/web`, `packages/vscode`
 > **Prerequisite**: [ui_framework_analysis.md](./ui_framework_analysis.md) — 5 approaches evaluated, Approach 5 (Layered Architecture) selected.
+> **Feature Status**: See [ui_feature_status.md](../ui_feature_status.md) — 64/82 features implemented (79%).
 
 ---
 
@@ -270,7 +272,7 @@ Target: React DOM components + new design system.
 Each phase ships on its own branch. Phases 1-2 can run in parallel with production SolidJS.
 
 ```
-Phase 1         Phase 2         Phase 3           Phase 4
+Phase 1  ✅      Phase 2  ✅      Phase 3  ❌        Phase 4  ❌
 Foundation  →   CLI Port    →   Web UI Redesign → Consumer Swap
 (ink+hooks)     (validate)      (new design)      (go-live)
 
@@ -279,11 +281,11 @@ feat/ink        feat/cli-react  feat/ui-react      feat/react-migration
 feat/hooks                                         (merges all)
 ```
 
-### Phase 1: Foundation — `packages/ink` + `packages/hooks`
+### Phase 1: Foundation — `packages/ink` + `packages/hooks` ✅
 
 **Branch**: `feat/ink` and `feat/hooks` (can be parallel)
 
-#### 1a: Create `packages/ink`
+#### 1a: Create `packages/ink` ✅
 
 | Action | File | Est. Lines |
 |--------|------|-----------|
@@ -302,7 +304,7 @@ Steps:
 7. `bun typecheck` — resolve all type errors
 8. Basic render test: mount a `<Box><Text>Hello</Text></Box>`, verify terminal output
 
-#### 1b: Create `packages/hooks`
+#### 1b: Create `packages/hooks` ✅
 
 | Action | File | Est. Lines |
 |--------|------|-----------|
@@ -322,7 +324,9 @@ Steps:
 
 **Validation**: `bun typecheck` for both packages. Unit tests. No behavioral changes to production code.
 
-### Phase 2: CLI Port
+> ✅ **Completed** — See [Phase_1a_walkthrough.md](./done/Phase_1a_walkthrough.md) and [phase_1a_review.md](./done/phase_1a_review.md).
+
+### Phase 2: CLI Port ✅
 
 **Branch**: `feat/cli-react`
 
@@ -349,7 +353,9 @@ Steps:
 
 **Validation**: `bun typecheck`, `bun test test/`, manual TUI testing.
 
-### Phase 3: Web UI Redesign
+> ✅ **Completed** — CLI TUI is live with React+Ink. Includes Phases 2.1–2.7 infrastructure, contexts, primitives, components, routes, cleanup + Phases 3.0–3.4 critical UX (information layer, message interaction, active operation UX, input productivity, keybinding help) + Phase 4.0–4.6 specialized views (help v2, manual compact, context visualization, diff dialog, rewind viewer, session browser, transcript mode). See [done/](./done/) for all walkthroughs.
+
+### Phase 3: Web UI Redesign ❌
 
 **Branch**: `feat/ui-react`
 
@@ -380,7 +386,7 @@ Steps:
 
 **Validation**: `bun typecheck`, Storybook visual review, component unit tests.
 
-### Phase 4: Consumer Swap
+### Phase 4: Consumer Swap ❌
 
 **Branch**: `feat/react-migration` (merges Phase 1-3 branches)
 
