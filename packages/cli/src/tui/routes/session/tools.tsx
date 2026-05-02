@@ -15,7 +15,9 @@ import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useTuiConfig } from "../../context/tui-config"
 import { useElapsedTime } from "../../hooks/use-elapsed-time"
+import { useOutputFile } from "../../hooks/use-output-file"
 import { Spinner } from "../../ui/spinner"
+import { shortenPath } from "../../util/output-file"
 import { useSessionContext } from "./ctx"
 import { formatInput, normalizePath } from "./utils"
 
@@ -186,6 +188,11 @@ export function GenericTool(props: ToolProps) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
   const output = useMemo(() => props.output?.trim() ?? "", [props.output])
+  const { savedPath } = useOutputFile({
+    output,
+    sessionID: ctx.sessionID,
+    callID: props.part.callID,
+  })
   const [expanded, setExpanded] = useState(false)
   const lines = useMemo(() => output.split("\n"), [output])
   const max = 3
@@ -196,6 +203,24 @@ export function GenericTool(props: ToolProps) {
   }, [expanded, overflow, output, lines])
 
   if (props.output && ctx.showGenericToolOutput) {
+    if (savedPath) {
+      const preview = lines.slice(0, 50).join("\n")
+      return (
+        <BlockTool
+          title={`# ${props.tool} ${formatInput(props.input as Record<string, unknown>)}`}
+          part={props.part}
+          {...extractToolTiming(props.part)}
+        >
+          <Box gap={1} flexDirection="column">
+            {preview && <Text color={theme.text as Color}>{preview}</Text>}
+            <Text color={theme.textMuted as Color}>
+              ── Full output ({output.length.toLocaleString()} chars): {shortenPath(savedPath)}
+            </Text>
+          </Box>
+        </BlockTool>
+      )
+    }
+
     return (
       <BlockTool
         title={`# ${props.tool} ${formatInput(props.input as Record<string, unknown>)}`}
@@ -382,6 +407,11 @@ export function RunCommand(props: ToolProps) {
   const metadata = typed<RunCommandMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
   const output = useMemo(() => stripAnsi(metadata.output?.trim() ?? ""), [metadata])
+  const { savedPath } = useOutputFile({
+    output,
+    sessionID: ctx.sessionID,
+    callID: props.part.callID,
+  })
   const [expanded, setExpanded] = useState(false)
   const lines = useMemo(() => output.split("\n"), [output])
   const overflow = lines.length > 10
@@ -412,10 +442,32 @@ export function RunCommand(props: ToolProps) {
 
   if (metadata.output !== undefined) {
     if (ctx?.isToolCompact(props.tool)) {
+      if (savedPath) {
+        return (
+          <InlineTool icon="$" pending="" complete={input.command} part={props.part} {...extractToolTiming(props.part)}>
+            Ran {input.command} (output: {shortenPath(savedPath)})
+          </InlineTool>
+        )
+      }
       return (
         <InlineTool icon="$" pending="" complete={input.command} part={props.part} {...extractToolTiming(props.part)}>
           Ran {input.command}
         </InlineTool>
+      )
+    }
+
+    if (savedPath) {
+      const preview = lines.slice(0, 50).join("\n")
+      return (
+        <BlockTool title={title} part={props.part} spinner={running} {...extractToolTiming(props.part)}>
+          <Box flexDirection="column" gap={1}>
+            <Text color={theme.text as Color}>$ {input.command}</Text>
+            {preview && <Text color={theme.text as Color}>{preview}</Text>}
+            <Text color={theme.textMuted as Color}>
+              ── Full output ({output.length.toLocaleString()} chars): {shortenPath(savedPath)}
+            </Text>
+          </Box>
+        </BlockTool>
       )
     }
 
@@ -777,11 +829,16 @@ export function CommandStatus(props: ToolProps) {
   const metadata = typed<CommandStatusMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
   const output = stripAnsi((props.output || metadata.output || "") as string)
+  const ctx = useSessionContext()
+  const { savedPath } = useOutputFile({
+    output,
+    sessionID: ctx.sessionID,
+    callID: props.part.callID,
+  })
   const [expanded, setExpanded] = useState(false)
   const lines = output.split("\n")
   const overflow = lines.length > 10
   const limited = expanded || !overflow ? output : [...lines.slice(0, 10), "…"].join("\n")
-  const ctx = useSessionContext()
 
   if (metadata.output !== undefined || props.output) {
     if (ctx?.isToolCompact(props.tool)) {
@@ -789,6 +846,26 @@ export function CommandStatus(props: ToolProps) {
         <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
           Status: {metadata.commandId || input.CommandId || "unknown"}
         </InlineTool>
+      )
+    }
+
+    if (savedPath) {
+      const preview = lines.slice(0, 50).join("\n")
+      return (
+        <BlockTool
+          title={`# Status: ${metadata.commandId || input.CommandId || "unknown"}`}
+          part={props.part}
+          spinner={running}
+          {...extractToolTiming(props.part)}
+        >
+          <Box flexDirection="column" gap={1}>
+            <Text color={theme.text as Color}>{metadata.status === "running" ? "Running" : "Completed"}</Text>
+            {preview && <Text color={theme.text as Color}>{preview}</Text>}
+            <Text color={theme.textMuted as Color}>
+              ── Full output ({output.length.toLocaleString()} chars): {shortenPath(savedPath)}
+            </Text>
+          </Box>
+        </BlockTool>
       )
     }
 

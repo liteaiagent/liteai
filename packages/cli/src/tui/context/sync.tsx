@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef } from "react"
 import { useStore } from "zustand"
 import { immer } from "zustand/middleware/immer"
 import { createStore } from "zustand/vanilla"
+import { clearDynamicCompactTools } from "../constants/compact-allowlist"
 import { useArgs } from "./args"
 import { useExit } from "./exit"
 import { createSimpleContext } from "./helper"
@@ -459,6 +460,33 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
                   state.lsp = x.data ?? []
                 }),
               )
+              break
+            }
+            case "mcp.tools.changed": {
+              // Re-fetch MCP status to detect connect/disconnect state changes.
+              // When a server disconnects, unregister its tools from the dynamic compact allowlist.
+              sdk.client.project.mcp.status({ projectID: sdk.projectID }).then((x) => {
+                const newStatus = x.data ?? {}
+                const oldStatus = store.getState().mcp
+                // Detect servers that were previously connected but are no longer
+                for (const [serverName, status] of Object.entries(oldStatus)) {
+                  if (status.status === "connected" && newStatus[serverName]?.status !== "connected") {
+                    // Server disconnected — unregister its tools from compact allowlist.
+                    // We don't know individual tool names here, so clear all dynamic tools
+                    // and let connected servers re-register on next tools sync.
+                    clearDynamicCompactTools()
+                  }
+                }
+                store.setState((state) => {
+                  state.mcp = newStatus
+                })
+              })
+              // TODO: When the MCP tools API starts returning tool annotations
+              // (per MCP 2025-03-26 spec `annotations.compactEligible`), fetch the
+              // tools list here and call registerCompactTool() for qualifying tools.
+              // Currently the API returns `{ [server: string]: string[] }` — just
+              // tool names without metadata, so annotation-based registration is
+              // deferred until the backend surfaces that data.
               break
             }
             case "vcs.branch.updated": {
