@@ -23,7 +23,7 @@ export function DialogHelpV2(): React.ReactNode {
 
   // Group bindings by context
   const bindingsByContext = bindings.reduce(
-    (acc: Record<string, typeof bindings>, binding: any) => {
+    (acc: Record<string, typeof bindings>, binding) => {
       if (!acc[binding.context]) acc[binding.context] = []
       acc[binding.context]?.push(binding)
       return acc
@@ -49,8 +49,8 @@ export function DialogHelpV2(): React.ReactNode {
                   <Text bold color={theme.info as Color}>
                     {context}
                   </Text>
-                  {contextBindings.map((binding: any, idx: number) => {
-                    const shortcut = getBindingDisplayText(binding.action, binding.context, bindings)
+                  {contextBindings.map((binding, idx: number) => {
+                    const shortcut = getBindingDisplayText(binding.action ?? "", binding.context, bindings)
                     return (
                       <Box key={idx} flexDirection="row" justifyContent="space-between">
                         <Text>{binding.action}</Text>

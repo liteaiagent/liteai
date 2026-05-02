@@ -30,14 +30,19 @@ export const FileRoutes = lazy(() =>
         "query",
         z.object({
           pattern: z.string(),
+          limit: z.coerce.number().int().min(1).max(500).optional(),
+          maxPerFile: z.coerce.number().int().min(1).max(50).optional(),
         }),
       ),
       async (c) => {
         const pattern = c.req.valid("query").pattern
+        const limit = c.req.valid("query").limit ?? 50
+        const maxPerFile = c.req.valid("query").maxPerFile ?? 10
         const result = await Ripgrep.search({
           cwd: Instance.directory,
           pattern,
-          limit: 10,
+          limit,
+          maxPerFile,
         })
         return c.json(result)
       },

@@ -41,12 +41,12 @@ export { useTerminalFocus } from './hooks/use-terminal-focus.js'
 export { useTerminalTitle } from './hooks/use-terminal-title.js'
 export { useTerminalViewport } from './hooks/use-terminal-viewport.js'
 export type { Options } from './ink.js'
+export { default as instances } from './instances.js'
 export { default as measureElement } from './measure-element.js'
 export type { ParsedKey } from './parse-keypress.js'
 export type { Instance, RenderOptions, Root } from './root.js'
 export { createRoot, default as render, renderSync } from './root.js'
 export { stringWidth } from './stringWidth.js'
-export { default as instances } from './instances.js'
 // Styles
 export type { Color, Styles, TextStyles } from './styles.js'
 // Utilities

@@ -26,6 +26,7 @@ import { Plugin } from "../plugin"
 import { Instance } from "../project/instance"
 import { ProjectID } from "../project/schema"
 import { and, Database, desc, eq, gte, isNotNull, isNull, like, NotFoundError, sql } from "../storage/db"
+import { FTS } from "../storage/fts"
 import { SessionPrompt } from "./engine"
 import { Message } from "./message"
 import { MessageID, PartID, SessionID } from "./schema"
@@ -791,11 +792,12 @@ export namespace Session {
       // CASCADE delete handles messages and parts automatically
       Database.use((db) => {
         db.delete(SessionTable).where(eq(SessionTable.id, sessionID)).run()
-        Database.effect(() =>
+        Database.effect(() => {
+          FTS.removeSession(sessionID)
           Bus.publish(Event.Deleted, {
             info: session,
-          }),
-        )
+          })
+        })
       })
       sessionAgentCounts.delete(sessionID)
     } catch (e) {
@@ -891,6 +893,24 @@ export namespace Session {
           part: structuredClone(part),
         }),
       )
+      if (part.type === "text" && part.text) {
+        // Fetch role from MessageTable to index FTS
+        const msgRow = db
+          .select({ role: sql<string>`json_extract(data, '$.role')` })
+          .from(MessageTable)
+          .where(eq(MessageTable.id, messageID))
+          .get()
+        if (msgRow?.role) {
+          Database.effect(() => {
+            FTS.index({
+              sessionID,
+              messageID,
+              role: msgRow.role,
+              content: part.text,
+            })
+          })
+        }
+      }
     })
     return part
   })

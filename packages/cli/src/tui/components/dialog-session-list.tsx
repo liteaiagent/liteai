@@ -37,10 +37,14 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   const debouncedSearch = useDebounce(search, 150)
 
   const [searchResults, setSearchResults] = useState<import("@liteai/sdk").Session[] | undefined>()
+  const [ftsResults, setFtsResults] = useState<
+    Array<{ sessionID: string; snippet: string; [key: string]: unknown }> | undefined
+  >()
 
   useEffect(() => {
     if (!debouncedSearch) {
       setSearchResults(undefined)
+      setFtsResults(undefined)
       return
     }
     let active = true
@@ -50,6 +54,20 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         if (active) setSearchResults(result.data ?? [])
       })
       .catch(() => {})
+
+    sdk
+      .fetch(`${sdk.url}/session/search?q=${encodeURIComponent(debouncedSearch)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (active && Array.isArray(data)) setFtsResults(data)
+      })
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") {
+          // FTS search is best-effort; log but don't block title-based filtering
+          console.warn("[dialog-session-list] FTS search failed:", err.message)
+        }
+      })
+
     return () => {
       active = false
     }
@@ -73,7 +91,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
 
   const options = useMemo(() => {
     const today = new Date().toDateString()
-    return sessions
+    const opts = sessions
       .filter((x) => x.parentID === undefined)
       .toSorted((a, b) => b.time.updated - a.time.updated)
       .map((x) => {
@@ -98,7 +116,29 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
           gutter: isWorking ? <Spinner /> : hasParent ? <Text color={theme.info as Color}>⑂</Text> : undefined,
         }
       })
-  }, [sessions, toDelete, sync.session_status, theme.error])
+
+    if (ftsResults && ftsResults.length > 0) {
+      const ftsOptions = ftsResults.map((r) => {
+        const session = sync.sessions.find((s) => s.id === r.sessionID)
+        return {
+          title: session?.title ?? "Unknown Session",
+          description: r.snippet.replace(/<mark>/g, "").replace(/<\/mark>/g, ""),
+          value: r.sessionID,
+          category: "Message Matches",
+        }
+      })
+      // Dedup by session ID so we only show one match per session
+      const seen = new Set()
+      const dedupedFts = ftsOptions.filter((o) => {
+        if (seen.has(o.value)) return false
+        seen.add(o.value)
+        return true
+      })
+      return [...opts, ...dedupedFts]
+    }
+
+    return opts
+  }, [sessions, toDelete, sync.session_status, theme.error, ftsResults, sync.sessions])
 
   useKeybindings(
     {

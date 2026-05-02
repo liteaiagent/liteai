@@ -57,9 +57,11 @@ import { DialogContext as DialogContextView } from "../dialog-context"
 import { DialogDiff } from "../dialog-diff"
 import { DialogHelpV2 } from "../dialog-help-v2"
 import { DialogMcp } from "../dialog-mcp"
+import { DialogMemory } from "../dialog-memory"
 import { DialogModel } from "../dialog-model"
 import { DialogPlugin } from "../dialog-plugin"
 import { DialogRewind } from "../dialog-rewind"
+import { DialogSearch } from "../dialog-search"
 import { DialogSessionList } from "../dialog-session-list"
 import { DialogSettings } from "../dialog-settings"
 import { DialogStats } from "../dialog-stats"
@@ -95,6 +97,7 @@ type PromptInputProps = {
   readonly workspaceID?: string
   /** When true, input is suppressed (cursor mode is active) */
   readonly cursorModeActive?: boolean
+  readonly onSearch?: () => void
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -103,6 +106,7 @@ export const TUI_COMMANDS: Command[] = [
   { name: "compact", description: "Summarize and compact the session history", template: "", hints: [] },
   { name: "context", description: "View token usage breakdown and limits", template: "", hints: [] },
   { name: "diff", description: "View modified files in the session", template: "", hints: [] },
+  { name: "find", description: "Search file contents across the workspace", template: "", hints: [] },
   { name: "help", description: "Show help and keyboard shortcuts", template: "", hints: [] },
   {
     name: "history",
@@ -128,7 +132,7 @@ export const TUI_COMMANDS: Command[] = [
   },
 ]
 
-export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive }: PromptInputProps) {
+export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive, onSearch }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
   const route = useRoute()
@@ -314,9 +318,12 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
       },
       context: () => dialog.push(() => <DialogContextView />),
       diff: () => dialog.push(() => <DialogDiff />),
+      find: () => dialog.push(() => <DialogSearch />),
+      search: () => onSearch?.(),
       help: () => dialog.push(() => <DialogHelpV2 />),
       history: () => dialog.push(() => <DialogRewind />),
       mcp: () => dialog.push(() => <DialogMcp />),
+      memory: () => dialog.push(() => <DialogMemory />),
       models: () => dialog.push(() => <DialogModel />),
       new: () => route.navigate({ type: "home" }),
       plugins: () => dialog.push(() => <DialogPlugin />),

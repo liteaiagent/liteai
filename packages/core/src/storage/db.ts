@@ -17,6 +17,7 @@ import { Global } from "../global"
 import { Installation } from "../installation"
 import { Context } from "../util/context"
 import { lazy } from "../util/lazy"
+import { FTS } from "./fts"
 import type * as schema from "./schema"
 
 declare const LITEAI_MIGRATIONS: { sql: string; timestamp: number; name: string }[] | undefined
@@ -117,8 +118,17 @@ export namespace Database {
       migrate(db, entries)
     }
 
+    FTS.initialize(sqlite)
+
     return db
   })
+
+  export function getRawSQLite(): BunDatabase {
+    Client() // ensure initialized
+    const sqlite = state.sqlite
+    if (!sqlite) throw new Error("SQLite client is not initialized")
+    return sqlite
+  }
 
   export function close() {
     const sqlite = state.sqlite

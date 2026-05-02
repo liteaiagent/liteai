@@ -47,7 +47,7 @@ function extractThinkingTitle(text: string, maxLen = 60): string {
   const cleaned = text.replace("[REDACTED]", "").trim()
   const match = cleaned.match(/^(.+?[.!?\n])/s)
   const sentence = match ? match[1].replace(/\n/g, " ").trim() : cleaned
-  return sentence.length > maxLen ? sentence.slice(0, maxLen - 1) + "…" : sentence
+  return sentence.length > maxLen ? `${sentence.slice(0, maxLen - 1)}…` : sentence
 }
 
 function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {

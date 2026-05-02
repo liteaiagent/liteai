@@ -354,6 +354,7 @@ export namespace Ripgrep {
     pattern: string
     glob?: string[]
     limit?: number
+    maxPerFile?: number
     follow?: boolean
   }) {
     const args = [`${await filepath()}`, "--json", "--hidden", "--glob=!.git/*"]
@@ -365,8 +366,8 @@ export namespace Ripgrep {
       }
     }
 
-    if (input.limit) {
-      args.push(`--max-count=${input.limit}`)
+    if (input.maxPerFile) {
+      args.push(`--max-count=${input.maxPerFile}`)
     }
 
     args.push("--")
@@ -384,10 +385,16 @@ export namespace Ripgrep {
     const lines = result.text.trim().split(/\r?\n/).filter(Boolean)
     // Parse JSON lines from ripgrep output
 
-    return lines
+    const matches = lines
       .map((line) => JSON.parse(line))
       .map((parsed) => Result.parse(parsed))
       .filter((r) => r.type === "match")
       .map((r) => r.data)
+
+    if (input.limit && matches.length > input.limit) {
+      return matches.slice(0, input.limit)
+    }
+
+    return matches
   }
 }

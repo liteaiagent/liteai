@@ -16,6 +16,7 @@ import { SessionRevert } from "../../session/revert"
 import { SessionCompaction } from "../../session/tasks/compaction"
 import { ContextBreakdown } from "../../session/tasks/context-breakdown"
 import { Todo } from "../../session/todo"
+import { FTS } from "../../storage/fts"
 import { lazy } from "../../util/lazy"
 import { errors } from "../error"
 
@@ -123,6 +124,52 @@ export const SessionRoutes = lazy(() =>
       async (c) => {
         const history = await Session.history({ limit: 500 })
         return c.json(history)
+      },
+    )
+    .get(
+      "/search",
+      describeRoute({
+        summary: "Search messages across sessions",
+        description: "Full-text search across all session message content using FTS5.",
+        operationId: "project.session.search",
+        responses: {
+          200: {
+            description: "Search results",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.array(
+                    z.object({
+                      sessionID: z.string(),
+                      messageID: z.string(),
+                      role: z.string(),
+                      snippet: z.string(),
+                      rank: z.number(),
+                    }),
+                  ),
+                ),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      validator(
+        "query",
+        z.object({
+          q: z.string().min(1),
+          limit: z.coerce.number().int().min(1).max(200).optional(),
+        }),
+      ),
+      async (c) => {
+        const { q, limit } = c.req.valid("query")
+        try {
+          const results = FTS.search(q, limit ?? 50)
+          return c.json(results)
+        } catch (e) {
+          log.warn("FTS search failed", { query: q, error: e })
+          return c.json([])
+        }
       },
     )
     .get(

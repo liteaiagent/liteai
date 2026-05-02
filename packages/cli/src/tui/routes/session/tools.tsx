@@ -366,7 +366,7 @@ function computeDiffStats(diff?: string) {
 function truncateDiff(diff: string, maxLines: number): string {
   const lines = diff.split("\n")
   if (lines.length <= maxLines) return diff
-  return lines.slice(0, maxLines).join("\n") + `\n… (${lines.length - maxLines} more lines)`
+  return `${lines.slice(0, maxLines).join("\n")}\n… (${lines.length - maxLines} more lines)`
 }
 
 export function RunCommand(props: ToolProps) {

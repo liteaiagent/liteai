@@ -30,7 +30,7 @@ export function CollapsedGroupView({
   }, [part.tools])
 
   if (isExpanded) {
-    const ToolView = PART_MAPPING["tool"]
+    const ToolView = PART_MAPPING.tool
     return (
       <Box flexDirection="column">
         {part.tools.map((t, idx) => {

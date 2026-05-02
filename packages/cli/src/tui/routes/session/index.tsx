@@ -1,5 +1,7 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext } from "@liteai/ink"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { DialogMemory } from "../../components/dialog-memory"
+import { DialogSearch } from "../../components/dialog-search"
 import { DialogSessionList } from "../../components/dialog-session-list"
 import { dispatchMessageAction, type MessageActionCaps } from "../../components/message-action-handlers"
 import type { MessageActionContext } from "../../components/message-action-registry"
@@ -10,6 +12,7 @@ import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
 import { ThinkingToggleDialog } from "../../components/thinking-toggle"
 import { TokenWarning } from "../../components/token-warning"
+import { TranscriptSearch } from "../../components/transcript-search"
 import { isCompactEligible } from "../../constants/compact-allowlist"
 import { useDialog } from "../../context/dialog"
 import { MessageCursorContext } from "../../context/message-cursor"
@@ -39,6 +42,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const [showThinking, setShowThinking] = useState(true)
   // TODO: Wire to keybindings (session_timestamps_toggle, session_details_toggle, session_generic_toggle)
   const [showTimestamps, _setShowTimestamps] = useState(false)
+  const [showTranscriptSearch, setShowTranscriptSearch] = useState(false)
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>("compact")
   const showDetails = displayMode === "transcript"
@@ -75,7 +79,10 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
       },
       "chat:newSession": () => route.navigate({ type: "home" }),
       "chat:sessionList": () => dialog.push(() => <DialogSessionList />),
+      "chat:memory": () => dialog.push(() => <DialogMemory />),
+      "chat:workspaceSearch": () => dialog.push(() => <DialogSearch />),
       "chat:enterMessageCursor": cursor.enterCursor,
+      "chat:transcriptSearch": () => setShowTranscriptSearch(true),
     },
     { context: "Chat", isActive: !cursor.active },
   )
@@ -207,16 +214,29 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
               value={{
                 selectedMessageId: cursor.selectedMessage?.id,
                 isExpanded: (id) => cursor.expandedIds.has(id),
+                selectMessage: cursor.selectMessage,
               }}
             >
               <Messages scrollRef={scrollRef} />
             </MessageCursorContext.Provider>
           }
-          bottom={<SessionBottom sessionID={sessionID} cursorContext={makeActionCtx()} />}
+          bottom={
+            <SessionBottom
+              sessionID={sessionID}
+              cursorContext={makeActionCtx()}
+              onSearch={() => setShowTranscriptSearch(true)}
+            />
+          }
           overlay={
             <Box flexDirection="column">
               {permissionRequest && <PermissionPrompt request={permissionRequest} />}
               {questionRequest && <QuestionPrompt request={questionRequest} />}
+              {showTranscriptSearch && (
+                <TranscriptSearch
+                  onClose={() => setShowTranscriptSearch(false)}
+                  onNavigate={(id) => cursor.selectMessage(id)}
+                />
+              )}
             </Box>
           }
         />
@@ -233,9 +253,11 @@ import { useQueueProcessor } from "../../hooks/use-queue-processor"
 function SessionBottom({
   sessionID,
   cursorContext,
+  onSearch,
 }: {
   sessionID: string
   cursorContext: MessageActionContext | null
+  onSearch?: () => void
 }) {
   const stats = useStats()
   const session = useSession()
@@ -257,7 +279,13 @@ function SessionBottom({
     <Box flexDirection="column" width="100%" flexShrink={0}>
       <TokenWarning utilization={stats.contextUtilization} onAutoCompact={handleAutoCompact} />
       {cursorContext && <MessageActionsBar ctx={cursorContext} />}
-      <PromptInput debug={false} verbose={false} isLoading={session.isLoading} cursorModeActive={!!cursorContext} />
+      <PromptInput
+        debug={false}
+        verbose={false}
+        isLoading={session.isLoading}
+        cursorModeActive={!!cursorContext}
+        onSearch={onSearch}
+      />
       <StatusLine sessionID={sessionID} />
     </Box>
   )

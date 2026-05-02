@@ -42,6 +42,8 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+x ctrl+e": "chat:externalEditor",
       "ctrl+g": "chat:externalEditor",
       "ctrl+s": "chat:stash",
+      "ctrl+f": "chat:transcriptSearch",
+      "ctrl+shift+f": "chat:workspaceSearch",
       [IMAGE_PASTE_KEY]: "chat:imagePaste",
       "shift+up": "chat:enterMessageCursor",
       // LiteAI extensions
@@ -51,6 +53,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+x y": "chat:messageCopy",
       "ctrl+x c": "chat:compact",
       "ctrl+x r": "chat:rename",
+      "ctrl+x m": "chat:memory",
     },
   },
   {

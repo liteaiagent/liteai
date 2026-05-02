@@ -32,6 +32,8 @@ export type MessageCursorActions = {
   moveToBottom: () => void
   /** Toggle expand/collapse for a specific id or the selected message */
   toggleExpand: (id?: string) => void
+  /** Jump directly to a specific message by its index */
+  selectMessage: (id: string) => void
 }
 
 export type UseMessageCursorReturn = MessageCursorState & MessageCursorActions
@@ -166,6 +168,17 @@ export function useMessageCursor(messages: Message[], partsMap: Record<string, P
     [selectedMessage],
   )
 
+  const selectMessage = useCallback(
+    (id: string) => {
+      const idx = messages.findIndex((m) => m.id === id)
+      if (idx !== -1) {
+        setActive(true)
+        setSelectedIndex(idx)
+      }
+    },
+    [messages],
+  )
+
   return {
     active,
     selectedIndex,
@@ -178,5 +191,6 @@ export function useMessageCursor(messages: Message[], partsMap: Record<string, P
     moveToTop,
     moveToBottom,
     toggleExpand,
+    selectMessage,
   }
 }

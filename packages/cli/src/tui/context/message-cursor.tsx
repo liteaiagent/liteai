@@ -5,6 +5,8 @@ export type MessageCursorContextValue = {
   selectedMessageId: string | undefined
   /** Whether a message is expanded in cursor mode */
   isExpanded: (messageId: string) => boolean
+  /** Jump directly to a specific message */
+  selectMessage?: (messageId: string) => void
 }
 
 export const MessageCursorContext = createContext<MessageCursorContextValue>({

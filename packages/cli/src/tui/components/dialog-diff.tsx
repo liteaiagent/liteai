@@ -1,4 +1,4 @@
-import { Box, TerminalSizeContext, Text } from "@liteai/ink"
+import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
 import type React from "react"
 import { useContext, useState } from "react"
 import { useDialog } from "../context/dialog"
@@ -87,15 +87,15 @@ export function DialogDiff(): React.ReactNode {
 
               return (
                 <Box key={idx} flexDirection="row" gap={1}>
-                  <Text color={isSelected ? (theme.primary as any) : (theme.text as any)}>
+                  <Text color={isSelected ? (theme.primary as Color) : (theme.text as Color)}>
                     {isSelected ? ">" : " "}
                   </Text>
-                  <Text color={statusColor as any}>{statusText}</Text>
+                  <Text color={statusColor as Color}>{statusText}</Text>
                   <Box flexGrow={1}>
                     <Text bold={isSelected}>{diff.file}</Text>
                   </Box>
-                  <Text color={theme.success as any}>+{diff.additions}</Text>
-                  <Text color={theme.error as any}>-{diff.deletions}</Text>
+                  <Text color={theme.success as Color}>+{diff.additions}</Text>
+                  <Text color={theme.error as Color}>-{diff.deletions}</Text>
                 </Box>
               )
             })}

@@ -122,3 +122,69 @@ export function editPromptInEditor(currentPrompt: string): EditorResult {
     }
   }
 }
+
+/**
+ * Open the user's external editor with an existing file.
+ */
+export function openFileInEditor(filePath: string, line?: number): EditorResult {
+  const editor = getExternalEditor()
+  if (!editor) return { content: null, error: "No $VISUAL or $EDITOR set" }
+
+  const inkInstance = instances.get(process.stdout)
+  if (!inkInstance) return { content: null, error: "Ink instance not found" }
+
+  const editorBase = path
+    .basename(editor.split(" ")[0] ?? "")
+    .replace(/\.exe$/i, "")
+    .toLowerCase()
+  const isGui = isGuiEditor(editor)
+
+  try {
+    if (isGui) {
+      inkInstance.pause()
+      inkInstance.suspendStdin()
+    } else {
+      inkInstance.enterAlternateScreen()
+    }
+
+    try {
+      const waitFlag = WAIT_FLAG_OVERRIDES[editorBase]
+      const args: string[] = []
+      if (waitFlag) args.push(waitFlag)
+
+      // Add line number if supported by the editor
+      if (line !== undefined) {
+        if (["code", "cursor", "windsurf", "codium", "subl", "atom", "zed"].includes(editorBase)) {
+          args.push("--goto", `${filePath}:${line}`)
+        } else if (["vim", "nvim", "nano"].includes(editorBase)) {
+          args.push(`+${line}`, filePath)
+        } else {
+          args.push(filePath)
+        }
+      } else {
+        args.push(filePath)
+      }
+
+      const opts: SpawnSyncOptions = { stdio: "inherit", shell: true }
+      const result = spawnSync(editor, args, opts)
+
+      if (result.error) {
+        return { content: null, error: `Editor failed to launch: ${result.error.message}` }
+      }
+      if (result.status !== null && result.status !== 0) {
+        return { content: null, error: `Editor exited with code ${result.status}` }
+      }
+
+      return { content: null } // We don't read the file back for this use case
+    } finally {
+      if (isGui) {
+        inkInstance.resumeStdin()
+        inkInstance.resume()
+      } else {
+        inkInstance.exitAlternateScreen()
+      }
+    }
+  } catch (e) {
+    return { content: null, error: String(e) }
+  }
+}
