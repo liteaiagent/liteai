@@ -46,6 +46,7 @@ export type { ParsedKey } from './parse-keypress.js'
 export type { Instance, RenderOptions, Root } from './root.js'
 export { createRoot, default as render, renderSync } from './root.js'
 export { stringWidth } from './stringWidth.js'
+export { default as instances } from './instances.js'
 // Styles
 export type { Color, Styles, TextStyles } from './styles.js'
 // Utilities

@@ -1,6 +1,6 @@
 import type { DOMElement, ScrollBoxHandle } from "@liteai/ink"
 import type { RefObject } from "react"
-import { useCallback, useDeferredValue, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react"
+import { useCallback, useDeferredValue, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 
 /**
  * Estimated height (rows) for items not yet measured. Intentionally LOW:
@@ -111,6 +111,7 @@ export function useVirtualScroll(
   const frozenRange = freezeRendersRef.current > 0 ? prevRangeRef.current : null
   const listOriginRef = useRef(0)
   const spacerRef = useRef<DOMElement | null>(null)
+  const [, setTick] = useState(0)
 
   const subscribe = useCallback(
     (listener: () => void) => scrollRef.current?.subscribe(listener) ?? NOOP_UNSUB,
@@ -308,7 +309,10 @@ export function useVirtualScroll(
         anyChanged = true
       }
     }
-    if (anyChanged) offsetVersionRef.current++
+    if (anyChanged) {
+      offsetVersionRef.current++
+      setTick((t) => t + 1)
+    }
   })
 
   const measureRef = useCallback((key: string) => {

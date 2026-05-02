@@ -42,10 +42,10 @@ Each platform must implement these capabilities — this document tracks current
 | Compact Mode | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) (mode-aware tool renderers) |
 | Transcript Mode | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
 | Mode Toggle | ✅ | [`default-bindings.ts`](../../packages/cli/src/tui/keybindings/default-bindings.ts) (`ctrl+o` binding) |
-| Per-Message Expand | ❌ | — |
-| Collapsed Groups | ❌ | — |
-| Inline Diff Preview | 🔶 | [`structured-diff.tsx`](../../packages/cli/src/tui/components/structured-diff.tsx) (diff rendering exists, but no inline preview in compact mode) |
-| Compact Allowlist | ❌ | — |
+| Per-Message Expand | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx), [`use-message-cursor.ts`](../../packages/cli/src/tui/hooks/use-message-cursor.ts) |
+| Collapsed Groups | ✅ | [`collapse-tool-groups.ts`](../../packages/cli/src/tui/utils/collapse-tool-groups.ts), [`collapsed-group-view.tsx`](../../packages/cli/src/tui/components/collapsed-group-view.tsx) |
+| Inline Diff Preview | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
+| Compact Allowlist | ✅ | [`compact-allowlist.ts`](../../packages/cli/src/tui/constants/compact-allowlist.ts) |
 
 ---
 
@@ -56,7 +56,7 @@ Each platform must implement these capabilities — this document tracks current
 | Thinking Indicator | ✅ | [`session/parts.tsx`](../../packages/cli/src/tui/routes/session/parts.tsx) |
 | Thinking Title | ✅ | [`session/parts.tsx`](../../packages/cli/src/tui/routes/session/parts.tsx) |
 | Thinking Toggle | ✅ | [`thinking-toggle.tsx`](../../packages/cli/src/tui/components/thinking-toggle.tsx) |
-| Hide Past Thinking | ❌ | — |
+| Hide Past Thinking | ✅ | [`session/parts.tsx`](../../packages/cli/src/tui/routes/session/parts.tsx), [`session/ctx.tsx`](../../packages/cli/src/tui/routes/session/ctx.tsx) |
 
 ---
 
@@ -87,8 +87,8 @@ Each platform must implement these capabilities — this document tracks current
 | Slash Commands | ✅ | [`use-slash-suggestion.ts`](../../packages/cli/src/tui/hooks/use-slash-suggestion.ts), [`prompt-command-suggestions.tsx`](../../packages/cli/src/tui/components/prompt/prompt-command-suggestions.tsx) |
 | History Navigation | ✅ | [`use-arrow-key-history.ts`](../../packages/cli/src/tui/hooks/use-arrow-key-history.ts), [`useCommandHistory.ts`](../../packages/hooks/src/session/useCommandHistory.ts) |
 | History Search | ✅ | [`use-history-search.ts`](../../packages/cli/src/tui/hooks/use-history-search.ts), [`history-search-input.tsx`](../../packages/cli/src/tui/components/prompt/history-search-input.tsx) |
-| Prompt Stash | ❌ | — |
-| External Editor | ❌ | — |
+| Prompt Stash | ✅ | [`prompt-input.tsx`](../../packages/cli/src/tui/components/prompt/prompt-input.tsx) |
+| External Editor | ✅ | [`editor.ts`](../../packages/cli/src/tui/util/editor.ts), [`prompt-input.tsx`](../../packages/cli/src/tui/components/prompt/prompt-input.tsx) |
 
 ---
 
@@ -207,10 +207,10 @@ Each platform must implement these capabilities — this document tracks current
 |---|:---:|:---:|:---:|:---:|
 | Session Management | 4 | 0 | 3 | 7 |
 | Conversation | 7 | 0 | 0 | 7 |
-| Display Density | 3 | 1 | 3 | 7 |
-| Thinking / Reasoning | 3 | 0 | 1 | 4 |
+| Display Density | 7 | 0 | 0 | 7 |
+| Thinking / Reasoning | 4 | 0 | 0 | 4 |
 | Tool Output | 9 | 1 | 1 | 11 |
-| Prompt Input | 5 | 0 | 2 | 7 |
+| Prompt Input | 7 | 0 | 0 | 7 |
 | Token & Context Tracking | 5 | 0 | 0 | 5 |
 | Context Compaction | 4 | 0 | 1 | 5 |
 | Time Travel / Rewind | 2 | 1 | 0 | 3 |
@@ -221,9 +221,9 @@ Each platform must implement these capabilities — this document tracks current
 | Search | 0 | 0 | 3 | 3 |
 | MCP & Agents | 3 | 0 | 1 | 4 |
 | Status Display | 5 | 0 | 0 | 5 |
-| **Total** | **64** | **3** | **15** | **82** |
+| **Total** | **71** | **2** | **9** | **82** |
 
-> **Coverage: 79% complete · 4% partial · 17% remaining**
+> **Coverage: 87% complete · 2% partial · 11% remaining**
 
 ---
 

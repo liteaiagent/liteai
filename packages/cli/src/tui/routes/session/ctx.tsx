@@ -14,6 +14,8 @@ export const SessionContext = createContext<{
   showDetails: boolean
   showGenericToolOutput: boolean
   diffWrapMode: "word" | "none"
+  isToolCompact: (toolName: string) => boolean
+  lastReasoningId: string | null
   sync: ReturnType<typeof useSync>
   tui: ReturnType<typeof useTuiConfig>
 } | null>(null)

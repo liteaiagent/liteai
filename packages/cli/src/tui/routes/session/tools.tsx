@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react"
 import stripAnsi from "strip-ansi"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import { StructuredDiff } from "../../components/structured-diff"
+import { COMPACT_DIFF_MAX_LINES } from "../../constants/compact-diff"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useElapsedTime } from "../../hooks/use-elapsed-time"
@@ -362,6 +363,12 @@ function computeDiffStats(diff?: string) {
   return ` +${added}/-${removed}`
 }
 
+function truncateDiff(diff: string, maxLines: number): string {
+  const lines = diff.split("\n")
+  if (lines.length <= maxLines) return diff
+  return lines.slice(0, maxLines).join("\n") + `\n… (${lines.length - maxLines} more lines)`
+}
+
 export function RunCommand(props: ToolProps) {
   const { theme } = useTheme()
   const sync = useSync()
@@ -399,7 +406,7 @@ export function RunCommand(props: ToolProps) {
   }, [input, dir])
 
   if (metadata.output !== undefined) {
-    if (!ctx?.showDetails) {
+    if (ctx?.isToolCompact(props.tool)) {
       return (
         <InlineTool icon="$" pending="" complete={input.command} part={props.part} {...extractToolTiming(props.part)}>
           Ran {input.command}
@@ -447,11 +454,24 @@ export function Write(props: ToolProps) {
   const code = input.content ?? ""
 
   if (metadata.diagnostics !== undefined) {
-    if (!ctx?.showDetails) {
+    if (ctx?.isToolCompact(props.tool)) {
       return (
-        <InlineTool icon="←" pending="" complete={input.filePath} part={props.part} {...extractToolTiming(props.part)}>
-          Wrote {normalizePath(input.filePath)}
-        </InlineTool>
+        <Box flexDirection="column">
+          <InlineTool
+            icon="←"
+            pending=""
+            complete={input.filePath}
+            part={props.part}
+            {...extractToolTiming(props.part)}
+          >
+            Wrote {normalizePath(input.filePath)}
+          </InlineTool>
+          {code && code.split("\n").length <= COMPACT_DIFF_MAX_LINES && (
+            <Box paddingLeft={6} marginTop={0}>
+              <StructuredDiff modifiedContent={truncateDiff(code, COMPACT_DIFF_MAX_LINES)} />
+            </Box>
+          )}
+        </Box>
       )
     }
 
@@ -521,12 +541,26 @@ export function Edit(props: ToolProps) {
   const metadata = typed<EditMetadata>(props.metadata as Record<string, unknown>)
 
   if (metadata.diff !== undefined) {
-    if (!ctx?.showDetails) {
+    if (ctx?.isToolCompact(props.tool)) {
       const stats = computeDiffStats(metadata.diff)
       return (
-        <InlineTool icon="←" pending="" complete={input.filePath} part={props.part} {...extractToolTiming(props.part)}>
-          Edit {normalizePath(input.filePath)}{stats}
-        </InlineTool>
+        <Box flexDirection="column">
+          <InlineTool
+            icon="←"
+            pending=""
+            complete={input.filePath}
+            part={props.part}
+            {...extractToolTiming(props.part)}
+          >
+            Edit {normalizePath(input.filePath)}
+            {stats}
+          </InlineTool>
+          {metadata.diff && (
+            <Box paddingLeft={6} marginTop={0}>
+              <StructuredDiff modifiedContent={truncateDiff(metadata.diff, COMPACT_DIFF_MAX_LINES)} />
+            </Box>
+          )}
+        </Box>
       )
     }
 
@@ -745,7 +779,7 @@ export function CommandStatus(props: ToolProps) {
   const ctx = useSessionContext()
 
   if (metadata.output !== undefined || props.output) {
-    if (!ctx?.showDetails) {
+    if (ctx?.isToolCompact(props.tool)) {
       return (
         <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
           Status: {metadata.commandId || input.CommandId || "unknown"}
@@ -796,7 +830,7 @@ export function SendCommandInput(props: ToolProps) {
   const ctx = useSessionContext()
 
   if (metadata.output !== undefined || props.output) {
-    if (!ctx?.showDetails) {
+    if (ctx?.isToolCompact(props.tool)) {
       return (
         <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
           {text}: {metadata.commandId || input.CommandId || "unknown"}
@@ -833,12 +867,26 @@ export function ApplyPatch(props: ToolProps) {
   const files = metadata.files ?? []
 
   if (files.length > 0) {
-    if (!ctx?.showDetails) {
+    if (ctx?.isToolCompact(props.tool)) {
       const fileNames = files.map((f) => path.basename(f.relativePath)).join(", ")
       return (
-        <InlineTool icon="←" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
-          Patched {files.length} file{files.length === 1 ? "" : "s"} ({fileNames})
-        </InlineTool>
+        <Box flexDirection="column">
+          <InlineTool icon="←" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
+            Patch {files.length} file{files.length === 1 ? "" : "s"}: {fileNames}
+          </InlineTool>
+          <Box paddingLeft={6} marginTop={0} flexDirection="column">
+            {files.map((f, i) => {
+              if (!f.diff) return null
+              // Naive budget per file: 15 lines total, divided among files with diffs
+              const budget = Math.max(3, Math.floor(COMPACT_DIFF_MAX_LINES / files.length))
+              return (
+                <Box key={i} flexDirection="column">
+                  <StructuredDiff modifiedContent={truncateDiff(f.diff, budget)} />
+                </Box>
+              )
+            })}
+          </Box>
+        </Box>
       )
     }
 

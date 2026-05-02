@@ -10,6 +10,7 @@ import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { RichSpinner } from "../../ui/spinner"
+import { collapseToolParts } from "../../utils/collapse-tool-groups"
 import { useSessionContext } from "./ctx"
 import { MessageRow } from "./message-row"
 
@@ -26,9 +27,18 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
   const renderItem = useCallback(
     (msg: Message, index: number) => {
       const parts = sync.part[msg.id] ?? []
-      return <MessageRow key={msg.id} message={msg} parts={parts} index={index} last={index === messages.length - 1} />
+      const displayParts = ctx.displayMode === "compact" ? collapseToolParts(parts) : parts
+      return (
+        <MessageRow
+          key={msg.id}
+          message={msg}
+          parts={displayParts}
+          index={index}
+          last={index === messages.length - 1}
+        />
+      )
     },
-    [sync.part, messages.length],
+    [sync.part, messages.length, ctx.displayMode],
   )
 
   // Derive selectedIndex from cursor context so VirtualMessageList can scroll to it

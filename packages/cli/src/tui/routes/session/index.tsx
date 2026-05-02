@@ -10,6 +10,7 @@ import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
 import { ThinkingToggleDialog } from "../../components/thinking-toggle"
 import { TokenWarning } from "../../components/token-warning"
+import { isCompactEligible } from "../../constants/compact-allowlist"
 import { useDialog } from "../../context/dialog"
 import { MessageCursorContext } from "../../context/message-cursor"
 import { usePromptRef } from "../../context/prompt"
@@ -21,7 +22,7 @@ import { useClipboard } from "../../hooks/use-clipboard"
 import { useMessageCursor } from "../../hooks/use-message-cursor"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
-import { SessionProvider, type DisplayMode } from "./ctx"
+import { type DisplayMode, SessionProvider } from "./ctx"
 import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
@@ -38,7 +39,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const [showThinking, setShowThinking] = useState(true)
   // TODO: Wire to keybindings (session_timestamps_toggle, session_details_toggle, session_generic_toggle)
   const [showTimestamps, _setShowTimestamps] = useState(false)
-  
+
   const [displayMode, setDisplayMode] = useState<DisplayMode>("compact")
   const showDetails = displayMode === "transcript"
   const showGenericToolOutput = displayMode === "transcript"
@@ -99,9 +100,9 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     return {
       message: cursor.selectedMessage,
       parts: sync.part[cursor.selectedMessage.id] ?? [],
-      isExpanded: cursor.expandedMessages.has(cursor.selectedMessage.id),
+      isExpanded: cursor.expandedIds.has(cursor.selectedMessage.id),
     }
-  }, [cursor.selectedMessage, sync.part, cursor.expandedMessages])
+  }, [cursor.selectedMessage, sync.part, cursor.expandedIds])
 
   // Shared capabilities object — single source of truth for all action dispatches.
   // Each capability is the concrete side-effect; the dispatcher only decides *which* to call.
@@ -159,6 +160,27 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     return (sync.question[sessionID] ?? [])[0]
   }, [sync.question, sessionID])
 
+  const isToolCompact = useCallback(
+    (toolName: string) => {
+      if (displayMode === "transcript") return false
+      return isCompactEligible(toolName)
+    },
+    [displayMode],
+  )
+
+  const lastReasoningId = useMemo(() => {
+    if (displayMode !== "transcript") return null
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      if (msg.role === "user") break
+      const parts = sync.part[msg.id] ?? []
+      for (let j = parts.length - 1; j >= 0; j--) {
+        if (parts[j].type === "reasoning") return parts[j].id
+      }
+    }
+    return null
+  }, [messages, sync.part, displayMode])
+
   return (
     <StatsProvider>
       <SessionProvider
@@ -172,6 +194,8 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
           showDetails,
           showGenericToolOutput,
           diffWrapMode: "none",
+          isToolCompact,
+          lastReasoningId,
           sync,
           tui: sync.config,
         }}
@@ -182,7 +206,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
             <MessageCursorContext.Provider
               value={{
                 selectedMessageId: cursor.selectedMessage?.id,
-                isExpanded: (id) => cursor.expandedMessages.has(id),
+                isExpanded: (id) => cursor.expandedIds.has(id),
               }}
             >
               <Messages scrollRef={scrollRef} />

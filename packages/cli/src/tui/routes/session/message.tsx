@@ -8,6 +8,7 @@ import { useMessageCursorContext } from "../../context/message-cursor"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useKeybindingContext } from "../../keybindings/keybinding-context"
+import type { UILocalPart } from "../../utils/collapse-tool-groups"
 import { useSessionContext } from "./ctx"
 import { PART_MAPPING } from "./parts"
 import { MIME_BADGE } from "./utils"
@@ -18,7 +19,7 @@ export function UserMessageContent({
   index,
 }: {
   message: UserMessageInfo
-  parts: Part[]
+  parts: UILocalPart[]
   index: number
   pending?: string
 }) {
@@ -83,7 +84,7 @@ export function AssistantMessageContent({
   last,
 }: {
   message: AssistantMessageInfo
-  parts: Part[]
+  parts: UILocalPart[]
   last: boolean
 }) {
   const local = useLocal()

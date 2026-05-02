@@ -3,6 +3,7 @@ import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage, CompactionPart, ReasoningPart, TextPart, ToolPart } from "@liteai/sdk"
 import type React from "react"
 import { useMemo } from "react"
+import { CollapsedGroupView } from "../../components/collapsed-group-view"
 import { CompactSummary } from "../../components/compact-summary"
 import { Markdown } from "../../components/markdown"
 import { useSync } from "../../context/sync"
@@ -35,6 +36,7 @@ export const PART_MAPPING: Record<string, React.FC<any>> = {
   tool: ToolPartView,
   reasoning: ReasoningPartView,
   compaction: CompactionPartView,
+  "tool-group": CollapsedGroupView,
 }
 
 function CompactionPartView({ part }: { part: CompactionPart }) {
@@ -45,9 +47,7 @@ function extractThinkingTitle(text: string, maxLen = 60): string {
   const cleaned = text.replace("[REDACTED]", "").trim()
   const match = cleaned.match(/^(.+?[.!?\n])/s)
   const sentence = match ? match[1].replace(/\n/g, " ").trim() : cleaned
-  return sentence.length > maxLen
-    ? sentence.slice(0, maxLen - 1) + "…"
-    : sentence
+  return sentence.length > maxLen ? sentence.slice(0, maxLen - 1) + "…" : sentence
 }
 
 function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPart; message: AssistantMessage }) {
@@ -61,6 +61,9 @@ function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPa
   // Master override: global showThinking gates all rendering
   if (!content && !part.text.includes("[REDACTED]")) return null
   if (!ctx.showThinking) return null
+
+  // Hide as past if a latest reasoning exists and this isn't it
+  if (ctx.lastReasoningId && ctx.lastReasoningId !== part.id) return null
 
   const tokenCount = message.tokens.reasoning
   const formattedTokens = tokenCount > 0 ? tokenCount.toLocaleString() : "…"

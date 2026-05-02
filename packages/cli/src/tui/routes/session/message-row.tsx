@@ -1,9 +1,10 @@
-import type { Message, Part } from "@liteai/sdk"
+import type { Message } from "@liteai/sdk"
+import type { UILocalPart } from "../../utils/collapse-tool-groups"
 import { AssistantMessageContent, UserMessageContent } from "./message"
 
 type Props = {
   message: Message
-  parts: Part[]
+  parts: UILocalPart[]
   index: number
   last: boolean
 }

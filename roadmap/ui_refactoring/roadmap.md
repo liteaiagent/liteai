@@ -1,20 +1,7 @@
 
 ## Remaining Gaps
 
-### Phase 5 — Display Density & Productivity
 
-> Focus: Transcript mode refinements from competitive audit + productivity gaps.
-
-| # | Feature | Description | Effort |
-|---|---|---|---|
-| 5.0 | **Collapsed Read/Search Groups** | Collapse consecutive read/grep calls into a single summary line (e.g., `→ Read 5 files, Searched 3 patterns`). Click to expand individual tools. | 2–3 days |
-| 5.1 | **Inline Diff Preview** | Show up to N lines of diff inline in compact mode (like Gemini's `COMPACT_TOOL_SUBVIEW_MAX_LINES = 15`) instead of zero-line summary. | 1–2 days |
-| 5.2 | **Per-Message Expand/Collapse** | Selective verbose toggle per tool call (via cursor or click), OR'd with global mode. Leverages existing `MessageCursor`. | 1–2 days |
-| 5.3 | **Hide Past Thinking** | In transcript mode, show only the latest thinking block, hide all previous. Sentinel ID for streaming. | 0.5 day |
-| 5.4 | **Compact Tool Allowlist** | Explicit set of tool names eligible for compaction. Unknown/MCP tools default to verbose. | 0.5 day |
-| 5.5 | **External Editor** | Wire `ctrl+x ctrl+e` to spawn `$EDITOR` with temp file, suspend TUI via `exitTemporarily()`. | 1 day |
-| 5.6 | **Prompt Stash** | Save/restore prompt text when switching views or opening dialogs. | 0.5 day |
-| 5.7 | **Permission Mode Cycling** | `Shift+Tab` in permission prompts — cycle modes. Requires core API extension. | 1–2 days |
 
 ### Phase 6 — Search & Advanced Commands
 

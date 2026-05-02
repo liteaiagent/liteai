@@ -51,6 +51,7 @@ import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import { useKeybinding } from "../../keybindings/use-keybinding"
 import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
+import { editPromptInEditor } from "../../util/editor"
 import { detectInputHighlights } from "../../util/text-highlighting"
 import { DialogContext as DialogContextView } from "../dialog-context"
 import { DialogDiff } from "../dialog-diff"
@@ -157,6 +158,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   const [vimMode, setVimMode] = useState<VimMode>("INSERT")
   const [pastedContents, setPastedContents] = useState<Record<number, PastedContent>>({})
   const [exitMessage, setExitMessage] = useState<{ show: boolean; key?: string }>({ show: false })
+  const stashRef = useRef<{ text: string; mode: PromptInputMode; cursor: number } | null>(null)
 
   // ── History search state ────────────────────────────────────────────────
   const searchState = useHistorySearch()
@@ -599,6 +601,34 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
 
   useKeybinding("history:search", () => {
     searchState.startSearch()
+  })
+
+  useKeybinding("chat:stash", () => {
+    if (stashRef.current === null) {
+      if (input.length === 0) return
+      stashRef.current = { text: input, mode, cursor: cursorOffset }
+      trackAndSetInput("")
+      setCursorOffset(0)
+      setMode("prompt")
+    } else {
+      const saved = stashRef.current
+      if (input.length > 0) {
+        stashRef.current = { text: input, mode, cursor: cursorOffset }
+      } else {
+        stashRef.current = null
+      }
+      trackAndSetInput(saved.text)
+      setCursorOffset(saved.cursor)
+      setMode(saved.mode)
+    }
+  })
+
+  useKeybinding("chat:externalEditor", () => {
+    const result = editPromptInEditor(input)
+    if (result.content !== null) {
+      trackAndSetInput(result.content)
+      setCursorOffset(result.content.length)
+    }
   })
 
   useKeybinding("chat:cancel", () => {

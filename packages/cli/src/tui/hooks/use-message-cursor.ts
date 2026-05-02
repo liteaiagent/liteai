@@ -12,8 +12,8 @@ export type MessageCursorState = {
   selectedIndex: number | undefined
   /** The selected message (derived) */
   selectedMessage: Message | undefined
-  /** Per-message expand/collapse state (tool outputs only — thinking is session-level) */
-  expandedMessages: ReadonlySet<string>
+  /** Per-message and per-part expand/collapse state */
+  expandedIds: ReadonlySet<string>
 }
 
 /** Navigation + action dispatch interface */
@@ -30,8 +30,8 @@ export type MessageCursorActions = {
   moveToTop: () => void
   /** Jump to last navigable message */
   moveToBottom: () => void
-  /** Toggle expand/collapse for the selected message */
-  toggleExpand: () => void
+  /** Toggle expand/collapse for a specific id or the selected message */
+  toggleExpand: (id?: string) => void
 }
 
 export type UseMessageCursorReturn = MessageCursorState & MessageCursorActions
@@ -59,7 +59,7 @@ export function isNavigable(msg: Message, parts: Part[]): boolean {
 export function useMessageCursor(messages: Message[], partsMap: Record<string, Part[]>): UseMessageCursorReturn {
   const [active, setActive] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState<number | undefined>(undefined)
-  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set())
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
 
   // Compute indices of messages that can be navigated to
   const navigableIndices = useMemo(() => {
@@ -148,25 +148,29 @@ export function useMessageCursor(messages: Message[], partsMap: Record<string, P
     setSelectedIndex(navigableIndices[navigableIndices.length - 1])
   }, [navigableIndices])
 
-  const toggleExpand = useCallback(() => {
-    if (!selectedMessage) return
+  const toggleExpand = useCallback(
+    (id?: string) => {
+      const targetId = id ?? selectedMessage?.id
+      if (!targetId) return
 
-    setExpandedMessages((prev) => {
-      const next = new Set(prev)
-      if (next.has(selectedMessage.id)) {
-        next.delete(selectedMessage.id)
-      } else {
-        next.add(selectedMessage.id)
-      }
-      return next
-    })
-  }, [selectedMessage])
+      setExpandedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(targetId)) {
+          next.delete(targetId)
+        } else {
+          next.add(targetId)
+        }
+        return next
+      })
+    },
+    [selectedMessage],
+  )
 
   return {
     active,
     selectedIndex,
     selectedMessage,
-    expandedMessages,
+    expandedIds,
     enterCursor,
     exit,
     moveUp,
