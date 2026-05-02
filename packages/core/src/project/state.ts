@@ -28,6 +28,14 @@ export namespace State {
     }
   }
 
+  export function invalidate<S>(root: () => string, init: () => S) {
+    const key = root()
+    const entries = recordsByKey.get(key)
+    if (entries) {
+      entries.delete(init)
+    }
+  }
+
   export async function dispose(key: string) {
     const entries = recordsByKey.get(key)
     if (!entries) return

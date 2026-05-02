@@ -16,6 +16,7 @@ import { Skill } from "../../skill/skill"
 import { lazy } from "../../util/lazy"
 import { HEARTBEAT_INTERVAL_MS } from "../constants"
 import { Event } from "../event"
+import { AgentRoutes } from "./agent"
 
 const log = Log.create({ service: "server" })
 
@@ -165,6 +166,7 @@ export const InstanceRoutes = lazy(() =>
         return c.json(modes)
       },
     )
+    .route("/agent", AgentRoutes())
     .get(
       "/skill",
       describeRoute({

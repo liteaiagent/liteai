@@ -56,6 +56,7 @@ import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
 import { editPromptInEditor } from "../../util/editor"
 import { detectInputHighlights } from "../../util/text-highlighting"
+import { DialogAgentList } from "../dialog-agent-list"
 import { DialogContext as DialogContextView } from "../dialog-context"
 import { DialogDiff } from "../dialog-diff"
 import { DialogDoctor } from "../dialog-doctor"
@@ -110,6 +111,7 @@ type PromptInputProps = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const TUI_COMMANDS: Command[] = [
+  { name: "agents", description: "Manage custom agents", template: "", hints: [] },
   { name: "compact", description: "Summarize and compact the session history", template: "", hints: [] },
   { name: "context", description: "View token usage breakdown and limits", template: "", hints: [] },
   { name: "diff", description: "View modified files in the session", template: "", hints: [] },
@@ -324,6 +326,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // Extracted so both the suggestion branch and direct-input branch can use them.
   const tuiInterceptors: Record<string, () => void> = useMemo(
     () => ({
+      agents: () => dialog.push(() => <DialogAgentList />),
       compact: () => {
         if (session.sessionID) {
           void sdk.client.project.session.summarize({ sessionID: session.sessionID, projectID: sdk.projectID })
@@ -662,6 +665,10 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
 
   useKeybinding("history:search", () => {
     searchState.startSearch()
+  })
+
+  useKeybinding("chat:agents", () => {
+    dialog.push(() => <DialogAgentList />)
   })
 
   useKeybinding("chat:stash", () => {

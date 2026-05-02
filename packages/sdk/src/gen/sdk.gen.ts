@@ -2,7 +2,7 @@
 
 import { buildClientParams, type Client, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentListResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionHistoryErrors, ProjectSessionHistoryResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen';
+import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentCreateErrors, ProjectAgentCreateResponses, ProjectAgentDeleteErrors, ProjectAgentDeleteResponses, ProjectAgentGetErrors, ProjectAgentGetResponses, ProjectAgentListResponses, ProjectAgentUpdateErrors, ProjectAgentUpdateResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectDiagnosticsResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionContextErrors, ProjectSessionContextResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionHistoryErrors, ProjectSessionHistoryResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionSearchErrors, ProjectSessionSearchResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -43,261 +43,6 @@ class HeyApiRegistry<T> {
     
     set(value: T, key?: string): void {
         this.instances.set(key ?? this.defaultKey, value);
-    }
-}
-
-export class Event extends HeyApiClient {
-    /**
-     * Get global events
-     *
-     * Subscribe to global events from the LiteAI system using server-sent events.
-     */
-    public subscribe<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
-        return (options?.client ?? this.client).sse.get<EventSubscribeResponses, unknown, ThrowOnError>({ url: '/event', ...options });
-    }
-}
-
-export class Config extends HeyApiClient {
-    /**
-     * Get global configuration
-     *
-     * Retrieve the current global LiteAI configuration settings and preferences.
-     */
-    public get<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
-        return (options?.client ?? this.client).get<ConfigGetResponses, unknown, ThrowOnError>({ url: '/config', ...options });
-    }
-    
-    /**
-     * Update global configuration
-     *
-     * Update global LiteAI configuration settings and preferences.
-     */
-    public update<ThrowOnError extends boolean = false>(parameters?: {
-        config?: Config3;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [{ key: 'config', map: 'body' }] }]);
-        return (options?.client ?? this.client).patch<ConfigUpdateResponses, ConfigUpdateErrors, ThrowOnError>({
-            url: '/config',
-            ...options,
-            ...params,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-                ...params.headers
-            }
-        });
-    }
-}
-
-export class Log extends HeyApiClient {
-    /**
-     * Write log
-     *
-     * Write a log entry to the server logs with specified level and metadata.
-     */
-    public write<ThrowOnError extends boolean = false>(parameters?: {
-        service?: string;
-        level?: 'debug' | 'info' | 'error' | 'warn';
-        message?: string;
-        extra?: {
-            [key: string]: unknown;
-        };
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'body', key: 'service' },
-                    { in: 'body', key: 'level' },
-                    { in: 'body', key: 'message' },
-                    { in: 'body', key: 'extra' }
-                ] }]);
-        return (options?.client ?? this.client).post<LogWriteResponses, unknown, ThrowOnError>({
-            url: '/log',
-            ...options,
-            ...params,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-                ...params.headers
-            }
-        });
-    }
-}
-
-export class File extends HeyApiClient {
-    /**
-     * List system files
-     *
-     * List files and directories in a specified path on the host system.
-     */
-    public list<ThrowOnError extends boolean = false>(parameters: {
-        path: string;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [{ in: 'query', key: 'path' }] }]);
-        return (options?.client ?? this.client).get<SystemFileListResponses, unknown, ThrowOnError>({
-            url: '/system/file',
-            ...options,
-            ...params
-        });
-    }
-}
-
-export class Find extends HeyApiClient {
-    /**
-     * Find system files
-     *
-     * Search for files or directories by name pattern on the host system.
-     */
-    public files<ThrowOnError extends boolean = false>(parameters: {
-        query: string;
-        type?: 'file' | 'directory';
-        limit?: number;
-        dir?: string;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'query', key: 'query' },
-                    { in: 'query', key: 'type' },
-                    { in: 'query', key: 'limit' },
-                    { in: 'query', key: 'dir' }
-                ] }]);
-        return (options?.client ?? this.client).get<SystemFindFilesResponses, unknown, ThrowOnError>({
-            url: '/system/find/file',
-            ...options,
-            ...params
-        });
-    }
-}
-
-export class System extends HeyApiClient {
-    private _file?: File;
-    get file(): File {
-        return this._file ??= new File({ client: this.client });
-    }
-    
-    private _find?: Find;
-    get find(): Find {
-        return this._find ??= new Find({ client: this.client });
-    }
-}
-
-export class Auth extends HeyApiClient {
-    /**
-     * Remove auth credentials
-     *
-     * Remove authentication credentials
-     */
-    public remove<ThrowOnError extends boolean = false>(parameters: {
-        providerID: string;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'providerID' }] }]);
-        return (options?.client ?? this.client).delete<AuthRemoveResponses, AuthRemoveErrors, ThrowOnError>({
-            url: '/auth/{providerID}',
-            ...options,
-            ...params
-        });
-    }
-    
-    /**
-     * Set auth credentials
-     *
-     * Set authentication credentials
-     */
-    public set<ThrowOnError extends boolean = false>(parameters: {
-        providerID: string;
-        auth?: Auth3;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'providerID' }, { key: 'auth', map: 'body' }] }]);
-        return (options?.client ?? this.client).put<AuthSetResponses, AuthSetErrors, ThrowOnError>({
-            url: '/auth/{providerID}',
-            ...options,
-            ...params,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-                ...params.headers
-            }
-        });
-    }
-}
-
-export class Oauth extends HeyApiClient {
-    /**
-     * OAuth authorize
-     *
-     * Initiate OAuth authorization for a specific AI provider to get an authorization URL.
-     */
-    public authorize<ThrowOnError extends boolean = false>(parameters: {
-        providerID: string;
-        method?: number;
-        inputs?: {
-            [key: string]: string;
-        };
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'path', key: 'providerID' },
-                    { in: 'body', key: 'method' },
-                    { in: 'body', key: 'inputs' }
-                ] }]);
-        return (options?.client ?? this.client).post<ProviderOauthAuthorizeResponses, ProviderOauthAuthorizeErrors, ThrowOnError>({
-            url: '/provider/{providerID}/oauth/authorize',
-            ...options,
-            ...params,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-                ...params.headers
-            }
-        });
-    }
-    
-    /**
-     * OAuth callback
-     *
-     * Handle the OAuth callback from a provider after user authorization.
-     */
-    public callback<ThrowOnError extends boolean = false>(parameters: {
-        providerID: string;
-        method?: number;
-        code?: string;
-    }, options?: Options<never, ThrowOnError>) {
-        const params = buildClientParams([parameters], [{ args: [
-                    { in: 'path', key: 'providerID' },
-                    { in: 'body', key: 'method' },
-                    { in: 'body', key: 'code' }
-                ] }]);
-        return (options?.client ?? this.client).post<ProviderOauthCallbackResponses, ProviderOauthCallbackErrors, ThrowOnError>({
-            url: '/provider/{providerID}/oauth/callback',
-            ...options,
-            ...params,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options?.headers,
-                ...params.headers
-            }
-        });
-    }
-}
-
-export class Provider extends HeyApiClient {
-    /**
-     * List providers
-     *
-     * Get a list of all available AI providers, including both available and connected ones.
-     */
-    public list<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
-        return (options?.client ?? this.client).get<ProviderListResponses, unknown, ThrowOnError>({ url: '/provider', ...options });
-    }
-    
-    /**
-     * Get provider auth methods
-     *
-     * Retrieve available authentication methods for all AI providers.
-     */
-    public auth<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
-        return (options?.client ?? this.client).get<ProviderAuthResponses, unknown, ThrowOnError>({ url: '/provider/auth', ...options });
-    }
-    
-    private _oauth?: Oauth;
-    get oauth(): Oauth {
-        return this._oauth ??= new Oauth({ client: this.client });
     }
 }
 
@@ -457,7 +202,7 @@ export class Pty extends HeyApiClient {
     }
 }
 
-export class Config2 extends HeyApiClient {
+export class Config extends HeyApiClient {
     /**
      * Get configuration
      *
@@ -802,6 +547,30 @@ export class Session extends HeyApiClient {
     }
     
     /**
+     * Search messages across sessions
+     *
+     * Full-text search across all session message content using FTS5.
+     */
+    public search<ThrowOnError extends boolean = false>(parameters: {
+        projectID: string;
+        workspace?: string;
+        q: string;
+        limit?: number;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' },
+                    { in: 'query', key: 'q' },
+                    { in: 'query', key: 'limit' }
+                ] }]);
+        return (options?.client ?? this.client).get<ProjectSessionSearchResponses, ProjectSessionSearchErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/search',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
      * Delete session
      *
      * Delete a session and permanently remove all associated data, including messages and history.
@@ -1075,6 +844,28 @@ export class Session extends HeyApiClient {
                 ] }]);
         return (options?.client ?? this.client).get<ProjectSessionDiffResponses, unknown, ThrowOnError>({
             url: '/project/{projectID}/session/{sessionID}/diff',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
+     * Get context breakdown
+     *
+     * Get a breakdown of token usage by category for the session's context window.
+     */
+    public context<ThrowOnError extends boolean = false>(parameters: {
+        sessionID: string;
+        projectID: string;
+        workspace?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'sessionID' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' }
+                ] }]);
+        return (options?.client ?? this.client).get<ProjectSessionContextResponses, ProjectSessionContextErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/{sessionID}/context',
             ...options,
             ...params
         });
@@ -1594,7 +1385,7 @@ export class Question extends HeyApiClient {
     }
 }
 
-export class Find2 extends HeyApiClient {
+export class Find extends HeyApiClient {
     /**
      * Find text
      *
@@ -1604,11 +1395,15 @@ export class Find2 extends HeyApiClient {
         projectID: string;
         workspace?: string;
         pattern: string;
+        limit?: number;
+        maxPerFile?: number;
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
                     { in: 'path', key: 'projectID' },
                     { in: 'query', key: 'workspace' },
-                    { in: 'query', key: 'pattern' }
+                    { in: 'query', key: 'pattern' },
+                    { in: 'query', key: 'limit' },
+                    { in: 'query', key: 'maxPerFile' }
                 ] }]);
         return (options?.client ?? this.client).get<ProjectFindTextResponses, unknown, ThrowOnError>({
             url: '/project/{projectID}/find',
@@ -1668,7 +1463,7 @@ export class Find2 extends HeyApiClient {
     }
 }
 
-export class File2 extends HeyApiClient {
+export class File extends HeyApiClient {
     /**
      * List files
      *
@@ -1731,7 +1526,7 @@ export class File2 extends HeyApiClient {
     }
 }
 
-export class Auth2 extends HeyApiClient {
+export class Auth extends HeyApiClient {
     /**
      * Remove MCP OAuth
      *
@@ -1951,9 +1746,9 @@ export class Mcp extends HeyApiClient {
         });
     }
     
-    private _auth?: Auth2;
-    get auth(): Auth2 {
-        return this._auth ??= new Auth2({ client: this.client });
+    private _auth?: Auth;
+    get auth(): Auth {
+        return this._auth ??= new Auth({ client: this.client });
     }
     
     private _resource?: Resource;
@@ -2263,6 +2058,128 @@ export class Agent extends HeyApiClient {
             ...params
         });
     }
+    
+    /**
+     * Create agent
+     */
+    public create<ThrowOnError extends boolean = false>(parameters: {
+        projectID: string;
+        workspace?: string;
+        name?: string;
+        description?: string;
+        prompt?: string;
+        model?: string;
+        tools?: string | Array<string> | {
+            [key: string]: boolean;
+        };
+        permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+        temperature?: number;
+        mode?: 'subagent' | 'primary' | 'all';
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' },
+                    { in: 'body', key: 'name' },
+                    { in: 'body', key: 'description' },
+                    { in: 'body', key: 'prompt' },
+                    { in: 'body', key: 'model' },
+                    { in: 'body', key: 'tools' },
+                    { in: 'body', key: 'permissionMode' },
+                    { in: 'body', key: 'temperature' },
+                    { in: 'body', key: 'mode' }
+                ] }]);
+        return (options?.client ?? this.client).post<ProjectAgentCreateResponses, ProjectAgentCreateErrors, ThrowOnError>({
+            url: '/project/{projectID}/agent',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+    
+    /**
+     * Delete agent
+     */
+    public delete<ThrowOnError extends boolean = false>(parameters: {
+        name: string;
+        projectID: string;
+        workspace?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'name' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' }
+                ] }]);
+        return (options?.client ?? this.client).delete<ProjectAgentDeleteResponses, ProjectAgentDeleteErrors, ThrowOnError>({
+            url: '/project/{projectID}/agent/{name}',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
+     * Get agent detail
+     */
+    public get<ThrowOnError extends boolean = false>(parameters: {
+        name: string;
+        projectID: string;
+        workspace?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'name' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' }
+                ] }]);
+        return (options?.client ?? this.client).get<ProjectAgentGetResponses, ProjectAgentGetErrors, ThrowOnError>({
+            url: '/project/{projectID}/agent/{name}',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
+     * Update agent
+     */
+    public update<ThrowOnError extends boolean = false>(parameters: {
+        name: string;
+        projectID: string;
+        workspace?: string;
+        description?: string;
+        prompt?: string;
+        model?: string;
+        tools?: string | Array<string> | {
+            [key: string]: boolean;
+        };
+        permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+        temperature?: number;
+        mode?: 'subagent' | 'primary' | 'all';
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'name' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' },
+                    { in: 'body', key: 'description' },
+                    { in: 'body', key: 'prompt' },
+                    { in: 'body', key: 'model' },
+                    { in: 'body', key: 'tools' },
+                    { in: 'body', key: 'permissionMode' },
+                    { in: 'body', key: 'temperature' },
+                    { in: 'body', key: 'mode' }
+                ] }]);
+        return (options?.client ?? this.client).put<ProjectAgentUpdateResponses, ProjectAgentUpdateErrors, ThrowOnError>({
+            url: '/project/{projectID}/agent/{name}',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
 }
 
 export class Skill extends HeyApiClient {
@@ -2322,7 +2239,7 @@ export class Formatter extends HeyApiClient {
     }
 }
 
-export class Event2 extends HeyApiClient {
+export class Event extends HeyApiClient {
     /**
      * Subscribe to events
      *
@@ -2342,6 +2259,15 @@ export class Event2 extends HeyApiClient {
 }
 
 export class Project extends HeyApiClient {
+    /**
+     * Run diagnostics
+     *
+     * Run system health checks and return diagnostic results.
+     */
+    public diagnostics<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+        return (options?.client ?? this.client).get<ProjectDiagnosticsResponses, unknown, ThrowOnError>({ url: '/diagnostics', ...options });
+    }
+    
     /**
      * List all projects
      *
@@ -2508,9 +2434,9 @@ export class Project extends HeyApiClient {
         return this._pty ??= new Pty({ client: this.client });
     }
     
-    private _config?: Config2;
-    get config(): Config2 {
-        return this._config ??= new Config2({ client: this.client });
+    private _config?: Config;
+    get config(): Config {
+        return this._config ??= new Config({ client: this.client });
     }
     
     private _experimental?: Experimental;
@@ -2543,14 +2469,14 @@ export class Project extends HeyApiClient {
         return this._question ??= new Question({ client: this.client });
     }
     
-    private _find?: Find2;
-    get find(): Find2 {
-        return this._find ??= new Find2({ client: this.client });
+    private _find?: Find;
+    get find(): Find {
+        return this._find ??= new Find({ client: this.client });
     }
     
-    private _file?: File2;
-    get file(): File2 {
-        return this._file ??= new File2({ client: this.client });
+    private _file?: File;
+    get file(): File {
+        return this._file ??= new File({ client: this.client });
     }
     
     private _mcp?: Mcp;
@@ -2598,9 +2524,264 @@ export class Project extends HeyApiClient {
         return this._formatter ??= new Formatter({ client: this.client });
     }
     
-    private _event?: Event2;
-    get event(): Event2 {
-        return this._event ??= new Event2({ client: this.client });
+    private _event?: Event;
+    get event(): Event {
+        return this._event ??= new Event({ client: this.client });
+    }
+}
+
+export class Event2 extends HeyApiClient {
+    /**
+     * Get global events
+     *
+     * Subscribe to global events from the LiteAI system using server-sent events.
+     */
+    public subscribe<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+        return (options?.client ?? this.client).sse.get<EventSubscribeResponses, unknown, ThrowOnError>({ url: '/event', ...options });
+    }
+}
+
+export class Config2 extends HeyApiClient {
+    /**
+     * Get global configuration
+     *
+     * Retrieve the current global LiteAI configuration settings and preferences.
+     */
+    public get<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+        return (options?.client ?? this.client).get<ConfigGetResponses, unknown, ThrowOnError>({ url: '/config', ...options });
+    }
+    
+    /**
+     * Update global configuration
+     *
+     * Update global LiteAI configuration settings and preferences.
+     */
+    public update<ThrowOnError extends boolean = false>(parameters?: {
+        config?: Config3;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [{ key: 'config', map: 'body' }] }]);
+        return (options?.client ?? this.client).patch<ConfigUpdateResponses, ConfigUpdateErrors, ThrowOnError>({
+            url: '/config',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+}
+
+export class Log extends HeyApiClient {
+    /**
+     * Write log
+     *
+     * Write a log entry to the server logs with specified level and metadata.
+     */
+    public write<ThrowOnError extends boolean = false>(parameters?: {
+        service?: string;
+        level?: 'debug' | 'info' | 'error' | 'warn';
+        message?: string;
+        extra?: {
+            [key: string]: unknown;
+        };
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'body', key: 'service' },
+                    { in: 'body', key: 'level' },
+                    { in: 'body', key: 'message' },
+                    { in: 'body', key: 'extra' }
+                ] }]);
+        return (options?.client ?? this.client).post<LogWriteResponses, unknown, ThrowOnError>({
+            url: '/log',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+}
+
+export class File2 extends HeyApiClient {
+    /**
+     * List system files
+     *
+     * List files and directories in a specified path on the host system.
+     */
+    public list<ThrowOnError extends boolean = false>(parameters: {
+        path: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [{ in: 'query', key: 'path' }] }]);
+        return (options?.client ?? this.client).get<SystemFileListResponses, unknown, ThrowOnError>({
+            url: '/system/file',
+            ...options,
+            ...params
+        });
+    }
+}
+
+export class Find2 extends HeyApiClient {
+    /**
+     * Find system files
+     *
+     * Search for files or directories by name pattern on the host system.
+     */
+    public files<ThrowOnError extends boolean = false>(parameters: {
+        query: string;
+        type?: 'file' | 'directory';
+        limit?: number;
+        dir?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'query', key: 'query' },
+                    { in: 'query', key: 'type' },
+                    { in: 'query', key: 'limit' },
+                    { in: 'query', key: 'dir' }
+                ] }]);
+        return (options?.client ?? this.client).get<SystemFindFilesResponses, unknown, ThrowOnError>({
+            url: '/system/find/file',
+            ...options,
+            ...params
+        });
+    }
+}
+
+export class System extends HeyApiClient {
+    private _file?: File2;
+    get file(): File2 {
+        return this._file ??= new File2({ client: this.client });
+    }
+    
+    private _find?: Find2;
+    get find(): Find2 {
+        return this._find ??= new Find2({ client: this.client });
+    }
+}
+
+export class Auth2 extends HeyApiClient {
+    /**
+     * Remove auth credentials
+     *
+     * Remove authentication credentials
+     */
+    public remove<ThrowOnError extends boolean = false>(parameters: {
+        providerID: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'providerID' }] }]);
+        return (options?.client ?? this.client).delete<AuthRemoveResponses, AuthRemoveErrors, ThrowOnError>({
+            url: '/auth/{providerID}',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
+     * Set auth credentials
+     *
+     * Set authentication credentials
+     */
+    public set<ThrowOnError extends boolean = false>(parameters: {
+        providerID: string;
+        auth?: Auth3;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'providerID' }, { key: 'auth', map: 'body' }] }]);
+        return (options?.client ?? this.client).put<AuthSetResponses, AuthSetErrors, ThrowOnError>({
+            url: '/auth/{providerID}',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+}
+
+export class Oauth extends HeyApiClient {
+    /**
+     * OAuth authorize
+     *
+     * Initiate OAuth authorization for a specific AI provider to get an authorization URL.
+     */
+    public authorize<ThrowOnError extends boolean = false>(parameters: {
+        providerID: string;
+        method?: number;
+        inputs?: {
+            [key: string]: string;
+        };
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'providerID' },
+                    { in: 'body', key: 'method' },
+                    { in: 'body', key: 'inputs' }
+                ] }]);
+        return (options?.client ?? this.client).post<ProviderOauthAuthorizeResponses, ProviderOauthAuthorizeErrors, ThrowOnError>({
+            url: '/provider/{providerID}/oauth/authorize',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+    
+    /**
+     * OAuth callback
+     *
+     * Handle the OAuth callback from a provider after user authorization.
+     */
+    public callback<ThrowOnError extends boolean = false>(parameters: {
+        providerID: string;
+        method?: number;
+        code?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'providerID' },
+                    { in: 'body', key: 'method' },
+                    { in: 'body', key: 'code' }
+                ] }]);
+        return (options?.client ?? this.client).post<ProviderOauthCallbackResponses, ProviderOauthCallbackErrors, ThrowOnError>({
+            url: '/provider/{providerID}/oauth/callback',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+}
+
+export class Provider extends HeyApiClient {
+    /**
+     * List providers
+     *
+     * Get a list of all available AI providers, including both available and connected ones.
+     */
+    public list<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+        return (options?.client ?? this.client).get<ProviderListResponses, unknown, ThrowOnError>({ url: '/provider', ...options });
+    }
+    
+    /**
+     * Get provider auth methods
+     *
+     * Retrieve available authentication methods for all AI providers.
+     */
+    public auth<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+        return (options?.client ?? this.client).get<ProviderAuthResponses, unknown, ThrowOnError>({ url: '/provider/auth', ...options });
+    }
+    
+    private _oauth?: Oauth;
+    get oauth(): Oauth {
+        return this._oauth ??= new Oauth({ client: this.client });
     }
 }
 
@@ -2660,14 +2841,19 @@ export class LiteaiClient extends HeyApiClient {
         return (options?.client ?? this.client).get<PathResponses, unknown, ThrowOnError>({ url: '/path', ...options });
     }
     
-    private _event?: Event;
-    get event(): Event {
-        return this._event ??= new Event({ client: this.client });
+    private _project?: Project;
+    get project(): Project {
+        return this._project ??= new Project({ client: this.client });
     }
     
-    private _config?: Config;
-    get config(): Config {
-        return this._config ??= new Config({ client: this.client });
+    private _event?: Event2;
+    get event(): Event2 {
+        return this._event ??= new Event2({ client: this.client });
+    }
+    
+    private _config?: Config2;
+    get config(): Config2 {
+        return this._config ??= new Config2({ client: this.client });
     }
     
     private _log?: Log;
@@ -2680,18 +2866,13 @@ export class LiteaiClient extends HeyApiClient {
         return this._system ??= new System({ client: this.client });
     }
     
-    private _auth?: Auth;
-    get auth(): Auth {
-        return this._auth ??= new Auth({ client: this.client });
+    private _auth?: Auth2;
+    get auth(): Auth2 {
+        return this._auth ??= new Auth2({ client: this.client });
     }
     
     private _provider?: Provider;
     get provider(): Provider {
         return this._provider ??= new Provider({ client: this.client });
-    }
-    
-    private _project?: Project;
-    get project(): Project {
-        return this._project ??= new Project({ client: this.client });
     }
 }

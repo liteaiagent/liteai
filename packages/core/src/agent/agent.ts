@@ -6,6 +6,8 @@ import matter from "gray-matter"
 import { mergeDeep, pipe, sortBy, values } from "remeda"
 import z from "zod"
 import { Bundled } from "@/bundled"
+import { Bus } from "@/bus"
+import { BusEvent } from "@/bus/bus-event"
 import { PermissionNext } from "@/permission/next"
 import * as Platform from "@/platform"
 import { Plugin } from "@/plugin"
@@ -353,6 +355,16 @@ export namespace Agent {
       values(),
       sortBy([(x) => (cfg.default_agent ? x.name === cfg.default_agent : x.name === "plan"), "desc"]),
     )
+  }
+
+  export const Event = {
+    Updated: BusEvent.define("agent.updated", z.object({ agents: Agent.Info.array() })),
+  }
+
+  export async function reload() {
+    state.invalidate()
+    const agents = await list()
+    Bus.publish(Agent.Event.Updated, { agents })
   }
 
   export async function defaultAgent() {

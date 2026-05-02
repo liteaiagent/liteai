@@ -47,6 +47,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       [IMAGE_PASTE_KEY]: "chat:imagePaste",
       "shift+up": "chat:enterMessageCursor",
       // LiteAI extensions
+      "ctrl+x a": "chat:agents",
       "ctrl+x b": "chat:sidebarToggle",
       "ctrl+x n": "chat:newSession",
       "ctrl+x l": "chat:sessionList",
@@ -256,6 +257,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+r": "select:rename",
       "ctrl+u": "select:update",
       "ctrl+a": "model:providerList",
+      "meta+n": "agent:create",
       "ctrl+f": "model:favoriteToggle",
       enter: "select:accept",
       escape: "select:cancel",
