@@ -135,6 +135,15 @@ function McpDetail(props: { name: string }) {
 
   const options = useMemo(
     () => [
+      ...(mcpStatus?.status === "needs_auth" || mcpStatus?.status === "needs_client_registration"
+        ? [
+            {
+              value: "authenticate",
+              title: "Authenticate",
+              disabled: false,
+            },
+          ]
+        : []),
       {
         value: "tools",
         title: "View tools",
@@ -150,7 +159,7 @@ function McpDetail(props: { name: string }) {
         title: enabled ? "Disable" : "Enable",
       },
     ],
-    [enabled],
+    [enabled, mcpStatus],
   )
 
   const header = () => {
@@ -167,6 +176,17 @@ function McpDetail(props: { name: string }) {
           </Text>
           <Status enabled={enabled} loading={isLoading} isFailed={isFailed} />
         </Text>
+
+        {/* biome-ignore lint/suspicious/noExplicitAny: API shape not in SDK */}
+        {isFailed && (mcpStatus as any)?.error && (
+          <Text>
+            <Text color={theme.error as Color} bold>
+              Error:{" "}
+            </Text>
+            {/* biome-ignore lint/suspicious/noExplicitAny: API shape not in SDK */}
+            <Text color={theme.textMuted as Color}>{(mcpStatus as any).error}</Text>
+          </Text>
+        )}
 
         {c && c.type === "local" && (
           <Box flexDirection="column">
@@ -216,7 +236,15 @@ function McpDetail(props: { name: string }) {
       footerContent={<Text color={theme.textMuted as Color}>↑↓ to navigate · Enter to select</Text>}
       options={options}
       onSelect={async (option) => {
-        if (option.value === "toggle") {
+        if (option.value === "authenticate") {
+          // biome-ignore lint/suspicious/noExplicitAny: API shape not in SDK
+          const authUrl = (mcpStatus as any)?.authUrl
+          if (authUrl) {
+            const cmd = process.platform === "win32" ? "cmd" : process.platform === "darwin" ? "open" : "xdg-open"
+            const args = process.platform === "win32" ? ["/c", "start", "", authUrl] : [authUrl]
+            Bun.spawn([cmd, ...args], { stdout: "ignore", stderr: "ignore" })
+          }
+        } else if (option.value === "toggle") {
           if (loading !== null) return
           setLoading("toggle")
           try {
@@ -263,7 +291,8 @@ function McpDetail(props: { name: string }) {
 function McpToolsList(props: { name: string; onBack: () => void }) {
   const sdk = useSDK()
   const { theme } = useTheme()
-  const [tools, setTools] = useState<string[]>([])
+  // biome-ignore lint/suspicious/noExplicitAny: API shape not in SDK
+  const [tools, setTools] = useState<any[]>([])
 
   useEffect(() => {
     let active = true
@@ -275,7 +304,8 @@ function McpToolsList(props: { name: string; onBack: () => void }) {
         }
         return r.json()
       })
-      .then((data: Record<string, string[]>) => {
+      // biome-ignore lint/suspicious/noExplicitAny: API shape not in SDK
+      .then((data: Record<string, any[]>) => {
         if (!active) return
         const toolNames = data?.[props.name]
         if (toolNames) setTools(toolNames)
@@ -297,8 +327,9 @@ function McpToolsList(props: { name: string; onBack: () => void }) {
 
   const options = useMemo(() => {
     return tools.map((t) => ({
-      title: t,
-      value: t,
+      title: typeof t === "string" ? t : t.name,
+      value: typeof t === "string" ? t : t.name,
+      description: typeof t === "string" ? undefined : t.description,
     }))
   }, [tools])
 

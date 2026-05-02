@@ -21,6 +21,7 @@ import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { StatsProvider, useStats } from "../../context/stats"
 import { useSync } from "../../context/sync"
+import { useTuiConfig } from "../../context/tui-config"
 import { useClipboard } from "../../hooks/use-clipboard"
 import { useMessageCursor } from "../../hooks/use-message-cursor"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
@@ -33,6 +34,7 @@ import { QuestionPrompt } from "./question"
 export function SessionRoute({ sessionID }: { sessionID: string }) {
   const sync = useSync()
   const session = useSession()
+  const tuiConfig = useTuiConfig()
   useRegisterKeybindingContext("Chat")
   const dialog = useDialog()
   const route = useRoute()
@@ -204,7 +206,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
           isToolCompact,
           lastReasoningId,
           sync,
-          tui: sync.config,
+          tui: tuiConfig,
         }}
       >
         <SessionLayout

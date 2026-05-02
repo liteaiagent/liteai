@@ -1,11 +1,14 @@
 import { existsSync } from "node:fs"
+import path from "node:path"
 import { Brand } from "@liteai/core/brand"
 import { Config } from "@liteai/core/config/config"
 import { ConfigPaths } from "@liteai/core/config/paths"
 import { Flag } from "@liteai/core/flag/flag"
 import { Global } from "@liteai/core/global/index"
 import { Instance } from "@liteai/core/project/instance"
+import { Filesystem } from "@liteai/core/util/filesystem"
 import { Log } from "@liteai/util/log"
+import { applyEdits, modify } from "jsonc-parser"
 import { mergeDeep, unique } from "remeda"
 import type z from "zod"
 import type { KeybindingContextName } from "../../tui/keybindings/types"
@@ -120,5 +123,29 @@ export namespace TuiConfig {
     }
 
     return parsed.data
+  }
+
+  /**
+   * Persist a partial TUI config update to the global tui.json file.
+   * Uses JSONC-aware patching to preserve comments and formatting.
+   */
+  export async function update(patch: Partial<Info>): Promise<void> {
+    const filepath = path.join(Global.Path.config, "tui.json")
+    const before = await Filesystem.readText(filepath).catch((err: NodeJS.ErrnoException) => {
+      if (err.code === "ENOENT") return "{}"
+      throw err
+    })
+
+    let updated = before
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) continue
+      const edits = modify(updated, [key], value, {
+        formattingOptions: { insertSpaces: true, tabSize: 2 },
+      })
+      updated = applyEdits(updated, edits)
+    }
+
+    await Filesystem.write(filepath, updated)
+    log.info("persisted tui config update", { filepath, keys: Object.keys(patch) })
   }
 }

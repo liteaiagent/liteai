@@ -13,6 +13,7 @@ import { StructuredDiff } from "../../components/structured-diff"
 import { COMPACT_DIFF_MAX_LINES } from "../../constants/compact-diff"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { useTuiConfig } from "../../context/tui-config"
 import { useElapsedTime } from "../../hooks/use-elapsed-time"
 import { Spinner } from "../../ui/spinner"
 import { useSessionContext } from "./ctx"
@@ -258,6 +259,8 @@ function InlineTool(props: {
   }, [permission, hover, props.onClick, props.complete, theme])
 
   const error = props.part.state.status === "error" ? props.part.state.error : undefined
+  const config = useTuiConfig()
+  const displayError = error && config.errorVerbosity === "low" ? error.split("\n")[0] : error
   const denied =
     error?.includes("rejected permission") || error?.includes("specified a rule") || error?.includes("user dismissed")
 
@@ -280,7 +283,7 @@ function InlineTool(props: {
           </Text>
         )}
       </Box>
-      {error && !denied && <Text color={theme.error as Color}>{error}</Text>}
+      {displayError && !denied && <Text color={theme.error as Color}>{displayError}</Text>}
     </Box>
   )
 }
@@ -296,8 +299,10 @@ function BlockTool(props: {
   endTime?: number
 }) {
   const { theme } = useTheme()
+  const config = useTuiConfig()
   const [_hover, _setHover] = useState(false)
   const error = props.part?.state.status === "error" ? props.part.state.error : undefined
+  const displayError = error && config.errorVerbosity === "low" ? error.split("\n")[0] : error
 
   const timing = useElapsedTime({ startTime: props.startTime ?? null, endTime: props.endTime })
   const suffix = timing.formatted ? ` (${props.spinner ? "running… " : ""}${timing.formatted})` : ""
@@ -319,7 +324,7 @@ function BlockTool(props: {
         </Text>
       )}
       {props.children}
-      {error && <Text color={theme.error as Color}>{error}</Text>}
+      {displayError && <Text color={theme.error as Color}>{displayError}</Text>}
     </ThemedBox>
   )
 }

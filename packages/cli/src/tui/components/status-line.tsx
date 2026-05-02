@@ -31,6 +31,17 @@ function buildSegments(
     segments.push({ priority: 1.5, text: "Compact (ctrl+o)", color: theme.textMuted as string })
   }
 
+  const session = sync.session.get(sessionID)
+  if (session?.toolProfile === "Plan") {
+    segments.push({ priority: 1.6, text: "📋 Plan", color: theme.warning as string })
+  }
+
+  // effort is a server-side config field not yet reflected in the SDK Config type
+  const effort = (sync.config as Record<string, unknown>).effort as string | undefined
+  if (effort && effort !== "medium") {
+    segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
+  }
+
   // 2. Context %
   let ctxColor = theme.success
   if (stats.contextUtilization >= 0.85) ctxColor = theme.error

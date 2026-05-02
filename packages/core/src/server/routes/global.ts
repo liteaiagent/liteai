@@ -13,6 +13,7 @@ import { lazy } from "../../util/lazy"
 import { HEARTBEAT_INTERVAL_MS } from "../constants"
 import { errors } from "../error"
 import { Event } from "../event"
+import { DiagnosticRoutes } from "./diagnostics"
 
 const log = Log.create({ service: "server" })
 
@@ -137,6 +138,7 @@ export const GlobalDisposedEvent = BusEvent.define("global.disposed", z.object({
 
 export const GlobalRoutes = lazy(() =>
   new Hono()
+    .route("/diagnostics", DiagnosticRoutes())
     .get(
       "/health",
       describeRoute({

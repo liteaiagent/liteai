@@ -30,6 +30,7 @@
  * - React Compiler artifacts (_c(), $[n])
  */
 
+import fs from "node:fs/promises"
 import { Box, type Color, TerminalSizeContext, useInput } from "@liteai/ink"
 import type { Command, FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
@@ -41,12 +42,14 @@ import { useSDK } from "../../context/sdk"
 import { useSession } from "../../context/session"
 import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { useToast } from "../../context/toast"
 import { useTuiConfig } from "../../context/tui-config"
 import { useArrowKeyHistory } from "../../hooks/use-arrow-key-history"
 import { useAtCompleter } from "../../hooks/use-at-completer"
 import { useDoublePress } from "../../hooks/use-double-press"
 import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
+import { formatSessionExport } from "../../hooks/use-session-export"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import { useKeybinding } from "../../keybindings/use-keybinding"
 import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
@@ -55,10 +58,14 @@ import { editPromptInEditor } from "../../util/editor"
 import { detectInputHighlights } from "../../util/text-highlighting"
 import { DialogContext as DialogContextView } from "../dialog-context"
 import { DialogDiff } from "../dialog-diff"
+import { DialogDoctor } from "../dialog-doctor"
+import { DialogEffort } from "../dialog-effort"
+import { DialogExportOptions } from "../dialog-export-options"
 import { DialogHelpV2 } from "../dialog-help-v2"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogMemory } from "../dialog-memory"
 import { DialogModel } from "../dialog-model"
+import { DialogPermissions } from "../dialog-permissions"
 import { DialogPlugin } from "../dialog-plugin"
 import { DialogRewind } from "../dialog-rewind"
 import { DialogSearch } from "../dialog-search"
@@ -106,6 +113,9 @@ export const TUI_COMMANDS: Command[] = [
   { name: "compact", description: "Summarize and compact the session history", template: "", hints: [] },
   { name: "context", description: "View token usage breakdown and limits", template: "", hints: [] },
   { name: "diff", description: "View modified files in the session", template: "", hints: [] },
+  { name: "doctor", description: "Run system diagnostics", template: "", hints: [] },
+  { name: "effort", description: "Set model effort level", template: "", hints: [] },
+  { name: "export", description: "Export session transcript to a file", template: "", hints: [] },
   { name: "find", description: "Search file contents across the workspace", template: "", hints: [] },
   { name: "help", description: "Show help and keyboard shortcuts", template: "", hints: [] },
   {
@@ -117,6 +127,8 @@ export const TUI_COMMANDS: Command[] = [
   { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
   { name: "models", description: "Change the current AI model", template: "", hints: [] },
   { name: "new", description: "Start a new conversation session", template: "", hints: [] },
+  { name: "permissions", description: "View pending permission requests", template: "", hints: [] },
+  { name: "plan", description: "Toggle plan mode (think before acting)", template: "", hints: [] },
   { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
   { name: "rewind", description: "Time-travel through conversation history", template: "", hints: [] },
   { name: "sessions", description: "List and switch between sessions", template: "", hints: [] },
@@ -135,6 +147,7 @@ export const TUI_COMMANDS: Command[] = [
 export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive, onSearch }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
+  const toast = useToast()
   const route = useRoute()
   const sync = useSync()
   const { theme } = useTheme()
@@ -318,6 +331,34 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       },
       context: () => dialog.push(() => <DialogContextView />),
       diff: () => dialog.push(() => <DialogDiff />),
+      doctor: () => dialog.push(() => <DialogDoctor />),
+      effort: () => dialog.push(() => <DialogEffort />),
+      export: () => {
+        const sid = session.sessionID
+        if (!sid) return
+        dialog.push(() => (
+          <DialogExportOptions
+            defaultFilename={`liteai-session-${sid.slice(0, 8)}.md`}
+            defaultThinking={false}
+            defaultToolDetails={true}
+            defaultAssistantMetadata={false}
+            defaultOpenWithoutSaving={false}
+            onConfirm={async (opts) => {
+              const messages = sync.message[sid] ?? []
+              const parts = sync.part
+              const content = formatSessionExport(messages, parts, opts)
+              if (opts.openWithoutSaving) {
+                editPromptInEditor(content)
+              } else {
+                await fs.writeFile(opts.filename, content, "utf-8")
+                toast.show({ variant: "success", message: `Exported to ${opts.filename}` })
+              }
+              dialog.pop()
+            }}
+            onCancel={() => dialog.pop()}
+          />
+        ))
+      },
       find: () => dialog.push(() => <DialogSearch />),
       search: () => onSearch?.(),
       help: () => dialog.push(() => <DialogHelpV2 />),
@@ -326,6 +367,19 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       memory: () => dialog.push(() => <DialogMemory />),
       models: () => dialog.push(() => <DialogModel />),
       new: () => route.navigate({ type: "home" }),
+      permissions: () => dialog.push(() => <DialogPermissions />),
+      plan: () => {
+        const sid = session.sessionID
+        if (!sid) return
+        // biome-ignore lint/suspicious/noExplicitAny: SDK method not typed yet
+        const planModeApi = (sdk.client.project.session as any).planMode
+        if (planModeApi) {
+          void planModeApi.toggle({ sessionID: sid, projectID: sdk.projectID })
+          toast.show({ variant: "info", message: "Plan mode toggled" })
+        } else {
+          toast.show({ variant: "warning", message: "Plan mode not supported yet" })
+        }
+      },
       plugins: () => dialog.push(() => <DialogPlugin />),
       rewind: () => dialog.push(() => <DialogRewind />),
       sessions: () => dialog.push(() => <DialogSessionList />),

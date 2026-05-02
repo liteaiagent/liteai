@@ -22,6 +22,10 @@ export const TuiOptions = z.object({
     .enum(["auto", "stacked"])
     .optional()
     .describe("Control diff rendering style: 'auto' adapts to terminal width, 'stacked' always shows single column"),
+  errorVerbosity: z
+    .enum(["low", "full"])
+    .optional()
+    .describe("Control error verbosity: 'low' shows only the first line, 'full' shows the full stack trace"),
 })
 
 export const TuiInfo = z
