@@ -140,7 +140,11 @@ The rewind viewer will implement:
 1. **Message-level navigation** — browse all turns in the session
 2. **DiffStats per turn** — show which files were changed, insertions/deletions for each turn
 3. **Restore options** — "Restore Code & Conversation", "Restore Conversation Only", "Summarize from here"
-4. **Cross-session search** — search transcripts across all historical sessions (using the JSONL sidechains)
+
+> [!NOTE]
+> **Cross-session search** (searching transcripts across all historical sessions) is deferred to Phase 5.
+> Rationale: With multiple UIs (CLI, Web, VSCode), this must be a core API — not client-side JSONL parsing.
+> Requires new core routes + potentially SQLite FTS5 indexing. See `phase4_open_questions.md` Q2.
 
 Reference: Claude Code's `MessageSelector.tsx` (831 lines) + `LogSelector.tsx` (1575 lines).
 
@@ -177,18 +181,25 @@ These are **deliberate architectural advantages** over the reference CLIs. Do NO
 
 ## Proposed Next Steps
 
-### Phase 4 — Specialized Views & Commands
+### Phase 4 — Specialized Views & Commands (✅ COMPLETED)
 
 > Focus: Fill the **critical functional gaps** that block parity.
 
-| Step | Gap(s) | Deliverable | 
-|---|---|---|
-| 4.0 | G4 | **Help Dialog V2** — Tabbed General + Commands view, powered by keybinding system |
-| 4.1 | G11 | **Manual `/compact`** — Register as TUI slash command + lower auto-compact to 80% + add circuit breaker |
-| 4.2 | G1 | **Context Visualization** — Token breakdown grid (files, tools, agents, system prompt). Port Claude's category model. |
-| 4.3 | G3 | **Diff Dialog** — File list navigation + detail view. Extend `structured-diff.tsx` into a multi-file dialog. |
-| 4.4 | G2 | **Rewind Viewer (Full Time-Travel)** — Message navigation with DiffStats, restore options, cross-session search. Leverage existing core snapshots. |
-| 4.5 | G5 | **Session Browser** — Enhance `dialog-session-list.tsx` with search, branch filtering, preview. |
+| Step | Gap(s) | Deliverable | Status |
+|---|---|---|---|
+| 4.0 | G4 | **Help Dialog V2** — Tabbed General + Commands view, powered by keybinding system | ✅ Done |
+| 4.1 | G11 | **Manual `/compact`** — Register as TUI slash command + lower auto-compact to 80% + add circuit breaker | ✅ Done |
+| 4.2 | G1 | **Context Visualization** — Core API endpoint (`GET /session/:id/context`) + CLI dialog. Token breakdown grid with static category estimates (system prompt, tools, agents, MCP, conversation). | ✅ Done |
+| 4.3 | G3 | **Diff Dialog** — File list navigation + detail view. Extend `structured-diff.tsx` into a multi-file dialog. | ✅ Done |
+| 4.4 | G2 | **Rewind Viewer** — Message navigation with per-turn DiffStats, restore options. Cross-session search deferred to Phase 5. | ✅ Done |
+| 4.5 | G5 | **Session Browser** — Core: AI-generated session descriptions (`tasks/description.ts`). CLI: branch indicators, archive support. | ✅ Done |
+
+**Phase 4 Completion Summary:**
+- **Help System**: Built a tabbed dialog (`DialogHelpV2`) grouping keybindings by context and documenting all slash commands.
+- **Compaction**: Implemented `/compact` slash command, `useCompactCircuitBreaker` to prevent compact loops, and adjusted auto-compact threshold to 80%.
+- **Context Breakdown**: Built `GET /session/:id/context` backend route and `ContextBreakdown` task to estimate token usage across categories (System, Models, Memory, Tools, Conversation), surfaced via `DialogContext`.
+- **Diff & Rewind**: Implemented `DialogDiff` for exploring cross-file session changes, and `DialogRewind` (Time Travel) for navigating user message history and viewing per-turn DiffStats.
+- **Session Metadata**: Extended `Session.Info` with AI-generated session descriptions using a fire-and-forget task triggered on the first session turn, and updated the session browser to display them.
 
 ### Phase 5 — Productivity & Polish
 
@@ -201,7 +212,8 @@ These are **deliberate architectural advantages** over the reference CLIs. Do NO
 | 5.2 | G8 | **Permission Mode Cycling** — Core API extension + `Shift+Tab` handler |
 | 5.3 | G9 | **MCP Management** — Extend `dialog-mcp.tsx` with tool detail, reconnect, settings |
 | 5.4 | G10 | **Memory File Management** — `/memory` command with file selector |
-| 5.5 | — | **Slash Command Registration Sweep** — Map `/help`, `/diff`, `/export`, `/history`, `/plan`, `/permissions` to their dialogs/actions |
+| 5.5 | G2 | **Cross-Session Search** — Core FTS5 infrastructure + `GET /session/search?q=` route. Enables rewind viewer to search across all historical sessions. |
+| 5.6 | — | **Slash Command Registration Sweep** — Map remaining commands to dialogs/actions |
 
 ### Phase 6 — Deferred (Post-Launch)
 

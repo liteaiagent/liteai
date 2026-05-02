@@ -184,6 +184,8 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   )
 }
 
+import { useSDK } from "../../context/sdk"
+import { useCompactCircuitBreaker } from "../../hooks/use-compact-circuit-breaker"
 import { useQueueProcessor } from "../../hooks/use-queue-processor"
 
 function SessionBottom({
@@ -196,15 +198,22 @@ function SessionBottom({
   const stats = useStats()
   const session = useSession()
   const sync = useSync()
+  const sdk = useSDK()
+  const breaker = useCompactCircuitBreaker(3)
 
   useQueueProcessor({
     sessionStatus: sync.session.status(sessionID),
     submit: session.submit,
   })
 
+  const handleAutoCompact = useCallback(() => {
+    if (breaker.isBroken) return
+    void breaker.withCircuitBreaker(() => sdk.client.project.session.summarize({ sessionID, projectID: sdk.projectID }))
+  }, [breaker, sdk, sessionID])
+
   return (
     <Box flexDirection="column" width="100%" flexShrink={0}>
-      <TokenWarning utilization={stats.contextUtilization} onAutoCompact={() => session.submit("/compact", "prompt")} />
+      <TokenWarning utilization={stats.contextUtilization} onAutoCompact={handleAutoCompact} />
       {cursorContext && <MessageActionsBar ctx={cursorContext} />}
       <PromptInput debug={false} verbose={false} isLoading={session.isLoading} cursorModeActive={!!cursorContext} />
       <StatusLine sessionID={sessionID} />

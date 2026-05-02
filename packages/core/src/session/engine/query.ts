@@ -17,6 +17,7 @@ import type { PlanModeState, PlanModeStateRef } from "../plan-mode-state"
 import { SessionProcessor } from "../processor"
 import { MessageID, PartID, type SessionID } from "../schema"
 import { SessionCompaction } from "../tasks/compaction"
+import { SessionDescription } from "../tasks/description"
 import { ensureTitle } from "../tasks/title"
 import { InstructionPrompt } from "./instruction"
 import { LoopDetectionService } from "./loop-detection"
@@ -156,6 +157,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         telemetryTracker,
         telemetryBatchId: `gen_${step}`,
       }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
+
+      SessionDescription.create({ sessionID }).catch((e: unknown) =>
+        log.error("SessionDescription failed", { error: e }),
+      )
     }
 
     // ── Model resolution ──

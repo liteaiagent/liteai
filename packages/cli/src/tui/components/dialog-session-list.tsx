@@ -85,13 +85,17 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         const isDeleting = toDelete === x.id
         const status = sync.session_status?.[x.id]
         const isWorking = status?.type === "busy"
+        // biome-ignore lint/suspicious/noExplicitAny: parentID access — bypassed until sdk is regenerated
+        const hasParent = !!(x as any).parentID
         return {
           title: isDeleting ? `Press ctrl+d again to confirm` : x.title,
+          // biome-ignore lint/suspicious/noExplicitAny: bypassed until sdk is regenerated
+          description: (x as any).description ?? undefined,
           bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
           footer: Locale.time(x.time.updated),
-          gutter: isWorking ? <Spinner /> : undefined,
+          gutter: isWorking ? <Spinner /> : hasParent ? <Text color={theme.info as Color}>⑂</Text> : undefined,
         }
       })
   }, [sessions, toDelete, sync.session_status, theme.error])
@@ -114,6 +118,16 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         if (!selectedOption) return
         dialog.replace(() => <DialogSessionRename session={selectedOption.value} />)
       },
+      "select:update": () => {
+        if (!selectedOption) return
+        const session = sessions.find((s) => s.id === selectedOption.value)
+        if (!session) return
+        void sdk.client.project.session.update({
+          sessionID: selectedOption.value,
+          projectID: sdk.projectID,
+          time: { archived: session.time.archived ? 0 : Date.now() },
+        })
+      },
     },
     { context: "Select" },
   )
@@ -124,7 +138,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
 
   return (
     <DialogSelect
-      title="Sessions"
+      title={`Sessions (${sessions.length})`}
       options={options}
       skipFilter={true}
       current={currentSessionID}
@@ -141,7 +155,9 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         dialog.clear()
       }}
       footerContent={
-        <Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+d delete · ctrl+r rename</Text>
+        <Text color={theme.textMuted as Color}>
+          ↑↓ navigate · Enter select · ctrl+d delete · ctrl+r rename · ctrl+a archive
+        </Text>
       }
     />
   )

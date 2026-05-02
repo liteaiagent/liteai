@@ -51,11 +51,14 @@ import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import { useKeybinding } from "../../keybindings/use-keybinding"
 import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
-import { DialogHelp } from "../../ui/dialog-help"
 import { detectInputHighlights } from "../../util/text-highlighting"
+import { DialogContext as DialogContextView } from "../dialog-context"
+import { DialogDiff } from "../dialog-diff"
+import { DialogHelpV2 } from "../dialog-help-v2"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogModel } from "../dialog-model"
 import { DialogPlugin } from "../dialog-plugin"
+import { DialogRewind } from "../dialog-rewind"
 import { DialogSessionList } from "../dialog-session-list"
 import { DialogSettings } from "../dialog-settings"
 import { DialogStats } from "../dialog-stats"
@@ -95,6 +98,35 @@ type PromptInputProps = {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
+export const TUI_COMMANDS: Command[] = [
+  { name: "compact", description: "Summarize and compact the session history", template: "", hints: [] },
+  { name: "context", description: "View token usage breakdown and limits", template: "", hints: [] },
+  { name: "diff", description: "View modified files in the session", template: "", hints: [] },
+  { name: "help", description: "Show help and keyboard shortcuts", template: "", hints: [] },
+  {
+    name: "history",
+    description: "Time-travel through conversation history (alias for /rewind)",
+    template: "",
+    hints: [],
+  },
+  { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
+  { name: "models", description: "Change the current AI model", template: "", hints: [] },
+  { name: "new", description: "Start a new conversation session", template: "", hints: [] },
+  { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
+  { name: "rewind", description: "Time-travel through conversation history", template: "", hints: [] },
+  { name: "sessions", description: "List and switch between sessions", template: "", hints: [] },
+  { name: "settings", description: "Open settings", template: "", hints: [] },
+  { name: "stats", description: "Show session statistics and token usage", template: "", hints: [] },
+  { name: "status", description: "Show system status", template: "", hints: [] },
+  { name: "theme", description: "Change the color theme", template: "", hints: [] },
+  {
+    name: "timeline",
+    description: "Time-travel through conversation history (alias for /rewind)",
+    template: "",
+    hints: [],
+  },
+]
+
 export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
@@ -129,22 +161,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   // ── History search state ────────────────────────────────────────────────
   const searchState = useHistorySearch()
 
-  const tuiCommands: Command[] = useMemo(
-    () => [
-      { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
-      { name: "models", description: "Change the current AI model", template: "", hints: [] },
-      { name: "new", description: "Start a new conversation session", template: "", hints: [] },
-      { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
-      { name: "sessions", description: "List and switch between sessions", template: "", hints: [] },
-      { name: "settings", description: "Open settings", template: "", hints: [] },
-      { name: "theme", description: "Change the color theme", template: "", hints: [] },
-      { name: "status", description: "Show system status", template: "", hints: [] },
-      { name: "stats", description: "Show session statistics and token usage", template: "", hints: [] },
-    ],
-    [],
-  )
-
-  const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(sync.command ?? []), ...tuiCommands])
+  const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(sync.command ?? []), ...TUI_COMMANDS])
 
   const atCompleter = useAtCompleter({
     input,
@@ -288,13 +305,24 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
   // Extracted so both the suggestion branch and direct-input branch can use them.
   const tuiInterceptors: Record<string, () => void> = useMemo(
     () => ({
+      compact: () => {
+        if (session.sessionID) {
+          void sdk.client.project.session.summarize({ sessionID: session.sessionID, projectID: sdk.projectID })
+        }
+      },
+      context: () => dialog.push(() => <DialogContextView />),
+      diff: () => dialog.push(() => <DialogDiff />),
+      help: () => dialog.push(() => <DialogHelpV2 />),
+      history: () => dialog.push(() => <DialogRewind />),
       mcp: () => dialog.push(() => <DialogMcp />),
       models: () => dialog.push(() => <DialogModel />),
       new: () => route.navigate({ type: "home" }),
       plugins: () => dialog.push(() => <DialogPlugin />),
+      rewind: () => dialog.push(() => <DialogRewind />),
       sessions: () => dialog.push(() => <DialogSessionList />),
       settings: () => dialog.push(() => <DialogSettings />),
       theme: () => dialog.push(() => <DialogTheme />),
+      timeline: () => dialog.push(() => <DialogRewind />),
       status: () => dialog.push(() => <DialogStatus />),
       stats: () => {
         const sid = session.sessionID
@@ -303,7 +331,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
         }
       },
     }),
-    [dialog, route, session.sessionID],
+    [dialog, route, session.sessionID, sdk.client, sdk.projectID],
   )
 
   const onSubmit = useCallback(
@@ -347,7 +375,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
           applyCommandSuggestion(
             selected,
             true, // shouldExecute
-            [...(sync.command ?? []), ...tuiCommands],
+            [...(sync.command ?? []), ...TUI_COMMANDS],
             input,
             commandSuggestions.midCommandMatch,
             (value) => trackAndSetInput(value),
@@ -378,7 +406,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
       const trimmed = inputParam.trimEnd()
 
       if (trimmed === "?") {
-        dialog.push(() => <DialogHelp />)
+        dialog.push(() => <DialogHelpV2 />)
         trackAndSetInput("")
         setCursorOffset(0)
         return
@@ -456,7 +484,6 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
       sync.command,
       sync.agent,
       sdk,
-      tuiCommands,
       tuiInterceptors,
       dialog,
       atCompleter,
@@ -621,8 +648,8 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
 
   // ── Highlights & Ghost Text ─────────────────────────────────────────────
   const knownCommands = useMemo(
-    () => [...sync.command.map((cmd) => cmd.name), ...tuiCommands.map((cmd) => cmd.name)],
-    [sync.command, tuiCommands],
+    () => [...sync.command.map((cmd) => cmd.name), ...TUI_COMMANDS.map((cmd) => cmd.name)],
+    [sync.command],
   )
 
   const highlights = useMemo(() => {
@@ -651,7 +678,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive 
           applyCommandSuggestion(
             selected,
             false,
-            [...(sync.command ?? []), ...tuiCommands],
+            [...(sync.command ?? []), ...TUI_COMMANDS],
             input,
             commandSuggestions.midCommandMatch,
             (value) => trackAndSetInput(value),

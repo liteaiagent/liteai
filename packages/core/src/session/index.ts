@@ -91,6 +91,7 @@ export namespace Session {
       directory: row.directory,
       parentID: row.parent_id ?? undefined,
       title: row.title,
+      description: row.description ?? undefined,
       version: row.version,
       summary,
       share,
@@ -117,6 +118,7 @@ export namespace Session {
       slug: info.slug,
       directory: info.directory,
       title: info.title,
+      description: info.description ?? null,
       version: info.version,
       share_url: info.share?.url,
       summary_additions: info.summary?.additions,
@@ -167,6 +169,7 @@ export namespace Session {
         })
         .optional(),
       title: z.string(),
+      description: z.string().optional(),
       version: z.string(),
       time: z.object({
         created: z.number(),
@@ -469,6 +472,27 @@ export namespace Session {
         const row = db
           .update(SessionTable)
           .set({ title: input.title })
+          .where(eq(SessionTable.id, input.sessionID))
+          .returning()
+          .get()
+        if (!row) throw new NotFoundError({ message: `Session not found: ${input.sessionID}` })
+        const info = fromRow(row)
+        Database.effect(() => Bus.publish(Event.Updated, { info }))
+        return info
+      })
+    },
+  )
+
+  export const setDescription = fn(
+    z.object({
+      sessionID: SessionID.zod,
+      description: z.string().optional(),
+    }),
+    async (input) => {
+      return Database.use((db) => {
+        const row = db
+          .update(SessionTable)
+          .set({ description: input.description ?? null })
           .where(eq(SessionTable.id, input.sessionID))
           .returning()
           .get()

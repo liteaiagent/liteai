@@ -14,6 +14,7 @@ import { SessionPrompt } from "../../session/engine"
 import { Message } from "../../session/message"
 import { SessionRevert } from "../../session/revert"
 import { SessionCompaction } from "../../session/tasks/compaction"
+import { ContextBreakdown } from "../../session/tasks/context-breakdown"
 import { Todo } from "../../session/todo"
 import { lazy } from "../../util/lazy"
 import { errors } from "../error"
@@ -497,6 +498,36 @@ export const SessionRoutes = lazy(() =>
           sessionID: params.sessionID,
           messageID: query.messageID,
         })
+        return c.json(result)
+      },
+    )
+    .get(
+      "/:sessionID/context",
+      describeRoute({
+        summary: "Get context breakdown",
+        description: "Get a breakdown of token usage by category for the session's context window.",
+        operationId: "project.session.context",
+        responses: {
+          200: {
+            description: "Context breakdown",
+            content: {
+              "application/json": {
+                schema: resolver(ContextBreakdown.Info),
+              },
+            },
+          },
+          ...errors(400, 404),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      async (c) => {
+        const sessionID = c.req.valid("param").sessionID
+        const result = await ContextBreakdown.get({ sessionID })
         return c.json(result)
       },
     )

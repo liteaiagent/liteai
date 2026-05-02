@@ -4,22 +4,22 @@ import { useTheme } from "../context/theme"
 
 type Props = {
   utilization: number
-  compressionThreshold?: number // default 0.85
+  compressionThreshold?: number // default 0.65
   onAutoCompact?: () => void
 }
 
-export function TokenWarning({ utilization, compressionThreshold = 0.85, onAutoCompact }: Props) {
+export function TokenWarning({ utilization, compressionThreshold = 0.65, onAutoCompact }: Props) {
   const { theme } = useTheme()
   const autoCompactFiredRef = useRef(false)
 
   useEffect(() => {
-    if (utilization >= 0.95) {
+    if (utilization >= 0.8) {
       if (!autoCompactFiredRef.current) {
         autoCompactFiredRef.current = true
         onAutoCompact?.()
       }
     } else {
-      // Reset when utilization drops below 95% (e.g., after compaction)
+      // Reset when utilization drops below 80% (e.g., after compaction)
       autoCompactFiredRef.current = false
     }
   }, [utilization, onAutoCompact])
@@ -30,7 +30,7 @@ export function TokenWarning({ utilization, compressionThreshold = 0.85, onAutoC
 
   const percent = Math.round(utilization * 100)
 
-  if (utilization >= 0.95) {
+  if (utilization >= 0.8) {
     return (
       <Box paddingX={1} backgroundColor={theme.error as Color} width="100%">
         <Text color={theme.backgroundPanel as Color} bold>
