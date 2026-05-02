@@ -172,9 +172,9 @@ Each platform must implement these capabilities — this document tracks current
 
 | Feature | Status | Source |
 |---|:---:|---|
-| Transcript Search | ❌ | — |
-| Workspace Search | ❌ | — |
-| Cross-Session Search | ❌ | — |
+| Transcript Search | ✅ | [`transcript-search.tsx`](../../packages/cli/src/tui/components/transcript-search.tsx) |
+| Workspace Search | ✅ | [`dialog-search.tsx`](../../packages/cli/src/tui/components/dialog-search.tsx) |
+| Cross-Session Search | ✅ | [`fts.ts`](../../packages/core/src/storage/fts.ts) |
 
 ---
 
@@ -185,7 +185,7 @@ Each platform must implement these capabilities — this document tracks current
 | MCP Server List | ✅ | [`dialog-mcp.tsx`](../../packages/cli/src/tui/components/dialog-mcp.tsx) |
 | MCP Management | ✅ | [`dialog-mcp.tsx`](../../packages/cli/src/tui/components/dialog-mcp.tsx) |
 | Agent List | ✅ | [`dialog-agent.tsx`](../../packages/cli/src/tui/components/dialog-agent.tsx) |
-| Memory Management | ❌ | — |
+| Memory Management | ✅ | [`dialog-memory.tsx`](../../packages/cli/src/tui/components/dialog-memory.tsx) |
 
 ---
 
@@ -201,9 +201,22 @@ Each platform must implement these capabilities — this document tracks current
 
 ---
 
+## 17. Diagnostics & Error Control
+
+| Feature | Status | Source |
+|---|:---:|---|
+| Doctor/Diagnostics | ✅ | [`dialog-doctor.tsx`](../../packages/cli/src/tui/components/dialog-doctor.tsx), [`diagnostics.ts`](../../packages/core/src/server/routes/diagnostics.ts) |
+| Error Verbosity | ✅ | [`dialog-settings.tsx`](../../packages/cli/src/tui/components/dialog-settings.tsx), [`tui-schema.ts`](../../packages/cli/src/cli/config/tui-schema.ts) |
+| Effort Level | ✅ | [`dialog-effort.tsx`](../../packages/cli/src/tui/components/dialog-effort.tsx) |
+| Permissions Dialog | ✅ | [`dialog-permissions.tsx`](../../packages/cli/src/tui/components/dialog-permissions.tsx) |
+| Plan Mode Indicator | ✅ | [`status-line.tsx`](../../packages/cli/src/tui/components/status-line.tsx) |
+| Session Export | ✅ | [`use-session-export.ts`](../../packages/cli/src/tui/hooks/use-session-export.ts), [`dialog-export-options.tsx`](../../packages/cli/src/tui/components/dialog-export-options.tsx) |
+
+---
+
 ## Summary
 
-| Category | ✅ Done | 🔶 Partial | ❌ Missing | Total |
+| Category | ✅ Done | 🟡 Partial | ❌ Missing | Total |
 |---|:---:|:---:|:---:|:---:|
 | Session Management | 4 | 0 | 3 | 7 |
 | Conversation | 7 | 0 | 0 | 7 |
@@ -218,12 +231,13 @@ Each platform must implement these capabilities — this document tracks current
 | Permissions | 3 | 0 | 0 | 3 |
 | Settings & Configuration | 5 | 0 | 0 | 5 |
 | Active Operation Feedback | 4 | 0 | 0 | 4 |
-| Search | 0 | 0 | 3 | 3 |
-| MCP & Agents | 3 | 0 | 1 | 4 |
+| Search | 3 | 0 | 0 | 3 |
+| MCP & Agents | 4 | 0 | 0 | 4 |
 | Status Display | 5 | 0 | 0 | 5 |
-| **Total** | **71** | **2** | **9** | **82** |
+| Diagnostics & Error Control | 6 | 0 | 0 | 6 |
+| **Total** | **81** | **2** | **5** | **88** |
 
-> **Coverage: 87% complete · 2% partial · 11% remaining**
+> **Coverage: 92% complete · 2% partial · 6% remaining**
 
 ---
 

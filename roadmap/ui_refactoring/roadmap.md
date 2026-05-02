@@ -1,33 +1,16 @@
 
 ## Remaining Gaps
 
-
-
-### Phase 6 — Search & Advanced Commands
-
-> Focus: Search infrastructure, cross-session features, command coverage.
-
-| # | Feature | Description | Effort |
-|---|---|---|---|
-| 6.0 | **Transcript Search** | In-memory text search across rendered messages with position highlighting. Tool-specific text extractors. | 3–4 days |
-| 6.1 | **Global File Search** | Ripgrep-powered workspace search dialog (`ctrl+shift+f`) with preview pane and editor-open. | 2–3 days |
-| 6.2 | **Cross-Session Search** | Core FTS5 infrastructure + `GET /session/search?q=` route. Enables searching across all historical sessions. | 3–5 days |
-| 6.3 | **MCP Management** | Extend `dialog-mcp.tsx` with tool detail views, reconnect, server settings. | 2–3 days |
-| 6.4 | **Memory File Management** | `/memory` command with file selector and update notifications. | 1–2 days |
-| 6.5 | **Slash Command Sweep** | Register remaining commands: `/diff`, `/export`, `/permissions`, `/plan`, `/context`, `/effort`. | 2 days |
-
 ### Phase 7 — Polish & Deferred
 
 > Focus: Nice-to-have features and low-priority gaps.
 
 | # | Feature | Description | Effort |
 |---|---|---|---|
-| 7.0 | **Error Verbosity Control** | `errorVerbosity: 'low' | 'full'` setting — hide internal tool errors in low mode. | 0.5 day |
 | 7.1 | **Output File Support** | When tool output exceeds threshold, save to file and show path. | 1 day |
 | 7.2 | **Subagent Hint Suppression** | Suppress `(ctrl+o to expand)` hint inside nested subagent output. | 0.5 day |
 | 7.3 | **Agent Management UI** | Agent list, detail view, editor. | 3 days |
 | 7.4 | **Advanced Stats** | Heatmaps, streaks, date range cycling. | 2 days |
-| 7.5 | **Doctor/Diagnostics** | System health check (providers, MCP, SDK version, config validation). | 2 days |
 | 7.6 | **Session Tagging/Renaming** | Tag system for sessions. Enhanced rename UX. | 1 day |
 | 7.7 | **Toast Positioning** | Absolute bottom positioning instead of inline. | 0.5 day |
 | 7.8 | **Feedback/Survey System** | Thumbs up/down + transcript sharing. | 2 days |
