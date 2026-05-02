@@ -2,7 +2,7 @@
 
 import { buildClientParams, type Client, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentCreateErrors, ProjectAgentCreateResponses, ProjectAgentDeleteErrors, ProjectAgentDeleteResponses, ProjectAgentGetErrors, ProjectAgentGetResponses, ProjectAgentListResponses, ProjectAgentUpdateErrors, ProjectAgentUpdateResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectDiagnosticsResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionContextErrors, ProjectSessionContextResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionHistoryErrors, ProjectSessionHistoryResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionSearchErrors, ProjectSessionSearchResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen';
+import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentCreateErrors, ProjectAgentCreateResponses, ProjectAgentDeleteErrors, ProjectAgentDeleteResponses, ProjectAgentGetErrors, ProjectAgentGetResponses, ProjectAgentListResponses, ProjectAgentUpdateErrors, ProjectAgentUpdateResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectDiagnosticsResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionContextErrors, ProjectSessionContextResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionHistoryErrors, ProjectSessionHistoryResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionSearchErrors, ProjectSessionSearchResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTagsErrors, ProjectSessionTagsResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -461,6 +461,7 @@ export class Session extends HeyApiClient {
         search?: string;
         limit?: number;
         archived?: boolean;
+        tag?: string;
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
                     { in: 'path', key: 'projectID' },
@@ -470,7 +471,8 @@ export class Session extends HeyApiClient {
                     { in: 'query', key: 'start' },
                     { in: 'query', key: 'search' },
                     { in: 'query', key: 'limit' },
-                    { in: 'query', key: 'archived' }
+                    { in: 'query', key: 'archived' },
+                    { in: 'query', key: 'tag' }
                 ] }]);
         return (options?.client ?? this.client).get<ProjectSessionListResponses, unknown, ThrowOnError>({
             url: '/project/{projectID}/session',
@@ -509,6 +511,23 @@ export class Session extends HeyApiClient {
                 ...options?.headers,
                 ...params.headers
             }
+        });
+    }
+    
+    /**
+     * Get session tags
+     *
+     * Retrieve all unique tags used across sessions.
+     */
+    public tags<ThrowOnError extends boolean = false>(parameters: {
+        projectID: string;
+        workspace?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [{ in: 'path', key: 'projectID' }, { in: 'query', key: 'workspace' }] }]);
+        return (options?.client ?? this.client).get<ProjectSessionTagsResponses, ProjectSessionTagsErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/tags',
+            ...options,
+            ...params
         });
     }
     
@@ -630,6 +649,7 @@ export class Session extends HeyApiClient {
         sessionMode?: 'Normal' | 'Coordinator' | 'Swarm';
         toolProfile?: 'Plan' | 'Fast';
         forkEnabled?: boolean;
+        tags?: Array<string>;
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
                     { in: 'path', key: 'sessionID' },
@@ -639,7 +659,8 @@ export class Session extends HeyApiClient {
                     { in: 'body', key: 'time' },
                     { in: 'body', key: 'sessionMode' },
                     { in: 'body', key: 'toolProfile' },
-                    { in: 'body', key: 'forkEnabled' }
+                    { in: 'body', key: 'forkEnabled' },
+                    { in: 'body', key: 'tags' }
                 ] }]);
         return (options?.client ?? this.client).patch<ProjectSessionUpdateResponses, ProjectSessionUpdateErrors, ThrowOnError>({
             url: '/project/{projectID}/session/{sessionID}',

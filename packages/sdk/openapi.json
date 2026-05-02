@@ -2368,6 +2368,14 @@
             "description": "Include archived sessions (default false)"
           },
           {
+            "in": "query",
+            "name": "tag",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter sessions by tag"
+          },
+          {
             "schema": {
               "type": "string"
             },
@@ -2472,6 +2480,61 @@
           {
             "lang": "js",
             "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.create({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/session/tags": {
+      "get": {
+        "operationId": "project.session.tags",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Get session tags",
+        "description": "Retrieve all unique tags used across sessions.",
+        "responses": {
+          "200": {
+            "description": "List of tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.tags({\n  ...\n})"
           }
         ]
       }
@@ -2921,6 +2984,12 @@
                   },
                   "forkEnabled": {
                     "type": "boolean"
+                  },
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -10403,6 +10472,12 @@
           "forkEnabled": {
             "default": false,
             "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": ["id", "slug", "projectID", "directory", "title", "version", "time"]

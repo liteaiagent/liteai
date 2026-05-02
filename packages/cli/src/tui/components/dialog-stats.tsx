@@ -1,20 +1,43 @@
-import { Box, type Color, Text } from "@liteai/ink"
-import { useMemo } from "react"
+import { Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
+import { useContext, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
 import { ContextUsageDisplay } from "./context-usage-display"
+import { Heatmap } from "./heatmap"
 
 type Props = {
   sessionID: string
 }
+
+const FACTOIDS = [
+  { threshold: 1_000_000, text: "You've crossed the million-token mark!" },
+  { threshold: 730_000, text: "That's roughly War and Peace in tokens!" },
+  { threshold: 100_000, text: "That's a short novel worth of tokens." },
+]
 
 export function DialogStats({ sessionID }: Props) {
   const _dialog = useDialog()
   const { theme } = useTheme()
   const sync = useSync()
   const stats = useSessionStats(sessionID)
+  const terminalSize = useContext(TerminalSizeContext)
+
+  const [tab, setTab] = useState<"session" | "global">("session")
+  const [dateRange, setDateRange] = useState<DateRange>("30d")
+  const globalStats = useGlobalStats(dateRange)
+
+  useInput((input, key) => {
+    if (key.tab) {
+      setTab((t) => (t === "session" ? "global" : "session"))
+    }
+    if (tab === "global" && input === "r") {
+      const ranges: DateRange[] = ["7d", "30d", "90d", "all"]
+      setDateRange((r) => ranges[(ranges.indexOf(r) + 1) % ranges.length])
+    }
+  })
 
   const diff = sync.session_diff[sessionID]
   const changes = useMemo(() => {
@@ -42,22 +65,16 @@ export function DialogStats({ sessionID }: Props) {
 
   const formatTokens = (t: number) => t.toLocaleString()
 
-  const _totalTokens =
-    stats.totalTokens.input +
-    stats.totalTokens.output +
-    stats.totalTokens.reasoning +
-    stats.totalTokens.cache.read +
-    stats.totalTokens.cache.write
+  const factoid = useMemo(() => {
+    const total = globalStats.totalTokens
+    for (const f of FACTOIDS) {
+      if (total >= f.threshold) return f.text
+    }
+    return "Keep chatting to reach new milestones!"
+  }, [globalStats.totalTokens])
 
-  return (
-    <Box paddingLeft={2} paddingRight={2} flexDirection="column" gap={1} paddingBottom={1}>
-      <Box flexDirection="row" justifyContent="space-between" paddingBottom={1}>
-        <Text color={theme.text as Color} bold>
-          Session Statistics
-        </Text>
-        <Text color={theme.textMuted as Color}>esc</Text>
-      </Box>
-
+  const renderSessionTab = () => (
+    <Box flexDirection="column" gap={1}>
       {/* Session Info */}
       <Box flexDirection="column" paddingBottom={1}>
         <Text color={theme.text as Color} bold>
@@ -191,6 +208,94 @@ export function DialogStats({ sessionID }: Props) {
               </Box>
             </Box>
           ))}
+        </Box>
+      )}
+    </Box>
+  )
+
+  const renderGlobalTab = () => {
+    if (globalStats.loading) {
+      return (
+        <Box padding={1}>
+          <Text color={theme.textMuted as Color}>Loading global stats...</Text>
+        </Box>
+      )
+    }
+
+    const termWidth = terminalSize?.columns ?? 80
+    const weeks = globalStats.dateRange === "7d" ? 1 : globalStats.dateRange === "30d" ? 4 : 12
+
+    return (
+      <Box flexDirection="column" gap={1}>
+        <Box flexDirection="row" gap={4} paddingBottom={1}>
+          <Box flexDirection="column">
+            <Text color={theme.textMuted as Color}>Total Sessions</Text>
+            <Text color={theme.text as Color} bold>
+              {globalStats.totalSessions}
+            </Text>
+          </Box>
+          <Box flexDirection="column">
+            <Text color={theme.textMuted as Color}>Current Streak</Text>
+            <Text color={theme.success as Color} bold>
+              {globalStats.currentStreak} days
+            </Text>
+          </Box>
+          <Box flexDirection="column">
+            <Text color={theme.textMuted as Color}>Longest Streak</Text>
+            <Text color={theme.primary as Color} bold>
+              {globalStats.longestStreak} days
+            </Text>
+          </Box>
+        </Box>
+
+        <Box flexDirection="column" paddingBottom={1}>
+          <Text color={theme.text as Color} bold>
+            Activity Heatmap
+          </Text>
+          <Box paddingTop={1} paddingBottom={1}>
+            <Heatmap dailyActivity={globalStats.dailyActivity} weeks={weeks} width={termWidth} />
+          </Box>
+          {globalStats.peakDay && (
+            <Text color={theme.textMuted as Color}>
+              Peak day: {globalStats.peakDay.date} ({globalStats.peakDay.count} sessions)
+            </Text>
+          )}
+        </Box>
+
+        {globalStats.totalTokens > 0 && (
+          <Box flexDirection="column" paddingBottom={1} paddingTop={1}>
+            <Text color={theme.text as Color} bold>
+              Factoid
+            </Text>
+            <Text color={theme.info as Color}>💡 {factoid}</Text>
+          </Box>
+        )}
+      </Box>
+    )
+  }
+
+  return (
+    <Box paddingLeft={2} paddingRight={2} flexDirection="column" gap={1} paddingBottom={1}>
+      <Box flexDirection="row" justifyContent="space-between" paddingBottom={1}>
+        <Box flexDirection="row" gap={2}>
+          <Text color={tab === "session" ? (theme.primary as Color) : (theme.text as Color)} bold>
+            Session Statistics
+          </Text>
+          <Text color={theme.textMuted as Color}>|</Text>
+          <Text color={tab === "global" ? (theme.primary as Color) : (theme.text as Color)} bold>
+            Global Statistics
+          </Text>
+        </Box>
+        <Text color={theme.textMuted as Color}>tab cycle · esc close</Text>
+      </Box>
+
+      {tab === "session" ? renderSessionTab() : renderGlobalTab()}
+
+      {tab === "global" && (
+        <Box paddingTop={1}>
+          <Text color={theme.textMuted as Color}>
+            Range: <Text color={theme.primary as Color}>{dateRange}</Text> (Press 'r' to cycle)
+          </Text>
         </Box>
       )}
     </Box>

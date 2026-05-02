@@ -53,6 +53,7 @@ export const SessionRoutes = lazy(() =>
           search: z.string().optional().meta({ description: "Filter sessions by title (case-insensitive)" }),
           limit: z.coerce.number().optional().meta({ description: "Maximum number of sessions to return" }),
           archived: z.coerce.boolean().optional().meta({ description: "Include archived sessions (default false)" }),
+          tag: z.string().optional().meta({ description: "Filter sessions by tag" }),
         }),
       ),
       async (c) => {
@@ -65,10 +66,34 @@ export const SessionRoutes = lazy(() =>
           search: query.search,
           limit: query.limit,
           archived: query.archived,
+          tag: query.tag,
         })) {
           sessions.push(session)
         }
         return c.json(sessions)
+      },
+    )
+    .get(
+      "/tags",
+      describeRoute({
+        summary: "Get session tags",
+        description: "Retrieve all unique tags used across sessions.",
+        operationId: "project.session.tags",
+        responses: {
+          200: {
+            description: "List of tags",
+            content: {
+              "application/json": {
+                schema: resolver(z.array(z.string())),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      async (c) => {
+        const result = Session.listTags()
+        return c.json(result)
       },
     )
     .get(
@@ -356,6 +381,7 @@ export const SessionRoutes = lazy(() =>
           sessionMode: z.enum(["Normal", "Coordinator", "Swarm"]).optional(),
           toolProfile: z.enum(["Plan", "Fast"]).optional(),
           forkEnabled: z.boolean().optional(),
+          tags: z.array(z.string()).optional(),
         }),
       ),
       async (c) => {
@@ -380,6 +406,9 @@ export const SessionRoutes = lazy(() =>
             toolProfile: updates.toolProfile,
             forkEnabled: updates.forkEnabled,
           })
+        }
+        if (updates.tags !== undefined) {
+          session = await Session.setTags({ sessionID, tags: updates.tags })
         }
 
         return c.json(session)

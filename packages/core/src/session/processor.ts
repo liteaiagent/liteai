@@ -1,5 +1,6 @@
 import { Log } from "@liteai/util/log"
 import type { Provider } from "@/provider/provider"
+import { AsyncPersistenceWriter } from "./engine/persistence-writer"
 import { EventPersister } from "./engine/persister"
 import type { EngineEvent } from "./events"
 import { LLM } from "./llm"
@@ -163,11 +164,25 @@ export namespace SessionProcessor {
 
           for await (const event of generator) {
             const action = await persister.handleEvent(event)
+
+            // Drain accumulated writes from synchronous event handling
+            const writer = new AsyncPersistenceWriter()
+            const ops = persister.drainWrites()
+            if (ops.length > 0) {
+              await writer.write(ops)
+            }
+
             if (action) {
               if (action === "continue") {
                 break // Break out of for await, but while (true) will restart
               }
               await persister.flush(currentStreamResult)
+
+              const flushOps = persister.drainWrites()
+              if (flushOps.length > 0) {
+                await writer.write(flushOps)
+              }
+
               return action
             }
           }
@@ -181,6 +196,12 @@ export namespace SessionProcessor {
             // If attempt was bumped, handleEvent returns "continue" early.
           }
           const finalAction = await persister.flush(currentStreamResult)
+          const writer = new AsyncPersistenceWriter()
+          const finalOps = persister.drainWrites()
+          if (finalOps.length > 0) {
+            await writer.write(finalOps)
+          }
+
           if (finalAction && finalAction !== "continue") return finalAction
           if (!finalAction) return "continue" // safe fallback
         }

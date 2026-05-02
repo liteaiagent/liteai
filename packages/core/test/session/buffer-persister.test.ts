@@ -20,6 +20,7 @@ import { Instance } from "../../src/project/instance"
 import { ProjectTable } from "../../src/project/project.sql"
 import type { Provider } from "../../src/provider/provider"
 import type { ModelID, ProviderID } from "../../src/provider/schema"
+import { AsyncPersistenceWriter } from "../../src/session/engine/persistence-writer"
 import { EventPersister } from "../../src/session/engine/persister"
 import { Message } from "../../src/session/message"
 import { MessageID, SessionID } from "../../src/session/schema"
@@ -272,6 +273,9 @@ describe("EventPersister in-memory buffer (FR-4, FR-5, FR-6)", () => {
 
         // flush must end the reasoning part using allParts (FR-6)
         await persister.flush(undefined)
+
+        const writer = new AsyncPersistenceWriter()
+        await writer.write(persister.drainWrites())
 
         // DB should now have the reasoning part with a completed end timestamp
         const parts = await Message.parts(msgID)

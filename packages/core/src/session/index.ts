@@ -107,6 +107,7 @@ export namespace Session {
       sessionMode: (row.session_mode as "Normal" | "Coordinator" | "Swarm") ?? "Normal",
       toolProfile: (row.tool_profile as "Plan" | "Fast") ?? "Plan",
       forkEnabled: row.fork_enabled === 1,
+      tags: row.tags ? row.tags.split(",").filter(Boolean) : undefined,
     }
   }
 
@@ -135,6 +136,7 @@ export namespace Session {
       session_mode: info.sessionMode ?? "Normal",
       tool_profile: info.toolProfile ?? "Plan",
       fork_enabled: info.forkEnabled ? 1 : 0,
+      tags: info.tags?.join(",") ?? null,
     }
   }
 
@@ -190,6 +192,7 @@ export namespace Session {
       sessionMode: z.enum(["Normal", "Coordinator", "Swarm"]).default("Normal"),
       toolProfile: z.enum(["Plan", "Fast"]).default("Plan"),
       forkEnabled: z.boolean().default(false),
+      tags: z.array(z.string()).optional(),
     })
     .meta({
       ref: "Session",
@@ -570,6 +573,42 @@ export namespace Session {
     },
   )
 
+  export const setTags = fn(
+    z.object({
+      sessionID: SessionID.zod,
+      tags: z.array(z.string()),
+    }),
+    async (input) => {
+      return Database.use((db) => {
+        const row = db
+          .update(SessionTable)
+          .set({ tags: input.tags.join(","), time_updated: Date.now() })
+          .where(eq(SessionTable.id, input.sessionID))
+          .returning()
+          .get()
+        if (!row) throw new NotFoundError({ message: `Session not found: ${input.sessionID}` })
+        const info = fromRow(row)
+        Database.effect(() => Bus.publish(Event.Updated, { info }))
+        return info
+      })
+    },
+  )
+
+  export function listTags(): string[] {
+    const rows = Database.use((db) =>
+      db.select({ tags: SessionTable.tags }).from(SessionTable).where(isNotNull(SessionTable.tags)).all(),
+    )
+    const tagSet = new Set<string>()
+    for (const row of rows) {
+      if (row.tags) {
+        for (const t of row.tags.split(",")) {
+          if (t.trim()) tagSet.add(t.trim())
+        }
+      }
+    }
+    return [...tagSet].sort()
+  }
+
   export const setRevert = fn(
     z.object({
       sessionID: SessionID.zod,
@@ -728,6 +767,7 @@ export namespace Session {
     search?: string
     limit?: number
     archived?: boolean
+    tag?: string
   }) {
     const project = Instance.project
     const conditions = [eq(SessionTable.project_id, project.id)]
@@ -746,6 +786,9 @@ export namespace Session {
     }
     if (input?.search) {
       conditions.push(like(SessionTable.title, `%${input.search}%`))
+    }
+    if (input?.tag) {
+      conditions.push(like(SessionTable.tags, `%${input.tag}%`))
     }
     if (!input?.archived) {
       conditions.push(isNull(SessionTable.time_archived))

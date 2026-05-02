@@ -1,4 +1,4 @@
-import { type Color, Text } from "@liteai/ink"
+import { Box, type Color, Text } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
@@ -10,6 +10,7 @@ import { useKeybindings } from "../keybindings/use-keybinding"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { Spinner } from "../ui/spinner"
 import { DialogSessionRename } from "./dialog-session-rename"
+import { DialogTag } from "./dialog-tag"
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value)
@@ -33,8 +34,16 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
 
   const [toDelete, setToDelete] = useState<string | undefined>()
   const [search, setSearch] = useState("")
+  const [activeTag, setActiveTag] = useState<string | undefined>()
+  const [tags, setTags] = useState<string[]>([])
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
   const debouncedSearch = useDebounce(search, 150)
+
+  useEffect(() => {
+    sdk.client.project.session.tags({ projectID: sdk.projectID }).then((res) => {
+      if (res.data) setTags(res.data)
+    })
+  }, [sdk])
 
   const [searchResults, setSearchResults] = useState<import("@liteai/sdk").Session[] | undefined>()
   const [ftsResults, setFtsResults] = useState<
@@ -49,7 +58,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
     }
     let active = true
     sdk.client.project.session
-      .list({ projectID: sdk.projectID, search: debouncedSearch, limit: 30 })
+      .list({ projectID: sdk.projectID, search: debouncedSearch, limit: 30, tag: activeTag })
       .then((result) => {
         if (active) setSearchResults(result.data ?? [])
       })
@@ -71,7 +80,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
     return () => {
       active = false
     }
-  }, [debouncedSearch, sdk])
+  }, [debouncedSearch, activeTag, sdk])
 
   const currentSessionID = useMemo(
     () => (route.data.type === "session" ? route.data.sessionID : undefined),
@@ -103,12 +112,13 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         const isDeleting = toDelete === x.id
         const status = sync.session_status?.[x.id]
         const isWorking = status?.type === "busy"
-        // biome-ignore lint/suspicious/noExplicitAny: parentID access — bypassed until sdk is regenerated
-        const hasParent = !!(x as any).parentID
+        const sessionExt = x as import("@liteai/sdk").Session & { tags?: string[]; description?: string }
+        const hasParent = !!x.parentID
         return {
           title: isDeleting ? `Press ctrl+d again to confirm` : x.title,
-          // biome-ignore lint/suspicious/noExplicitAny: bypassed until sdk is regenerated
-          description: (x as any).description ?? undefined,
+          description:
+            (sessionExt.tags?.length ? `${sessionExt.tags.map((t: string) => `#${t}`).join(" ")} ` : "") +
+            (sessionExt.description ?? ""),
           bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
@@ -168,6 +178,20 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
           time: { archived: session.time.archived ? 0 : Date.now() },
         })
       },
+      "select:tag": () => {
+        if (!selectedOption) return
+        const session = sessions.find((s) => s.id === selectedOption.value)
+        if (!session) return
+        const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
+        const existingTags = sessionExt.tags || []
+        dialog.replace(() => <DialogTag sessionID={selectedOption.value} existingTags={existingTags} allTags={tags} />)
+      },
+      "select:nextTag": () => {
+        const t = ["", ...tags]
+        const currentIdx = t.indexOf(activeTag ?? "")
+        const nextIdx = (currentIdx + 1) % t.length
+        setActiveTag(t[nextIdx] || undefined)
+      },
     },
     { context: "Select" },
   )
@@ -194,9 +218,21 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         })
         dialog.clear()
       }}
+      header={
+        tags.length > 0 ? (
+          <Box flexDirection="row" gap={1}>
+            <Text color={!activeTag ? (theme.primary as Color) : (theme.textMuted as Color)}>All</Text>
+            {tags.map((tag) => (
+              <Text key={tag} color={activeTag === tag ? (theme.primary as Color) : (theme.textMuted as Color)}>
+                #{tag}
+              </Text>
+            ))}
+          </Box>
+        ) : undefined
+      }
       footerContent={
         <Text color={theme.textMuted as Color}>
-          ↑↓ navigate · Enter select · ctrl+d delete · ctrl+r rename · ctrl+a archive
+          ↑↓ navigate · Enter select · ctrl+d del · ctrl+r rename · ctrl+a archive · ctrl+t tag · tab filter
         </Text>
       }
     />

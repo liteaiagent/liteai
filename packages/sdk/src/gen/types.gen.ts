@@ -922,6 +922,7 @@ export type Session = {
     sessionMode?: 'Normal' | 'Coordinator' | 'Swarm';
     toolProfile?: 'Plan' | 'Fast';
     forkEnabled?: boolean;
+    tags?: Array<string>;
 };
 
 export type EventSessionCreated = {
@@ -3211,6 +3212,10 @@ export type ProjectSessionListData = {
          * Include archived sessions (default false)
          */
         archived?: boolean;
+        /**
+         * Filter sessions by tag
+         */
+        tag?: string;
     };
     url: '/project/{projectID}/session';
 };
@@ -3257,6 +3262,35 @@ export type ProjectSessionCreateResponses = {
 };
 
 export type ProjectSessionCreateResponse = ProjectSessionCreateResponses[keyof ProjectSessionCreateResponses];
+
+export type ProjectSessionTagsData = {
+    body?: never;
+    path: {
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/tags';
+};
+
+export type ProjectSessionTagsErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+};
+
+export type ProjectSessionTagsError = ProjectSessionTagsErrors[keyof ProjectSessionTagsErrors];
+
+export type ProjectSessionTagsResponses = {
+    /**
+     * List of tags
+     */
+    200: Array<string>;
+};
+
+export type ProjectSessionTagsResponse = ProjectSessionTagsResponses[keyof ProjectSessionTagsResponses];
 
 export type ProjectSessionStatusData = {
     body?: never;
@@ -3436,6 +3470,7 @@ export type ProjectSessionUpdateData = {
         sessionMode?: 'Normal' | 'Coordinator' | 'Swarm';
         toolProfile?: 'Plan' | 'Fast';
         forkEnabled?: boolean;
+        tags?: Array<string>;
     };
     path: {
         sessionID: string;

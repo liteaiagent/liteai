@@ -38,6 +38,7 @@ export const SessionTable = sqliteTable(
     session_mode: text().notNull().default("Normal"),
     tool_profile: text().notNull().default("Plan"),
     fork_enabled: int().notNull().default(0),
+    tags: text(),
     ...Timestamps,
     time_compacting: integer(),
     time_archived: integer(),
