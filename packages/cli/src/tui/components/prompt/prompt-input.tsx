@@ -62,10 +62,12 @@ import { DialogDiff } from "../dialog-diff"
 import { DialogDoctor } from "../dialog-doctor"
 import { DialogEffort } from "../dialog-effort"
 import { DialogExportOptions } from "../dialog-export-options"
+import { DialogFeedback } from "../dialog-feedback"
 import { DialogHelpV2 } from "../dialog-help-v2"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogMemory } from "../dialog-memory"
 import { DialogModel } from "../dialog-model"
+import { DialogOutputStyle } from "../dialog-output-style"
 import { DialogPermissions } from "../dialog-permissions"
 import { DialogPlugin } from "../dialog-plugin"
 import { DialogRewind } from "../dialog-rewind"
@@ -362,6 +364,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           />
         ))
       },
+      feedback: () => dialog.push(() => <DialogFeedback onDone={() => dialog.pop()} />),
       find: () => dialog.push(() => <DialogSearch />),
       search: () => onSearch?.(),
       help: () => dialog.push(() => <DialogHelpV2 />),
@@ -390,6 +393,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       theme: () => dialog.push(() => <DialogTheme />),
       timeline: () => dialog.push(() => <DialogRewind />),
       status: () => dialog.push(() => <DialogStatus />),
+      style: () => dialog.push(() => <DialogOutputStyle onDone={() => dialog.pop()} />),
       stats: () => {
         const sid = session.sessionID
         if (sid) {

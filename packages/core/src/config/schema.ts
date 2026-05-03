@@ -590,6 +590,10 @@ export const Info = z
       .optional()
       .describe("Config-driven hooks that fire on lifecycle events (Claude Code compatible)"),
     disableAllHooks: z.boolean().optional().describe("Disable all config-driven hooks"),
+    outputStyle: z
+      .string()
+      .optional()
+      .describe("Active output style name. Styles are loaded from .liteai/styles/ as markdown files."),
     enabledPlugins: z
       .record(z.string(), z.boolean().nullable())
       .optional()

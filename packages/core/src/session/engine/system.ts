@@ -155,6 +155,13 @@ export namespace SystemPrompt {
       }
     }
 
+    // Inject active output style if configured
+    const { OutputStyle } = await import("../../style/style")
+    const activeStyle = await OutputStyle.active()
+    if (activeStyle) {
+      parts.push([`<output_style name="${activeStyle.name}">`, activeStyle.content, `</output_style>`].join("\n"))
+    }
+
     return { parts, boundary: staticBoundary }
   }
 

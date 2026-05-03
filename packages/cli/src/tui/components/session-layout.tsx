@@ -1,6 +1,7 @@
 import type { Color, ScrollBoxHandle } from "@liteai/ink"
 import { Box, ScrollBox, TerminalSizeContext, Text } from "@liteai/ink"
 import React, { createContext, type ReactNode, type RefObject, useContext, useState, useSyncExternalStore } from "react"
+import { Toast } from "../ui/toast"
 import { StickyPromptHeader } from "./sticky-prompt-header"
 import { NewMessagesPill } from "./unseen-divider"
 
@@ -118,8 +119,10 @@ export function SessionLayout({
         )}
       </Box>
       <Box flexDirection="column" flexShrink={0} width="100%" maxHeight="50%">
-        {/* TOAST OVERLAY ZONE (Absolute) */}
-        <Box position="absolute" bottom="100%" left={0} right={0} opaque={true} flexDirection="column" />
+        {/* TOAST OVERLAY ZONE (Absolute) — anchored just above the bottom bar */}
+        <Box position="absolute" bottom="100%" left={0} right={0} opaque={true} flexDirection="column">
+          <Toast />
+        </Box>
         <Box flexDirection="column" width="100%" flexGrow={1} overflowY="hidden">
           {bottom}
         </Box>

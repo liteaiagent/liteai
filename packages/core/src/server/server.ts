@@ -21,6 +21,7 @@ import {
 import { AuthRoutes } from "./routes/auth"
 import { ConfigRoutes } from "./routes/config"
 import { ExperimentalRoutes } from "./routes/experimental"
+import { FeedbackRoutes } from "./routes/feedback"
 import { FileRoutes } from "./routes/file"
 import { GlobalRoutes } from "./routes/global"
 import { InstanceRoutes } from "./routes/instance"
@@ -32,6 +33,7 @@ import { ProviderRoutes } from "./routes/provider"
 import { PtyRoutes } from "./routes/pty"
 import { QuestionRoutes } from "./routes/question"
 import { SessionRoutes } from "./routes/session"
+import { StyleRoutes } from "./routes/style"
 import { SystemRoutes } from "./routes/system"
 import { ToolRoutes } from "./routes/tool"
 
@@ -74,6 +76,7 @@ export namespace Server {
       .route("/config/mcp", McpRoutes())
       .route("/config/plugin", PluginRoutes())
       .route("/tool", ToolRoutes())
+      .route("/style", StyleRoutes())
       .route("/", InstanceRoutes())
   }
 
@@ -94,6 +97,7 @@ export namespace Server {
         .route("/system", SystemRoutes())
         .route("/auth", AuthRoutes())
         .route("/provider", ProviderRoutes())
+        .route("/feedback", FeedbackRoutes())
 
         // ─── Tier 2: Project CRUD (no instance boot required) ────────────
         .get(

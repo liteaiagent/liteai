@@ -1,7 +1,40 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import type React from "react"
-import { type ToastVariant, useToast } from "../context/toast"
+import { type ToastItem, type ToastVariant, useToast } from "../context/toast"
 
+const VARIANT_ICONS: Record<ToastVariant, string> = {
+  info: "ℹ",
+  success: "✓",
+  warning: "⚠",
+  error: "✗",
+}
+
+const VARIANT_COLORS: Record<ToastVariant, Color> = {
+  info: "ansi:blue",
+  success: "ansi:green",
+  warning: "ansi:yellow",
+  error: "ansi:red",
+}
+
+/** Render a single toast notification with icon and themed styling. */
+function ToastEntry({ toast }: { toast: ToastItem }): React.ReactNode {
+  const color = VARIANT_COLORS[toast.variant]
+  const icon = VARIANT_ICONS[toast.variant]
+
+  return (
+    <Box key={toast.id} flexDirection="row" paddingX={1} paddingY={0} borderStyle="round" borderColor={color}>
+      <Text color={color}>
+        {icon} {toast.title ? <Text bold>{toast.title}: </Text> : null}
+        {toast.message}
+      </Text>
+    </Box>
+  )
+}
+
+/**
+ * Renders all active toasts as a vertical stack.
+ * Designed to be placed in an absolute-positioned container at the bottom of the viewport.
+ */
 export function Toast(): React.ReactNode {
   const { toasts } = useToast()
 
@@ -9,26 +42,11 @@ export function Toast(): React.ReactNode {
     return null
   }
 
-  const colors: Record<ToastVariant, Color> = {
-    info: "ansi:blue",
-    success: "ansi:green",
-    warning: "ansi:yellow",
-    error: "ansi:red",
-  }
-
   return (
-    <Box flexDirection="column" gap={1} marginTop={1}>
-      {toasts.map((toast) => {
-        const color = colors[toast.variant]
-        return (
-          <Box key={toast.id} flexDirection="row" paddingX={1} paddingY={0} borderStyle="round" borderColor={color}>
-            <Text color={color}>
-              {toast.title ? <Text bold>{toast.title}: </Text> : null}
-              {toast.message}
-            </Text>
-          </Box>
-        )
-      })}
+    <Box flexDirection="column" gap={0}>
+      {toasts.map((toast) => (
+        <ToastEntry key={toast.id} toast={toast} />
+      ))}
     </Box>
   )
 }
