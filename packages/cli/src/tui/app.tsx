@@ -6,6 +6,7 @@ import { DialogProvider } from "./context/dialog"
 import { ExitProvider } from "./context/exit"
 import { KVProvider } from "./context/kv"
 import { LocalProvider } from "./context/local"
+import { PromptRefProvider } from "./context/prompt"
 import { RouteProvider, useRoute } from "./context/route"
 import { type EventSource, SDKProvider } from "./context/sdk"
 import { SessionProvider } from "./context/session"
@@ -63,11 +64,13 @@ export function App(props: AppProps) {
                         <LocalProvider>
                           <RouteProvider>
                             <DialogProvider>
-                              <SessionProvider>
-                                <AlternateScreen>
-                                  <AppContent />
-                                </AlternateScreen>
-                              </SessionProvider>
+                              <PromptRefProvider>
+                                <SessionProvider>
+                                  <AlternateScreen>
+                                    <AppContent />
+                                  </AlternateScreen>
+                                </SessionProvider>
+                              </PromptRefProvider>
                             </DialogProvider>
                           </RouteProvider>
                         </LocalProvider>
