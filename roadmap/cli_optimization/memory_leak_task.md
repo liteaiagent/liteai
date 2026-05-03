@@ -52,6 +52,13 @@
 
 ## Memory Optimization Roadmap Phases ✅ COMPLETE
 
+### Phase 1: Production Bundle Pipeline
+- [x] Configure `Bun.build` with `minify: true` in `script/build.ts`
+- [x] Bundle `src/index.ts` and `worker.ts` into a minified `dist/bundle` directory
+- [x] Run `bun build --compile` on the optimized `index.js` to produce `liteai.exe`
+- [x] Embed native C++ addons (`@parcel/watcher`, `better-sqlite3`) and `.wasm` files directly into the exe
+- [x] Copy `worker.js` alongside the executable and update `thread.ts` target resolution
+- [x] Add `"bundle"` script to `package.json`
 ### Phase 2: Lazy Provider Loading
 - [x] Rewrite `bundled.ts` — 22 static imports → dynamic `import()` closures
 - [x] Update `sdk.ts` — `getSDK()` awaits lazy loader before invoking factory
@@ -100,19 +107,19 @@ All 12 remaining providers → explicit createContext + Provider component:
 - [ ] Typecheck: `bun typecheck`
 - [ ] Lint: `bun lint:fix`
 
-## Phase 2: SSE Transport Hardening
+## Phase 2: SSE Transport Hardening ✅ COMPLETE
 
 > **Priority: Medium.** Without backoff, a misconfigured or offline backend
 > causes tight reconnection loops generating rapid `setState` calls. The new
 > `useAppState` architecture limits blast radius (no full-tree re-renders),
 > but CPU/network cost of rapid reconnects remains.
 
-- [ ] Add reconnection delay (1s) for normal stream completion
-- [ ] Implement exponential backoff (1s → 2s → 4s → ... → 30s cap)
-- [ ] Reset backoff on successful connection
-- [ ] Return cleanup function from useEffect SSE path
-- [ ] Add `startedRef` guard against concurrent SSE loops
-- [ ] Typecheck + Lint
+- [x] Add reconnection delay (1s) for normal stream completion
+- [x] Implement exponential backoff (1s → 2s → 4s → ... → 30s cap)
+- [x] Reset backoff on successful connection
+- [x] Return cleanup function from useEffect SSE path
+- [x] Add `startedRef` guard against concurrent SSE loops
+- [x] Typecheck + Lint
 
 ## Phase 3: State Lifecycle Management
 

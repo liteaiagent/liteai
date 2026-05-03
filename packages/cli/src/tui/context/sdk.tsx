@@ -25,6 +25,7 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
     // Use refs for values that should persist across renders but don't need to trigger them
     const abortControllerRef = useRef(new AbortController())
     const sseControllerRef = useRef<AbortController | undefined>(undefined)
+    const startedRef = useRef(false)
     const queueRef = useRef<Event[]>([])
     const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const lastFlushRef = useRef(0)
@@ -84,6 +85,8 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       const ctrl = new AbortController()
       sseControllerRef.current = ctrl
 
+      let backoff = 1000
+
       ;(async () => {
         while (true) {
           if (abortControllerRef.current.signal.aborted || ctrl.signal.aborted) break
@@ -91,12 +94,17 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
             const events = await sdk.event.subscribe({ signal: ctrl.signal })
             for await (const event of events.stream) {
               if (ctrl.signal.aborted) break
+              backoff = 1000 // reset on successful connection
               handleEvent(event as unknown as Event)
             }
+            if (ctrl.signal.aborted) break
+            // Wait before reconnecting after normal completion
+            await new Promise((resolve) => setTimeout(resolve, 1000))
           } catch {
             if (ctrl.signal.aborted) break
-            // Wait before reconnecting
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            // Exponential backoff
+            await new Promise((resolve) => setTimeout(resolve, backoff))
+            backoff = Math.min(backoff * 2, 30_000) // cap at 30s
           }
 
           if (timerRef.current) clearTimeout(timerRef.current)
@@ -107,11 +115,17 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
 
     useEffect(() => {
       if (props.events) {
-        const unsub = props.events.on(handleEvent)
-        return unsub
+        return props.events.on(handleEvent)
       }
 
+      if (startedRef.current) return
+      startedRef.current = true
       startSSE()
+
+      return () => {
+        startedRef.current = false
+        sseControllerRef.current?.abort()
+      }
     }, [props.events, handleEvent, startSSE])
 
     useEffect(() => {
@@ -139,7 +153,6 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
           // Bump version to trigger SDK client recreation (mirrors SolidJS sdk = createSDK())
           setSdkVersion((v) => v + 1)
           props.events?.setWorkspace?.(next)
-          if (!props.events) startSSE()
         },
         url: props.url,
       }),

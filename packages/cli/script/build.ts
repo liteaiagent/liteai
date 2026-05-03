@@ -241,14 +241,36 @@ for (const name of names()) {
 
   const item = targets[names().indexOf(name)]
   const workerPath = "./src/cli/cmd/tui/worker.ts"
-
-  await Bun.build({
+  // Step 1: Bundle and minify
+  const bundleResult = await Bun.build({
     tsconfig: "./tsconfig.json",
     plugins: [rawPlugin],
+    entrypoints: ["./src/index.ts", workerPath],
+    outdir: `dist/${name}/bundle`,
+    target: "bun",
+    minify: true,
+    define: {
+      LITEAI_VERSION: `'${Script.version}'`,
+      LITEAI_MIGRATIONS: JSON.stringify(migrations),
+      LITEAI_WORKER_PATH: '"./worker.js"',
+      LITEAI_CHANNEL: `'${Script.channel}'`,
+      LITEAI_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
+    },
+  })
+
+  if (!bundleResult.success) {
+    console.error(`Build failed for ${name}:`)
+    for (const log of bundleResult.logs) console.error(log)
+    process.exit(1)
+  }
+
+  // Step 2: Compile the minified index.js into an executable
+  await Bun.build({
+    entrypoints: [`dist/${name}/bundle/index.js`],
     compile: {
       autoloadBunfig: false,
       autoloadDotenv: false,
-      autoloadTsconfig: true,
+      autoloadTsconfig: false,
       autoloadPackageJson: true,
       // biome-ignore lint/suspicious/noExplicitAny: Bun compile target is dynamically constructed
       target: name.replace(pkg.name, "bun") as any,
@@ -263,16 +285,10 @@ for (const name of names()) {
         copyright: "Copyright (c)",
       },
     },
-    entrypoints: ["./src/index.ts", workerPath],
-    define: {
-      LITEAI_VERSION: `'${Script.version}'`,
-      LITEAI_MIGRATIONS: JSON.stringify(migrations),
-
-      LITEAI_WORKER_PATH: workerPath,
-      LITEAI_CHANNEL: `'${Script.channel}'`,
-      LITEAI_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
-    },
   })
+
+  // Copy bundled worker.js alongside the executable
+  await $`cp dist/${name}/bundle/cli/cmd/tui/worker.js dist/${name}/bin/worker.js`
 
   await $`rm -rf ./dist/${name}/bin/tui`
   await Bun.file(`dist/${name}/package.json`).write(

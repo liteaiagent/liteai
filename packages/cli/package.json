@@ -10,6 +10,7 @@
     "dev:serve": "bun --watch run ./src/index.ts serve",
     "build:exe": "bun run script/build.ts --single",
     "build:exe:all": "bun run script/build.ts",
+    "bundle": "bun run script/build.ts --single",
     "preview": "bun run script/release.ts --preview",
     "release": "bun run script/release.ts",
     "typecheck": "tsc --noEmit",

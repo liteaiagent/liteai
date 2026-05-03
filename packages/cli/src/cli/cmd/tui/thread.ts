@@ -22,9 +22,22 @@ declare global {
 type RpcClient = ReturnType<typeof Rpc.client<typeof rpc>>
 
 async function target() {
-  if (typeof LITEAI_WORKER_PATH !== "undefined") return LITEAI_WORKER_PATH
+  // If defined at build time via define: { LITEAI_WORKER_PATH: ... }
+  if (typeof LITEAI_WORKER_PATH !== "undefined" && LITEAI_WORKER_PATH !== "./src/cli/cmd/tui/worker.ts") {
+    // If it's a relative path starting with ./, resolve relative to the executable
+    if (LITEAI_WORKER_PATH.startsWith("./") && process.execPath) {
+      const exeDir = path.dirname(process.execPath)
+      const resolved = path.join(exeDir, LITEAI_WORKER_PATH.slice(2))
+      if (await Filesystem.exists(resolved)) return resolved
+    }
+    return LITEAI_WORKER_PATH
+  }
+
+  // Fallback 1: Production bundle (not compiled to exe, but bundled to dist/cli.js)
   const dist = new URL("./cli/cmd/tui/worker.js", import.meta.url)
   if (await Filesystem.exists(fileURLToPath(dist))) return dist
+
+  // Fallback 2: Local dev mode
   return new URL("./worker.ts", import.meta.url)
 }
 
