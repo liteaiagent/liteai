@@ -56,8 +56,45 @@ async function target() {
   return new URL("./worker.ts", import.meta.url)
 }
 
+async function readPipedInput(timeoutMs = 500): Promise<string | undefined> {
+  if (process.stdin.isTTY) return undefined
+
+  return new Promise((resolve) => {
+    let data = ""
+    let timeout: ReturnType<typeof setTimeout> | null = null
+
+    const onData = (chunk: Buffer | string) => {
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
+      data += chunk.toString()
+    }
+
+    const onEnd = () => {
+      cleanup()
+      resolve(data || undefined)
+    }
+
+    const cleanup = () => {
+      if (timeout) clearTimeout(timeout)
+      process.stdin.off("data", onData)
+      process.stdin.off("end", onEnd)
+    }
+
+    // Give up if no data arrives within timeoutMs
+    timeout = setTimeout(() => {
+      cleanup()
+      resolve(undefined) // Timeout reached, assume interactive shell
+    }, timeoutMs)
+
+    process.stdin.on("data", onData)
+    process.stdin.once("end", onEnd)
+  })
+}
+
 async function input(value?: string) {
-  const piped = process.stdin.isTTY ? undefined : await Bun.stdin.text()
+  const piped = await readPipedInput(500)
   if (!value) return piped
   if (!piped) return value
   return `${piped}\n${value}`
