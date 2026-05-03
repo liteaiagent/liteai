@@ -6,12 +6,14 @@ export async function tui(input: AppProps) {
   const unguard = win32InstallCtrlCGuard()
   win32DisableProcessedInput()
 
-  return new Promise<void>((resolve) => {
-    void (async () => {
-      const { waitUntilExit } = await render(<ReactApp {...input} />, { exitOnCtrlC: false })
-      await waitUntilExit()
-      unguard?.()
-      resolve()
-    })()
-  })
+  try {
+    const { waitUntilExit } = await render(<ReactApp {...input} />, { exitOnCtrlC: false })
+    await waitUntilExit()
+  } finally {
+    // Restore ENABLE_PROCESSED_INPUT so Ctrl+C generates SIGINT again.
+    // Critical when Ink unmounts on error: componentDidCatch → unmount
+    // removes the stdin readable listener and rejects waitUntilExit.
+    // Without unguard, SIGINT stays disabled and the process is unkillable.
+    unguard?.()
+  }
 }
