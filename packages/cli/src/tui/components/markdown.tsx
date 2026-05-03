@@ -63,7 +63,8 @@ export function Markdown(props: Props): React.ReactNode {
 }
 
 function MarkdownWithHighlight(props: Props): React.ReactNode {
-  const highlight = use(getCliHighlightPromise())
+  const promise = useMemo(() => getCliHighlightPromise(props.children), [props.children])
+  const highlight = use(promise)
   return <MarkdownBody {...props} highlight={highlight} />
 }
 

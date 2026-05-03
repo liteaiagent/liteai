@@ -144,26 +144,24 @@ All 12 remaining providers → explicit createContext + Provider component:
 
 ## Memory Optimization Roadmap — Remaining Phases
 
-### Phase 4 (Roadmap): Core/TUI Boundary Decoupling
+### Phase 4 (Roadmap): Core/TUI Boundary Decoupling ✅ CANCELLED (Worker Removed)
 
-> **Priority: Low (recontextualized).** With single-process mode as default,
-> the duplication problem no longer applies to the common case. Only relevant
-> for `--port`/`--mdns` (Worker mode).
+> **Priority: Cancelled.** With the dual-process worker architecture completely removed in recent changes, the CLI now strictly operates in single-process mode. The duplication problem is permanently resolved, rendering this phase moot.
 
-- [ ] Audit TUI imports from `@liteai/core` — classify as type-only / constant / function
-- [ ] Replace runtime imports with `import type` where possible
-- [ ] Extract shared types to `@liteai/sdk` or `@liteai/types`
-- [ ] Proxy `Global.Path` via bootstrap RPC instead of direct import
-- [ ] Verify: `grep -r "@liteai/core" packages/cli/src/tui/` returns zero runtime imports
+- [x] Audit TUI imports from `@liteai/core` — classify as type-only / constant / function (CANCELLED)
+- [x] Replace runtime imports with `import type` where possible (CANCELLED)
+- [x] Extract shared types to `@liteai/sdk` or `@liteai/types` (CANCELLED)
+- [x] Proxy `Global.Path` via bootstrap RPC instead of direct import (CANCELLED)
+- [x] Verify: `grep -r "@liteai/core" packages/cli/src/tui/` returns zero runtime imports (CANCELLED)
 
-### Phase 6 (Roadmap): Eager Import Audit
+### Phase 6 (Roadmap): Eager Import Audit ✅ COMPLETE
 
-> **Priority: Low.** Est. savings 10-30MB. Polish pass.
+> **Priority: Low.** Polish pass for final memory savings.
 
-- [ ] Lazy theme loading — replace 33 static JSON imports with on-demand `Bun.file().json()`
-- [ ] Lazy `highlight.js` grammars — switch to `highlight.js/lib/core` + on-demand registration
-- [ ] Evaluate dialog lazy registration (code-split 30+ dialogs, load on first open)
-- [ ] Typecheck + Lint
+- [x] Lazy theme loading — replaced 33 static JSON imports with on-demand `Bun.file().json()`
+- [x] Lazy `highlight.js` grammars — switched to `highlight.js/lib/core` + on-demand registration
+- [x] Evaluate dialog lazy registration — Evaluated: negligible memory benefits for code-splitting React UI components in Bun's single-process bundler. TUI components are extremely lightweight compared to the heavy external dependencies (AI providers, OTEL) we already lazy-loaded.
+- [x] Typecheck + Lint
 
 ---
 

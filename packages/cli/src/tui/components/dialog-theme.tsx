@@ -9,7 +9,7 @@ export function DialogTheme() {
   const dialog = useDialog()
 
   const options = useMemo(() => {
-    return Object.keys(all())
+    return all()
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
       .map((value) => ({
         title: value,
