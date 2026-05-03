@@ -8,7 +8,7 @@ export async function tui(input: AppProps) {
 
   return new Promise<void>((resolve) => {
     void (async () => {
-      const { waitUntilExit } = await render(<ReactApp {...input} />)
+      const { waitUntilExit } = await render(<ReactApp {...input} />, { exitOnCtrlC: false })
       await waitUntilExit()
       unguard?.()
       resolve()

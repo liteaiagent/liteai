@@ -52,7 +52,11 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.on(signal, async () => {
     Log.Default.info("received signal, shutting down", { signal })
     Server.shutdown()
+    // Bounded cleanup — if dispose hangs (e.g. server never started), force-exit after 3s
+    const disposeTimeout = setTimeout(() => process.exit(0), 3000)
+    disposeTimeout.unref()
     await Instance.disposeAll().catch(() => {})
+    clearTimeout(disposeTimeout)
     process.exit(0)
   })
 }

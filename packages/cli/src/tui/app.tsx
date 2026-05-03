@@ -1,5 +1,6 @@
 import { AlternateScreen } from "@liteai/ink"
 import type { TuiConfig } from "../cli/config/tui"
+import { GlobalExitHandler } from "./components/global-exit-handler"
 import { type Args, ArgsProvider } from "./context/args"
 import { DialogProvider } from "./context/dialog"
 import { ExitProvider } from "./context/exit"
@@ -47,32 +48,34 @@ export function App(props: AppProps) {
         <KVProvider>
           <ThemeProvider mode="dark">
             <KeybindingSetup>
-              <SDKProvider
-                url={props.url}
-                directory={props.directory}
-                projectID={props.projectID}
-                fetch={props.fetch}
-                headers={props.headers}
-                events={props.events}
-              >
-                <ArgsProvider {...props.args}>
-                  <ToastProvider>
-                    <SyncProvider>
-                      <LocalProvider>
-                        <RouteProvider>
-                          <DialogProvider>
-                            <SessionProvider>
-                              <AlternateScreen>
-                                <AppContent />
-                              </AlternateScreen>
-                            </SessionProvider>
-                          </DialogProvider>
-                        </RouteProvider>
-                      </LocalProvider>
-                    </SyncProvider>
-                  </ToastProvider>
-                </ArgsProvider>
-              </SDKProvider>
+              <GlobalExitHandler>
+                <SDKProvider
+                  url={props.url}
+                  directory={props.directory}
+                  projectID={props.projectID}
+                  fetch={props.fetch}
+                  headers={props.headers}
+                  events={props.events}
+                >
+                  <ArgsProvider {...props.args}>
+                    <ToastProvider>
+                      <SyncProvider>
+                        <LocalProvider>
+                          <RouteProvider>
+                            <DialogProvider>
+                              <SessionProvider>
+                                <AlternateScreen>
+                                  <AppContent />
+                                </AlternateScreen>
+                              </SessionProvider>
+                            </DialogProvider>
+                          </RouteProvider>
+                        </LocalProvider>
+                      </SyncProvider>
+                    </ToastProvider>
+                  </ArgsProvider>
+                </SDKProvider>
+              </GlobalExitHandler>
             </KeybindingSetup>
           </ThemeProvider>
         </KVProvider>

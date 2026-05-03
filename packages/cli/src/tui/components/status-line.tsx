@@ -5,6 +5,7 @@ import { useStats } from "../context/stats"
 import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useSessionContext } from "../routes/session/ctx"
+import { useExitState } from "./global-exit-handler"
 
 type Props = { sessionID: string }
 
@@ -128,6 +129,7 @@ function StatusLineInner({ sessionID }: Props) {
   const local = useLocal()
   const stats = useStats()
   const terminalSize = useContext(TerminalSizeContext)
+  const exitState = useExitState()
 
   const columns = terminalSize?.columns ?? 80
   const budget = columns - 2 // paddingX={1} means 1 on each side
@@ -139,6 +141,17 @@ function StatusLineInner({ sessionID }: Props) {
   )
 
   const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])
+
+  // Exit pending: replace the entire status line with the exit prompt
+  if (exitState.pending) {
+    return (
+      <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
+        <Text dim italic>
+          Press {exitState.keyName} again to exit
+        </Text>
+      </Box>
+    )
+  }
 
   return (
     <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
