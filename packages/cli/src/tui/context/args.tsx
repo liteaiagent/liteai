@@ -1,4 +1,5 @@
-import { createSimpleContext } from "./helper"
+import type React from "react"
+import { createContext, useContext } from "react"
 
 export interface Args {
   model?: string
@@ -9,7 +10,16 @@ export interface Args {
   fork?: boolean
 }
 
-export const { use: useArgs, provider: ArgsProvider } = createSimpleContext({
-  name: "Args",
-  init: (props: Args) => props,
-})
+const ArgsContext = createContext<Args | undefined>(undefined)
+
+export function useArgs(): Args {
+  const context = useContext(ArgsContext)
+  if (context === undefined) {
+    throw new Error("Args context must be used within a context provider")
+  }
+  return context
+}
+
+export function ArgsProvider({ children, ...props }: { children?: React.ReactNode } & Args) {
+  return <ArgsContext.Provider value={props}>{children}</ArgsContext.Provider>
+}

@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
+import type React from "react"
+import { createContext, useContext, useMemo, useState } from "react"
 import type { PromptInfo } from "../types"
-import { createSimpleContext } from "./helper"
 
 export type PromptRef = {
   focused: boolean
@@ -14,21 +14,35 @@ export type PromptRef = {
   prefill(text: string): void
 }
 
-export const { use: usePromptRef, provider: PromptRefProvider } = createSimpleContext({
-  name: "PromptRef",
-  init: () => {
-    const [current, setCurrent] = useState<PromptRef | undefined>()
+export type PromptRefContextValue = {
+  readonly current: PromptRef | undefined
+  set: (ref: PromptRef | undefined) => void
+}
 
-    return useMemo(
-      () => ({
-        get current() {
-          return current
-        },
-        set(ref: PromptRef | undefined) {
-          setCurrent(ref)
-        },
-      }),
-      [current],
-    )
-  },
-})
+const PromptRefContext = createContext<PromptRefContextValue | undefined>(undefined)
+
+export function usePromptRef(): PromptRefContextValue {
+  const context = useContext(PromptRefContext)
+  if (context === undefined) {
+    throw new Error("PromptRef context must be used within a context provider")
+  }
+  return context
+}
+
+export function PromptRefProvider({ children }: { children?: React.ReactNode }) {
+  const [current, setCurrent] = useState<PromptRef | undefined>()
+
+  const value = useMemo(
+    () => ({
+      get current() {
+        return current
+      },
+      set(ref: PromptRef | undefined) {
+        setCurrent(ref)
+      },
+    }),
+    [current],
+  )
+
+  return <PromptRefContext.Provider value={value}>{children}</PromptRefContext.Provider>
+}

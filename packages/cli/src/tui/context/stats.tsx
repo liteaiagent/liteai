@@ -1,5 +1,6 @@
+import type React from "react"
+import { createContext, useContext } from "react"
 import { type SessionStats, useSessionStats } from "../hooks/use-session-stats"
-import { createSimpleContext } from "./helper"
 import { useSession } from "./session"
 
 const DEFAULT_STATS: SessionStats = {
@@ -13,18 +14,26 @@ const DEFAULT_STATS: SessionStats = {
   perModel: [],
 }
 
-export const { use: useStats, provider: StatsProvider } = createSimpleContext({
-  name: "Stats",
-  init: () => {
-    const session = useSession()
-    const sessionID = session.sessionID
+const StatsContext = createContext<SessionStats | undefined>(undefined)
 
-    // We cannot conditionally call hooks, so we must always call useSessionStats.
-    // When sessionID is undefined, we pass a dummy ID and then return DEFAULT_STATS.
-    // However, useSessionStats takes a string.
-    const stats = useSessionStats(sessionID ?? "none")
+export function useStats(): SessionStats {
+  const context = useContext(StatsContext)
+  if (context === undefined) {
+    throw new Error("Stats context must be used within a context provider")
+  }
+  return context
+}
 
-    if (!sessionID) return DEFAULT_STATS
-    return stats
-  },
-})
+export function StatsProvider({ children }: { children?: React.ReactNode }) {
+  const session = useSession()
+  const sessionID = session.sessionID
+
+  // We cannot conditionally call hooks, so we must always call useSessionStats.
+  // When sessionID is undefined, we pass a dummy ID and then return DEFAULT_STATS.
+  // However, useSessionStats takes a string.
+  const stats = useSessionStats(sessionID ?? "none")
+
+  const value = sessionID ? stats : DEFAULT_STATS
+
+  return <StatsContext.Provider value={value}>{children}</StatsContext.Provider>
+}

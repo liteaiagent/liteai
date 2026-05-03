@@ -1,164 +1,192 @@
 import { createLiteaiClient, type Event } from "@liteai/sdk"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import type React from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { createEventEmitter } from "../util/event-emitter"
-import { createSimpleContext } from "./helper"
 
 export type EventSource = {
   on: (handler: (event: Event) => void) => () => void
   setWorkspace?: (workspaceID?: string) => void
 }
 
-export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
-  name: "SDK",
-  init: (props: {
-    url: string
-    directory?: string
-    projectID?: string
-    fetch?: typeof fetch
-    headers?: RequestInit["headers"]
-    events?: EventSource
-  }) => {
-    const [workspaceID, setWorkspaceID] = useState<string | undefined>()
-    // Bumped on workspace switch to force SDK client recreation (fresh abort controller)
-    const [sdkVersion, setSdkVersion] = useState(0)
+export type LiteaiEventMap = {
+  [key in Event["type"]]: Extract<Event, { type: key }>
+}
 
-    // Use refs for values that should persist across renders but don't need to trigger them
-    const abortControllerRef = useRef(new AbortController())
-    const sseControllerRef = useRef<AbortController | undefined>(undefined)
-    const startedRef = useRef(false)
-    const queueRef = useRef<Event[]>([])
-    const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-    const lastFlushRef = useRef(0)
+export type SDKContextValue = {
+  readonly client: ReturnType<typeof createLiteaiClient>
+  readonly projectID: string
+  readonly directory?: string
+  readonly event: ReturnType<typeof createEventEmitter<LiteaiEventMap>>
+  readonly fetch: typeof fetch
+  setWorkspace: (next?: string) => void
+  readonly url: string
+}
 
-    const sdk = useMemo(() => {
-      // Replace the global abort controller on each SDK recreation
-      abortControllerRef.current.abort()
-      const controller = new AbortController()
-      abortControllerRef.current = controller
+const SDKContext = createContext<SDKContextValue | undefined>(undefined)
 
-      return createLiteaiClient({
-        baseUrl: props.url,
-        signal: controller.signal,
-        fetch: props.fetch,
-        headers: props.headers,
-      })
-      // sdkVersion forces recreation on workspace switch
-    }, [props.url, props.fetch, props.headers, sdkVersion])
+export function useSDK(): SDKContextValue {
+  const context = useContext(SDKContext)
+  if (context === undefined) {
+    throw new Error("SDK context must be used within a context provider")
+  }
+  return context
+}
 
-    const emitter = useMemo(() => {
-      return createEventEmitter<{
-        [key in Event["type"]]: Extract<Event, { type: key }>
-      }>()
-    }, [])
+export function SDKProvider({
+  children,
+  url,
+  directory,
+  projectID,
+  fetch: fetchFn,
+  headers,
+  events,
+}: {
+  children?: React.ReactNode
+  url: string
+  directory?: string
+  projectID?: string
+  fetch?: typeof fetch
+  headers?: RequestInit["headers"]
+  events?: EventSource
+}) {
+  const [workspaceID, setWorkspaceID] = useState<string | undefined>()
+  // Bumped on workspace switch to force SDK client recreation (fresh abort controller)
+  const [sdkVersion, setSdkVersion] = useState(0)
 
-    const flush = useCallback(() => {
-      if (queueRef.current.length === 0) return
-      const events = queueRef.current
-      queueRef.current = []
-      timerRef.current = undefined
-      lastFlushRef.current = Date.now()
+  // Use refs for values that should persist across renders but don't need to trigger them
+  const abortControllerRef = useRef(new AbortController())
+  const sseControllerRef = useRef<AbortController | undefined>(undefined)
+  const startedRef = useRef(false)
+  const queueRef = useRef<Event[]>([])
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const lastFlushRef = useRef(0)
 
-      // Batch event emissions
-      for (const event of events) {
-        emitter.emit(event.type, event)
+  const sdk = useMemo(() => {
+    // Replace the global abort controller on each SDK recreation
+    abortControllerRef.current.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    return createLiteaiClient({
+      baseUrl: url,
+      signal: controller.signal,
+      fetch: fetchFn,
+      headers: headers,
+    })
+    // sdkVersion forces recreation on workspace switch
+  }, [url, fetchFn, headers, sdkVersion])
+
+  const emitter = useMemo(() => {
+    return createEventEmitter<LiteaiEventMap>()
+  }, [])
+
+  const flush = useCallback(() => {
+    if (queueRef.current.length === 0) return
+    const events = queueRef.current
+    queueRef.current = []
+    timerRef.current = undefined
+    lastFlushRef.current = Date.now()
+
+    // Batch event emissions
+    for (const event of events) {
+      emitter.emit(event.type, event)
+    }
+  }, [emitter])
+
+  const handleEvent = useCallback(
+    (event: Event) => {
+      queueRef.current.push(event)
+      const elapsed = Date.now() - lastFlushRef.current
+
+      if (timerRef.current) return
+
+      if (elapsed < 16) {
+        timerRef.current = setTimeout(flush, 16)
+        return
       }
-    }, [emitter])
+      flush()
+    },
+    [flush],
+  )
 
-    const handleEvent = useCallback(
-      (event: Event) => {
-        queueRef.current.push(event)
-        const elapsed = Date.now() - lastFlushRef.current
+  const startSSE = useCallback(() => {
+    sseControllerRef.current?.abort()
+    const ctrl = new AbortController()
+    sseControllerRef.current = ctrl
 
-        if (timerRef.current) return
+    let backoff = 1000
 
-        if (elapsed < 16) {
-          timerRef.current = setTimeout(flush, 16)
-          return
-        }
-        flush()
-      },
-      [flush],
-    )
-
-    const startSSE = useCallback(() => {
-      sseControllerRef.current?.abort()
-      const ctrl = new AbortController()
-      sseControllerRef.current = ctrl
-
-      let backoff = 1000
-
-      ;(async () => {
-        while (true) {
-          if (abortControllerRef.current.signal.aborted || ctrl.signal.aborted) break
-          try {
-            const events = await sdk.event.subscribe({ signal: ctrl.signal })
-            for await (const event of events.stream) {
-              if (ctrl.signal.aborted) break
-              backoff = 1000 // reset on successful connection
-              handleEvent(event as unknown as Event)
-            }
+    ;(async () => {
+      while (true) {
+        if (abortControllerRef.current.signal.aborted || ctrl.signal.aborted) break
+        try {
+          const events = await sdk.event.subscribe({ signal: ctrl.signal })
+          for await (const event of events.stream) {
             if (ctrl.signal.aborted) break
-            // Wait before reconnecting after normal completion
-            await new Promise((resolve) => setTimeout(resolve, 1000))
-          } catch {
-            if (ctrl.signal.aborted) break
-            // Exponential backoff
-            await new Promise((resolve) => setTimeout(resolve, backoff))
-            backoff = Math.min(backoff * 2, 30_000) // cap at 30s
+            backoff = 1000 // reset on successful connection
+            handleEvent(event as unknown as Event)
           }
-
-          if (timerRef.current) clearTimeout(timerRef.current)
-          if (queueRef.current.length > 0) flush()
+          if (ctrl.signal.aborted) break
+          // Wait before reconnecting after normal completion
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+        } catch {
+          if (ctrl.signal.aborted) break
+          // Exponential backoff
+          await new Promise((resolve) => setTimeout(resolve, backoff))
+          backoff = Math.min(backoff * 2, 30_000) // cap at 30s
         }
-      })()
-    }, [sdk, handleEvent, flush])
 
-    useEffect(() => {
-      if (props.events) {
-        return props.events.on(handleEvent)
-      }
-
-      if (startedRef.current) return
-      startedRef.current = true
-      startSSE()
-
-      return () => {
-        startedRef.current = false
-        sseControllerRef.current?.abort()
-      }
-    }, [props.events, handleEvent, startSSE])
-
-    useEffect(() => {
-      return () => {
-        abortControllerRef.current.abort()
-        sseControllerRef.current?.abort()
         if (timerRef.current) clearTimeout(timerRef.current)
+        if (queueRef.current.length > 0) flush()
       }
-    }, [])
+    })()
+  }, [sdk, handleEvent, flush])
 
-    const result = useMemo(
-      () => ({
-        get client() {
-          return sdk
-        },
-        get projectID() {
-          return workspaceID || props.projectID || props.directory || ""
-        },
-        directory: props.directory,
-        event: emitter,
-        fetch: props.fetch ?? fetch,
-        setWorkspace(next?: string) {
-          if (workspaceID === next) return
-          setWorkspaceID(next)
-          // Bump version to trigger SDK client recreation (mirrors SolidJS sdk = createSDK())
-          setSdkVersion((v) => v + 1)
-          props.events?.setWorkspace?.(next)
-        },
-        url: props.url,
-      }),
-      [sdk, workspaceID, props.projectID, props.directory, emitter, props.fetch, props.events, props.url, startSSE],
-    )
+  useEffect(() => {
+    if (events) {
+      return events.on(handleEvent)
+    }
 
-    return result
-  },
-})
+    if (startedRef.current) return
+    startedRef.current = true
+    startSSE()
+
+    return () => {
+      startedRef.current = false
+      sseControllerRef.current?.abort()
+    }
+  }, [events, handleEvent, startSSE])
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current.abort()
+      sseControllerRef.current?.abort()
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      get client() {
+        return sdk
+      },
+      get projectID() {
+        return workspaceID || projectID || directory || ""
+      },
+      directory: directory,
+      event: emitter,
+      fetch: fetchFn ?? fetch,
+      setWorkspace(next?: string) {
+        if (workspaceID === next) return
+        setWorkspaceID(next)
+        // Bump version to trigger SDK client recreation (mirrors SolidJS sdk = createSDK())
+        setSdkVersion((v) => v + 1)
+        events?.setWorkspace?.(next)
+      },
+      url: url,
+    }),
+    [sdk, workspaceID, projectID, directory, emitter, fetchFn, events, url, startSSE],
+  )
+
+  return <SDKContext.Provider value={value}>{children}</SDKContext.Provider>
+}

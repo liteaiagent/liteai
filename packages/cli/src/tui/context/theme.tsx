@@ -25,8 +25,8 @@ export class SyntaxStyle {
   }
 }
 
-import { useEffect, useMemo, useState } from "react"
-import { createSimpleContext } from "./helper"
+import type React from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { useKV } from "./kv"
 import aura from "./theme/aura.json" with { type: "json" }
 import ayu from "./theme/ayu.json" with { type: "json" }
@@ -282,105 +282,118 @@ export type ThemeContextValue = {
   ready: boolean
 }
 
-export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
-  name: "Theme",
-  init: (props: { mode: "dark" | "light" }) => {
-    const config = useTuiConfig()
-    const kv = useKV()
-    const { getPalette, clearPaletteCache } = useApp()
-    const { setRawMode } = useStdin()
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
-    const [themes, setThemes] = useState<Record<string, ThemeJson>>(DEFAULT_THEMES)
-    const [mode, setModeState] = useState<"dark" | "light">(kv.get("theme_mode", props.mode) as "dark" | "light")
-    const [active, setActive] = useState<string>((config.theme ?? kv.get("theme", "liteai")) as string)
-    const [ready, setReady] = useState(false)
+export function useTheme(): ThemeContextValue {
+  const context = useContext(ThemeContext)
+  if (context === undefined) {
+    throw new Error("Theme context must be used within a context provider")
+  }
+  return context
+}
 
-    useEffect(() => {
-      if (config.theme) setActive(config.theme)
-    }, [config.theme])
+export function ThemeProvider({ children, mode: initialMode }: { children?: React.ReactNode; mode: "dark" | "light" }) {
+  const config = useTuiConfig()
+  const kv = useKV()
+  const { getPalette, clearPaletteCache } = useApp()
+  const { setRawMode } = useStdin()
 
-    const resolveSystemTheme = async (currentMode: "dark" | "light") => {
-      const colors = await getPalette({ size: 16 })
-      if (!colors.palette[0]) {
-        if (active === "system") {
-          setActive("liteai")
-          setReady(true)
-        }
-        return
-      }
-      setThemes((prev) => ({
-        ...prev,
-        system: generateSystem(colors, currentMode),
-      }))
+  const [themes, setThemes] = useState<Record<string, ThemeJson>>(DEFAULT_THEMES)
+  const [mode, setModeState] = useState<"dark" | "light">(kv.get("theme_mode", initialMode) as "dark" | "light")
+  const [active, setActive] = useState<string>((config.theme ?? kv.get("theme", "liteai")) as string)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (config.theme) setActive(config.theme)
+  }, [config.theme])
+
+  const resolveSystemTheme = async (currentMode: "dark" | "light") => {
+    const colors = await getPalette({ size: 16 })
+    if (!colors.palette[0]) {
       if (active === "system") {
+        setActive("liteai")
+        setReady(true)
+      }
+      return
+    }
+    setThemes((prev) => ({
+      ...prev,
+      system: generateSystem(colors, currentMode),
+    }))
+    if (active === "system") {
+      setReady(true)
+    }
+  }
+
+  const init = async () => {
+    await resolveSystemTheme(mode)
+    try {
+      const custom = await getCustomThemes()
+      setThemes((prev) => ({ ...prev, ...custom }))
+    } catch {
+      setActive("liteai")
+    } finally {
+      if (active !== "system") {
         setReady(true)
       }
     }
+  }
 
-    const init = async () => {
-      await resolveSystemTheme(mode)
+  useEffect(() => {
+    setRawMode(true)
+    init().finally(() => setRawMode(false))
+  }, [])
+
+  useEffect(() => {
+    const handler = async () => {
+      clearPaletteCache()
+      setRawMode(true)
       try {
-        const custom = await getCustomThemes()
-        setThemes((prev) => ({ ...prev, ...custom }))
-      } catch {
-        setActive("liteai")
+        await init()
       } finally {
-        if (active !== "system") {
-          setReady(true)
-        }
+        setRawMode(false)
       }
     }
+    process.on("SIGUSR2", handler)
+    return () => {
+      process.off("SIGUSR2", handler)
+    }
+  }, [clearPaletteCache, setRawMode])
 
-    useEffect(() => {
-      setRawMode(true)
-      init().finally(() => setRawMode(false))
-    }, [])
+  const values = useMemo(() => {
+    return resolveTheme(themes[active] ?? themes.liteai, mode)
+  }, [themes, active, mode])
 
-    useEffect(() => {
-      const handler = async () => {
-        clearPaletteCache()
-        setRawMode(true)
-        try {
-          await init()
-        } finally {
-          setRawMode(false)
-        }
-      }
-      process.on("SIGUSR2", handler)
-      return () => {
-        process.off("SIGUSR2", handler)
-      }
-    }, [clearPaletteCache, setRawMode])
+  const syntax = useMemo(() => generateSyntax(values), [values])
+  const subtleSyntax = useMemo(() => generateSubtleSyntax(values), [values])
 
-    const values = useMemo(() => {
-      return resolveTheme(themes[active] ?? themes.liteai, mode)
-    }, [themes, active, mode])
+  const value = useMemo(
+    () => ({
+      theme: values,
+      selected: active,
+      all: () => themes,
+      syntax,
+      subtleSyntax,
+      mode: () => mode,
+      setMode: (m: "dark" | "light") => {
+        setModeState(m)
+        kv.set("theme_mode", m)
+      },
+      set: (t: string) => {
+        setActive(t)
+        kv.set("theme", t)
+      },
+      ready,
+    }),
+    [values, active, themes, syntax, subtleSyntax, mode, ready, kv],
+  )
 
-    const syntax = useMemo(() => generateSyntax(values), [values])
-    const subtleSyntax = useMemo(() => generateSubtleSyntax(values), [values])
+  if (!ready) {
+    return null
+  }
 
-    return useMemo(
-      () => ({
-        theme: values,
-        selected: active,
-        all: () => themes,
-        syntax,
-        subtleSyntax,
-        mode: () => mode,
-        setMode: (m: "dark" | "light") => {
-          setModeState(m)
-          kv.set("theme_mode", m)
-        },
-        set: (t: string) => {
-          setActive(t)
-          kv.set("theme", t)
-        },
-        ready,
-      }),
-      [values, active, themes, syntax, subtleSyntax, mode, ready, kv],
-    )
-  },
-})
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+}
 
 async function getCustomThemes() {
   const directories = [

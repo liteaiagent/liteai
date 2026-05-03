@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react"
-import { createSimpleContext } from "./helper"
+import type React from "react"
+import { createContext, useCallback, useContext, useMemo, useState } from "react"
 
 export type ToastVariant = "info" | "success" | "warning" | "error"
 
@@ -18,45 +18,54 @@ export type ToastContextValue = {
   toasts: ToastItem[]
 }
 
-export const { use: useToast, provider: ToastProvider } = createSimpleContext({
-  name: "Toast",
-  init: () => {
-    const [toasts, setToasts] = useState<ToastItem[]>([])
+const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 
-    const show = useCallback((options: ToastOptions) => {
-      const duration = options.duration ?? 3000
-      const id = Math.random().toString(36).substring(2, 9)
+export function useToast(): ToastContextValue {
+  const context = useContext(ToastContext)
+  if (context === undefined) {
+    throw new Error("Toast context must be used within a context provider")
+  }
+  return context
+}
 
-      setToasts((prev) => [...prev, { ...options, id }])
+export function ToastProvider({ children }: { children?: React.ReactNode }) {
+  const [toasts, setToasts] = useState<ToastItem[]>([])
 
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id))
-      }, duration)
-    }, [])
+  const show = useCallback((options: ToastOptions) => {
+    const duration = options.duration ?? 3000
+    const id = Math.random().toString(36).substring(2, 9)
 
-    const error = useCallback(
-      (err: unknown) => {
-        if (err instanceof Error) {
-          return show({
-            variant: "error",
-            message: err.message,
-          })
-        }
-        show({
+    setToasts((prev) => [...prev, { ...options, id }])
+
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id))
+    }, duration)
+  }, [])
+
+  const error = useCallback(
+    (err: unknown) => {
+      if (err instanceof Error) {
+        return show({
           variant: "error",
-          message: "An unknown error has occurred",
+          message: err.message,
         })
-      },
-      [show],
-    )
+      }
+      show({
+        variant: "error",
+        message: "An unknown error has occurred",
+      })
+    },
+    [show],
+  )
 
-    return useMemo(
-      () => ({
-        show,
-        error,
-        toasts,
-      }),
-      [show, error, toasts],
-    )
-  },
-})
+  const value = useMemo(
+    () => ({
+      show,
+      error,
+      toasts,
+    }),
+    [show, error, toasts],
+  )
+
+  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
+}

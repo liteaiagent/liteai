@@ -83,7 +83,7 @@
 
 ---
 
-## Phase 1B: Migrate createSimpleContext Providers
+## Phase 1B: Migrate createSimpleContext Providers ✅ COMPLETE
 
 > **Priority: Low.** These providers hold small, infrequently-changing state.
 > The `createSimpleContext` pattern re-executes `init()` per render, but unlike
@@ -91,21 +91,21 @@
 
 All 12 remaining providers → explicit createContext + Provider component:
 
-- [ ] `context/exit.tsx` — ExitProvider
-- [ ] `context/args.tsx` — ArgsProvider
-- [ ] `context/kv.tsx` — KVProvider
-- [ ] `context/tui-config.tsx` — TuiConfigProvider
-- [ ] `context/theme.tsx` — ThemeProvider
-- [ ] `context/toast.tsx` — ToastProvider
-- [ ] `context/route.tsx` — RouteProvider
-- [ ] `context/prompt.tsx` — PromptRefProvider
-- [ ] `context/sdk.tsx` — SDKProvider
-- [ ] `context/session.tsx` — SessionProvider
-- [ ] `context/local.tsx` — LocalProvider
-- [ ] `context/stats.tsx` — StatsProvider
-- [ ] Delete `context/helper.tsx` (createSimpleContext)
-- [ ] Typecheck: `bun typecheck`
-- [ ] Lint: `bun lint:fix`
+- [x] `context/exit.tsx` — ExitProvider
+- [x] `context/args.tsx` — ArgsProvider
+- [x] `context/kv.tsx` — KVProvider
+- [x] `context/tui-config.tsx` — TuiConfigProvider
+- [x] `context/theme.tsx` — ThemeProvider
+- [x] `context/toast.tsx` — ToastProvider
+- [x] `context/route.tsx` — RouteProvider
+- [x] `context/prompt.tsx` — PromptRefProvider
+- [x] `context/sdk.tsx` — SDKProvider
+- [x] `context/session.tsx` — SessionProvider
+- [x] `context/local.tsx` — LocalProvider
+- [x] `context/stats.tsx` — StatsProvider
+- [x] Delete `context/helper.tsx` (createSimpleContext)
+- [x] Typecheck: `bun typecheck`
+- [x] Lint: `bun lint:fix`
 
 ## Phase 2: SSE Transport Hardening ✅ COMPLETE
 
