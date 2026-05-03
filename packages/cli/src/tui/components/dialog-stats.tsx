@@ -22,7 +22,6 @@ export function DialogStats({ sessionID }: Props) {
   const _dialog = useDialog()
   const { theme } = useTheme()
   const session_diff = useAppState((s) => s.session_diff)
-  const sessionStatus = useAppState((s) => s.session_status[sessionID] ?? { type: "idle" as const })
   const stats = useSessionStats(sessionID)
   const terminalSize = useContext(TerminalSizeContext)
 

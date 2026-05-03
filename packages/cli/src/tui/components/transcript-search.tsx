@@ -12,7 +12,7 @@ export function TranscriptSearch(props: {
   const [query, setQuery] = useState("")
   const [currentIndex, setCurrentIndex] = useState(0)
   const session = useSession()
-  const messagesList = useAppState(selectMessages(session.sessionID!))
+  const messagesList = useAppState(selectMessages(session.sessionID ?? ""))
   const parts = useAppState((s) => s.part)
 
   const matches = useMemo(() => {

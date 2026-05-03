@@ -2,7 +2,6 @@ import type { Snapshot } from "@liteai/core/snapshot/index"
 import type {
   Event,
   LiteaiClient,
-  McpStatus,
   Message,
   Part,
   PermissionRequest,
@@ -39,7 +38,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       setState((prev) => {
         const requests = prev.permission[sessionID]
         if (!requests) return prev
-        const match = Binary.search(requests as any[], requestID, (r: any) => r.id)
+        const match = Binary.search(requests as PermissionRequest[], requestID, (r: PermissionRequest) => r.id)
         if (match.found) {
           const nextReqs = [...requests]
           nextReqs.splice(match.index, 1)
@@ -54,7 +53,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       const request = event.properties as unknown as PermissionRequest
       setState((prev) => {
         const requests = prev.permission[request.sessionID] || []
-        const match = Binary.search(requests as any[], request.id, (r: any) => r.id)
+        const match = Binary.search(requests as PermissionRequest[], request.id, (r: PermissionRequest) => r.id)
         const nextReqs = [...requests]
         if (match.found) {
           nextReqs[match.index] = request
@@ -73,7 +72,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       setState((prev) => {
         const requests = prev.question[sessionID]
         if (!requests) return prev
-        const match = Binary.search(requests as any[], requestID, (r: any) => r.id)
+        const match = Binary.search(requests as QuestionRequest[], requestID, (r: QuestionRequest) => r.id)
         if (match.found) {
           const nextReqs = [...requests]
           nextReqs.splice(match.index, 1)
@@ -88,7 +87,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       const request = event.properties as unknown as QuestionRequest
       setState((prev) => {
         const requests = prev.question[request.sessionID] || []
-        const match = Binary.search(requests as any[], request.id, (r: any) => r.id)
+        const match = Binary.search(requests as QuestionRequest[], request.id, (r: QuestionRequest) => r.id)
         const nextReqs = [...requests]
         if (match.found) {
           nextReqs[match.index] = request
@@ -121,7 +120,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
 
     case "session.deleted": {
       setState((prev) => {
-        const match = Binary.search(prev.sessions as any[], event.properties.info.id, (s: any) => s.id)
+        const match = Binary.search(prev.sessions as Session[], event.properties.info.id, (s: Session) => s.id)
         if (match.found) {
           const nextSessions = [...prev.sessions]
           nextSessions.splice(match.index, 1)
@@ -135,7 +134,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
     case "session.updated": {
       setState((prev) => {
         const info = event.properties.info as Session
-        const match = Binary.search(prev.sessions as any[], info.id, (s: any) => s.id)
+        const match = Binary.search(prev.sessions as Session[], info.id, (s: Session) => s.id)
         const nextSessions = [...prev.sessions]
         if (match.found) {
           nextSessions[match.index] = info
@@ -162,7 +161,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       const info = event.properties.info as Message
       setState((prev) => {
         const messages = prev.message[info.sessionID] || []
-        const match = Binary.search(messages as any[], info.id, (m: any) => m.id)
+        const match = Binary.search(messages as Message[], info.id, (m: Message) => m.id)
         const nextMsgs = [...messages]
         if (match.found) {
           nextMsgs[match.index] = info
@@ -189,7 +188,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
         const messageID = event.properties.messageID
         const messages = prev.message[sessionID]
         if (!messages) return prev
-        const match = Binary.search(messages as any[], messageID, (m: any) => m.id)
+        const match = Binary.search(messages as Message[], messageID, (m: Message) => m.id)
         if (match.found) {
           const nextMsgs = [...messages]
           nextMsgs.splice(match.index, 1)
@@ -204,7 +203,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       const p = event.properties.part as Part
       setState((prev) => {
         const parts = prev.part[p.messageID] || []
-        const match = Binary.search(parts as any[], p.id, (x: any) => x.id)
+        const match = Binary.search(parts as Part[], p.id, (x: Part) => x.id)
         const nextParts = [...parts]
         if (match.found) {
           nextParts[match.index] = p
@@ -221,11 +220,14 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       setState((prev) => {
         const parts = prev.part[messageID]
         if (!parts) return prev
-        const match = Binary.search(parts as any[], partID, (p: any) => p.id)
+        const match = Binary.search(parts as Part[], partID, (p: Part) => p.id)
         if (match.found) {
           const nextParts = [...parts]
-          const existingPart = nextParts[match.index] as any
-          nextParts[match.index] = { ...existingPart, [field]: (existingPart[field] ?? "") + delta }
+          const existingPart = nextParts[match.index] as Record<string, unknown>
+          nextParts[match.index] = {
+            ...existingPart,
+            [field]: ((existingPart[field] as string | undefined) ?? "") + delta,
+          } as unknown as Part
           return { ...prev, part: { ...prev.part, [messageID]: nextParts } }
         }
         return prev
@@ -239,7 +241,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
         const partID = event.properties.partID
         const parts = prev.part[messageID]
         if (!parts) return prev
-        const match = Binary.search(parts as any[], partID, (p: any) => p.id)
+        const match = Binary.search(parts as Part[], partID, (p: Part) => p.id)
         if (match.found) {
           const nextParts = [...parts]
           nextParts.splice(match.index, 1)

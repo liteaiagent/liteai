@@ -1,11 +1,9 @@
-import { LangfuseSpanProcessor } from "@langfuse/otel"
 import { DiagConsoleLogger, DiagLogLevel, diag, metrics } from "@opentelemetry/api"
 import { logs } from "@opentelemetry/api-logs"
-import { envDetector, hostDetector, osDetector, resourceFromAttributes } from "@opentelemetry/resources"
-import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs"
-import { MeterProvider } from "@opentelemetry/sdk-metrics"
-import { NodeSDK } from "@opentelemetry/sdk-node"
-import { BatchSpanProcessor, type SpanProcessor } from "@opentelemetry/sdk-trace-base"
+import type { LogRecordExporter, LoggerProvider as TLoggerProvider } from "@opentelemetry/sdk-logs"
+import type { MeterProvider as TMeterProvider } from "@opentelemetry/sdk-metrics"
+import type { NodeSDK as TNodeSDK } from "@opentelemetry/sdk-node"
+import type { SpanExporter, SpanProcessor } from "@opentelemetry/sdk-trace-base"
 import {
   ATTR_SERVICE_NAME,
   ATTR_SERVICE_NAMESPACE,
@@ -60,9 +58,9 @@ export function applyConfigToEnv(config: Info) {
 }
 
 // Keep explicit providers for shutdown
-let globalMeterProvider: MeterProvider | undefined
-let globalLoggerProvider: LoggerProvider | undefined
-let globalNodeSdk: NodeSDK | undefined
+let globalMeterProvider: TMeterProvider | undefined
+let globalLoggerProvider: TLoggerProvider | undefined
+let globalNodeSdk: TNodeSDK | undefined
 
 export async function initializeTelemetry() {
   if (!process.env.OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE) {
@@ -89,11 +87,14 @@ export async function initializeTelemetry() {
   // Initialize Perfetto tracing (independent of OTEL)
   initializePerfettoTracing(globalTelemetryConfig?.perfetto)
 
-  const readers = []
-
-  if (telemetryEnabled) {
-    readers.push(...(await getOtlpReaders(globalTelemetryConfig?.otel)))
+  if (!telemetryEnabled) {
+    return
   }
+
+  const { envDetector, hostDetector, osDetector, resourceFromAttributes } = await import("@opentelemetry/resources")
+  const { MeterProvider } = await import("@opentelemetry/sdk-metrics")
+
+  const readers = await getOtlpReaders(globalTelemetryConfig?.otel)
 
   const baseAttributes: Record<string, string> = {
     [ATTR_SERVICE_NAMESPACE]: "liteai",
@@ -125,87 +126,90 @@ export async function initializeTelemetry() {
   metrics.setGlobalMeterProvider(meterProvider)
   globalMeterProvider = meterProvider
 
-  if (telemetryEnabled) {
-    const logExporters = await getOtlpLogExporters(globalTelemetryConfig?.otel)
+  const logExporters = await getOtlpLogExporters(globalTelemetryConfig?.otel)
 
-    if (logExporters.length > 0) {
-      const loggerProvider = new LoggerProvider({
-        resource,
-        processors: logExporters.map(
-          (exporter) =>
-            new BatchLogRecordProcessor(exporter, {
-              scheduledDelayMillis: parseInt(
-                globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),
-                10,
-              ),
-            }),
-        ),
-      })
+  if (logExporters.length > 0) {
+    const { BatchLogRecordProcessor, LoggerProvider } = await import("@opentelemetry/sdk-logs")
+    const loggerProvider = new LoggerProvider({
+      resource,
+      processors: logExporters.map(
+        (exporter) =>
+          new BatchLogRecordProcessor(exporter as LogRecordExporter, {
+            scheduledDelayMillis: parseInt(
+              globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_LOGS_EXPORT_INTERVAL_MS.toString(),
+              10,
+            ),
+          }),
+      ),
+    })
 
-      logs.setGlobalLoggerProvider(loggerProvider)
-      globalLoggerProvider = loggerProvider
+    logs.setGlobalLoggerProvider(loggerProvider)
+    globalLoggerProvider = loggerProvider
 
-      process.on("beforeExit", async () => {
-        await loggerProvider.forceFlush()
-        await globalNodeSdk?.shutdown()
-        await globalMeterProvider?.forceFlush()
-      })
+    process.on("beforeExit", async () => {
+      await loggerProvider.forceFlush()
+      await globalNodeSdk?.shutdown()
+      await globalMeterProvider?.forceFlush()
+    })
 
-      process.on("exit", () => {
-        void loggerProvider.forceFlush()
-        void globalMeterProvider?.forceFlush()
-      })
-    }
+    process.on("exit", () => {
+      void loggerProvider.forceFlush()
+      void globalMeterProvider?.forceFlush()
+    })
+  }
 
-    // ── Traces: NodeSDK + LangfuseSpanProcessor ──────────────────────────
-    // NodeSDK installs AsyncLocalStorageContextManager globally, which is
-    // required for OTel context to propagate across async/await boundaries.
-    // Without it, BasicTracerProvider loses parent context between ticks and
-    // every streamText / startSpan call becomes a disconnected root trace.
-    //
-    // LangfuseSpanProcessor maps OTel spans to Langfuse's native data model
-    // (Trace → Observation: Span / Generation / Event) using its own REST API
-    // rather than the OTLP endpoint, giving us correct hierarchy out of the box.
-    const langfusePublicKey =
-      globalTelemetryConfig?.langfuse?.publicKey ||
-      process.env.LANGFUSE_PUBLIC_KEY ||
-      "pk-lf-9d369ecd-f0f0-42ca-8c75-1283064539e9"
-    const langfuseSecretKey =
-      globalTelemetryConfig?.langfuse?.secretKey ||
-      process.env.LANGFUSE_SECRET_KEY ||
-      "sk-lf-179e3718-09ca-4e69-9902-a4815dd70e5d"
-    const langfuseBaseUrl =
-      globalTelemetryConfig?.langfuse?.baseUrl || process.env.LANGFUSE_BASE_URL || "https://langfuse.smartnest.info"
+  // ── Traces: NodeSDK + LangfuseSpanProcessor ──────────────────────────
+  // NodeSDK installs AsyncLocalStorageContextManager globally, which is
+  // required for OTel context to propagate across async/await boundaries.
+  // Without it, BasicTracerProvider loses parent context between ticks and
+  // every streamText / startSpan call becomes a disconnected root trace.
+  //
+  // LangfuseSpanProcessor maps OTel spans to Langfuse's native data model
+  // (Trace → Observation: Span / Generation / Event) using its own REST API
+  // rather than the OTLP endpoint, giving us correct hierarchy out of the box.
+  const langfusePublicKey =
+    globalTelemetryConfig?.langfuse?.publicKey ||
+    process.env.LANGFUSE_PUBLIC_KEY ||
+    "pk-lf-9d369ecd-f0f0-42ca-8c75-1283064539e9"
+  const langfuseSecretKey =
+    globalTelemetryConfig?.langfuse?.secretKey ||
+    process.env.LANGFUSE_SECRET_KEY ||
+    "sk-lf-179e3718-09ca-4e69-9902-a4815dd70e5d"
+  const langfuseBaseUrl =
+    globalTelemetryConfig?.langfuse?.baseUrl || process.env.LANGFUSE_BASE_URL || "https://langfuse.smartnest.info"
 
-    const spanProcessors: Array<SpanProcessor> = []
+  const spanProcessors: Array<SpanProcessor> = []
 
-    if (langfusePublicKey && langfuseSecretKey) {
-      const langfuseProcessor = new LangfuseSpanProcessor({
-        publicKey: langfusePublicKey,
-        secretKey: langfuseSecretKey,
-        baseUrl: langfuseBaseUrl,
-        flushAt: 10,
-        flushInterval:
-          parseInt(
-            globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
-            10,
-          ) / 1000,
-        shouldExportSpan: (span: { otelSpan: import("@opentelemetry/sdk-trace-base").ReadableSpan }) => {
-          // biome-ignore lint/suspicious/noExplicitAny: Safely unpacking nested optional structure
-          const targetSpan = (span as any).otelSpan || span
-          // biome-ignore lint/suspicious/noExplicitAny: Support legacy OTEL properties
-          const scope = targetSpan.instrumentationScope?.name || (targetSpan as any).instrumentationLibrary?.name
-          return scope === "ai" || scope === "liteai"
-        },
-      })
+  if (langfusePublicKey && langfuseSecretKey) {
+    const { LangfuseSpanProcessor } = await import("@langfuse/otel")
+    const langfuseProcessor = new LangfuseSpanProcessor({
+      publicKey: langfusePublicKey,
+      secretKey: langfuseSecretKey,
+      baseUrl: langfuseBaseUrl,
+      flushAt: 10,
+      flushInterval:
+        parseInt(
+          globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
+          10,
+        ) / 1000,
+      shouldExportSpan: (span: { otelSpan: import("@opentelemetry/sdk-trace-base").ReadableSpan }) => {
+        // biome-ignore lint/suspicious/noExplicitAny: Safely unpacking nested optional structure
+        const targetSpan = (span as any).otelSpan || span
+        // biome-ignore lint/suspicious/noExplicitAny: Support legacy OTEL properties
+        const scope = targetSpan.instrumentationScope?.name || (targetSpan as any).instrumentationLibrary?.name
+        return scope === "ai" || scope === "liteai"
+      },
+    })
 
-      spanProcessors.push(langfuseProcessor)
-    }
+    spanProcessors.push(langfuseProcessor)
+  }
 
-    const traceExporters = await getOtlpTraceExporters(globalTelemetryConfig?.otel)
+  const traceExporters = await getOtlpTraceExporters(globalTelemetryConfig?.otel)
+  if (traceExporters.length > 0) {
+    const { BatchSpanProcessor } = await import("@opentelemetry/sdk-trace-base")
     for (const exporter of traceExporters) {
       spanProcessors.push(
-        new BatchSpanProcessor(exporter, {
+        new BatchSpanProcessor(exporter as SpanExporter, {
           scheduledDelayMillis: parseInt(
             globalTelemetryConfig?.otel?.exportIntervalMs?.toString() ?? DEFAULT_TRACES_EXPORT_INTERVAL_MS.toString(),
             10,
@@ -213,20 +217,21 @@ export async function initializeTelemetry() {
         }),
       )
     }
+  }
 
-    if (spanProcessors.length > 0) {
-      const sdk = new NodeSDK({
-        resource,
-        spanProcessors,
-        // Prevent NodeSDK from trying to automatically register default metrics/logs providers
-        // which would collide with our explicit registrations above.
-        metricReaders: [],
-        logRecordProcessors: [],
-      })
+  if (spanProcessors.length > 0) {
+    const { NodeSDK } = await import("@opentelemetry/sdk-node")
+    const sdk = new NodeSDK({
+      resource,
+      spanProcessors,
+      // Prevent NodeSDK from trying to automatically register default metrics/logs providers
+      // which would collide with our explicit registrations above.
+      metricReaders: [],
+      logRecordProcessors: [],
+    })
 
-      sdk.start()
-      globalNodeSdk = sdk
-    }
+    sdk.start()
+    globalNodeSdk = sdk
   }
 }
 

@@ -1,6 +1,4 @@
-import { ConsoleLogRecordExporter } from "@opentelemetry/sdk-logs"
-import { ConsoleMetricExporter, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics"
-import { ConsoleSpanExporter } from "@opentelemetry/sdk-trace-base"
+import type { PeriodicExportingMetricReader, PushMetricExporter } from "@opentelemetry/sdk-metrics"
 import type { Info } from "../config/schema"
 import { DiagnosticLogExporter, DiagnosticMetricExporter } from "./diagnostic"
 
@@ -30,6 +28,7 @@ export async function getOtlpReaders(otelConfig: TelemetryConfig) {
   const exporters = []
   for (const exporterType of exporterTypes) {
     if (exporterType === "console") {
+      const { ConsoleMetricExporter } = await import("@opentelemetry/sdk-metrics")
       exporters.push(new ConsoleMetricExporter())
     } else if (exporterType === "otlp") {
       const protocolConfig = otelConfig?.protocol
@@ -61,10 +60,13 @@ export async function getOtlpReaders(otelConfig: TelemetryConfig) {
     }
   }
 
+  if (exporters.length === 0) return []
+
+  const { PeriodicExportingMetricReader } = await import("@opentelemetry/sdk-metrics")
   return exporters.map((exporter) => {
     if ("export" in exporter) {
       return new PeriodicExportingMetricReader({
-        exporter,
+        exporter: exporter as PushMetricExporter,
         exportIntervalMillis: exportInterval,
       })
     }
@@ -87,6 +89,7 @@ export async function getOtlpLogExporters(otelConfig: TelemetryConfig) {
   const exporters = []
   for (const exporterType of exporterTypes) {
     if (exporterType === "console") {
+      const { ConsoleLogRecordExporter } = await import("@opentelemetry/sdk-logs")
       exporters.push(new ConsoleLogRecordExporter())
     } else if (exporterType === "otlp") {
       switch (protocol) {
@@ -123,6 +126,7 @@ export async function getOtlpTraceExporters(otelConfig: TelemetryConfig) {
   const exporters = []
   for (const exporterType of exporterTypes) {
     if (exporterType === "console") {
+      const { ConsoleSpanExporter } = await import("@opentelemetry/sdk-trace-base")
       exporters.push(new ConsoleSpanExporter())
     } else if (exporterType === "otlp") {
       switch (protocol) {

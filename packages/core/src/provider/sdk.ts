@@ -205,7 +205,8 @@ export async function getSDK(model: Provider.Model, s: State) {
     const bundledFn = BUNDLED_PROVIDERS[model.api.npm]
     if (bundledFn) {
       log.info("using bundled provider", { providerID: model.providerID, pkg: model.api.npm })
-      const loaded = bundledFn({
+      const loader = await bundledFn()
+      const loaded = loader({
         name: model.providerID,
         ...options,
       })

@@ -1,5 +1,11 @@
 # CLI Memory Leak Resolution — Comprehensive Plan
 
+> [!TIP]
+> **Status: Phase 1 COMPLETE. Memory Optimization Phases 2/3/5 COMPLETE.**
+> The active 9.8GB leak has been eliminated via the state management rewrite.
+> Lazy loading + single-process mode have been shipped, reducing the idle footprint
+> from ~1.2GB toward the ~300-350MB target. Phases 1B, 2, 3, 4 below are optimization/polish.
+
 ## Problem Statement
 
 Starting the CLI and leaving it idle causes continuous memory accumulation, reaching 9.8 GB. The leak occurs **at startup** — no user interaction required.
@@ -101,7 +107,7 @@ This is architecturally identical to the problem Claude Code solved with `useSyn
 
 ---
 
-## Phase 1: State Management Rewrite (Critical — Fixes the Leak)
+## Phase 1: State Management Rewrite (Critical — Fixes the Leak) ✅ COMPLETE
 
 > **Goal:** Replace the monolithic `useSync()` context with a selector-based external store that only re-renders consumers when their selected slice changes.
 
@@ -451,32 +457,26 @@ const agents = useAppState(s => s.agent)
 
 ---
 
-## Phase 5: Memory Optimization Roadmap Integration
+## Phase 5: Memory Optimization Roadmap Integration ✅ COMPLETE (5B, 5C, 5E)
 
-> **Goal:** Execute the 6-phase roadmap from [memory-optimization-roadmap.md](file:///d:/liteai/roadmap/memory-optimization-roadmap.md) as a continuation.
+> **Goal:** Execute the 6-phase roadmap from [memory-optimization-roadmap.md](file:///d:/liteai/roadmap/cli_optimization/memory-optimization-roadmap.md) as a continuation.
 
-> [!IMPORTANT]
-> **Should this be integrated or separate?**
+> [!TIP]
+> **Completed phases:**
 > 
-> **Recommendation: Integrate as a continuation phase, NOT merge into Phases 1-4.**
-> 
-> Rationale:
-> - Phases 1-4 fix the **active leak** (9.8 GB growth) — this is the burning fire
-> - Phase 5 (roadmap) reduces the **baseline footprint** (~1.2 GB → ~300 MB) — this is optimization
-> - They're complementary, not overlapping — no regression risk from splitting
-> - Phase 5 depends on Phase 1 being stable (can't measure idle footprint accurately while leak exists)
-> - The roadmap's Phase 4 (Core/TUI Decoupling) benefits from the new `state/` module boundary
-> 
-> Execute Phase 5 sub-phases in order AFTER Phases 1-4 are verified:
-> 
-> | Roadmap Phase | Description | Est. Savings |
+> | Roadmap Phase | Description | Status |
 > |---|---|---|
-> | 5A: Production Bundle | ESBuild bundle for tree-shaking | 400–600 MB |
-> | 5B: Lazy Providers | Dynamic `import()` for AI SDK providers | 100–200 MB |
-> | 5C: Lazy Telemetry | Gate OTEL behind `isTelemetryEnabled()` | 50–80 MB |
-> | 5D: Core/TUI Decoupling | Remove `@liteai/core` imports from TUI | Indirect |
-> | 5E: Single-Process Mode | Eliminate Worker for local-only | 200–300 MB |
-> | 5F: Eager Import Audit | Lazy themes, highlight.js, dialogs | 10–30 MB |
+> | 5A: Production Bundle | ESBuild bundle for tree-shaking | ⚠️ Not started |
+> | **5B: Lazy Providers** | **Dynamic `import()` for AI SDK providers** | **✅ Complete** |
+> | **5C: Lazy Telemetry** | **Gate OTEL behind `isTelemetryEnabled()`** | **✅ Complete** |
+> | 5D: Core/TUI Decoupling | Remove `@liteai/core` imports from TUI | ⚠️ Not started (deprioritized — single-process mode eliminates duplication) |
+> | **5E: Single-Process Mode** | **Eliminate Worker for local-only** | **✅ Complete** |
+> | 5F: Eager Import Audit | Lazy themes, highlight.js, dialogs | ⚠️ Not started |
+>
+> **Post-completion hardening (applied 2026-05-03):**
+> - `thread.ts`: `local-server.ts` import gated behind dynamic `import()` so ~7 `@liteai/core` modules are not evaluated in Worker mode
+> - `factories.ts`: Early return in `getOtlpReaders()` when no metric exporters configured, skipping unnecessary `PeriodicExportingMetricReader` import
+> - `local-server.ts`: Exported `LocalRpcApi` interface for type-safe RPC without requiring module evaluation
 
 ---
 

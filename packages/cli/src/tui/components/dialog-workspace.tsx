@@ -206,7 +206,7 @@ export function DialogWorkspaceList() {
 
   const currentWorkspaceID = useMemo(() => {
     if (route.data.type === "session") {
-      return sessions.find((s) => s.id === (route.data as any).sessionID)?.workspaceID ?? "__local__"
+      return sessions.find((s) => s.id === (route.data as { sessionID: string }).sessionID)?.workspaceID ?? "__local__"
     }
     return "__local__"
   }, [route.data, sessions])

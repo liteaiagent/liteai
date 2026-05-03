@@ -124,7 +124,7 @@ export async function syncSessionAction(
     const msgs = messages.data ?? []
 
     setState((state) => {
-      const match = Binary.search(state.sessions as any[], sessionID, (s: any) => s.id)
+      const match = Binary.search(state.sessions as Session[], sessionID, (s: Session) => s.id)
       const data = session.data as Session
       const nextSessions = [...state.sessions]
       if (data) {

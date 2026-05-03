@@ -14,7 +14,7 @@ type Segment = { priority: number; text: string; color: string }
 function buildSegments(
   stats: ReturnType<typeof useStats>,
   local: ReturnType<typeof useLocal>,
-  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff">,
+  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff" | "session_status">,
   theme: ReturnType<typeof useTheme>["theme"],
   sessionID: string,
   displayMode: "compact" | "transcript",
@@ -41,6 +41,21 @@ function buildSegments(
   const effort = (state.config as Record<string, unknown>).effort as string | undefined
   if (effort && effort !== "medium") {
     segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
+  }
+
+  // 1.8 Session Status
+  const sessionStatus = state.session_status?.[sessionID]
+  if (sessionStatus) {
+    let statusColor = theme.textMuted
+    let statusText: string = sessionStatus.type
+    if (sessionStatus.type === "busy") {
+      statusColor = theme.primary
+      statusText = "busy..."
+    } else if (sessionStatus.type === "retry") {
+      statusColor = theme.warning
+      statusText = "retrying..."
+    }
+    segments.push({ priority: 1.8, text: statusText, color: statusColor as string })
   }
 
   // 2. Context %
@@ -130,6 +145,7 @@ function StatusLineInner({ sessionID }: Props) {
   const path = useAppState((s) => s.path)
   const vcs = useAppState((s) => s.vcs)
   const session_diff = useAppState((s) => s.session_diff)
+  const session_status = useAppState((s) => s.session_status)
   const local = useLocal()
   const stats = useStats()
   const terminalSize = useContext(TerminalSizeContext)
@@ -144,12 +160,12 @@ function StatusLineInner({ sessionID }: Props) {
       buildSegments(
         stats,
         local,
-        { sessions, config, path, vcs, session_diff },
+        { sessions, config, path, vcs, session_diff, session_status },
         theme,
         sessionID,
         ctx?.displayMode ?? "compact",
       ),
-    [stats, local, sessions, config, path, vcs, session_diff, theme, sessionID, ctx?.displayMode],
+    [stats, local, sessions, config, path, vcs, session_diff, session_status, theme, sessionID, ctx?.displayMode],
   )
 
   const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])

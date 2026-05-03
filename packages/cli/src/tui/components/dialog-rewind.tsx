@@ -15,7 +15,7 @@ import { Dialog } from "../ui/dialog"
 export function DialogRewind(): React.ReactNode {
   const dialog = useDialog()
   const session = useSession()
-  const messages = useAppState(selectMessages(session.sessionID!))
+  const messages = useAppState(selectMessages(session.sessionID ?? ""))
   const partsMap = useAppState((s) => s.part)
   const { theme } = useTheme()
 

@@ -1,3 +1,4 @@
+import type { Event } from "@liteai/sdk"
 import type React from "react"
 import {
   createContext,
@@ -12,6 +13,7 @@ import {
 import { useArgs } from "../context/args"
 import { useExit } from "../context/exit"
 import { useSDK } from "../context/sdk"
+import { TuiLog } from "../util/tui-log"
 import type { AppState } from "./app-state"
 import { getDefaultAppState } from "./app-state"
 import { bootstrapAction, syncSessionAction, syncWorkspacesAction } from "./app-state-actions"
@@ -119,7 +121,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   // Handle events using pure function
   const handleEvent = useCallback(
-    (event: any) => {
+    (event: Event) => {
       handleAppStateEvent(event, { ...ctx, sdk: sdk.client, bootstrap })
     },
     [ctx, sdk, bootstrap],
@@ -146,7 +148,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
           for await (const event of events.stream) {
             if (ctrl.signal.aborted) break
-            handleEvent(event)
+            // Extract payload if it's a GlobalEvent, otherwise cast to Event
+            const e = ("payload" in event ? event.payload : event) as Event
+            handleEvent(e)
           }
 
           // Stream completed normally, add a small delay before reconnecting
@@ -155,6 +159,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (err) {
           if (ctrl.signal.aborted) break
+
+          TuiLog.error("SSE connection error", {
+            error: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+          })
 
           // Exponential backoff on error
           await new Promise((resolve) => setTimeout(resolve, backoff))
