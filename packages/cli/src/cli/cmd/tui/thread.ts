@@ -1,45 +1,14 @@
 import path from "node:path"
-import { fileURLToPath } from "node:url"
 import { Instance } from "@liteai/core/project/instance"
 import { Project } from "@liteai/core/project/project"
 import { Fs as Filesystem } from "@liteai/util/fs"
 import { Log } from "@liteai/util/log"
-import { Rpc } from "@liteai/util/rpc"
 import { withTimeout } from "@liteai/util/timeout"
 import { TuiConfig } from "../../config/tui"
-import { resolveNetworkOptions, withNetworkOptions } from "../../network"
 import { UI } from "../../ui"
 import { cmd } from "../cmd"
 import { tui } from "./app"
-import type { LocalRpcApi } from "./local-server"
 import { win32DisableProcessedInput, win32InstallCtrlCGuard } from "./win32"
-import type { rpc } from "./worker"
-
-declare global {
-  const LITEAI_WORKER_PATH: string
-}
-
-type RpcClient = ReturnType<typeof Rpc.client<typeof rpc>>
-
-async function target() {
-  // If defined at build time via define: { LITEAI_WORKER_PATH: ... }
-  if (typeof LITEAI_WORKER_PATH !== "undefined" && LITEAI_WORKER_PATH !== "./src/cli/cmd/tui/worker.ts") {
-    // If it's a relative path starting with ./, resolve relative to the executable
-    if (LITEAI_WORKER_PATH.startsWith("./") && process.execPath) {
-      const exeDir = path.dirname(process.execPath)
-      const resolved = path.join(exeDir, LITEAI_WORKER_PATH.slice(2))
-      if (await Filesystem.exists(resolved)) return resolved
-    }
-    return LITEAI_WORKER_PATH
-  }
-
-  // Fallback 1: Production bundle (not compiled to exe, but bundled to dist/cli.js)
-  const dist = new URL("./cli/cmd/tui/worker.js", import.meta.url)
-  if (await Filesystem.exists(fileURLToPath(dist))) return dist
-
-  // Fallback 2: Local dev mode
-  return new URL("./worker.ts", import.meta.url)
-}
 
 async function readPipedInput(timeoutMs = 500): Promise<string | undefined> {
   if (process.stdin.isTTY) return undefined
@@ -89,7 +58,7 @@ export const TuiThreadCommand = cmd({
   command: "$0 [project]",
   describe: "start liteai tui",
   builder: (yargs) =>
-    withNetworkOptions(yargs)
+    yargs
       .positional("project", {
         type: "string",
         describe: "path to start liteai in",
@@ -146,7 +115,6 @@ export const TuiThreadCommand = cmd({
               : path.join(root, args.project as string),
           )
         : Filesystem.resolve(process.cwd())
-      const file = await target()
       try {
         process.chdir(next)
       } catch {
@@ -155,56 +123,17 @@ export const TuiThreadCommand = cmd({
       }
       const cwd = Filesystem.resolve(process.cwd())
 
-      const network = await resolveNetworkOptions(args)
-      const external =
-        process.argv.includes("--port") ||
-        process.argv.includes("--hostname") ||
-        process.argv.includes("--mdns") ||
-        network.mdns ||
-        network.port !== 0 ||
-        network.hostname !== "127.0.0.1"
-
-      let worker: Worker | undefined
-      let client: LocalRpcApi | RpcClient
-      // Lazily loaded — only evaluated in local (non-Worker) mode to avoid
-      // pulling ~7 @liteai/core modules into the main thread when using a Worker.
-      let localFetch: typeof fetch | undefined
-      let localEvents: ReturnType<typeof import("./local-server").createLocalEventSource> | undefined
-
-      if (external) {
-        worker = new Worker(file, {
-          env: Object.fromEntries(
-            Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
-          ),
-        })
-        worker.onerror = (e) => {
-          Log.Default.error(e)
-        }
-
-        client = Rpc.client<typeof rpc>({
-          postMessage: (data: string) => {
-            worker?.postMessage(data)
-            return undefined
-          },
-          // biome-ignore lint/suspicious/noExplicitAny: must match Worker.onmessage signature
-          set onmessage(handler: ((ev: MessageEvent<any>) => any) | null) {
-            if (worker) worker.onmessage = handler
-          },
-        })
-      } else {
-        const localServer = await import("./local-server")
-        await localServer.bootLocalServer()
-        client = localServer.localRpc
-        localFetch = localServer.createLocalFetch()
-        localEvents = localServer.createLocalEventSource()
-      }
+      const localServer = await import("./local-server")
+      await localServer.bootLocalServer()
+      const client = localServer.localRpc
+      const localFetch = localServer.createLocalFetch()
+      const localEvents = localServer.createLocalEventSource()
 
       const error = (e: unknown) => {
         Log.Default.error(e)
       }
       const reload = () => {
-        const reloadCall = external ? (client as RpcClient).call("reload", undefined) : (client as LocalRpcApi).reload()
-        reloadCall.catch((err) => {
+        client.reload().catch((err) => {
           Log.Default.warn("worker reload failed", {
             error: err instanceof Error ? err.message : String(err),
           })
@@ -222,16 +151,11 @@ export const TuiThreadCommand = cmd({
         process.off("unhandledRejection", error)
         process.off("SIGUSR2", reload)
 
-        const shutdownPromise = external
-          ? (client as RpcClient).call("shutdown", undefined)
-          : (client as LocalRpcApi).shutdown()
-
-        await withTimeout(shutdownPromise as Promise<void>, 5000).catch((error) => {
+        await withTimeout(client.shutdown(), 5000).catch((error) => {
           Log.Default.warn("worker shutdown failed", {
             error: error instanceof Error ? error.message : String(error),
           })
         })
-        if (worker) worker.terminate()
       }
 
       const prompt = await input(args.prompt as string | undefined)
@@ -248,23 +172,14 @@ export const TuiThreadCommand = cmd({
         fn: () => TuiConfig.get(),
       })
 
-      const transport = external
-        ? {
-            url: (await (client as RpcClient).call("server", network)).url,
-            fetch: undefined,
-            events: undefined,
-          }
-        : {
-            url: "http://liteai.internal",
-            fetch: localFetch,
-            events: localEvents,
-          }
+      const transport = {
+        url: "http://liteai.internal",
+        fetch: localFetch,
+        events: localEvents,
+      }
 
       setTimeout(() => {
-        const checkCall = external
-          ? (client as RpcClient).call("checkUpgrade", { directory: cwd })
-          : (client as LocalRpcApi).checkUpgrade({ directory: cwd })
-        checkCall.catch(() => {})
+        client.checkUpgrade({ directory: cwd }).catch(() => {})
       }, 1000).unref?.()
 
       try {
