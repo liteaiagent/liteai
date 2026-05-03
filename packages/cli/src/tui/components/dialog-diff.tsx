@@ -3,22 +3,22 @@ import type React from "react"
 import { useContext, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useSession } from "../context/session"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { useAppState } from "../state"
 import { Dialog } from "../ui/dialog"
 import { StructuredDiff } from "./structured-diff"
 
 export function DialogDiff(): React.ReactNode {
   const dialog = useDialog()
   const session = useSession()
-  const sync = useSync()
+  const session_diff = useAppState((s) => s.session_diff)
   const { theme } = useTheme()
   const terminalSize = useContext(TerminalSizeContext)
   const columns = terminalSize?.columns ?? 80
 
-  const diffs = (session.sessionID ? sync.session_diff[session.sessionID] : []) ?? []
+  const diffs = (session.sessionID ? session_diff[session.sessionID] : []) ?? []
 
   const [selectedFileIndex, setSelectedFileIndex] = useState(0)
   const [viewMode, setViewMode] = useState<"list" | "detail">("list")

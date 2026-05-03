@@ -11,11 +11,11 @@ import stripAnsi from "strip-ansi"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import { StructuredDiff } from "../../components/structured-diff"
 import { COMPACT_DIFF_MAX_LINES } from "../../constants/compact-diff"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useTuiConfig } from "../../context/tui-config"
 import { useElapsedTime } from "../../hooks/use-elapsed-time"
 import { useOutputFile } from "../../hooks/use-output-file"
+import { selectMessages, selectPermissions, useAppActions, useAppState } from "../../state"
 import { Spinner } from "../../ui/spinner"
 import { shortenPath } from "../../util/output-file"
 import { useSessionContext } from "./ctx"
@@ -265,16 +265,15 @@ function InlineTool(props: {
 }) {
   const { theme } = useTheme()
   const ctx = useSessionContext()
-  const sync = useSync()
+  const permissions = useAppState(selectPermissions(ctx.sessionID))
   const [hover, _setHover] = useState(false)
 
   const timing = useElapsedTime({ startTime: props.startTime ?? null, endTime: props.endTime })
   const timingSuffix = timing.formatted ? ` (${timing.formatted})` : ""
 
   const permission = useMemo(() => {
-    const permissions = sync.permission[ctx.sessionID] ?? []
     return permissions.some((x) => x.tool?.callID === props.part.callID)
-  }, [sync.permission, ctx.sessionID, props.part.callID])
+  }, [permissions, props.part.callID])
 
   const fg = useMemo(() => {
     if (permission) return theme.warning
@@ -401,7 +400,7 @@ function truncateDiff(diff: string, maxLines: number): string {
 
 export function RunCommand(props: ToolProps) {
   const { theme } = useTheme()
-  const sync = useSync()
+  const directory = useAppState((s) => s.path.directory)
   const ctx = useSessionContext()
   const input = typed<RunCommandInput>(props.input as Record<string, unknown>)
   const metadata = typed<RunCommandMetadata>(props.metadata as Record<string, unknown>)
@@ -423,7 +422,7 @@ export function RunCommand(props: ToolProps) {
   const dir = useMemo(() => {
     const workdir = input.cwd
     if (!workdir || workdir === ".") return undefined
-    const base = sync.path.directory
+    const base = directory
     if (!base) return undefined
     const absolute = path.resolve(base, workdir)
     if (absolute === base) return undefined
@@ -431,7 +430,7 @@ export function RunCommand(props: ToolProps) {
     if (!home) return absolute
     const match = absolute === home || absolute.startsWith(home + path.sep)
     return match ? absolute.replace(home, "~") : absolute
-  }, [input.cwd, sync.path.directory])
+  }, [input.cwd, directory])
 
   const title = useMemo(() => {
     const desc = input.description ?? "Shell"
@@ -742,22 +741,26 @@ export function WebSearch(props: ToolProps) {
 }
 
 export function Task(props: ToolProps) {
-  const sync = useSync()
+  const {
+    session: { sync: syncSession },
+  } = useAppActions()
+  const partsMap = useAppState((s) => s.part)
   const input = typed<TaskInput>(props.input as Record<string, unknown>)
   const metadata = typed<TaskMetadata>(props.metadata as Record<string, unknown>)
   const running = props.part.state.status === "running"
   const sessionID = metadata.sessionId
 
-  useEffect(() => {
-    if (sessionID && !sync.message[sessionID]?.length) {
-      sync.session.sync(sessionID)
-    }
-  }, [sessionID, sync])
+  const messages = useAppState(selectMessages(sessionID ?? ""))
 
-  const messages = useMemo(() => sync.message[sessionID ?? ""] ?? [], [sync.message, sessionID])
+  useEffect(() => {
+    if (sessionID && !messages?.length) {
+      syncSession(sessionID)
+    }
+  }, [sessionID, messages?.length, syncSession])
+
   const toolCount = useMemo(() => {
-    return messages.flatMap((msg) => (sync.part[msg.id] ?? []).filter((p) => p.type === "tool")).length
-  }, [messages, sync.part])
+    return messages.flatMap((msg) => (partsMap[msg.id] ?? []).filter((p) => p.type === "tool")).length
+  }, [messages, partsMap])
 
   return (
     <InlineTool

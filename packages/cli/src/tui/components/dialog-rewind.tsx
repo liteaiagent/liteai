@@ -5,20 +5,21 @@ import type React from "react"
 import { useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useSession } from "../context/session"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useTurnDiffs } from "../hooks/use-turn-diffs"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { selectMessages, useAppState } from "../state"
 import { Dialog } from "../ui/dialog"
 
 export function DialogRewind(): React.ReactNode {
   const dialog = useDialog()
   const session = useSession()
-  const sync = useSync()
+  const messages = useAppState(selectMessages(session.sessionID!))
+  const partsMap = useAppState((s) => s.part)
   const { theme } = useTheme()
 
-  const allMessages = session.sessionID ? (sync.message[session.sessionID] ?? []) : []
+  const allMessages = messages
   const userMessages = allMessages.filter((m: Message) => m.role === "user")
 
   const [selectedIndex, setSelectedIndex] = useState(userMessages.length > 0 ? userMessages.length - 1 : 0)
@@ -56,7 +57,7 @@ export function DialogRewind(): React.ReactNode {
             ) : (
               userMessages.map((msg: Message, i: number) => {
                 const isSelected = i === selectedIndex
-                const parts = sync.part[msg.id] ?? []
+                const parts = partsMap[msg.id] ?? []
                 const textPart = parts.find((p) => p.type === "text" && "text" in p)
                 const text = textPart && "text" in textPart ? textPart.text : "..."
                 const truncated = text.replace(/\n/g, " ").slice(0, 40) + (text.length > 40 ? "..." : "")

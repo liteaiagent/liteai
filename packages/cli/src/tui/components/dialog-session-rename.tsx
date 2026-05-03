@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
-import { useSync } from "../context/sync"
+import { selectSessions, useAppState } from "../state"
 import { DialogPrompt } from "../ui/dialog-prompt"
 
 interface DialogSessionRenameProps {
@@ -10,9 +10,9 @@ interface DialogSessionRenameProps {
 
 export function DialogSessionRename(props: DialogSessionRenameProps) {
   const dialog = useDialog()
-  const sync = useSync()
+  const sessionsList = useAppState(selectSessions())
   const sdk = useSDK()
-  const session = useMemo(() => sync.session.get(props.session), [sync.session, props.session])
+  const session = useMemo(() => sessionsList.find((s) => s.id === props.session), [sessionsList, props.session])
 
   return (
     <DialogPrompt

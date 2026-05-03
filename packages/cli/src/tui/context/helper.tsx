@@ -13,7 +13,7 @@ export function createSimpleContext<T, Props extends Record<string, unknown>>(in
 }) {
   const ctx = createContext<T | undefined>(undefined)
 
-  function Provider({ children, ...props }: { children: React.ReactNode } & Props) {
+  function Provider({ children, ...props }: { children?: React.ReactNode } & Props) {
     // We intentionally don't memoize 'init' here to match the behavior of the Solid version
     // where the provider body is re-executed if the component re-renders.
     const { children: _children, ...rest } = props

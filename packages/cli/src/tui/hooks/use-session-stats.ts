@@ -5,7 +5,7 @@ import { immer } from "zustand/middleware/immer"
 import { createStore } from "zustand/vanilla"
 import { useLocal } from "../context/local"
 import { useSDK } from "../context/sdk"
-import { useSync } from "../context/sync"
+import { selectMessages, useAppState } from "../state"
 
 export type ModelMetrics = {
   modelID: string
@@ -49,7 +49,9 @@ interface StatsStoreState {
 
 export function useSessionStats(sessionID: string): SessionStats {
   const sdk = useSDK()
-  const sync = useSync()
+  const messages = useAppState(selectMessages(sessionID))
+  const partsMap = useAppState((s) => s.part)
+  const providers = useAppState((s) => s.provider)
   const local = useLocal()
 
   const store = useMemo(() => {
@@ -118,7 +120,7 @@ export function useSessionStats(sessionID: string): SessionStats {
     }
 
     // Bootstrap from existing messages already in sync store
-    const existingMessages = sync.message[sessionID] ?? []
+    const existingMessages = messages
     for (const msg of existingMessages) {
       if (msg.role === "assistant") {
         processAssistantMessage(msg)
@@ -126,7 +128,7 @@ export function useSessionStats(sessionID: string): SessionStats {
     }
     // Bootstrap existing tool parts
     for (const msg of existingMessages) {
-      const parts = sync.part[msg.id] ?? []
+      const parts = partsMap[msg.id] ?? []
       for (const part of parts) {
         if (part.type === "tool") {
           processToolPart(part)
@@ -135,7 +137,7 @@ export function useSessionStats(sessionID: string): SessionStats {
     }
 
     return s
-  }, [sessionID, sync.message, sync.part]) // recreate when session changes
+  }, [sessionID, messages, partsMap]) // recreate when session changes
 
   // Subscribe to live events
   useEffect(() => {
@@ -213,10 +215,10 @@ export function useSessionStats(sessionID: string): SessionStats {
   const currentModel = local.model.current()
   const contextLimit = useMemo(() => {
     if (!currentModel) return 200_000
-    const provider = sync.provider.find((p) => p.id === currentModel.providerID)
+    const provider = providers.find((p) => p.id === currentModel.providerID)
     const modelInfo = provider?.models[currentModel.modelID]
     return modelInfo?.limit?.context ?? 200_000
-  }, [currentModel, sync.provider])
+  }, [currentModel, providers])
 
   // Compute contextUtilization
   const totalUsedTokens =

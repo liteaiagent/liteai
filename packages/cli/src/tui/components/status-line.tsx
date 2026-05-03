@@ -2,9 +2,9 @@ import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
 import { memo, useContext, useMemo } from "react"
 import { useLocal } from "../context/local"
 import { useStats } from "../context/stats"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useSessionContext } from "../routes/session/ctx"
+import { type AppState, useAppState } from "../state"
 import { useExitState } from "./global-exit-handler"
 
 type Props = { sessionID: string }
@@ -14,7 +14,7 @@ type Segment = { priority: number; text: string; color: string }
 function buildSegments(
   stats: ReturnType<typeof useStats>,
   local: ReturnType<typeof useLocal>,
-  sync: ReturnType<typeof useSync>,
+  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff">,
   theme: ReturnType<typeof useTheme>["theme"],
   sessionID: string,
   displayMode: "compact" | "transcript",
@@ -32,13 +32,13 @@ function buildSegments(
     segments.push({ priority: 1.5, text: "Compact (ctrl+o)", color: theme.textMuted as string })
   }
 
-  const session = sync.session.get(sessionID)
+  const session = state.sessions.find((s) => s.id === sessionID)
   if (session?.toolProfile === "Plan") {
     segments.push({ priority: 1.6, text: "📋 Plan", color: theme.warning as string })
   }
 
   // effort is a server-side config field not yet reflected in the SDK Config type
-  const effort = (sync.config as Record<string, unknown>).effort as string | undefined
+  const effort = (state.config as Record<string, unknown>).effort as string | undefined
   if (effort && effort !== "medium") {
     segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
   }
@@ -72,18 +72,18 @@ function buildSegments(
   segments.push({ priority: 4, text: tokText, color: theme.textMuted as string })
 
   // 5. CWD
-  const dir = sync.path.directory || sync.path.worktree || process.cwd()
+  const dir = state.path.directory || state.path.worktree || process.cwd()
   const parts = dir.replace(/\\/g, "/").split("/")
   const cwdText = parts[parts.length - 1] || dir
   segments.push({ priority: 5, text: cwdText, color: theme.textMuted as string })
 
   // 6. Git Branch (optional)
-  if (sync.vcs?.branch) {
-    segments.push({ priority: 6, text: `⎇ ${sync.vcs.branch}`, color: theme.textMuted as string })
+  if (state.vcs?.branch) {
+    segments.push({ priority: 6, text: `⎇ ${state.vcs.branch}`, color: theme.textMuted as string })
   }
 
   // 7. Code Changes (optional)
-  const diff = sync.session_diff[sessionID]
+  const diff = state.session_diff[sessionID]
   if (diff && diff.length > 0) {
     let additions = 0
     let deletions = 0
@@ -125,7 +125,11 @@ function fitSegments(segments: Segment[], budget: number): { visible: Segment[];
 
 function StatusLineInner({ sessionID }: Props) {
   const { theme } = useTheme()
-  const sync = useSync()
+  const sessions = useAppState((s) => s.sessions)
+  const config = useAppState((s) => s.config)
+  const path = useAppState((s) => s.path)
+  const vcs = useAppState((s) => s.vcs)
+  const session_diff = useAppState((s) => s.session_diff)
   const local = useLocal()
   const stats = useStats()
   const terminalSize = useContext(TerminalSizeContext)
@@ -136,8 +140,16 @@ function StatusLineInner({ sessionID }: Props) {
   const ctx = useSessionContext()
 
   const allSegments = useMemo(
-    () => buildSegments(stats, local, sync, theme, sessionID, ctx?.displayMode ?? "compact"),
-    [stats, local, sync, theme, sessionID, ctx?.displayMode],
+    () =>
+      buildSegments(
+        stats,
+        local,
+        { sessions, config, path, vcs, session_diff },
+        theme,
+        sessionID,
+        ctx?.displayMode ?? "compact",
+      ),
+    [stats, local, sessions, config, path, vcs, session_diff, theme, sessionID, ctx?.displayMode],
   )
 
   const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])

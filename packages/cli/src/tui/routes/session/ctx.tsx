@@ -1,5 +1,4 @@
 import { createContext, useContext } from "react"
-import type { useSync } from "../../context/sync"
 import type { useTuiConfig } from "../../context/tui-config"
 
 export type DisplayMode = "compact" | "transcript"
@@ -16,7 +15,6 @@ export const SessionContext = createContext<{
   diffWrapMode: "word" | "none"
   isToolCompact: (toolName: string) => boolean
   lastReasoningId: string | null
-  sync: ReturnType<typeof useSync>
   tui: ReturnType<typeof useTuiConfig>
 } | null>(null)
 

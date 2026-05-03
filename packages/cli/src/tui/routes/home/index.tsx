@@ -6,21 +6,21 @@ import { useMemo } from "react"
 import { Logo } from "../../components/logo"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { Tips } from "../../components/tips"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { useAppState } from "../../state"
 
 export function HomeRoute({ workspaceID }: { workspaceID: string }) {
-  const sync = useSync()
+  const directory = useAppState((s) => s.path.directory)
+  const mcp = useAppState((s) => s.mcp)
   const { theme } = useTheme()
-  const directory = sync.path.directory
 
   const connectedMcpCount = useMemo(() => {
-    return Object.values(sync.mcp).filter((x) => x.status === "connected").length
-  }, [sync.mcp])
+    return Object.values(mcp).filter((x) => x.status === "connected").length
+  }, [mcp])
 
   const mcpError = useMemo(() => {
-    return Object.values(sync.mcp).some((x) => x.status === "failed")
-  }, [sync.mcp])
+    return Object.values(mcp).some((x) => x.status === "failed")
+  }, [mcp])
 
   const hint = useMemo(() => {
     if (connectedMcpCount === 0) return undefined

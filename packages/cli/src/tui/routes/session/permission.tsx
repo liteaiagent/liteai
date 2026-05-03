@@ -4,14 +4,12 @@ import type { PermissionRequest } from "@liteai/sdk"
 import { useState } from "react"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import { useSDK } from "../../context/sdk"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
 import { normalizePath } from "./utils"
 export function PermissionPrompt({ request }: { request: PermissionRequest }) {
   const sdk = useSDK()
-  const _sync = useSync()
   const { theme } = useTheme()
   const [selected, setSelected] = useState<"once" | "always" | "reject">("once")
 

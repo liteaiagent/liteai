@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
 import { useSDK } from "../context/sdk"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { selectMcpConfig, useAppState } from "../state"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 
 function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean }) {
@@ -33,7 +33,7 @@ function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean 
 
 export function DialogMcp() {
   const local = useLocal()
-  const sync = useSync()
+  const mcp = useAppState((s) => s.mcp)
   const sdk = useSDK()
   const dialog = useDialog()
   const { theme } = useTheme()
@@ -41,7 +41,7 @@ export function DialogMcp() {
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
   const options = useMemo(() => {
-    const mcpData = sync.mcp
+    const mcpData = mcp
     const mcpEntries = Object.entries(mcpData || {})
     mcpEntries.sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
 
@@ -62,7 +62,7 @@ export function DialogMcp() {
         category: "User MCPs",
       }
     })
-  }, [sync.mcp, local.mcp, loading])
+  }, [mcp, local.mcp, loading])
 
   useKeybindings(
     {
@@ -86,7 +86,7 @@ export function DialogMcp() {
   return (
     <DialogSelect
       title="Manage MCP servers"
-      header={<Text color={theme.textMuted as Color}>{Object.keys(sync.mcp ?? {}).length} servers</Text>}
+      header={<Text color={theme.textMuted as Color}>{Object.keys(mcp ?? {}).length} servers</Text>}
       footerContent={
         <Text color={theme.textMuted as Color}>
           ↑↓ to navigate · Enter to confirm · Space to toggle · Esc to cancel
@@ -102,15 +102,16 @@ export function DialogMcp() {
 }
 
 function McpDetail(props: { name: string }) {
-  const sync = useSync()
+  const mcpConfigMap = useAppState(selectMcpConfig())
+  const mcpStatusMap = useAppState((s) => s.mcp)
   const sdk = useSDK()
   const local = useLocal()
   const dialog = useDialog()
   const { theme } = useTheme()
   const [loading, setLoading] = useState<string | null>(null)
 
-  const mcpConfig = sync.config?.mcpServers?.[props.name]
-  const mcpStatus = sync.mcp?.[props.name]
+  const mcpConfig = mcpConfigMap?.[props.name]
+  const mcpStatus = mcpStatusMap?.[props.name]
   const enabled = local.mcp.isEnabled(props.name)
   const [toolsLength, setToolsLength] = useState<number | null>(null)
 

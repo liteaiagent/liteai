@@ -2,18 +2,18 @@ import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type React from "react"
 import { useDialog } from "../context/dialog"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useKeybindingContext, useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { getBindingDisplayText } from "../keybindings/resolver"
 import { useKeybinding } from "../keybindings/use-keybinding"
+import { useAppState } from "../state"
 import { Dialog } from "../ui/dialog"
 import { Tab, Tabs } from "./design-system/Tabs"
 import { TUI_COMMANDS } from "./prompt/prompt-input"
 
 export function DialogHelpV2(): React.ReactNode {
   const dialog = useDialog()
-  const sync = useSync()
+  const command = useAppState((s) => s.command)
   const { bindings } = useKeybindingContext()
 
   useRegisterKeybindingContext("Help")
@@ -35,7 +35,7 @@ export function DialogHelpV2(): React.ReactNode {
   const sortedContexts = Object.keys(bindingsByContext).sort()
 
   // Merge and sort commands
-  const allCommands = [...(sync.command ?? []), ...TUI_COMMANDS].sort((a, b) => a.name.localeCompare(b.name))
+  const allCommands = [...(command ?? []), ...TUI_COMMANDS].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <Dialog title="Help" hideInputGuide onCancel={() => dialog.clear()}>

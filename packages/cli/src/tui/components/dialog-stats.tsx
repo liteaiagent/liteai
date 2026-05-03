@@ -1,10 +1,10 @@
 import { Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
 import { useContext, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
+import { useAppState } from "../state"
 import { ContextUsageDisplay } from "./context-usage-display"
 import { Heatmap } from "./heatmap"
 
@@ -21,7 +21,8 @@ const FACTOIDS = [
 export function DialogStats({ sessionID }: Props) {
   const _dialog = useDialog()
   const { theme } = useTheme()
-  const sync = useSync()
+  const session_diff = useAppState((s) => s.session_diff)
+  const sessionStatus = useAppState((s) => s.session_status[sessionID] ?? { type: "idle" as const })
   const stats = useSessionStats(sessionID)
   const terminalSize = useContext(TerminalSizeContext)
 
@@ -39,7 +40,7 @@ export function DialogStats({ sessionID }: Props) {
     }
   })
 
-  const diff = sync.session_diff[sessionID]
+  const diff = session_diff[sessionID]
   const changes = useMemo(() => {
     if (!diff || diff.length === 0) return null
     let files = 0

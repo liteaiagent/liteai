@@ -10,13 +10,13 @@ import { PromptRefProvider } from "./context/prompt"
 import { RouteProvider, useRoute } from "./context/route"
 import { type EventSource, SDKProvider } from "./context/sdk"
 import { SessionProvider } from "./context/session"
-import { SyncProvider } from "./context/sync"
 import { ThemeProvider } from "./context/theme"
 import { ToastProvider } from "./context/toast"
 import { TuiConfigProvider } from "./context/tui-config"
 import { KeybindingSetup } from "./keybindings/keybinding-setup"
 import { HomeRoute } from "./routes/home"
 import { SessionRoute } from "./routes/session"
+import { AppStateProvider } from "./state/app-state-context"
 
 export type AppProps = {
   url: string
@@ -60,7 +60,7 @@ export function App(props: AppProps) {
                 >
                   <ArgsProvider {...props.args}>
                     <ToastProvider>
-                      <SyncProvider>
+                      <AppStateProvider>
                         <LocalProvider>
                           <RouteProvider>
                             <DialogProvider>
@@ -74,7 +74,7 @@ export function App(props: AppProps) {
                             </DialogProvider>
                           </RouteProvider>
                         </LocalProvider>
-                      </SyncProvider>
+                      </AppStateProvider>
                     </ToastProvider>
                   </ArgsProvider>
                 </SDKProvider>

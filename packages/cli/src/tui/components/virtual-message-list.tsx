@@ -5,8 +5,8 @@ import type React from "react"
 import { useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { useVirtualScroll } from "../../tui/hooks/use-virtual-scroll"
 import { useMessageCursorContext } from "../context/message-cursor"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { useAppState } from "../state"
 import { ScrollChromeContext } from "./session-layout"
 
 export type StickyPrompt = {
@@ -255,7 +255,7 @@ function StickyTracker({
   getItemElement: (index: number) => DOMElement | null
   scrollRef: React.RefObject<ScrollBoxHandle | null>
 }): null {
-  const sync = useSync()
+  const partsMap = useAppState((s) => s.part)
   const { setStickyPrompt } = useContext(ScrollChromeContext)
   const subscribe = useCallback(
     (listener: () => void) => scrollRef.current?.subscribe(listener) ?? NOOP_UNSUB,
@@ -289,8 +289,8 @@ function StickyTracker({
     for (let i = firstVisible - 1; i >= 0; i--) {
       const msg = messages[i]
       if (!msg) continue
-      const parts = sync.part[msg.id] ?? []
-      const t = promptTextFromMessage(msg, parts)
+      const parts = partsMap[msg.id] ?? []
+      const t = promptTextFromMessage(msg, parts as import("@liteai/sdk").Part[])
       if (t === null) continue
       const top = getItemTop(i)
       if (top >= 0 && top + 1 >= target) continue

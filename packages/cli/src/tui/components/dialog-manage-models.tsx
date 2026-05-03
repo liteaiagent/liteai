@@ -3,8 +3,8 @@ import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
 import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { selectProviders, useAppState } from "../state"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 
@@ -17,7 +17,7 @@ import { DialogSelect } from "../ui/dialog-select"
  */
 export function DialogManageModels(props: { onBack?: () => void }) {
   const local = useLocal()
-  const sync = useSync()
+  const providers = useAppState(selectProviders())
   const dialog = useDialog()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
@@ -26,7 +26,7 @@ export function DialogManageModels(props: { onBack?: () => void }) {
     const needle = query.trim()
 
     const allModels = pipe(
-      sync.provider,
+      providers,
       sortBy(
         (provider) => (provider.id !== "google-code-assist" ? 1 : 0),
         (provider) => provider.name,
@@ -66,7 +66,7 @@ export function DialogManageModels(props: { onBack?: () => void }) {
     }
 
     return allModels
-  }, [query, sync.provider, local.model, theme, dialog])
+  }, [query, providers, local.model, theme, dialog])
 
   return (
     <DialogSelect<{ providerID: string; modelID: string }>

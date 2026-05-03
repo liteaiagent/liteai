@@ -40,7 +40,6 @@ import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSDK } from "../../context/sdk"
 import { useSession } from "../../context/session"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useToast } from "../../context/toast"
 import { useTuiConfig } from "../../context/tui-config"
@@ -52,6 +51,7 @@ import { usePasteHandler } from "../../hooks/use-paste-handler"
 import { formatSessionExport } from "../../hooks/use-session-export"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import { useKeybinding } from "../../keybindings/use-keybinding"
+import { selectMessages, useAppState } from "../../state"
 import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
 import { editPromptInEditor } from "../../util/editor"
@@ -153,7 +153,21 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   const session = useSession()
   const toast = useToast()
   const route = useRoute()
-  const sync = useSync()
+  const command = useAppState((s) => s.command)
+  const agent = useAppState((s) => s.agent)
+  const mcp_resource = useAppState((s) => s.mcp_resource)
+  const messagesList = useAppState(selectMessages(session.sessionID ?? ""))
+  const partsMap = useAppState((s) => s.part)
+  const sync = useMemo(
+    () => ({
+      command,
+      agent,
+      mcp_resource,
+      message: session.sessionID ? { [session.sessionID]: messagesList } : {},
+      part: partsMap,
+    }),
+    [command, agent, mcp_resource, messagesList, partsMap, session.sessionID],
+  )
   const { theme } = useTheme()
   const dialog = useDialog()
   const promptRefCtx = usePromptRef()
@@ -189,7 +203,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   const atCompleter = useAtCompleter({
     input,
     cursorOffset,
-    agents: sync.agent,
+    agents: sync.agent as import("@liteai/sdk").Agent[],
     mcpResources: sync.mcp_resource,
     projectID: sdk.projectID,
     sdk: sdk.client,
@@ -351,7 +365,11 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
             onConfirm={async (opts) => {
               const messages = sync.message[sid] ?? []
               const parts = sync.part
-              const content = formatSessionExport(messages, parts, opts)
+              const content = formatSessionExport(
+                messages as import("@liteai/sdk").Message[],
+                parts as Record<string, import("@liteai/sdk").Part[]>,
+                opts,
+              )
               if (opts.openWithoutSaving) {
                 editPromptInEditor(content)
               } else {
@@ -524,7 +542,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       if (trimmed.includes("@")) {
         const processed = await processAtReferences({
           input: trimmed,
-          agents: sync.agent,
+          agents: sync.agent as import("@liteai/sdk").Agent[],
           sdk: sdk.client,
           projectID: sdk.projectID,
         })
@@ -813,6 +831,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // ── Render ──────────────────────────────────────────────────────────────
   const baseProps: BaseTextInputProps = {
     multiline: true,
+    disableCursorMovementForUpDownKeys: commandSuggestions.active || atCompleter.active,
     onSubmit,
     onChange,
     value: input,

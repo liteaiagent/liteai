@@ -3,24 +3,21 @@ import type React from "react"
 import { useMemo } from "react"
 import { useDialog } from "../context/dialog"
 import { useSession } from "../context/session"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { selectPermissions, useAppState } from "../state"
 import { DialogSelect } from "../ui/dialog-select"
 
 export function DialogPermissions(): React.ReactNode {
-  const sync = useSync()
   // biome-ignore lint/correctness/noUnusedVariables: reserved for future actions
   const dialog = useDialog()
   const { theme } = useTheme()
   const sessionID = useSession().sessionID
 
-  const permissions = useMemo(() => {
-    return sync.permission[sessionID ?? ""] ?? []
-  }, [sync.permission, sessionID])
+  const permissions = useAppState(selectPermissions(sessionID ?? ""))
 
   // Group by tool name
   const grouped = useMemo(() => {
-    const map = new Map<string, typeof permissions>()
+    const map = new Map<string, import("@liteai/sdk").PermissionRequest[]>()
     for (const p of permissions) {
       // biome-ignore lint/suspicious/noExplicitAny: SDK type outdated
       const tool = (p.tool as any)?.name ?? "unknown"

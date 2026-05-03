@@ -1,13 +1,15 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import { useMemo } from "react"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
+import { useAppState } from "../state"
 
 export function DialogStatus() {
-  const sync = useSync()
+  const mcp = useAppState((s) => s.mcp)
+  const lsp = useAppState((s) => s.lsp)
+  const formatter = useAppState((s) => s.formatter)
   const { theme } = useTheme()
 
-  const enabledFormatters = useMemo(() => sync.formatter.filter((f) => f.enabled), [sync.formatter])
+  const enabledFormatters = useMemo(() => formatter.filter((f) => f.enabled), [formatter])
 
   return (
     <Box paddingLeft={2} paddingRight={2} flexDirection="column" gap={1} paddingBottom={1}>
@@ -18,10 +20,10 @@ export function DialogStatus() {
         <Text color={theme.textMuted as Color}>esc</Text>
       </Box>
 
-      {Object.keys(sync.mcp).length > 0 ? (
+      {Object.keys(mcp).length > 0 ? (
         <Box flexDirection="column">
-          <Text color={theme.text as Color}>{Object.keys(sync.mcp).length} MCP Servers</Text>
-          {Object.entries(sync.mcp).map(([key, item]) => {
+          <Text color={theme.text as Color}>{Object.keys(mcp).length} MCP Servers</Text>
+          {Object.entries(mcp).map(([key, item]) => {
             const statusColor =
               (
                 {
@@ -55,10 +57,10 @@ export function DialogStatus() {
         <Text color={theme.text as Color}>No MCP Servers</Text>
       )}
 
-      {sync.lsp.length > 0 && (
+      {lsp.length > 0 && (
         <Box flexDirection="column">
-          <Text color={theme.text as Color}>{sync.lsp.length} LSP Servers</Text>
-          {sync.lsp.map((item) => (
+          <Text color={theme.text as Color}>{lsp.length} LSP Servers</Text>
+          {lsp.map((item) => (
             <Box flexDirection="row" gap={1} key={item.id}>
               <Text color={(item.status === "connected" ? theme.success : theme.error) as Color}>•</Text>
               <Text color={theme.text as Color} wrap="wrap">

@@ -3,10 +3,10 @@ import type { ProviderAuthAuthorization } from "@liteai/sdk"
 import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { useAppActions, useAppState } from "../state"
 import { DialogPrompt } from "../ui/dialog-prompt"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
@@ -22,12 +22,13 @@ const PROVIDER_PRIORITY: Record<string, number> = {
 }
 
 export function useDialogProviderOptions() {
-  const sync = useSync()
+  const provider_next = useAppState((s) => s.provider_next)
+  const provider_auth = useAppState((s) => s.provider_auth)
   const dialog = useDialog()
   const sdk = useSDK()
 
   const options = useMemo(() => {
-    const allProviders = sync.provider_next?.all || []
+    const allProviders = provider_next?.all || []
     const sorted = [...allProviders].sort((a, b) => {
       const pA = PROVIDER_PRIORITY[a.id] ?? 99
       const pB = PROVIDER_PRIORITY[b.id] ?? 99
@@ -48,7 +49,7 @@ export function useDialogProviderOptions() {
           )[provider.id],
           category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
           onSelect: () => {
-            const methods = sync.provider_auth?.[provider.id] ?? [{ type: "api", label: "API key" }]
+            const methods = provider_auth?.[provider.id] ?? [{ type: "api", label: "API key" }]
 
             if (methods.length === 1) {
               const method = methods[0]
@@ -79,7 +80,7 @@ export function useDialogProviderOptions() {
           },
         }) as DialogSelectOption<string>,
     )
-  }, [sync.provider_next?.all, sync.provider_auth, dialog, sdk])
+  }, [provider_next?.all, provider_auth, dialog, sdk])
 
   return options
 }
@@ -158,7 +159,8 @@ function MethodRunner({
 }
 
 export function DialogProvider() {
-  const sync = useSync()
+  const provider_next = useAppState((s) => s.provider_next)
+  const { bootstrap } = useAppActions()
   const dialog = useDialog()
   const sdk = useSDK()
   const { theme } = useTheme()
@@ -166,10 +168,10 @@ export function DialogProvider() {
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
-  const connectedSet = useMemo(() => new Set(sync.provider_next?.connected || []), [sync.provider_next?.connected])
+  const connectedSet = useMemo(() => new Set(provider_next?.connected || []), [provider_next?.connected])
 
   const connectedOptions = useMemo(() => {
-    return (sync.provider_next?.all || [])
+    return (provider_next?.all || [])
       .filter((p) => connectedSet.has(p.id))
       .map(
         (p) =>
@@ -180,10 +182,10 @@ export function DialogProvider() {
             category: "Connected",
           }) as DialogSelectOption<string>,
       )
-  }, [sync.provider_next?.all, connectedSet, disconnecting])
+  }, [provider_next?.all, connectedSet, disconnecting])
 
   const availableOptions = useMemo(() => {
-    const available = (sync.provider_next?.all || []).filter((p) => !connectedSet.has(p.id))
+    const available = (provider_next?.all || []).filter((p) => !connectedSet.has(p.id))
     const sorted = [...available].sort((a, b) => {
       const pA = PROVIDER_PRIORITY[a.id] ?? 99
       const pB = PROVIDER_PRIORITY[b.id] ?? 99
@@ -205,7 +207,7 @@ export function DialogProvider() {
           category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
         }) as DialogSelectOption<string>,
     )
-  }, [sync.provider_next?.all, connectedSet])
+  }, [provider_next?.all, connectedSet])
 
   const allOptions = useMemo(() => [...connectedOptions, ...availableOptions], [connectedOptions, availableOptions])
   const connectOptions = useDialogProviderOptions()
@@ -221,7 +223,7 @@ export function DialogProvider() {
         return
       }
       await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
-      await sync.bootstrap()
+      await bootstrap()
       toast.show({ variant: "info", message: `Disconnected ${name}` })
     } finally {
       setDisconnecting(null)
@@ -272,7 +274,7 @@ function AutoMethod({
   const { theme } = useTheme()
   const sdk = useSDK()
   const dialog = useDialog()
-  const sync = useSync()
+  const { bootstrap } = useAppActions()
 
   useEffect(() => {
     let active = true
@@ -288,13 +290,13 @@ function AutoMethod({
           return
         }
         await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
-        await sync.bootstrap()
+        await bootstrap()
         dialog.replace(() => <DialogModel providerID={providerID} />)
       })
     return () => {
       active = false
     }
-  }, [sdk, providerID, index, dialog, sync])
+  }, [sdk, providerID, index, dialog, bootstrap])
 
   return (
     <Box paddingLeft={2} paddingRight={2} flexDirection="column" gap={1} paddingBottom={1}>
@@ -326,7 +328,7 @@ function CodeMethod({
 }) {
   const { theme } = useTheme()
   const sdk = useSDK()
-  const sync = useSync()
+  const { bootstrap } = useAppActions()
   const dialog = useDialog()
   const [error, setError] = useState(false)
 
@@ -342,7 +344,7 @@ function CodeMethod({
         })
         if (!err) {
           await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
-          await sync.bootstrap()
+          await bootstrap()
           dialog.replace(() => <DialogModel providerID={providerID} />)
           return
         }
@@ -362,7 +364,7 @@ function CodeMethod({
 function ApiMethod({ providerID, title }: { providerID: string; title: string }) {
   const dialog = useDialog()
   const sdk = useSDK()
-  const sync = useSync()
+  const { bootstrap } = useAppActions()
   const { theme } = useTheme()
 
   const description = {
@@ -393,7 +395,7 @@ function ApiMethod({ providerID, title }: { providerID: string; title: string })
           },
         })
         await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
-        await sync.bootstrap()
+        await bootstrap()
         dialog.replace(() => <DialogModel providerID={providerID} />)
       }}
     />

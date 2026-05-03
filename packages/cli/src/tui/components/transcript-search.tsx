@@ -2,7 +2,7 @@ import { Box, type Color, Text } from "@liteai/ink"
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import { useSession } from "../context/session"
-import { useSync } from "../context/sync"
+import { selectMessages, useAppState } from "../state"
 import { TextInput } from "./text-input"
 
 export function TranscriptSearch(props: {
@@ -12,21 +12,14 @@ export function TranscriptSearch(props: {
   const [query, setQuery] = useState("")
   const [currentIndex, setCurrentIndex] = useState(0)
   const session = useSession()
-  const sync = useSync()
-
-  const sessionID = session.sessionID
-  const messages = useMemo(() => {
-    if (!sessionID) return []
-    return sync.message[sessionID] ?? []
-  }, [sessionID, sync.message])
-
-  const parts = sync.part
+  const messagesList = useAppState(selectMessages(session.sessionID!))
+  const parts = useAppState((s) => s.part)
 
   const matches = useMemo(() => {
     if (!query.trim()) return []
     const q = query.toLowerCase()
     const results: string[] = []
-    for (const msg of messages) {
+    for (const msg of messagesList) {
       const msgParts = parts[msg.id] ?? []
       let text = ""
       for (const p of msgParts) {
@@ -40,7 +33,7 @@ export function TranscriptSearch(props: {
       }
     }
     return results
-  }, [query, messages, parts])
+  }, [query, messagesList, parts])
 
   useEffect(() => {
     if (matches.length > 0) {

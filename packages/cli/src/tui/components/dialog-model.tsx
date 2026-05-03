@@ -4,25 +4,25 @@ import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
 import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { selectProviders, useAppState } from "../state"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 import { DialogProvider, useDialogProviderOptions } from "./dialog-provider"
 
 export function useConnected() {
-  const sync = useSync()
+  const providers = useAppState(selectProviders())
   return useMemo(() => {
-    return sync.provider.some(
+    return providers.some(
       (x) => x.id !== "google-code-assist" || Object.values(x.models).some((y) => y.cost?.input !== 0),
     )
-  }, [sync.provider])
+  }, [providers])
 }
 
 export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
-  const sync = useSync()
+  const availableProviders = useAppState(selectProviders())
   const dialog = useDialog()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
@@ -47,7 +47,7 @@ export function DialogModel(props: { providerID?: string }) {
     function toOptions(items: typeof favorites, category: string) {
       if (!showSections) return []
       return items.flatMap((item) => {
-        const provider = sync.provider.find((x) => x.id === item.providerID)
+        const provider = availableProviders.find((x) => x.id === item.providerID)
         if (!provider) return []
         const model = provider.models[item.modelID]
         if (!model) return []
@@ -79,7 +79,7 @@ export function DialogModel(props: { providerID?: string }) {
     )
 
     const providerOptions = pipe(
-      sync.provider,
+      availableProviders,
       sortBy(
         (provider) => (provider.id !== "google-code-assist" ? 1 : 0),
         (provider) => provider.name,
@@ -140,9 +140,9 @@ export function DialogModel(props: { providerID?: string }) {
     }
 
     return [...favoriteOptions, ...recentOptions, ...providerOptions, ...popularProviders]
-  }, [query, showExtra, connected, local.model, sync.provider, props.providerID, providers, dialog, theme])
+  }, [query, showExtra, connected, local.model, availableProviders, props.providerID, providers, dialog, theme])
 
-  const provider = props.providerID ? sync.provider.find((x) => x.id === props.providerID) : null
+  const provider = props.providerID ? availableProviders.find((x) => x.id === props.providerID) : null
   const title = provider?.name ?? "Select model"
 
   useKeybindings(

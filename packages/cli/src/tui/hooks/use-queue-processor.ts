@@ -1,9 +1,10 @@
+import type { SessionStatus } from "@liteai/sdk"
 import { useEffect, useSyncExternalStore } from "react"
 import { dequeueAll, getSnapshot, isEmpty, subscribe } from "../stores/message-queue-store"
 import type { PromptInputMode } from "../types/text-input"
 
 export function useQueueProcessor(opts: {
-  sessionStatus: "idle" | "compacting" | "working" | "planning" | "working_subagent"
+  sessionStatus: SessionStatus["type"]
   submit: (text: string, mode: PromptInputMode) => Promise<void>
 }): void {
   const queue = useSyncExternalStore(subscribe, getSnapshot)

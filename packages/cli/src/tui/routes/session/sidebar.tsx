@@ -4,8 +4,8 @@ import { useMemo } from "react"
 import { Divider } from "../../components/design-system/Divider"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import ThemedText from "../../components/design-system/ThemedText"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
+import { selectMessages, selectSession, useAppState } from "../../state"
 
 type Props = {
   sessionID: string
@@ -13,11 +13,10 @@ type Props = {
 }
 
 export function Sidebar({ sessionID, overlay }: Props) {
-  const sync = useSync()
+  const session = useAppState(selectSession(sessionID))
+  const messages = useAppState(selectMessages(sessionID))
+  const mcp = useAppState((s) => s.mcp)
   const { theme } = useTheme()
-
-  const session = useMemo(() => sync.session.get(sessionID), [sync.session, sessionID])
-  const messages = useMemo(() => sync.message[sessionID] ?? [], [sync.message, sessionID])
 
   const cost = useMemo(() => {
     const total = messages.reduce(
@@ -64,7 +63,7 @@ export function Sidebar({ sessionID, overlay }: Props) {
           {/* Additional sidebar sections (MCP, etc.) could be added here */}
           <Box flexDirection="column">
             <Text color={theme.textMuted as Color}>MCP Servers</Text>
-            {Object.entries(sync.mcp).map(([name, status]) => (
+            {Object.entries(mcp).map(([name, status]) => (
               <Box key={name} justifyContent="space-between">
                 <Text color={theme.textMuted as Color}>{name}</Text>
                 <Text color={(status.status === "connected" ? theme.success : theme.error) as Color}>

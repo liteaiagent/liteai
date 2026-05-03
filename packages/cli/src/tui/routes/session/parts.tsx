@@ -6,8 +6,8 @@ import { useMemo } from "react"
 import { CollapsedGroupView } from "../../components/collapsed-group-view"
 import { CompactSummary } from "../../components/compact-summary"
 import { Markdown } from "../../components/markdown"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme.tsx"
+import { selectPermissions, useAppState } from "../../state"
 import { useSessionContext } from "./ctx"
 import {
   ApplyPatch,
@@ -113,13 +113,13 @@ function TextPartView({ part }: { last: boolean; part: TextPart; message: Assist
 }
 
 function ToolPartView({ part, message }: { last: boolean; part: ToolPart; message: AssistantMessage }) {
-  const sync = useSync()
+  const permissions = useAppState(selectPermissions(message.sessionID))
 
   const toolprops = {
     metadata: part.state.status === "pending" ? {} : (part.state.metadata ?? {}),
     input: part.state.input ?? {},
     output: part.state.status === "completed" ? part.state.output : undefined,
-    permission: (sync.permission[message.sessionID] ?? []).find((x) => x.tool?.callID === part.callID),
+    permission: permissions.find((x) => x.tool?.callID === part.callID),
     tool: part.tool,
     part: part,
   }

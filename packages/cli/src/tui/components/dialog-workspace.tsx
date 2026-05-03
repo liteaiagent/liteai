@@ -4,10 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { selectSessions, useAppActions, useAppState } from "../state"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { DialogSessionList } from "./dialog-session-list"
 
@@ -16,7 +16,7 @@ async function openWorkspace(input: {
   dialog: ReturnType<typeof useDialog>
   route: ReturnType<typeof useRoute>
   sdk: ReturnType<typeof useSDK>
-  sync: ReturnType<typeof useSync>
+  actions: ReturnType<typeof useAppActions>
   toast: ReturnType<typeof useToast>
   workspaceID: string
   forceCreate?: boolean
@@ -31,7 +31,7 @@ async function openWorkspace(input: {
     : await client.project.session.list({ roots: true, limit: 1, projectID: input.workspaceID }).catch(() => undefined)
   const session = listed?.data?.[0]
   if (session?.id) {
-    await input.sync.session.sync(session.id)
+    await input.actions.session.sync(session.id)
     input.route.navigate({
       type: "session",
       sessionID: session.id,
@@ -64,7 +64,7 @@ async function openWorkspace(input: {
     }
     created = result.data
   }
-  await input.sync.session.sync(created.id)
+  await input.actions.session.sync(created.id)
   input.route.navigate({
     type: "session",
     sessionID: created.id,
@@ -75,7 +75,7 @@ async function openWorkspace(input: {
 // DialogWorkspaceCreate component port
 export function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) => Promise<void> }) {
   const dialog = useDialog()
-  const sync = useSync()
+  const actions = useAppActions()
   const sdk = useSDK()
   const toast = useToast()
   const [creating, setCreating] = useState<string | undefined>()
@@ -124,7 +124,7 @@ export function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) =
       })
       return
     }
-    await sync.workspace.sync()
+    await actions.workspace.sync()
     await props.onSelect(workspace.id)
     setCreating(undefined)
   }
@@ -146,7 +146,9 @@ export function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) =
 export function DialogWorkspaceList() {
   const dialog = useDialog()
   const route = useRoute()
-  const sync = useSync()
+  const actions = useAppActions()
+  const sessions = useAppState(selectSessions())
+  const workspaceList = useAppState((s) => s.workspaceList)
   const sdk = useSDK()
   const toast = useToast()
   const { theme } = useTheme()
@@ -159,7 +161,7 @@ export function DialogWorkspaceList() {
       dialog,
       route,
       sdk,
-      sync,
+      actions,
       toast,
       workspaceID,
       forceCreate,
@@ -204,19 +206,19 @@ export function DialogWorkspaceList() {
 
   const currentWorkspaceID = useMemo(() => {
     if (route.data.type === "session") {
-      return sync.session.get(route.data.sessionID)?.workspaceID ?? "__local__"
+      return sessions.find((s) => s.id === (route.data as any).sessionID)?.workspaceID ?? "__local__"
     }
     return "__local__"
-  }, [route.data, sync.session])
+  }, [route.data, sessions])
 
   const localCount = useMemo(
-    () => sync.sessions.filter((session) => !session.workspaceID && !session.parentID).length,
-    [sync.sessions],
+    () => sessions.filter((session) => !session.workspaceID && !session.parentID).length,
+    [sessions],
   )
 
   const runRef = useRef(0)
   useEffect(() => {
-    const workspaces = sync.workspaceList
+    const workspaces = workspaceList
     const next = ++runRef.current
     if (!workspaces.length) {
       setCounts({})
@@ -239,7 +241,7 @@ export function DialogWorkspaceList() {
       if (runRef.current !== next) return
       setCounts(Object.fromEntries(entries))
     })
-  }, [sync.workspaceList, sdk.url, sdk.fetch])
+  }, [workspaceList, sdk.url, sdk.fetch])
 
   const options = useMemo(
     () =>
@@ -251,7 +253,7 @@ export function DialogWorkspaceList() {
           description: "Use the local machine",
           footer: `${localCount} session${localCount === 1 ? "" : "s"}`,
         },
-        ...sync.workspaceList.map((workspace) => {
+        ...workspaceList.map((workspace) => {
           const count = counts[workspace.id]
           return {
             title: toDelete === workspace.id ? `Delete ${workspace.id}? Press ctrl+d again` : workspace.id,
@@ -273,13 +275,13 @@ export function DialogWorkspaceList() {
           description: "Create a new workspace",
         },
       ] as DialogSelectOption<string>[],
-    [sync.workspaceList, counts, localCount, toDelete],
+    [workspaceList, counts, localCount, toDelete],
   )
 
   useEffect(() => {
     dialog.setSize("large")
-    void sync.workspace.sync()
-  }, [dialog, sync.workspace])
+    void actions.workspace.sync()
+  }, [dialog, actions.workspace])
 
   useKeybindings(
     {
@@ -305,7 +307,7 @@ export function DialogWorkspaceList() {
             type: "home",
           })
         }
-        await sync.workspace.sync()
+        await actions.workspace.sync()
       },
     },
     { context: "Select" },

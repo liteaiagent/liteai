@@ -20,19 +20,32 @@ import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { StatsProvider, useStats } from "../../context/stats"
-import { useSync } from "../../context/sync"
 import { useTuiConfig } from "../../context/tui-config"
 import { useClipboard } from "../../hooks/use-clipboard"
 import { useMessageCursor } from "../../hooks/use-message-cursor"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
+import {
+  selectMessages,
+  selectPermissions,
+  selectQuestions,
+  selectSessionStatus,
+  useAppActions,
+  useAppState,
+} from "../../state"
 import { type DisplayMode, SessionProvider } from "./ctx"
 import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
 
 export function SessionRoute({ sessionID }: { sessionID: string }) {
-  const sync = useSync()
+  const {
+    session: { sync: syncSession },
+  } = useAppActions()
+  const messages = useAppState(selectMessages(sessionID))
+  const partsMap = useAppState((s) => s.part)
+  const permissions = useAppState(selectPermissions(sessionID))
+  const questions = useAppState(selectQuestions(sessionID))
   const session = useSession()
   const tuiConfig = useTuiConfig()
   useRegisterKeybindingContext("Chat")
@@ -53,15 +66,17 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const scrollRef = useRef<ScrollBoxHandle>(null)
 
   // Cursor state
-  const messages = sync.message[sessionID] ?? []
-  const cursor = useMessageCursor(messages, sync.part)
+  const cursor = useMessageCursor(
+    messages as import("@liteai/sdk").Message[],
+    partsMap as Record<string, import("@liteai/sdk").Part[]>,
+  )
   const promptRef = usePromptRef()
   useRegisterKeybindingContext("MessageActions")
 
   // Sync session on mount
   useEffect(() => {
-    sync.session.sync(sessionID)
-  }, [sessionID, sync.session])
+    syncSession(sessionID)
+  }, [sessionID, syncSession])
 
   useKeybindings(
     {
@@ -108,10 +123,10 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     if (!cursor.selectedMessage) return null
     return {
       message: cursor.selectedMessage,
-      parts: sync.part[cursor.selectedMessage.id] ?? [],
+      parts: (partsMap[cursor.selectedMessage.id] ?? []) as import("@liteai/sdk").Part[],
       isExpanded: cursor.expandedIds.has(cursor.selectedMessage.id),
     }
-  }, [cursor.selectedMessage, sync.part, cursor.expandedIds])
+  }, [cursor.selectedMessage, partsMap, cursor.expandedIds])
 
   // Shared capabilities object — single source of truth for all action dispatches.
   // Each capability is the concrete side-effect; the dispatcher only decides *which* to call.
@@ -121,7 +136,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
       retry: (id: string) => {
         const userMsg = messages.find((m) => m.id === id && m.role === "user")
         if (!userMsg) return
-        const parts = sync.part[userMsg.id] ?? []
+        const parts = partsMap[userMsg.id] ?? []
         const textPart = parts.find((p) => p.type === "text" && "text" in p)
         if (textPart && "text" in textPart) {
           cursor.exit()
@@ -133,7 +148,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
         promptRef.current?.prefill(text)
       },
     }),
-    [copy, messages, sync.part, cursor, session, promptRef],
+    [copy, messages, partsMap, cursor, session, promptRef],
   )
 
   const dispatchAction = useCallback(
@@ -161,13 +176,8 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     { context: "MessageActions", isActive: cursor.active },
   )
 
-  const permissionRequest = useMemo(() => {
-    return (sync.permission[sessionID] ?? [])[0]
-  }, [sync.permission, sessionID])
-
-  const questionRequest = useMemo(() => {
-    return (sync.question[sessionID] ?? [])[0]
-  }, [sync.question, sessionID])
+  const permissionRequest = useMemo(() => permissions[0], [permissions])
+  const questionRequest = useMemo(() => questions[0], [questions])
 
   const isToolCompact = useCallback(
     (toolName: string) => {
@@ -182,13 +192,13 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]
       if (msg.role === "user") break
-      const parts = sync.part[msg.id] ?? []
+      const parts = partsMap[msg.id] ?? []
       for (let j = parts.length - 1; j >= 0; j--) {
         if (parts[j].type === "reasoning") return parts[j].id
       }
     }
     return null
-  }, [messages, sync.part, displayMode])
+  }, [messages, partsMap, displayMode])
 
   return (
     <StatsProvider>
@@ -205,7 +215,6 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
           diffWrapMode: "none",
           isToolCompact,
           lastReasoningId,
-          sync,
           tui: tuiConfig,
         }}
       >
@@ -263,12 +272,12 @@ function SessionBottom({
 }) {
   const stats = useStats()
   const session = useSession()
-  const sync = useSync()
+  const sessionStatus = useAppState(selectSessionStatus(sessionID))
   const sdk = useSDK()
   const breaker = useCompactCircuitBreaker(3)
 
   useQueueProcessor({
-    sessionStatus: sync.session.status(sessionID),
+    sessionStatus: sessionStatus.type,
     submit: session.submit,
   })
 

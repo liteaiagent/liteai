@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import { useDialog } from "../context/dialog"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
-import { useSync } from "../context/sync"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { selectSessions, useAppState } from "../state"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { Spinner } from "../ui/spinner"
 import { DialogSessionRename } from "./dialog-session-rename"
@@ -28,7 +28,8 @@ function useDebounce<T>(value: T, delay: number): T {
 export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: string }) {
   const dialog = useDialog()
   const route = useRoute()
-  const sync = useSync()
+  const sessionsList = useAppState(selectSessions())
+  const sessionStatusMap = useAppState((s) => s.session_status)
   const { theme } = useTheme()
   const sdk = useSDK()
 
@@ -88,7 +89,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   )
 
   const sessions = useMemo(() => {
-    const list = searchResults ?? sync.sessions
+    const list = searchResults ?? sessionsList
     if (props.localOnly) {
       return list.filter((x) => !x.workspaceID && !x.parentID)
     }
@@ -96,7 +97,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
       return list.filter((x) => x.workspaceID === props.workspaceID)
     }
     return list
-  }, [searchResults, sync.sessions, props.localOnly, props.workspaceID])
+  }, [searchResults, sessionsList, props.localOnly, props.workspaceID])
 
   const options = useMemo(() => {
     const today = new Date().toDateString()
@@ -110,7 +111,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
           category = "Today"
         }
         const isDeleting = toDelete === x.id
-        const status = sync.session_status?.[x.id]
+        const status = sessionStatusMap?.[x.id]
         const isWorking = status?.type === "busy"
         const sessionExt = x as import("@liteai/sdk").Session & { tags?: string[]; description?: string }
         const hasParent = !!x.parentID
@@ -129,7 +130,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
 
     if (ftsResults && ftsResults.length > 0) {
       const ftsOptions = ftsResults.map((r) => {
-        const session = sync.sessions.find((s) => s.id === r.sessionID)
+        const session = sessionsList.find((s) => s.id === r.sessionID)
         return {
           title: session?.title ?? "Unknown Session",
           description: r.snippet.replace(/<mark>/g, "").replace(/<\/mark>/g, ""),
@@ -148,7 +149,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
     }
 
     return opts
-  }, [sessions, toDelete, sync.session_status, theme.error, ftsResults, sync.sessions])
+  }, [sessions, toDelete, sessionStatusMap, theme.error, ftsResults, sessionsList])
 
   useKeybindings(
     {

@@ -5,9 +5,9 @@ import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
 import { useLocal } from "../../context/local"
 import { useMessageCursorContext } from "../../context/message-cursor"
-import { useSync } from "../../context/sync"
 import { useTheme } from "../../context/theme"
 import { useKeybindingContext } from "../../keybindings/keybinding-context"
+import { selectMessages, useAppState } from "../../state"
 import type { UILocalPart } from "../../utils/collapse-tool-groups"
 import { useSessionContext } from "./ctx"
 import { PART_MAPPING } from "./parts"
@@ -89,18 +89,17 @@ export function AssistantMessageContent({
 }) {
   const local = useLocal()
   const { theme } = useTheme()
-  const sync = useSync()
+  const messages = useAppState(selectMessages(message.sessionID))
   const keybindContext = useKeybindingContext()
 
   const final = message.finish && !["tool-calls", "unknown"].includes(message.finish)
 
   const duration = useMemo(() => {
     if (!final || !message.time.completed) return 0
-    const messages = sync.message[message.sessionID] ?? []
     const user = messages.find((x) => x.role === "user" && x.id === message.parentID)
     if (!user || !user.time) return 0
     return message.time.completed - user.time.created
-  }, [final, message.time.completed, sync.message, message.sessionID, message.parentID])
+  }, [final, message.time.completed, messages, message.parentID])
 
   return (
     <Box flexDirection="column">
