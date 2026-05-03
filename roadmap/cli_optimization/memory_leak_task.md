@@ -121,24 +121,24 @@ All 12 remaining providers → explicit createContext + Provider component:
 - [x] Add `startedRef` guard against concurrent SSE loops
 - [x] Typecheck + Lint
 
-## Phase 3: State Lifecycle Management
+## Phase 3: State Lifecycle Management ✅ COMPLETE
 
 > **Priority: Low-Medium.** Prevents slow memory creep in long-running
 > sessions with heavy tool use. Not a crisis for typical usage.
 
-- [ ] Implement agent eviction (completed agents removed after 5min)
-- [ ] Implement session-scoped cleanup on navigation (clear diff/todo/parts for inactive sessions)
-- [ ] Cap `part` map (500 total, LRU eviction by oldest message)
-- [ ] Typecheck + Lint
+- [x] Implement agent eviction (completed agents removed after 5min)
+- [x] Implement session-scoped cleanup on navigation (clear diff/todo/parts for inactive sessions)
+- [x] Cap `part` map (500 total, LRU eviction by oldest message)
+- [x] Typecheck + Lint
 
-## Phase 4: Render Optimization
+## Phase 4: Render Optimization ✅ COMPLETE
 
 > **Priority: Low.** Further reduces intermediate allocations in hot render paths.
 
-- [ ] Create memoized selector factories in `app-state-selectors.ts`
-- [ ] Split `prompt-input.tsx` to use individual selectors per consumed field
-- [ ] Verify render counts with `useRef` counters (PromptInput stays at 0 during streaming)
-- [ ] Typecheck + Lint
+- [x] Create memoized selector factories in `app-state-selectors.ts`
+- [x] Split `prompt-input.tsx` to use individual selectors per consumed field
+- [x] Verify render counts with `useRef` counters (PromptInput stays at 0 during streaming)
+- [x] Typecheck + Lint
 
 ---
 

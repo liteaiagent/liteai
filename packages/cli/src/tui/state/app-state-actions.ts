@@ -3,6 +3,7 @@ import type { LiteaiClient, Message, Part, Session, Todo, Workspace } from "@lit
 import { Binary } from "@liteai/util/binary"
 import { Log } from "@liteai/util/log"
 import type { AppState } from "./app-state"
+import { capPartMap } from "./app-state-events"
 import type { AppStore } from "./app-store"
 
 export interface ActionContext {
@@ -142,7 +143,7 @@ export async function syncSessionAction(
         sessions: nextSessions,
         todo: { ...state.todo, [sessionID]: (todo.data as Todo[]) ?? [] },
         message: { ...state.message, [sessionID]: msgs.map((x) => x.info as Message) },
-        part: newParts,
+        part: capPartMap(newParts),
         session_diff: { ...state.session_diff, [sessionID]: (diff.data as Snapshot.FileDiff[]) ?? [] },
       }
     })
@@ -151,4 +152,29 @@ export async function syncSessionAction(
   } catch (e) {
     Log.Default.error("[tui:sync] session.sync failed", { sessionID, error: e })
   }
+}
+
+export function cleanupSessionAction(
+  ctx: ActionContext,
+  sessionID: string,
+  fullSyncedSessionsRef: { current: Set<string> },
+) {
+  fullSyncedSessionsRef.current.delete(sessionID)
+  ctx.setState((state) => {
+    const { [sessionID]: _diff, ...restDiff } = state.session_diff
+    const { [sessionID]: _todo, ...restTodo } = state.todo
+    const messages = state.message[sessionID] || []
+    const nextParts = { ...state.part }
+    for (const msg of messages) {
+      delete nextParts[msg.id]
+    }
+    const { [sessionID]: _msg, ...restMessage } = state.message
+    return {
+      ...state,
+      session_diff: restDiff,
+      todo: restTodo,
+      message: restMessage,
+      part: nextParts,
+    }
+  })
 }

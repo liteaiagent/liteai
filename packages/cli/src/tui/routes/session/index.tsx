@@ -40,7 +40,7 @@ import { QuestionPrompt } from "./question"
 
 export function SessionRoute({ sessionID }: { sessionID: string }) {
   const {
-    session: { sync: syncSession },
+    session: { sync: syncSession, cleanup: cleanupSession },
   } = useAppActions()
   const messages = useAppState(selectMessages(sessionID))
   const partsMap = useAppState((s) => s.part)
@@ -76,7 +76,10 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   // Sync session on mount
   useEffect(() => {
     syncSession(sessionID)
-  }, [sessionID, syncSession])
+    return () => {
+      cleanupSession(sessionID)
+    }
+  }, [sessionID, syncSession, cleanupSession])
 
   useKeybindings(
     {
@@ -277,7 +280,7 @@ function SessionBottom({
   const breaker = useCompactCircuitBreaker(3)
 
   useQueueProcessor({
-    sessionStatus: sessionStatus.type,
+    sessionStatus: sessionStatus?.type ?? "idle",
     submit: session.submit,
   })
 

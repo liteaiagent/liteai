@@ -16,7 +16,7 @@ import { useSDK } from "../context/sdk"
 import { TuiLog } from "../util/tui-log"
 import type { AppState } from "./app-state"
 import { getDefaultAppState } from "./app-state"
-import { bootstrapAction, syncSessionAction, syncWorkspacesAction } from "./app-state-actions"
+import { bootstrapAction, cleanupSessionAction, syncSessionAction, syncWorkspacesAction } from "./app-state-actions"
 import { handleAppStateEvent } from "./app-state-events"
 import { type AppStore, createAppStore } from "./app-store"
 
@@ -54,6 +54,7 @@ export interface AppActions {
   syncWorkspaces: () => Promise<void>
   session: {
     sync: (sessionID: string) => Promise<void>
+    cleanup: (sessionID: string) => void
   }
   workspace: {
     sync: () => Promise<void>
@@ -85,6 +86,7 @@ export function useAppActions(): AppActions {
       syncWorkspaces,
       session: {
         sync: (sessionID: string) => syncSessionAction(ctx, sessionID, fullSyncedSessionsRef),
+        cleanup: (sessionID: string) => cleanupSessionAction(ctx, sessionID, fullSyncedSessionsRef),
       },
       workspace: {
         sync: syncWorkspaces,

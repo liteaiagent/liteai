@@ -16,6 +16,19 @@ import { clearDynamicCompactTools } from "../constants/compact-allowlist"
 import type { AppState } from "./app-state"
 import type { AppStore } from "./app-store"
 
+export function capPartMap(
+  partMap: Readonly<Record<string, readonly Part[]>>,
+): Readonly<Record<string, readonly Part[]>> {
+  const keys = Object.keys(partMap)
+  if (keys.length <= 500) return partMap
+
+  const nextPart = { ...partMap }
+  for (let i = 0; i < keys.length - 500; i++) {
+    delete nextPart[keys[i]]
+  }
+  return nextPart
+}
+
 export interface EventContext {
   setState: AppStore<AppState>["setState"]
   getState: AppStore<AppState>["getState"]
@@ -177,7 +190,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
             nextPart = restParts
           }
         }
-        return { ...prev, message: { ...prev.message, [info.sessionID]: nextMsgs }, part: nextPart }
+        return { ...prev, message: { ...prev.message, [info.sessionID]: nextMsgs }, part: capPartMap(nextPart) }
       })
       break
     }
@@ -210,7 +223,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
         } else {
           nextParts.splice(match.index, 0, p)
         }
-        return { ...prev, part: { ...prev.part, [p.messageID]: nextParts } }
+        return { ...prev, part: capPartMap({ ...prev.part, [p.messageID]: nextParts }) }
       })
       break
     }
@@ -228,7 +241,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
             ...existingPart,
             [field]: ((existingPart[field] as string | undefined) ?? "") + delta,
           } as unknown as Part
-          return { ...prev, part: { ...prev.part, [messageID]: nextParts } }
+          return { ...prev, part: capPartMap({ ...prev.part, [messageID]: nextParts }) }
         }
         return prev
       })

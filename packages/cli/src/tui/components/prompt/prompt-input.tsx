@@ -51,7 +51,7 @@ import { usePasteHandler } from "../../hooks/use-paste-handler"
 import { formatSessionExport } from "../../hooks/use-session-export"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
 import { useKeybinding } from "../../keybindings/use-keybinding"
-import { selectMessages, useAppState } from "../../state"
+import { useAppState, useAppStore } from "../../state"
 import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
 import { editPromptInEditor } from "../../util/editor"
@@ -153,21 +153,10 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   const session = useSession()
   const toast = useToast()
   const route = useRoute()
+  const store = useAppStore()
   const command = useAppState((s) => s.command)
   const agent = useAppState((s) => s.agent)
   const mcp_resource = useAppState((s) => s.mcp_resource)
-  const messagesList = useAppState(selectMessages(session.sessionID ?? ""))
-  const partsMap = useAppState((s) => s.part)
-  const sync = useMemo(
-    () => ({
-      command,
-      agent,
-      mcp_resource,
-      message: session.sessionID ? { [session.sessionID]: messagesList } : {},
-      part: partsMap,
-    }),
-    [command, agent, mcp_resource, messagesList, partsMap, session.sessionID],
-  )
   const { theme } = useTheme()
   const dialog = useDialog()
   const promptRefCtx = usePromptRef()
@@ -198,13 +187,13 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // ── History search state ────────────────────────────────────────────────
   const searchState = useHistorySearch()
 
-  const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(sync.command ?? []), ...TUI_COMMANDS])
+  const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(command ?? []), ...TUI_COMMANDS])
 
   const atCompleter = useAtCompleter({
     input,
     cursorOffset,
-    agents: sync.agent as import("@liteai/sdk").Agent[],
-    mcpResources: sync.mcp_resource,
+    agents: agent as import("@liteai/sdk").Agent[],
+    mcpResources: mcp_resource,
     projectID: sdk.projectID,
     sdk: sdk.client,
     enabled: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
@@ -273,13 +262,14 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       const sessionID = session.sessionID
       if (!sessionID) return
 
-      const messages = sync.message[sessionID] ?? []
+      const state = store.getState()
+      const messages = state.message[sessionID] ?? []
 
       // Iterate reverse to yield newest messages first
       for (let i = messages.length - 1; i >= 0; i--) {
         const msg = messages[i]
         if (msg && msg.role === "user") {
-          const parts = sync.part[msg.id] ?? []
+          const parts = state.part[msg.id] ?? []
           const textPart = parts.find((p) => p.type === "text")
           if (textPart && textPart.type === "text" && textPart.text) {
             yield { display: textPart.text }
@@ -287,7 +277,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
         }
       }
     },
-    [sync.message, sync.part, session.sessionID],
+    [session.sessionID, store],
   )
 
   const { onHistoryUp, onHistoryDown, resetHistory } = useArrowKeyHistory({
@@ -363,8 +353,9 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
             defaultAssistantMetadata={false}
             defaultOpenWithoutSaving={false}
             onConfirm={async (opts) => {
-              const messages = sync.message[sid] ?? []
-              const parts = sync.part
+              const state = store.getState()
+              const messages = state.message[sid] ?? []
+              const parts = state.part
               const content = formatSessionExport(
                 messages as import("@liteai/sdk").Message[],
                 parts as Record<string, import("@liteai/sdk").Part[]>,
@@ -463,7 +454,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           applyCommandSuggestion(
             selected,
             true, // shouldExecute
-            [...(sync.command ?? []), ...TUI_COMMANDS],
+            [...(command ?? []), ...TUI_COMMANDS],
             input,
             commandSuggestions.midCommandMatch,
             (value) => trackAndSetInput(value),
@@ -542,7 +533,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       if (trimmed.includes("@")) {
         const processed = await processAtReferences({
           input: trimmed,
-          agents: sync.agent as import("@liteai/sdk").Agent[],
+          agents: agent as import("@liteai/sdk").Agent[],
           sdk: sdk.client,
           projectID: sdk.projectID,
         })
@@ -569,8 +560,8 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       searchState,
       commandSuggestions,
       input,
-      sync.command,
-      sync.agent,
+      command,
+      agent,
       sdk,
       tuiInterceptors,
       dialog,
@@ -768,8 +759,8 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
 
   // ── Highlights & Ghost Text ─────────────────────────────────────────────
   const knownCommands = useMemo(
-    () => [...sync.command.map((cmd) => cmd.name), ...TUI_COMMANDS.map((cmd) => cmd.name)],
-    [sync.command],
+    () => [...command.map((cmd) => cmd.name), ...TUI_COMMANDS.map((cmd) => cmd.name)],
+    [command],
   )
 
   const highlights = useMemo(() => {
@@ -798,7 +789,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           applyCommandSuggestion(
             selected,
             false,
-            [...(sync.command ?? []), ...TUI_COMMANDS],
+            [...(command ?? []), ...TUI_COMMANDS],
             input,
             commandSuggestions.midCommandMatch,
             (value) => trackAndSetInput(value),
