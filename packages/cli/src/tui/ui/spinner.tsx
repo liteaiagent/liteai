@@ -111,6 +111,23 @@ export function SpinnerAnimationRow({
   const [ref, time] = useAnimationFrame(50)
   const currentLength = responseLengthRef.current ?? 0
 
+  // Mount guard — skip the very first render frame to avoid visual artifacts.
+  // On mount, the animation frame hook returns the shared clock's current time
+  // which produces valid but jarring initial frame/color values. The ref flips
+  // to true after the first animation tick, giving the animation a clean start.
+  const mountedRef = useRef(false)
+  if (!mountedRef.current) {
+    mountedRef.current = true
+    return (
+      <Box ref={ref} flexDirection="row" gap={1}>
+        <SpinnerGlyph frame={0} color={messageColor} stalledIntensity={0} reducedMotion={reducedMotion} time={0} />
+        <Text color={messageColor as Color} dim={true}>
+          {message}
+        </Text>
+      </Box>
+    )
+  }
+
   const { isStalled, stalledIntensity } = useStalledAnimation(
     time,
     currentLength,

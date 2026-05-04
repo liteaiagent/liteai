@@ -38,17 +38,16 @@ export function useExitOnCtrlCD(onInterrupt?: () => boolean, isActive = true): E
     keyName: null,
   })
 
+  // Stable callbacks for useDoublePress — prevents handler chain churn
+  const setCtrlCPending = useCallback((pending: boolean) => setExitState({ pending, keyName: "Ctrl-C" }), [])
+  const setCtrlDPending = useCallback((pending: boolean) => setExitState({ pending, keyName: "Ctrl-D" }), [])
+  const doExit = useCallback(() => void exit(), [exit])
+
   // Double-press handler for Ctrl+C
-  const handleCtrlCDoublePress = useDoublePress(
-    (pending) => setExitState({ pending, keyName: "Ctrl-C" }),
-    () => void exit(),
-  )
+  const handleCtrlCDoublePress = useDoublePress(setCtrlCPending, doExit)
 
   // Double-press handler for Ctrl+D
-  const handleCtrlDDoublePress = useDoublePress(
-    (pending) => setExitState({ pending, keyName: "Ctrl-D" }),
-    () => void exit(),
-  )
+  const handleCtrlDDoublePress = useDoublePress(setCtrlDPending, doExit)
 
   // Handler for app:interrupt (Ctrl+C by default)
   // Let features handle interrupt first via callback

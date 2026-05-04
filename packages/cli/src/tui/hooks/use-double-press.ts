@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useRef } from "react"
 
-export const DOUBLE_PRESS_TIMEOUT_MS = 800
+export const DOUBLE_PRESS_TIMEOUT_MS = 1500
 
 export function useDoublePress(
   setPending: (pending: boolean) => void,

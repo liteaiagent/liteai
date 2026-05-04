@@ -2,7 +2,7 @@ import type { ScrollBoxHandle } from "@liteai/ink"
 import { Box } from "@liteai/ink"
 import type { Message, Part, ReasoningPart } from "@liteai/sdk"
 import type React from "react"
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { type SubagentInfo, SubagentProgress } from "../../components/subagent-progress"
 import { VirtualMessageList } from "../../components/virtual-message-list"
 import { useMessageCursorContext } from "../../context/message-cursor"
@@ -52,7 +52,38 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
   const lastMessage = messages.at(-1)
   const lastParts = lastMessage ? (partsMap[lastMessage.id] ?? []) : []
   const hasRunningTools = lastParts.some((p) => p.type === "tool" && p.state.status === "running")
-  const showSpinner = session.isLoading && !hasRunningTools
+  const rawShowSpinner = session.isLoading && !hasRunningTools
+
+  // Debounce spinner visibility to prevent rapid mount/unmount cycles.
+  // When tool states transition (running → complete → next tool), showSpinner
+  // toggles rapidly causing the RichSpinner to remount (new random verb,
+  // animation restart, potential ANSI rendering artifacts).
+  // Keep the spinner visible for at least 150ms after it was last shown.
+  const [debouncedShowSpinner, setDebouncedShowSpinner] = useState(false)
+  const spinnerTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => {
+    if (rawShowSpinner) {
+      // Show immediately
+      if (spinnerTimerRef.current) {
+        clearTimeout(spinnerTimerRef.current)
+        spinnerTimerRef.current = undefined
+      }
+      setDebouncedShowSpinner(true)
+    } else {
+      // Delay hiding by 150ms to absorb rapid toggles
+      spinnerTimerRef.current = setTimeout(() => {
+        setDebouncedShowSpinner(false)
+        spinnerTimerRef.current = undefined
+      }, 150)
+    }
+    return () => {
+      if (spinnerTimerRef.current) {
+        clearTimeout(spinnerTimerRef.current)
+        spinnerTimerRef.current = undefined
+      }
+    }
+  }, [rawShowSpinner])
+  const showSpinner = debouncedShowSpinner
 
   const assistantMsg = lastMessage?.role === "assistant" ? lastMessage : undefined
   const startTime = assistantMsg?.time.created ?? Date.now()

@@ -3,6 +3,7 @@ import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
+import { useExitState } from "../../components/global-exit-handler"
 import { Logo } from "../../components/logo"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { Tips } from "../../components/tips"
@@ -13,6 +14,7 @@ export function HomeRoute({ workspaceID }: { workspaceID: string }) {
   const directory = useAppState((s) => s.path.directory)
   const mcp = useAppState((s) => s.mcp)
   const { theme } = useTheme()
+  const exitState = useExitState()
 
   const connectedMcpCount = useMemo(() => {
     return Object.values(mcp).filter((x) => x.status === "connected").length
@@ -57,15 +59,21 @@ export function HomeRoute({ workspaceID }: { workspaceID: string }) {
         borderRight={false}
         borderColor={theme.backgroundElement as Color}
       >
-        <Box gap={2}>
-          <Text color={theme.textMuted as Color}>{directory}</Text>
-          {connectedMcpCount > 0 && (
-            <Text color={theme.text as Color}>
-              <Text color={(mcpError ? theme.error : theme.success) as Color}>⊙ </Text>
-              {connectedMcpCount} MCP
-            </Text>
-          )}
-        </Box>
+        {exitState.pending ? (
+          <Text dim italic>
+            Press {exitState.keyName} again to exit
+          </Text>
+        ) : (
+          <Box gap={2}>
+            <Text color={theme.textMuted as Color}>{directory}</Text>
+            {connectedMcpCount > 0 && (
+              <Text color={theme.text as Color}>
+                <Text color={(mcpError ? theme.error : theme.success) as Color}>⊙ </Text>
+                {connectedMcpCount} MCP
+              </Text>
+            )}
+          </Box>
+        )}
         <Text color={theme.textMuted as Color}>{Installation.VERSION}</Text>
       </Box>
     </Box>

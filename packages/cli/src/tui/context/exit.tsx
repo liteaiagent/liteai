@@ -35,6 +35,11 @@ export function ExitProvider({ children, onExit }: { children?: React.ReactNode;
       if (exitingRef.current) return
       exitingRef.current = true
 
+      // Hard exit safety net — if Ink's unmount/cleanup hangs (pending renders,
+      // async effects, stdin listener teardown), guarantee termination after 2s.
+      const hardExit = setTimeout(() => process.exit(0), 2000)
+      hardExit.unref()
+
       // Reset window title before exiting
       if (process.platform === "win32") {
         process.title = ""
