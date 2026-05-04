@@ -160,15 +160,226 @@ See individual documents:
 
 ---
 
-## 7. Open Questions for Future Analysis
+## 7. Resolved Design Questions
+
+> [!NOTE]
+> These questions were identified during the initial analysis and have now been resolved
+> through cross-reference analysis of LangGraphJS, Claude Code, and Gemini CLI.
+
+---
+
+### Q1: Compaction in a Forward-Only Loop
+
+**Question**: Currently compaction reads/writes the DB mid-loop. How does it work when the loop never reads from external storage?
+
+#### Reference Analysis
+
+**Claude Code** (`src/services/compact/compact.ts`, `autoCompact.ts`):
+- Compaction is a **pure message transformation** — `compactConversation()` takes `messages: Message[]`, sends them to the model for summarization, returns `CompactionResult` containing `boundaryMarker`, `summaryMessages`, `attachments`, `hookResults`.
+- The caller (REPL.tsx query loop) **replaces the in-memory message array** with `buildPostCompactMessages(result)`. No DB involved — Claude Code has no DB.
+- Auto-compact fires **between turns**, checking `tokenCountWithEstimation(messages)` against `getAutoCompactThreshold(model)`.
+- Circuit breaker: `MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3` — stops retrying after 3 failures (prevents 250K+ wasted API calls/day globally).
+
+**Gemini CLI** (`packages/core/src/context/chatCompressionService.ts`):
+- `ChatCompressionService.compress()` takes `chat: GeminiChat`, reads `chat.getHistory(true)`, finds a split point via `findCompressSplitPoint()` (70% compress / 30% keep), sends the compressable portion to the model, returns `{ newHistory: Content[], info }`.
+- The caller **replaces the chat history** entirely with `newHistory`. Again, pure in-memory transformation.
+- Two-phase verification: after initial summary, sends a "probe" to verify no critical info was lost. Novel approach not seen in Claude Code.
+- Tool output truncation via `truncateHistoryToBudget()` — clips old function responses exceeding 50K token budget, saving them to disk files.
+
+**LangGraph** (`libs/langgraph-core/src/pregel/loop.ts`):
+- State (channels) is always in-memory during forward execution. The checkpointer is an observer that receives `putWrites()` calls — it never feeds data back into the loop mid-execution.
+- There is no "compaction" concept — LangGraph manages state via typed channel reducers, not message lists.
+
+#### Design Decision for LiteAI
+
+Compaction becomes a **state transformation on `msgsBuffer`** — consistent with both Claude Code and Gemini CLI:
+
+```
+Before: loop → detect overflow → DB.read(messages) → LLM(summarize) → DB.write(summary) → DB.read(newMessages) → continue
+After:  loop → detect overflow → LLM(summarize, msgsBuffer.current) → msgsBuffer.current = [marker, summary] → checkpointer.put(msgsBuffer) → continue
+```
+
+Specific changes:
+1. **`CompactionOrchestrator.process()`** already receives `messages: Message.WithParts[]` from the buffer — it doesn't need DB reads. The remaining DB writes inside `SessionCompaction.process()` (lines creating marker/summary messages via `Session.updateMessage()`) become **checkpointer writes** instead.
+2. **`CompactionOrchestrator.createMarker()`** currently calls `Session.updateMessage()` + `Session.updatePart()` — these become checkpointer ops, with the marker appended to `msgsBuffer.current` immediately (already done in loop.ts lines 644-656).
+3. **Buffer reset** after compaction already works: `msgsBuffer.current = [markerMsg, summaryWithParts]` (loop.ts line 631). The checkpointer simply persists this new state.
+4. **`SessionCompaction.prune()`** remains a post-loop cleanup — it operates on historical data and doesn't affect forward execution. It can stay as a direct DB call (or become a checkpointer lifecycle hook).
+
+**Proactive autocompact** (pipeline.ts `shouldAutocompact()`) already operates on `msgsBuffer` — zero changes needed.
+
+> [!TIP]
+> Adopt Gemini CLI's two-phase verification pattern — it adds ~1 extra LLM call but catches lossy summaries that would otherwise degrade session quality over multiple compaction cycles.
+
+---
+
+### Q2: Crash Recovery with Checkpointer
+
+**Question**: Currently, partial writes to DB allow resuming after crash. How is crash recovery preserved in the decoupled model?
+
+#### Reference Analysis
+
+**LangGraph** (`libs/langgraph-core/src/pregel/loop.ts:558-650`):
+- **Incremental writes via `putWrites()`**: Every task completion immediately calls `loop.putWrites(taskId, writes)`, which (a) updates in-memory `checkpointPendingWrites`, and (b) if `durability !== "exit"`, asynchronously calls `checkpointer.putWrites(config, writesToSave, taskId)`.
+- **Tracked async**: All checkpointer promises go into `checkpointerPromises: Set<Promise<unknown>>` via `_trackCheckpointerPromise()`. Failed promises are kept in the set so `Promise.all()` surfaces errors during cleanup.
+- **Full checkpoint on superstep boundary**: After all tasks in a step complete, `_putCheckpoint({ source: "loop" })` writes the full channel state.
+- **Resume from checkpoint**: On resume, `PregelLoop.initialize()` calls `checkpointer.getTuple(config)` to load the last consistent state. Pending writes from an interrupted step are replayed by `_prepareSingleTask()`.
+- **Durability modes**: `"full"` (write after every task), `"exit"` (write only on graph completion — faster but no mid-run recovery).
+
+**Claude Code** (`src/utils/conversationRecovery.ts`, `sessionStorage.ts`):
+- **JSONL append-only transcript**: Every message is appended to `<sessionId>.jsonl` as it's created. This IS the crash recovery mechanism — read the file, chain-walk via `parentUuid`, reconstruct conversation.
+- **`deserializeMessagesWithInterruptDetection()`**: On resume, detects whether the session was interrupted mid-turn (user message without assistant response) or mid-tool (tool_use without tool_result). Injects synthetic "Continue from where you left off." messages.
+- **`filterUnresolvedToolUses()`**: Strips assistant messages with tool_use blocks that have no matching tool_result — these are artifacts of mid-stream crashes.
+- **No atomic consistency**: A crash mid-write can leave a partial JSON line. `loadTranscriptFile()` handles this by catching parse errors per line.
+
+**Gemini CLI** (`packages/core/src`):
+- Uses Gemini's `GeminiChat` wrapper with in-memory `Content[]` history. No crash recovery — the session is lost on process exit.
+- `chatCompressionService` operates entirely in memory.
+
+#### Design Decision for LiteAI
+
+The current `AsyncPersistenceWriter` already provides incremental writes — it's a proto-checkpointer. The design makes this explicit:
+
+**Crash Recovery Contract:**
+1. **During forward execution**: `EventPersister.drainWrites()` produces `PersistenceOp[]` which `AsyncPersistenceWriter.write()` persists. Each write is atomic at the message/part level (SQLite INSERT/UPDATE). A crash between writes loses the current part but all prior writes are durable.
+
+2. **On resume**: `Message.stream(sessionID)` reconstructs the last consistent state from the DB. The loop loads this into `msgsBuffer` (exactly as it does today, loop.ts line 399) and resumes.
+
+3. **What changes**: The `AsyncPersistenceWriter` becomes the `SqliteCheckpointer` implementation. Its `write()` method maps 1:1 to `putWrites()`:
+
+```
+PersistenceOp[]  →  CheckpointerOp[]
+upsert-part      →  putWrite("part", part)
+delta-part       →  putWrite("part-delta", {id, field, delta})
+upsert-message   →  putWrite("message", message)
+```
+
+4. **What stays the same**: The granularity of crash recovery is unchanged — we recover to the last persisted message/part boundary, same as today. The LangGraph "full checkpoint on superstep boundary" model doesn't apply because our "superstep" is a single LLM turn, and we already persist parts incrementally during streaming.
+
+5. **`MemoryCheckpointer`** for tests: Same interface, writes to `Map<string, Op[]>`. Zero DB dependency in test suites.
 
 > [!IMPORTANT]
-> These are scoped OUT of this refactor but should be analyzed in dedicated sessions.
+> The `processSubtask()` function (loop.ts:867-1089) still calls `Session.updateMessage()` and `Session.updatePart()` directly — 14 raw DB writes. These must be migrated to checkpointer ops. This is the largest single migration task in Phase 1.
 
-1. **Compaction**: Currently reads/writes the DB mid-loop. How does compaction work in a forward-only loop? (Likely: compaction is a state transformation applied to `msgsBuffer` in-memory, then checkpointed.)
+**Tracked async adoption** (from LangGraph):
+```typescript
+// Current: fire-and-forget
+await dbWriter.write(ops)
 
-2. **Crash recovery**: Currently, partial writes to DB allow resuming after crash. In the new model, the checkpointer still writes incrementally (like LangGraph's `putWrites`), so crash recovery is preserved — but needs explicit design.
+// Target: tracked promises with error surfacing
+const promise = checkpointer.putWrites(ops)
+this.pendingWrites.add(promise)
+promise.then(() => this.pendingWrites.delete(promise))
+// In cleanup: await Promise.all(this.pendingWrites)
+```
 
-3. **JSONL transcripts**: The existing transcript sidechain writes are a proto-checkpointer. Can `FileCheckpointer` unify with the transcript system?
+---
 
-4. **Plan mode state**: `PlanModeStateRef` is session-scoped in-memory state. Should it be part of the checkpointer's state or remain separate?
+### Q3: JSONL Transcripts and FileCheckpointer Unification
+
+**Question**: The existing `SidechainTranscript` writes are a proto-checkpointer. Can `FileCheckpointer` unify with the transcript system?
+
+#### Reference Analysis
+
+**Claude Code** (`src/services/compact/compact.ts:713-717`, `src/utils/sessionStorage.ts`):
+- Primary persistence IS the JSONL transcript — `<sessionId>.jsonl` is append-only.
+- Each message has `uuid`, `parentUuid`, `timestamp`, `isSidechain` fields.
+- **Chain walking**: `buildConversationChain(byUuid, tip)` walks `parentUuid` links from a leaf to reconstruct the conversation. This supports branching (compaction creates new chain heads).
+- **Compaction boundary markers**: `SystemCompactBoundaryMessage` with `compactMetadata` records pre-compact token count and preserved segment UUIDs for relinking.
+- **Sidechain transcripts**: Written separately before compaction via `writeSessionTranscriptSegment()` — preserves the pre-compaction conversation for audit/replay. This is the KAIROS feature (ant-only).
+
+**LiteAI current** (`src/session/transcript.ts`):
+- `SidechainTranscript` is a minimal JSONL writer for subagent conversations.
+- Format: `{ isSidechain: true, uuid, parentUuid?, role, content, timestamp }` — same structure as Claude Code's transcript format.
+- Write path: `appendFile(path, JSON.stringify(message) + "\n")`.
+- Read path: Line-by-line JSON.parse with malformed-line resilience.
+- Scope: Only used for subagent transcripts (`agent-${agentId}.jsonl`), not the main session.
+
+#### Design Decision
+
+**No — `FileCheckpointer` should NOT unify with the transcript system.** They serve fundamentally different purposes:
+
+| Concern | Checkpointer | Transcript |
+|---|---|---|
+| **Purpose** | Crash recovery + state reconstruction | Audit trail + session history |
+| **Consistency** | Must be consistent (atomic writes, chain integrity) | Best-effort (malformed lines OK) |
+| **Lifecycle** | Mutated by compaction (old state replaced) | Append-only (compaction adds boundary, never deletes) |
+| **Read pattern** | Load latest state on resume | Chain-walk from leaf for full history |
+| **Scope** | Main session + subagents | Subagents only (currently) |
+
+However, the transcript system SHOULD be extended to serve as the **pre-compaction archive** (Claude Code's `writeSessionTranscriptSegment` pattern):
+
+1. **Before compaction**: Write the full `msgsBuffer.current` to `<sessionId>/transcript.jsonl` as a JSONL chain with `parentUuid` links.
+2. **After compaction**: The checkpointer persists the compacted state (marker + summary). The transcript preserves the full pre-compaction history.
+3. **On resume (`--resume` / `--continue`)**: Load from checkpointer (fast, compact state), with the transcript available for "replay" or "step-back" operations (Phase 5).
+
+The `SidechainTranscript` format already matches Claude Code's format. Extending it to the main session is trivial — add `isSidechain: false` entries.
+
+> [!TIP]
+> The transcript file becomes the foundation for Phase 5 (backward execution / replay). When a user wants to "step back" past a compaction boundary, the system reads the transcript to reconstruct pre-compaction state.
+
+---
+
+### Q4: Plan Mode State Ownership
+
+**Question**: `PlanModeStateRef` is session-scoped in-memory state. Should it be part of the checkpointer's state or remain separate?
+
+#### Reference Analysis
+
+**Claude Code** (`src/bootstrap/state.ts:157-159`, `src/tools/EnterPlanModeTool/`):
+- Plan mode is tracked via **process-scoped boolean flags** in the global `STATE` object:
+  - `hasExitedPlanMode: boolean` — whether user has exited plan mode this session
+  - `needsPlanModeExitAttachment: boolean` — one-time UI notification flag
+- Plan mode is NOT part of the message history — it's tracked by the `AppStateStore` and communicated to the model via **attachments** injected into messages.
+- On compaction, plan mode state is explicitly preserved via `createPlanModeAttachmentIfNeeded(context)` — injects a plan mode instruction attachment after compaction.
+- On resume, plan mode must be re-detected from the conversation history (no persisted flag).
+
+**Gemini CLI** (`packages/core/src/tools/enter-plan-mode.ts`, `config/config.ts`):
+- Plan mode is tracked via `Config.setApprovalMode(ApprovalMode.PLAN)` — a global config mutation.
+- It controls tool availability (read-only restriction) rather than being a conversation-level state.
+- No persistence mechanism — plan mode is lost on process exit.
+- No compaction interaction — the compression service doesn't know about plan mode.
+
+**LiteAI current** (`src/session/plan-mode-state.ts`):
+- `PlanModeStateRef` is a module-scoped registry keyed by `SessionID`.
+- State includes: `active`, `planText`, `planFilePath`, `turnsSincePlanReminder`, `workflowType`.
+- Created at session start with defaults, registered in the module-level `Map<SessionID, PlanModeStateRef>`.
+- Emits `Session.Event.PlanStateChanged` on `active` transitions.
+- `turnsSincePlanReminder` drives the full/sparse reminder injection cycle in `plan-reminder.ts`.
+- NOT persisted to DB (was previously in a SQLite JSON column, migrated to in-memory in the plan-mode feature).
+
+#### Design Decision
+
+**Plan mode state should remain SEPARATE from the checkpointer.** The checkpointer owns conversation state (messages, parts). Plan mode is a **session lifecycle concern**, not conversation state.
+
+Rationale:
+
+1. **Orthogonal lifecycle**: Plan mode can be entered/exited multiple times within a single conversation. The `turnsSincePlanReminder` counter resets independently of message state. Embedding it in the checkpointer's state would conflate two independent state machines.
+
+2. **No recovery semantics**: If the process crashes, plan mode state doesn't need to be recovered — the user re-enters plan mode explicitly. Claude Code and Gemini CLI both treat it this way. This is unlike conversation messages, which MUST survive crashes.
+
+3. **Cross-compaction survival**: Plan mode state must survive compaction (the model must stay in plan mode after context is compacted). Both Claude Code and LiteAI handle this via **message injection** (attachments/reminders), not by persisting the flag in the conversation state. The checkpointer would delete it during compaction buffer reset.
+
+4. **Multi-tenant isolation**: `PlanModeStateRef` is keyed by `SessionID` in a process-level registry — it's already properly isolated per session. Moving it into the checkpointer would add unnecessary coupling to the storage layer.
+
+**What SHOULD change:**
+
+The `PlanModeStateRef` should adopt Claude Code's compaction-survival pattern more explicitly:
+
+```typescript
+// In CompactionOrchestrator.process(), after buffer reset:
+if (planModeStateRef.get().active) {
+  // Inject plan mode continuation attachment into post-compaction buffer
+  // (currently handled by plan-reminder.ts on next turn, but could miss
+  // if the compaction summary doesn't mention plan mode)
+  injectPlanModeRestorationAttachment(msgsBuffer, planModeStateRef)
+}
+```
+
+The `PlanModeStateRef` lifecycle stays as-is:
+- Created at session start → registered
+- Updated synchronously during turns
+- Deregistered at session cleanup
+- NOT checkpointed, NOT persisted to DB, NOT part of transcript
+
+> [!WARNING]
+> If Phase 5 (backward execution) implements "step back to before plan mode was entered," the `PlanModeStateRef` state at that checkpoint must be reconstructable. This can be done by scanning the message history for `plan_enter` / `plan_exit` tool calls — the state is derived, not stored.
