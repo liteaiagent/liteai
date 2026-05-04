@@ -65,6 +65,14 @@ const isWorkingCache = new Map<string | undefined, (s: AppState) => boolean>()
 export function selectIsWorking(sessionID?: string) {
   return getOrSet(isWorkingCache, sessionID, () => (s: AppState) => {
     if (!sessionID) return false
+
+    // Server-authoritative: if the server explicitly reports idle, trust it.
+    // This handles the case where the engine crashed before creating an
+    // assistant message — messages still show "user last" but the server
+    // has already cleaned up and published session.status = idle.
+    const serverStatus = s.session_status[sessionID]
+    if (serverStatus?.type === "idle") return false
+
     const session = s.sessions.find((x) => x.id === sessionID)
     if (session?.time.compacting) return true
 

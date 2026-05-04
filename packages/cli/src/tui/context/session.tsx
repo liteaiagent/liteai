@@ -18,7 +18,7 @@ import type { FilePartInput, TextPartInput } from "@liteai/sdk"
 import { Log } from "@liteai/util/log"
 import type React from "react"
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react"
-import { selectIsWorking, useAppState } from "../state"
+import { selectIsWorking, useAppState, useSetAppState } from "../state"
 import type { PromptInputMode } from "../types/text-input"
 import { useLocal } from "./local"
 import { useRoute } from "./route"
@@ -164,6 +164,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // ── Abort ─────────────────────────────────────────────────────────────
 
+  const setState = useSetAppState()
+
   const abort = useCallback(async () => {
     if (!sessionID) return
     try {
@@ -171,11 +173,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         sessionID,
         projectID: sdk.projectID,
       })
+      // Force-refresh session status from server after abort.
+      // Covers SSE delivery gaps — ensures client converges with the
+      // server's authoritative idle state so selectIsWorking returns false.
+      const statusResult = await sdk.client.project.session.status({
+        projectID: sdk.projectID,
+      })
+      if (statusResult.data) {
+        setState((prev) => ({ ...prev, session_status: statusResult.data ?? {} }))
+      }
     } catch (e) {
       Log.Default.error("[session] Failed to abort session", { error: e })
       toast.error(e)
     }
-  }, [sessionID, sdk, toast])
+  }, [sessionID, sdk, toast, setState])
 
   // ── Value ─────────────────────────────────────────────────────────────
 

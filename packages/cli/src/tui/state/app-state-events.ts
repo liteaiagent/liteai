@@ -35,10 +35,13 @@ export interface EventContext {
   sdk: LiteaiClient
   projectID: string
   bootstrap: () => Promise<void>
+  /** Called when the server publishes a session error (e.g., model not found).
+   * The UI layer wires this to a toast notification. */
+  onSessionError?: (sessionID: string, error: unknown) => void
 }
 
 export function handleAppStateEvent(event: Event, ctx: EventContext) {
-  const { setState, getState, sdk, projectID, bootstrap } = ctx
+  const { setState, getState, sdk, projectID, bootstrap, onSessionError } = ctx
 
   switch (event.type) {
     case "server.instance.disposed":
@@ -167,6 +170,37 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
           [event.properties.sessionID]: event.properties.status as SessionStatus,
         },
       }))
+      break
+    }
+
+    case "session.error": {
+      const sessionID = event.properties.sessionID as string
+      const error = event.properties.error as { name?: string; message?: string } | undefined
+
+      // If the last message is an incomplete assistant, attach the error and
+      // mark it completed so selectIsWorking transitions to false.
+      setState((prev) => {
+        const messages = prev.message[sessionID]
+        if (!messages || messages.length === 0) return prev
+
+        const last = messages[messages.length - 1]
+        if (last.role === "assistant" && !last.time.completed) {
+          const nextMsgs = [...messages]
+          nextMsgs[messages.length - 1] = {
+            ...last,
+            error: {
+              name: "UnknownError" as const,
+              data: { message: error?.message ?? "Session failed" },
+            },
+            time: { ...last.time, completed: Date.now() },
+          }
+          return { ...prev, message: { ...prev.message, [sessionID]: nextMsgs } }
+        }
+        return prev
+      })
+
+      // Surface the error to the user via toast
+      onSessionError?.(sessionID, error)
       break
     }
 

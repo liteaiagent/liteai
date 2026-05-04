@@ -13,6 +13,7 @@ import {
 import { useArgs } from "../context/args"
 import { useExit } from "../context/exit"
 import { useSDK } from "../context/sdk"
+import { useToast } from "../context/toast"
 import { TuiLog } from "../util/tui-log"
 import type { AppState } from "./app-state"
 import { getDefaultAppState } from "./app-state"
@@ -102,6 +103,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const sdk = useSDK()
   const exit = useExit()
   const args = useArgs()
+  const toast = useToast()
 
   // Phase 2: SSE Transport Hardening references
   const sseControllerRef = useRef<AbortController | undefined>(undefined)
@@ -121,12 +123,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const bootstrap = useCallback(() => bootstrapAction(ctx), [ctx])
 
+  // Session error toast — wired into the event handler via onSessionError
+  const onSessionError = useCallback(
+    (_sessionID: string, error: unknown) => {
+      const err = error as { name?: string; message?: string } | undefined
+      const message = err?.message ?? "Session encountered an error"
+      toast.show({ variant: "error", message, duration: 5000 })
+    },
+    [toast],
+  )
+
   // Handle events using pure function
   const handleEvent = useCallback(
     (event: Event) => {
-      handleAppStateEvent(event, { ...ctx, sdk: sdk.client, bootstrap })
+      handleAppStateEvent(event, { ...ctx, sdk: sdk.client, bootstrap, onSessionError })
     },
-    [ctx, sdk, bootstrap],
+    [ctx, sdk, bootstrap, onSessionError],
   )
 
   const startSSE = useCallback(() => {

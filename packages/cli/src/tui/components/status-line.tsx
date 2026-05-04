@@ -43,9 +43,9 @@ function buildSegments(
     segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
   }
 
-  // 1.8 Session Status
+  // 1.8 Session Status (only non-idle states are worth showing)
   const sessionStatus = state.session_status?.[sessionID]
-  if (sessionStatus) {
+  if (sessionStatus && sessionStatus.type !== "idle") {
     let statusColor = theme.textMuted
     let statusText: string = sessionStatus.type
     if (sessionStatus.type === "busy") {
