@@ -1,5 +1,18 @@
 # LiteAI vs LangGraph: Architecture Evaluation
 
+> [!CAUTION]
+> **SUPERSEDED** — This RFC has been superseded by the [`engine-loop-decoupling`](../engine-loop-decoupling/) roadmap.
+>
+> **Conclusions proven incorrect:**
+> - §5 "Persistent Checkpointing — ❌ Already Have It" — The loop is *coupled to* the DB, not *checkpointed by* it. See [00-analysis.md](../engine-loop-decoupling/00-analysis.md) §1.
+> - §2 "State = message DB (single source of truth)" — DB-as-source-of-truth during forward execution is the root cause of the crash.
+>
+> **Recommendations absorbed into the new roadmap:**
+> - §3 Step Execution & Pause → [05-backward-execution.md Feature A](../engine-loop-decoupling/05-backward-execution.md)
+> - §4 Step-Back → [05-backward-execution.md Feature B](../engine-loop-decoupling/05-backward-execution.md)
+> - §6 Time Travel (fork + re-execute) → [05-backward-execution.md Feature C](../engine-loop-decoupling/05-backward-execution.md)
+> - §2 Step Context / Trace formalization → [05-backward-execution.md Feature D](../engine-loop-decoupling/05-backward-execution.md)
+
 > [!NOTE]
 > This is a **design-concept evaluation only**. Refactoring effort is explicitly out of scope.
 

@@ -1,0 +1,181 @@
+INFO  2026-05-04T11:45:04 +27ms service=config path=C:\Users\ahmed\.liteai\settings.json loading
+INFO  2026-05-04T11:45:04 +380ms service=runtime telemetry=enabled (default) @liteai/core runtime initialized
+INFO  2026-05-04T11:45:04 +0ms service=project directory=D:\liteai\packages\cli fromDirectory
+INFO  2026-05-04T11:45:04 +1ms service=project directory=D:\liteai\packages\cli resolve
+INFO  2026-05-04T11:45:05 +131ms service=project id=e1260c7977de5db08c312f85d4a1310a86b27d5f register
+INFO  2026-05-04T11:45:05 +12ms service=default directory=D:\liteai\packages\cli creating instance
+INFO  2026-05-04T11:45:05 +0ms service=project directory=D:\liteai\packages\cli resolve
+INFO  2026-05-04T11:45:05 +166ms service=default [tui:sync] bootstrapping
+INFO  2026-05-04T11:45:05 +34ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli method=GET path=/provider request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/provider request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/agent request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/agent request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config request
+INFO  2026-05-04T11:45:05 +2ms service=default client=cli directory=D:\liteai creating instance
+INFO  2026-05-04T11:45:05 +1ms service=project client=cli directory=D:\liteai resolve
+INFO  2026-05-04T11:45:05 +3ms service=server client=cli method=GET path=/event request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/event request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli global event connected
+INFO  2026-05-04T11:45:05 +25ms service=provider client=cli status=started state
+INFO  2026-05-04T11:45:05 +27ms service=provider client=cli init
+INFO  2026-05-04T11:45:05 +21ms service=provider client=cli providerID=openai auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:05 +1ms service=provider client=cli providerID=github-copilot auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:05 +2ms service=provider client=cli providerID=google-code-assist auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:05 +1ms service=provider client=cli providerID=ai4all auth plugin skipped (no credentials)
+DEBUG 2026-05-04T11:45:05 +4ms service=provider client=cli providerID=opencode err=[instance] No context found for instance stack=instance: No context found for instance\n    at use (D:\liteai\packages\core\src\util\context.ts:16:21)\n    at directory (D:\liteai\packages\core\src\project\instance.ts:100:20)\n    at <anonymous> (D:\liteai\packages\core\src\project\instance.ts:121:35)\n    at <anonymous> (D:\liteai\packages\core\src\project\state.ts:14:19)\n    at get (D:\liteai\packages\core\src\config\loader.ts:381:24)\n    at opencode (D:\liteai\packages\core\src\provider\loaders\opencode.ts:10:31)\n    at processTicksAndRejections (native:7:39) custom loader skipped (no instance context)
+DEBUG 2026-05-04T11:45:05 +1ms service=provider client=cli providerID=amazon-bedrock err=[instance] No context found for instance stack=instance: No context found for instance\n    at use (D:\liteai\packages\core\src\util\context.ts:16:21)\n    at directory (D:\liteai\packages\core\src\project\instance.ts:100:20)\n    at <anonymous> (D:\liteai\packages\core\src\project\instance.ts:121:35)\n    at <anonymous> (D:\liteai\packages\core\src\project\state.ts:14:19)\n    at get (D:\liteai\packages\core\src\config\loader.ts:381:24)\n    at amazonBedrock (D:\liteai\packages\core\src\provider\loaders\amazon-bedrock.ts:10:31)\n    at loadCustom (D:\liteai\packages\core\src\provider\state.ts:347:26)\n    at processTicksAndRejections (native:7:39) custom loader skipped (no instance context)
+DEBUG 2026-05-04T11:45:05 +9ms service=provider client=cli providerID=gitlab err=[instance] No context found for instance stack=instance: No context found for instance\n    at use (D:\liteai\packages\core\src\util\context.ts:16:21)\n    at directory (D:\liteai\packages\core\src\project\instance.ts:100:20)\n    at <anonymous> (D:\liteai\packages\core\src\project\instance.ts:121:35)\n    at <anonymous> (D:\liteai\packages\core\src\project\state.ts:14:19)\n    at get (D:\liteai\packages\core\src\config\loader.ts:381:24)\n    at gitlab (D:\liteai\packages\core\src\provider\loaders\gitlab.ts:19:31)\n    at processTicksAndRejections (native:7:39) custom loader skipped (no instance context)
+INFO  2026-05-04T11:45:05 +19ms service=provider client=cli status=completed duration=86 state
+INFO  2026-05-04T11:45:05 +49ms service=server client=cli status=completed duration=166 method=GET path=/provider request
+INFO  2026-05-04T11:45:05 +63ms service=default client=cli directory=D:\liteai bootstrapping
+INFO  2026-05-04T11:45:05 +0ms service=auth.registry client=cli providers=["openai","github-copilot","google-code-assist","ai4all"] initializing auth providers
+INFO  2026-05-04T11:45:05 +0ms service=auth.registry client=cli provider=openai auth provider has no setup, skipping
+INFO  2026-05-04T11:45:05 +0ms service=auth.registry client=cli provider=github-copilot auth provider has no setup, skipping
+INFO  2026-05-04T11:45:05 +1ms service=auth.registry client=cli provider=google-code-assist auth provider has no setup, skipping
+INFO  2026-05-04T11:45:05 +0ms service=auth.registry client=cli provider=ai4all auth provider has no setup, skipping
+INFO  2026-05-04T11:45:05 +0ms service=auth.registry client=cli auth providers initialized
+DEBUG 2026-05-04T11:45:05 +3ms service=config client=cli loading config from C:\Users\ahmed\.liteai\settings.json
+INFO  2026-05-04T11:45:05 +0ms service=config client=cli path=C:\Users\ahmed\.liteai\settings.json loading
+INFO  2026-05-04T11:45:05 +2ms service=bus client=cli type=* subscribing
+INFO  2026-05-04T11:45:05 +0ms service=bus client=cli type=session.updated subscribing
+INFO  2026-05-04T11:45:05 +0ms service=bus client=cli type=message.updated subscribing
+INFO  2026-05-04T11:45:05 +0ms service=bus client=cli type=message.part.updated subscribing
+INFO  2026-05-04T11:45:05 +0ms service=bus client=cli type=session.diff subscribing
+INFO  2026-05-04T11:45:05 +1ms service=format client=cli init
+INFO  2026-05-04T11:45:05 +0ms service=bus client=cli type=file.edited subscribing
+INFO  2026-05-04T11:45:05 +0ms service=lsp client=cli serverIds=deno, typescript, vue, eslint, oxlint, biome, gopls, ruby-lsp, ty, pyright, elixir-ls, zls, csharp, fsharp, sourcekit-lsp, rust, clangd, svelte, astro, jdtls, kotlin-ls, yaml-ls, lua-ls, php intelephense, prisma, dart, ocaml-lsp, bash, terraform, texlab, dockerfile, gleam, clojure-lsp, nixd, tinymist, haskell-language-server, julials enabled LSP servers
+INFO  2026-05-04T11:45:05 +1ms service=file.watcher client=cli init
+INFO  2026-05-04T11:45:05 +0ms service=file client=cli directory=D:\liteai projectId=e1260c7977de5db08c312f85d4a1310a86b27d5f init
+INFO  2026-05-04T11:45:05 +0ms service=file client=cli directory=D:\liteai projectId=e1260c7977de5db08c312f85d4a1310a86b27d5f isGlobalHome=false isDangerous=false file state init
+INFO  2026-05-04T11:45:05 +1ms service=file client=cli directory=D:\liteai maxFiles=100000 indexing workspace files started
+INFO  2026-05-04T11:45:05 +6ms service=scheduler client=cli id=snapshot.cleanup run
+INFO  2026-05-04T11:45:05 +0ms service=scheduler client=cli id=tool.truncation.cleanup run
+INFO  2026-05-04T11:45:05 +2ms service=bus client=cli type=command.executed subscribing
+INFO  2026-05-04T11:45:05 +0ms service=mcp client=cli count=0 servers=[] scanning for mcp servers
+INFO  2026-05-04T11:45:05 +0ms service=file.watcher client=cli platform=win32 backend=windows watcher backend
+INFO  2026-05-04T11:45:05 +16ms service=agent client=cli loading agents
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli status=completed duration=263 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=completed duration=265 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session request
+INFO  2026-05-04T11:45:05 +20ms service=skill:loader client=cli dir=C:\Users\ahmed\.liteai scanning for skills
+INFO  2026-05-04T11:45:05 +4ms service=skill:loader client=cli dir=D:\liteai\packages\core\src\bundled\skills scanning for bundled skills
+INFO  2026-05-04T11:45:05 +13ms service=skill:loader client=cli name=simplify path=D:\liteai\packages\core\src\bundled\skills\simplify\SKILL.md source=bundled loaded skill
+INFO  2026-05-04T11:45:05 +2ms service=skill:loader client=cli name=debug path=D:\liteai\packages\core\src\bundled\skills\debug\SKILL.md source=bundled loaded skill
+DEBUG 2026-05-04T11:45:05 +20ms service=file client=cli files=1000 indexing progress
+INFO  2026-05-04T11:45:05 +1ms service=vcs client=cli branch=main initialized
+INFO  2026-05-04T11:45:05 +0ms service=bus client=cli type=file.watcher.updated subscribing
+DEBUG 2026-05-04T11:45:05 +3ms service=file client=cli files=2000 indexing progress
+DEBUG 2026-05-04T11:45:05 +3ms service=file client=cli files=3000 indexing progress
+INFO  2026-05-04T11:45:05 +2ms service=file client=cli files=3481 dirs=362 indexing workspace files completed
+INFO  2026-05-04T11:45:05 +5ms service=agent client=cli count=7 names=plan, build, general, explore, compaction, title, summary agents loaded
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli status=completed duration=338 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/agent request
+INFO  2026-05-04T11:45:05 +3ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/command request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/command request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/lsp request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/lsp request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config/mcp request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config/mcp request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config/mcp/resource request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config/mcp/resource request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/formatter request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/formatter request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/status request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/status request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli method=GET path=/provider/auth request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/provider/auth request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/vcs request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/vcs request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/instance/info request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/instance/info request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/experimental/workspace request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/experimental/workspace request
+INFO  2026-05-04T11:45:05 +13ms service=server client=cli status=completed duration=14 method=GET path=/provider/auth request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli status=completed duration=15 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/status request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=completed duration=14 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/instance/info request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=completed duration=14 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/experimental/workspace request
+INFO  2026-05-04T11:45:05 +0ms service=server client=cli status=completed duration=17 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/lsp request
+INFO  2026-05-04T11:45:05 +9ms service=server client=cli status=completed duration=23 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/vcs request
+INFO  2026-05-04T11:45:05 +1ms service=server client=cli status=completed duration=27 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config/mcp request
+INFO  2026-05-04T11:45:05 +9ms service=server client=cli status=completed duration=35 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/config/mcp/resource request
+INFO  2026-05-04T11:45:05 +200ms service=server client=cli status=completed duration=235 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/formatter request
+INFO  2026-05-04T11:45:05 +79ms service=server client=cli status=completed duration=316 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/command request
+INFO  2026-05-04T11:45:25 +19926ms service=server client=cli method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=started method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session request
+INFO  2026-05-04T11:45:25 +4ms service=session client=cli id=ses_20d314cb6fferuilYZTjgmkbUc slug=lucky-island version=local projectID=e1260c7977de5db08c312f85d4a1310a86b27d5f directory=D:\liteai title=New session - 2026-05-04T11:45:25.833Z time={"created":1777895125833,"updated":1777895125833} sessionMode=Normal toolProfile=Plan forkEnabled=false created
+INFO  2026-05-04T11:45:25 +1ms service=bus client=cli type=session.created publishing
+INFO  2026-05-04T11:45:25 +0ms service=bus client=cli type=session.updated publishing
+INFO  2026-05-04T11:45:25 +2ms service=provider client=cli status=started state
+INFO  2026-05-04T11:45:25 +12ms service=provider client=cli init
+INFO  2026-05-04T11:45:25 +4ms service=provider client=cli providerID=openai auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:25 +2ms service=provider client=cli providerID=github-copilot auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:25 +1ms service=provider client=cli providerID=google-code-assist auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:25 +1ms service=provider client=cli providerID=ai4all auth plugin skipped (no credentials)
+INFO  2026-05-04T11:45:25 +5ms service=provider client=cli status=completed duration=25 state
+DEBUG 2026-05-04T11:45:25 +1ms service=provider client=cli error=[Error] ENOENT: no such file or directory, open 'C:\Users\ahmed\.local\state\liteai\model.json' stack=Error: ENOENT: no such file or directory, open 'C:\Users\ahmed\.local\state\liteai\model.json'\n    at async readJson (D:\liteai\packages\core\src\util\filesystem.ts:26:29)\n    at async defaultModel (D:\liteai\packages\core\src\provider\provider.ts:246:8)\n    at async createNext (D:\liteai\packages\core\src\session\index.ts:381:84)\n    at async <anonymous> (D:\liteai\packages\core\src\server\routes\session.ts:314:39)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async <anonymous> (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\validator\validator.js:81:18)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async <anonymous> (D:\liteai\node_modules\.bun\hono-openapi@1.1.2+b1aa9b983b696eb6\node_modules\hono-openapi\dist\index.js:461:11)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async <anonymous> (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\validator\validator.js:81:18)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async cors2 (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\middleware\cors\index.js:79:11)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async <anonymous> (D:\liteai\packages\core\src\server\middleware.ts:158:13)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async <anonymous> (D:\liteai\packages\core\src\server\middleware.ts:121:17)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async dispatch (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\compose.js:22:23)\n    at async <anonymous> (D:\liteai\node_modules\.bun\hono@4.10.7\node_modules\hono\dist\hono-base.js:201:31)\n    at async <anonymous> (D:\liteai\packages\cli\src\cli\cmd\tui\local-server.ts:34:35)\n    at async <anonymous> (D:\liteai\packages\sdk\src\gen\client\client.gen.ts:101:24)\n    at async <anonymous> (D:\liteai\packages\cli\src\tui\context\session.tsx:81:55)\n    at async <anonymous> (D:\liteai\packages\cli\src\tui\context\session.tsx:107:37)\n    at async <anonymous> (D:\liteai\packages\cli\src\tui\components\prompt\prompt-input.tsx:548:21) failed to read recent models
+INFO  2026-05-04T11:45:25 +1ms service=hook client=cli event=SessionStart groups=0 source=startup session=ses_20d314cb6fferuilYZTjgmkbUc dispatch
+INFO  2026-05-04T11:45:25 +0ms service=hook client=cli event=SessionStart dispatch skip — no groups
+INFO  2026-05-04T11:45:25 +4ms service=isolation:registry client=cli Running stale isolation artifacts cleanup
+INFO  2026-05-04T11:45:25 +1ms service=server client=cli status=completed duration=39 method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session request
+INFO  2026-05-04T11:45:25 +1ms service=server client=cli method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=started method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:45:25 +7ms service=hook client=cli event=UserPromptSubmit groups=0 session=ses_20d314cb6fferuilYZTjgmkbUc dispatch
+INFO  2026-05-04T11:45:25 +0ms service=hook client=cli event=UserPromptSubmit dispatch skip — no groups
+INFO  2026-05-04T11:45:25 +2ms service=bus client=cli type=message.updated publishing
+INFO  2026-05-04T11:45:25 +2ms service=bus client=cli type=message.part.updated publishing
+INFO  2026-05-04T11:45:25 +3ms service=bus client=cli type=session.updated publishing
+INFO  2026-05-04T11:45:25 +1ms service=session.engine client=cli sessionID=ses_20d314cb6fferuilYZTjgmkbUc start
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=completed duration=15 method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+ERROR 2026-05-04T11:45:25 +12ms service=session.engine client=cli providerID=302ai modelID=gemini-3-pro-preview error=[ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39) model resolution failed
+INFO  2026-05-04T11:45:25 +0ms service=bus client=cli type=session.error publishing
+INFO  2026-05-04T11:45:25 +1ms service=hook client=cli event=Stop groups=0 session=ses_20d314cb6fferuilYZTjgmkbUc dispatch
+INFO  2026-05-04T11:45:25 +0ms service=hook client=cli event=Stop dispatch skip — no groups
+ERROR 2026-05-04T11:45:25 +1ms service=session.engine client=cli error=[ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39) ensureTitle failed
+INFO  2026-05-04T11:45:25 +1ms service=session.compaction client=cli pruning
+INFO  2026-05-04T11:45:25 +1ms service=session.compaction client=cli pruned=0 total=0 found
+INFO  2026-05-04T11:45:25 +1ms service=background-task client=cli count=0 Disposing all background tasks
+INFO  2026-05-04T11:45:25 +1ms service=session.engine client=cli sessionID=ses_20d314cb6fferuilYZTjgmkbUc cleanup
+INFO  2026-05-04T11:45:25 +0ms service=bus client=cli type=session.status publishing
+INFO  2026-05-04T11:45:25 +0ms service=bus client=cli type=session.idle publishing
+ERROR 2026-05-04T11:45:25 +0ms service=server client=cli error=[Error] Impossible stack=Error: Impossible\n    at <anonymous> (D:\liteai\packages\core\src\session\engine\loop.ts:803:13)\n    at processTicksAndRejections (native:7:39) sessionID=ses_20d314cb6fferuilYZTjgmkbUc prompt stream failed
+ERROR 2026-05-04T11:45:25 +1ms service=default name=ProviderModelNotFoundError data={"providerID":"302ai","modelID":"gemini-3-pro-preview","suggestions":[]} stack="ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\\liteai\\packages\\core\\src\\provider\\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39)" rejection
+ERROR 2026-05-04T11:45:25 +0ms service=runtime reason=ProviderModelNotFoundError stack="ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\\liteai\\packages\\core\\src\\provider\\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39)" reasonObj=[ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39) CRITICAL: Unhandled Promise Rejection detected!
+ERROR 2026-05-04T11:45:25 +0ms service=default [ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39)
+INFO  2026-05-04T11:45:25 +24ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc request
+INFO  2026-05-04T11:45:25 +1ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/todo request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/todo request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/diff request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=started method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/diff request
+INFO  2026-05-04T11:45:25 +3ms service=server client=cli url=http://liteai.internal/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc SEARCH
+INFO  2026-05-04T11:45:25 +5ms service=server client=cli status=completed duration=9 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc request
+INFO  2026-05-04T11:45:25 +0ms service=server client=cli status=completed duration=8 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/todo request
+INFO  2026-05-04T11:45:25 +1ms service=server client=cli status=completed duration=9 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:45:25 +6ms service=server client=cli status=completed duration=15 method=GET path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/diff request
+INFO  2026-05-04T11:46:20 +54691ms service=server client=cli method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:46:20 +0ms service=server client=cli status=started method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+INFO  2026-05-04T11:46:20 +5ms service=hook client=cli event=UserPromptSubmit groups=0 session=ses_20d314cb6fferuilYZTjgmkbUc dispatch
+INFO  2026-05-04T11:46:20 +0ms service=hook client=cli event=UserPromptSubmit dispatch skip — no groups
+INFO  2026-05-04T11:46:20 +1ms service=bus client=cli type=message.updated publishing
+INFO  2026-05-04T11:46:20 +1ms service=bus client=cli type=message.part.updated publishing
+INFO  2026-05-04T11:46:20 +1ms service=bus client=cli type=session.updated publishing
+INFO  2026-05-04T11:46:20 +1ms service=session.engine client=cli sessionID=ses_20d314cb6fferuilYZTjgmkbUc start
+INFO  2026-05-04T11:46:20 +0ms service=server client=cli status=completed duration=9 method=POST path=/project/e1260c7977de5db08c312f85d4a1310a86b27d5f/session/ses_20d314cb6fferuilYZTjgmkbUc/message request
+ERROR 2026-05-04T11:46:20 +5ms service=session.engine client=cli providerID=302ai modelID=gemini-3-pro-preview error=[ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39) model resolution failed
+INFO  2026-05-04T11:46:20 +0ms service=bus client=cli type=session.error publishing
+INFO  2026-05-04T11:46:20 +0ms service=hook client=cli event=Stop groups=0 session=ses_20d314cb6fferuilYZTjgmkbUc dispatch
+INFO  2026-05-04T11:46:20 +0ms service=hook client=cli event=Stop dispatch skip — no groups
+INFO  2026-05-04T11:46:20 +1ms service=session.compaction client=cli pruning
+INFO  2026-05-04T11:46:20 +1ms service=session.compaction client=cli pruned=0 total=0 found
+INFO  2026-05-04T11:46:20 +1ms service=background-task client=cli count=0 Disposing all background tasks
+INFO  2026-05-04T11:46:20 +0ms service=session.engine client=cli sessionID=ses_20d314cb6fferuilYZTjgmkbUc cleanup
+INFO  2026-05-04T11:46:20 +0ms service=bus client=cli type=session.status publishing
+INFO  2026-05-04T11:46:20 +0ms service=bus client=cli type=session.idle publishing
+ERROR 2026-05-04T11:46:20 +0ms service=server client=cli error=[Error] Impossible stack=Error: Impossible\n    at <anonymous> (D:\liteai\packages\core\src\session\engine\loop.ts:803:13)\n    at processTicksAndRejections (native:7:39) sessionID=ses_20d314cb6fferuilYZTjgmkbUc prompt stream failed
+ERROR 2026-05-04T11:46:20 +1ms service=default name=ProviderModelNotFoundError data={"providerID":"302ai","modelID":"gemini-3-pro-preview","suggestions":[]} stack="ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\\liteai\\packages\\core\\src\\provider\\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39)" rejection
+ERROR 2026-05-04T11:46:20 +0ms service=runtime reason=ProviderModelNotFoundError stack="ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\\liteai\\packages\\core\\src\\provider\\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39)" reasonObj=[ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39) CRITICAL: Unhandled Promise Rejection detected!
+ERROR 2026-05-04T11:46:20 +0ms service=default [ProviderModelNotFoundError] ProviderModelNotFoundError stack=ProviderModelNotFoundError: ProviderModelNotFoundError\n    at getModel (D:\liteai\packages\core\src\provider\provider.ts:131:17)\n    at processTicksAndRejections (native:7:39)
+INFO  2026-05-04T11:47:35 +75333ms service=server client=cli global event disconnected

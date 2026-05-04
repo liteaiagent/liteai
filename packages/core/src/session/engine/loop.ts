@@ -15,6 +15,7 @@ import { Provider } from "../../provider/provider"
 import { ModelID, ProviderID } from "../../provider/schema"
 import { defer } from "../../util/defer"
 import { Session } from ".."
+import type { EngineEvent } from "../events"
 import { Message } from "../message"
 import { createDefaultPlanModeState, PlanModeStateRef } from "../plan-mode-state"
 import { SessionRetry } from "../retry"
@@ -713,6 +714,18 @@ async function runSessionInner(input: {
 
         // ── Stream events: route to persister ──
         default: {
+          // ── Pre-turn error: model resolution or other early failures ──
+          // When queryLoop yields an error BEFORE turn-start, persister is undefined.
+          // We must intercept here to prevent the "Impossible" guard from firing.
+          if (!persister && "type" in event && event.type === "error") {
+            log.error("runSession: pre-turn error (no persister)", {
+              sessionID,
+              error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
+            })
+            // Exit cleanly — cleanup()/defer will emit session.idle
+            return
+          }
+
           if (persister) {
             const action = persister.handleEvent(event) // synchronous — no DB writes
             // Drain accumulated writes and persist to DB

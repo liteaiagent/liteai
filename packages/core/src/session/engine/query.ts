@@ -147,22 +147,6 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     step++
     loopDetector.turnStarted()
 
-    // ── Title generation (fire-and-forget on first step) ──
-    if (step === 1 && isRootAgent()) {
-      ensureTitle({
-        session,
-        modelID: lastUser.model.modelID,
-        providerID: lastUser.model.providerID,
-        history: msgs,
-        telemetryTracker,
-        telemetryBatchId: `gen_${step}`,
-      }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
-
-      SessionDescription.create({ sessionID }).catch((e: unknown) =>
-        log.error("SessionDescription failed", { error: e }),
-      )
-    }
-
     // ── Model resolution ──
     if (lastUser.model.providerID === "unknown" || lastUser.model.modelID === "unknown") {
       log.warn("queryLoop: lastUser message has unknown model identifier", {
@@ -187,10 +171,38 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
           error: new NamedError.Unknown({
             message: `Model not found: ${e.data.providerID}/${e.data.modelID}.${hint}`,
           }).toObject(),
+        }).catch((busErr: unknown) => {
+          log.error("Bus.publish(Session.Event.Error) failed", { error: busErr, sessionID })
         })
       }
-      throw e
+      return e as Error
     })
+
+    if (model instanceof Error) {
+      yield {
+        type: "error",
+        kind: "stream",
+        error: model,
+        isAbortError: false,
+      } satisfies EngineEvent.BlockEvent
+      break
+    }
+
+    // ── Title generation (fire-and-forget on first step, AFTER model validated) ──
+    if (step === 1 && isRootAgent()) {
+      ensureTitle({
+        session,
+        modelID: lastUser.model.modelID,
+        providerID: lastUser.model.providerID,
+        history: msgs,
+        telemetryTracker,
+        telemetryBatchId: `gen_${step}`,
+      }).catch((e: unknown) => log.error("ensureTitle failed", { error: e }))
+
+      SessionDescription.create({ sessionID }).catch((e: unknown) =>
+        log.error("SessionDescription failed", { error: e }),
+      )
+    }
 
     const task = tasks.pop()
 
