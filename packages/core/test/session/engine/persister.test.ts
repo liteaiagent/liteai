@@ -10,12 +10,7 @@ mock.module("../index", () => ({
   Session: {
     updatePart: mock(async (part) => part),
     updateMessage: mock(async (msg) => msg),
-    Event: { Error: "session.error" },
   },
-}))
-
-mock.module("../../bus", () => ({
-  Bus: { publish: mock() },
 }))
 
 // Minimal test to verify AbortError handling in EventPersister

@@ -1,7 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test"
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test"
 import type { Provider } from "../../../../src/provider/provider"
 import { SectionRegistry } from "../../../../src/session/engine/section-registry"
 import { SystemPrompt } from "../../../../src/session/engine/system"
+
+mock.module("../../../../src/style/style", () => ({
+  OutputStyle: { active: mock(async () => undefined) },
+}))
 
 describe("System Prompt Resolver", () => {
   const originalEnvironment = SystemPrompt.environment

@@ -19,8 +19,8 @@
 
 **Purpose**: Create foundation types — no behavioral change, no existing code modified.
 
-- [ ] T001 [P] [US1] Create `PromiseTracker` class in `packages/core/src/session/engine/promise-tracker.ts`
-- [ ] T002 [P] [US1] Write `PromiseTracker` tests in `packages/core/test/session/engine/promise-tracker.test.ts`
+- [x] T001 [P] [US1] Create `PromiseTracker` class in `packages/core/src/session/engine/loop/promise-tracker.ts`
+- [x] T002 [P] [US1] Write `PromiseTracker` tests in `packages/core/test/session/engine/promise-tracker.test.ts`
 
 **Checkpoint**: `bun test test/session/engine/promise-tracker.test.ts` passes.
 
@@ -32,12 +32,12 @@
 
 **⚠️ CRITICAL**: No user story wiring can begin until this phase is complete.
 
-- [ ] T003 [US1] Define `Checkpointer` interface and `SessionResult` type in `packages/core/src/session/engine/checkpointer.ts`
-- [ ] T004 [US1] Implement `SqliteCheckpointer` in `packages/core/src/session/engine/checkpointer.ts`
-- [ ] T005 [P] [US1] Implement `MemoryCheckpointer` in `packages/core/src/session/engine/checkpointer.ts`
-- [ ] T006 [P] [US1] Implement `NoopCheckpointer` in `packages/core/src/session/engine/checkpointer.ts`
-- [ ] T007 [US1] Write `Checkpointer` implementation tests in `packages/core/test/session/engine/checkpointer.test.ts`
-- [ ] T008 [US1] Export new modules from `packages/core/src/session/engine/index.ts`
+- [x] T003 [US1] Define `Checkpointer` interface and `SessionResult` type in `packages/core/src/session/engine/loop/checkpointer.ts`
+- [x] T004 [US1] Implement `SqliteCheckpointer` in `packages/core/src/session/engine/loop/checkpointer.ts`
+- [x] T005 [P] [US1] Implement `MemoryCheckpointer` in `packages/core/src/session/engine/loop/checkpointer.ts`
+- [x] T006 [P] [US1] Implement `NoopCheckpointer` in `packages/core/src/session/engine/loop/checkpointer.ts`
+- [x] T007 [US1] Write `Checkpointer` implementation tests in `packages/core/test/session/engine/checkpointer.test.ts`
+- [x] T008 [US1] Export new modules from `packages/core/src/session/engine/index.ts` (barrel re-exports from `engine/loop/`)
 
 **Checkpoint**: `bun test test/session/engine/checkpointer.test.ts` passes. `bun typecheck` passes.
 
@@ -49,10 +49,10 @@
 
 **Independent Test**: Run a session loop with `MemoryCheckpointer` and verify it produces a correct result without any SQLite operations.
 
-- [ ] T009 [US1] Add `checkpointer` parameter to `runSessionInner()`, replace buffer load + turn-start persist + dbWriter calls in `packages/core/src/session/engine/loop.ts`
-- [ ] T010 [US1] Update `loop()` to consume `SessionResult`, eliminate `Message.stream()` re-query and `Error: Impossible` guard in `packages/core/src/session/engine/loop.ts`
-- [ ] T011 [US2] Inject `checkpointer` into `processSubtask()`, replace 8 direct `Session.updateMessage/updatePart` calls in `packages/core/src/session/engine/loop.ts`
-- [ ] T012 [US2] Refactor `stripIncompleteThinking()` to use in-memory buffer + `checkpointer.deletePart()` in `packages/core/src/session/engine/loop.ts`
+- [x] T009 [US1] Add `checkpointer` parameter to `runSessionInner()`, replace buffer load + turn-start persist + dbWriter calls in `packages/core/src/session/engine/loop.ts`
+- [x] T010 [US1] Update `loop()` to consume `SessionResult`, eliminate `Message.stream()` re-query and `Error: Impossible` guard in `packages/core/src/session/engine/loop.ts`
+- [x] T011 [US2] Inject `checkpointer` into `processSubtask()`, replace 8 direct `Session.updateMessage/updatePart` calls in `packages/core/src/session/engine/loop.ts`
+- [x] T012 [US2] Refactor `stripIncompleteThinking()` to use in-memory buffer + `checkpointer.deletePart()` in `packages/core/src/session/engine/loop.ts`
 
 **Checkpoint**: `bun typecheck` passes. Existing `bun test test/session/engine/pipeline.test.ts` still passes.
 
@@ -64,8 +64,8 @@
 
 **Independent Test**: Trigger a model resolution failure and verify exactly one error notification with complete stack trace, zero detached promises.
 
-- [ ] T013 [US3] Remove `Bus.publish` from model resolution error in `packages/core/src/session/engine/query.ts` line 169, move notification to `loop()` orchestrator
-- [ ] T014 [US3] Remove `Bus.publish` from error handlers in `packages/core/src/session/engine/persister.ts` lines 393, 409
+- [x] T013 [US3] Remove `Bus.publish` from model resolution error in `packages/core/src/session/engine/query.ts` line 169, move notification to `loop()` orchestrator
+- [x] T014 [US3] Remove `Bus.publish` from error handlers in `packages/core/src/session/engine/persister.ts` lines 393, 409
 
 **Checkpoint**: `grep -r "Bus.publish" packages/core/src/session/engine/query.ts packages/core/src/session/engine/persister.ts` returns zero matches.
 
@@ -77,7 +77,7 @@
 
 **Independent Test**: All tracked promises resolve/reject before session resources are released. `tracker.size === 0` after cleanup.
 
-- [ ] T015 [US4] Wire `PromiseTracker.track()` around checkpointer writes and Bus publishes, add `tracker.flush()` to cleanup in `packages/core/src/session/engine/loop.ts`
+- [x] T015 [US4] Wire `PromiseTracker.track()` around checkpointer writes and Bus publishes, add `tracker.flush()` to cleanup in `packages/core/src/session/engine/loop.ts`
 
 **Checkpoint**: `bun typecheck` passes.
 
@@ -89,7 +89,7 @@
 
 **Independent Test**: Implement a trivial `TestCheckpointer` recording method calls, run a session, verify call sequence matches expectations.
 
-- [ ] T016 [US5] Remove `AsyncPersistenceWriter` class from `packages/core/src/session/engine/persistence-writer.ts` (keep `PersistenceOp` type)
+- [x] T016 [US5] Remove `AsyncPersistenceWriter` class from `packages/core/src/session/engine/persistence-writer.ts` (keep `PersistenceOp` type)
 
 **Checkpoint**: `grep -r "AsyncPersistenceWriter" packages/core/src/` returns zero matches. `bun typecheck` passes.
 
@@ -97,9 +97,9 @@
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T017 Update `persister.test.ts` to remove Bus mock and add no-Bus-dependency assertion in `packages/core/test/session/engine/persister.test.ts`
-- [ ] T018 Run full verification suite: `bun test test/session/engine/checkpointer.test.ts && bun test test/session/engine/promise-tracker.test.ts && bun test test/session/engine/persister.test.ts && bun test test/session/engine/pipeline.test.ts && bun typecheck`
-- [ ] T019 Run `bun lint:fix` for formatting compliance across all modified files
+- [x] T017 Update `persister.test.ts` to remove Bus mock (structural absence of Bus import enforces the constraint) in `packages/core/test/session/engine/persister.test.ts`
+- [x] T018 Run full verification suite: `bun test test/session/engine/checkpointer.test.ts && bun test test/session/engine/promise-tracker.test.ts && bun test test/session/engine/persister.test.ts && bun test test/session/engine/pipeline.test.ts && bun typecheck`
+- [x] T019 Run `bun lint:fix` for formatting compliance across all modified files
 
 ---
 

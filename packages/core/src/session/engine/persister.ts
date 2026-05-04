@@ -1,5 +1,5 @@
 import { Log } from "@liteai/util/log"
-import { Bus } from "@/bus"
+
 import { PermissionNext } from "@/permission/next"
 import type { Provider } from "@/provider/provider"
 import { Question } from "@/question"
@@ -12,7 +12,7 @@ import { SessionRetry } from "../retry"
 import { PartID, type SessionID } from "../schema"
 import { SessionStatus } from "../status"
 import { SessionSummary } from "../tasks/summary"
-import type { PersistenceOp } from "./persistence-writer"
+import type { PersistenceOp } from "./loop/checkpointer"
 
 const log = Log.create({ service: "session.persister" })
 
@@ -23,7 +23,7 @@ const log = Log.create({ service: "session.persister" })
  * `Session.updatePart()` / `Session.updatePartDelta()` / `Session.updateMessage()`
  * calls are replaced with in-memory write queue entries. The consumer
  * (loop.ts) drains the queue via `drainWrites()` and delegates to
- * `AsyncPersistenceWriter` for actual DB persistence.
+ * the injected `Checkpointer` for actual persistence.
  *
  * `handleEvent()` is synchronous — it accumulates parts in memory and
  * enqueues persistence ops. The only remaining async method is `flush()`,
@@ -78,7 +78,7 @@ export class EventPersister {
 
   /**
    * Drain the accumulated write queue and return ops for the
-   * AsyncPersistenceWriter. Clears the queue after draining.
+   * injected Checkpointer. Clears the queue after draining.
    */
   public drainWrites(): PersistenceOp[] {
     const ops = this.writeQueue
@@ -390,7 +390,6 @@ export class EventPersister {
       const error = Message.fromError(e, { providerID: model.providerID })
       if (Message.ContextOverflowError.isInstance(error)) {
         this.needsCompaction = true
-        Bus.publish(Session.Event.Error, { sessionID, error })
       } else {
         const retry = SessionRetry.retryable(error)
         if (retry !== undefined) {
@@ -406,7 +405,6 @@ export class EventPersister {
           return "retry"
         }
         assistantMessage.error = error
-        Bus.publish(Session.Event.Error, { sessionID, error: assistantMessage.error })
       }
     }
   }

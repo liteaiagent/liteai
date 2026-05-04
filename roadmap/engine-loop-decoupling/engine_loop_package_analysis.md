@@ -234,6 +234,6 @@ graph TD
 
 - [X] Claim `@liteagent` org on npm
 - [X] Reserve `liteaiagent` org on GitHub
-- [ ] During Phase 1-3 implementation, organize extractable code under `engine/loop/` with barrel export
+- [x] During Phase 1-3 implementation, organize extractable code under `engine/loop/` with barrel export
 - [ ] After Phases 1-3 proven: mechanical extraction to `packages/agent-loop`
 - [ ] After LiteAI v1.0: publish `@liteagent/loop` to npm at `0.1.0`

@@ -500,7 +500,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
 
       // Ensure only dense task result returns to parent
       if (resultMsg?.parts) {
-        const textParts = resultMsg.parts.filter((p) => p.type === "text") as { text: string }[]
+        const textParts = resultMsg.parts.filter((p: { type?: string }) => p.type === "text") as { text: string }[]
         if (textParts.length > 0) {
           finalOutput = textParts.map((p) => p.text).join("\n")
         }
@@ -521,7 +521,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
         result: finalOutput,
         usage: {
           totalTokens,
-          toolCalls: resultMsg?.parts ? resultMsg.parts.filter((p) => p.type === "tool").length : 0,
+          toolCalls: resultMsg?.parts ? resultMsg.parts.filter((p: { type?: string }) => p.type === "tool").length : 0,
           duration,
         },
       }

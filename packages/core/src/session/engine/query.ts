@@ -4,13 +4,12 @@ import type { BackgroundTaskRegistry } from "@/command/background"
 import { Agent } from "../../agent/agent"
 import { AgentExecutionContext, isRootAgent } from "../../agent/context"
 import { Bundled } from "../../bundled"
-import { Bus } from "../../bus"
 import { Hook } from "../../hook"
 import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import type { ModelID, ProviderID } from "../../provider/schema"
-import { Session } from ".."
+import type { Session } from ".."
 import type { EngineEvent } from "../events"
 import { Message } from "../message"
 import type { PlanModeState, PlanModeStateRef } from "../plan-mode-state"
@@ -166,13 +165,8 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       })
       if (Provider.ModelNotFoundError.isInstance(e)) {
         const hint = e.data.suggestions?.length ? ` Did you mean: ${e.data.suggestions.join(", ")}?` : ""
-        Bus.publish(Session.Event.Error, {
-          sessionID,
-          error: new NamedError.Unknown({
-            message: `Model not found: ${e.data.providerID}/${e.data.modelID}.${hint}`,
-          }).toObject(),
-        }).catch((busErr: unknown) => {
-          log.error("Bus.publish(Session.Event.Error) failed", { error: busErr, sessionID })
+        return new NamedError.Unknown({
+          message: `Model not found: ${e.data.providerID}/${e.data.modelID}.${hint}`,
         })
       }
       return e as Error

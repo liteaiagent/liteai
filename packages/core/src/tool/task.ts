@@ -120,10 +120,11 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         parts: promptParts,
       })
 
-      const textPart = (result.parts.findLast((x) => x.type === "text") as { text?: string })?.text ?? ""
-      const yieldTurnPart = result.parts.findLast((x) => x.type === "tool" && x.tool === "yield_turn") as
-        | { args?: { summary?: string } }
-        | undefined
+      const textPart =
+        (result.parts.findLast((x: { type?: string }) => x.type === "text") as { text?: string })?.text ?? ""
+      const yieldTurnPart = result.parts.findLast(
+        (x: { type?: string; tool?: string }) => x.type === "tool" && x.tool === "yield_turn",
+      ) as { args?: { summary?: string } } | undefined
 
       const taskResultContent = yieldTurnPart?.args?.summary ? `[Yield] ${yieldTurnPart.args.summary}` : textPart
 

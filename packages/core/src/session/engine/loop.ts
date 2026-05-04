@@ -2,6 +2,7 @@ import { Log } from "@liteai/util/log"
 import { trace } from "@opentelemetry/api"
 import { ulid } from "ulid"
 import z from "zod"
+import { Bus } from "@/bus"
 import { BackgroundTaskRegistry } from "@/command/background"
 import { PermissionNext } from "@/permission/next"
 import { TaskTool } from "@/tool/task"
@@ -27,8 +28,9 @@ import { CompactionOrchestrator } from "./compaction-orchestrator"
 import { CorrectionInjector } from "./correction-injector"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
+import { type Checkpointer, type SessionResult, SqliteCheckpointer } from "./loop/checkpointer"
+import { PromiseTracker } from "./loop/promise-tracker"
 import { type LoopDetectionResult, LoopType } from "./loop-detection"
-import { AsyncPersistenceWriter } from "./persistence-writer"
 import { EventPersister } from "./persister"
 import { queryLoop } from "./query"
 import type { TelemetryTracker } from "./telemetry"
@@ -319,6 +321,8 @@ async function runSession(input: {
   session: Session.Info
   abort: AbortSignal
   registry: BackgroundTaskRegistry
+  checkpointer: Checkpointer
+  tracker: PromiseTracker
 }) {
   const tracer = trace.getTracer("liteai")
 
@@ -371,9 +375,11 @@ async function runSessionInner(input: {
   session: Session.Info
   abort: AbortSignal
   registry: BackgroundTaskRegistry
+  checkpointer: Checkpointer
+  tracker: PromiseTracker
 }) {
   const isAbortError = (e: unknown): e is DOMException => e instanceof DOMException && e.name === "AbortError"
-  const { sessionID, session, abort } = input
+  const { sessionID, session, abort, tracker } = input
 
   let persister: EventPersister | undefined
   let currentAssistantMessage: Message.Assistant | undefined
@@ -390,13 +396,12 @@ async function runSessionInner(input: {
   planModeStateRef.register()
 
   // ── Phase 2+3 services: decoupled persistence and extracted concerns ──
-  const dbWriter = new AsyncPersistenceWriter()
   const compactionOrchestrator = new CompactionOrchestrator(sessionID)
   const correctionInjector = new CorrectionInjector(sessionID)
 
   // Single one-time DB read — after this the buffer is the live message view (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
-    current: await Message.filterCompacted(Message.stream(sessionID)),
+    current: await input.checkpointer.loadHistory(sessionID),
   }
 
   const generator = queryLoop({
@@ -413,8 +418,8 @@ async function runSessionInner(input: {
       switch (event.type) {
         // ── Turn Start: persist assistant message, create persister ──
         case "turn-start": {
-          // Persist the assistant message to DB
-          currentAssistantMessage = (await Session.updateMessage(event.assistantMessage)) as Message.Assistant
+          currentAssistantMessage = event.assistantMessage
+          tracker.track(input.checkpointer.saveMessage(currentAssistantMessage))
 
           // Create fresh persister for this turn
           persister = new EventPersister(currentAssistantMessage, sessionID, event.model, abort)
@@ -453,7 +458,7 @@ async function runSessionInner(input: {
           // Drain accumulated writes and persist to DB
           const flushOps = persister.drainWrites()
           if (flushOps.length > 0) {
-            await dbWriter.write(flushOps)
+            tracker.track(input.checkpointer.write(flushOps))
           }
 
           // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
@@ -469,6 +474,9 @@ async function runSessionInner(input: {
             await stripIncompleteThinking({
               sessionID,
               message: currentAssistantMessage,
+              msgsBuffer,
+              checkpointer: input.checkpointer,
+              tracker,
             })
 
             // Escalation strategy
@@ -477,7 +485,7 @@ async function runSessionInner(input: {
                 sessionID,
                 count: loopDetectionCount,
               })
-              return
+              return { status: "error", error: new Error("loop escalation: max retries reached") } as SessionResult
             }
 
             // Inject corrective user message
@@ -504,7 +512,7 @@ async function runSessionInner(input: {
           if (event.structuredOutput !== undefined) {
             currentAssistantMessage.structured = event.structuredOutput
             currentAssistantMessage.finish = currentAssistantMessage.finish ?? "stop"
-            await Session.updateMessage(currentAssistantMessage)
+            await input.checkpointer.updateMessage(currentAssistantMessage)
             log.info("runSession: structured output captured", { sessionID })
             // Don't call .next() — let the generator break naturally
             break
@@ -521,7 +529,7 @@ async function runSessionInner(input: {
                 message: "Model did not produce structured output",
                 retries: 0,
               }).toObject()
-              await Session.updateMessage(currentAssistantMessage)
+              await input.checkpointer.updateMessage(currentAssistantMessage)
               log.info("runSession: structured output error", { sessionID })
             }
           }
@@ -536,7 +544,11 @@ async function runSessionInner(input: {
             // Exit runSessionInner entirely — this stops the for-await loop
             // and terminates the generator. Using `return` (not `break`) because
             // `break` only exits the switch, not the for-await.
-            return
+            return {
+              status: "error",
+              error: currentAssistantMessage?.error,
+              message: persister?.getCompletedMessage(),
+            } as SessionResult
           }
           if (flushResult === "compact") {
             const lastUser = findLastUserFromBuffer(msgsBuffer.current)
@@ -603,6 +615,8 @@ async function runSessionInner(input: {
                 msgs,
                 telemetryTracker,
                 telemetryBatchId,
+                checkpointer: input.checkpointer,
+                tracker,
               })
               // Append subtask messages to buffer (FR-8) — no DB read
               msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
@@ -621,7 +635,7 @@ async function runSessionInner(input: {
                 telemetryBatchId,
               })
               if (result === "stop") {
-                return
+                return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
               }
               const markerMsg = msgs.findLast(
                 (m: Message.WithParts) =>
@@ -683,6 +697,9 @@ async function runSessionInner(input: {
                 await stripIncompleteThinking({
                   sessionID,
                   message: currentAssistantMessage,
+                  msgsBuffer,
+                  checkpointer: input.checkpointer,
+                  tracker,
                 })
               }
 
@@ -702,7 +719,7 @@ async function runSessionInner(input: {
               break
             }
             case "stop": {
-              return
+              return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
             }
             case "continue": {
               // Normal continuation — no-op, generator resumes
@@ -723,7 +740,10 @@ async function runSessionInner(input: {
               error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
             })
             // Exit cleanly — cleanup()/defer will emit session.idle
-            return
+            return {
+              status: "error",
+              error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
+            } as SessionResult
           }
 
           if (persister) {
@@ -731,11 +751,15 @@ async function runSessionInner(input: {
             // Drain accumulated writes and persist to DB
             const ops = persister.drainWrites()
             if (ops.length > 0) {
-              await dbWriter.write(ops)
+              tracker.track(input.checkpointer.write(ops))
             }
             if (action === "stop") {
               log.info("runSession: persister signalled stop during event handling", { sessionID })
-              return
+              return {
+                status: "error",
+                error: currentAssistantMessage?.error,
+                message: persister?.getCompletedMessage(),
+              } as SessionResult
             }
             if (action === "retry") {
               // Retry sleep extracted from persister — loop.ts handles the blocking wait
@@ -753,6 +777,7 @@ async function runSessionInner(input: {
     // Swallow it here so it doesn't propagate as an unhandled rejection.
     if (isAbortError(e)) {
       log.info("session/loop abort: caught AbortError in event loop", { sessionID })
+      return { status: "aborted" } as SessionResult
     } else {
       throw e
     }
@@ -768,6 +793,8 @@ async function runSessionInner(input: {
       }
     })
   }
+
+  return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
 }
 
 /**
@@ -795,7 +822,13 @@ export const loop = fn(LoopInput, async (input) => {
   // Disposed (all running tasks terminated) when the session ends via defer.
   const registry = new BackgroundTaskRegistry()
 
+  const tracker = new PromiseTracker()
+
   await using _ = defer(async () => {
+    // Flush all pending async writes before cleaning up session
+    await tracker.flush().catch((e: unknown) => {
+      log.error("loop tracker.flush() failed during cleanup", { error: e, sessionID })
+    })
     await registry.disposeAll()
     cleanup(sessionID)
   })
@@ -803,17 +836,37 @@ export const loop = fn(LoopInput, async (input) => {
   const session = await Session.get(sessionID)
 
   // Delegate to the event-sourced orchestrator
-  await runSession({ sessionID, session, abort, registry })
+  const checkpointer = new SqliteCheckpointer()
+  const result = await runSession({ sessionID, session, abort, registry, checkpointer, tracker })
 
-  for await (const item of Message.stream(sessionID)) {
-    if (item.info.role === "user") continue
-    const queued = state()[sessionID]?.callbacks ?? []
-    for (const q of queued) {
-      q.resolve(item)
+  const queued = state()[sessionID]?.callbacks ?? []
+  switch (result.status) {
+    case "ok": {
+      for (const q of queued) q.resolve(result.message)
+      return result.message
     }
-    return item
+    case "error": {
+      const err = result.error instanceof Error ? result.error : new Error(String(result.error))
+      for (const q of queued) q.reject(err)
+      const publishedError =
+        err && typeof err === "object" && "name" in err && "data" in err
+          ? err
+          : { name: "UnknownError", data: { message: err.message } }
+      // T013/T014: Publish to Bus so TUI and frontend SSE can receive it
+      // Do not block loop exit on Bus publish
+      // biome-ignore lint/suspicious/noExplicitAny: error is a generic union in the bus
+      Bus.publish(Session.Event.Error, { sessionID, error: publishedError as any }).catch((busErr: unknown) => {
+        log.error("Bus.publish(Session.Event.Error) failed", { error: busErr, sessionID })
+      })
+      if (result.message) return result.message
+      throw err
+    }
+    case "aborted": {
+      const abortErr = new DOMException("Session aborted", "AbortError")
+      for (const q of queued) q.reject(abortErr)
+      throw abortErr
+    }
   }
-  throw new Error("Impossible")
 })
 
 // ─── Loop Recovery Helpers ──────────────────────────────────────────────────
@@ -829,24 +882,18 @@ export const loop = fn(LoopInput, async (input) => {
  * This function removes reasoning parts that were never closed (no `time.end`),
  * making the message safe to include in subsequent inference calls.
  */
-async function stripIncompleteThinking(input: { sessionID: SessionID; message: Message.Assistant }): Promise<void> {
-  const { sessionID, message } = input
+async function stripIncompleteThinking(input: {
+  sessionID: SessionID
+  message: Message.Assistant
+  msgsBuffer: { current: Message.WithParts[] }
+  checkpointer: Checkpointer
+  tracker: PromiseTracker
+}): Promise<void> {
+  const { sessionID, message, msgsBuffer, checkpointer, tracker } = input
 
-  // Read the persisted parts for this message from the DB
-  let assistantMsg: Message.WithParts
-  try {
-    assistantMsg = await Message.get({ sessionID, messageID: message.id })
-  } catch (e) {
-    if (e instanceof Error && e.name === "NotFoundError") {
-      return
-    }
-    log.error("stripIncompleteThinking: unexpected error getting message", {
-      sessionID,
-      messageID: message.id,
-      error: e,
-    })
-    return
-  }
+  // Read from in-memory buffer instead of DB
+  const assistantMsg = msgsBuffer.current.find((m) => m.info.id === message.id && m.info.role === "assistant")
+  if (!assistantMsg) return
 
   for (const part of assistantMsg.parts) {
     if (part.type === "reasoning" && !part.time?.end && !part.metadata?.thoughtSignature) {
@@ -855,11 +902,10 @@ async function stripIncompleteThinking(input: { sessionID: SessionID; message: M
         messageID: message.id,
         partID: part.id,
       })
-      await Session.removePart({
-        sessionID,
-        messageID: message.id,
-        partID: part.id,
-      })
+      // Persist deletion through checkpointer
+      tracker.track(checkpointer.deletePart({ sessionID, messageID: message.id, partID: part.id }))
+      // Update the in-memory buffer
+      assistantMsg.parts = assistantMsg.parts.filter((p) => p.id !== part.id)
     }
   }
 }
@@ -874,8 +920,11 @@ async function processSubtask(input: {
   msgs: Message.WithParts[]
   telemetryTracker?: TelemetryTracker
   telemetryBatchId?: string
+  checkpointer: Checkpointer
+  tracker: PromiseTracker
 }): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
-  const { task, lastUser, sessionID, session, abort, msgs, telemetryTracker, telemetryBatchId } = input
+  const { task, lastUser, sessionID, session, abort, msgs, telemetryTracker, telemetryBatchId, checkpointer, tracker } =
+    input
   const taskTool = await TaskTool.init()
   const taskModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {
@@ -886,7 +935,7 @@ async function processSubtask(input: {
         return input.model
       })
     : input.model
-  const assistantMessage = (await Session.updateMessage({
+  const assistantMessage = {
     id: MessageID.ascending(),
     role: "assistant",
     parentID: lastUser.id,
@@ -910,8 +959,10 @@ async function processSubtask(input: {
     time: {
       created: Date.now(),
     },
-  })) as Message.Assistant
-  let part = (await Session.updatePart({
+  } as Message.Assistant
+  tracker.track(checkpointer.saveMessage(assistantMessage))
+
+  let part = {
     id: PartID.ascending(),
     messageID: assistantMessage.id,
     sessionID: assistantMessage.sessionID,
@@ -930,7 +981,8 @@ async function processSubtask(input: {
         start: Date.now(),
       },
     },
-  })) as Message.ToolPart
+  } as Message.ToolPart
+  tracker.track(checkpointer.savePart(part))
   const taskArgs = {
     prompt: task.prompt,
     description: task.description,
@@ -958,14 +1010,15 @@ async function processSubtask(input: {
     extra: { bypassAgentCheck: true },
     messages: msgs,
     async metadata(val) {
-      part = (await Session.updatePart({
+      part = {
         ...part,
         type: "tool",
         state: {
           ...part.state,
           ...val,
         },
-      } satisfies Message.ToolPart)) as Message.ToolPart
+      } satisfies Message.ToolPart as Message.ToolPart
+      tracker.track(checkpointer.savePart(part))
     },
     async ask(req) {
       await PermissionNext.ask({
@@ -1015,9 +1068,9 @@ async function processSubtask(input: {
   )
   assistantMessage.finish = "tool-calls"
   assistantMessage.time.completed = Date.now()
-  await Session.updateMessage(assistantMessage)
+  tracker.track(checkpointer.updateMessage(assistantMessage))
   if (result && part.state.status === "running") {
-    part = (await Session.updatePart({
+    part = {
       ...part,
       state: {
         status: "completed",
@@ -1031,10 +1084,11 @@ async function processSubtask(input: {
           end: Date.now(),
         },
       },
-    } satisfies Message.ToolPart)) as Message.ToolPart
+    } satisfies Message.ToolPart as Message.ToolPart
+    tracker.track(checkpointer.savePart(part))
   }
   if (!result) {
-    part = (await Session.updatePart({
+    part = {
       ...part,
       state: {
         status: "error",
@@ -1046,7 +1100,8 @@ async function processSubtask(input: {
         metadata: "metadata" in part.state ? part.state.metadata : undefined,
         input: part.state.input,
       },
-    } satisfies Message.ToolPart)) as Message.ToolPart
+    } satisfies Message.ToolPart as Message.ToolPart
+    tracker.track(checkpointer.savePart(part))
   }
 
   // Build the in-memory WithParts for the subtask assistant message (FR-8)
@@ -1069,15 +1124,16 @@ async function processSubtask(input: {
       agent: lastUser.agent,
       model: lastUser.model,
     }
-    await Session.updateMessage(summaryUserMsg)
-    const summaryTextPart = (await Session.updatePart({
+    tracker.track(checkpointer.saveMessage(summaryUserMsg))
+    const summaryTextPart = {
       id: PartID.ascending(),
       messageID: summaryUserMsg.id,
       sessionID,
       type: "text",
       text: "Summarize the task tool output above and continue with your task.",
       synthetic: true,
-    } satisfies Message.TextPart)) as Message.Part
+    } satisfies Message.TextPart as Message.TextPart
+    tracker.track(checkpointer.savePart(summaryTextPart))
     const syntheticUser: Message.WithParts = {
       info: summaryUserMsg,
       parts: [summaryTextPart],

@@ -1,6 +1,6 @@
 import { Log } from "@liteai/util/log"
 import type { Provider } from "@/provider/provider"
-import { AsyncPersistenceWriter } from "./engine/persistence-writer"
+import { SqliteCheckpointer } from "./engine/loop/checkpointer"
 import { EventPersister } from "./engine/persister"
 import type { EngineEvent } from "./events"
 import { LLM } from "./llm"
@@ -166,10 +166,10 @@ export namespace SessionProcessor {
             const action = await persister.handleEvent(event)
 
             // Drain accumulated writes from synchronous event handling
-            const writer = new AsyncPersistenceWriter()
+            const checkpointer = new SqliteCheckpointer()
             const ops = persister.drainWrites()
             if (ops.length > 0) {
-              await writer.write(ops)
+              await checkpointer.write(ops)
             }
 
             if (action) {
@@ -180,7 +180,7 @@ export namespace SessionProcessor {
 
               const flushOps = persister.drainWrites()
               if (flushOps.length > 0) {
-                await writer.write(flushOps)
+                await checkpointer.write(flushOps)
               }
 
               return action
@@ -196,10 +196,10 @@ export namespace SessionProcessor {
             // If attempt was bumped, handleEvent returns "continue" early.
           }
           const finalAction = await persister.flush(currentStreamResult)
-          const writer = new AsyncPersistenceWriter()
+          const checkpointer = new SqliteCheckpointer()
           const finalOps = persister.drainWrites()
           if (finalOps.length > 0) {
-            await writer.write(finalOps)
+            await checkpointer.write(finalOps)
           }
 
           if (finalAction && finalAction !== "continue") return finalAction
