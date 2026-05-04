@@ -10,6 +10,7 @@ export namespace SessionPrompt {
   export const loop = Loop.loop
   export const LoopInput = Loop.LoopInput
   export const prompt = Loop.prompt
+  export const runSubagent = Loop.runSubagent
   export const PromptInput = Loop.PromptInput
   export type PromptInput = Loop.PromptInput
   export const resolvePromptParts = Message.resolvePromptParts

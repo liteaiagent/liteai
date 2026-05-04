@@ -8,7 +8,7 @@ import DESCRIPTION from "../bundled/prompts/tools/task.txt"
 import { Provider } from "../provider/provider"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/engine"
-import { Message } from "../session/message"
+
 import { MessageID, SessionID } from "../session/schema"
 import { Tool } from "./tool"
 
@@ -48,12 +48,12 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       const agent = await Agent.get(params.subagent_type)
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
 
-      const msg = await Message.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
-      if (msg.info.role !== "assistant") throw new Error("Not an assistant message")
+      const parentAssistant = ctx.messages.findLast((m) => m.info.id === ctx.messageID)
+      if (!parentAssistant || parentAssistant.info.role !== "assistant") throw new Error("Not an assistant message")
 
       const parent = {
-        modelID: msg.info.modelID,
-        providerID: msg.info.providerID,
+        modelID: parentAssistant.info.modelID,
+        providerID: parentAssistant.info.providerID,
       }
       const model = await (async () => {
         if (!agent.model) return parent
@@ -109,7 +109,7 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
       const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
 
-      const result = await SessionPrompt.prompt({
+      const result = await SessionPrompt.runSubagent({
         messageID,
         sessionID: session.id,
         model: {
@@ -120,9 +120,45 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         parts: promptParts,
       })
 
+      if (result.status === "error") {
+        const errorMsg = result.error instanceof Error ? result.error.message : String(result.error)
+        return {
+          title: params.description,
+          metadata: {
+            sessionId: session.id,
+            model,
+          },
+          output: [
+            `task_id: ${session.id} (for resuming to continue this task if needed)`,
+            "",
+            "<task_result_error>",
+            `Subagent execution failed: ${errorMsg}`,
+            "</task_result_error>",
+          ].join("\n"),
+        }
+      }
+
+      if (result.status === "aborted") {
+        return {
+          title: params.description,
+          metadata: {
+            sessionId: session.id,
+            model,
+          },
+          output: [
+            `task_id: ${session.id} (for resuming to continue this task if needed)`,
+            "",
+            "<task_result_aborted>",
+            "Subagent execution was aborted.",
+            "</task_result_aborted>",
+          ].join("\n"),
+        }
+      }
+
+      const completedMessage = result.message
       const textPart =
-        (result.parts.findLast((x: { type?: string }) => x.type === "text") as { text?: string })?.text ?? ""
-      const yieldTurnPart = result.parts.findLast(
+        (completedMessage?.parts.findLast((x: { type?: string }) => x.type === "text") as { text?: string })?.text ?? ""
+      const yieldTurnPart = completedMessage?.parts.findLast(
         (x: { type?: string; tool?: string }) => x.type === "tool" && x.tool === "yield_turn",
       ) as { args?: { summary?: string } } | undefined
 

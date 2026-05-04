@@ -151,6 +151,38 @@ export const prompt = fn(PromptInput, async (input) => {
   return await loop({ sessionID: input.sessionID })
 })
 
+export const runSubagent = fn(PromptInput, async (input) => {
+  const session = await Session.get(input.sessionID)
+  await SessionRevert.cleanup(session)
+
+  await createUserMessage(input)
+  await Session.touch(input.sessionID)
+
+  if (input.noReply === true) {
+    throw new Error("runSubagent does not support noReply — subagents must always produce a result")
+  }
+
+  const { sessionID } = input
+  const abort = start(sessionID)
+  if (!abort) {
+    return { status: "error", error: new Error("Session busy") } as SessionResult
+  }
+
+  const registry = new BackgroundTaskRegistry()
+  const tracker = new PromiseTracker()
+
+  await using _ = defer(async () => {
+    await tracker.flush().catch((e: unknown) => {
+      log.error("runSubagent tracker.flush() failed during cleanup", { error: e, sessionID })
+    })
+    await registry.disposeAll()
+    cleanup(sessionID)
+  })
+
+  const checkpointer = new SqliteCheckpointer()
+  return await runSession({ sessionID, session, abort, registry, checkpointer, tracker })
+})
+
 export function start(sessionID: SessionID) {
   const s = state()
   if (s[sessionID]) {

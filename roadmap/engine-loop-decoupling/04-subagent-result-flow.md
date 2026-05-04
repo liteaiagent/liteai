@@ -70,19 +70,20 @@ It does NOT change:
 
 ---
 
-## Files to Change
+## Files Changed (Actual)
 
 | File | Change |
 |---|---|
-| `[MODIFY] loop.ts` | Subagent delegation in orchestrator uses child's `SessionResult` directly |
-| `[MODIFY] query.ts` | Subtask handling receives child result via return, not DB query |
-| `[MODIFY] streaming-tool-executor.ts` | If subagent tool execution reads child results from DB, change to use return value |
+| `[MODIFY] loop.ts` | Exported `runSubagent()` — creates own `SqliteCheckpointer`, `PromiseTracker`, `BackgroundTaskRegistry`; returns `SessionResult` directly without `Bus.publish` or exceptions |
+| `[MODIFY] task.ts` | Replaced `Message.get()` DB read with `ctx.messages.findLast()` in-memory lookup; calls `runSubagent` instead of `prompt`; explicitly handles all 3 `SessionResult` states |
+| `[VERIFIED] query.ts` | Already decoupled from subagent DB reads after Phase 2 — no changes needed |
+| `[VERIFIED] streaming-tool-executor.ts` | Already clean — no changes needed |
 
 ---
 
-## Analysis Tasks (for future sessions)
+## Analysis Tasks (Resolved)
 
-- [ ] Map the exact subagent delegation path: which function creates the child session, which function reads the result
-- [ ] Determine if the parent needs the child's FULL message list or just the final response
-- [ ] Evaluate fork/branch scenarios: does forking a session with subagents need to fork the child sessions too?
-- [ ] Audit `TaskTool` — how does it currently retrieve subagent results?
+- [x] **Map the exact subagent delegation path**: `loop.ts:runSessionInner` → control event `subtask` → `processSubtask()` → `TaskTool.execute()` → `SessionPrompt.runSubagent()` → `runSession()` → `SessionResult`. Documented in `specs/010-subagent-result-flow/explanation.md`.
+- [x] **Parent needs full message list or just final response?**: Final response only. The parent extracts the last text part or `yield_turn` summary from `SessionResult.message`. The child's full message history is persisted by its own checkpointer for UI streaming and audit, but the parent never reads it.
+- [x] **Fork/branch scenarios — does forking need to fork child sessions?**: **No.** Analysis of Claude Code's fork model confirms: fork is context-sharing (copying the parent's message buffer), not state-cloning. By the time a parent forks, completed subagents have already returned their `SessionResult` and the result is embedded in the parent's `msgsBuffer`. Forking the buffer automatically includes subagent contributions. If a fork child needs to continue a prior subagent's work, it creates a new child session via the `task_id` resume path (`task.ts:71-74`). Reference: `D:\claude-code\src\tools\AgentTool\forkSubagent.ts` — children receive `forkContextMessages` (a copy of the parent's messages), not clones of child session state.
+- [x] **Audit `TaskTool`**: Fully refactored. `task.ts` now uses `ctx.messages.findLast()` for parent model resolution (zero DB reads) and `SessionPrompt.runSubagent()` for execution (direct `SessionResult` return).
