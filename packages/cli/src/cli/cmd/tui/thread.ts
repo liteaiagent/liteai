@@ -190,6 +190,7 @@ export const TuiThreadCommand = cmd({
           projectID,
           fetch: transport.fetch,
           events: transport.events,
+          headers: { "x-liteai-client": "cli" },
           args: {
             continue: args.continue as boolean | undefined,
             sessionID: args.session as string | undefined,

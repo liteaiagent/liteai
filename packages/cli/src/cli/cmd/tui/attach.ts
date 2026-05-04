@@ -62,9 +62,10 @@ export const AttachCommand = cmd({
       })()
       const headers = (() => {
         const password = args.password ?? process.env.LITEAI_SERVER_PASSWORD
-        if (!password) return undefined
+        const baseHeaders: Record<string, string> = { "x-liteai-client": "cli" }
+        if (!password) return baseHeaders
         const auth = `Basic ${Buffer.from(`liteai:${password}`).toString("base64")}`
-        return { Authorization: auth }
+        return { ...baseHeaders, Authorization: auth }
       })()
       const config = await Instance.provide({
         directory: directory && existsSync(directory) ? directory : process.cwd(),

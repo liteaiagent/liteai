@@ -14,7 +14,7 @@ import {
   toRGBString,
 } from "../util/spinner-color"
 
-const SPINNER_CHARS = ["·", "✢", "✳", "✶", "✻", "✽"]
+const SPINNER_CHARS = ["·", "✢", "✣", "✶", "✻", "✽"]
 export const SPINNER_FRAMES = [...SPINNER_CHARS, ...[...SPINNER_CHARS].reverse()]
 
 function sample<T>(arr: T[]): T {
@@ -116,6 +116,15 @@ export function SpinnerAnimationRow({
   // which produces valid but jarring initial frame/color values. The ref flips
   // to true after the first animation tick, giving the animation a clean start.
   const mountedRef = useRef(false)
+  const displayTokensRef = useRef(0)
+
+  const { isStalled, stalledIntensity } = useStalledAnimation(
+    time,
+    currentLength,
+    hasActiveTools || thinkingStatus != null,
+    reducedMotion,
+  )
+
   if (!mountedRef.current) {
     mountedRef.current = true
     return (
@@ -128,13 +137,6 @@ export function SpinnerAnimationRow({
     )
   }
 
-  const { isStalled, stalledIntensity } = useStalledAnimation(
-    time,
-    currentLength,
-    hasActiveTools || thinkingStatus != null,
-    reducedMotion,
-  )
-
   const elapsedMs = Date.now() - startTime
   const isVeryStalled = isStalled && elapsedMs > 30000
   const displayMessage = isVeryStalled ? "Still working…" : message
@@ -143,7 +145,6 @@ export function SpinnerAnimationRow({
   const messageWidth = stringWidth(displayMessage)
   const glimmerIndex = computeGlimmerIndex(Math.floor(time / 200), messageWidth)
 
-  const displayTokensRef = useRef(0)
   const targetTokens = Math.floor(currentLength / 4)
   if (displayTokensRef.current < targetTokens) {
     displayTokensRef.current = Math.min(

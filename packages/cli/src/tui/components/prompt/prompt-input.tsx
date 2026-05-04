@@ -36,6 +36,7 @@ import type { Command, FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import stripAnsi from "strip-ansi"
 import { useDialog } from "../../context/dialog"
+import { useExit } from "../../context/exit"
 import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSDK } from "../../context/sdk"
@@ -151,6 +152,7 @@ export const TUI_COMMANDS: Command[] = [
 export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive, onSearch }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
+  const exit = useExit()
   const toast = useToast()
   const route = useRoute()
   const store = useAppStore()
@@ -670,10 +672,8 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // ── Exit double-press ───────────────────────────────────────────────────
   const [_exitPending, setExitPending] = useState(false)
   const doublePressEsc = useDoublePress(setExitPending, () => {
-    // Double-press: abort if loading
-    if (isLoading) {
-      void session.abort()
-    }
+    // Double-press: hard exit
+    void exit()
   })
 
   useKeybinding("history:search", () => {
@@ -726,6 +726,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
 
     if (isLoading) {
       void session.abort()
+      doublePressEsc()
       return
     }
 
@@ -831,7 +832,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
     onHistoryReset: resetHistory,
     placeholder: "How can I help you?",
     onExit: () => {
-      // TODO: wire to app-level exit
+      void exit()
     },
     onExitMessage: (show, key) => setExitMessage({ show, key }),
     onImagePaste,
