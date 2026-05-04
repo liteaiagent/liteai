@@ -983,6 +983,195 @@
         ]
       }
     },
+    "/feedback": {
+      "post": {
+        "operationId": "global.feedback.submit",
+        "summary": "Submit feedback",
+        "description": "Submit a feedback report with optional transcript and environment info.",
+        "responses": {
+          "200": {
+            "description": "Feedback submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "path"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "timestamp": {
+                    "type": "number"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "sessionID": {
+                    "type": "string"
+                  },
+                  "transcript": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "environment": {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "type": "string"
+                      },
+                      "arch": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["platform", "arch"]
+                  }
+                },
+                "required": ["timestamp", "description", "sessionID", "environment"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.feedback.submit({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/feedback/rate": {
+      "post": {
+        "operationId": "global.feedback.rate",
+        "summary": "Rate a message",
+        "description": "Submit a thumbs up/down rating for a specific message.",
+        "responses": {
+          "200": {
+            "description": "Rating recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["ok"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionID": {
+                    "type": "string"
+                  },
+                  "messageID": {
+                    "type": "string"
+                  },
+                  "rating": {
+                    "type": "string",
+                    "enum": ["good", "bad"]
+                  },
+                  "timestamp": {
+                    "type": "number"
+                  }
+                },
+                "required": ["sessionID", "messageID", "rating", "timestamp"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.feedback.rate({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/feedback/survey": {
+      "post": {
+        "operationId": "global.feedback.survey",
+        "summary": "Submit session survey",
+        "description": "Submit a session-level feedback survey response.",
+        "responses": {
+          "200": {
+            "description": "Survey response recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["ok"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionID": {
+                    "type": "string"
+                  },
+                  "response": {
+                    "type": "string",
+                    "enum": ["bad", "fine", "good", "dismissed"]
+                  },
+                  "timestamp": {
+                    "type": "number"
+                  }
+                },
+                "required": ["sessionID", "response", "timestamp"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.global.feedback.survey({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/project": {
       "get": {
         "operationId": "project.list",
@@ -6911,6 +7100,138 @@
         ]
       }
     },
+    "/project/{projectID}/style": {
+      "get": {
+        "operationId": "project.style.list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "List output styles",
+        "description": "Get all available output styles from the project's .liteai/styles/ directory.",
+        "responses": {
+          "200": {
+            "description": "List of available output styles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "description": "Unique style identifier (filename without extension)",
+                        "type": "string"
+                      },
+                      "title": {
+                        "description": "Human-readable title for the style",
+                        "type": "string"
+                      },
+                      "description": {
+                        "description": "Short description of what this style does",
+                        "type": "string"
+                      },
+                      "content": {
+                        "description": "The style prompt content injected into the system prompt",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["name", "title", "content"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.style.list({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/style/active": {
+      "get": {
+        "operationId": "project.style.active",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Get active output style",
+        "description": "Get the currently active output style, or null if none is configured.",
+        "responses": {
+          "200": {
+            "description": "Active output style or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "description": "Unique style identifier (filename without extension)",
+                          "type": "string"
+                        },
+                        "title": {
+                          "description": "Human-readable title for the style",
+                          "type": "string"
+                        },
+                        "description": {
+                          "description": "Short description of what this style does",
+                          "type": "string"
+                        },
+                        "content": {
+                          "description": "The style prompt content injected into the system prompt",
+                          "type": "string"
+                        }
+                      },
+                      "required": ["name", "title", "content"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.style.active({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/project/{projectID}/instance/info": {
       "get": {
         "operationId": "project.instance.info",
@@ -12176,6 +12497,10 @@
           "disableAllHooks": {
             "description": "Disable all config-driven hooks",
             "type": "boolean"
+          },
+          "outputStyle": {
+            "description": "Active output style name. Styles are loaded from .liteai/styles/ as markdown files.",
+            "type": "string"
           },
           "enabledPlugins": {
             "description": "Installed plugins and their enabled/disabled state (plugin-id → boolean)",

@@ -100,6 +100,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // ── Submit ────────────────────────────────────────────────────────────
 
+  const setState = useSetAppState()
+
   const submit = useCallback(
     async (input: string, mode: PromptInputMode, attachments?: FilePartInput[]) => {
       const activeSessionID = await ensureSession()
@@ -156,15 +158,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         })
       } catch (e) {
         Log.Default.error("[session] Failed to submit prompt", { error: e })
-        toast.error(e)
+        // Do NOT show a toast here — the SSE session.error handler is the
+        // single source of truth for user-facing error display. Showing a
+        // toast here would duplicate the notification and trigger an SSE
+        // reconnection cascade (toast state change → context re-emit →
+        // callback identity change → useEffect cleanup → SSE teardown).
+
+        // The prompt request failed entirely, so the session isn't busy.
+        // Explicitly set idle so selectIsWorking unblocks.
+        setState((prev) => ({
+          ...prev,
+          session_status: { ...prev.session_status, [activeSessionID]: { type: "idle" } },
+        }))
       }
     },
-    [ensureSession, sdk, local, toast, commands],
+    [ensureSession, sdk, local, commands, setState],
   )
 
   // ── Abort ─────────────────────────────────────────────────────────────
-
-  const setState = useSetAppState()
 
   const abort = useCallback(async () => {
     if (!sessionID) return
@@ -180,7 +191,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         projectID: sdk.projectID,
       })
       if (statusResult.data) {
-        setState((prev) => ({ ...prev, session_status: statusResult.data ?? {} }))
+        setState((prev) => {
+          const nextStatus = { ...statusResult.data }
+          // The server omits idle sessions from the list.
+          // Explicitly add 'idle' for our session if it's not busy.
+          if (!nextStatus[sessionID]) {
+            nextStatus[sessionID] = { type: "idle" }
+          }
+          return { ...prev, session_status: nextStatus }
+        })
       }
     } catch (e) {
       Log.Default.error("[session] Failed to abort session", { error: e })

@@ -179,9 +179,17 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
 
       // If the last message is an incomplete assistant, attach the error and
       // mark it completed so selectIsWorking transitions to false.
+      // Additionally, explicitly set session_status to idle.
       setState((prev) => {
+        const nextStatus = {
+          ...prev.session_status,
+          [sessionID]: { type: "idle" } as SessionStatus,
+        }
+
         const messages = prev.message[sessionID]
-        if (!messages || messages.length === 0) return prev
+        if (!messages || messages.length === 0) {
+          return { ...prev, session_status: nextStatus }
+        }
 
         const last = messages[messages.length - 1]
         if (last.role === "assistant" && !last.time.completed) {
@@ -194,9 +202,10 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
             },
             time: { ...last.time, completed: Date.now() },
           }
-          return { ...prev, message: { ...prev.message, [sessionID]: nextMsgs } }
+          return { ...prev, session_status: nextStatus, message: { ...prev.message, [sessionID]: nextMsgs } }
         }
-        return prev
+
+        return { ...prev, session_status: nextStatus }
       })
 
       // Surface the error to the user via toast

@@ -974,7 +974,20 @@ export const SessionRoutes = lazy(() =>
           } catch (e) {
             // AbortError is expected when the client disconnects mid-stream
             if (e instanceof DOMException && e.name === "AbortError") return
-            throw e
+
+            // The error is already published via Bus → session.error SSE event
+            // in the engine (queryLoop/runSession). Do NOT re-throw: the stream
+            // callback has resolved and Hono cannot catch it, causing an
+            // unhandled promise rejection that destabilizes the client.
+            log.error("prompt stream failed", { error: e, sessionID })
+
+            // Explicitly close the stream to prevent dangling HTTP connections
+            // when the prompt throws (e.g. ModelNotFoundError)
+            try {
+              stream.close()
+            } catch {
+              /* ignore */
+            }
           }
         })
       },

@@ -104,6 +104,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const exit = useExit()
   const args = useArgs()
   const toast = useToast()
+  // Stable reference — toast.show is a useCallback with zero deps, so its
+  // identity never changes. Destructuring prevents the SSE reconnection
+  // cascade that occurs when onSessionError depends on the full toast object
+  // (which re-identifies whenever the toasts array changes).
+  const toastShow = toast.show
 
   // Phase 2: SSE Transport Hardening references
   const sseControllerRef = useRef<AbortController | undefined>(undefined)
@@ -124,13 +129,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const bootstrap = useCallback(() => bootstrapAction(ctx), [ctx])
 
   // Session error toast — wired into the event handler via onSessionError
+  // Extract descriptive message from NamedError discriminated union shape:
+  // { name: "UnknownError", data: { message: "Model not found: ..." } }
   const onSessionError = useCallback(
     (_sessionID: string, error: unknown) => {
-      const err = error as { name?: string; message?: string } | undefined
-      const message = err?.message ?? "Session encountered an error"
-      toast.show({ variant: "error", message, duration: 5000 })
+      const err = error as { name?: string; data?: { message?: string } } | undefined
+      const message = err?.data?.message ?? "Session encountered an error"
+      toastShow({ variant: "error", message, duration: 5000 })
     },
-    [toast],
+    [toastShow],
   )
 
   // Handle events using pure function

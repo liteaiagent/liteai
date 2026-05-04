@@ -1633,6 +1633,10 @@ export type Config = {
      */
     disableAllHooks?: boolean;
     /**
+     * Active output style name. Styles are loaded from .liteai/styles/ as markdown files.
+     */
+    outputStyle?: string;
+    /**
      * Installed plugins and their enabled/disabled state (plugin-id → boolean)
      */
     enabledPlugins?: {
@@ -2538,6 +2542,82 @@ export type ProviderOauthCallbackResponses = {
 };
 
 export type ProviderOauthCallbackResponse = ProviderOauthCallbackResponses[keyof ProviderOauthCallbackResponses];
+
+export type GlobalFeedbackSubmitData = {
+    body?: {
+        timestamp: number;
+        description: string;
+        sessionID: string;
+        transcript?: Array<{
+            [key: string]: unknown;
+        }>;
+        environment: {
+            platform: string;
+            arch: string;
+            version?: string;
+        };
+    };
+    path?: never;
+    query?: never;
+    url: '/feedback';
+};
+
+export type GlobalFeedbackSubmitResponses = {
+    /**
+     * Feedback submitted successfully
+     */
+    200: {
+        id: string;
+        path: string;
+    };
+};
+
+export type GlobalFeedbackSubmitResponse = GlobalFeedbackSubmitResponses[keyof GlobalFeedbackSubmitResponses];
+
+export type GlobalFeedbackRateData = {
+    body?: {
+        sessionID: string;
+        messageID: string;
+        rating: 'good' | 'bad';
+        timestamp: number;
+    };
+    path?: never;
+    query?: never;
+    url: '/feedback/rate';
+};
+
+export type GlobalFeedbackRateResponses = {
+    /**
+     * Rating recorded
+     */
+    200: {
+        ok: boolean;
+    };
+};
+
+export type GlobalFeedbackRateResponse = GlobalFeedbackRateResponses[keyof GlobalFeedbackRateResponses];
+
+export type GlobalFeedbackSurveyData = {
+    body?: {
+        sessionID: string;
+        response: 'bad' | 'fine' | 'good' | 'dismissed';
+        timestamp: number;
+    };
+    path?: never;
+    query?: never;
+    url: '/feedback/survey';
+};
+
+export type GlobalFeedbackSurveyResponses = {
+    /**
+     * Survey response recorded
+     */
+    200: {
+        ok: boolean;
+    };
+};
+
+export type GlobalFeedbackSurveyResponse = GlobalFeedbackSurveyResponses[keyof GlobalFeedbackSurveyResponses];
 
 export type ProjectListData = {
     body?: never;
@@ -5131,6 +5211,80 @@ export type ProjectToolListResponses = {
 };
 
 export type ProjectToolListResponse = ProjectToolListResponses[keyof ProjectToolListResponses];
+
+export type ProjectStyleListData = {
+    body?: never;
+    path: {
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/style';
+};
+
+export type ProjectStyleListResponses = {
+    /**
+     * List of available output styles
+     */
+    200: Array<{
+        /**
+         * Unique style identifier (filename without extension)
+         */
+        name: string;
+        /**
+         * Human-readable title for the style
+         */
+        title: string;
+        /**
+         * Short description of what this style does
+         */
+        description?: string;
+        /**
+         * The style prompt content injected into the system prompt
+         */
+        content: string;
+    }>;
+};
+
+export type ProjectStyleListResponse = ProjectStyleListResponses[keyof ProjectStyleListResponses];
+
+export type ProjectStyleActiveData = {
+    body?: never;
+    path: {
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/style/active';
+};
+
+export type ProjectStyleActiveResponses = {
+    /**
+     * Active output style or null
+     */
+    200: {
+        /**
+         * Unique style identifier (filename without extension)
+         */
+        name: string;
+        /**
+         * Human-readable title for the style
+         */
+        title: string;
+        /**
+         * Short description of what this style does
+         */
+        description?: string;
+        /**
+         * The style prompt content injected into the system prompt
+         */
+        content: string;
+    } | null;
+};
+
+export type ProjectStyleActiveResponse = ProjectStyleActiveResponses[keyof ProjectStyleActiveResponses];
 
 export type ProjectInstanceInfoData = {
     body?: never;
