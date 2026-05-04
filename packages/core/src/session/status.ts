@@ -2,6 +2,7 @@ import z from "zod"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Instance } from "@/project/instance"
+import { CheckpointMetadataSchema } from "./engine/loop/checkpoint-store"
 import { SessionID } from "./schema"
 
 export namespace SessionStatus {
@@ -18,6 +19,10 @@ export namespace SessionStatus {
       }),
       z.object({
         type: z.literal("busy"),
+      }),
+      z.object({
+        type: z.literal("paused"),
+        step: z.number(),
       }),
     ])
     .meta({
@@ -38,6 +43,19 @@ export namespace SessionStatus {
       "session.idle",
       z.object({
         sessionID: SessionID.zod,
+      }),
+    ),
+    /** Emitted when a new checkpoint is captured (step mode) */
+    Checkpoint: BusEvent.define(
+      "session.checkpoint",
+      z.object({
+        sessionID: SessionID.zod,
+        checkpoint: z.object({
+          id: z.string(),
+          step: z.number(),
+          timestamp: z.number(),
+          metadata: CheckpointMetadataSchema,
+        }),
       }),
     ),
   }

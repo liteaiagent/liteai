@@ -28,8 +28,11 @@ import { CompactionOrchestrator } from "./compaction-orchestrator"
 import { CorrectionInjector } from "./correction-injector"
 import { createUserMessage } from "./input"
 import { InstructionPrompt } from "./instruction"
+import { CheckpointStoreManager } from "./loop/checkpoint-store"
 import { type Checkpointer, type SessionResult, SqliteCheckpointer } from "./loop/checkpointer"
 import { PromiseTracker } from "./loop/promise-tracker"
+import type { ResumePayload } from "./loop/step-latch"
+import { SessionNotPausedError, type StepLatchHandle, StepPauseLatch } from "./loop/step-latch"
 import { type LoopDetectionResult, LoopType } from "./loop-detection"
 import { EventPersister } from "./persister"
 import { queryLoop } from "./query"
@@ -47,6 +50,10 @@ type SessionState = Record<
       resolve(input: Message.WithParts): void
       reject(reason?: unknown): void
     }[]
+    /** Active step-pause latch — present only while the session is paused in step mode */
+    stepLatch?: StepLatchHandle
+    /** Mutable ref to the step mode flag — can be toggled by resume API */
+    stepModeRef?: { current: boolean }
   }
 >
 
@@ -90,6 +97,8 @@ export const PromptInput = z.object({
   format: Message.Format.optional(),
   system: z.string().optional(),
   variant: z.string().optional(),
+  /** Enable step-by-step execution — loop pauses after each iteration */
+  stepMode: z.boolean().optional(),
   parts: z.array(
     z.discriminatedUnion("type", [
       Message.TextPart.omit({
@@ -148,7 +157,7 @@ export const prompt = fn(PromptInput, async (input) => {
     return message
   }
 
-  return await loop({ sessionID: input.sessionID })
+  return await loop({ sessionID: input.sessionID, stepMode: input.stepMode })
 })
 
 export const runSubagent = fn(PromptInput, async (input) => {
@@ -204,6 +213,21 @@ function resume(sessionID: SessionID) {
   if (!s[sessionID]) return
 
   return s[sessionID].abort.signal
+}
+
+/**
+ * Resume a session that is paused in step mode.
+ * Resolves the pending step-pause latch, unblocking the loop.
+ */
+export function resumeStepMode(sessionID: SessionID, payload: ResumePayload) {
+  const s = state()
+  const match = s[sessionID]
+  if (!match || !match.stepLatch) {
+    throw new SessionNotPausedError({ sessionID })
+  }
+  match.stepLatch.resolve(payload)
+  // Clear the latch reference — the loop will create a new one on next pause
+  match.stepLatch = undefined
 }
 
 export function cancel(sessionID: SessionID) {
@@ -307,6 +331,14 @@ function cleanup(sessionID: SessionID) {
   const s = state()
   delete s[sessionID]
   SessionStatus.set(sessionID, { type: "idle" })
+
+  // Clear the in-memory checkpoint store for this session to prevent leaks.
+  // Uses CheckpointStoreManager directly — pure static operation, no instance needed.
+  try {
+    CheckpointStoreManager.clearSession(sessionID)
+  } catch (e) {
+    log.warn("cleanup: failed to clear checkpoint store", { sessionID, error: e })
+  }
 }
 
 export async function lastModel(sessionID: SessionID) {
@@ -333,6 +365,7 @@ export async function lastModel(sessionID: SessionID) {
 export const LoopInput = z.object({
   sessionID: SessionID.zod,
   resume_existing: z.boolean().optional(),
+  stepMode: z.boolean().optional(),
 })
 
 // ─── runSession: The Event-Sourced Orchestrator ─────────────────────────────
@@ -355,6 +388,7 @@ async function runSession(input: {
   registry: BackgroundTaskRegistry
   checkpointer: Checkpointer
   tracker: PromiseTracker
+  stepModeRef?: { current: boolean }
 }) {
   const tracer = trace.getTracer("liteai")
 
@@ -409,6 +443,7 @@ async function runSessionInner(input: {
   registry: BackgroundTaskRegistry
   checkpointer: Checkpointer
   tracker: PromiseTracker
+  stepModeRef?: { current: boolean }
 }) {
   const isAbortError = (e: unknown): e is DOMException => e instanceof DOMException && e.name === "AbortError"
   const { sessionID, session, abort, tracker } = input
@@ -431,6 +466,15 @@ async function runSessionInner(input: {
   const compactionOrchestrator = new CompactionOrchestrator(sessionID)
   const correctionInjector = new CorrectionInjector(sessionID)
 
+  // Step mode: mutable ref so the resume API can toggle it externally
+  const stepModeRef = input.stepModeRef ?? { current: false }
+
+  // Store stepModeRef on SessionState so resume API can access it
+  const sessionEntry = state()[sessionID]
+  if (sessionEntry) {
+    sessionEntry.stepModeRef = stepModeRef
+  }
+
   // Single one-time DB read — after this the buffer is the live message view (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
     current: await input.checkpointer.loadHistory(sessionID),
@@ -443,6 +487,7 @@ async function runSessionInner(input: {
     msgsBuffer,
     planModeStateRef,
     backgroundTaskRegistry: input.registry,
+    stepModeRef,
   })
 
   try {
@@ -757,6 +802,73 @@ async function runSessionInner(input: {
               // Normal continuation — no-op, generator resumes
               break
             }
+            case "step-pause": {
+              const { step, checkpoint } = event.payload as {
+                step: number
+                checkpoint: import("./loop/checkpoint-store").CheckpointData
+              }
+
+              // 1. Set session status to paused
+              SessionStatus.set(sessionID, { type: "paused", step })
+
+              // 2. Publish checkpoint event (fire-and-forget)
+              Bus.publish(SessionStatus.Event.Checkpoint, {
+                sessionID,
+                checkpoint: {
+                  id: checkpoint.id,
+                  step: checkpoint.step,
+                  timestamp: checkpoint.timestamp,
+                  metadata: checkpoint.metadata,
+                },
+              }).catch((e: unknown) => {
+                log.error("Bus.publish(session.checkpoint) failed", { error: e, sessionID })
+              })
+
+              // 3. Create a new latch and store it on SessionState
+              const latch = StepPauseLatch.create()
+              const sessionStateEntry = state()[sessionID]
+              if (sessionStateEntry) {
+                sessionStateEntry.stepLatch = latch
+              }
+
+              // 4. Wire abort signal to reject the latch (cancel during pause)
+              const abortHandler = () => {
+                latch.reject(new DOMException("Session aborted during pause", "AbortError"))
+              }
+              abort.addEventListener("abort", abortHandler, { once: true })
+
+              try {
+                // 5. Await the latch — blocks until user resumes or aborts
+                const resumePayload = await latch.promise
+
+                // 6. Handle resume payload
+                if (resumePayload.guidance) {
+                  // Inject guidance as a synthetic user text part (same pattern as correctionInjector)
+                  const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+                  if (lastUser) {
+                    await correctionInjector.inject({
+                      lastUser,
+                      text: resumePayload.guidance,
+                      msgsBuffer,
+                    })
+                  }
+                }
+
+                // Only disable step mode if the caller explicitly owns a stepModeRef.
+                // The local `stepModeRef` always exists (defaulted to { current: false }),
+                // but `input.stepModeRef` is only set when the session was started with
+                // step mode support — without this check the guard is always true.
+                if (resumePayload.disableStepMode && input.stepModeRef) {
+                  stepModeRef.current = false
+                }
+
+                // 7. Set status back to busy
+                SessionStatus.set(sessionID, { type: "busy" })
+              } finally {
+                abort.removeEventListener("abort", abortHandler)
+              }
+              break
+            }
           }
           break
         }
@@ -869,7 +981,8 @@ export const loop = fn(LoopInput, async (input) => {
 
   // Delegate to the event-sourced orchestrator
   const checkpointer = new SqliteCheckpointer()
-  const result = await runSession({ sessionID, session, abort, registry, checkpointer, tracker })
+  const stepModeRef = input.stepMode ? { current: true } : undefined
+  const result = await runSession({ sessionID, session, abort, registry, checkpointer, tracker, stepModeRef })
 
   const queued = state()[sessionID]?.callbacks ?? []
   switch (result.status) {

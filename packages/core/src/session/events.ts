@@ -51,6 +51,7 @@ export namespace EngineEvent {
       | "overflow"
       | "loop-detected"
       | "plan-stop-correction"
+      | "step-pause"
     // biome-ignore lint/suspicious/noExplicitAny: payload varies by action
     payload?: any
   }

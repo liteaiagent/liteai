@@ -1,5 +1,6 @@
 import path from "node:path"
 import type { LanguageModelV2Usage } from "@ai-sdk/provider"
+import { NamedError } from "@liteai/util/error"
 import { Log } from "@liteai/util/log"
 import { Slug } from "@liteai/util/slug"
 import type { ProviderMetadata } from "ai"
@@ -310,6 +311,139 @@ export namespace Session {
           })
         }
       }
+      return session
+    },
+  )
+
+  // ─── Fork-at-checkpoint errors (NamedError-based per §5) ──────────────────
+  const ForkProviderModelNotFoundData = z.object({
+    message: z.string(),
+    providerID: z.string(),
+    modelID: z.string(),
+  })
+  export class ForkProviderModelNotFoundError extends NamedError.create(
+    "ForkProviderModelNotFoundError",
+    ForkProviderModelNotFoundData,
+  ) {}
+
+  const ForkAgentNotFoundData = z.object({
+    message: z.string(),
+    agent: z.string(),
+  })
+  export class ForkAgentNotFoundError extends NamedError.create("ForkAgentNotFoundError", ForkAgentNotFoundData) {}
+
+  export const forkAtCheckpoint = fn(
+    z.object({
+      sessionID: SessionID.zod,
+      checkpointID: z.string(),
+      model: z.object({ providerID: ProviderID.zod, modelID: ModelID.zod }).optional(),
+      agent: z.string().optional(),
+      guidance: z.string().optional(),
+    }),
+    async (input) => {
+      // Validation
+      if (input.model) {
+        const { Provider } = await import("../provider/provider")
+        const model = await Provider.getModel(input.model.providerID, input.model.modelID)
+        if (!model)
+          throw new ForkProviderModelNotFoundError({
+            message: `Model not found: ${input.model.providerID}/${input.model.modelID}`,
+            providerID: input.model.providerID,
+            modelID: input.model.modelID,
+          })
+      }
+      if (input.agent) {
+        const { Agent } = await import("../agent/agent")
+        const agent = await Agent.get(input.agent)
+        if (!agent)
+          throw new ForkAgentNotFoundError({
+            message: `Agent not found: ${input.agent}`,
+            agent: input.agent,
+          })
+      }
+
+      // 1. Retrieve source session and checkpoint from the centralized in-memory store
+      const source = await get(input.sessionID)
+      const { CheckpointStoreManager } = await import("./engine/loop/checkpoint-store")
+      const checkpoint = CheckpointStoreManager.getCheckpoint(input.sessionID, input.checkpointID)
+      if (!checkpoint) {
+        const { CheckpointNotFoundError } = await import("./engine/loop/checkpoint-store")
+        throw new CheckpointNotFoundError({ checkpointID: input.checkpointID, sessionID: input.sessionID })
+      }
+
+      // 2. Create new session (no parentID to avoid confusing tree)
+      const title = getForkedTitle(source.title)
+      const session = await createNext({
+        directory: source.directory,
+        workspaceID: source.workspaceID,
+        title,
+      })
+
+      // 3. Copy messages from checkpoint.messages
+      const idMap = new Map<string, MessageID>()
+      let lastUserMessage: Message.WithParts | undefined
+
+      for (const msg of checkpoint.messages) {
+        const newID = MessageID.ascending()
+        idMap.set(msg.info.id, newID)
+
+        const parentID = msg.info.role === "assistant" && msg.info.parentID ? idMap.get(msg.info.parentID) : undefined
+        const cloned = await updateMessage({
+          ...msg.info,
+          sessionID: session.id,
+          id: newID,
+          ...(parentID && { parentID }),
+        })
+
+        for (const part of msg.parts) {
+          await updatePart({
+            ...part,
+            id: PartID.ascending(),
+            messageID: cloned.id,
+            sessionID: session.id,
+          })
+        }
+
+        if (cloned.role === "user") {
+          lastUserMessage = { info: cloned, parts: [] }
+        }
+      }
+
+      // 4. Apply model/agent overrides to the last user message
+      if (lastUserMessage && (input.model || input.agent)) {
+        await updateMessage({
+          ...lastUserMessage.info,
+          ...(input.model && { model: input.model }),
+          ...(input.agent && { agent: input.agent }),
+        } as Message.User)
+      }
+
+      // 5. Inject guidance message if provided
+      if (input.guidance) {
+        const guidanceMsgID = MessageID.ascending()
+        await updateMessage({
+          id: guidanceMsgID,
+          sessionID: session.id,
+          role: "user",
+          agent: input.agent ?? (lastUserMessage?.info as Message.User)?.agent ?? "unknown",
+          variant: "default",
+          time: { created: Date.now() },
+          model: input.model ??
+            (lastUserMessage?.info as Message.User)?.model ?? {
+              providerID: "unknown" as ProviderID,
+              modelID: "unknown" as ModelID,
+            },
+        })
+        await updatePart({
+          id: PartID.ascending(),
+          sessionID: session.id,
+          messageID: guidanceMsgID,
+          type: "text",
+          text: input.guidance,
+          synthetic: true,
+        })
+      }
+
       return session
     },
   )
@@ -1079,3 +1213,4 @@ export * from "./events"
 export * from "./retry"
 export * from "./schema"
 export * from "./status"
+export * from "./step-back"

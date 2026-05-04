@@ -13,6 +13,13 @@ export type PersistenceOp =
     }
   | { type: "upsert-message"; message: Message.Assistant }
 
+/**
+ * Persistence interface for session message/part operations.
+ *
+ * Checkpoint lifecycle operations (capture, get, list, truncate, clear) have
+ * been extracted to `CheckpointStoreManager` — a static utility that manages
+ * pure in-memory checkpoint stores with no dependency on the persistence backend.
+ */
 export interface Checkpointer {
   loadHistory(sessionID: SessionID): Promise<Message.WithParts[]>
   write(ops: PersistenceOp[]): Promise<void>
@@ -66,7 +73,8 @@ export class SqliteCheckpointer implements Checkpointer {
   }
 
   async dispose(): Promise<void> {
-    /* DB connections managed externally */
+    // No-op: SqliteCheckpointer has no instance-level resources.
+    // Checkpoint store cleanup is handled by CheckpointStoreManager.clearSession().
   }
 }
 

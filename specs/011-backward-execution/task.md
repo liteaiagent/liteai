@@ -1,0 +1,22 @@
+# Backward Execution: Architectural Fix Tasks
+
+- [x] **T1** Extract `CheckpointStoreManager` static class in `checkpoint-store.ts`
+  - Moved `globalStores` static map here
+  - Exposed static methods: `captureCheckpoint`, `getCheckpoint`, `getCheckpointByStep`, `listCheckpoints`, `truncateCheckpointsAfter`, `getStore`, `clearSession`
+- [x] **T2** Narrow `Checkpointer` interface — removed 7 checkpoint lifecycle methods
+- [x] **T3** Simplify `SqliteCheckpointer` and `MemoryCheckpointer` — removed duplicated boilerplate, deleted their `globalStores` maps
+- [x] **T4** Update `NoopCheckpointer` — removed checkpoint lifecycle stubs
+- [x] **T5** Update `query.ts` — use `CheckpointStoreManager` instead of `params.checkpointer`
+- [x] **T6** Update `step-back.ts`:
+  - Removed `injectedCheckpointer` parameter
+  - Use `CheckpointStoreManager` directly
+  - Created `CheckpointEmptyMessagesError` (Issue C)
+  - Created `SnapshotTrackingError` (Issue D)
+- [x] **T7** Update `session/index.ts` (`forkAtCheckpoint`) — removed `_checkpointer` parameter, use `CheckpointStoreManager`
+- [x] **T8** Update `loop.ts` `cleanup()` — use `CheckpointStoreManager.clearSession()` (Issue E)
+- [x] **T9** Update route handlers in `session.ts`:
+  - Replaced `new SqliteCheckpointer()` with `CheckpointStoreManager` in checkpoint/step-back/fork-at routes
+  - Replaced `console.error` with `log.error` (Issue B)
+  - Added `SnapshotTrackingError` and `CheckpointEmptyMessagesError` handling (500)
+- [x] **T10** Exported `CheckpointMetadataSchema` Zod object from `checkpoint-store.ts`, used in `status.ts` (Issue F)
+- [x] **T11** Run `bun typecheck` and `bun lint:fix` — ✅ passed

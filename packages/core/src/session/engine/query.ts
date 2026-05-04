@@ -1,5 +1,6 @@
 import { NamedError } from "@liteai/util/error"
 import { Log } from "@liteai/util/log"
+import { trace } from "@opentelemetry/api"
 import type { BackgroundTaskRegistry } from "@/command/background"
 import { Agent } from "../../agent/agent"
 import { AgentExecutionContext, isRootAgent } from "../../agent/context"
@@ -9,6 +10,7 @@ import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
 import type { ModelID, ProviderID } from "../../provider/schema"
+import { Snapshot } from "../../snapshot"
 import type { Session } from ".."
 import type { EngineEvent } from "../events"
 import { Message } from "../message"
@@ -19,6 +21,7 @@ import { SessionCompaction } from "../tasks/compaction"
 import { SessionDescription } from "../tasks/description"
 import { ensureTitle } from "../tasks/title"
 import { InstructionPrompt } from "./instruction"
+import { type CheckpointMetadata, CheckpointStoreManager } from "./loop/checkpoint-store"
 import { LoopDetectionService } from "./loop-detection"
 import { type AutocompactState, createAutocompactState, executePipeline, shouldAutocompact } from "./pipeline"
 import { injectPlanAttachment } from "./plan-reminder"
@@ -47,6 +50,8 @@ export type QueryLoopParams = {
   /** Session-scoped registry for background tasks. Passed through to resolveTools
    * so tools can register/query background processes via ctx.extra. */
   backgroundTaskRegistry?: BackgroundTaskRegistry
+  /** Mutable ref to the step mode flag — controls whether the loop pauses between iterations */
+  stepModeRef?: { current: boolean }
 }
 
 // ─── queryLoop ───────────────────────────────────────────────────────────────
@@ -530,6 +535,48 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       structuredOutput,
       streamResult,
     } satisfies EngineEvent.TurnEndEvent
+
+    // ── Step mode: capture checkpoint and pause (T009/T015/T024) ──
+    // Zero overhead on the non-step-mode path: single boolean check, no function
+    // calls, no allocations (FR-015, SC-007).
+    if (params.stepModeRef?.current) {
+      // Capture file state via Snapshot
+      const snapshotHash = await Snapshot.track().catch((e: unknown) => {
+        log.warn("step-pause: Snapshot.track() failed, proceeding without snapshot", { error: e, sessionID })
+        return undefined
+      })
+
+      // Build enriched metadata (T024)
+      const stepTimingEnd = Date.now()
+      const trigger = tasks.length > 0 ? (tasks[0].type as CheckpointMetadata["trigger"]) : "user"
+
+      const checkpoint = CheckpointStoreManager.captureCheckpoint(sessionID, {
+        step,
+        messages: msgsBuffer.current,
+        snapshot: snapshotHash,
+        metadata: {
+          agent: agent.name,
+          model: { providerID: lastUser.model.providerID, modelID: lastUser.model.modelID },
+          trigger,
+          timing: { start: assistantMessage.time.created, end: stepTimingEnd },
+          tokenUsage: assistantMessage.tokens
+            ? {
+                input: assistantMessage.tokens.input,
+                output: assistantMessage.tokens.output,
+                reasoning: assistantMessage.tokens.reasoning,
+              }
+            : undefined,
+          traceSpanID: trace.getActiveSpan()?.spanContext().spanId,
+        },
+      })
+
+      // Yield step-pause control event — the orchestrator will gate on the latch
+      yield {
+        type: "control",
+        action: "step-pause",
+        payload: { step, checkpoint },
+      } satisfies EngineEvent.GeneratorResultEvent
+    }
 
     // ── yield_turn detection ──
     // If the model called yield_turn (and naturally finished streaming), break the loop

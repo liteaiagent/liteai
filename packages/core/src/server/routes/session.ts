@@ -1160,5 +1160,234 @@ export const SessionRoutes = lazy(() =>
         const session = await SessionRevert.unrevert({ sessionID })
         return c.json(session)
       },
+    )
+    // ── Backward Execution: Step-Level Control ──
+    .post(
+      "/:sessionID/resume",
+      describeRoute({
+        summary: "Resume a paused session",
+        description: "Resume a session paused in step mode, optionally injecting user guidance or disabling step mode.",
+        operationId: "project.session.resume",
+        responses: {
+          200: {
+            description: "Session resumed",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({ resumed: z.boolean() })),
+              },
+            },
+          },
+          ...errors(400, 404),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      validator(
+        "json",
+        z.object({
+          guidance: z.string().optional(),
+          disableStepMode: z.boolean().optional(),
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const body = c.req.valid("json")
+        SessionPrompt.resumeStepMode(sessionID, body)
+        return c.json({ resumed: true })
+      },
+    )
+    .post(
+      "/:sessionID/step-back",
+      describeRoute({
+        summary: "Step back to a previous checkpoint",
+        description:
+          "Revert the session state and workspace files to a specific historical checkpoint. This is a destructive action that truncates newer messages.",
+        operationId: "project.session.step_back",
+        responses: {
+          200: {
+            description: "Session reverted to checkpoint",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    restored: z.boolean(),
+                    step: z.number(),
+                    orphanedChildren: z.array(SessionID.zod),
+                  }),
+                ),
+              },
+            },
+          },
+          ...errors(400, 404, 409),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      validator(
+        "json",
+        z.object({
+          checkpointID: z.string(),
+          guidance: z.string().optional(),
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const body = c.req.valid("json")
+        try {
+          const { stepBack } = await import("../../session/step-back")
+          const result = await stepBack({ sessionID, ...body })
+          return c.json(result)
+        } catch (error) {
+          if (error && typeof error === "object" && "name" in error) {
+            if (error.name === "CheckpointNotFoundError") {
+              return c.json({ error: (error as Error).message }, 404)
+            }
+            if (error.name === "FileConflictError") {
+              const conflicts = (error as Error & { data?: { conflicts?: string[] } }).data?.conflicts
+              return c.json({ error: (error as Error).message, conflicts }, 409)
+            }
+            if (error.name === "SnapshotTrackingError" || error.name === "CheckpointEmptyMessagesError") {
+              return c.json({ error: (error as Error).message }, 500)
+            }
+          }
+          throw error
+        }
+      },
+    )
+    .post(
+      "/:sessionID/fork-at",
+      describeRoute({
+        summary: "Fork session at checkpoint",
+        description:
+          "Create a new independent session branching off from a specific historical checkpoint. Optionally override the model or agent.",
+        operationId: "project.session.forkAt",
+        responses: {
+          200: {
+            description: "Session forked successfully",
+            content: {
+              "application/json": {
+                schema: resolver(Session.Info),
+              },
+            },
+          },
+          ...errors(400, 404),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      validator(
+        "json",
+        z.object({
+          checkpointID: z.string(),
+          model: z.object({ providerID: ProviderID.zod, modelID: ModelID.zod }).optional(),
+          agent: z.string().optional(),
+          guidance: z.string().optional(),
+          autoResume: z.boolean().optional(),
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const body = c.req.valid("json")
+        try {
+          const newSession = await Session.forkAtCheckpoint({ sessionID, ...body })
+          if (body.autoResume) {
+            SessionPrompt.loop({ sessionID: newSession.id }).catch((e) =>
+              log.error("auto-resume failed for forked session", { error: e, sessionID: newSession.id }),
+            )
+          }
+          return c.json(newSession)
+        } catch (error) {
+          if (error && typeof error === "object" && "name" in error) {
+            const name = (error as Error).name
+            if (name === "CheckpointNotFoundError") {
+              return c.json({ error: (error as Error).message }, 404)
+            }
+            if (name === "ForkProviderModelNotFoundError" || name === "ForkAgentNotFoundError") {
+              return c.json({ error: (error as Error).message }, 400)
+            }
+          }
+          throw error
+        }
+      },
+    )
+    .get(
+      "/:sessionID/checkpoints",
+      describeRoute({
+        summary: "List checkpoints for a session",
+        description: "Get all step-level checkpoints for a session, ordered by step. Messages are excluded.",
+        operationId: "project.session.checkpoints",
+        responses: {
+          200: {
+            description: "List of checkpoint summaries",
+            content: {
+              "application/json": {
+                schema: resolver(z.array(z.any())),
+              },
+            },
+          },
+          ...errors(404),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const { CheckpointStoreManager } = await import("../../session/engine/loop/checkpoint-store")
+        const checkpoints = CheckpointStoreManager.listCheckpoints(sessionID)
+        // Return summaries without messages (too large for list endpoint)
+        const summaries = checkpoints.map(({ messages: _messages, ...rest }) => rest)
+        return c.json(summaries)
+      },
+    )
+    .get(
+      "/:sessionID/checkpoints/:checkpointID",
+      describeRoute({
+        summary: "Get a specific checkpoint",
+        description: "Get full checkpoint data including messages for a specific checkpoint.",
+        operationId: "project.session.checkpoint",
+        responses: {
+          200: {
+            description: "Full checkpoint data",
+            content: {
+              "application/json": {
+                schema: resolver(z.any()),
+              },
+            },
+          },
+          ...errors(404),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+          checkpointID: z.string(),
+        }),
+      ),
+      async (c) => {
+        const { sessionID, checkpointID } = c.req.valid("param")
+        const { CheckpointStoreManager } = await import("../../session/engine/loop/checkpoint-store")
+        const checkpoint = CheckpointStoreManager.getCheckpoint(sessionID, checkpointID)
+        if (!checkpoint) {
+          return c.json({ error: `Checkpoint not found: ${checkpointID}` }, 404)
+        }
+        return c.json(checkpoint)
+      },
     ),
 )
