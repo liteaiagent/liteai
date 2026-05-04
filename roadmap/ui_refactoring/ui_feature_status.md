@@ -15,6 +15,7 @@ Each platform must implement these capabilities — this document tracks current
 | Session Create | ✅ | [`home/index.tsx`](../../packages/cli/src/tui/routes/home/index.tsx) |
 | Session Resume | ✅ | [`context/sync.tsx`](../../packages/cli/src/tui/context/sync.tsx), [`context/sdk.tsx`](../../packages/cli/src/tui/context/sdk.tsx) |
 | Session Rename | ✅ | [`dialog-session-rename.tsx`](../../packages/cli/src/tui/components/dialog-session-rename.tsx) |
+| Session Tagging | ✅ | [`dialog-tag.tsx`](../../packages/cli/src/tui/components/dialog-tag.tsx) |
 | Session Archive | ❌ | — |
 | Session Branch | ❌ | — |
 | Multi-Session | ❌ | — |
@@ -74,7 +75,7 @@ Each platform must implement these capabilities — this document tracks current
 | Web Search/Fetch | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
 | Subagent | ✅ | [`subagent-progress.tsx`](../../packages/cli/src/tui/components/subagent-progress.tsx) |
 | Error Display | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
-| Output File Fallback | ❌ | — |
+| Output File Fallback | ✅ | [`output-file.ts`](../../packages/cli/src/tui/util/output-file.ts), [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
 
 ---
 
@@ -152,7 +153,8 @@ Each platform must implement these capabilities — this document tracks current
 | Model Selection | ✅ | [`dialog-model.tsx`](../../packages/cli/src/tui/components/dialog-model.tsx), [`dialog-manage-models.tsx`](../../packages/cli/src/tui/components/dialog-manage-models.tsx) |
 | Provider Selection | ✅ | [`dialog-provider.tsx`](../../packages/cli/src/tui/components/dialog-provider.tsx) |
 | Theme Selection | ✅ | [`dialog-theme.tsx`](../../packages/cli/src/tui/components/dialog-theme.tsx) |
-| Stats Dashboard | ✅ | [`dialog-stats.tsx`](../../packages/cli/src/tui/components/dialog-stats.tsx) |
+| Output Styles | ✅ | [`dialog-output-style.tsx`](../../packages/cli/src/tui/components/dialog-output-style.tsx) |
+| Stats Dashboard | ✅ | [`dialog-stats.tsx`](../../packages/cli/src/tui/components/dialog-stats.tsx), [`use-global-stats.ts`](../../packages/cli/src/tui/hooks/use-global-stats.ts) |
 | Help System | ✅ | [`dialog-help-v2.tsx`](../../packages/cli/src/tui/components/dialog-help-v2.tsx) |
 
 ---
@@ -184,7 +186,7 @@ Each platform must implement these capabilities — this document tracks current
 |---|:---:|---|
 | MCP Server List | ✅ | [`dialog-mcp.tsx`](../../packages/cli/src/tui/components/dialog-mcp.tsx) |
 | MCP Management | ✅ | [`dialog-mcp.tsx`](../../packages/cli/src/tui/components/dialog-mcp.tsx) |
-| Agent List | ✅ | [`dialog-agent.tsx`](../../packages/cli/src/tui/components/dialog-agent.tsx) |
+| Agent Management | ✅ | [`dialog-agent-list.tsx`](../../packages/cli/src/tui/components/dialog-agent-list.tsx), [`dialog-agent-editor.tsx`](../../packages/cli/src/tui/components/dialog-agent-editor.tsx) |
 | Memory Management | ✅ | [`dialog-memory.tsx`](../../packages/cli/src/tui/components/dialog-memory.tsx) |
 
 ---
@@ -198,6 +200,7 @@ Each platform must implement these capabilities — this document tracks current
 | Session Cost | ✅ | [`status-line.tsx`](../../packages/cli/src/tui/components/status-line.tsx) |
 | Mode Indicator | ✅ | [`status-line.tsx`](../../packages/cli/src/tui/components/status-line.tsx) |
 | Working Directory | ✅ | [`dialog-workspace.tsx`](../../packages/cli/src/tui/components/dialog-workspace.tsx) |
+| Toast System | ✅ | [`toast-item.tsx`](../../packages/cli/src/tui/components/toast-item.tsx), [`session-layout.tsx`](../../packages/cli/src/tui/components/session-layout.tsx) |
 
 ---
 
@@ -211,6 +214,7 @@ Each platform must implement these capabilities — this document tracks current
 | Permissions Dialog | ✅ | [`dialog-permissions.tsx`](../../packages/cli/src/tui/components/dialog-permissions.tsx) |
 | Plan Mode Indicator | ✅ | [`status-line.tsx`](../../packages/cli/src/tui/components/status-line.tsx) |
 | Session Export | ✅ | [`use-session-export.ts`](../../packages/cli/src/tui/hooks/use-session-export.ts), [`dialog-export-options.tsx`](../../packages/cli/src/tui/components/dialog-export-options.tsx) |
+| Feedback System | ✅ | [`dialog-feedback.tsx`](../../packages/cli/src/tui/components/dialog-feedback.tsx), [`redact.ts`](../../packages/cli/src/tui/util/redact.ts) |
 
 ---
 
@@ -218,26 +222,26 @@ Each platform must implement these capabilities — this document tracks current
 
 | Category | ✅ Done | 🟡 Partial | ❌ Missing | Total |
 |---|:---:|:---:|:---:|:---:|
-| Session Management | 4 | 0 | 3 | 7 |
+| Session Management | 5 | 0 | 3 | 8 |
 | Conversation | 7 | 0 | 0 | 7 |
 | Display Density | 7 | 0 | 0 | 7 |
 | Thinking / Reasoning | 4 | 0 | 0 | 4 |
-| Tool Output | 9 | 1 | 1 | 11 |
+| Tool Output | 10 | 1 | 0 | 11 |
 | Prompt Input | 7 | 0 | 0 | 7 |
 | Token & Context Tracking | 5 | 0 | 0 | 5 |
 | Context Compaction | 4 | 0 | 1 | 5 |
 | Time Travel / Rewind | 2 | 1 | 0 | 3 |
 | Diff Viewer | 2 | 0 | 0 | 2 |
 | Permissions | 3 | 0 | 0 | 3 |
-| Settings & Configuration | 5 | 0 | 0 | 5 |
+| Settings & Configuration | 6 | 0 | 0 | 6 |
 | Active Operation Feedback | 4 | 0 | 0 | 4 |
 | Search | 3 | 0 | 0 | 3 |
 | MCP & Agents | 4 | 0 | 0 | 4 |
-| Status Display | 5 | 0 | 0 | 5 |
-| Diagnostics & Error Control | 6 | 0 | 0 | 6 |
-| **Total** | **81** | **2** | **5** | **88** |
+| Status Display | 6 | 0 | 0 | 6 |
+| Diagnostics & Error Control | 7 | 0 | 0 | 7 |
+| **Total** | **86** | **2** | **4** | **92** |
 
-> **Coverage: 92% complete · 2% partial · 6% remaining**
+> **Coverage: 93% complete · 2% partial · 5% remaining**
 
 ---
 
