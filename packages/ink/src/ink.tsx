@@ -90,6 +90,7 @@ import {
 import {
   CLEAR_ITERM2_PROGRESS,
   CLEAR_TAB_STATUS,
+  CLEAR_TERMINAL_TITLE,
   setClipboard,
   supportsTabStatus,
   wrapForMultiplexer,
@@ -1628,6 +1629,16 @@ export default class Ink {
       writeSync(1, SHOW_CURSOR)
       // Clear iTerm2 progress bar
       writeSync(1, CLEAR_ITERM2_PROGRESS)
+      // Clear terminal title so the tab doesn't show stale session info.
+      // Respect LITEAI_DISABLE_TERMINAL_TITLE — if the user opted out of
+      // title changes, don't clear their existing title on exit either.
+      if (!process.env.LITEAI_DISABLE_TERMINAL_TITLE) {
+        if (process.platform === 'win32') {
+          process.title = ''
+        } else {
+          writeSync(1, CLEAR_TERMINAL_TITLE)
+        }
+      }
       // Clear tab status (OSC 21337) so a stale dot doesn't linger
       if (supportsTabStatus()) writeSync(1, wrapForMultiplexer(CLEAR_TAB_STATUS))
     }

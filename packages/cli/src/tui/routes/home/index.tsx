@@ -8,13 +8,23 @@ import { Logo } from "../../components/logo"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { Tips } from "../../components/tips"
 import { useTheme } from "../../context/theme"
+import { useIdleWindowTitle } from "../../hooks/use-window-title"
 import { useAppState } from "../../state"
+
+function getFolderName(dir: string): string {
+  const parts = dir.replace(/\\/g, "/").split("/")
+  return parts[parts.length - 1] || dir
+}
 
 export function HomeRoute({ workspaceID }: { workspaceID: string }) {
   const directory = useAppState((s) => s.path.directory)
   const mcp = useAppState((s) => s.mcp)
   const { theme } = useTheme()
   const exitState = useExitState()
+
+  // Terminal title bar: "LiteAI (folder)"
+  const folderName = useMemo(() => getFolderName(directory || process.cwd()), [directory])
+  useIdleWindowTitle(folderName)
 
   const connectedMcpCount = useMemo(() => {
     return Object.values(mcp).filter((x) => x.status === "connected").length

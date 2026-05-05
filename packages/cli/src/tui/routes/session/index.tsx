@@ -23,6 +23,7 @@ import { StatsProvider, useStats } from "../../context/stats"
 import { useTuiConfig } from "../../context/tui-config"
 import { useClipboard } from "../../hooks/use-clipboard"
 import { useMessageCursor } from "../../hooks/use-message-cursor"
+import { useWindowTitle } from "../../hooks/use-window-title"
 import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
 import { useKeybindings } from "../../keybindings/use-keybinding"
 import {
@@ -38,6 +39,11 @@ import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
 import { QuestionPrompt } from "./question"
 
+function getFolderName(dir: string): string {
+  const parts = dir.replace(/\\/g, "/").split("/")
+  return parts[parts.length - 1] || dir
+}
+
 export function SessionRoute({ sessionID }: { sessionID: string }) {
   const {
     session: { sync: syncSession, cleanup: cleanupSession },
@@ -48,6 +54,11 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const questions = useAppState(selectQuestions(sessionID))
   const session = useSession()
   const tuiConfig = useTuiConfig()
+
+  // Terminal title bar status (like Claude Code / Gemini CLI)
+  const directory = useAppState((s) => s.path.directory || s.path.worktree)
+  const folderName = useMemo(() => getFolderName(directory || process.cwd()), [directory])
+  useWindowTitle({ sessionID, folderName })
   useRegisterKeybindingContext("Chat")
   const dialog = useDialog()
   const route = useRoute()
