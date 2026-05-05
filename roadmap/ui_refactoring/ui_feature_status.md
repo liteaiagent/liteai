@@ -16,9 +16,9 @@ Each platform must implement these capabilities — this document tracks current
 | Session Resume | ✅ | [`context/sync.tsx`](../../packages/cli/src/tui/context/sync.tsx), [`context/sdk.tsx`](../../packages/cli/src/tui/context/sdk.tsx) |
 | Session Rename | ✅ | [`dialog-session-rename.tsx`](../../packages/cli/src/tui/components/dialog-session-rename.tsx) |
 | Session Tagging | ✅ | [`dialog-tag.tsx`](../../packages/cli/src/tui/components/dialog-tag.tsx) |
-| Session Archive | ❌ | — |
-| Session Branch | ❌ | — |
-| Multi-Session | ❌ | — |
+| Session Archive | ✅ | [`dialog-session-list.tsx`](../../packages/cli/src/tui/components/dialog-session-list.tsx) |
+| Session Branch | ✅ | [`dialog-rewind-actions.tsx`](../../packages/cli/src/tui/components/dialog-rewind-actions.tsx) |
+| Multi-Session | ✅ | [`session-tab-store.ts`](../../packages/cli/src/tui/state/session-tab-store.ts), [`app.tsx`](../../packages/cli/src/tui/app.tsx) |
 
 ---
 
@@ -68,7 +68,7 @@ Each platform must implement these capabilities — this document tracks current
 | File Read | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
 | File Write | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
 | File Edit | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx), [`structured-diff.tsx`](../../packages/cli/src/tui/components/structured-diff.tsx) |
-| Multi-File Patch | 🔶 | [`dialog-diff.tsx`](../../packages/cli/src/tui/components/dialog-diff.tsx) (dialog exists, no batch summary) |
+| Multi-File Patch | ✅ | [`dialog-diff.tsx`](../../packages/cli/src/tui/components/dialog-diff.tsx) |
 | Command Execution | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
 | Command Output | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) (shown in transcript mode) |
 | Search Results | ✅ | [`session/tools.tsx`](../../packages/cli/src/tui/routes/session/tools.tsx) |
@@ -112,7 +112,7 @@ Each platform must implement these capabilities — this document tracks current
 | Auto-Compact | ✅ | [`token-warning.tsx`](../../packages/cli/src/tui/components/token-warning.tsx) (`onAutoCompact` at threshold) |
 | Manual Compact | ✅ | Slash command via [`prompt-input.tsx`](../../packages/cli/src/tui/components/prompt/prompt-input.tsx) |
 | Compact Summary | ✅ | [`compact-summary.tsx`](../../packages/cli/src/tui/components/compact-summary.tsx) |
-| Show All | ❌ | — |
+| Show All | ✅ | [`session/index.tsx`](../../packages/cli/src/tui/routes/session/index.tsx) |
 | Circuit Breaker | ✅ | [`use-compact-circuit-breaker.ts`](../../packages/cli/src/tui/hooks/use-compact-circuit-breaker.ts) |
 
 ---
@@ -123,7 +123,7 @@ Each platform must implement these capabilities — this document tracks current
 |---|:---:|---|
 | Turn Navigation | ✅ | [`dialog-rewind.tsx`](../../packages/cli/src/tui/components/dialog-rewind.tsx) |
 | Diff Stats | ✅ | [`use-turn-diffs.ts`](../../packages/cli/src/tui/hooks/use-turn-diffs.ts) |
-| Restore Options | 🔶 | [`dialog-rewind.tsx`](../../packages/cli/src/tui/components/dialog-rewind.tsx) (conversation restore exists, code restore / summarize TBD) |
+| Restore Options | ✅ | [`dialog-rewind-actions.tsx`](../../packages/cli/src/tui/components/dialog-rewind-actions.tsx) |
 
 ---
 
@@ -222,15 +222,15 @@ Each platform must implement these capabilities — this document tracks current
 
 | Category | ✅ Done | 🟡 Partial | ❌ Missing | Total |
 |---|:---:|:---:|:---:|:---:|
-| Session Management | 5 | 0 | 3 | 8 |
+| Session Management | 8 | 0 | 0 | 8 |
 | Conversation | 7 | 0 | 0 | 7 |
 | Display Density | 7 | 0 | 0 | 7 |
 | Thinking / Reasoning | 4 | 0 | 0 | 4 |
-| Tool Output | 10 | 1 | 0 | 11 |
+| Tool Output | 11 | 0 | 0 | 11 |
 | Prompt Input | 7 | 0 | 0 | 7 |
 | Token & Context Tracking | 5 | 0 | 0 | 5 |
-| Context Compaction | 4 | 0 | 1 | 5 |
-| Time Travel / Rewind | 2 | 1 | 0 | 3 |
+| Context Compaction | 5 | 0 | 0 | 5 |
+| Time Travel / Rewind | 3 | 0 | 0 | 3 |
 | Diff Viewer | 2 | 0 | 0 | 2 |
 | Permissions | 3 | 0 | 0 | 3 |
 | Settings & Configuration | 6 | 0 | 0 | 6 |
@@ -239,9 +239,9 @@ Each platform must implement these capabilities — this document tracks current
 | MCP & Agents | 4 | 0 | 0 | 4 |
 | Status Display | 6 | 0 | 0 | 6 |
 | Diagnostics & Error Control | 7 | 0 | 0 | 7 |
-| **Total** | **86** | **2** | **4** | **92** |
+| **Total** | **92** | **0** | **0** | **92** |
 
-> **Coverage: 93% complete · 2% partial · 5% remaining**
+> **Coverage: 100% complete · 0% partial · 0% remaining**
 
 ---
 

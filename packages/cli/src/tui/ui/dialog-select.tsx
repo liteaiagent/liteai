@@ -39,6 +39,7 @@ export interface DialogSelectProps<T> {
 
   current?: T
   header?: React.ReactNode
+  headerEnd?: React.ReactNode
   footerContent?: React.ReactNode
   /** When provided, called on Escape instead of dialog.clear(). Enables stacked dialog pop navigation. */
   onEscape?: () => void
@@ -265,9 +266,12 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       {/* Header section */}
       <Box paddingLeft={4} paddingRight={4} flexDirection="column">
         <Box flexDirection="row" justifyContent="space-between">
-          <Text color={theme.text as Color} bold>
-            {props.title}
-          </Text>
+          <Box flexDirection="row" gap={2}>
+            <Text color={theme.text as Color} bold>
+              {props.title}
+            </Text>
+            {props.headerEnd}
+          </Box>
           <Text color={theme.textMuted as Color}>esc</Text>
         </Box>
         <Box paddingTop={1}>

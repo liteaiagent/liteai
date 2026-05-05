@@ -1,12 +1,13 @@
-import { Box, type Color, Text } from "@liteai/ink"
+import { Box, type Color, Text, useInput } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { useDialog } from "../context/dialog"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
-import { useKeybindings } from "../keybindings/use-keybinding"
+import { useToast } from "../context/toast"
 import { selectSessions, useAppState } from "../state"
+import { SessionTabStore } from "../state/session-tab-store"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
 import { Spinner } from "../ui/spinner"
 import { DialogSessionRename } from "./dialog-session-rename"
@@ -32,6 +33,10 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   const sessionStatusMap = useAppState((s) => s.session_status)
   const { theme } = useTheme()
   const sdk = useSDK()
+  const toast = useToast()
+
+  const [showArchived, setShowArchived] = useState(false)
+  const { tabs } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
 
   const [toDelete, setToDelete] = useState<string | undefined>()
   const [search, setSearch] = useState("")
@@ -90,14 +95,15 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
 
   const sessions = useMemo(() => {
     const list = searchResults ?? sessionsList
+    let filtered = list
     if (props.localOnly) {
-      return list.filter((x) => !x.workspaceID && !x.parentID)
+      filtered = filtered.filter((x) => !x.workspaceID && !x.parentID)
     }
     if (props.workspaceID) {
-      return list.filter((x) => x.workspaceID === props.workspaceID)
+      filtered = filtered.filter((x) => x.workspaceID === props.workspaceID)
     }
-    return list
-  }, [searchResults, sessionsList, props.localOnly, props.workspaceID])
+    return filtered.filter((x) => (showArchived ? !!x.time.archived : !x.time.archived))
+  }, [searchResults, sessionsList, props.localOnly, props.workspaceID, showArchived])
 
   const options = useMemo(() => {
     const today = new Date().toDateString()
@@ -115,16 +121,25 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         const isWorking = status?.type === "busy"
         const sessionExt = x as import("@liteai/sdk").Session & { tags?: string[]; description?: string }
         const hasParent = !!x.parentID
+        const isArchived = !!x.time.archived
         return {
-          title: isDeleting ? `Press ctrl+d again to confirm` : x.title,
+          title: isDeleting ? `Press ctrl+d again to confirm` : isArchived ? `📦 ${x.title}` : x.title,
           description:
             (sessionExt.tags?.length ? `${sessionExt.tags.map((t: string) => `#${t}`).join(" ")} ` : "") +
             (sessionExt.description ?? ""),
           bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
-          footer: Locale.time(x.time.updated),
-          gutter: isWorking ? <Spinner /> : hasParent ? <Text color={theme.info as Color}>⑂</Text> : undefined,
+          footer: isArchived ? <Text dim>{Locale.time(x.time.updated)}</Text> : Locale.time(x.time.updated),
+          gutter: isWorking ? (
+            <Spinner />
+          ) : tabs.includes(x.id) ? (
+            <Text color={theme.primary as Color}>[{tabs.indexOf(x.id) + 1}]</Text>
+          ) : isArchived ? (
+            <Text dim>📦</Text>
+          ) : hasParent ? (
+            <Text color={theme.info as Color}>⑂</Text>
+          ) : undefined,
         }
       })
 
@@ -149,53 +164,58 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
     }
 
     return opts
-  }, [sessions, toDelete, sessionStatusMap, theme.error, ftsResults, sessionsList])
+  }, [sessions, toDelete, sessionStatusMap, theme.error, ftsResults, sessionsList, tabs])
 
-  useKeybindings(
-    {
-      "select:delete": () => {
-        if (!selectedOption) return
-        if (toDelete === selectedOption.value) {
-          sdk.client.project.session.delete({
-            projectID: sdk.projectID,
-            sessionID: selectedOption.value,
-          })
-          setToDelete(undefined)
-          return
-        }
-        setToDelete(selectedOption.value)
-      },
-      "select:rename": () => {
-        if (!selectedOption) return
-        dialog.replace(() => <DialogSessionRename session={selectedOption.value} />)
-      },
-      "select:update": () => {
-        if (!selectedOption) return
-        const session = sessions.find((s) => s.id === selectedOption.value)
-        if (!session) return
-        void sdk.client.project.session.update({
-          sessionID: selectedOption.value,
+  useInput((input, key) => {
+    if (key.tab) {
+      const t = ["", ...tags]
+      const currentIdx = t.indexOf(activeTag ?? "")
+      const nextIdx = (currentIdx + 1) % t.length
+      setActiveTag(t[nextIdx] || undefined)
+      return
+    }
+
+    if (!key.ctrl) return
+
+    if (input === "a") {
+      setShowArchived((v) => !v)
+    } else if (input === "d") {
+      if (!selectedOption) return
+      if (toDelete === selectedOption.value) {
+        sdk.client.project.session.delete({
           projectID: sdk.projectID,
-          time: { archived: session.time.archived ? 0 : Date.now() },
+          sessionID: selectedOption.value,
         })
-      },
-      "select:tag": () => {
-        if (!selectedOption) return
-        const session = sessions.find((s) => s.id === selectedOption.value)
-        if (!session) return
-        const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
-        const existingTags = sessionExt.tags || []
-        dialog.replace(() => <DialogTag sessionID={selectedOption.value} existingTags={existingTags} allTags={tags} />)
-      },
-      "select:nextTag": () => {
-        const t = ["", ...tags]
-        const currentIdx = t.indexOf(activeTag ?? "")
-        const nextIdx = (currentIdx + 1) % t.length
-        setActiveTag(t[nextIdx] || undefined)
-      },
-    },
-    { context: "Select" },
-  )
+        setToDelete(undefined)
+        return
+      }
+      setToDelete(selectedOption.value)
+    } else if (input === "r") {
+      if (!selectedOption) return
+      dialog.replace(() => <DialogSessionRename session={selectedOption.value} />)
+    } else if (input === "t") {
+      if (!selectedOption) return
+      const session = sessionsList.find((s) => s.id === selectedOption.value)
+      if (!session) return
+      const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
+      const existingTags = sessionExt.tags || []
+      dialog.replace(() => <DialogTag sessionID={selectedOption.value} existingTags={existingTags} allTags={tags} />)
+    } else if (input === "u") {
+      if (!selectedOption) return
+      const session = sessionsList.find((s) => s.id === selectedOption.value)
+      if (!session) return
+      const isNowArchived = !session.time.archived
+      void sdk.client.project.session.update({
+        sessionID: selectedOption.value,
+        projectID: sdk.projectID,
+        time: { archived: isNowArchived ? Date.now() : 0 },
+      })
+      toast.show({
+        variant: "success",
+        message: isNowArchived ? "Session archived" : "Session restored from archive",
+      })
+    }
+  })
 
   useEffect(() => {
     dialog.setSize("large")
@@ -231,9 +251,11 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
           </Box>
         ) : undefined
       }
+      headerEnd={showArchived ? <Text dim>📦 Archived</Text> : undefined}
       footerContent={
         <Text color={theme.textMuted as Color}>
-          ↑↓ navigate · Enter select · ctrl+d del · ctrl+r rename · ctrl+a archive · ctrl+t tag · tab filter
+          ↑↓ navigate · Enter select · ctrl+d del · ctrl+r rename · ctrl+a archived view · ctrl+u toggle archive ·
+          ctrl+t tag · tab filter
         </Text>
       }
     />

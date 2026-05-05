@@ -23,6 +23,20 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
   const partsMap = useAppState((s) => s.part)
   const agents = useAppState((s) => s.agents)
 
+  const filteredMessages = useMemo(() => {
+    if (ctx.showPreCompaction) return messages
+    let compactionIndex = -1
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const parts = partsMap[messages[i].id] ?? []
+      if (parts.some((p) => p.type === "compaction")) {
+        compactionIndex = i
+        break
+      }
+    }
+    if (compactionIndex === -1) return messages
+    return messages.slice(compactionIndex)
+  }, [messages, partsMap, ctx.showPreCompaction])
+
   const itemKey = useCallback((msg: Message) => msg.id, [])
 
   const renderItem = useCallback(
@@ -39,15 +53,15 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
         />
       )
     },
-    [partsMap, messages.length, ctx.displayMode],
+    [partsMap, filteredMessages.length, ctx.displayMode],
   )
 
   // Derive selectedIndex from cursor context so VirtualMessageList can scroll to it
   const selectedIndex = useMemo(() => {
     if (!cursorCtx.selectedMessageId) return undefined
-    const idx = messages.findIndex((m) => m.id === cursorCtx.selectedMessageId)
+    const idx = filteredMessages.findIndex((m) => m.id === cursorCtx.selectedMessageId)
     return idx >= 0 ? idx : undefined
-  }, [cursorCtx.selectedMessageId, messages])
+  }, [cursorCtx.selectedMessageId, filteredMessages])
 
   const lastMessage = messages.at(-1)
   const lastParts = lastMessage ? (partsMap[lastMessage.id] ?? []) : []
@@ -119,7 +133,7 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
   return (
     <>
       <VirtualMessageList
-        messages={messages as Message[]}
+        messages={filteredMessages as Message[]}
         scrollRef={scrollRef}
         columns={ctx.width}
         itemKey={itemKey}

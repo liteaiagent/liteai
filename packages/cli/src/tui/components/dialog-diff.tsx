@@ -20,6 +20,19 @@ export function DialogDiff(): React.ReactNode {
 
   const diffs = (session.sessionID ? session_diff[session.sessionID] : []) ?? []
 
+  const totalAdditions = diffs.reduce((sum, d) => sum + d.additions, 0)
+  const totalDeletions = diffs.reduce((sum, d) => sum + d.deletions, 0)
+
+  const extCounts = new Map<string, number>()
+  for (const d of diffs) {
+    const ext = d.file.includes(".") ? `.${d.file.split(".").pop()}` : "other"
+    extCounts.set(ext, (extCounts.get(ext) ?? 0) + 1)
+  }
+  const extSummary = [...extCounts.entries()].map(([ext, count]) => `${count} ${ext}`).join(" · ")
+
+  const statusOrder: Record<string, number> = { added: 0, modified: 1, deleted: 2 }
+  const sortedDiffs = [...diffs].sort((a, b) => (statusOrder[a.status ?? ""] ?? 1) - (statusOrder[b.status ?? ""] ?? 1))
+
   const [selectedFileIndex, setSelectedFileIndex] = useState(0)
   const [viewMode, setViewMode] = useState<"list" | "detail">("list")
 
@@ -37,11 +50,11 @@ export function DialogDiff(): React.ReactNode {
       },
       "diff:nextFile": () => {
         if (viewMode === "list") {
-          setSelectedFileIndex((prev) => Math.min(diffs.length - 1, prev + 1))
+          setSelectedFileIndex((prev) => Math.min(sortedDiffs.length - 1, prev + 1))
         }
       },
       "diff:viewDetails": () => {
-        if (viewMode === "list" && diffs.length > 0) {
+        if (viewMode === "list" && sortedDiffs.length > 0) {
           setViewMode("detail")
         }
       },
@@ -49,7 +62,7 @@ export function DialogDiff(): React.ReactNode {
     { context: "DiffDialog" },
   )
 
-  const selectedDiff = diffs[selectedFileIndex]
+  const selectedDiff = sortedDiffs[selectedFileIndex]
 
   if (diffs.length === 0) {
     return (
@@ -73,7 +86,14 @@ export function DialogDiff(): React.ReactNode {
       <Box flexDirection="column" marginTop={1}>
         {viewMode === "list" ? (
           <Box flexDirection="column">
-            {diffs.map((diff, idx) => {
+            <Box flexDirection="row" marginBottom={1} paddingX={2} gap={2}>
+              <Text bold>{diffs.length} files changed</Text>
+              <Text color={theme.success as Color}>+{totalAdditions}</Text>
+              <Text color={theme.error as Color}>-{totalDeletions}</Text>
+              <Box flexGrow={1} />
+              <Text dim>{extSummary}</Text>
+            </Box>
+            {sortedDiffs.map((diff, idx) => {
               const isSelected = idx === selectedFileIndex
               let statusText = "M"
               let statusColor = theme.warning

@@ -69,6 +69,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   // TODO: Wire to keybindings (session_timestamps_toggle, session_details_toggle, session_generic_toggle)
   const [showTimestamps, _setShowTimestamps] = useState(false)
   const [showTranscriptSearch, setShowTranscriptSearch] = useState(false)
+  const [showPreCompaction, setShowPreCompaction] = useState(false)
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>("compact")
   const showDetails = displayMode === "transcript"
@@ -128,7 +129,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   useKeybindings(
     {
       "transcript:exit": () => setDisplayMode("compact"),
-      "transcript:toggleShowAll": () => {}, // TODO: Expand pre-compaction history
+      "transcript:toggleShowAll": () => setShowPreCompaction((v) => !v),
     },
     { context: "Transcript", isActive: displayMode === "transcript" },
   )
@@ -227,6 +228,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
           showDetails,
           showGenericToolOutput,
           diffWrapMode: "none",
+          showPreCompaction,
           isToolCompact,
           lastReasoningId,
           tui: tuiConfig,

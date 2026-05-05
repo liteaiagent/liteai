@@ -1,10 +1,11 @@
 import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
-import { memo, useContext, useMemo } from "react"
+import { memo, useContext, useMemo, useSyncExternalStore } from "react"
 import { useLocal } from "../context/local"
 import { useStats } from "../context/stats"
 import { useTheme } from "../context/theme"
 import { useSessionContext } from "../routes/session/ctx"
 import { type AppState, useAppState } from "../state"
+import { SessionTabStore } from "../state/session-tab-store"
 import { useExitState } from "./global-exit-handler"
 
 type Props = { sessionID: string }
@@ -155,6 +156,8 @@ function StatusLineInner({ sessionID }: Props) {
   const budget = columns - 2 // paddingX={1} means 1 on each side
   const ctx = useSessionContext()
 
+  const { tabs, activeTabId } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
+
   const allSegments = useMemo(
     () =>
       buildSegments(
@@ -182,18 +185,37 @@ function StatusLineInner({ sessionID }: Props) {
   }
 
   return (
-    <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
-      {visible.map((seg, i) => (
-        <Box flexDirection="row" key={seg.priority} flexShrink={0}>
-          {i > 0 && <Text color={theme.textMuted as Color}>{" │ "}</Text>}
-          <Text color={seg.color as Color}>{seg.priority === 1 ? <Text bold>{seg.text}</Text> : seg.text}</Text>
-        </Box>
-      ))}
-      {truncated && (
-        <Box flexShrink={0}>
-          <Text color={theme.textMuted as Color}>…</Text>
+    <Box flexDirection="column" width="100%" flexShrink={0}>
+      {tabs.length > 1 && (
+        <Box flexDirection="row" gap={2} paddingX={1} width="100%" marginBottom={0}>
+          {tabs.slice(0, 9).map((tab, idx) => {
+            const isActive = tab === activeTabId
+            const sessionTitle = sessions.find((s) => s.id === tab)?.title ?? tab.slice(0, 8)
+            const truncated = sessionTitle.length > 15 ? `${sessionTitle.slice(0, 12)}...` : sessionTitle
+            return (
+              <Box key={tab} flexDirection="row" gap={0}>
+                <Text color={theme.textMuted as Color}>alt+{idx + 1} </Text>
+                <Text color={isActive ? (theme.primary as Color) : (theme.text as Color)} bold={isActive}>
+                  {truncated}
+                </Text>
+              </Box>
+            )
+          })}
         </Box>
       )}
+      <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
+        {visible.map((seg, i) => (
+          <Box flexDirection="row" key={seg.priority} flexShrink={0}>
+            {i > 0 && <Text color={theme.textMuted as Color}>{" │ "}</Text>}
+            <Text color={seg.color as Color}>{seg.priority === 1 ? <Text bold>{seg.text}</Text> : seg.text}</Text>
+          </Box>
+        ))}
+        {truncated && (
+          <Box flexShrink={0}>
+            <Text color={theme.textMuted as Color}>…</Text>
+          </Box>
+        )}
+      </Box>
     </Box>
   )
 }

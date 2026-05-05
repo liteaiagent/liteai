@@ -13,6 +13,7 @@ export const SessionContext = createContext<{
   showDetails: boolean
   showGenericToolOutput: boolean
   diffWrapMode: "word" | "none"
+  showPreCompaction: boolean
   isToolCompact: (toolName: string) => boolean
   lastReasoningId: string | null
   tui: ReturnType<typeof useTuiConfig>

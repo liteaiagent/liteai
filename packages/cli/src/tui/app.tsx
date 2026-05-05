@@ -1,4 +1,5 @@
-import { AlternateScreen } from "@liteai/ink"
+import { AlternateScreen, Box, useInput } from "@liteai/ink"
+import { useEffect, useSyncExternalStore } from "react"
 import type { TuiConfig } from "../cli/config/tui"
 import { GlobalExitHandler } from "./components/global-exit-handler"
 import { type Args, ArgsProvider } from "./context/args"
@@ -11,12 +12,13 @@ import { RouteProvider, useRoute } from "./context/route"
 import { type EventSource, SDKProvider } from "./context/sdk"
 import { SessionProvider } from "./context/session"
 import { ThemeProvider } from "./context/theme"
-import { ToastProvider } from "./context/toast"
+import { ToastProvider, useToast } from "./context/toast"
 import { TuiConfigProvider } from "./context/tui-config"
 import { KeybindingSetup } from "./keybindings/keybinding-setup"
 import { HomeRoute } from "./routes/home"
 import { SessionRoute } from "./routes/session"
 import { AppStateProvider } from "./state/app-state-context"
+import { SessionTabStore } from "./state/session-tab-store"
 
 export type AppProps = {
   url: string
@@ -31,15 +33,56 @@ export type AppProps = {
 
 function AppContent() {
   const route = useRoute()
+  const toast = useToast()
+  const { tabs, activeTabId } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
 
-  switch (route.data.type) {
-    case "home":
-      return <HomeRoute workspaceID={route.data.workspaceID ?? "default"} />
-    case "session":
-      return <SessionRoute sessionID={route.data.sessionID} />
-    default:
-      return null
+  useEffect(() => {
+    if (route.data.type === "session") {
+      const added = SessionTabStore.addTab(route.data.sessionID)
+      if (!added) {
+        toast.show({
+          variant: "error",
+          message: "Maximum tabs reached. Close a tab first (Ctrl+W).",
+        })
+      }
+    }
+  }, [route.data, toast])
+
+  useInput((input, key) => {
+    if (key.ctrl && input === "w") {
+      SessionTabStore.closeActiveTab()
+      const state = SessionTabStore.getSnapshot()
+      if (state.activeTabId) {
+        route.navigate({ type: "session", sessionID: state.activeTabId })
+      } else {
+        route.navigate({ type: "home" })
+      }
+      return
+    }
+
+    if (key.meta && input >= "1" && input <= "9") {
+      const idx = parseInt(input, 10) - 1
+      if (idx >= 0 && idx < tabs.length) {
+        const targetId = tabs[idx]
+        SessionTabStore.setActiveTab(targetId)
+        route.navigate({ type: "session", sessionID: targetId })
+      }
+    }
+  })
+
+  if (route.data.type === "home") {
+    return <HomeRoute workspaceID={route.data.workspaceID ?? "default"} />
   }
+
+  return (
+    <>
+      {tabs.map((id) => (
+        <Box key={id} display={id === activeTabId ? "flex" : "none"} width="100%" height="100%" flexDirection="column">
+          <SessionRoute sessionID={id} />
+        </Box>
+      ))}
+    </>
+  )
 }
 
 export function App(props: AppProps) {

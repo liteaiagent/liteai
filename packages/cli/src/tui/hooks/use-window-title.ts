@@ -21,7 +21,7 @@ const MAX_LEN = 80
 
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text
-  return text.substring(0, maxLen - 1) + "…"
+  return `${text.substring(0, maxLen - 1)}…`
 }
 
 interface WindowTitleOptions {
@@ -59,7 +59,7 @@ export function useWindowTitle({ sessionID, folderName }: WindowTitleOptions): v
     const raw = `${base}${getSuffix(context)}`
 
     // Strip control characters, pad to fixed width to prevent taskbar jitter
-    // eslint-disable-next-line no-control-regex
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: we explicitly want to strip these
     const safe = raw.replace(/[\x00-\x1F\x7F]/g, "")
     return safe.padEnd(MAX_LEN, " ").substring(0, MAX_LEN)
   }, [sessionStatus, permissions, questions, folderName])
@@ -78,7 +78,7 @@ export function useIdleWindowTitle(folderName: string): void {
     const maxContextLen = MAX_LEN - base.length - 3
     const context = truncate(folderName, maxContextLen)
     const raw = `${base} (${context})`
-    // eslint-disable-next-line no-control-regex
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: we explicitly want to strip these
     const safe = raw.replace(/[\x00-\x1F\x7F]/g, "")
     return safe.padEnd(MAX_LEN, " ").substring(0, MAX_LEN)
   }, [folderName])
