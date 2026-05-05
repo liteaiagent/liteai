@@ -7,10 +7,11 @@
  */
 
 import type { InputEvent, Key } from "@liteai/ink"
-import { useInput } from "@liteai/ink"
+import { useInput, useSelection } from "@liteai/ink"
 import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTuiConfig } from "../context/tui-config"
+import { useClipboard } from "../hooks/use-clipboard"
 import { DEFAULT_BINDINGS } from "./default-bindings"
 import { type HandlerRegistration, KeybindingProvider } from "./keybinding-context"
 import { parseBindings } from "./parser"
@@ -111,6 +112,7 @@ export function KeybindingSetup({ children }: KeybindingSetupProps): React.React
       unregisterActiveContext={unregisterActiveContext}
       handlerRegistryRef={handlerRegistryRef}
     >
+      <GlobalSelectionInterceptor />
       <ChordInterceptor
         bindings={bindings}
         pendingChordRef={pendingChordRef}
@@ -121,6 +123,48 @@ export function KeybindingSetup({ children }: KeybindingSetupProps): React.React
       {children}
     </KeybindingProvider>
   )
+}
+
+/**
+ * Intercepts Enter, Escape, and Ctrl+C when a text selection is active.
+ * This mimics standard terminal QuickEdit behavior (Enter to copy) when
+ * automatic copy-on-select is disabled.
+ */
+function GlobalSelectionInterceptor() {
+  const selection = useSelection()
+  const { copy } = useClipboard()
+
+  useInput((input: string, key: Key, event: InputEvent) => {
+    if (!selection.hasSelection()) return
+
+    if (key.escape) {
+      selection.clearSelection()
+      event.stopImmediatePropagation()
+      return
+    }
+
+    if (key.return || (key.ctrl && input === "c")) {
+      const text = selection.copySelectionNoClear()
+      if (text) {
+        void copy(text)
+        selection.clearSelection()
+      }
+      event.stopImmediatePropagation()
+      return
+    }
+
+    // Clear selection on other printable keys, mimicking native terminal behavior
+    // where any keystroke clears the highlight.
+    // Skip wheel events and navigational keys (shift+arrow)
+    if (key.wheelUp || key.wheelDown) return
+    
+    const isNav = key.leftArrow || key.rightArrow || key.upArrow || key.downArrow || key.home || key.end || key.pageUp || key.pageDown
+    if (isNav && (key.shift || key.meta)) return
+
+    selection.clearSelection()
+  })
+
+  return null
 }
 
 /**

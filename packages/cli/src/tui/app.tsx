@@ -91,8 +91,9 @@ export function App(props: AppProps) {
       <TuiConfigProvider config={props.config}>
         <KVProvider>
           <ThemeProvider mode="dark">
-            <KeybindingSetup>
-              <GlobalExitHandler>
+            <ToastProvider>
+              <KeybindingSetup>
+                <GlobalExitHandler>
                 <SDKProvider
                   url={props.url}
                   directory={props.directory}
@@ -102,10 +103,9 @@ export function App(props: AppProps) {
                   events={props.events}
                 >
                   <ArgsProvider {...props.args}>
-                    <ToastProvider>
-                      <AppStateProvider>
-                        <LocalProvider>
-                          <RouteProvider>
+                    <AppStateProvider>
+                      <LocalProvider>
+                        <RouteProvider>
                             <DialogProvider>
                               <PromptRefProvider>
                                 <SessionProvider>
@@ -118,11 +118,11 @@ export function App(props: AppProps) {
                           </RouteProvider>
                         </LocalProvider>
                       </AppStateProvider>
-                    </ToastProvider>
                   </ArgsProvider>
                 </SDKProvider>
               </GlobalExitHandler>
             </KeybindingSetup>
+            </ToastProvider>
           </ThemeProvider>
         </KVProvider>
       </TuiConfigProvider>
