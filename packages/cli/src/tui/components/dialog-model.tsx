@@ -12,17 +12,14 @@ import { DialogSelect } from "../ui/dialog-select"
 import { DialogProvider, useDialogProviderOptions } from "./dialog-provider"
 
 export function useConnected() {
-  const providers = useAppState(selectProviders())
-  return useMemo(() => {
-    return providers.some(
-      (x) => x.id !== "google-code-assist" || Object.values(x.models).some((y) => y.cost?.input !== 0),
-    )
-  }, [providers])
+  const connected = useAppState((s) => s.provider_next.connected)
+  return connected.length > 0
 }
 
 export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
   const availableProviders = useAppState(selectProviders())
+  const syncConnected = useAppState((s) => s.provider_next.connected)
   const dialog = useDialog()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
@@ -80,6 +77,7 @@ export function DialogModel(props: { providerID?: string }) {
 
     const providerOptions = pipe(
       availableProviders,
+      filter((provider) => (props.providerID ? provider.id === props.providerID : syncConnected.includes(provider.id))),
       sortBy(
         (provider) => (provider.id !== "google-code-assist" ? 1 : 0),
         (provider) => provider.name,
@@ -127,7 +125,8 @@ export function DialogModel(props: { providerID?: string }) {
           .map((option) => ({
             ...option,
             value: { providerID: option.value, modelID: "" }, // Type coercion
-            category: "Popular providers",
+            category: "Connect a provider",
+            onSelect: () => dialog.replace(() => <DialogProvider />),
           }))
           .slice(0, 6)
       : []

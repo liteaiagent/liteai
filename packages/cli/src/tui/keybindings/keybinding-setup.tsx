@@ -157,8 +157,16 @@ function GlobalSelectionInterceptor() {
     // where any keystroke clears the highlight.
     // Skip wheel events and navigational keys (shift+arrow)
     if (key.wheelUp || key.wheelDown) return
-    
-    const isNav = key.leftArrow || key.rightArrow || key.upArrow || key.downArrow || key.home || key.end || key.pageUp || key.pageDown
+
+    const isNav =
+      key.leftArrow ||
+      key.rightArrow ||
+      key.upArrow ||
+      key.downArrow ||
+      key.home ||
+      key.end ||
+      key.pageUp ||
+      key.pageDown
     if (isNav && (key.shift || key.meta)) return
 
     selection.clearSelection()

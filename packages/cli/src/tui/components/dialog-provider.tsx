@@ -150,6 +150,7 @@ function MethodRunner({
     <DialogPrompt
       title={prompt.message}
       placeholder={prompt.placeholder}
+      onCancel={() => dialog.clear()}
       onConfirm={(value) => {
         setInputs((prev) => ({ ...prev, [prompt.key]: value }))
         setStep((s) => s + 1)
@@ -336,6 +337,7 @@ function CodeMethod({
     <DialogPrompt
       title={title}
       placeholder="Enter JSON"
+      onCancel={() => dialog.clear()}
       onConfirm={async (value) => {
         const { error: err } = await sdk.client.provider.oauth.callback({
           providerID,
@@ -385,6 +387,7 @@ function ApiMethod({ providerID, title }: { providerID: string; title: string })
       title={title}
       placeholder="API key"
       description={description}
+      onCancel={() => dialog.clear()}
       onConfirm={async (value) => {
         if (!value) return
         await sdk.client.auth.set({

@@ -84,6 +84,7 @@ export function LocalProvider({ children }: { children: React.ReactNode }) {
   const syncAgent = useAppState((s) => s.agent)
   const syncConfig = useAppState((s) => s.config)
   const syncProviderDefault = useAppState((s) => s.provider_default)
+  const syncConnected = useAppState((s) => s.provider_next.connected)
   const syncMcp = useAppState((s) => s.mcp)
   const syncReady = useAppState((s) => s.status !== "loading")
 
@@ -181,14 +182,18 @@ export function LocalProvider({ children }: { children: React.ReactNode }) {
       if (isModelValid(item)) return item
     }
 
-    const provider = syncProvider[0]
+    // Only fall back to providers that are actually connected/authenticated.
+    // Without this filter, the footer displays model names from unconnected
+    // providers (e.g. "gemini-3-pro-preview") that fail on submit.
+    const connectedProviders = syncProvider.filter((p) => syncConnected.includes(p.id))
+    const provider = connectedProviders[0]
     if (!provider) return undefined
     const defaultModel = syncProviderDefault[provider.id]
     const firstModel = Object.values(provider.models)[0]
     const modelID = defaultModel ?? firstModel?.id
     if (!modelID) return undefined
     return { providerID: provider.id, modelID }
-  }, [args.model, syncConfig.model, syncProvider, syncProviderDefault, state.model.recent, isModelValid])
+  }, [args.model, syncConfig.model, syncProvider, syncProviderDefault, syncConnected, state.model.recent, isModelValid])
 
   const currentAgent = useMemo(() => {
     return agents.find((x) => x.name === state.agent.current) ?? agents[0]

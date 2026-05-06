@@ -1,5 +1,7 @@
-import { Box } from "@liteai/ink"
+import { Box, TerminalSizeContext } from "@liteai/ink"
 import type React from "react"
+import { useContext } from "react"
+import { DialogContext } from "../../context/dialog.tsx"
 import type { ThemeColors } from "../../context/theme.tsx"
 import { useIsInsideModal } from "../../ui/dialog.tsx"
 import { Divider } from "./Divider.tsx"
@@ -46,9 +48,19 @@ export function Pane({ children, color }: PaneProps): React.ReactNode {
       </Box>
     )
   }
+  const dialogCtx = useContext(DialogContext)
+  const terminalSize = useContext(TerminalSizeContext)
+  const currentColumns = terminalSize?.columns ?? 80
+
+  // If inside a DialogProvider, the actual box is constrained.
+  // The max width of a dialog is currentColumns - 2.
+  const dialogWidth = dialogCtx
+    ? Math.min(dialogCtx.size === "large" ? 80 : 60, Math.max(0, currentColumns - 2))
+    : undefined
+
   return (
     <Box flexDirection="column" paddingTop={1}>
-      <Divider color={color} />
+      <Divider color={color} width={dialogWidth} />
       <Box flexDirection="column" paddingX={2}>
         {children}
       </Box>

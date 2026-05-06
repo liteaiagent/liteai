@@ -104,8 +104,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const submit = useCallback(
     async (input: string, mode: PromptInputMode, attachments?: FilePartInput[]) => {
-      const activeSessionID = await ensureSession()
+      // ── Pre-flight model validation ─────────────────────────────────
+      // Validate model availability *before* session creation so the error
+      // surfaces on the current page (e.g. home) instead of navigating to
+      // an empty session page that immediately shows a "model not found" error.
       const model = local.model.current()
+      if (!model) {
+        toast.show({
+          variant: "error",
+          message: "No model selected. Use /models to configure a provider and model.",
+          duration: 5000,
+        })
+        return
+      }
+
+      const activeSessionID = await ensureSession()
       const agent = local.agent.current()
 
       // ── Slash command routing ──────────────────────────────────────
@@ -172,7 +185,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }))
       }
     },
-    [ensureSession, sdk, local, commands, setState],
+    [ensureSession, sdk, local, commands, setState, toast],
   )
 
   // ── Abort ─────────────────────────────────────────────────────────────

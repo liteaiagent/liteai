@@ -21,7 +21,7 @@ export type DialogContextType = {
   setSize: (size: DialogSize) => void
 }
 
-const DialogContext = createContext<DialogContextType | null>(null)
+export const DialogContext = createContext<DialogContextType | null>(null)
 
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [stack, setStack] = useState<DialogItem[]>([])

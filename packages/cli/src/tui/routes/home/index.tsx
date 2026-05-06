@@ -6,6 +6,7 @@ import { useMemo } from "react"
 import { useExitState } from "../../components/global-exit-handler"
 import { Logo } from "../../components/logo"
 import { PromptInput } from "../../components/prompt/prompt-input"
+import { ProviderSetupBanner } from "../../components/provider-setup-banner"
 import { Tips } from "../../components/tips"
 import { useTheme } from "../../context/theme"
 import { useIdleWindowTitle } from "../../hooks/use-window-title"
@@ -19,6 +20,8 @@ function getFolderName(dir: string): string {
 export function HomeRoute({ workspaceID }: { workspaceID: string }) {
   const directory = useAppState((s) => s.path.directory)
   const mcp = useAppState((s) => s.mcp)
+  const connectedProviders = useAppState((s) => s.provider_next.connected)
+  const hasConnectedProvider = connectedProviders.length > 0
   const { theme } = useTheme()
   const exitState = useExitState()
 
@@ -51,11 +54,17 @@ export function HomeRoute({ workspaceID }: { workspaceID: string }) {
       <Box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
         <Logo />
         <Box height={1} />
-        <Box width="100%" maxWidth={80}>
-          <PromptInput workspaceID={workspaceID} hint={hint} debug={false} verbose={false} isLoading={false} />
-        </Box>
-        <Box height={2} />
-        <Tips />
+        {hasConnectedProvider ? (
+          <>
+            <Box width="100%" maxWidth={80}>
+              <PromptInput workspaceID={workspaceID} hint={hint} debug={false} verbose={false} isLoading={false} />
+            </Box>
+            <Box height={2} />
+            <Tips />
+          </>
+        ) : (
+          <ProviderSetupBanner />
+        )}
       </Box>
 
       <Box

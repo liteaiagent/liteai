@@ -1,8 +1,9 @@
 import type { Color } from "@liteai/ink"
-import { Box, TerminalSizeContext, Text, useInput } from "@liteai/ink"
+import { Box, TerminalSizeContext, Text } from "@liteai/ink"
 import fuzzysort from "fuzzysort"
 import type React from "react"
 import { useContext, useEffect, useImperativeHandle, useMemo, useState } from "react"
+import { TextInput } from "../components/text-input"
 import type { DialogContextType } from "../context/dialog"
 import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"
@@ -174,19 +175,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     { context: "Select" },
   )
 
-  useInput((input, _key, event) => {
-    if (!event) return
-
-    if (_key.backspace || _key.delete) {
-      setQuery((q) => q.slice(0, -1))
-      return
-    }
-
-    if (input) {
-      setQuery((q) => q + input)
-    }
-  })
-
   // Slicing logic for scrolling
   const terminalHeight = terminalSize?.rows || 24
   const maxListHeight = Math.floor(terminalHeight / 2) - 6
@@ -275,9 +263,15 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           <Text color={theme.textMuted as Color}>esc</Text>
         </Box>
         <Box paddingTop={1}>
-          <Box flexDirection="row" borderStyle="round" paddingX={1} borderColor="ansi:blue">
-            <Text>{query || <Text dim>{props.placeholder ?? "Search"}</Text>}</Text>
-            <Text color={theme.primary as Color}>█</Text>
+          <Box borderStyle="round" paddingX={1} borderColor="ansi:blue" width="100%">
+            <TextInput
+              value={query}
+              onChange={setQuery}
+              placeholder={props.placeholder ?? "Search"}
+              disableCursorMovementForUpDownKeys={true}
+              disableEscapeDoublePress={true}
+              focus={true}
+            />
           </Box>
         </Box>
       </Box>

@@ -1,6 +1,7 @@
-import { Box, Text, useInput } from "@liteai/ink"
+import { Box } from "@liteai/ink"
 import type React from "react"
 import { useState } from "react"
+import { TextInput } from "../components/text-input"
 import { Dialog } from "./dialog"
 
 export type DialogPromptProps = {
@@ -22,27 +23,19 @@ export function DialogPrompt({
 }: DialogPromptProps): React.ReactNode {
   const [input, setInput] = useState(value)
 
-  useInput((char, _key) => {
-    if (_key.return) {
-      onConfirm?.(input)
-      return
-    }
-    if (_key.backspace || _key.delete) {
-      setInput((prev) => prev.slice(0, -1))
-      return
-    }
-    if (char) {
-      setInput((prev) => prev + char)
-    }
-  })
-
   return (
     <Dialog title={title} onCancel={() => onCancel?.()} isCancelActive>
       <Box flexDirection="column" gap={1} paddingBottom={1}>
         {description && <Box>{description}</Box>}
-        <Box flexDirection="row" borderStyle="round" paddingX={1} borderColor="ansi:blue">
-          <Text>{input || <Text dim>{placeholder}</Text>}</Text>
-          <Text>█</Text>
+        <Box borderStyle="round" paddingX={1} borderColor="ansi:blue" width="100%">
+          <TextInput
+            value={input}
+            onChange={setInput}
+            placeholder={placeholder}
+            onSubmit={(val: string) => onConfirm?.(val)}
+            focus={true}
+            disableEscapeDoublePress={true}
+          />
         </Box>
       </Box>
     </Dialog>

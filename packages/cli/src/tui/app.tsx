@@ -94,18 +94,18 @@ export function App(props: AppProps) {
             <ToastProvider>
               <KeybindingSetup>
                 <GlobalExitHandler>
-                <SDKProvider
-                  url={props.url}
-                  directory={props.directory}
-                  projectID={props.projectID}
-                  fetch={props.fetch}
-                  headers={props.headers}
-                  events={props.events}
-                >
-                  <ArgsProvider {...props.args}>
-                    <AppStateProvider>
-                      <LocalProvider>
-                        <RouteProvider>
+                  <SDKProvider
+                    url={props.url}
+                    directory={props.directory}
+                    projectID={props.projectID}
+                    fetch={props.fetch}
+                    headers={props.headers}
+                    events={props.events}
+                  >
+                    <ArgsProvider {...props.args}>
+                      <AppStateProvider>
+                        <LocalProvider>
+                          <RouteProvider>
                             <DialogProvider>
                               <PromptRefProvider>
                                 <SessionProvider>
@@ -118,10 +118,10 @@ export function App(props: AppProps) {
                           </RouteProvider>
                         </LocalProvider>
                       </AppStateProvider>
-                  </ArgsProvider>
-                </SDKProvider>
-              </GlobalExitHandler>
-            </KeybindingSetup>
+                    </ArgsProvider>
+                  </SDKProvider>
+                </GlobalExitHandler>
+              </KeybindingSetup>
             </ToastProvider>
           </ThemeProvider>
         </KVProvider>
