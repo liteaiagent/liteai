@@ -1,4 +1,5 @@
 import type { AssistantMessage, Message, Part, ToolPart } from "@liteai/sdk"
+import { enableMapSet } from "immer"
 import { useEffect, useMemo } from "react"
 import { useStore } from "zustand"
 import { immer } from "zustand/middleware/immer"
@@ -6,6 +7,8 @@ import { createStore } from "zustand/vanilla"
 import { useLocal } from "../context/local"
 import { useSDK } from "../context/sdk"
 import { selectMessages, useAppState } from "../state"
+
+enableMapSet()
 
 export type ModelMetrics = {
   modelID: string
