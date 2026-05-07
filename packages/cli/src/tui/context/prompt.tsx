@@ -1,5 +1,5 @@
 import type React from "react"
-import { createContext, useContext, useMemo, useState } from "react"
+import { createContext, useContext, useRef } from "react"
 import type { PromptInfo } from "../types"
 
 export type PromptRef = {
@@ -30,19 +30,24 @@ export function usePromptRef(): PromptRefContextValue {
 }
 
 export function PromptRefProvider({ children }: { children?: React.ReactNode }) {
-  const [current, setCurrent] = useState<PromptRef | undefined>()
+  // Use useRef instead of useState: PromptRef is an imperative handle
+  // (a bag of callbacks), not declarative state. Storing it in useState
+  // caused an infinite render loop:
+  //   PromptInput useEffect → set(newObj) → setCurrent → provider re-renders
+  //   → new context value → consumers re-render → effect fires again → ∞
+  // useRef holds the value without triggering re-renders.
+  const ref = useRef<PromptRef | undefined>(undefined)
 
-  const value = useMemo(
-    () => ({
-      get current() {
-        return current
-      },
-      set(ref: PromptRef | undefined) {
-        setCurrent(ref)
-      },
-    }),
-    [current],
-  )
+  // Stable context value — created once, never changes identity.
+  // Consumers read `current` imperatively via the getter.
+  const valueRef = useRef<PromptRefContextValue>({
+    get current() {
+      return ref.current
+    },
+    set(promptRef: PromptRef | undefined) {
+      ref.current = promptRef
+    },
+  })
 
-  return <PromptRefContext.Provider value={value}>{children}</PromptRefContext.Provider>
+  return <PromptRefContext.Provider value={valueRef.current}>{children}</PromptRefContext.Provider>
 }

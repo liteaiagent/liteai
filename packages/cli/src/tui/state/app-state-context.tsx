@@ -35,7 +35,14 @@ export function useAppStoreContext(): AppStore<AppState> {
 
 export function useAppState<R>(selector: (state: AppState) => R): R {
   const store = useAppStoreContext()
-  const getSnapshot = useCallback(() => selector(store.getState()), [selector, store])
+  // Store selector in a ref so getSnapshot's identity is stable across renders.
+  // Without this, inline arrow selectors (the universal usage pattern) cause
+  // useCallback to create a new getSnapshot every render, forcing
+  // useSyncExternalStore to re-subscribe — unnecessary churn under high
+  // re-render frequency.
+  const selectorRef = useRef(selector)
+  selectorRef.current = selector
+  const getSnapshot = useCallback(() => selectorRef.current(store.getState()), [store])
   return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot)
 }
 
