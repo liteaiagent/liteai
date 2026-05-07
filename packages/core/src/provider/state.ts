@@ -9,7 +9,13 @@ import { Config } from "../config/config"
 import { Flag } from "../flag/flag"
 import { Instance } from "../project/instance"
 import { lazy } from "../util/lazy"
-import { CUSTOM_LOADERS, type ModelLoader, type VarsLoader } from "./loaders"
+import {
+  buildDynamicModels,
+  CUSTOM_LOADERS,
+  fetchOpenAICompatibleModels,
+  type ModelLoader,
+  type VarsLoader,
+} from "./loaders"
 import { ModelsDev } from "./models"
 import type { Provider } from "./provider"
 import { ModelID, ProviderID } from "./schema"
@@ -129,6 +135,18 @@ function registerAi4all(database: Record<string, Provider.Info>) {
     env: ["AI4ALL_API_KEY"],
     options: {},
     source: "env",
+    models: {},
+  }
+}
+
+function registerLmstudio(database: Record<string, Provider.Info>) {
+  const pid = ProviderID.make("lmstudio")
+  database.lmstudio = {
+    id: pid,
+    name: "LM Studio",
+    env: [],
+    options: {},
+    source: "custom",
     models: {},
   }
 }
@@ -328,6 +346,49 @@ async function loadPlugins(
   }
 }
 
+/**
+ * Resolve dynamic models for a provider using the `dynamicModels` config.
+ * Fetches from the provider's OpenAI-compatible /v1/models endpoint, builds
+ * Provider.Model entries enriched with models.dev capability data where available.
+ * Returns the built models, or undefined if fetch failed.
+ */
+async function resolveDynamicModels(
+  providerID: ProviderID,
+  dynamicModels: NonNullable<import("./loaders").LoaderResult["dynamicModels"]>,
+  resolvedKey: string | undefined,
+  providerApiUrl: string | undefined,
+  providerNpm: string | undefined,
+  database: Record<string, Provider.Info>,
+): Promise<Record<string, Provider.Model> | undefined> {
+  const baseUrl = dynamicModels.baseUrl ?? providerApiUrl
+  if (!baseUrl) {
+    log.warn("dynamicModels: no base URL available for fetch", { providerID })
+    return undefined
+  }
+
+  const npm = providerNpm ?? "@ai-sdk/openai-compatible"
+  const apiKey = dynamicModels.apiKey ?? resolvedKey
+
+  const ids = await fetchOpenAICompatibleModels(baseUrl, {
+    apiKey,
+    timeout: dynamicModels.timeout,
+    headers: dynamicModels.headers,
+  })
+
+  if (ids) {
+    log.info("dynamicModels: fetched models from API", { providerID, count: ids.length })
+    return buildDynamicModels(ids, providerID, npm, baseUrl, database)
+  }
+
+  // Fetch failed — try fallback model IDs if provided
+  if (dynamicModels.fallbackModelIds && dynamicModels.fallbackModelIds.length > 0) {
+    log.info("dynamicModels: using fallback model IDs", { providerID, count: dynamicModels.fallbackModelIds.length })
+    return buildDynamicModels(dynamicModels.fallbackModelIds, providerID, npm, baseUrl, database)
+  }
+
+  return undefined
+}
+
 async function loadCustom(
   database: Record<string, Provider.Info>,
   providers: Record<string, Provider.Info>,
@@ -353,22 +414,115 @@ async function loadCustom(
     if (result && (result.autoload || providers[providerID])) {
       if (result.getModel) modelLoaders[providerID] = result.getModel
       if (result.vars) varsLoaders[providerID] = result.vars
-      // If the loader provides a model list, merge into the database entry.
-      // Loader models are set first; any config-defined models override for same IDs.
+
       let mergedModels: Record<string, Provider.Model> | undefined
-      if (result.models && Object.keys(result.models).length > 0) {
+
+      // Dynamic models: orchestrator-driven fetch from /v1/models
+      if (result.dynamicModels) {
+        const resolvedKey = providers[providerID]?.key ?? data.key
+        const providerApiUrl = data.options?.api ?? data.options?.baseURL
+        const providerNpm = Object.values(data.models)[0]?.api?.npm
+        const dynamicResult = await resolveDynamicModels(
+          providerID,
+          result.dynamicModels,
+          resolvedKey,
+          providerApiUrl,
+          providerNpm,
+          database,
+        )
+        if (dynamicResult) {
+          mergedModels = dynamicResult
+        }
+      }
+
+      // If dynamic fetch didn't produce models, fall back to loader-supplied models
+      if (!mergedModels && result.models && Object.keys(result.models).length > 0) {
         mergedModels = { ...result.models }
+      }
+
+      // If we have models (from dynamic fetch or static loader), merge into database
+      if (mergedModels && Object.keys(mergedModels).length > 0) {
         database[providerID] = {
           ...database[providerID],
           models: mergedModels,
         }
-        log.info("loader provided models", { providerID, count: Object.keys(result.models).length })
+        log.info("loader provided models", { providerID, count: Object.keys(mergedModels).length })
       }
+
       const opts = result.options ?? {}
       const patch: Partial<Provider.Info> = providers[providerID]
         ? { options: opts, ...(mergedModels && { models: mergedModels }) }
         : { source: data.source ?? "custom", options: opts }
       merge(providerID, patch)
+    }
+  }
+}
+
+/**
+ * Load dynamic models for config-only providers (those that have `dynamicModels`
+ * set in config but don't have a custom loader).
+ */
+async function loadConfigDynamicModels(
+  config: Awaited<ReturnType<typeof Config.get>>,
+  database: Record<string, Provider.Info>,
+  providers: Record<string, Provider.Info>,
+  disabled: Set<string>,
+  merge: (id: ProviderID, patch: Partial<Provider.Info>) => void,
+) {
+  for (const [id, providerConfig] of Object.entries(config.provider ?? {})) {
+    const providerID = ProviderID.make(id)
+    if (disabled.has(providerID)) continue
+
+    // Skip providers that already have a custom loader — those are handled in loadCustom
+    if (CUSTOM_LOADERS[id]) continue
+
+    // Check if this config provider has dynamicModels enabled
+    const dynamicConfig = providerConfig.dynamicModels
+    if (!dynamicConfig) continue
+
+    const baseUrl = providerConfig.api ?? providerConfig.options?.baseURL
+    if (!baseUrl) {
+      log.warn("config dynamicModels: no api URL configured", { providerID })
+      continue
+    }
+
+    const timeout = typeof dynamicConfig === "object" ? dynamicConfig.timeout : undefined
+    const resolvedKey = providers[providerID]?.key ?? providerConfig.options?.apiKey
+    const npm = providerConfig.npm ?? "@ai-sdk/openai-compatible"
+
+    const dynamicResult = await resolveDynamicModels(
+      providerID,
+      { baseUrl, apiKey: resolvedKey, timeout },
+      resolvedKey,
+      baseUrl,
+      npm,
+      database,
+    )
+
+    if (dynamicResult && Object.keys(dynamicResult).length > 0) {
+      // Ensure the provider exists in the database
+      if (!database[providerID]) {
+        database[providerID] = {
+          id: providerID,
+          name: providerConfig.name ?? id,
+          env: providerConfig.env ?? [],
+          options: providerConfig.options ?? {},
+          source: "config",
+          models: {},
+        }
+      }
+
+      database[providerID] = {
+        ...database[providerID],
+        models: dynamicResult,
+      }
+
+      merge(providerID, {
+        source: "config",
+        models: dynamicResult,
+      })
+
+      log.info("config dynamicModels: fetched models", { providerID, count: Object.keys(dynamicResult).length })
     }
   }
 }
@@ -452,6 +606,7 @@ async function resolveProviders(
   registerCopilotEnterprise(database)
   registerCodeAssist(database)
   registerAi4all(database)
+  registerLmstudio(database)
 
   function merge(providerID: ProviderID, provider: Partial<Provider.Info>) {
     const existing = providers[providerID]
@@ -471,6 +626,7 @@ async function resolveProviders(
   await loadEnvAuth(database, disabled, merge, env)
   await loadPlugins(database, providers, disabled, merge)
   await loadCustom(database, providers, disabled, merge, modelLoaders, varsLoaders)
+  await loadConfigDynamicModels(config, database, providers, disabled, merge)
 
   // Copy models from `database` into `providers` before applying overrides
   for (const [id, provider] of Object.entries(database)) {

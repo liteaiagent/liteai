@@ -1,7 +1,8 @@
 import type { CustomLoader } from "./types"
 
 export { BUNDLED_PROVIDERS } from "./bundled"
-export type { CustomLoader, LoaderInput, LoaderResult, ModelLoader, VarsLoader } from "./types"
+export { buildDynamicModels, fetchOpenAICompatibleModels } from "./openai-compat-fetch"
+export type { CustomLoader, DynamicModelsConfig, LoaderInput, LoaderResult, ModelLoader, VarsLoader } from "./types"
 
 import { ai4all } from "./ai4all"
 import { amazonBedrock } from "./amazon-bedrock"
@@ -14,6 +15,7 @@ import { gitlab } from "./gitlab"
 import { googleCodeAssist } from "./google-code-assist"
 import { googleVertex, googleVertexAnthropic } from "./google-vertex"
 import { kilo } from "./kilo"
+import { lmstudio } from "./lmstudio"
 import { openai } from "./openai"
 import { opencode } from "./opencode"
 import { openrouter } from "./openrouter"
@@ -43,4 +45,5 @@ export const CUSTOM_LOADERS: Record<string, CustomLoader> = {
   kilo,
   "google-code-assist": googleCodeAssist,
   ai4all,
+  lmstudio,
 }

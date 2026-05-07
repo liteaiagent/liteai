@@ -327,6 +327,25 @@ export const Provider = ModelsDev.Provider.partial()
   .extend({
     whitelist: z.array(z.string()).optional(),
     blacklist: z.array(z.string()).optional(),
+    dynamicModels: z
+      .union([
+        z.boolean().describe("Enable dynamic model fetching from the provider's /v1/models endpoint"),
+        z
+          .object({
+            timeout: z
+              .number()
+              .int()
+              .positive()
+              .optional()
+              .describe("Request timeout in milliseconds for the /v1/models endpoint. Default: 5000"),
+          })
+          .strict(),
+      ])
+      .optional()
+      .describe(
+        "Enable dynamic model fetching from the provider's OpenAI-compatible /v1/models endpoint. " +
+          "When enabled, the model list is fetched directly from the provider's API instead of using the static models.dev registry.",
+      ),
     models: z
       .record(
         z.string(),

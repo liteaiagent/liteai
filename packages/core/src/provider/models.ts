@@ -121,6 +121,14 @@ export namespace ModelsDev {
         models: {},
       }
     }
+    if (!providers.lmstudio) {
+      providers.lmstudio = {
+        id: "lmstudio",
+        name: "LM Studio",
+        env: [],
+        models: {},
+      }
+    }
     return providers
   }
 
