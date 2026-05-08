@@ -17,7 +17,7 @@
 import type { FilePartInput, TextPartInput } from "@liteai/sdk"
 import { Log } from "@liteai/util/log"
 import type React from "react"
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { selectIsWorking, useAppState, useSetAppState } from "../state"
 import type { PromptInputMode } from "../types/text-input"
 import { useLocal } from "./local"
@@ -58,6 +58,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Track session ID: either from route (resuming) or auto-created
   const initialSessionID = route.data.type === "session" ? route.data.sessionID : undefined
   const [createdSessionID, setCreatedSessionID] = useState<string | undefined>(undefined)
+  
+  useEffect(() => {
+    if (route.data.type === "home") {
+      setCreatedSessionID(undefined)
+    }
+  }, [route.data.type])
+
   const sessionID = initialSessionID ?? createdSessionID
 
   // Guard against concurrent session creation

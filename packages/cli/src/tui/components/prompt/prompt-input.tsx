@@ -131,7 +131,7 @@ export const TUI_COMMANDS: Command[] = [
   },
   { name: "mcp", description: "Manage Model Context Protocol servers", template: "", hints: [] },
   { name: "models", description: "Change the current AI model", template: "", hints: [] },
-  { name: "new", description: "Start a new conversation session", template: "", hints: [] },
+  { name: "clear", description: "Start a new conversation session", template: "", hints: [] },
   { name: "permissions", description: "View pending permission requests", template: "", hints: [] },
   { name: "plan", description: "Toggle plan mode (think before acting)", template: "", hints: [] },
   { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
@@ -383,7 +383,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       mcp: () => dialog.push(() => <DialogMcp />),
       memory: () => dialog.push(() => <DialogMemory />),
       models: () => dialog.push(() => <DialogModel />),
-      new: () => route.navigate({ type: "home" }),
+      clear: () => route.navigate({ type: "home" }),
       permissions: () => dialog.push(() => <DialogPermissions />),
       plan: () => {
         const sid = session.sessionID

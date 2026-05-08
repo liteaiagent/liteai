@@ -83,7 +83,7 @@ const TIPS = [
   "Press [chat:externalEditor|Chat|Ctrl+X E] or {highlight}/editor{/highlight} to compose messages in your external editor",
   "Run {highlight}/init{/highlight} to auto-generate project rules based on your codebase",
   "Run {highlight}/models{/highlight} or [chat:modelPicker|Chat|Ctrl+X M] to see and switch between available AI models",
-  "Press [chat:newSession|Chat|Ctrl+X N] or {highlight}/new{/highlight} to start a fresh conversation session",
+  "Press [chat:newSession|Chat|Ctrl+X N] or {highlight}/clear{/highlight} to start a fresh conversation session",
   "Use {highlight}/sessions{/highlight} or [chat:sessionList|Chat|Ctrl+X L] to list and continue previous conversations",
   "Run {highlight}/compact{/highlight} to summarize long sessions near context limits",
   "Press {highlight}Ctrl+X X{/highlight} or {highlight}/export{/highlight} to save the conversation as Markdown",
