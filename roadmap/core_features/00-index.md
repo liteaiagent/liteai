@@ -15,6 +15,7 @@
 | 03 | [Providers & Models](./03-providers.md) | Provider loaders, model registry, auth, SDK transforms | 🔶 |
 | 04 | [Server & API](./04-server-api.md) | HTTP server, routes, middleware, SSE, OpenAPI | 🔶 |
 | 05 | [Infrastructure](./05-infrastructure.md) | Storage, telemetry, project, control-plane, worktree, isolation, LSP | 🔶 |
+| 06 | [Context & Memory](./06-context-memory.md) | Context instructions (AGENTS.md), agent memory, conversation history, skills extraction | 🔶 |
 
 ---
 
@@ -24,6 +25,7 @@ Complete scan of `packages/core/src/` — every top-level module with its docume
 
 | Module | Path | Document | Files |
 |---|---|---|---|
+| `session/engine/instruction.ts` | `src/session/engine/` | [06-context](./06-context-memory.md) | `instruction.ts` |
 | `session/` | `src/session/` | [01-engine](./01-engine.md) | `index.ts`, `llm.ts`, `message.ts`, `plan-mode-state.ts`, `processor.ts`, `retry.ts`, `revert.ts`, `schema.ts`, `session.sql.ts`, `status.ts`, `step-back.ts`, `todo.ts`, `transcript.ts`, `events.ts` |
 | `session/engine/` | `src/session/engine/` | [01-engine](./01-engine.md) | `loop.ts`, `query.ts`, `persister.ts`, `pipeline.ts`, `input.ts`, `instruction.ts`, `system.ts`, `tools.ts`, `shell.ts`, `command.ts`, `namespace.ts`, `section-parser.ts`, `section-registry.ts`, `streaming-tool-executor.ts`, `compaction-orchestrator.ts`, `correction-injector.ts`, `loop-detection.ts`, `thinking-loop-detector.ts`, `stop-drift.ts`, `plan-reminder.ts`, `telemetry.ts` |
 | `session/engine/loop/` | `src/session/engine/loop/` | [01-engine](./01-engine.md) | `checkpoint-store.ts`, `checkpointer.ts`, `promise-tracker.ts`, `step-latch.ts` |
@@ -32,11 +34,14 @@ Complete scan of `packages/core/src/` — every top-level module with its docume
 | `tool/` | `src/tool/` | [01-engine](./01-engine.md) | 31 tool files, `registry.ts`, `schema.ts`, `tool.ts` |
 | `mcp/` | `src/mcp/` | [02-addon](./02-addon-config.md) | `index.ts`, `loader.ts`, `auth.ts`, `agent-mcp.ts`, `oauth-callback.ts`, `oauth-provider.ts` |
 | `plugin/` | `src/plugin/` | [02-addon](./02-addon-config.md) | `index.ts`, `loader.ts`, `registry.ts`, `cache.ts`, `download.ts`, `env.ts`, `manifest.ts`, `marketplace-source.ts`, `marketplace.ts`, `mount.ts`, `types.ts` |
-| `agent/` | `src/agent/` | [02-addon](./02-addon-config.md) | `agent.ts`, `agent-meta.ts`, `cleanup.ts`, `context.ts`, `errors.ts`, `events.ts`, `filter.ts`, `fork.ts`, `lifecycle.ts`, `loader.ts`, `memory.ts`, `policy.ts`, `resume.ts`, `runner.ts`, `writer.ts` |
+| `agent/` | `src/agent/` | [02-addon](./02-addon-config.md) | `agent.ts`, `agent-meta.ts`, `cleanup.ts`, `context.ts`, `errors.ts`, `events.ts`, `filter.ts`, `fork.ts`, `lifecycle.ts`, `loader.ts`, `policy.ts`, `resume.ts`, `runner.ts`, `writer.ts` |
+| `agent/memory.ts` | `src/agent/` | [06-context](./06-context-memory.md) | `memory.ts` |
 | `skill/` | `src/skill/` | [02-addon](./02-addon-config.md) | `discovery.ts`, `loader.ts`, `skill.ts`, `substitute.ts` |
 | `hook/` | `src/hook/` | [02-addon](./02-addon-config.md) | `command.ts`, `hook.ts`, `http.ts`, `loader.ts` |
 | `command/` | `src/command/` | [02-addon](./02-addon-config.md) | `background.ts`, `index.ts`, `loader.ts`, `semantics.ts` |
 | `bundled/` | `src/bundled/` | [02-addon](./02-addon-config.md) | `agents/` (7 agents), `commands/` (2), `skills/` (2), `prompts/` (5 dirs) |
+| `platform/` | `src/platform/` | [06-context](./06-context-memory.md) | `index.ts`, `profile.ts`, `profiles/` |
+| `tool/memory.ts` | `src/tool/` | [06-context](./06-context-memory.md) | `memory.ts` |
 | `provider/` | `src/provider/` | [03-providers](./03-providers.md) | `provider.ts`, `state.ts`, `sdk.ts`, `models.ts`, `auth.ts`, `auth-service.ts`, `error.ts`, `schema.ts`, `sse.ts`, `transform.ts` |
 | `provider/loaders/` | `src/provider/loaders/` | [03-providers](./03-providers.md) | 20+ provider loaders (anthropic, openai, google, bedrock, copilot, etc.) |
 | `provider/sdk/` | `src/provider/sdk/` | [03-providers](./03-providers.md) | `code-assist/`, `copilot/` |
@@ -69,7 +74,6 @@ Complete scan of `packages/core/src/` — every top-level module with its docume
 | `question/` | `src/question/` | [01-engine](./01-engine.md) | `index.ts`, `schema.ts`, `service.ts` |
 | `patch/` | `src/patch/` | [01-engine](./01-engine.md) | `index.ts` (21KB) |
 | `ide/` | `src/ide/` | [05-infra](./05-infrastructure.md) | `index.ts` |
-| `platform/` | `src/platform/` | [05-infra](./05-infrastructure.md) | `index.ts`, `profile.ts`, `profiles/` |
 | `installation/` | `src/installation/` | [05-infra](./05-infrastructure.md) | `index.ts` |
 | `global/` | `src/global/` | [05-infra](./05-infrastructure.md) | `index.ts` |
 | `id/` | `src/id/` | [05-infra](./05-infrastructure.md) | — |

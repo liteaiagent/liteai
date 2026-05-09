@@ -1,6 +1,6 @@
 # LiteAI Core — Addon & Configuration Systems
 
-> **Scope:** `src/mcp/`, `src/plugin/`, `src/agent/`, `src/skill/`, `src/hook/`, `src/command/`, `src/bundled/`, `src/style/`  
+> **Scope:** `src/mcp/`, `src/plugin/`, `src/agent/` (excl. `memory.ts`), `src/skill/`, `src/hook/`, `src/command/`, `src/bundled/`, `src/style/`  
 > **Last audited:** 2026-05-09
 
 ---
@@ -63,7 +63,6 @@
 | Agent Filter | ✅ | [`agent/filter.ts`](../../packages/core/src/agent/filter.ts) |
 | Agent Fork | ✅ | [`agent/fork.ts`](../../packages/core/src/agent/fork.ts) (15KB) |
 | Agent Lifecycle | ✅ | [`agent/lifecycle.ts`](../../packages/core/src/agent/lifecycle.ts) (16KB) |
-| Agent Memory | ✅ | [`agent/memory.ts`](../../packages/core/src/agent/memory.ts) |
 | Agent Policy | ✅ | [`agent/policy.ts`](../../packages/core/src/agent/policy.ts) |
 | Agent Resume | ✅ | [`agent/resume.ts`](../../packages/core/src/agent/resume.ts) (19KB) |
 | Agent Runner | ✅ | [`agent/runner.ts`](../../packages/core/src/agent/runner.ts) (26KB) |
@@ -132,10 +131,10 @@
 |---|:---:|:---:|:---:|:---:|
 | MCP Client | 20 | 0 | 0 | 20 |
 | Plugin System | 11 | 0 | 0 | 11 |
-| Agent System | 15 | 0 | 0 | 15 |
+| Agent System | 14 | 0 | 0 | 14 |
 | Skill System | 5 | 0 | 0 | 5 |
 | Hook System | 4 | 0 | 0 | 4 |
 | Command System | 4 | 0 | 0 | 4 |
 | Bundled Assets | 1 | 0 | 0 | 1 |
 | Output Style | 1 | 0 | 0 | 1 |
-| **Total** | **61** | **0** | **0** | **61** |
+| **Total** | **60** | **0** | **0** | **60** |

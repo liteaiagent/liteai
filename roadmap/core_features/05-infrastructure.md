@@ -1,6 +1,6 @@
 # LiteAI Core — Infrastructure & Platform
 
-> **Scope:** `src/storage/`, `src/telemetry/`, `src/project/`, `src/control-plane/`, `src/worktree/`, `src/isolation/`, `src/lsp/`, `src/file/`, `src/acp/`, `src/capabilities/`, `src/auth/`, `src/account/`, `src/share/`, `src/snapshot/`, `src/scheduler/`, `src/bus/`, `src/env/`, `src/flag/`, `src/shell/`, `src/pty/`, `src/ide/`, `src/platform/`, `src/installation/`, `src/global/`, `src/id/`, `src/effect/`, `src/bun/`  
+> **Scope:** `src/storage/`, `src/telemetry/`, `src/project/`, `src/control-plane/`, `src/worktree/`, `src/isolation/`, `src/lsp/`, `src/file/`, `src/acp/`, `src/capabilities/`, `src/auth/`, `src/account/`, `src/share/`, `src/snapshot/`, `src/scheduler/`, `src/bus/`, `src/env/`, `src/flag/`, `src/shell/`, `src/pty/`, `src/ide/`, `src/installation/`, `src/global/`, `src/id/`, `src/effect/`, `src/bun/`  
 > **Last audited:** 2026-05-09
 
 ---
@@ -214,7 +214,6 @@
 | PTY Service | ✅ | [`pty/index.ts`](../../packages/core/src/pty/index.ts) |
 | PTY Schema | ✅ | [`pty/schema.ts`](../../packages/core/src/pty/schema.ts) |
 | IDE Integration | ✅ | [`ide/index.ts`](../../packages/core/src/ide/index.ts) |
-| Platform / Profiles | ✅ | [`platform/index.ts`](../../packages/core/src/platform/index.ts), [`platform/profile.ts`](../../packages/core/src/platform/profile.ts) |
 | Installation Metadata | ✅ | [`installation/index.ts`](../../packages/core/src/installation/index.ts) |
 | Global Paths | ✅ | [`global/index.ts`](../../packages/core/src/global/index.ts) |
 | Feature Flags | ✅ | [`flag/flag.ts`](../../packages/core/src/flag/flag.ts) |
@@ -245,5 +244,5 @@
 | Session Sharing | 2 | 0 | 0 | 2 |
 | Snapshot | 1 | 0 | 0 | 1 |
 | Event Bus | 4 | 0 | 0 | 4 |
-| Misc Infrastructure | 13 | 0 | 0 | 13 |
-| **Total** | **79** | **0** | **0** | **79** |
+| Misc Infrastructure | 12 | 0 | 0 | 12 |
+| **Total** | **78** | **0** | **0** | **78** |
