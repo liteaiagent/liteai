@@ -1,8 +1,8 @@
 import { Log } from "@liteai/util/log"
 import type { BackgroundTaskRegistry } from "@/command/background"
-import { Session } from ".."
 import type { Message } from "../message"
 import { MessageID, PartID, type SessionID } from "../schema"
+import type { Checkpointer } from "./loop/checkpointer"
 
 const log = Log.create({ service: "session.correction-injector" })
 
@@ -17,7 +17,10 @@ const log = Log.create({ service: "session.correction-injector" })
  * next queryLoop iteration picks them up without a DB read (FR-3).
  */
 export class CorrectionInjector {
-  constructor(private readonly sessionID: SessionID) {}
+  constructor(
+    private readonly sessionID: SessionID,
+    private readonly checkpointer: Checkpointer,
+  ) {}
 
   /**
    * Inject a correction message into the session.
@@ -40,16 +43,16 @@ export class CorrectionInjector {
       model: lastUser.model,
       time: { created: Date.now() },
     }
-    const persisted = await Session.updateMessage(correctionMsg)
+    const persisted = await this.checkpointer.saveMessage(correctionMsg)
 
-    const correctionPart = await Session.updatePart({
+    const correctionPart = await this.checkpointer.savePart({
       id: PartID.ascending(),
       messageID: (persisted as Message.User).id,
       sessionID,
       type: "text",
       text,
       synthetic: true,
-    })
+    } as Message.Part)
 
     msgsBuffer.current = [
       ...msgsBuffer.current,
@@ -119,16 +122,16 @@ export class CorrectionInjector {
       model: lastUser.model,
       time: { created: Date.now() },
     }
-    const notificationMsg = await Session.updateMessage(notificationMsgData)
+    const notificationMsg = await this.checkpointer.saveMessage(notificationMsgData)
 
-    const notificationPart = await Session.updatePart({
+    const notificationPart = await this.checkpointer.savePart({
       id: PartID.ascending(),
       messageID: (notificationMsg as Message.User).id,
       sessionID,
       type: "text",
       text: notificationText,
       synthetic: true,
-    })
+    } as Message.Part)
 
     // Append to in-memory buffer so the generator sees it on the next turn
     // without a DB read (consistent with the FR-3 buffer invariant).

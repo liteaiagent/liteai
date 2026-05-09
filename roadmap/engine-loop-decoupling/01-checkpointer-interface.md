@@ -1,8 +1,12 @@
 # Phase 1: Checkpointer Interface
 
+> **Status**: ✅ **DONE** (completed 2026-05-09)  
 > **Depends on**: Nothing  
 > **Enables**: Phase 2 (Self-Contained Loop), Phase 5 (Backward Execution)  
 > **Estimated scope**: ~8 files modified, ~3 new files
+>
+> **Implemented in**: `packages/core/src/session/engine/loop/checkpointer.ts`  
+> **What was built**: `Checkpointer` interface, `SqliteCheckpointer`, `MemoryCheckpointer`, `NoopCheckpointer`, `PersistenceOp` union type. `CheckpointStore` + `CheckpointManager` for in-memory lifecycle management. All `processSubtask()` DB writes migrated to checkpointer ops.
 
 ---
 

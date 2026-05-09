@@ -1,6 +1,6 @@
 # `@liteagent/loop` — Package Extraction Analysis
 
-> **Status**: Decisions finalized  
+> **Status**: Phases 1-3 ✅ DONE — Step 1 (Internal Module Boundary) ✅ DONE — **Ready for Step 2 (Extract to Package)**  
 > **Target package**: `@liteagent/loop` (npm) / `liteaiagent` (GitHub org)  
 > **Scope**: Forward-only agent execution loop with pluggable persistence  
 > **Strategy**: Build inside `packages/core` first, extract after Phases 1-3 are proven
@@ -22,20 +22,21 @@
 
 ## What's Extractable
 
-| Primitive | Lines (est.) | Extractable? |
-|---|---|---|
-| `Checkpointer` interface (`save`, `putWrites`, `loadHistory`, `dispose`) | ~40 | **Yes** |
-| `MemoryCheckpointer` / `NoopCheckpointer` | ~60 | **Yes** |
-| `PromiseTracker` (tracked async writes) | ~30 | **Yes** |
-| `LoopResult` type + loop status enum | ~20 | **Yes** |
-| `EventConsumer` fan-out interface | ~25 | **Yes** |
-| `LoopEvent` type (own event taxonomy) | ~40 | **Yes** |
-| AI SDK adapter (`fromStreamText`) | ~40 | **Yes** — sub-export |
-| Forward-only loop runner | ~80 | **Yes** |
-| `SqliteCheckpointer` | ~150 | **No** — tied to Drizzle schema |
-| `CompactionOrchestrator` | ~300 | **No** — deeply LiteAI-specific |
-| `EventPersister` / event classification | ~400 | **No** — tied to LiteAI event taxonomy |
-| Step-back / time-travel (Phase 5) | TBD | **No** — depends on LiteAI message schema |
+| Primitive | Lines (est.) | Extractable? | Implemented? |
+|---|---|---|---|
+| `Checkpointer` interface (`saveMessage`, `savePart`, `updateMessage`, `loadHistory`, `write`, `deletePart`, `dispose`) | ~40 | **Yes** | ✅ `loop/checkpointer.ts` |
+| `MemoryCheckpointer` / `NoopCheckpointer` | ~60 | **Yes** | ✅ `loop/checkpointer.ts` |
+| `PromiseTracker` (tracked async writes) | ~30 | **Yes** | ✅ `loop/promise-tracker.ts` |
+| `LoopResult` type + `LoopFinishReason` enum | ~20 | **Yes** | ✅ `loop/event.ts` |
+| `EventConsumer` fan-out interface | ~25 | **Yes** | ✅ `loop/event-consumer.ts` |
+| `LoopEvent` type (own event taxonomy) | ~40 | **Yes** | ✅ `loop/event.ts` |
+| `LoopMessage` / `LoopContent` / `LoopUsage` types | ~30 | **Yes** | ✅ `loop/event.ts` |
+| AI SDK adapter (`fromStreamText`) | ~40 | **Yes** — sub-export | ❌ Deferred — mapping logic exists in `processor.ts`, will be extracted not duplicated |
+| Forward-only loop runner | ~80 | **Yes** | ❌ Logic embedded in `runSessionInner` (~550 lines), needs distillation |
+| `SqliteCheckpointer` | ~150 | **No** — tied to Drizzle schema | ✅ Implemented but stays in `packages/core` |
+| `CompactionOrchestrator` | ~300 | **No** — deeply LiteAI-specific | ✅ Implemented, stays |
+| `EventPersister` / event classification | ~400 | **No** — tied to LiteAI event taxonomy | ✅ Implemented, stays |
+| Step-back / time-travel (Phase 5) | TBD | **No** — depends on LiteAI message schema | Not started |
 
 **Clean extraction boundary**: ~335 lines of universal primitives + AI SDK adapter.
 
@@ -141,18 +142,19 @@ LiteAI's `packages/core` maps `LoopEvent` ↔ `EngineEvent` at the boundary.
 
 ## Extraction Roadmap
 
-### Step 1: Internal Module Boundary (During Phases 1-3)
+### Step 1: Internal Module Boundary ✅ DONE
+
+All extractable primitives now live under `engine/loop/` with a clean barrel export:
 
 ```
 packages/core/src/session/engine/
   loop/                     ← clean directory, barrel export
-    checkpointer.ts         ← Checkpointer interface + Memory + Noop
-    promise-tracker.ts      ← PromiseTracker
+    checkpointer.ts         ← Checkpointer interface + Memory + Noop + SessionResult type
+    checkpoint-store.ts     ← CheckpointManager + CheckpointData (in-memory lifecycle)
+    event.ts                ← LoopEvent, LoopMessage, LoopContent, LoopResult, LoopFinishReason, LoopUsage
     event-consumer.ts       ← EventConsumer interface
-    event.ts                ← LoopEvent, LoopFinishReason types
-    result.ts               ← LoopResult type
-    runner.ts               ← Forward-only loop runner
-    ai-sdk.ts               ← streamText → LoopEvent adapter
+    promise-tracker.ts      ← PromiseTracker
+    step-latch.ts           ← StepPauseLatch + ResumePayload (concurrency primitive)
     index.ts                ← Public API barrel
 ```
 
@@ -232,8 +234,12 @@ graph TD
 
 ## Action Items
 
-- [X] Claim `@liteagent` org on npm
-- [X] Reserve `liteaiagent` org on GitHub
+- [x] Claim `@liteagent` org on npm
+- [x] Reserve `liteaiagent` org on GitHub
 - [x] During Phase 1-3 implementation, organize extractable code under `engine/loop/` with barrel export
-- [ ] After Phases 1-3 proven: mechanical extraction to `packages/agent-loop`
-- [ ] After LiteAI v1.0: publish `@liteagent/loop` to npm at `0.1.0`
+- [x] Complete Phase 1: Checkpointer interface + implementations (2026-05-09)
+- [x] Complete Phase 2: Self-contained loop, typed SessionResult, zero DB reads in forward path (2026-05-09)
+- [x] Complete Phase 3: PromiseTracker, EventConsumer interface, LoopEvent types, async safety (2026-05-09)
+- [x] Step 1: Internal module boundary — all extractable primitives under `engine/loop/` with barrel export (2026-05-09)
+- [ ] **Step 2: Extract to `packages/agent-loop`** — mechanical copy, add package.json, wire as workspace dep
+- [ ] Step 3: After LiteAI v1.0 — publish `@liteagent/loop` to npm at `0.1.0`

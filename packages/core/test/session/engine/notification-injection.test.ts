@@ -1,26 +1,39 @@
 import { describe, expect, mock, test } from "bun:test"
 import { type BackgroundTask, BackgroundTaskRegistry } from "../../../src/command/background"
+import { CorrectionInjector } from "../../../src/session/engine/correction-injector"
+import type { Checkpointer } from "../../../src/session/engine/loop/checkpointer"
 import type { Message } from "../../../src/session/message"
 import { MessageID, SessionID } from "../../../src/session/schema"
 
-// Mock the Session module to break the circular dependency chain:
-// test → correction-injector.ts → Session (from "..") → engine/index → namespace.ts → loop.ts (circular)
-// By mocking session/index, Bun never loads the real barrel and the cycle is broken.
-mock.module("../../../src/session/index", () => ({
-  Session: {
-    updateMessage: mock(async (msg: unknown) => msg),
-    updatePart: mock(async (part: unknown) => part),
-  },
-}))
-
-// Now we can safely import from correction-injector.ts
-const { CorrectionInjector } = await import("../../../src/session/engine/correction-injector")
+/**
+ * Creates a mock Checkpointer that stubs saveMessage/savePart as identity passthrough.
+ * These tests verify buffer behavior and call routing, not actual persistence.
+ */
+function createMockCheckpointer(): Checkpointer & {
+  saveMessageMock: ReturnType<typeof mock>
+  savePartMock: ReturnType<typeof mock>
+} {
+  const saveMessageMock = mock(async (msg: unknown) => msg)
+  const savePartMock = mock(async (part: unknown) => part)
+  return {
+    saveMessage: saveMessageMock as Checkpointer["saveMessage"],
+    savePart: savePartMock as Checkpointer["savePart"],
+    saveMessageMock,
+    savePartMock,
+    // Remaining Checkpointer methods — not exercised by CorrectionInjector
+    loadHistory: mock(async () => []),
+    write: mock(async () => {}),
+    updateMessage: mock(async (msg: unknown) => msg) as Checkpointer["updateMessage"],
+    deletePart: mock(async () => {}),
+  }
+}
 
 describe("CorrectionInjector.injectNotifications", () => {
   test("injects synthetic user message when tasks complete", async () => {
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test")
-    const injector = new CorrectionInjector(sessionID)
+    const checkpointer = createMockCheckpointer()
+    const injector = new CorrectionInjector(sessionID, checkpointer)
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
 
     const lastUser: Message.User = {
@@ -69,13 +82,18 @@ describe("CorrectionInjector.injectNotifications", () => {
     // Verify markNotified was called (idempotency/tracking check)
     const pending = registry.getUnnotifiedCompletedTasks()
     expect(pending.length).toBe(0)
+
+    // Verify checkpointer was called (not Session directly)
+    expect(checkpointer.saveMessageMock).toHaveBeenCalledTimes(1)
+    expect(checkpointer.savePartMock).toHaveBeenCalledTimes(1)
   })
 
   test("noop when no tasks completed", async () => {
     const registry = new BackgroundTaskRegistry()
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
     const sessionID = SessionID.make("test")
-    const injector = new CorrectionInjector(sessionID)
+    const checkpointer = createMockCheckpointer()
+    const injector = new CorrectionInjector(sessionID, checkpointer)
     const lastUser = { id: MessageID.make("usr"), agent: "a", model: {} } as unknown as Message.User
 
     await injector.injectNotifications({
@@ -85,20 +103,20 @@ describe("CorrectionInjector.injectNotifications", () => {
     })
 
     expect(msgsBuffer.current.length).toBe(0)
+    // Checkpointer should NOT be called when there's nothing to inject
+    expect(checkpointer.saveMessageMock).not.toHaveBeenCalled()
   })
 
   test("injection failure propagates (call-site .catch absorbs it)", async () => {
-    // Re-mock Session to throw on updateMessage
-    const { Session } = await import("../../../src/session/index")
-    const originalUpdateMessage = Session.updateMessage
-    // @ts-expect-error — overriding for test
-    Session.updateMessage = mock(async () => {
+    const checkpointer = createMockCheckpointer()
+    // Override saveMessage to throw — simulates persistence failure
+    checkpointer.saveMessage = mock(async () => {
       throw new Error("DB write failed")
-    })
+    }) as Checkpointer["saveMessage"]
 
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test-err")
-    const injector = new CorrectionInjector(sessionID)
+    const injector = new CorrectionInjector(sessionID, checkpointer)
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
     const lastUser: Message.User = {
       id: MessageID.make("usr"),
@@ -128,16 +146,13 @@ describe("CorrectionInjector.injectNotifications", () => {
 
     // Task should NOT be marked notified (markNotified is called after persist)
     expect(registry.getUnnotifiedCompletedTasks().length).toBe(1)
-
-    // Restore
-    // @ts-expect-error
-    Session.updateMessage = originalUpdateMessage
   })
 
   test("multiple completed tasks batched into one user message", async () => {
     const registry = new BackgroundTaskRegistry()
     const sessionID = SessionID.make("test-multi")
-    const injector = new CorrectionInjector(sessionID)
+    const checkpointer = createMockCheckpointer()
+    const injector = new CorrectionInjector(sessionID, checkpointer)
     const msgsBuffer: { current: Message.WithParts[] } = { current: [] }
 
     const lastUser: Message.User = {
@@ -192,5 +207,9 @@ describe("CorrectionInjector.injectNotifications", () => {
 
     // Both tasks marked notified
     expect(registry.getUnnotifiedCompletedTasks().length).toBe(0)
+
+    // Verify single saveMessage + single savePart (batched into one message)
+    expect(checkpointer.saveMessageMock).toHaveBeenCalledTimes(1)
+    expect(checkpointer.savePartMock).toHaveBeenCalledTimes(1)
   })
 })

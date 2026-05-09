@@ -1,6 +1,6 @@
 # Engine Loop Decoupling — Architectural Analysis
 
-> **Status**: Analysis & Decision  
+> **Status**: Phases 1-3 ✅ **DONE** (completed 2026-05-09). Next: Package extraction (Step 2 of extraction roadmap).  
 > **Branch**: `engine-loop-decoupling` (TBD)  
 > **Scope**: `packages/core/src/session/engine/`  
 > **Prerequisite reading**: [langgraph-step-exec-rfc.md](../langgraph-step-exec-rfc.md)

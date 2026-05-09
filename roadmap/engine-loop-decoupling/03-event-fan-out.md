@@ -1,8 +1,21 @@
 # Phase 3: Event Fan-Out & Async Safety
 
+> **Status**: ✅ **DONE** (completed 2026-05-09)  
 > **Depends on**: Phase 1 (Checkpointer Interface), Phase 2 (Self-Contained Loop)  
 > **Enables**: Phase 5 (Backward Execution)  
 > **Estimated scope**: ~4 files modified
+>
+> ### What was implemented
+> - `PromiseTracker` in `loop/promise-tracker.ts` — all async writes tracked and flushed in cleanup
+> - `EventConsumer` interface in `loop/event-consumer.ts` — defines `handleEvent(event: LoopEvent)` + optional `dispose()`
+> - `LoopEvent` standalone type taxonomy in `loop/event.ts` — zero LiteAI imports, 9-variant union
+> - All `Database.effect` fire-and-forget calls eliminated from engine
+> - `tracker.track(checkpointer.write(ops))` pattern used throughout `runSessionInner`
+> - `tracker.flush()` awaited in both `loop()` and `runSubagent()` defer cleanup blocks
+>
+> ### What was NOT implemented (deferred to package extraction)
+> - `SSETransport implements EventConsumer` — Bus.publish calls remain for checkpoint and error events (2 call sites in loop.ts). These are outbound notification events, not the inbound fire-and-forget problem this phase targeted. SSETransport formalization will happen during extraction when `EngineEvent` ↔ `LoopEvent` mapping is created.
+> - `EventPersister implements EventConsumer` — EventPersister already follows the pattern functionally (`handleEvent()` → `drainWrites()` → `checkpointer.write()`) but doesn't formally implement the interface. Will be formalized during extraction.
 
 ---
 

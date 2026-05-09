@@ -1,8 +1,24 @@
 # Phase 2: Self-Contained Loop
 
+> **Status**: ✅ **DONE** (completed 2026-05-09)  
 > **Depends on**: Phase 1 (Checkpointer Interface)  
 > **Enables**: Phase 3 (Event Fan-Out), Phase 4 (Subagent Result Flow)  
 > **Estimated scope**: ~5 files modified
+>
+> ### What was implemented
+> - `SessionResult` type in `loop/checkpointer.ts` (not separate `result.ts` — colocated with Checkpointer)
+> - `runSessionInner` returns `Promise<SessionResult>` with explicit exit points for ok/error/aborted
+> - `loop()` consumes result via switch statement — zero DB re-query, zero "Impossible" guard
+> - `queryLoop` is pure: zero `Bus.publish` calls, only yields events
+> - Initial state loaded once via `checkpointer.loadHistory()` in `runSession()`, passed as `initialHistory` to `runSessionInner`
+> - `CorrectionInjector` routes all writes through `Checkpointer` via constructor DI (4 direct Session calls eliminated)
+> - Telemetry span attributes (`input.value`, `output.value`) read from `initialHistory` and `SessionResult.message` — zero DB reads
+>
+> ### Deviation from original plan
+> - `SessionResult` type lives in `checkpointer.ts` alongside `Checkpointer`, not in a separate `result.ts`
+> - `events.ts` was NOT modified — no `PreFlightErrorEvent` was needed; pre-turn errors are handled via the existing error event type with a guard check for `!persister`
+> - `query.ts` was NOT modified — `Bus.publish` was already removed in a prior session
+> - `initialHistory` injection was added (not in original plan) — lifts the sole DB read from `runSessionInner` into `runSession` for telemetry span access
 
 ---
 

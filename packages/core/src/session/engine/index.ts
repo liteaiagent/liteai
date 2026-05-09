@@ -1,4 +1,6 @@
 export type { Checkpointer, SessionResult } from "./loop/checkpointer"
 export { MemoryCheckpointer, NoopCheckpointer, SqliteCheckpointer } from "./loop/checkpointer"
+export type { LoopContent, LoopEvent, LoopFinishReason, LoopMessage, LoopResult, LoopUsage } from "./loop/event"
+export type { EventConsumer } from "./loop/event-consumer"
 export { PromiseTracker } from "./loop/promise-tracker"
 export { SessionPrompt } from "./namespace"

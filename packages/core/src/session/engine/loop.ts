@@ -392,9 +392,10 @@ async function runSession(input: {
 }) {
   const tracer = trace.getTracer("liteai")
 
-  // Resolve the first user message text to use as the trace name/input in Langfuse
-  const msgs = await Message.filterCompacted(Message.stream(input.sessionID))
-  const firstUserText = msgs
+  // Single DB read via checkpointer — passed through to runSessionInner.
+  // This is the ONLY database read in the entire forward execution path.
+  const initialHistory = await input.checkpointer.loadHistory(input.sessionID)
+  const firstUserText = initialHistory
     .findLast((m) => m.info.role === "user")
     ?.parts.filter((p) => p.type === "text")
     .map((p) => (p as { text: string }).text)
@@ -412,23 +413,30 @@ async function runSession(input: {
       },
     },
     async (sessionSpan) => {
+      let caughtError: unknown
       try {
-        const result = await runSessionInner(input)
+        const result = await runSessionInner({ ...input, initialHistory })
+
+        // Use SessionResult.message for output span — no DB read.
+        // The result already contains the completed assistant message with parts.
+        if (result.status !== "aborted" && result.message) {
+          const outputText = result.message.parts
+            .filter((p) => p.type === "text")
+            .map((p) => (p as { text: string }).text)
+            .join(" ")
+            .slice(0, 500)
+          if (outputText) {
+            sessionSpan.setAttribute("output.value", outputText)
+          }
+        }
+
         return result
       } catch (e) {
-        sessionSpan.recordException(e as Error)
+        caughtError = e
         throw e
       } finally {
-        const finalMsgs = await Message.filterCompacted(Message.stream(input.sessionID))
-        const lastAssistant = finalMsgs.findLast((m) => m.info.role === "assistant")
-        const outputText = lastAssistant?.parts
-          .filter((p) => p.type === "text")
-          .map((p) => (p as { text: string }).text)
-          .join(" ")
-          .slice(0, 500)
-
-        if (outputText) {
-          sessionSpan.setAttribute("output.value", outputText)
+        if (caughtError) {
+          sessionSpan.recordException(caughtError as Error)
         }
         sessionSpan.end()
       }
@@ -444,6 +452,9 @@ async function runSessionInner(input: {
   checkpointer: Checkpointer
   tracker: PromiseTracker
   stepModeRef?: { current: boolean }
+  /** Pre-loaded message history — loaded once by runSession() via checkpointer.
+   * Eliminates the DB read that was previously inside runSessionInner. */
+  initialHistory: Message.WithParts[]
 }) {
   const isAbortError = (e: unknown): e is DOMException => e instanceof DOMException && e.name === "AbortError"
   const { sessionID, session, abort, tracker } = input
@@ -464,7 +475,7 @@ async function runSessionInner(input: {
 
   // ── Phase 2+3 services: decoupled persistence and extracted concerns ──
   const compactionOrchestrator = new CompactionOrchestrator(sessionID)
-  const correctionInjector = new CorrectionInjector(sessionID)
+  const correctionInjector = new CorrectionInjector(sessionID, input.checkpointer)
 
   // Step mode: mutable ref so the resume API can toggle it externally
   const stepModeRef = input.stepModeRef ?? { current: false }
@@ -475,9 +486,9 @@ async function runSessionInner(input: {
     sessionEntry.stepModeRef = stepModeRef
   }
 
-  // Single one-time DB read — after this the buffer is the live message view (FR-1)
+  // Use pre-loaded history — the buffer is the live message view from here on (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
-    current: await input.checkpointer.loadHistory(sessionID),
+    current: input.initialHistory,
   }
 
   const generator = queryLoop({
