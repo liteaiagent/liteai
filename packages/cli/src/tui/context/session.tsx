@@ -58,7 +58,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // Track session ID: either from route (resuming) or auto-created
   const initialSessionID = route.data.type === "session" ? route.data.sessionID : undefined
   const [createdSessionID, setCreatedSessionID] = useState<string | undefined>(undefined)
-  
+
   useEffect(() => {
     if (route.data.type === "home") {
       setCreatedSessionID(undefined)

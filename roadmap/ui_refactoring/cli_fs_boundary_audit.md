@@ -52,6 +52,8 @@ const entries = await fs.readdir(baseDir, { withFileTypes: true })
 **Impact**: Directly imports `Instance.directory` and reads `node:fs` in CLI. This is a **hard violation** — Instance.directory is the core server's project root, and even if the symbol resolves in the same process today, the CLI shouldn't depend on it for remote mode.
 
 **Fix**: Create a `GET /memory` route in core that discovers and returns memory file listings. CLI fetches via SDK.
+> [!IMPORTANT]
+> **Prerequisite Gate**: Any implementation of `use-memory-files.ts` in `packages/cli` MUST NOT import `Instance`, `node:fs`, or any core runtime module. The `GET /memory` route must be created in core before this CLI feature can be implemented.
 
 ---
 
