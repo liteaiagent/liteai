@@ -4,18 +4,19 @@ import { PermissionNext } from "@/permission/next"
 import { defer } from "@/util/defer"
 import { iife } from "@/util/iife"
 import { Agent } from "../agent/agent"
+import { ForkAgentConfig, isForkSubagentEnabled } from "../agent/fork"
 import DESCRIPTION from "../bundled/prompts/tools/task.txt"
+import { isCoordinatorMode } from "../coordinator/coordinator-mode"
 import { Provider } from "../provider/provider"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/engine"
-
 import { MessageID, SessionID } from "../session/schema"
 import { Tool } from "./tool"
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
   prompt: z.string().describe("The task for the agent to perform"),
-  subagent_type: z.string().describe("The type of specialized agent to use for this task"),
+  subagent_type: z.string().describe("The type of specialized agent to use for this task").optional(),
   task_id: z
     .string()
     .describe(
@@ -45,8 +46,17 @@ export const TaskTool = Tool.define("task", async (ctx) => {
     description,
     parameters,
     async execute(params: z.infer<typeof parameters>, ctx) {
-      const agent = await Agent.get(params.subagent_type)
-      if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
+      const parentSession = await Session.get(ctx.sessionID)
+      const forkEnabled = isForkSubagentEnabled({
+        isCoordinator: isCoordinatorMode(parentSession.sessionMode),
+        isNonInteractive: parentSession.toolProfile === "Fast",
+      })
+
+      const defaultAgentName = await Agent.defaultAgent()
+      const effectiveType = params.subagent_type ?? (forkEnabled ? ForkAgentConfig.agentType : defaultAgentName)
+
+      const agent = await Agent.get(effectiveType)
+      if (!agent) throw new Error(`Unknown agent type: ${effectiveType} is not a valid agent type`)
 
       const parentAssistant = ctx.messages.findLast((m) => m.info.id === ctx.messageID)
       if (!parentAssistant || parentAssistant.info.role !== "assistant") throw new Error("Not an assistant message")
@@ -91,11 +101,11 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       if (!ctx.extra?.bypassAgentCheck) {
         await ctx.ask({
           permission: "task",
-          patterns: [params.subagent_type],
+          patterns: [effectiveType],
           always: ["*"],
           metadata: {
             description: params.description,
-            subagent_type: params.subagent_type,
+            subagent_type: effectiveType,
           },
         })
       }

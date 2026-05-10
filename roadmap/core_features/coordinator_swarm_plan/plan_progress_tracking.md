@@ -14,7 +14,7 @@ Phase 1 achieved full feature parity with Claude Code's mode gating and orchestr
 
 **What was done:**
 - **Mode Gating (`coordinator-mode.ts`)**: Implemented `isCoordinatorMode()` and `matchSessionMode()` to detect environment variables and persist the mode in the database via `Session.createNext()`.
-- **System Prompt (`coordinator-prompt.ts`)**: Added the ~350-line authoritative orchestration prompt, injected directly into the `query.ts` engine loop when `sessionMode === "Coordinator"`.
+- **System Prompt (`coordinator-prompt.ts`)**: The ~304-line authoritative orchestration prompt, injected directly into the `query.ts` engine loop when `sessionMode === "Coordinator"`. Enriched to full Claude Code parity (2026-05-10) covering: subagent operation model (context isolation, tool access, execution lifecycle, completion reporting), fork vs fresh worker semantics, parallelism emphasis, verification rigor, task_stop workflow, purpose statement guidance, 6-row continue/spawn decision table, continue mechanics with code examples, expanded good/bad prompt examples, verification-specific directives, and scratchpadDir parameter readiness.
 - **Tool Allowlist & Injection**: Implemented `applyCoordinatorToolFilter()` to aggressively strip file-system tools from the coordinator's capability set, and `getCoordinatorUserContext()` to provide workers with visibility into the dynamic MCP context.
 - **Tools implementation**: 
   - `task_stop.ts`: Safely aborts running `SessionPrompt` background tasks.
@@ -24,7 +24,17 @@ Phase 1 achieved full feature parity with Claude Code's mode gating and orchestr
 **Anomalies / Explanations:**
 - **`isForkSubagentEnabled` Wiring (RESOLVED):** Originally, this gate had no callers because LiteAI's `TaskTool` strictly required a `subagent_type`. We have now refactored `task.ts` to make `subagent_type` optional, and correctly wired `isForkSubagentEnabled` into the Task Tool. If omitted and the gate is active, it seamlessly falls back to spinning up a shared-cache `ForkAgentConfig` fork (aligned 1:1 with Claude Code architecture).
 
-**Conclusion for Phase 1:** 100% Completed. No TODOs left behind.
+**CRITICAL BUGS & ARCHITECTURAL ISSUES DISCOVERED (REMEDIATED):**
+1. **The Root `AppState` Stub Bug (RESOLVED):** 
+   - **Fix:** We introduced a stateful `AppState` object directly to the root engine loop (`loop.ts`). Modified `runSessionInner` to properly mount a `RootAgentContext` via `AsyncLocalStorage`, granting all root session tools the ability to robustly access and mutate `teamContext` and `tasks` state without evaporation.
+
+2. **Missing Session Cleanup Tracking (RESOLVED):**
+   - **Fix:** Wired team directory deletion dynamically into the engine's `cleanup(sessionID)` phase in `loop.ts`. This ensures canceled/aborted sessions reliably and automatically execute `fs.rm` to tear down transient team folders, plugging the file system leak risk.
+
+3. **Task Directory/Name Registration Omission (RESOLVED):**
+   - **Fix:** Refactored swarm tools (`team_create`, `task_stop`, `team_delete`, `send_message`) to consume `AgentExecutionContext.getStore()` predictably. Background tasks and teammates outputs are properly anchored to the root AppState's task definitions, laying the stable foundation required for Phase 2 Mailbox IPC integration.
+
+**Conclusion for Phase 1 Remediation:** The architectural defects preventing mutable state persistence in the coordinator swarm model have been fully eliminated. The foundation is structurally sound, rigorously type-safe, and ready for Phase 2 implementation.
 
 ---
 

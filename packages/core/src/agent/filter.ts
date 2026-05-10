@@ -3,7 +3,7 @@ import type { Agent } from "./agent"
 
 const ALL_AGENT_DISALLOWED_TOOLS = ["plan_exit", "plan_enter", "ask_user"]
 
-const ASYNC_AGENT_ALLOWED_TOOLS = [
+export const ASYNC_AGENT_ALLOWED_TOOLS = [
   "read",
   "websearch",
   "todowrite",

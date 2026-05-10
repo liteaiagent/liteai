@@ -9,7 +9,8 @@ import { TaskTool } from "@/tool/task"
 import type { Tool } from "@/tool/tool"
 import { fn } from "@/util/fn"
 import { Agent } from "../../agent/agent"
-import { isRootAgent } from "../../agent/context"
+import { isRootAgent, runWithAgentContext } from "../../agent/context"
+import { cleanupTeamDirectories } from "../../coordinator/team-helpers"
 import { Plugin } from "../../plugin"
 import { Instance } from "../../project/instance"
 import { Provider } from "../../provider/provider"
@@ -54,6 +55,7 @@ type SessionState = Record<
     stepLatch?: StepLatchHandle
     /** Mutable ref to the step mode flag — can be toggled by resume API */
     stepModeRef?: { current: boolean }
+    appState: import("../../agent/context").AppState
   }
 >
 
@@ -204,6 +206,7 @@ export function start(sessionID: SessionID) {
   s[sessionID] = {
     abort: controller,
     callbacks: [],
+    appState: {},
   }
   return controller.signal
 }
@@ -329,6 +332,15 @@ function cleanup(sessionID: SessionID) {
   }
 
   const s = state()
+  const entry = s[sessionID]
+
+  if (entry?.appState?.teamContext) {
+    const teamName = entry.appState.teamContext.teamName
+    cleanupTeamDirectories(teamName).catch((e) => {
+      log.error("cleanup: team directory removal failed", { sessionID, teamName, error: e })
+    })
+  }
+
   delete s[sessionID]
   SessionStatus.set(sessionID, { type: "idle" })
 
@@ -486,7 +498,6 @@ async function runSessionInner(input: {
     sessionEntry.stepModeRef = stepModeRef
   }
 
-  // Use pre-loaded history — the buffer is the live message view from here on (FR-1)
   const msgsBuffer: { current: Message.WithParts[] } = {
     current: input.initialHistory,
   }
@@ -501,454 +512,498 @@ async function runSessionInner(input: {
     stepModeRef,
   })
 
-  try {
-    for await (const event of generator) {
-      switch (event.type) {
-        // ── Turn Start: persist assistant message, create persister ──
-        case "turn-start": {
-          currentAssistantMessage = event.assistantMessage
-          tracker.track(input.checkpointer.saveMessage(currentAssistantMessage))
+  // Create the root AgentContext to provide mutable AppState to the session tools.
+  // Getters/setters throw if the session entry is missing — during active execution
+  // the entry MUST exist. Cleanup uses optional chaining because it runs during teardown.
+  const rootContext: import("../../agent/context").RootAgentContext = {
+    type: "root",
+    sessionId: sessionID,
+    getAppState: () => {
+      const entry = state()[sessionID]
+      if (!entry) {
+        throw new Error(
+          `Session ${sessionID} state not found during getAppState — session was cleaned up while tools were still executing`,
+        )
+      }
+      return entry.appState
+    },
+    setAppState: (updater) => {
+      const entry = state()[sessionID]
+      if (!entry) {
+        throw new Error(
+          `Session ${sessionID} state not found during setAppState — session was cleaned up while tools were still executing`,
+        )
+      }
+      entry.appState = updater(entry.appState)
+    },
+    setAppStateForTasks: (updater) => {
+      const entry = state()[sessionID]
+      if (!entry) {
+        throw new Error(
+          `Session ${sessionID} state not found during setAppStateForTasks — session was cleaned up while tools were still executing`,
+        )
+      }
+      entry.appState = updater(entry.appState)
+    },
+    cwd: session.directory ?? process.cwd(),
+    abortController: state()[sessionID]?.abort ?? new AbortController(),
+    readFileState: new Map(),
+  }
 
-          // Create fresh persister for this turn
-          persister = new EventPersister(currentAssistantMessage, sessionID, event.model, abort)
+  return await runWithAgentContext(rootContext, async () => {
+    try {
+      for await (const event of generator) {
+        switch (event.type) {
+          // ── Turn Start: persist assistant message, create persister ──
+          case "turn-start": {
+            currentAssistantMessage = event.assistantMessage
+            tracker.track(input.checkpointer.saveMessage(currentAssistantMessage))
 
-          // Set up instruction prompt cleanup
-          // Note: InstructionPrompt.clear will be called in turn-end
-          SessionStatus.set(sessionID, { type: "busy" })
+            // Create fresh persister for this turn
+            persister = new EventPersister(currentAssistantMessage, sessionID, event.model, abort)
 
-          currentTurnCache = {
-            system: event.streamInput.system,
-            tools: event.streamInput.tools,
-          }
+            // Set up instruction prompt cleanup
+            // Note: InstructionPrompt.clear will be called in turn-end
+            SessionStatus.set(sessionID, { type: "busy" })
 
-          // Fire-and-forget summary on first turn
-          const lastUser = event.streamInput.user
-          if (lastUser && isRootAgent()) {
-            SessionSummary.summarize({
-              sessionID,
-              messageID: lastUser.id,
-            })
-          }
-          break
-        }
-
-        // ── Turn End: flush persister, handle result ──
-        case "turn-end": {
-          if (!persister || !currentAssistantMessage) break
-
-          // Capture raw SDK stream result for partial token recovery on error
-          currentStreamResult = event.streamResult
-
-          // Flush the persister
-          const flushResult = await persister.flush(currentStreamResult)
-          currentStreamResult = undefined
-
-          // Drain accumulated writes and persist to DB
-          const flushOps = persister.drainWrites()
-          if (flushOps.length > 0) {
-            tracker.track(input.checkpointer.write(flushOps))
-          }
-
-          // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
-          msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
-
-          // ── Loop recovery: handle pending detection after flush ──
-          if (pendingLoopRecovery) {
-            const recovery = pendingLoopRecovery
-            pendingLoopRecovery = undefined
-
-            // Strip incomplete thinking parts from DB (critical for Code Assist API —
-            // partial thought blocks without thoughtSignature cause 400 errors on retry)
-            await stripIncompleteThinking({
-              sessionID,
-              message: currentAssistantMessage,
-              msgsBuffer,
-              checkpointer: input.checkpointer,
-              tracker,
-            })
-
-            // Escalation strategy
-            if (loopDetectionCount >= 3) {
-              log.warn("loop escalation: max retries reached, stopping session", {
-                sessionID,
-                count: loopDetectionCount,
-              })
-              return { status: "error", error: new Error("loop escalation: max retries reached") } as SessionResult
+            currentTurnCache = {
+              system: event.streamInput.system,
+              tools: event.streamInput.tools,
             }
 
-            // Inject corrective user message
-            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-            if (lastUser) {
-              const hint =
-                recovery.type === LoopType.THINKING_LOOP
-                  ? "Do not over-plan. Take action immediately using the available tools."
-                  : `Potential loop detected: ${recovery.detail}. Step back and rethink your approach.`
+            // Fire-and-forget summary on first turn
+            const lastUser = event.streamInput.user
+            if (lastUser && isRootAgent()) {
+              SessionSummary.summarize({
+                sessionID,
+                messageID: lastUser.id,
+              })
+            }
+            break
+          }
 
-              await correctionInjector.inject({
-                lastUser,
-                text: `<system-correction>${hint}</system-correction>`,
+          // ── Turn End: flush persister, handle result ──
+          case "turn-end": {
+            if (!persister || !currentAssistantMessage) break
+
+            // Capture raw SDK stream result for partial token recovery on error
+            currentStreamResult = event.streamResult
+
+            // Flush the persister
+            const flushResult = await persister.flush(currentStreamResult)
+            currentStreamResult = undefined
+
+            // Drain accumulated writes and persist to DB
+            const flushOps = persister.drainWrites()
+            if (flushOps.length > 0) {
+              tracker.track(input.checkpointer.write(flushOps))
+            }
+
+            // Update in-memory buffer with this turn's completed message (FR-3, no DB read)
+            msgsBuffer.current = [...msgsBuffer.current, persister.getCompletedMessage()]
+
+            // ── Loop recovery: handle pending detection after flush ──
+            if (pendingLoopRecovery) {
+              const recovery = pendingLoopRecovery
+              pendingLoopRecovery = undefined
+
+              // Strip incomplete thinking parts from DB (critical for Code Assist API —
+              // partial thought blocks without thoughtSignature cause 400 errors on retry)
+              await stripIncompleteThinking({
+                sessionID,
+                message: currentAssistantMessage,
                 msgsBuffer,
-              })
-            }
-
-            // Clean up instruction prompt and continue to next turn
-            await InstructionPrompt.clear(currentAssistantMessage.id)
-            break
-          }
-
-          // Handle structured output
-          if (event.structuredOutput !== undefined) {
-            currentAssistantMessage.structured = event.structuredOutput
-            currentAssistantMessage.finish = currentAssistantMessage.finish ?? "stop"
-            await input.checkpointer.updateMessage(currentAssistantMessage)
-            log.info("runSession: structured output captured", { sessionID })
-            // Don't call .next() — let the generator break naturally
-            break
-          }
-
-          // Handle structured output error (model finished without calling tool)
-          const modelFinished =
-            currentAssistantMessage.finish && !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
-          if (modelFinished && !currentAssistantMessage.error) {
-            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-            const format = lastUser?.format ?? { type: "text" }
-            if (format.type === "json_schema") {
-              currentAssistantMessage.error = new Message.StructuredOutputError({
-                message: "Model did not produce structured output",
-                retries: 0,
-              }).toObject()
-              await input.checkpointer.updateMessage(currentAssistantMessage)
-              log.info("runSession: structured output error", { sessionID })
-            }
-          }
-
-          // Process the flush result
-          if (flushResult === "stop") {
-            log.info("runSession: persister returned stop", {
-              sessionID,
-              error: currentAssistantMessage.error,
-              finish: currentAssistantMessage.finish,
-            })
-            // Exit runSessionInner entirely — this stops the for-await loop
-            // and terminates the generator. Using `return` (not `break`) because
-            // `break` only exits the switch, not the for-await.
-            return {
-              status: "error",
-              error: currentAssistantMessage?.error,
-              message: persister?.getCompletedMessage(),
-            } as SessionResult
-          }
-          if (flushResult === "compact") {
-            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-            if (lastUser) {
-              const { markerWithParts } = await compactionOrchestrator.createMarker({
-                agent: lastUser.agent,
-                model: lastUser.model,
-                auto: true,
-                overflow: !currentAssistantMessage.finish,
-              })
-              // Buffer remains as-is after create() — process() will reset it via compaction-task
-              // The query loop will re-scan the buffer and emit a compaction-task control event
-              // for the marker, so buffer will be reset there.
-              log.info("runSession: compaction marker created", { markerID: markerWithParts.info.id, sessionID })
-            }
-            break
-          }
-
-          // flushResult === "continue" — inject any task completion notifications
-          // before the generator's next iteration picks up the buffer.
-          {
-            const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-            if (lastUser) {
-              await correctionInjector
-                .injectNotifications({
-                  registry: input.registry,
-                  lastUser,
-                  msgsBuffer,
-                })
-                .catch((e: unknown) => {
-                  // Notification injection failure must NOT crash the engine loop.
-                  log.error("runSession: injectTaskNotifications failed", { error: e, sessionID })
-                })
-            }
-          }
-
-          // Save cache-safe params so forks can inherit them
-          if (currentTurnCache && isRootAgent()) {
-            const { saveCacheSafeParams } = await import("@/agent/fork")
-            saveCacheSafeParams(sessionID, {
-              systemPrompt: currentTurnCache.system,
-              toolConfig: currentTurnCache.tools,
-              forkContextMessages: msgsBuffer.current,
-            })
-          }
-
-          // Clean up instruction prompt
-          await InstructionPrompt.clear(currentAssistantMessage.id)
-          break
-        }
-
-        // ── Control: compaction, subtask, overflow ──
-        case "control": {
-          switch (event.action) {
-            case "subtask": {
-              const { task, model, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
-              const { subtaskAssistant, syntheticUser } = await processSubtask({
-                task,
-                model,
-                lastUser,
-                sessionID,
-                abort,
-                msgs,
-                telemetryTracker,
-                telemetryBatchId,
                 checkpointer: input.checkpointer,
                 tracker,
               })
-              // Append subtask messages to buffer (FR-8) — no DB read
-              msgsBuffer.current = [...msgsBuffer.current, subtaskAssistant, ...(syntheticUser ? [syntheticUser] : [])]
-              break
-            }
-            case "compaction-task": {
-              const { task, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
 
-              const { result, summaryWithParts } = await compactionOrchestrator.process({
-                messages: msgs,
-                parentID: lastUser.id,
-                abort,
-                auto: task.auto,
-                overflow: task.overflow,
-                telemetryTracker,
-                telemetryBatchId,
-              })
-              if (result === "stop") {
-                return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
-              }
-              const markerMsg = msgs.findLast(
-                (m: Message.WithParts) =>
-                  m.info.role === "user" && m.parts.some((p: Message.Part) => p.type === "compaction"),
-              )
-              if (markerMsg && summaryWithParts) {
-                msgsBuffer.current = [markerMsg, summaryWithParts]
-                log.info("runSession: buffer reset after compaction-task", {
+              // Escalation strategy
+              if (loopDetectionCount >= 3) {
+                log.warn("loop escalation: max retries reached, stopping session", {
                   sessionID,
-                  bufferLen: msgsBuffer.current.length,
+                  count: loopDetectionCount,
                 })
-              }
-              break
-            }
-            case "overflow": {
-              const { lastUser } = event.payload
-              const { markerWithParts } = await compactionOrchestrator.createMarker({
-                agent: lastUser.agent,
-                model: lastUser.model,
-                auto: true,
-              })
-              msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
-              break
-            }
-            case "compact": {
-              const { lastUser } = event.payload
-              const { markerWithParts } = await compactionOrchestrator.createMarker({
-                agent: lastUser.agent,
-                model: lastUser.model,
-                auto: true,
-              })
-              msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
-              break
-            }
-            case "loop-detected": {
-              const { loopResult } = event.payload as { loopResult: LoopDetectionResult }
-              loopDetectionCount = loopResult.count
-              pendingLoopRecovery = loopResult
-              log.warn("loop detected", {
-                sessionID,
-                type: loopResult.type,
-                detail: loopResult.detail,
-                count: loopResult.count,
-              })
-              break
-            }
-            case "plan-stop-correction": {
-              const { correctionCount, correctionText } = event.payload as {
-                correctionCount: number
-                correctionText: string
-              }
-              log.warn("plan mode stop-drift: injecting correction message", {
-                sessionID,
-                correctionCount,
-              })
-
-              // Strip incomplete thinking parts (same cleanup as loop recovery)
-              if (currentAssistantMessage) {
-                await stripIncompleteThinking({
-                  sessionID,
-                  message: currentAssistantMessage,
-                  msgsBuffer,
-                  checkpointer: input.checkpointer,
-                  tracker,
-                })
+                return { status: "error", error: new Error("loop escalation: max retries reached") } as SessionResult
               }
 
+              // Inject corrective user message
               const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-              if (lastUser && correctionText) {
+              if (lastUser) {
+                const hint =
+                  recovery.type === LoopType.THINKING_LOOP
+                    ? "Do not over-plan. Take action immediately using the available tools."
+                    : `Potential loop detected: ${recovery.detail}. Step back and rethink your approach.`
+
                 await correctionInjector.inject({
                   lastUser,
-                  text: correctionText,
+                  text: `<system-correction>${hint}</system-correction>`,
                   msgsBuffer,
                 })
               }
 
-              // Clean up instruction prompt before next turn
-              if (currentAssistantMessage) {
-                await InstructionPrompt.clear(currentAssistantMessage.id)
-              }
+              // Clean up instruction prompt and continue to next turn
+              await InstructionPrompt.clear(currentAssistantMessage.id)
               break
             }
-            case "stop": {
-              return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
-            }
-            case "continue": {
-              // Normal continuation — no-op, generator resumes
+
+            // Handle structured output
+            if (event.structuredOutput !== undefined) {
+              currentAssistantMessage.structured = event.structuredOutput
+              currentAssistantMessage.finish = currentAssistantMessage.finish ?? "stop"
+              await input.checkpointer.updateMessage(currentAssistantMessage)
+              log.info("runSession: structured output captured", { sessionID })
+              // Don't call .next() — let the generator break naturally
               break
             }
-            case "step-pause": {
-              const { step, checkpoint } = event.payload as {
-                step: number
-                checkpoint: import("./loop/checkpoint-store").CheckpointData
+
+            // Handle structured output error (model finished without calling tool)
+            const modelFinished =
+              currentAssistantMessage.finish && !["tool-calls", "unknown"].includes(currentAssistantMessage.finish)
+            if (modelFinished && !currentAssistantMessage.error) {
+              const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+              const format = lastUser?.format ?? { type: "text" }
+              if (format.type === "json_schema") {
+                currentAssistantMessage.error = new Message.StructuredOutputError({
+                  message: "Model did not produce structured output",
+                  retries: 0,
+                }).toObject()
+                await input.checkpointer.updateMessage(currentAssistantMessage)
+                log.info("runSession: structured output error", { sessionID })
               }
+            }
 
-              // 1. Set session status to paused
-              SessionStatus.set(sessionID, { type: "paused", step })
-
-              // 2. Publish checkpoint event (fire-and-forget)
-              Bus.publish(SessionStatus.Event.Checkpoint, {
+            // Process the flush result
+            if (flushResult === "stop") {
+              log.info("runSession: persister returned stop", {
                 sessionID,
-                checkpoint: {
-                  id: checkpoint.id,
-                  step: checkpoint.step,
-                  timestamp: checkpoint.timestamp,
-                  metadata: checkpoint.metadata,
-                },
-              }).catch((e: unknown) => {
-                log.error("Bus.publish(session.checkpoint) failed", { error: e, sessionID })
+                error: currentAssistantMessage.error,
+                finish: currentAssistantMessage.finish,
               })
-
-              // 3. Create a new latch and store it on SessionState
-              const latch = StepPauseLatch.create()
-              const sessionStateEntry = state()[sessionID]
-              if (sessionStateEntry) {
-                sessionStateEntry.stepLatch = latch
-              }
-
-              // 4. Wire abort signal to reject the latch (cancel during pause)
-              const abortHandler = () => {
-                latch.reject(new DOMException("Session aborted during pause", "AbortError"))
-              }
-              abort.addEventListener("abort", abortHandler, { once: true })
-
-              try {
-                // 5. Await the latch — blocks until user resumes or aborts
-                const resumePayload = await latch.promise
-
-                // 6. Handle resume payload
-                if (resumePayload.guidance) {
-                  // Inject guidance as a synthetic user text part (same pattern as correctionInjector)
-                  const lastUser = findLastUserFromBuffer(msgsBuffer.current)
-                  if (lastUser) {
-                    await correctionInjector.inject({
-                      lastUser,
-                      text: resumePayload.guidance,
-                      msgsBuffer,
-                    })
-                  }
-                }
-
-                // Only disable step mode if the caller explicitly owns a stepModeRef.
-                // The local `stepModeRef` always exists (defaulted to { current: false }),
-                // but `input.stepModeRef` is only set when the session was started with
-                // step mode support — without this check the guard is always true.
-                if (resumePayload.disableStepMode && input.stepModeRef) {
-                  stepModeRef.current = false
-                }
-
-                // 7. Set status back to busy
-                SessionStatus.set(sessionID, { type: "busy" })
-              } finally {
-                abort.removeEventListener("abort", abortHandler)
-              }
-              break
-            }
-          }
-          break
-        }
-
-        // ── Stream events: route to persister ──
-        default: {
-          // ── Pre-turn error: model resolution or other early failures ──
-          // When queryLoop yields an error BEFORE turn-start, persister is undefined.
-          // We must intercept here to prevent the "Impossible" guard from firing.
-          if (!persister && "type" in event && event.type === "error") {
-            log.error("runSession: pre-turn error (no persister)", {
-              sessionID,
-              error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
-            })
-            // Exit cleanly — cleanup()/defer will emit session.idle
-            return {
-              status: "error",
-              error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
-            } as SessionResult
-          }
-
-          if (persister) {
-            const action = persister.handleEvent(event) // synchronous — no DB writes
-            // Drain accumulated writes and persist to DB
-            const ops = persister.drainWrites()
-            if (ops.length > 0) {
-              tracker.track(input.checkpointer.write(ops))
-            }
-            if (action === "stop") {
-              log.info("runSession: persister signalled stop during event handling", { sessionID })
+              // Exit runSessionInner entirely — this stops the for-await loop
+              // and terminates the generator. Using `return` (not `break`) because
+              // `break` only exits the switch, not the for-await.
               return {
                 status: "error",
                 error: currentAssistantMessage?.error,
                 message: persister?.getCompletedMessage(),
               } as SessionResult
             }
-            if (action === "retry") {
-              // Retry sleep extracted from persister — loop.ts handles the blocking wait
-              const delay = SessionRetry.delay(persister.attempt)
-              await SessionRetry.sleep(delay, abort).catch(() => {})
-              // Don't break — let the for-await continue to process the next event
+            if (flushResult === "compact") {
+              const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+              if (lastUser) {
+                const { markerWithParts } = await compactionOrchestrator.createMarker({
+                  agent: lastUser.agent,
+                  model: lastUser.model,
+                  auto: true,
+                  overflow: !currentAssistantMessage.finish,
+                })
+                // Buffer remains as-is after create() — process() will reset it via compaction-task
+                // The query loop will re-scan the buffer and emit a compaction-task control event
+                // for the marker, so buffer will be reset there.
+                log.info("runSession: compaction marker created", { markerID: markerWithParts.info.id, sessionID })
+              }
+              break
             }
+
+            // flushResult === "continue" — inject any task completion notifications
+            // before the generator's next iteration picks up the buffer.
+            {
+              const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+              if (lastUser) {
+                await correctionInjector
+                  .injectNotifications({
+                    registry: input.registry,
+                    lastUser,
+                    msgsBuffer,
+                  })
+                  .catch((e: unknown) => {
+                    // Notification injection failure must NOT crash the engine loop.
+                    log.error("runSession: injectTaskNotifications failed", { error: e, sessionID })
+                  })
+              }
+            }
+
+            // Save cache-safe params so forks can inherit them
+            if (currentTurnCache && isRootAgent()) {
+              const { saveCacheSafeParams } = await import("@/agent/fork")
+              saveCacheSafeParams(sessionID, {
+                systemPrompt: currentTurnCache.system,
+                toolConfig: currentTurnCache.tools,
+                forkContextMessages: msgsBuffer.current,
+              })
+            }
+
+            // Clean up instruction prompt
+            await InstructionPrompt.clear(currentAssistantMessage.id)
+            break
           }
-          break
+
+          // ── Control: compaction, subtask, overflow ──
+          case "control": {
+            switch (event.action) {
+              case "subtask": {
+                const { task, model, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
+                const { subtaskAssistant, syntheticUser } = await processSubtask({
+                  task,
+                  model,
+                  lastUser,
+                  sessionID,
+                  abort,
+                  msgs,
+                  telemetryTracker,
+                  telemetryBatchId,
+                  checkpointer: input.checkpointer,
+                  tracker,
+                })
+                // Append subtask messages to buffer (FR-8) — no DB read
+                msgsBuffer.current = [
+                  ...msgsBuffer.current,
+                  subtaskAssistant,
+                  ...(syntheticUser ? [syntheticUser] : []),
+                ]
+                break
+              }
+              case "compaction-task": {
+                const { task, lastUser, msgs, telemetryTracker, telemetryBatchId } = event.payload
+
+                const { result, summaryWithParts } = await compactionOrchestrator.process({
+                  messages: msgs,
+                  parentID: lastUser.id,
+                  abort,
+                  auto: task.auto,
+                  overflow: task.overflow,
+                  telemetryTracker,
+                  telemetryBatchId,
+                })
+                if (result === "stop") {
+                  return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
+                }
+                const markerMsg = msgs.findLast(
+                  (m: Message.WithParts) =>
+                    m.info.role === "user" && m.parts.some((p: Message.Part) => p.type === "compaction"),
+                )
+                if (markerMsg && summaryWithParts) {
+                  msgsBuffer.current = [markerMsg, summaryWithParts]
+                  log.info("runSession: buffer reset after compaction-task", {
+                    sessionID,
+                    bufferLen: msgsBuffer.current.length,
+                  })
+                }
+                break
+              }
+              case "overflow": {
+                const { lastUser } = event.payload
+                const { markerWithParts } = await compactionOrchestrator.createMarker({
+                  agent: lastUser.agent,
+                  model: lastUser.model,
+                  auto: true,
+                })
+                msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
+                break
+              }
+              case "compact": {
+                const { lastUser } = event.payload
+                const { markerWithParts } = await compactionOrchestrator.createMarker({
+                  agent: lastUser.agent,
+                  model: lastUser.model,
+                  auto: true,
+                })
+                msgsBuffer.current = [...msgsBuffer.current, markerWithParts]
+                break
+              }
+              case "loop-detected": {
+                const { loopResult } = event.payload as { loopResult: LoopDetectionResult }
+                loopDetectionCount = loopResult.count
+                pendingLoopRecovery = loopResult
+                log.warn("loop detected", {
+                  sessionID,
+                  type: loopResult.type,
+                  detail: loopResult.detail,
+                  count: loopResult.count,
+                })
+                break
+              }
+              case "plan-stop-correction": {
+                const { correctionCount, correctionText } = event.payload as {
+                  correctionCount: number
+                  correctionText: string
+                }
+                log.warn("plan mode stop-drift: injecting correction message", {
+                  sessionID,
+                  correctionCount,
+                })
+
+                // Strip incomplete thinking parts (same cleanup as loop recovery)
+                if (currentAssistantMessage) {
+                  await stripIncompleteThinking({
+                    sessionID,
+                    message: currentAssistantMessage,
+                    msgsBuffer,
+                    checkpointer: input.checkpointer,
+                    tracker,
+                  })
+                }
+
+                const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+                if (lastUser && correctionText) {
+                  await correctionInjector.inject({
+                    lastUser,
+                    text: correctionText,
+                    msgsBuffer,
+                  })
+                }
+
+                // Clean up instruction prompt before next turn
+                if (currentAssistantMessage) {
+                  await InstructionPrompt.clear(currentAssistantMessage.id)
+                }
+                break
+              }
+              case "stop": {
+                return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
+              }
+              case "continue": {
+                // Normal continuation — no-op, generator resumes
+                break
+              }
+              case "step-pause": {
+                const { step, checkpoint } = event.payload as {
+                  step: number
+                  checkpoint: import("./loop/checkpoint-store").CheckpointData
+                }
+
+                // 1. Set session status to paused
+                SessionStatus.set(sessionID, { type: "paused", step })
+
+                // 2. Publish checkpoint event (fire-and-forget)
+                Bus.publish(SessionStatus.Event.Checkpoint, {
+                  sessionID,
+                  checkpoint: {
+                    id: checkpoint.id,
+                    step: checkpoint.step,
+                    timestamp: checkpoint.timestamp,
+                    metadata: checkpoint.metadata,
+                  },
+                }).catch((e: unknown) => {
+                  log.error("Bus.publish(session.checkpoint) failed", { error: e, sessionID })
+                })
+
+                // 3. Create a new latch and store it on SessionState
+                const latch = StepPauseLatch.create()
+                const sessionStateEntry = state()[sessionID]
+                if (sessionStateEntry) {
+                  sessionStateEntry.stepLatch = latch
+                }
+
+                // 4. Wire abort signal to reject the latch (cancel during pause)
+                const abortHandler = () => {
+                  latch.reject(new DOMException("Session aborted during pause", "AbortError"))
+                }
+                abort.addEventListener("abort", abortHandler, { once: true })
+
+                try {
+                  // 5. Await the latch — blocks until user resumes or aborts
+                  const resumePayload = await latch.promise
+
+                  // 6. Handle resume payload
+                  if (resumePayload.guidance) {
+                    // Inject guidance as a synthetic user text part (same pattern as correctionInjector)
+                    const lastUser = findLastUserFromBuffer(msgsBuffer.current)
+                    if (lastUser) {
+                      await correctionInjector.inject({
+                        lastUser,
+                        text: resumePayload.guidance,
+                        msgsBuffer,
+                      })
+                    }
+                  }
+
+                  // Only disable step mode if the caller explicitly owns a stepModeRef.
+                  // The local `stepModeRef` always exists (defaulted to { current: false }),
+                  // but `input.stepModeRef` is only set when the session was started with
+                  // step mode support — without this check the guard is always true.
+                  if (resumePayload.disableStepMode && input.stepModeRef) {
+                    stepModeRef.current = false
+                  }
+
+                  // 7. Set status back to busy
+                  SessionStatus.set(sessionID, { type: "busy" })
+                } finally {
+                  abort.removeEventListener("abort", abortHandler)
+                }
+                break
+              }
+            }
+            break
+          }
+
+          // ── Stream events: route to persister ──
+          default: {
+            // ── Pre-turn error: model resolution or other early failures ──
+            // When queryLoop yields an error BEFORE turn-start, persister is undefined.
+            // We must intercept here to prevent the "Impossible" guard from firing.
+            if (!persister && "type" in event && event.type === "error") {
+              log.error("runSession: pre-turn error (no persister)", {
+                sessionID,
+                error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
+              })
+              // Exit cleanly — cleanup()/defer will emit session.idle
+              return {
+                status: "error",
+                error: (event as EngineEvent.BlockEvent & { type: "error" }).error,
+              } as SessionResult
+            }
+
+            if (persister) {
+              const action = persister.handleEvent(event) // synchronous — no DB writes
+              // Drain accumulated writes and persist to DB
+              const ops = persister.drainWrites()
+              if (ops.length > 0) {
+                tracker.track(input.checkpointer.write(ops))
+              }
+              if (action === "stop") {
+                log.info("runSession: persister signalled stop during event handling", { sessionID })
+                return {
+                  status: "error",
+                  error: currentAssistantMessage?.error,
+                  message: persister?.getCompletedMessage(),
+                } as SessionResult
+              }
+              if (action === "retry") {
+                // Retry sleep extracted from persister — loop.ts handles the blocking wait
+                const delay = SessionRetry.delay(persister.attempt)
+                await SessionRetry.sleep(delay, abort).catch(() => {})
+                // Don't break — let the for-await continue to process the next event
+              }
+            }
+            break
+          }
         }
       }
-    }
-  } catch (e: unknown) {
-    // AbortError is expected when the user cancels mid-stream.
-    // Swallow it here so it doesn't propagate as an unhandled rejection.
-    if (isAbortError(e)) {
-      log.info("session/loop abort: caught AbortError in event loop", { sessionID })
-      return { status: "aborted" } as SessionResult
-    } else {
-      throw e
-    }
-  }
-
-  // Post-loop cleanup (fire-and-forget with catch to prevent unhandled rejection)
-  if (isRootAgent()) {
-    import("@/agent/fork").then((m) => m.saveCacheSafeParams(sessionID, null)).catch(() => {})
-
-    compactionOrchestrator.prune().catch((e: unknown) => {
-      if (!isAbortError(e)) {
-        log.error("runSession: prune failed", { error: e, sessionID })
+    } catch (e: unknown) {
+      // AbortError is expected when the user cancels mid-stream.
+      // Swallow it here so it doesn't propagate as an unhandled rejection.
+      if (isAbortError(e)) {
+        log.info("session/loop abort: caught AbortError in event loop", { sessionID })
+        return { status: "aborted" } as SessionResult
+      } else {
+        throw e
       }
-    })
-  }
+    }
 
-  return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
+    // Post-loop cleanup (fire-and-forget with catch to prevent unhandled rejection)
+    if (isRootAgent()) {
+      import("@/agent/fork").then((m) => m.saveCacheSafeParams(sessionID, null)).catch(() => {})
+
+      compactionOrchestrator.prune().catch((e: unknown) => {
+        if (!isAbortError(e)) {
+          log.error("runSession: prune failed", { error: e, sessionID })
+        }
+      })
+    }
+
+    return { status: "ok", message: persister?.getCompletedMessage() } as SessionResult
+  })
 }
 
 /**

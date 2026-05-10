@@ -2653,12 +2653,13 @@
                   "title": {
                     "type": "string"
                   },
-                  "permission": {
-                    "$ref": "#/components/schemas/PermissionRuleset"
-                  },
                   "workspaceID": {
                     "type": "string",
                     "pattern": "^wrk.*"
+                  },
+                  "sessionMode": {
+                    "type": "string",
+                    "enum": ["Normal", "Coordinator"]
                   }
                 }
               }
@@ -4151,6 +4152,9 @@
                   "variant": {
                     "type": "string"
                   },
+                  "stepMode": {
+                    "type": "boolean"
+                  },
                   "parts": {
                     "type": "array",
                     "items": {
@@ -4630,6 +4634,9 @@
                   "variant": {
                     "type": "string"
                   },
+                  "stepMode": {
+                    "type": "boolean"
+                  },
                   "parts": {
                     "type": "array",
                     "items": {
@@ -5069,6 +5076,441 @@
           {
             "lang": "js",
             "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.unrevert({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/session/{sessionID}/resume": {
+      "post": {
+        "operationId": "project.session.resume",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses.*"
+            },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Resume a paused session",
+        "description": "Resume a session paused in step mode, optionally injecting user guidance or disabling step mode.",
+        "responses": {
+          "200": {
+            "description": "Session resumed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "resumed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["resumed"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "guidance": {
+                    "type": "string"
+                  },
+                  "disableStepMode": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.resume({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/session/{sessionID}/step-back": {
+      "post": {
+        "operationId": "project.session.step_back",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses.*"
+            },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Step back to a previous checkpoint",
+        "description": "Revert the session state and workspace files to a specific historical checkpoint. This is a destructive action that truncates newer messages.",
+        "responses": {
+          "200": {
+            "description": "Session reverted to checkpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restored": {
+                      "type": "boolean"
+                    },
+                    "step": {
+                      "type": "number"
+                    },
+                    "orphanedChildren": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^ses.*"
+                      }
+                    }
+                  },
+                  "required": ["restored", "step", "orphanedChildren"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkpointID": {
+                    "type": "string"
+                  },
+                  "guidance": {
+                    "type": "string"
+                  }
+                },
+                "required": ["checkpointID"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.step_back({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/session/{sessionID}/fork-at": {
+      "post": {
+        "operationId": "project.session.forkAt",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses.*"
+            },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Fork session at checkpoint",
+        "description": "Create a new independent session branching off from a specific historical checkpoint. Optionally override the model or agent.",
+        "responses": {
+          "200": {
+            "description": "Session forked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BadRequestError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkpointID": {
+                    "type": "string"
+                  },
+                  "model": {
+                    "type": "object",
+                    "properties": {
+                      "providerID": {
+                        "type": "string"
+                      },
+                      "modelID": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["providerID", "modelID"]
+                  },
+                  "agent": {
+                    "type": "string"
+                  },
+                  "guidance": {
+                    "type": "string"
+                  },
+                  "autoResume": {
+                    "type": "boolean"
+                  }
+                },
+                "required": ["checkpointID"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.forkAt({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/session/{sessionID}/checkpoints": {
+      "get": {
+        "operationId": "project.session.checkpoints",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses.*"
+            },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "List checkpoints for a session",
+        "description": "Get all step-level checkpoints for a session, ordered by step. Messages are excluded.",
+        "responses": {
+          "200": {
+            "description": "List of checkpoint summaries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {}
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.checkpoints({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/{projectID}/session/{sessionID}/checkpoints/{checkpointID}": {
+      "get": {
+        "operationId": "project.session.checkpoint",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string",
+              "pattern": "^ses.*"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "checkpointID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "projectID",
+            "required": true
+          }
+        ],
+        "summary": "Get a specific checkpoint",
+        "description": "Get full checkpoint data including messages for a specific checkpoint.",
+        "responses": {
+          "200": {
+            "description": "Full checkpoint data",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundError"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createLiteaiClient } from \"@liteai/sdk\n\nconst client = createLiteaiClient()\nawait client.project.session.checkpoint({\n  ...\n})"
           }
         ]
       }
@@ -8292,6 +8734,12 @@
               }
             },
             "required": ["messageID", "callID"]
+          },
+          "agentId": {
+            "type": "string"
+          },
+          "agentName": {
+            "type": "string"
           }
         },
         "required": ["id", "sessionID", "permission", "patterns", "metadata", "always"]
@@ -8622,239 +9070,6 @@
               }
             },
             "required": ["name", "sessionID", "arguments", "messageID"]
-          }
-        },
-        "required": ["type", "properties"]
-      },
-      "PermissionAction": {
-        "type": "string",
-        "enum": ["allow", "deny", "ask"]
-      },
-      "PermissionRule": {
-        "type": "object",
-        "properties": {
-          "permission": {
-            "type": "string"
-          },
-          "pattern": {
-            "type": "string"
-          },
-          "action": {
-            "$ref": "#/components/schemas/PermissionAction"
-          }
-        },
-        "required": ["permission", "pattern", "action"]
-      },
-      "PermissionRuleset": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/PermissionRule"
-        }
-      },
-      "Agent": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "mode": {
-            "type": "string",
-            "enum": ["subagent", "primary", "all"]
-          },
-          "native": {
-            "type": "boolean"
-          },
-          "hidden": {
-            "type": "boolean"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "topP": {
-            "type": "number"
-          },
-          "temperature": {
-            "type": "number"
-          },
-          "color": {
-            "type": "string"
-          },
-          "permission": {
-            "$ref": "#/components/schemas/PermissionRuleset"
-          },
-          "model": {
-            "type": "object",
-            "properties": {
-              "modelID": {
-                "type": "string"
-              },
-              "providerID": {
-                "type": "string"
-              }
-            },
-            "required": ["modelID", "providerID"]
-          },
-          "variant": {
-            "type": "string"
-          },
-          "prompt": {
-            "type": "string"
-          },
-          "toolChoice": {
-            "type": "string",
-            "enum": ["auto", "required", "none"]
-          },
-          "options": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
-          },
-          "steps": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "tools": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {
-                  "type": "boolean"
-                }
-              }
-            ]
-          },
-          "disallowedTools": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "permissionMode": {
-            "type": "string",
-            "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]
-          },
-          "skills": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "mcpServers": {
-            "type": "array",
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "object",
-                  "propertyNames": {
-                    "type": "string"
-                  },
-                  "additionalProperties": {}
-                }
-              ]
-            }
-          },
-          "effort": {
-            "type": "string",
-            "enum": ["low", "medium", "high", "max"]
-          },
-          "memory": {
-            "type": "string",
-            "enum": ["user", "project", "local"]
-          },
-          "background": {
-            "type": "boolean"
-          },
-          "isolation": {
-            "type": "string",
-            "enum": ["worktree", "remote"]
-          },
-          "hooks": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
-          },
-          "thinking": {
-            "type": "boolean"
-          },
-          "thinkingBudget": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "timeout": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "criticalSystemReminder": {
-            "type": "string"
-          },
-          "requiredMcpServers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "omitLiteaiMd": {
-            "type": "boolean"
-          },
-          "initialPrompt": {
-            "type": "string"
-          },
-          "containerImage": {
-            "type": "string"
-          }
-        },
-        "required": ["name", "mode", "permission", "options"]
-      },
-      "Event.agent.updated": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "agent.updated"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "agents": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/Agent"
-                }
-              }
-            },
-            "required": ["agents"]
           }
         },
         "required": ["type", "properties"]
@@ -10271,6 +10486,239 @@
         },
         "required": ["type", "properties"]
       },
+      "PermissionAction": {
+        "type": "string",
+        "enum": ["allow", "deny", "ask"]
+      },
+      "PermissionRule": {
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "action": {
+            "$ref": "#/components/schemas/PermissionAction"
+          }
+        },
+        "required": ["permission", "pattern", "action"]
+      },
+      "PermissionRuleset": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PermissionRule"
+        }
+      },
+      "Agent": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["subagent", "primary", "all"]
+          },
+          "native": {
+            "type": "boolean"
+          },
+          "hidden": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "topP": {
+            "type": "number"
+          },
+          "temperature": {
+            "type": "number"
+          },
+          "color": {
+            "type": "string"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/PermissionRuleset"
+          },
+          "model": {
+            "type": "object",
+            "properties": {
+              "modelID": {
+                "type": "string"
+              },
+              "providerID": {
+                "type": "string"
+              }
+            },
+            "required": ["modelID", "providerID"]
+          },
+          "variant": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "toolChoice": {
+            "type": "string",
+            "enum": ["auto", "required", "none"]
+          },
+          "options": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "steps": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              }
+            ]
+          },
+          "disallowedTools": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "permissionMode": {
+            "type": "string",
+            "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mcpServers": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              ]
+            }
+          },
+          "effort": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "max"]
+          },
+          "memory": {
+            "type": "string",
+            "enum": ["user", "project", "local"]
+          },
+          "background": {
+            "type": "boolean"
+          },
+          "isolation": {
+            "type": "string",
+            "enum": ["worktree", "remote"]
+          },
+          "hooks": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "thinkingBudget": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "timeout": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "criticalSystemReminder": {
+            "type": "string"
+          },
+          "requiredMcpServers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "omitLiteaiMd": {
+            "type": "boolean"
+          },
+          "initialPrompt": {
+            "type": "string"
+          },
+          "containerImage": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "mode", "permission", "options"]
+      },
+      "Event.agent.updated": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "agent.updated"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "agents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Agent"
+                }
+              }
+            },
+            "required": ["agents"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
       "SessionStatus": {
         "anyOf": [
           {
@@ -10311,6 +10759,19 @@
               }
             },
             "required": ["type"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "paused"
+              },
+              "step": {
+                "type": "number"
+              }
+            },
+            "required": ["type", "step"]
           }
         ]
       },
@@ -10353,6 +10814,96 @@
               }
             },
             "required": ["sessionID"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.session.checkpoint": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "session.checkpoint"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string",
+                "pattern": "^ses.*"
+              },
+              "checkpoint": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "step": {
+                    "type": "number"
+                  },
+                  "timestamp": {
+                    "type": "number"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "properties": {
+                      "agent": {
+                        "type": "string"
+                      },
+                      "model": {
+                        "type": "object",
+                        "properties": {
+                          "providerID": {
+                            "type": "string"
+                          },
+                          "modelID": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["providerID", "modelID"]
+                      },
+                      "trigger": {
+                        "type": "string",
+                        "enum": ["user", "subtask", "compaction", "retry"]
+                      },
+                      "timing": {
+                        "type": "object",
+                        "properties": {
+                          "start": {
+                            "type": "number"
+                          },
+                          "end": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["start", "end"]
+                      },
+                      "tokenUsage": {
+                        "type": "object",
+                        "properties": {
+                          "input": {
+                            "type": "number"
+                          },
+                          "output": {
+                            "type": "number"
+                          },
+                          "reasoning": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["input", "output", "reasoning"]
+                      },
+                      "traceSpanID": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["agent", "model", "trigger", "timing"]
+                  }
+                },
+                "required": ["id", "step", "timestamp", "metadata"]
+              }
+            },
+            "required": ["sessionID", "checkpoint"]
           }
         },
         "required": ["type", "properties"]
@@ -10756,9 +11307,6 @@
               }
             },
             "required": ["created", "updated"]
-          },
-          "permission": {
-            "$ref": "#/components/schemas/PermissionRuleset"
           },
           "revert": {
             "type": "object",
@@ -11174,9 +11722,6 @@
             "$ref": "#/components/schemas/Event.command.executed"
           },
           {
-            "$ref": "#/components/schemas/Event.agent.updated"
-          },
-          {
             "$ref": "#/components/schemas/Event.lsp.client.diagnostics"
           },
           {
@@ -11198,10 +11743,16 @@
             "$ref": "#/components/schemas/Event.message.part.removed"
           },
           {
+            "$ref": "#/components/schemas/Event.agent.updated"
+          },
+          {
             "$ref": "#/components/schemas/Event.session.status"
           },
           {
             "$ref": "#/components/schemas/Event.session.idle"
+          },
+          {
+            "$ref": "#/components/schemas/Event.session.checkpoint"
           },
           {
             "$ref": "#/components/schemas/Event.session.compacted"
@@ -11834,6 +12385,27 @@
             "items": {
               "type": "string"
             }
+          },
+          "dynamicModels": {
+            "description": "Enable dynamic model fetching from the provider's OpenAI-compatible /v1/models endpoint. When enabled, the model list is fetched directly from the provider's API instead of using the static models.dev registry.",
+            "anyOf": [
+              {
+                "description": "Enable dynamic model fetching from the provider's /v1/models endpoint",
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "timeout": {
+                    "description": "Request timeout in milliseconds for the /v1/models endpoint. Default: 5000",
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
           "options": {
             "type": "object",

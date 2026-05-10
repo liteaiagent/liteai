@@ -354,23 +354,7 @@ export const RunCommand = cmd({
       process.exit(1)
     }
 
-    const rules: PermissionNext.Ruleset = [
-      {
-        permission: "ask_user",
-        action: "deny",
-        pattern: "*",
-      },
-      {
-        permission: "plan_enter",
-        action: "deny",
-        pattern: "*",
-      },
-      {
-        permission: "plan_exit",
-        action: "deny",
-        pattern: "*",
-      },
-    ]
+
 
     function title() {
       if (args.title === undefined) return
@@ -394,7 +378,6 @@ export const RunCommand = cmd({
       const name = title()
       const result = await sdk.project.session.create({
         title: name,
-        permission: rules,
         projectID: directory ?? process.cwd(),
       })
       return result.data?.id

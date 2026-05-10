@@ -21,6 +21,9 @@ import { SendCommandInputTool } from "./send_command_input"
 import { SendMessageTool } from "./send_message"
 import { SkillTool } from "./skill"
 import { TaskTool } from "./task"
+import { TaskStopTool } from "./task_stop"
+import { TeamCreateTool } from "./team_create"
+import { TeamDeleteTool } from "./team_delete"
 import { TodoWriteTool } from "./todo"
 import type { Tool } from "./tool"
 import { WebFetchTool } from "./webfetch"
@@ -51,6 +54,9 @@ export namespace ToolRegistry {
       WriteTool,
       SendMessageTool,
       TaskTool,
+      TaskStopTool,
+      TeamCreateTool,
+      TeamDeleteTool,
       WebFetchTool,
       TodoWriteTool,
       // Intentionally disabled. The agent remembers the current state of its tasks through its

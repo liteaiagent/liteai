@@ -2,7 +2,7 @@
 
 import { buildClientParams, type Client, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, GlobalFeedbackRateResponses, GlobalFeedbackSubmitResponses, GlobalFeedbackSurveyResponses, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, PermissionRuleset, ProjectAgentCreateErrors, ProjectAgentCreateResponses, ProjectAgentDeleteErrors, ProjectAgentDeleteResponses, ProjectAgentGetErrors, ProjectAgentGetResponses, ProjectAgentListResponses, ProjectAgentUpdateErrors, ProjectAgentUpdateResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectDiagnosticsResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionContextErrors, ProjectSessionContextResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionHistoryErrors, ProjectSessionHistoryResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionSearchErrors, ProjectSessionSearchResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTagsErrors, ProjectSessionTagsResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectStyleActiveResponses, ProjectStyleListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen';
+import type { AgentPartInput, Auth as Auth3, AuthRemoveErrors, AuthRemoveResponses, AuthSetErrors, AuthSetResponses, BrowseResponses, Config as Config3, ConfigGetResponses, ConfigUpdateErrors, ConfigUpdateResponses, DisposeResponses, EventSubscribeResponses, FilePartInput, FilePartSource, GlobalFeedbackRateResponses, GlobalFeedbackSubmitResponses, GlobalFeedbackSurveyResponses, HealthResponses, LogResponses, LogWriteResponses, McpLocalConfig, McpRemoteConfig, OutputFormat, Part as Part2, PathResponses, ProjectAgentCreateErrors, ProjectAgentCreateResponses, ProjectAgentDeleteErrors, ProjectAgentDeleteResponses, ProjectAgentGetErrors, ProjectAgentGetResponses, ProjectAgentListResponses, ProjectAgentUpdateErrors, ProjectAgentUpdateResponses, ProjectArchiveErrors, ProjectArchiveResponses, ProjectCommandListResponses, ProjectConfigGetResponses, ProjectConfigProvidersResponses, ProjectConfigUpdateErrors, ProjectConfigUpdateResponses, ProjectCreateResponses, ProjectCurrentResponses, ProjectDiagnosticsResponses, ProjectEventSubscribeResponses, ProjectExperimentalWorkspaceCreateErrors, ProjectExperimentalWorkspaceCreateResponses, ProjectExperimentalWorkspaceListResponses, ProjectExperimentalWorkspaceRemoveErrors, ProjectExperimentalWorkspaceRemoveResponses, ProjectFileListResponses, ProjectFileReadResponses, ProjectFileStatusResponses, ProjectFindFilesResponses, ProjectFindSymbolsResponses, ProjectFindTextResponses, ProjectFormatterStatusResponses, ProjectGetErrors, ProjectGetResponses, ProjectInitGitErrors, ProjectInitGitResponses, ProjectInstanceDisposeResponses, ProjectInstanceInfoResponses, ProjectListResponses, ProjectLspStatusResponses, ProjectMcpAddErrors, ProjectMcpAddResponses, ProjectMcpAuthAuthenticateErrors, ProjectMcpAuthAuthenticateResponses, ProjectMcpAuthCallbackErrors, ProjectMcpAuthCallbackResponses, ProjectMcpAuthRemoveErrors, ProjectMcpAuthRemoveResponses, ProjectMcpAuthStartErrors, ProjectMcpAuthStartResponses, ProjectMcpConnectResponses, ProjectMcpDisconnectResponses, ProjectMcpResourceListResponses, ProjectMcpStatusResponses, ProjectMcpToolsResponses, ProjectPartDeleteErrors, ProjectPartDeleteResponses, ProjectPartUpdateErrors, ProjectPartUpdateResponses, ProjectPermissionListResponses, ProjectPermissionReplyErrors, ProjectPermissionReplyResponses, ProjectPluginDisableResponses, ProjectPluginEnableResponses, ProjectPluginListResponses, ProjectPluginMarketplaceAddResponses, ProjectPluginMarketplaceInstallResponses, ProjectPluginMarketplaceListResponses, ProjectPluginMarketplacePluginsResponses, ProjectPluginMarketplaceRemoveResponses, ProjectPluginUninstallResponses, ProjectPtyConnectErrors, ProjectPtyConnectResponses, ProjectPtyCreateErrors, ProjectPtyCreateResponses, ProjectPtyGetErrors, ProjectPtyGetResponses, ProjectPtyListResponses, ProjectPtyRemoveErrors, ProjectPtyRemoveResponses, ProjectPtyUpdateErrors, ProjectPtyUpdateResponses, ProjectQuestionListResponses, ProjectQuestionRejectErrors, ProjectQuestionRejectResponses, ProjectQuestionReplyErrors, ProjectQuestionReplyResponses, ProjectSessionAbortErrors, ProjectSessionAbortResponses, ProjectSessionCheckpointErrors, ProjectSessionCheckpointResponses, ProjectSessionCheckpointsErrors, ProjectSessionCheckpointsResponses, ProjectSessionChildrenErrors, ProjectSessionChildrenResponses, ProjectSessionCommandErrors, ProjectSessionCommandResponses, ProjectSessionContextErrors, ProjectSessionContextResponses, ProjectSessionCreateErrors, ProjectSessionCreateResponses, ProjectSessionDeleteErrors, ProjectSessionDeleteMessageErrors, ProjectSessionDeleteMessageResponses, ProjectSessionDeleteResponses, ProjectSessionDiffResponses, ProjectSessionForkAtErrors, ProjectSessionForkAtResponses, ProjectSessionForkResponses, ProjectSessionGetErrors, ProjectSessionGetResponses, ProjectSessionHistoryErrors, ProjectSessionHistoryResponses, ProjectSessionInitErrors, ProjectSessionInitResponses, ProjectSessionListResponses, ProjectSessionMessageErrors, ProjectSessionMessageResponses, ProjectSessionMessagesErrors, ProjectSessionMessagesResponses, ProjectSessionPromptAsyncErrors, ProjectSessionPromptAsyncResponses, ProjectSessionPromptErrors, ProjectSessionPromptResponses, ProjectSessionResumeErrors, ProjectSessionResumeResponses, ProjectSessionRevertErrors, ProjectSessionRevertResponses, ProjectSessionSearchErrors, ProjectSessionSearchResponses, ProjectSessionShareErrors, ProjectSessionShareResponses, ProjectSessionShellErrors, ProjectSessionShellResponses, ProjectSessionStatusErrors, ProjectSessionStatusResponses, ProjectSessionStepBackErrors, ProjectSessionStepBackResponses, ProjectSessionSummarizeErrors, ProjectSessionSummarizeResponses, ProjectSessionTagsErrors, ProjectSessionTagsResponses, ProjectSessionTodoErrors, ProjectSessionTodoResponses, ProjectSessionUnrevertErrors, ProjectSessionUnrevertResponses, ProjectSessionUnshareErrors, ProjectSessionUnshareResponses, ProjectSessionUpdateErrors, ProjectSessionUpdateResponses, ProjectSkillListResponses, ProjectStyleActiveResponses, ProjectStyleListResponses, ProjectToolIdsErrors, ProjectToolIdsResponses, ProjectToolListErrors, ProjectToolListResponses, ProjectUnarchiveErrors, ProjectUnarchiveResponses, ProjectUpdateErrors, ProjectUpdateResponses, ProjectVcsResponses, ProjectWorktreeCreateErrors, ProjectWorktreeCreateResponses, ProjectWorktreeListResponses, ProjectWorktreeRemoveErrors, ProjectWorktreeRemoveResponses, ProjectWorktreeResetErrors, ProjectWorktreeResetResponses, ProviderAuthResponses, ProviderListResponses, ProviderOauthAuthorizeErrors, ProviderOauthAuthorizeResponses, ProviderOauthCallbackErrors, ProviderOauthCallbackResponses, QuestionAnswer, SubtaskPartInput, SystemFileListResponses, SystemFindFilesResponses, TextPartInput, WorktreeCreateInput, WorktreeRemoveInput, WorktreeResetInput } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -491,16 +491,16 @@ export class Session extends HeyApiClient {
         workspace?: string;
         parentID?: string;
         title?: string;
-        permission?: PermissionRuleset;
         workspaceID?: string;
+        sessionMode?: 'Normal' | 'Coordinator';
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
                     { in: 'path', key: 'projectID' },
                     { in: 'query', key: 'workspace' },
                     { in: 'body', key: 'parentID' },
                     { in: 'body', key: 'title' },
-                    { in: 'body', key: 'permission' },
-                    { in: 'body', key: 'workspaceID' }
+                    { in: 'body', key: 'workspaceID' },
+                    { in: 'body', key: 'sessionMode' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectSessionCreateResponses, ProjectSessionCreateErrors, ThrowOnError>({
             url: '/project/{projectID}/session',
@@ -970,6 +970,7 @@ export class Session extends HeyApiClient {
         format?: OutputFormat;
         system?: string;
         variant?: string;
+        stepMode?: boolean;
         parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>;
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
@@ -983,6 +984,7 @@ export class Session extends HeyApiClient {
                     { in: 'body', key: 'format' },
                     { in: 'body', key: 'system' },
                     { in: 'body', key: 'variant' },
+                    { in: 'body', key: 'stepMode' },
                     { in: 'body', key: 'parts' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectSessionPromptResponses, ProjectSessionPromptErrors, ThrowOnError>({
@@ -1064,6 +1066,7 @@ export class Session extends HeyApiClient {
         format?: OutputFormat;
         system?: string;
         variant?: string;
+        stepMode?: boolean;
         parts?: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>;
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
@@ -1077,6 +1080,7 @@ export class Session extends HeyApiClient {
                     { in: 'body', key: 'format' },
                     { in: 'body', key: 'system' },
                     { in: 'body', key: 'variant' },
+                    { in: 'body', key: 'stepMode' },
                     { in: 'body', key: 'parts' }
                 ] }]);
         return (options?.client ?? this.client).post<ProjectSessionPromptAsyncResponses, ProjectSessionPromptAsyncErrors, ThrowOnError>({
@@ -1223,6 +1227,154 @@ export class Session extends HeyApiClient {
                 ] }]);
         return (options?.client ?? this.client).post<ProjectSessionUnrevertResponses, ProjectSessionUnrevertErrors, ThrowOnError>({
             url: '/project/{projectID}/session/{sessionID}/unrevert',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
+     * Resume a paused session
+     *
+     * Resume a session paused in step mode, optionally injecting user guidance or disabling step mode.
+     */
+    public resume<ThrowOnError extends boolean = false>(parameters: {
+        sessionID: string;
+        projectID: string;
+        workspace?: string;
+        guidance?: string;
+        disableStepMode?: boolean;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'sessionID' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' },
+                    { in: 'body', key: 'guidance' },
+                    { in: 'body', key: 'disableStepMode' }
+                ] }]);
+        return (options?.client ?? this.client).post<ProjectSessionResumeResponses, ProjectSessionResumeErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/{sessionID}/resume',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+    
+    /**
+     * Step back to a previous checkpoint
+     *
+     * Revert the session state and workspace files to a specific historical checkpoint. This is a destructive action that truncates newer messages.
+     */
+    public stepBack<ThrowOnError extends boolean = false>(parameters: {
+        sessionID: string;
+        projectID: string;
+        workspace?: string;
+        checkpointID?: string;
+        guidance?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'sessionID' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' },
+                    { in: 'body', key: 'checkpointID' },
+                    { in: 'body', key: 'guidance' }
+                ] }]);
+        return (options?.client ?? this.client).post<ProjectSessionStepBackResponses, ProjectSessionStepBackErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/{sessionID}/step-back',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+    
+    /**
+     * Fork session at checkpoint
+     *
+     * Create a new independent session branching off from a specific historical checkpoint. Optionally override the model or agent.
+     */
+    public forkAt<ThrowOnError extends boolean = false>(parameters: {
+        sessionID: string;
+        projectID: string;
+        workspace?: string;
+        checkpointID?: string;
+        model?: {
+            providerID: string;
+            modelID: string;
+        };
+        agent?: string;
+        guidance?: string;
+        autoResume?: boolean;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'sessionID' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' },
+                    { in: 'body', key: 'checkpointID' },
+                    { in: 'body', key: 'model' },
+                    { in: 'body', key: 'agent' },
+                    { in: 'body', key: 'guidance' },
+                    { in: 'body', key: 'autoResume' }
+                ] }]);
+        return (options?.client ?? this.client).post<ProjectSessionForkAtResponses, ProjectSessionForkAtErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/{sessionID}/fork-at',
+            ...options,
+            ...params,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+                ...params.headers
+            }
+        });
+    }
+    
+    /**
+     * List checkpoints for a session
+     *
+     * Get all step-level checkpoints for a session, ordered by step. Messages are excluded.
+     */
+    public checkpoints<ThrowOnError extends boolean = false>(parameters: {
+        sessionID: string;
+        projectID: string;
+        workspace?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'sessionID' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' }
+                ] }]);
+        return (options?.client ?? this.client).get<ProjectSessionCheckpointsResponses, ProjectSessionCheckpointsErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/{sessionID}/checkpoints',
+            ...options,
+            ...params
+        });
+    }
+    
+    /**
+     * Get a specific checkpoint
+     *
+     * Get full checkpoint data including messages for a specific checkpoint.
+     */
+    public checkpoint<ThrowOnError extends boolean = false>(parameters: {
+        sessionID: string;
+        checkpointID: string;
+        projectID: string;
+        workspace?: string;
+    }, options?: Options<never, ThrowOnError>) {
+        const params = buildClientParams([parameters], [{ args: [
+                    { in: 'path', key: 'sessionID' },
+                    { in: 'path', key: 'checkpointID' },
+                    { in: 'path', key: 'projectID' },
+                    { in: 'query', key: 'workspace' }
+                ] }]);
+        return (options?.client ?? this.client).get<ProjectSessionCheckpointResponses, ProjectSessionCheckpointErrors, ThrowOnError>({
+            url: '/project/{projectID}/session/{sessionID}/checkpoints/{checkpointID}',
             ...options,
             ...params
         });

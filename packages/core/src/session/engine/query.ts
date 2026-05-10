@@ -348,7 +348,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     // The actual processor is created by the orchestrator after turn-start
     // Tools are resolved here using a temporary processor reference
     const toolProcessorRef = { message: assistantMessage, partFromToolCall: (_id: string) => undefined }
-    const tools = await resolveTools({
+    let tools = await resolveTools({
       agent,
       session,
       model,
@@ -364,6 +364,14 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         log.info("queryLoop: appended synthetic message via onInject", { sessionID, messageID: msg.info.id })
       },
     })
+
+    const { isCoordinatorMode, applyCoordinatorToolFilter, getCoordinatorUserContext, getCoordinatorSystemPrompt } =
+      await import("../../coordinator")
+
+    const inCoordinatorMode = isCoordinatorMode(session.sessionMode)
+    if (inCoordinatorMode) {
+      tools = applyCoordinatorToolFilter(tools) as typeof tools
+    }
 
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
     const format: Message.OutputFormat = lastUser.format ?? { type: "text" }
@@ -406,7 +414,16 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     const enabledToolNames = new Set(Object.keys(tools))
     const skills = await SystemPrompt.skills(agent, enabledToolNames)
     const instructions = agent?.omitLiteaiMd ? [] : await InstructionPrompt.system()
-    const system = [...providerParts, ...(skills ? [skills] : []), ...instructions]
+    let system = [...providerParts, ...(skills ? [skills] : []), ...instructions]
+
+    if (inCoordinatorMode) {
+      const { MCP } = await import("../../mcp")
+      const clients = await MCP.clients()
+      const mcpServers = Object.keys(clients).map((name) => ({ name }))
+      const workerCapabilities = getCoordinatorUserContext(session.sessionMode, mcpServers).workerToolsContext
+      system = [getCoordinatorSystemPrompt({ workerCapabilities })]
+    }
+
     if (format.type === "json_schema") {
       system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
     }

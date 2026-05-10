@@ -82,6 +82,8 @@ export type PermissionRequest = {
         messageID: string;
         callID: string;
     };
+    agentId?: string;
+    agentName?: string;
 };
 
 export type EventPermissionAsked = {
@@ -221,71 +223,6 @@ export type EventCommandExecuted = {
         sessionID: string;
         arguments: string;
         messageID: string;
-    };
-};
-
-export type PermissionAction = 'allow' | 'deny' | 'ask';
-
-export type PermissionRule = {
-    permission: string;
-    pattern: string;
-    action: PermissionAction;
-};
-
-export type PermissionRuleset = Array<PermissionRule>;
-
-export type Agent = {
-    name: string;
-    description?: string;
-    mode: 'subagent' | 'primary' | 'all';
-    native?: boolean;
-    hidden?: boolean;
-    enabled?: boolean;
-    topP?: number;
-    temperature?: number;
-    color?: string;
-    permission: PermissionRuleset;
-    model?: {
-        modelID: string;
-        providerID: string;
-    };
-    variant?: string;
-    prompt?: string;
-    toolChoice?: 'auto' | 'required' | 'none';
-    options: {
-        [key: string]: unknown;
-    };
-    steps?: number;
-    tools?: string | Array<string> | {
-        [key: string]: boolean;
-    };
-    disallowedTools?: string | Array<string>;
-    permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
-    skills?: Array<string>;
-    mcpServers?: Array<string | {
-        [key: string]: unknown;
-    }>;
-    effort?: 'low' | 'medium' | 'high' | 'max';
-    memory?: 'user' | 'project' | 'local';
-    background?: boolean;
-    isolation?: 'worktree' | 'remote';
-    hooks?: {
-        [key: string]: unknown;
-    };
-    thinking?: boolean;
-    thinkingBudget?: number;
-    timeout?: number;
-    criticalSystemReminder?: string;
-    requiredMcpServers?: Array<string>;
-    omitLiteaiMd?: boolean;
-    initialPrompt?: string;
-    containerImage?: string;
-};
-
-export type EventAgentUpdated = {
-    type: 'agent.updated';
-    properties: {
-        agents: Array<Agent>;
     };
 };
 
@@ -745,6 +682,71 @@ export type EventMessagePartRemoved = {
     };
 };
 
+export type PermissionAction = 'allow' | 'deny' | 'ask';
+
+export type PermissionRule = {
+    permission: string;
+    pattern: string;
+    action: PermissionAction;
+};
+
+export type PermissionRuleset = Array<PermissionRule>;
+
+export type Agent = {
+    name: string;
+    description?: string;
+    mode: 'subagent' | 'primary' | 'all';
+    native?: boolean;
+    hidden?: boolean;
+    enabled?: boolean;
+    topP?: number;
+    temperature?: number;
+    color?: string;
+    permission: PermissionRuleset;
+    model?: {
+        modelID: string;
+        providerID: string;
+    };
+    variant?: string;
+    prompt?: string;
+    toolChoice?: 'auto' | 'required' | 'none';
+    options: {
+        [key: string]: unknown;
+    };
+    steps?: number;
+    tools?: string | Array<string> | {
+        [key: string]: boolean;
+    };
+    disallowedTools?: string | Array<string>;
+    permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+    skills?: Array<string>;
+    mcpServers?: Array<string | {
+        [key: string]: unknown;
+    }>;
+    effort?: 'low' | 'medium' | 'high' | 'max';
+    memory?: 'user' | 'project' | 'local';
+    background?: boolean;
+    isolation?: 'worktree' | 'remote';
+    hooks?: {
+        [key: string]: unknown;
+    };
+    thinking?: boolean;
+    thinkingBudget?: number;
+    timeout?: number;
+    criticalSystemReminder?: string;
+    requiredMcpServers?: Array<string>;
+    omitLiteaiMd?: boolean;
+    initialPrompt?: string;
+    containerImage?: string;
+};
+
+export type EventAgentUpdated = {
+    type: 'agent.updated';
+    properties: {
+        agents: Array<Agent>;
+    };
+};
+
 export type SessionStatus = {
     type: 'idle';
 } | {
@@ -754,6 +756,9 @@ export type SessionStatus = {
     next: number;
 } | {
     type: 'busy';
+} | {
+    type: 'paused';
+    step: number;
 };
 
 export type EventSessionStatus = {
@@ -768,6 +773,36 @@ export type EventSessionIdle = {
     type: 'session.idle';
     properties: {
         sessionID: string;
+    };
+};
+
+export type EventSessionCheckpoint = {
+    type: 'session.checkpoint';
+    properties: {
+        sessionID: string;
+        checkpoint: {
+            id: string;
+            step: number;
+            timestamp: number;
+            metadata: {
+                agent: string;
+                model: {
+                    providerID: string;
+                    modelID: string;
+                };
+                trigger: 'user' | 'subtask' | 'compaction' | 'retry';
+                timing: {
+                    start: number;
+                    end: number;
+                };
+                tokenUsage?: {
+                    input: number;
+                    output: number;
+                    reasoning: number;
+                };
+                traceSpanID?: string;
+            };
+        };
     };
 };
 
@@ -912,7 +947,6 @@ export type Session = {
         compacting?: number;
         archived?: number;
     };
-    permission?: PermissionRuleset;
     revert?: {
         messageID: string;
         partID?: string;
@@ -1027,7 +1061,7 @@ export type EventPtyDeleted = {
     };
 };
 
-export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventAgentUpdated | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventSessionStatus | EventSessionIdle | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
+export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
 
 export type GlobalEvent = {
     directory: string;
@@ -1291,6 +1325,15 @@ export type ProviderConfig = {
     };
     whitelist?: Array<string>;
     blacklist?: Array<string>;
+    /**
+     * Enable dynamic model fetching from the provider's OpenAI-compatible /v1/models endpoint. When enabled, the model list is fetched directly from the provider's API instead of using the static models.dev registry.
+     */
+    dynamicModels?: boolean | {
+        /**
+         * Request timeout in milliseconds for the /v1/models endpoint. Default: 5000
+         */
+        timeout?: number;
+    };
     options?: {
         apiKey?: string;
         baseURL?: string;
@@ -3313,8 +3356,8 @@ export type ProjectSessionCreateData = {
     body?: {
         parentID?: string;
         title?: string;
-        permission?: PermissionRuleset;
         workspaceID?: string;
+        sessionMode?: 'Normal' | 'Coordinator';
     };
     path: {
         projectID: string;
@@ -3963,6 +4006,7 @@ export type ProjectSessionPromptData = {
         format?: OutputFormat;
         system?: string;
         variant?: string;
+        stepMode?: boolean;
         parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>;
     };
     path: {
@@ -4157,6 +4201,7 @@ export type ProjectSessionPromptAsyncData = {
         format?: OutputFormat;
         system?: string;
         variant?: string;
+        stepMode?: boolean;
         parts: Array<TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput>;
     };
     path: {
@@ -4354,6 +4399,188 @@ export type ProjectSessionUnrevertResponses = {
 };
 
 export type ProjectSessionUnrevertResponse = ProjectSessionUnrevertResponses[keyof ProjectSessionUnrevertResponses];
+
+export type ProjectSessionResumeData = {
+    body?: {
+        guidance?: string;
+        disableStepMode?: boolean;
+    };
+    path: {
+        sessionID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/resume';
+};
+
+export type ProjectSessionResumeErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+    /**
+     * Not found
+     */
+    404: NotFoundError;
+};
+
+export type ProjectSessionResumeError = ProjectSessionResumeErrors[keyof ProjectSessionResumeErrors];
+
+export type ProjectSessionResumeResponses = {
+    /**
+     * Session resumed
+     */
+    200: {
+        resumed: boolean;
+    };
+};
+
+export type ProjectSessionResumeResponse = ProjectSessionResumeResponses[keyof ProjectSessionResumeResponses];
+
+export type ProjectSessionStepBackData = {
+    body?: {
+        checkpointID: string;
+        guidance?: string;
+    };
+    path: {
+        sessionID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/step-back';
+};
+
+export type ProjectSessionStepBackErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+    /**
+     * Not found
+     */
+    404: NotFoundError;
+};
+
+export type ProjectSessionStepBackError = ProjectSessionStepBackErrors[keyof ProjectSessionStepBackErrors];
+
+export type ProjectSessionStepBackResponses = {
+    /**
+     * Session reverted to checkpoint
+     */
+    200: {
+        restored: boolean;
+        step: number;
+        orphanedChildren: Array<string>;
+    };
+};
+
+export type ProjectSessionStepBackResponse = ProjectSessionStepBackResponses[keyof ProjectSessionStepBackResponses];
+
+export type ProjectSessionForkAtData = {
+    body?: {
+        checkpointID: string;
+        model?: {
+            providerID: string;
+            modelID: string;
+        };
+        agent?: string;
+        guidance?: string;
+        autoResume?: boolean;
+    };
+    path: {
+        sessionID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/fork-at';
+};
+
+export type ProjectSessionForkAtErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+    /**
+     * Not found
+     */
+    404: NotFoundError;
+};
+
+export type ProjectSessionForkAtError = ProjectSessionForkAtErrors[keyof ProjectSessionForkAtErrors];
+
+export type ProjectSessionForkAtResponses = {
+    /**
+     * Session forked successfully
+     */
+    200: Session;
+};
+
+export type ProjectSessionForkAtResponse = ProjectSessionForkAtResponses[keyof ProjectSessionForkAtResponses];
+
+export type ProjectSessionCheckpointsData = {
+    body?: never;
+    path: {
+        sessionID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/checkpoints';
+};
+
+export type ProjectSessionCheckpointsErrors = {
+    /**
+     * Not found
+     */
+    404: NotFoundError;
+};
+
+export type ProjectSessionCheckpointsError = ProjectSessionCheckpointsErrors[keyof ProjectSessionCheckpointsErrors];
+
+export type ProjectSessionCheckpointsResponses = {
+    /**
+     * List of checkpoint summaries
+     */
+    200: Array<unknown>;
+};
+
+export type ProjectSessionCheckpointsResponse = ProjectSessionCheckpointsResponses[keyof ProjectSessionCheckpointsResponses];
+
+export type ProjectSessionCheckpointData = {
+    body?: never;
+    path: {
+        sessionID: string;
+        checkpointID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/checkpoints/{checkpointID}';
+};
+
+export type ProjectSessionCheckpointErrors = {
+    /**
+     * Not found
+     */
+    404: NotFoundError;
+};
+
+export type ProjectSessionCheckpointError = ProjectSessionCheckpointErrors[keyof ProjectSessionCheckpointErrors];
+
+export type ProjectSessionCheckpointResponses = {
+    /**
+     * Full checkpoint data
+     */
+    200: unknown;
+};
 
 export type ProjectPermissionReplyData = {
     body?: {

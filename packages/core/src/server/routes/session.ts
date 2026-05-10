@@ -311,7 +311,9 @@ export const SessionRoutes = lazy(() =>
       validator("json", Session.create.schema.optional()),
       async (c) => {
         const body = c.req.valid("json") ?? {}
-        const session = await Session.create(body)
+        const { isCoordinatorMode } = await import("../../coordinator")
+        const sessionMode = body.sessionMode ?? (isCoordinatorMode() ? "Coordinator" : "Normal")
+        const session = await Session.create({ ...body, sessionMode })
         return c.json(session)
       },
     )

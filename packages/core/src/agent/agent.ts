@@ -219,6 +219,22 @@ export namespace Agent {
       } as BuiltInAgentDefinition
     }
 
+    const { ForkAgentConfig } = await import("./fork")
+    result[ForkAgentConfig.agentType] = {
+      name: ForkAgentConfig.agentType,
+      mode: "subagent",
+      permission: PermissionNext.merge(defaults, user),
+      options: {},
+      tools: ForkAgentConfig.tools,
+      permissionMode: ForkAgentConfig.permissionMode,
+      background: ForkAgentConfig.background,
+      timeout: ForkAgentConfig.wallClockTimeout,
+      steps: ForkAgentConfig.maxTurns,
+      native: true,
+      source: ForkAgentConfig.source,
+      getSystemPrompt: async () => "",
+    } as BuiltInAgentDefinition
+
     const dirs = await Config.directories()
     const platformAgents = await AgentLoader.loadPlatformAgents()
     let projectAgents: Record<string, z.infer<typeof AgentSchema>> = {}

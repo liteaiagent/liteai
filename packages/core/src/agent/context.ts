@@ -33,9 +33,25 @@ export interface AppState {
   agentNameRegistry?: Record<string, string>
   /** Tasks/state tracking for background agents. */
   tasks?: Record<string, BackgroundTaskState>
+  /** Team context for coordinator/swarm mode. */
+  teamContext?: {
+    teamName: string
+    teamFilePath: string
+    leadAgentId: string
+    teammates: Record<
+      string,
+      {
+        name: string
+        agentType: string
+        color: string
+        spawnedAt: number
+        cwd: string
+      }
+    >
+  }
 }
 
-export type AgentContext = SubagentContext | TeammateAgentContext
+export type AgentContext = SubagentContext | TeammateAgentContext | RootAgentContext
 
 export interface Scope {
   readonly mode: "memory"
@@ -105,6 +121,25 @@ export interface SubagentContext {
   execController?: ExecController
 }
 
+/**
+ * Teammate agent context for in-process swarm teammates.
+ *
+ * Phase 1: Stub with identity-only fields. All coordinator tools guard against
+ * this context type and throw immediately.
+ *
+ * Phase 2/3 Roadmap: This interface must be extended with core capabilities
+ * before in-process teammates can execute tools:
+ *   - getAppState / setAppState (read-only view or isolated copy)
+ *   - abortController (for graceful shutdown via mailbox protocol)
+ *   - readFileState (for file-level caching)
+ *   - cwd (worktree-scoped working directory)
+ *
+ * Design Decision: Do NOT add these as optional properties. When Phase 3
+ * implementation begins, extract a `BaseExecutableContext` interface with
+ * the shared capabilities and have SubagentContext, TeammateAgentContext,
+ * and RootAgentContext all extend it. This ensures type safety at the
+ * call site rather than optional-property checks.
+ */
 export interface TeammateAgentContext {
   type: "teammate"
   agentId: string
@@ -113,6 +148,24 @@ export interface TeammateAgentContext {
   planModeRequired: boolean
   isTeamLead: boolean
   invokingRequestId?: string
+}
+
+export interface RootAgentContext {
+  type: "root"
+  agentId?: undefined
+  /** The session ID this root context is bound to. Used by tools that need
+   *  to reference the active session (e.g., team_create for leadSessionId). */
+  sessionId: string
+  invokingRequestId?: string
+  getAppState: () => AppState
+  setAppState: (updater: (state: AppState) => AppState) => void
+  setAppStateForTasks: (updater: (state: AppState) => AppState) => void
+  cwd: string
+  abortController: AbortController
+  // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
+  readFileState: Map<string, any>
+  // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
+  contentReplacementState?: any
 }
 
 export interface SubagentContextOverrides {

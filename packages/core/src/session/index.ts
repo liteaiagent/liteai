@@ -255,6 +255,7 @@ export namespace Session {
         parentID: SessionID.zod.optional(),
         title: z.string().optional(),
         workspaceID: WorkspaceID.zod.optional(),
+        sessionMode: z.enum(["Normal", "Coordinator"]).optional(),
       })
       .optional(),
     async (input) => {
@@ -263,6 +264,7 @@ export namespace Session {
         directory: Instance.directory,
         title: input?.title,
         workspaceID: input?.workspaceID,
+        sessionMode: input?.sessionMode,
       })
     },
   )
@@ -464,6 +466,7 @@ export namespace Session {
     parentID?: SessionID
     workspaceID?: WorkspaceID
     directory: string
+    sessionMode?: Session.Info["sessionMode"]
   }) {
     const result: Info = {
       id: SessionID.descending(input.id),
@@ -478,7 +481,7 @@ export namespace Session {
         created: Date.now(),
         updated: Date.now(),
       },
-      sessionMode: "Normal" as const,
+      sessionMode: input.sessionMode ?? ("Normal" as const),
       toolProfile: "Plan" as const,
       forkEnabled: false,
     }

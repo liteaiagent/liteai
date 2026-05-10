@@ -44,6 +44,7 @@ export namespace Flag {
   export declare const LITEAI_DISABLE_AGENTS: boolean
   export declare const LITEAI_DISABLE_PROJECT_CONFIG: boolean
   export declare const LITEAI_FORK_SUBAGENT: boolean
+  export declare const LITEAI_COORDINATOR_MODE: boolean
   export declare const LITEAI_CLIENT: string
   export const LITEAI_SERVER_PASSWORD = env("SERVER_PASSWORD")
   export const LITEAI_SERVER_USERNAME = env("SERVER_USERNAME")
@@ -157,6 +158,15 @@ Object.defineProperty(Flag, "LITEAI_PLUGIN_DIR", {
 Object.defineProperty(Flag, "LITEAI_FORK_SUBAGENT", {
   get() {
     return truthy("FORK_SUBAGENT")
+  },
+  enumerable: true,
+  configurable: false,
+})
+
+// Dynamic getter for LITEAI_COORDINATOR_MODE
+Object.defineProperty(Flag, "LITEAI_COORDINATOR_MODE", {
+  get() {
+    return truthy("COORDINATOR_MODE")
   },
   enumerable: true,
   configurable: false,

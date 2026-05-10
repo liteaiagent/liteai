@@ -101,40 +101,18 @@ export const SendMessageTool = Tool.define("send_message", {
   }),
   async execute(params, ctx) {
     const agentCtx = AgentExecutionContext.getStore()
+    if (!agentCtx) throw new Error("No agent context found")
+    if (agentCtx.type === "teammate") throw new Error("Teammates do not support sending messages yet")
 
-    let parentContext: ParentContext
-    if (agentCtx && agentCtx.type === "subagent") {
-      parentContext = {
-        sessionId: agentCtx.parentSessionId,
-        abortController: agentCtx.abortController,
-        readFileState: agentCtx.readFileState,
-        contentReplacementState: agentCtx.contentReplacementState,
-        getAppState: agentCtx.getAppState,
-        setAppState: agentCtx.setAppState,
-        setAppStateForTasks: agentCtx.setAppStateForTasks,
-        cwd: agentCtx.cwd,
-      }
-    } else {
-      // Stub for root session context until a real root context gets passed
-      let rootState: AppState = {}
-      const rootAbortController = new AbortController()
-      ctx.abort.addEventListener(
-        "abort",
-        () => {
-          rootAbortController.abort()
-        },
-        { once: true },
-      )
-
-      parentContext = {
-        sessionId: ctx.sessionID,
-        abortController: rootAbortController,
-        readFileState: new Map(),
-        getAppState: () => rootState,
-        setAppState: (updater) => {
-          rootState = updater(rootState)
-        },
-      }
+    const parentContext: ParentContext = {
+      sessionId: agentCtx.type === "subagent" ? agentCtx.parentSessionId : ctx.sessionID,
+      abortController: agentCtx.abortController,
+      readFileState: agentCtx.readFileState,
+      contentReplacementState: agentCtx.contentReplacementState,
+      getAppState: agentCtx.getAppState,
+      setAppState: agentCtx.setAppState,
+      setAppStateForTasks: agentCtx.setAppStateForTasks,
+      cwd: agentCtx.cwd,
     }
 
     const { target, text } = { target: params.to, text: params.message }
