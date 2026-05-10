@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, jest, spyOn, test } from "bun:test"
 import fs from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
-import { type AppState, type RootAgentContext, runWithAgentContext } from "../../src/agent/context"
+import {
+  type AgentContext,
+  type AppState,
+  type BackgroundTaskState,
+  type RootAgentContext,
+  runWithAgentContext,
+} from "../../src/agent/context"
 import * as resumeModule from "../../src/agent/resume"
 import { readMailbox } from "../../src/coordinator/teammate-mailbox"
 import { Global } from "../../src/global"
@@ -56,6 +63,8 @@ async function initTool(tool: { init: () => Promise<{ execute: unknown }> }) {
 
 describe("SendMessageTool", () => {
   let resumeSpy: ReturnType<typeof spyOn>
+  let originalRoot: string
+  let testRoot: string
 
   beforeEach(async () => {
     // Constitution §9: Use spyOn instead of mock.module for safe, scoped mocking
@@ -63,13 +72,16 @@ describe("SendMessageTool", () => {
       agentId: "test-agent",
       description: "test",
     })
-    Global.Path.root = path.join(process.cwd(), `.liteai-test-send-msg-${Date.now()}`)
+    originalRoot = Global.Path.root
+    testRoot = path.join(os.tmpdir(), `.liteai-test-send-msg-${Date.now()}`)
+    Global.Path.root = testRoot
   })
 
   afterEach(async () => {
     jest.restoreAllMocks()
+    Global.Path.root = originalRoot
     try {
-      await fs.rm(Global.Path.root, { recursive: true, force: true })
+      await fs.rm(testRoot, { recursive: true, force: true })
     } catch {}
   })
 
@@ -84,7 +96,7 @@ describe("SendMessageTool", () => {
       agentColor: "blue",
       planModeRequired: false,
       isTeamLead: false,
-    }
+    } as unknown as AgentContext
 
     await expect(
       runWithAgentContext(teammateCtx, () => execute({ to: "worker1", message: "hello" }, createMockToolCtx())),
@@ -106,7 +118,7 @@ describe("SendMessageTool", () => {
 
     expect(res.metadata.success).toBe(true)
     const state = getState()
-    expect(state.tasks?.worker1?.pendingMessages).toContain("hello")
+    expect((state.tasks?.worker1 as BackgroundTaskState)?.pendingMessages).toContain("hello")
     expect(resumeSpy).not.toHaveBeenCalled()
   })
 

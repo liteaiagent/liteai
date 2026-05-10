@@ -1,18 +1,35 @@
+import { Log } from "@liteai/util/log"
 import z from "zod"
-import { AgentExecutionContext, type AppState } from "../agent/context"
+import { AgentExecutionContext, type AppState, type ParentContext } from "../agent/context"
 import { readTeamFile, sanitizeTeamName, type TeamFile, writeTeamFile } from "../coordinator/team-helpers"
+import { startInProcessTeammate } from "../coordinator/teammate-runner"
+import { spawnInProcessTeammate } from "../coordinator/teammate-spawn"
 import { Tool } from "./tool"
+
+const log = Log.create({ service: "tool.team_create" })
 
 const parameters = z.object({
   team_name: z.string().describe("Name for the new team to create"),
   description: z.string().optional().describe("Team description/purpose"),
   agent_type: z.string().optional().describe("Type/role of the team lead (e.g., 'researcher', 'coordinator')"),
+  teammates: z
+    .array(
+      z.object({
+        name: z.string().describe("Teammate name"),
+        prompt: z.string().describe("Initial instructions for this teammate"),
+        model: z.string().optional().describe("Model override for this teammate"),
+        plan_mode_required: z.boolean().optional().describe("Whether this teammate must operate in plan mode"),
+      }),
+    )
+    .optional()
+    .describe("Teammates to spawn immediately after team creation"),
 })
 
 export const TeamCreateTool = Tool.define("team_create", {
   description: `Create a new team for coordinating multiple agents.
 - Takes a team_name parameter identifying the team
 - Sets up team directories and context
+- Optionally spawns teammates immediately with the teammates parameter
 - Use this when starting a multi-agent swarm task`,
   parameters,
   async execute(params, ctx) {
@@ -97,10 +114,82 @@ export const TeamCreateTool = Tool.define("team_create", {
       },
     }))
 
+    // ── Phase 3: Spawn inline teammates if specified ──
+    const spawnResults: Array<{ name: string; agentId: string; success: boolean; error?: string }> = []
+
+    if (params.teammates?.length) {
+      // Build parent context from current agent context for spawn
+      const parentContext: ParentContext = {
+        sessionId: leadSessionId,
+        abortController: agentCtx.abortController,
+        readFileState: agentCtx.readFileState,
+        contentReplacementState: agentCtx.contentReplacementState,
+        getAppState: agentCtx.getAppState,
+        setAppState: agentCtx.setAppState,
+        setAppStateForTasks: agentCtx.setAppStateForTasks,
+        cwd: agentCtx.cwd,
+      }
+
+      for (const mate of params.teammates) {
+        const spawnResult = await spawnInProcessTeammate(
+          {
+            name: mate.name,
+            teamName,
+            prompt: mate.prompt,
+            planModeRequired: mate.plan_mode_required ?? false,
+            model: mate.model,
+          },
+          parentContext,
+        )
+
+        spawnResults.push({
+          name: mate.name,
+          agentId: spawnResult.agentId,
+          success: spawnResult.success,
+          error: spawnResult.error,
+        })
+
+        if (spawnResult.success && spawnResult.teammateContext && spawnResult.abortController && spawnResult.taskId) {
+          // Start the runner loop (fire-and-forget)
+          startInProcessTeammate({
+            identity: {
+              agentId: spawnResult.agentId,
+              agentName: mate.name,
+              teamName,
+              planModeRequired: mate.plan_mode_required ?? false,
+              parentSessionId: leadSessionId,
+            },
+            taskId: spawnResult.taskId,
+            prompt: mate.prompt,
+            teammateContext: spawnResult.teammateContext,
+            abortController: spawnResult.abortController,
+          })
+
+          log.info("started teammate runner", { agentId: spawnResult.agentId, teamName })
+        } else if (!spawnResult.success) {
+          log.warn("teammate spawn failed", {
+            name: mate.name,
+            teamName,
+            error: spawnResult.error,
+          })
+        }
+      }
+    }
+
+    const teammatesSummary =
+      spawnResults.length > 0
+        ? `\nSpawned ${spawnResults.filter((r) => r.success).length}/${spawnResults.length} teammates: ${spawnResults.map((r) => `${r.name} (${r.success ? r.agentId : `FAILED: ${r.error}`})`).join(", ")}`
+        : ""
+
     return {
       title: `Created team ${teamName}`,
-      metadata: { success: true, team_name: teamName } as Record<string, unknown>,
-      output: `Successfully created team: ${teamName} at ${teamFilePath}`,
+      metadata: {
+        success: true,
+        team_name: teamName,
+        teammates_spawned: spawnResults.filter((r) => r.success).length,
+        teammates_failed: spawnResults.filter((r) => !r.success).length,
+      } as Record<string, unknown>,
+      output: `Successfully created team: ${teamName} at ${teamFilePath}${teammatesSummary}`,
     }
   },
 })

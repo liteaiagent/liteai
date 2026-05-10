@@ -2,6 +2,8 @@ import { Log } from "@liteai/util/log"
 import z from "zod"
 import { AgentExecutionContext, type AppState } from "../agent/context"
 import { cleanupTeamDirectories } from "../coordinator/team-helpers"
+import { killInProcessTeammate } from "../coordinator/teammate-spawn"
+import { isTeammateTask } from "../coordinator/teammate-types"
 import { Tool } from "./tool"
 
 const log = Log.create({ service: "tool.team_delete" })
@@ -12,13 +14,14 @@ export const TeamDeleteTool = Tool.define("team_delete", {
   description: `Clean up team and task directories when the swarm work is complete.
 
 This operation:
+- Kills all active in-process teammates
 - Removes the team directory (~/.liteai/teams/{team-name}/)
 - Clears team context from the current session
 
-IMPORTANT: TeamDelete will fail if the team still has active members.
-Gracefully terminate teammates first, then call TeamDelete.`,
+IMPORTANT: TeamDelete will forcefully terminate any active teammates.
+Prefer sending shutdown requests to teammates first for graceful shutdown.`,
   parameters,
-  // _params and _ctx are required by the Tool.execute signature but unused here
+  // _params is required by the Tool.execute signature but unused here
   async execute(_params, _ctx) {
     const agentCtx = AgentExecutionContext.getStore()
     if (!agentCtx) throw new Error("No agent context found")
@@ -37,20 +40,25 @@ Gracefully terminate teammates first, then call TeamDelete.`,
       }
     }
 
-    // Check for active members — M-5: throw for invariant violation
-    const teammates = appState.teamContext?.teammates ?? {}
-    const activeMembers = Object.entries(teammates).filter(([_id, t]) => t.name !== "team-lead")
-
-    // In Phase 1, we don't have in-process teammates yet, so we
-    // check AppState.tasks for any running tasks belonging to team members
+    // ── Phase 3: Kill all active in-process teammates ──
     const tasks = appState.tasks ?? {}
-    const runningTeamTasks = activeMembers.filter(([id]) => tasks[id]?.status === "running")
+    let killedCount = 0
+    for (const [taskId, task] of Object.entries(tasks)) {
+      if (isTeammateTask(task) && task.identity.teamName === teamName && task.status !== "killed") {
+        const killed = killInProcessTeammate(taskId, setAppState)
+        if (killed) {
+          killedCount++
+          log.info("killed teammate during team delete", {
+            taskId,
+            agentId: task.identity.agentId,
+            teamName,
+          })
+        }
+      }
+    }
 
-    if (runningTeamTasks.length > 0) {
-      const memberNames = runningTeamTasks.map(([_, t]) => t.name).join(", ")
-      throw new Error(
-        `Cannot cleanup team "${teamName}" with ${runningTeamTasks.length} active member(s): ${memberNames}. Send shutdown requests to teammates first.`,
-      )
+    if (killedCount > 0) {
+      log.info("killed teammates before team cleanup", { teamName, killedCount })
     }
 
     // Clean up team directory using the shared helper (also used by loop.ts cleanup)
@@ -65,8 +73,12 @@ Gracefully terminate teammates first, then call TeamDelete.`,
 
     return {
       title: `Deleted team ${teamName}`,
-      metadata: { success: true, team_name: teamName } as Record<string, unknown>,
-      output: `Cleaned up directories for team "${teamName}"`,
+      metadata: {
+        success: true,
+        team_name: teamName,
+        teammates_killed: killedCount,
+      } as Record<string, unknown>,
+      output: `Cleaned up directories for team "${teamName}"${killedCount > 0 ? ` (killed ${killedCount} active teammate${killedCount !== 1 ? "s" : ""})` : ""}`,
     }
   },
 })

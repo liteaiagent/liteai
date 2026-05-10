@@ -80,3 +80,15 @@ export async function cleanupTeamDirectories(teamName: string): Promise<void> {
     log.warn("failed to clean up team directory", { teamName, dir, error: e })
   }
 }
+
+/**
+ * Returns the shared scratchpad directory path for a team.
+ * Workers can read/write here without permission prompts.
+ *
+ * Creates the directory if it doesn't exist.
+ */
+export async function teamScratchpadDir(teamName: string): Promise<string> {
+  const dir = path.join(teamDir(teamName), "scratchpad")
+  await fs.mkdir(dir, { recursive: true })
+  return dir
+}

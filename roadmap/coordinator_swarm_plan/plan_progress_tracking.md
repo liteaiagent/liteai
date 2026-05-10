@@ -45,20 +45,27 @@ Audit and gap closure for the filtering/wiring layer, achieving full Claude Code
 - **StructuredOutput Scoping**: Base tool intentionally excluded from `ToolRegistry.all()` (like Claude Code's `specialTools` filter). Only enters tool pool when SDK caller requests `json_schema` format. Subagents/workers never see it.
 - **Tool Injection Order**: Schema-validated variant injected BEFORE coordinator filter, making the allowlist the single source of truth for coordinator tool visibility.
 
-**Remaining (deferred to Phase 3 implementation):**
-- Environment context injection (`SystemPrompt.environment(model)`) in coordinator system prompt.
-- Scratchpad directory wiring via `teamScratchpadDir()`.
-- Integration test for `query.ts` coordinator wiring path.
+**Remaining Phase 2.5 items folded into Phase 3.**
 
 ---
 
-## ⏳ Phase 3: In-Process Teammate Runner (NOT STARTED)
+## ✅ Phase 3: In-Process Teammate Runner (COMPLETED)
 
-**What needs to be implemented:**
-1. **Teammate Context (`teammate-context.ts`)**: `AsyncLocalStorage` isolation to decouple in-process teammates from parent session state mutations.
-2. **In-Process Runner (`teammate-runner.ts`)**: Prompt loop wrapping `SessionPrompt.runSubagent()` with 500ms mailbox polling, task claiming, and idle notification dispatch.
-3. **Spawn Mechanics (`teammate-spawn.ts`)**: Wire `team_create` to execute `spawnInProcessTeammate()` instead of merely creating folders.
-4. **Team Event Discovery**: Plumb SSE events (`team.created`, `teammate.spawned`, `teammate.idle`) to the client UI.
+Full in-process teammate execution system achieving feature parity with Claude Code's `inProcessRunner.ts` + `spawnInProcess.ts`.
+
+**What was delivered:**
+- **Type Foundation (`teammate-types.ts`)**: `TeammateIdentity`, `TeammateTaskState`, `TeammateStatus` union, UI message cap, `appendCappedMessage()`, `isTeammateTask()` guard, `formatAgentId()`/`parseAgentId()` utilities.
+- **Agent Context Evolution (`context.ts`)**: Promoted `TeammateAgentContext` from Phase 1 identity-stub to full execution context (AppState access, AbortController, readFileState, cwd). Updated `AppState.tasks` to accept `BackgroundTaskState | TeammateTaskState` union.
+- **Teammate Context (`teammate-context.ts`)**: `AsyncLocalStorage<TeammateAgentContext>` for concurrent execution isolation. `createTeammateContext()` factory with deep-cloned AppState snapshot, root store passthrough via `setAppStateForTasks`, forced `shouldAvoidPermissionPrompts`.
+- **Spawn Mechanics (`teammate-spawn.ts`)**: `spawnInProcessTeammate()` creates context + abort controller + AppState task registration. `killInProcessTeammate()` performs atomic abort + cleanup + AppState mutation in single `setAppState` call.
+- **Core Runner Loop (`teammate-runner.ts`)**: Persistent idle loop wrapping `SessionPrompt.runSubagent()` per-iteration. 500ms mailbox polling, shutdown request passthrough to model, task claiming from team file, abort-aware sleep. Per-turn `AbortController` linked to lifecycle abort.
+- **Event System (`teammate-events.ts`)**: `TeammateEvent.Spawned`, `.Idle`, `.Active`, `.Killed` Bus events for SSE consumers.
+- **Prompt Addendum (`teammate-prompt-addendum.ts`)**: System prompt injection teaching teammates SendMessage-only communication.
+- **Tool Wiring**: `team_create.ts` now accepts optional `teammates` array for inline spawning. `team_delete.ts` force-kills all active teammates before cleanup (Phase 3 behavioral change from Phase 1 throw-on-active).
+- **Deferred Phase 2.5 Items**: Environment context (`SystemPrompt.environment(model)`) and scratchpad directory (`teamScratchpadDir()`) now injected into coordinator system prompt via `query.ts`.
+- **Exports**: All Phase 3 modules exported from `coordinator/index.ts` barrel.
+
+**Validation:** Typecheck clean, lint clean, 39/39 coordinator tests pass. M-5 test updated for Phase 3 force-kill semantics.
 
 ---
 

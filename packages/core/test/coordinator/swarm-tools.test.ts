@@ -90,6 +90,7 @@ describe("TeamCreateTool", () => {
       teamsBaseDir: mock(() => "/tmp/teams"),
       teamDir: mock((name: string) => `/tmp/teams/${name}`),
       teamConfigPath: mock((name: string) => `/tmp/teams/${name}/config.json`),
+      teamScratchpadDir: mock(async (name: string) => `/tmp/teams/${name}/scratchpad`),
     }))
     mockWriteTeamFile.mockClear()
     mockReadTeamFile.mockClear()
@@ -203,10 +204,22 @@ describe("TeamDeleteTool", () => {
     expect(result.output).toContain("No team name found")
   })
 
-  test("M-5: throws when team has running members", async () => {
+  test("Phase 3: force-kills running teammates and succeeds", async () => {
+    // Mock cleanup so it doesn't touch the filesystem
+    mock.module("../../src/coordinator/team-helpers", () => ({
+      cleanupTeamDirectories: mock(() => Promise.resolve()),
+      readTeamFile: mock(() => Promise.resolve(null)),
+      writeTeamFile: mock(() => Promise.resolve("/tmp/test/config.json")),
+      sanitizeTeamName: mock((name: string) => name),
+      teamsBaseDir: mock(() => "/tmp/teams"),
+      teamDir: mock((name: string) => `/tmp/teams/${name}`),
+      teamConfigPath: mock((name: string) => `/tmp/teams/${name}/config.json`),
+      teamScratchpadDir: mock(async (name: string) => `/tmp/teams/${name}/scratchpad`),
+    }))
+
     const { TeamDeleteTool } = await import("../../src/tool/team_delete")
     const execute = await initTool(TeamDeleteTool)
-    const { ctx } = createMockRootContext({
+    const { ctx, getState } = createMockRootContext({
       appState: {
         teamContext: {
           teamName: "busy-team",
@@ -229,14 +242,19 @@ describe("TeamDeleteTool", () => {
             },
           },
         },
+        // BackgroundTaskState entries (not TeammateTaskState) won't be killed
+        // by killInProcessTeammate — but team_delete should still succeed
         tasks: { worker1: { status: "running" } },
       },
     })
     const toolCtx = createMockToolCtx()
 
-    await expect(runWithAgentContext(ctx, () => execute({}, toolCtx))).rejects.toThrow(
-      'Cannot cleanup team "busy-team"',
-    )
+    // Phase 3: team_delete no longer throws — it force-kills and proceeds
+    const result = await runWithAgentContext(ctx, () => execute({}, toolCtx))
+
+    expect(result.metadata.success).toBe(true)
+    expect(result.output).toContain('Cleaned up directories for team "busy-team"')
+    expect(getState().teamContext).toBeUndefined()
   })
 })
 

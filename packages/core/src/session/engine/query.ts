@@ -425,7 +425,21 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       const clients = await MCP.clients()
       const mcpServers = Object.keys(clients).map((name) => ({ name }))
       const workerCapabilities = getCoordinatorUserContext(session.sessionMode, mcpServers).workerToolsContext
-      system = [getCoordinatorSystemPrompt({ workerCapabilities })]
+
+      // Phase 2.5 deferred items: inject environment context and scratchpad directory
+      const envParts = await SystemPrompt.environment(model)
+      const environmentContext = envParts.join("\n")
+
+      // Access team context via ALS agent context (query.ts runs inside runWithAgentContext)
+      const agentCtx = AgentExecutionContext.getStore()
+      const teamContext = agentCtx && "getAppState" in agentCtx ? agentCtx.getAppState().teamContext : undefined
+      let scratchpadDir: string | undefined
+      if (teamContext?.teamName) {
+        const { teamScratchpadDir } = await import("../../coordinator/team-helpers")
+        scratchpadDir = await teamScratchpadDir(teamContext.teamName)
+      }
+
+      system = [getCoordinatorSystemPrompt({ workerCapabilities, scratchpadDir }), environmentContext]
     }
 
     if (format.type === "json_schema") {
@@ -447,11 +461,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         ...Message.toModelMessages(msgs, model),
         ...(isLastStep
           ? [
-            {
-              role: "assistant" as const,
-              content: await Bundled.miscPrompt("max-steps"),
-            },
-          ]
+              {
+                role: "assistant" as const,
+                content: await Bundled.miscPrompt("max-steps"),
+              },
+            ]
           : []),
       ],
       tools,
@@ -582,10 +596,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
           timing: { start: assistantMessage.time.created, end: stepTimingEnd },
           tokenUsage: assistantMessage.tokens
             ? {
-              input: assistantMessage.tokens.input,
-              output: assistantMessage.tokens.output,
-              reasoning: assistantMessage.tokens.reasoning,
-            }
+                input: assistantMessage.tokens.input,
+                output: assistantMessage.tokens.output,
+                reasoning: assistantMessage.tokens.reasoning,
+              }
             : undefined,
           traceSpanID: trace.getActiveSpan()?.spanContext().spanId,
         },

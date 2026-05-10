@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks"
 import type { Config } from "@/config/config"
+import type { TeammateTaskState } from "@/coordinator/teammate-types"
 import type { MCP } from "@/mcp"
 import type { Provider } from "@/provider/provider"
 import type { Agent } from "./agent"
@@ -31,8 +32,8 @@ export interface AppState {
   agentSummaries?: Record<string, string>
   /** Name-to-agentId registry for background agents. */
   agentNameRegistry?: Record<string, string>
-  /** Tasks/state tracking for background agents. */
-  tasks?: Record<string, BackgroundTaskState>
+  /** Tasks/state tracking for background agents and in-process teammates. */
+  tasks?: Record<string, BackgroundTaskState | TeammateTaskState>
   /** Team context for coordinator/swarm mode. */
   teamContext?: {
     teamName: string
@@ -124,30 +125,35 @@ export interface SubagentContext {
 /**
  * Teammate agent context for in-process swarm teammates.
  *
- * Phase 1: Stub with identity-only fields. All coordinator tools guard against
- * this context type and throw immediately.
+ * Phase 3: Full execution context. Teammates carry the same capabilities as
+ * subagents (AppState access, abort control, file state) while maintaining
+ * type-safe discrimination via the 'teammate' type literal.
  *
- * Phase 2/3 Roadmap: This interface must be extended with core capabilities
- * before in-process teammates can execute tools:
- *   - getAppState / setAppState (read-only view or isolated copy)
- *   - abortController (for graceful shutdown via mailbox protocol)
- *   - readFileState (for file-level caching)
- *   - cwd (worktree-scoped working directory)
- *
- * Design Decision: Do NOT add these as optional properties. When Phase 3
- * implementation begins, extract a `BaseExecutableContext` interface with
- * the shared capabilities and have SubagentContext, TeammateAgentContext,
- * and RootAgentContext all extend it. This ensures type safety at the
- * call site rather than optional-property checks.
+ * Note: A future `BaseExecutableContext` extraction (shared by SubagentContext,
+ * TeammateAgentContext, RootAgentContext) is deferred per Directive §4 (scope).
  */
 export interface TeammateAgentContext {
   type: "teammate"
   agentId: string
+  /** Human-readable name (e.g., "researcher") */
+  agentName: string
   teamName: string
-  agentColor: string
+  agentColor?: string
   planModeRequired: boolean
   isTeamLead: boolean
+  /** Session ID of the leader that spawned this teammate */
+  parentSessionId: string
+  invocationKind: "spawn"
   invokingRequestId?: string
+  getAppState: () => AppState
+  setAppState: (updater: (state: AppState) => AppState) => void
+  setAppStateForTasks: (updater: (state: AppState) => AppState) => void
+  abortController: AbortController
+  // biome-ignore lint/suspicious/noExplicitAny: compatibility with FileStateMap and Session state requires any
+  readFileState: Map<string, any>
+  // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
+  contentReplacementState?: any
+  cwd: string
 }
 
 export interface RootAgentContext {

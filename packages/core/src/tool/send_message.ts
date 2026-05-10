@@ -13,7 +13,10 @@ export function queuePendingMessage(
   setAppState((state) => {
     const tasks = state.tasks || {}
     const task = tasks[agentId] || {}
-    const pendingMessages = task.pendingMessages || []
+    // BackgroundTaskState uses index signature — pendingMessages is accessed as a dynamic key.
+    // TeammateTaskState uses pendingUserMessages instead (handled by the runner's poll loop).
+    const existing = (task as Record<string, unknown>).pendingMessages as string[] | undefined
+    const pendingMessages = existing || []
     return {
       ...state,
       tasks: {

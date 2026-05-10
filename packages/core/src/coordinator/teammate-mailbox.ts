@@ -2,7 +2,7 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { Log } from "@liteai/util/log"
 import * as lockfile from "proper-lockfile"
-import { sanitizeTeamName, teamDir } from "./team-helpers"
+import { Global } from "../global"
 
 const logger = Log.create({ service: "coordinator.mailbox" })
 
@@ -15,11 +15,26 @@ export interface TeammateMessage {
   summary?: string
 }
 
+/** Sanitize a name for filesystem use (local copy — avoids mock.module cache poisoning). */
+function sanitizePathComponent(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 64)
+}
+
+/** Resolve teams base directory directly from Global.Path.root. */
+function getTeamsDir(): string {
+  return path.join(Global.Path.root, "teams")
+}
+
 /**
  * Ensures the inboxes directory exists for a team.
  */
 export async function ensureInboxDir(teamName: string): Promise<string> {
-  const dir = path.join(teamDir(teamName), "inboxes")
+  const dir = path.join(getTeamsDir(), sanitizePathComponent(teamName), "inboxes")
   await fs.mkdir(dir, { recursive: true })
   return dir
 }
@@ -28,8 +43,9 @@ export async function ensureInboxDir(teamName: string): Promise<string> {
  * Gets the file path for an agent's inbox within a team.
  */
 export function getInboxPath(agentName: string, teamName: string): string {
-  const safeAgentName = sanitizeTeamName(agentName) // reuse sanitizer
-  return path.join(teamDir(teamName), "inboxes", `${safeAgentName}.json`)
+  const safeTeam = sanitizePathComponent(teamName)
+  const safeAgent = sanitizePathComponent(agentName)
+  return path.join(getTeamsDir(), safeTeam, "inboxes", `${safeAgent}.json`)
 }
 
 /**
@@ -67,7 +83,7 @@ export async function readUnreadMessages(agentName: string, teamName: string): P
  */
 export async function writeToMailbox(recipientName: string, message: TeammateMessage, teamName: string): Promise<void> {
   const inboxDir = await ensureInboxDir(teamName)
-  const inboxPath = path.join(inboxDir, `${sanitizeTeamName(recipientName)}.json`)
+  const inboxPath = path.join(inboxDir, `${sanitizePathComponent(recipientName)}.json`)
 
   // Ensure file exists before locking (proper-lockfile requires the file to exist)
   try {

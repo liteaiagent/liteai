@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import {
   clearMailbox,
@@ -18,17 +19,22 @@ describe("Teammate Mailbox Protocol", () => {
   let teamName: string
   let agentName: string
   let testId = 0
+  let originalRoot: string
+  let testRoot: string
 
   beforeEach(async () => {
     testId++
     teamName = `test-team-mailbox-${testId}`
     agentName = `test-agent-${testId}`
-    Global.Path.root = path.join(process.cwd(), `.liteai-test-mailbox-${testId}-${Date.now()}`)
+    originalRoot = Global.Path.root
+    testRoot = path.join(os.tmpdir(), `.liteai-test-mailbox-${testId}-${Date.now()}`)
+    Global.Path.root = testRoot
   })
 
   afterEach(async () => {
+    Global.Path.root = originalRoot
     try {
-      await fs.rm(Global.Path.root, { recursive: true, force: true })
+      await fs.rm(testRoot, { recursive: true, force: true })
     } catch {}
   })
 
