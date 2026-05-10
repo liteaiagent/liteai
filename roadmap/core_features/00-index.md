@@ -1,7 +1,7 @@
 # LiteAI Core — Feature Status Index
 
 > **Package:** `packages/core`  
-> **Last audited:** 2026-05-09  
+> **Last audited:** 2026-05-10  
 > **Legend:** ✅ Implemented · 🔶 Partial · ❌ Not Started · 📁 Folder Reference
 
 ---
@@ -16,6 +16,7 @@
 | 04 | [Server & API](./04-server-api.md) | HTTP server, routes, middleware, SSE, OpenAPI | 🔶 |
 | 05 | [Infrastructure](./05-infrastructure.md) | Storage, telemetry, project, control-plane, worktree, isolation, LSP | 🔶 |
 | 06 | [Context & Memory](./06-context-memory.md) | Context instructions (AGENTS.md), agent memory, conversation history, skills extraction | 🔶 |
+| 07 | [Coordinator & Swarms](./07-coordinator-swarms.md) | Coordinator mode, teammate runner, mailbox IPC, permission sync, verification agent | ✅ |
 
 ---
 
@@ -30,7 +31,8 @@ Complete scan of `packages/core/src/` — every top-level module with its docume
 | `session/engine/` | `src/session/engine/` | [01-engine](./01-engine.md) | `loop.ts`, `query.ts`, `persister.ts`, `pipeline.ts`, `input.ts`, `instruction.ts`, `system.ts`, `tools.ts`, `shell.ts`, `command.ts`, `namespace.ts`, `section-parser.ts`, `section-registry.ts`, `streaming-tool-executor.ts`, `compaction-orchestrator.ts`, `correction-injector.ts`, `loop-detection.ts`, `thinking-loop-detector.ts`, `stop-drift.ts`, `plan-reminder.ts`, `telemetry.ts` |
 | `session/engine/loop/` | `src/session/engine/loop/` | [01-engine](./01-engine.md) | `checkpoint-store.ts`, `checkpointer.ts`, `promise-tracker.ts`, `step-latch.ts` |
 | `session/tasks/` | `src/session/tasks/` | [01-engine](./01-engine.md) | `compaction.ts`, `context-breakdown.ts`, `description.ts`, `summary.ts`, `title.ts` |
-| `permission/` | `src/permission/` | [01-engine](./01-engine.md) | `arity.ts`, `classifier.ts`, `next.ts`, `sandbox.ts`, `schema.ts`, `service.ts` |
+| `permission/` | `src/permission/` | [01-engine](./01-engine.md), [07-coordinator](./07-coordinator-swarms.md) | `arity.ts`, `classifier.ts`, `next.ts`, `sandbox.ts`, `schema.ts`, `service.ts`, `teammate-classifier.ts` |
+| `coordinator/` | `src/coordinator/` | [07-coordinator](./07-coordinator-swarms.md) | `coordinator-mode.ts`, `coordinator-prompt.ts`, `teammate-runner.ts`, `teammate-spawn.ts`, `teammate-context.ts`, `teammate-types.ts`, `teammate-events.ts`, `teammate-mailbox.ts`, `teammate-prompt-addendum.ts`, `swarm-messages.ts`, `team-helpers.ts`, `permission-sync.ts`, `permission-bridge.ts`, `permission-bridge-handler.ts`, `verification-agent.ts`, `built-in-agents.ts`, `index.ts` |
 | `tool/` | `src/tool/` | [01-engine](./01-engine.md) | 31 tool files, `registry.ts`, `schema.ts`, `tool.ts` |
 | `mcp/` | `src/mcp/` | [02-addon](./02-addon-config.md) | `index.ts`, `loader.ts`, `auth.ts`, `agent-mcp.ts`, `oauth-callback.ts`, `oauth-provider.ts` |
 | `plugin/` | `src/plugin/` | [02-addon](./02-addon-config.md) | `index.ts`, `loader.ts`, `registry.ts`, `cache.ts`, `download.ts`, `env.ts`, `manifest.ts`, `marketplace-source.ts`, `marketplace.ts`, `mount.ts`, `types.ts` |

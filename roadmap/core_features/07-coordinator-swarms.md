@@ -1,321 +1,289 @@
-# Coordinator Mode + Agent Swarms — Phased Roadmap
+# LiteAI Core — Coordinator Mode & Agent Swarms
 
-> **Package:** `packages/core`  
-> **Reference:** `D:\claude-code\src` (coordinator, swarm, teammate, task, and SendMessage subsystems)  
-> **Depends On:** Agent Core Architecture (Phases 1–4 ✅), `disallowedTools` enforcement  
-> **Last Updated:** 2026-05-10
-
----
-
-## Overview
-
-This roadmap implements two complementary multi-agent paradigms adapted from the Claude Code reference to LiteAI's multi-tenant HTTP/SSE backend architecture:
-
-1. **Coordinator Mode** — The main agent becomes a pure orchestrator that delegates all real work to workers. Uses a dedicated system prompt, restricted tool pool, and worker capability injection.
-
-2. **Agent Swarms** — A full teammate system where multiple agents run concurrently (in-process), communicate via a structured mailbox protocol, share task lists, and coordinate through shutdown/plan-approval protocols.
-
-### Key Architectural Adaptation
-
-The reference implementation is a **CLI application** (single-tenant, single-process). LiteAI is a **multi-tenant HTTP/SSE backend**. Every reference pattern must be adapted:
-
-| Concern | CLI Reference | LiteAI Adaptation |
-|---|---|---|
-| Mode detection | `process.env.CLAUDE_CODE_COORDINATOR_MODE` | Session-scoped flag via `Flag` + session state |
-| State management | Global `AppState` + React hooks | Session-scoped `AppState` via `AgentExecutionContext` ALS |
-| Mailbox storage | `~/.claude/teams/{team}/inboxes/*.json` | `~/.liteai/teams/{team}/inboxes/*.json` (file-based, lock-guarded) |
-| Team config | `~/.claude/teams/{team}/config.json` | `~/.liteai/teams/{team}/config.json` |
-| Permission bridge | React `setToolUseConfirmQueue` | HTTP/SSE permission events to client |
-| Worker context | `AsyncLocalStorage` per process | `AsyncLocalStorage` per in-process worker (shared process) |
-| Agent spawn | `runAgent()` in Ink process | `SessionPrompt.runSubagent()` via session engine |
+> **Scope:** `src/coordinator/`, `src/permission/teammate-classifier.ts`, `src/tool/task.ts`, `src/tool/send_message.ts`, `src/tool/team_create.ts`, `src/tool/team_delete.ts`  
+> **Last audited:** 2026-05-10  
+> **Roadmap:** [Coordinator Swarm Plan](../coordinator_swarm_plan/)
 
 ---
 
-## Dependency Chain
+## 1. Coordinator Mode (State Machine)
 
-```
-Phase 0: Permission System Hardening (Subagent attribution, mode activation) ✅
-        │
-        ▼
-Phase 1: Coordinator Mode State Machine + System Prompt
-        │
-        ▼
-Phase 2: SendMessage + Mailbox Protocol + Agent Name Registry
-        │
-        ▼
-Phase 3: In-Process Teammate Runner + Team Lifecycle
-        │
-        ▼
-Phase 4: Permission Synchronization + Verification Agent
-```
+Session-scoped orchestrator mode that replaces the agent's normal system prompt with a dedicated orchestration prompt and restricts the tool pool to delegation-only tools.
 
-> **Feature Flag Architecture:** Coordinator mode is gated behind `Flag.LITEAI_COORDINATOR_MODE`. Fork mode and coordinator mode are mutually exclusive — `isForkSubagentEnabled()` already rejects when `context.isCoordinator` is true.
+| Feature | Status | Source |
+|---|:---:|---|
+| Mode detection (`isCoordinatorMode()`) | ✅ | [`coordinator-mode.ts`](../../packages/core/src/coordinator/coordinator-mode.ts) |
+| Session mode persistence (`matchSessionMode()`) | ✅ | [`coordinator-mode.ts`](../../packages/core/src/coordinator/coordinator-mode.ts) |
+| Coordinator system prompt (~330 lines) | ✅ | [`coordinator-prompt.ts`](../../packages/core/src/coordinator/coordinator-prompt.ts) |
+| Tool pool filter (`applyCoordinatorToolFilter()`) | ✅ | [`coordinator-mode.ts`](../../packages/core/src/coordinator/coordinator-mode.ts) |
+| Worker capability context injection | ✅ | [`coordinator-mode.ts`](../../packages/core/src/coordinator/coordinator-mode.ts) `getCoordinatorUserContext()` |
+| Scratchpad directory injection | ✅ | [`coordinator-prompt.ts`](../../packages/core/src/coordinator/coordinator-prompt.ts) `scratchpadDir` param |
+| Environment context injection | ✅ | [`engine/query.ts`](../../packages/core/src/session/engine/query.ts) via `SystemPrompt.environment()` |
+| Fork/Coordinator mutual exclusion | ✅ | [`agent/fork.ts`](../../packages/core/src/agent/fork.ts) `isForkSubagentEnabled()` |
+| `LITEAI_COORDINATOR_MODE` flag | ✅ | [`flag/flag.ts`](../../packages/core/src/flag/flag.ts) |
+
+> **Architecture:** Coordinator mode is session-scoped via `Flag.LITEAI_COORDINATOR_MODE`. Mode is persisted in session metadata and restored on resume via `matchSessionMode()`. Fork mode and coordinator mode are mutually exclusive.
 
 ---
 
-## Phase 1: Coordinator Mode State Machine + System Prompt
+## 2. Coordinator Tools
 
-> **Scope:** Mode detection, session mode persistence, coordinator system prompt, tool filtering, worker capability context injection
+Orchestration-only tools available to the coordinator. All other tools (file I/O, shell, etc.) are stripped from the coordinator's tool pool.
 
-### What to Implement
-
-1. **Coordinator mode detection** — `isCoordinatorMode()` reads from `Flag.LITEAI_COORDINATOR_MODE` (session-scoped). Returns `false` if flag not set.
-
-2. **Session mode persistence** — Store `coordinator` | `normal` in session metadata. On session resume, `matchSessionMode()` aligns the flag to the stored mode. Prevents mode drift across restarts.
-
-3. **Coordinator system prompt** — Dedicated ~370-line orchestration prompt covering:
-   - Role definition (delegate, don't execute)
-   - Tool documentation (task, send_message, task_stop)
-   - Worker lifecycle (research → synthesis → implementation → verification)
-   - Concurrency management (read-only parallel, write-heavy serialized)
-   - Failure handling (continue same worker via send_message)
-   - Worker prompt engineering guidelines
-   - Continue vs spawn decision matrix
-
-4. **Coordinator tool filtering** — `applyCoordinatorToolFilter()` restricts the coordinator's tool pool to orchestration-only tools: `task`, `send_message`, `task_stop`, `team_create`, `team_delete`, plus `SyntheticOutput` equivalent. All other tools are excluded.
-
-5. **Worker capability context injection** — `getCoordinatorUserContext()` builds a `workerToolsContext` string listing what tools workers have access to, injected into the coordinator's user context. Includes MCP server names.
-
-### Reference Implementation
-
-- [coordinatorMode.ts](file:///D:/claude-code/src/coordinator/coordinatorMode.ts) — Mode detection, system prompt, tool filtering (370 lines)
-
-### Files Affected
-
-| File | Action |
-|---|---|
-| *(new)* `src/coordinator/coordinator-mode.ts` | **New** — `isCoordinatorMode()`, `matchSessionMode()`, `getCoordinatorUserContext()`, `applyCoordinatorToolFilter()` |
-| *(new)* `src/coordinator/coordinator-prompt.ts` | **New** — `getCoordinatorSystemPrompt()` (~370 lines) |
-| *(new)* `src/coordinator/index.ts` | **New** — Barrel export |
-| `src/flag/flag.ts` | **Modify** — Add `LITEAI_COORDINATOR_MODE` flag |
-| `src/session/engine/system.ts` | **Modify** — Inject coordinator system prompt when mode active |
-| `src/session/engine/tools.ts` | **Modify** — Apply coordinator tool filter to pool |
-| `src/session/index.ts` | **Modify** — Persist/restore session mode field |
-| `src/agent/fork.ts` | **Modify** — Wire `ForkGateContext.isCoordinator` to live `isCoordinatorMode()` check |
-
-### Verification
-
-- Typecheck: `bun typecheck`
-- Test: `bun test test/coordinator` (new test suite)
-- Behavioral: Enable `LITEAI_COORDINATOR_MODE`, verify system prompt swap, tool pool restriction, mode persistence across session resume
+| Tool | Status | Source |
+|---|:---:|---|
+| `task` (spawn worker / fork) | ✅ | [`tool/task.ts`](../../packages/core/src/tool/task.ts) |
+| `send_message` (continue worker) | ✅ | [`tool/send_message.ts`](../../packages/core/src/tool/send_message.ts) |
+| `task_stop` (stop worker) | ✅ | [`tool/task_stop.ts`](../../packages/core/src/tool/task_stop.ts) |
+| `team_create` (create team + spawn teammates) | ✅ | [`tool/team_create.ts`](../../packages/core/src/tool/team_create.ts) |
+| `team_delete` (disband team + force-kill) | ✅ | [`tool/team_delete.ts`](../../packages/core/src/tool/team_delete.ts) |
+| `yield_turn` (wait for workers) | ✅ | [`tool/yield_turn.ts`](../../packages/core/src/tool/yield_turn.ts) |
+| `structured_output` (coordinator allowlisted) | ✅ | [`tool/structured_output.ts`](../../packages/core/src/tool/structured_output.ts) |
 
 ---
 
-## Phase 2: SendMessage + Mailbox Protocol + Agent Name Registry
+## 3. SendMessage & Mailbox Protocol
 
-> **Scope:** Expand `send_message` stub into full routing (running/stopped/evicted), add structured message types, file-based mailbox system, agent name registry, broadcast support
+Structured inter-agent communication with file-based mailbox persistence and broadcast support.
 
-### What to Implement
+### 3.1 — Message Routing
 
-1. **Agent name registry** — `Map<name, agentId>` in session `AppState.agentNameRegistry`. Set at async agent registration (in `runAsyncAgentLifecycle`), used by `send_message` for human-readable addressing.
+| Feature | Status | Source |
+|---|:---:|---|
+| Running agent → queue pending message | ✅ | [`tool/send_message.ts`](../../packages/core/src/tool/send_message.ts) |
+| Stopped agent → auto-resume with prompt | ✅ | [`tool/send_message.ts`](../../packages/core/src/tool/send_message.ts) |
+| Teammate mailbox routing | ✅ | [`tool/send_message.ts`](../../packages/core/src/tool/send_message.ts) |
+| Broadcast to all teammates (`to: "*"`) | ✅ | [`tool/send_message.ts`](../../packages/core/src/tool/send_message.ts) |
+| Agent name registry (`agentNameRegistry`) | ✅ | [`agent/context.ts`](../../packages/core/src/agent/context.ts) `AppState` |
 
-2. **Full SendMessage routing** — Expand the existing `send_message.ts` stub to handle 3 routing modes:
-   - **Running agents**: message queued via `queuePendingMessage()` (already implemented)
-   - **Stopped tasks**: auto-resume with message as new prompt via `resumeAgentBackground()` (already implemented)
-   - **Evicted tasks**: resume from disk transcript (already implemented)
-   - **New**: Teammate mailbox routing for swarm contexts
-   - **New**: Broadcast to all teammates (`to: "*"`)
+### 3.2 — Teammate Mailbox
 
-3. **Structured messages** — Add discriminated union schema for structured messages:
-   - `shutdown_request` — Leader requests teammate to shut down
-   - `shutdown_response` — Teammate approves/rejects shutdown
-   - `plan_approval_response` — Leader approves/rejects teammate's plan
+| Feature | Status | Source |
+|---|:---:|---|
+| File-based inbox storage | ✅ | [`coordinator/teammate-mailbox.ts`](../../packages/core/src/coordinator/teammate-mailbox.ts) |
+| `proper-lockfile` concurrency guard | ✅ | [`coordinator/teammate-mailbox.ts`](../../packages/core/src/coordinator/teammate-mailbox.ts) |
+| `writeToMailbox()` | ✅ | [`coordinator/teammate-mailbox.ts`](../../packages/core/src/coordinator/teammate-mailbox.ts) |
+| `readMailbox()` | ✅ | [`coordinator/teammate-mailbox.ts`](../../packages/core/src/coordinator/teammate-mailbox.ts) |
+| `markMessageAsReadByIndex()` | ✅ | [`coordinator/teammate-mailbox.ts`](../../packages/core/src/coordinator/teammate-mailbox.ts) |
+| `clearMailbox()` | ✅ | [`coordinator/teammate-mailbox.ts`](../../packages/core/src/coordinator/teammate-mailbox.ts) |
 
-4. **Teammate mailbox system** — File-based message queues per agent:
-   - Storage: `~/.liteai/teams/{team_name}/inboxes/{agent_name}.json`
-   - Operations: `writeToMailbox()`, `readMailbox()`, `markMessageAsReadByIndex()`, `clearMailbox()`
-   - File locking via `proper-lockfile` (or equivalent) for concurrent agent safety
-   - Message format: `{ from, text, timestamp, read, color?, summary? }`
+### 3.3 — Structured Swarm Messages
 
-5. **Idle notification protocol** — When a teammate finishes its current task, it sends an `idle_notification` to the leader's mailbox with completion metadata.
-
-### Reference Implementation
-
-- [SendMessageTool.ts](file:///D:/claude-code/src/tools/SendMessageTool/SendMessageTool.ts) — Full routing (918 lines)
-- [teammateMailbox.ts](file:///D:/claude-code/src/utils/teammateMailbox.ts) — File-based mailbox (1184 lines)
-
-### Files Affected
-
-| File | Action |
-|---|---|
-| `src/tool/send_message.ts` | **Major rewrite** — Full routing, structured messages, broadcast, teammate mailbox integration |
-| *(new)* `src/agent/teammate-mailbox.ts` | **New** — File-based mailbox: `writeToMailbox()`, `readMailbox()`, `markMessageAsReadByIndex()`, `clearMailbox()`, message type parsers |
-| *(new)* `src/agent/teammate-mailbox.types.ts` | **New** — `TeammateMessage`, `IdleNotificationMessage`, `ShutdownRequestMessage`, `ShutdownApprovedMessage`, `PermissionRequestMessage`, `PermissionResponseMessage` schemas |
-| `src/agent/context.ts` | **Modify** — Add `teamContext`, `teamName` to `AppState`; ensure `agentNameRegistry` is properly typed |
-| `src/agent/lifecycle.ts` | **Modify** — Register agent name in `agentNameRegistry` during `runAsyncAgentLifecycle()` |
-
-### Verification
-
-- Typecheck: `bun typecheck`
-- Test: `bun test test/agent/teammate-mailbox` + `bun test test/tool/send_message`
-- Behavioral: Send message to running agent → queued. Send to stopped → resumed. Broadcast → all teammates receive.
+| Feature | Status | Source |
+|---|:---:|---|
+| `idle_notification` schema | ✅ | [`coordinator/swarm-messages.ts`](../../packages/core/src/coordinator/swarm-messages.ts) |
+| `shutdown_request` schema | ✅ | [`coordinator/swarm-messages.ts`](../../packages/core/src/coordinator/swarm-messages.ts) |
+| `shutdown_approved` / `shutdown_rejected` | ✅ | [`coordinator/swarm-messages.ts`](../../packages/core/src/coordinator/swarm-messages.ts) |
+| `plan_approval_request` / `plan_approval_response` | ✅ | [`coordinator/swarm-messages.ts`](../../packages/core/src/coordinator/swarm-messages.ts) |
 
 ---
 
-## Phase 3: In-Process Teammate Runner + Team Lifecycle
+## 4. In-Process Teammate Runner
 
-> **Scope:** In-process teammate spawning, AsyncLocalStorage context isolation, team create/delete tools, teammate runner with continuous prompt loop, auto-compaction, task claiming
+Full in-process teammate execution with `AsyncLocalStorage` context isolation, continuous prompt loop, and mailbox polling.
 
-### What to Implement
+### 4.1 — Type Foundation
 
-1. **TeammateContext** — Extend `AgentExecutionContext` with teammate identity isolation:
-   - `runWithTeammateContext()` wraps the teammate's entire execution in ALS
-   - Carries: `agentId`, `agentName`, `teamName`, `color`, `planModeRequired`, `parentSessionId`
-   - Decoupled from parent session's state mutations
+| Feature | Status | Source |
+|---|:---:|---|
+| `TeammateIdentity` type | ✅ | [`coordinator/teammate-types.ts`](../../packages/core/src/coordinator/teammate-types.ts) |
+| `TeammateTaskState` type | ✅ | [`coordinator/teammate-types.ts`](../../packages/core/src/coordinator/teammate-types.ts) |
+| `TeammateStatus` union | ✅ | [`coordinator/teammate-types.ts`](../../packages/core/src/coordinator/teammate-types.ts) |
+| `formatAgentId()` / `parseAgentId()` | ✅ | [`coordinator/teammate-types.ts`](../../packages/core/src/coordinator/teammate-types.ts) |
+| `appendCappedMessage()` (UI message cap) | ✅ | [`coordinator/teammate-types.ts`](../../packages/core/src/coordinator/teammate-types.ts) |
+| `isTeammateTask()` guard | ✅ | [`coordinator/teammate-types.ts`](../../packages/core/src/coordinator/teammate-types.ts) |
 
-2. **In-process teammate spawning** — `spawnInProcessTeammate()`:
-   - Creates `TeammateContext` with identity
-   - Creates independent `AbortController` (not linked to parent query)
-   - Registers `InProcessTeammateTaskState` in parent's `AppState`
-   - Returns spawn result with context for the runner
+### 4.2 — Agent Context & Isolation
 
-3. **In-process teammate runner** — `runInProcessTeammate()`:
-   - Wraps `SessionPrompt.runSubagent()` within `runWithTeammateContext()`
-   - Continuous prompt loop: run → idle → wait for message/shutdown → run
-   - Mailbox polling (500ms interval) for new messages and shutdown requests
-   - Auto-compaction when token count exceeds threshold
-   - Task claiming from shared task list
-   - Shutdown request → pass to model for decision (approve/reject)
-   - Idle notification to leader on completion
+| Feature | Status | Source |
+|---|:---:|---|
+| `TeammateAgentContext` (full execution context) | ✅ | [`agent/context.ts`](../../packages/core/src/agent/context.ts) |
+| `AsyncLocalStorage<TeammateAgentContext>` | ✅ | [`coordinator/teammate-context.ts`](../../packages/core/src/coordinator/teammate-context.ts) |
+| `createTeammateContext()` factory | ✅ | [`coordinator/teammate-context.ts`](../../packages/core/src/coordinator/teammate-context.ts) |
+| `runWithTeammateContext()` ALS wrapper | ✅ | [`coordinator/teammate-context.ts`](../../packages/core/src/coordinator/teammate-context.ts) |
+| `isInProcessTeammate()` / `getTeammateContext()` | ✅ | [`coordinator/teammate-context.ts`](../../packages/core/src/coordinator/teammate-context.ts) |
+| Deep-cloned AppState snapshot per teammate | ✅ | [`coordinator/teammate-context.ts`](../../packages/core/src/coordinator/teammate-context.ts) |
+| Forced `shouldAvoidPermissionPrompts` | ✅ | [`coordinator/teammate-context.ts`](../../packages/core/src/coordinator/teammate-context.ts) |
 
-4. **TeamCreate tool** — `team_create`:
-   - Creates team directory structure: `~/.liteai/teams/{team_name}/`
-   - Writes `config.json` with team metadata, leader info, members list
-   - Spawns in-process teammates with specified names, colors, prompts
-   - Registers cleanup for session exit
+### 4.3 — Spawn & Lifecycle
 
-5. **TeamDelete tool** — `team_delete`:
-   - Sends shutdown requests to all teammates
-   - Waits for approval/cleanup
-   - Removes team directory structure
-   - Cleans up worktrees if any
+| Feature | Status | Source |
+|---|:---:|---|
+| `spawnInProcessTeammate()` | ✅ | [`coordinator/teammate-spawn.ts`](../../packages/core/src/coordinator/teammate-spawn.ts) |
+| `killInProcessTeammate()` (atomic abort + cleanup) | ✅ | [`coordinator/teammate-spawn.ts`](../../packages/core/src/coordinator/teammate-spawn.ts) |
+| Independent `AbortController` per teammate | ✅ | [`coordinator/teammate-spawn.ts`](../../packages/core/src/coordinator/teammate-spawn.ts) |
+| `AppState.tasks` registration | ✅ | [`coordinator/teammate-spawn.ts`](../../packages/core/src/coordinator/teammate-spawn.ts) |
+| `agentType` support (built-in profiles) | ✅ | [`coordinator/teammate-spawn.ts`](../../packages/core/src/coordinator/teammate-spawn.ts) |
 
-6. **Team discovery** — Expose team state via SSE events for client UI:
-   - `team.created`, `team.deleted` events
-   - `teammate.spawned`, `teammate.idle`, `teammate.killed` events
-   - Team status via `/session/{id}/team` route
+### 4.4 — Core Runner Loop
 
-### Reference Implementation
+| Feature | Status | Source |
+|---|:---:|---|
+| `runInProcessTeammate()` (persistent loop) | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| `startInProcessTeammate()` (fire-and-forget) | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| Per-iteration `SessionPrompt.runSubagent()` | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| 500ms mailbox polling | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| Shutdown request passthrough to model | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| Abort-aware sleep | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| Per-turn `AbortController` linked to lifecycle | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
+| Built-in agent profile injection (system prompt + critical reminder) | ✅ | [`coordinator/teammate-runner.ts`](../../packages/core/src/coordinator/teammate-runner.ts) |
 
-- [inProcessRunner.ts](file:///D:/claude-code/src/utils/swarm/inProcessRunner.ts) — Teammate runner (1553 lines)
-- [spawnInProcess.ts](file:///D:/claude-code/src/utils/swarm/spawnInProcess.ts) — Spawn logic (329 lines)
-- [teamHelpers.ts](file:///D:/claude-code/src/utils/swarm/teamHelpers.ts) — Team file management (684 lines)
+### 4.5 — Events & Prompt
 
-### Files Affected
-
-| File | Action |
-|---|---|
-| *(new)* `src/agent/teammate-context.ts` | **New** — `TeammateContext` type, `runWithTeammateContext()`, `createTeammateContext()` |
-| *(new)* `src/agent/teammate-runner.ts` | **New** — `runInProcessTeammate()`, `startInProcessTeammate()`, idle/shutdown/prompt loop |
-| *(new)* `src/agent/teammate-spawn.ts` | **New** — `spawnInProcessTeammate()`, `killInProcessTeammate()` |
-| *(new)* `src/agent/team-helpers.ts` | **New** — Team file read/write, member management, cleanup, worktree destruction |
-| *(new)* `src/tool/team_create.ts` | **New** — TeamCreate tool definition |
-| *(new)* `src/tool/team_delete.ts` | **New** — TeamDelete tool definition |
-| *(new)* `src/agent/teammate-types.ts` | **New** — `TeammateIdentity`, `InProcessTeammateTaskState`, `InProcessRunnerConfig`, `InProcessRunnerResult`, `TeamFile` |
-| `src/agent/context.ts` | **Modify** — Add `teamContext` to `AppState` with teammate map |
-| `src/agent/events.ts` | **Modify** — Add team/teammate events |
-| `src/tool/registry.ts` | **Modify** — Register `team_create` and `team_delete` tools |
-| `src/session/engine/tools.ts` | **Modify** — Inject team-essential tools into teammate tool pools |
-
-### Verification
-
-- Typecheck: `bun typecheck`
-- Test: `bun test test/agent/teammate-runner` + `bun test test/agent/team-helpers`
-- Behavioral: Create team → teammates spawn → teammates receive prompts → teammates go idle → leader sends new work → teammates resume → team delete → cleanup
+| Feature | Status | Source |
+|---|:---:|---|
+| `TeammateEvent.Spawned` | ✅ | [`coordinator/teammate-events.ts`](../../packages/core/src/coordinator/teammate-events.ts) |
+| `TeammateEvent.Idle` | ✅ | [`coordinator/teammate-events.ts`](../../packages/core/src/coordinator/teammate-events.ts) |
+| `TeammateEvent.Active` | ✅ | [`coordinator/teammate-events.ts`](../../packages/core/src/coordinator/teammate-events.ts) |
+| `TeammateEvent.Killed` | ✅ | [`coordinator/teammate-events.ts`](../../packages/core/src/coordinator/teammate-events.ts) |
+| System prompt addendum (teammate constraints) | ✅ | [`coordinator/teammate-prompt-addendum.ts`](../../packages/core/src/coordinator/teammate-prompt-addendum.ts) |
 
 ---
 
-## Phase 4: Permission Synchronization + Verification Agent
+## 5. Permission Synchronization
 
-> **Scope:** Leader ↔ teammate permission bridge, classifier auto-approval for bash commands, permission update propagation, verification agent with read-only enforcement
+Dual-transport permission bridge enabling teammates to request tool use approval from the leader.
 
-### What to Implement
+### 5.1 — Permission Sync Foundation
 
-1. **Permission synchronization** — Leader ↔ teammate permission bridge:
-   - **In-process path**: Teammates use the leader's permission dialog via SSE event bridge. Worker badge in UI shows which teammate is requesting.
-   - **Mailbox fallback**: When UI bridge unavailable, teammates send `permission_request` to leader's mailbox, poll their own mailbox for `permission_response`.
-   - **Classifier auto-approval**: For bash commands, teammates await the classifier result (don't race against user interaction like the main agent).
-   - **Permission update propagation**: When leader grants "always allow", the update is written back to the leader's shared context — preserving the leader's mode.
+| Feature | Status | Source |
+|---|:---:|---|
+| `SwarmPermissionRequest` schema (Zod) | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
+| `PermissionResolution` schema | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
+| `PermissionSuggestion` schema | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
+| `createPermissionRequest()` factory | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
+| File-based pending/resolved storage | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
+| Atomic writes (`.tmp` → rename) | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
+| `cleanupOldResolutions()` disk hygiene | ✅ | [`coordinator/permission-sync.ts`](../../packages/core/src/coordinator/permission-sync.ts) |
 
-2. **Swarm permission request/response flow**:
-   - Worker creates `SwarmPermissionRequest` with tool details
-   - Worker writes request to `~/.liteai/teams/{team}/permissions/pending/`
-   - Leader polls pending directory (or receives via mailbox)
-   - User approves/rejects via leader's UI
-   - Leader writes resolution to `resolved/`, removes from `pending/`
-   - Worker polls for resolution
+### 5.2 — Permission Bridge (Dual-Transport)
 
-3. **Verification agent** — Read-only agent for post-implementation quality verification:
-   - **Tool restrictions**: Disallows `edit`, `write`, `apply_patch`. Allowed to write ephemeral test scripts to temp dir.
-   - **Adversarial system prompt** (~130 lines): Strategy matrix per change type, anti-rationalization rules, required command-run evidence format
-   - **Output protocol**: Structured `### Check:` blocks with `VERDICT: PASS | FAIL | PARTIAL`
-   - **`whenToUse`**: Triggered after non-trivial tasks (3+ file edits, backend/API changes)
-   - **Model**: `inherit` (needs full capability)
+| Feature | Status | Source |
+|---|:---:|---|
+| `PermissionBridge` singleton | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
+| In-process path (Deferred promise) | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
+| File-based fallback (polling) | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
+| Handler registration / unregistration | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
+| Abort signal support | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
+| `TeammatePermissionEvent.Asked` / `.Resolved` | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
+| Pending request inspection | ✅ | [`coordinator/permission-bridge.ts`](../../packages/core/src/coordinator/permission-bridge.ts) |
 
-4. **Guide agent** (lightweight):
-   - Documentation assistant with read-only tools + web fetch
-   - Cost-optimized model (small/haiku equivalent)
-   - `permissionMode: 'dontAsk'`
-   - Injects user's configured skills, custom agents, MCP servers into system prompt
+### 5.3 — Leader Bridge Handler
 
-### Reference Implementation
+| Feature | Status | Source |
+|---|:---:|---|
+| `setupPermissionBridgeHandler()` | ✅ | [`coordinator/permission-bridge-handler.ts`](../../packages/core/src/coordinator/permission-bridge-handler.ts) |
+| `PermissionDecisionCallback` for UI | ✅ | [`coordinator/permission-bridge-handler.ts`](../../packages/core/src/coordinator/permission-bridge-handler.ts) |
+| `resolveFileBasedPermission()` | ✅ | [`coordinator/permission-bridge-handler.ts`](../../packages/core/src/coordinator/permission-bridge-handler.ts) |
+| Bus event publication for SSE consumers | ✅ | [`coordinator/permission-bridge-handler.ts`](../../packages/core/src/coordinator/permission-bridge-handler.ts) |
 
-- [permissionSync.ts](file:///D:/claude-code/src/utils/swarm/permissionSync.ts) — Permission request/response (929 lines)
-- [inProcessRunner.ts:128-451](file:///D:/claude-code/src/utils/swarm/inProcessRunner.ts) — `createInProcessCanUseTool()` (permission bridge)
+### 5.4 — PermissionService Integration
 
-### Files Affected
+| Feature | Status | Source |
+|---|:---:|---|
+| Teammate bridge path in `ask()` | ✅ | [`permission/service.ts`](../../packages/core/src/permission/service.ts) |
+| Classifier pre-approval → bridge forward | ✅ | [`permission/service.ts`](../../packages/core/src/permission/service.ts) |
+| Fallback to `PrePermissionDeny` hook | ✅ | [`permission/service.ts`](../../packages/core/src/permission/service.ts) |
 
-| File | Action |
-|---|---|
-| *(new)* `src/agent/permission-sync.ts` | **New** — `SwarmPermissionRequest` schema, `createPermissionRequest()`, `writePermissionRequest()`, `readPendingPermissions()`, `resolvePermission()`, `sendPermissionRequestViaMailbox()`, `sendPermissionResponseViaMailbox()` |
-| *(new)* `src/agent/built-in/verification.ts` | **New** — Verification agent definition with read-only enforcement and adversarial prompt |
-| *(new)* `src/agent/built-in/guide.ts` | **New** — Guide agent definition with doc-fetching prompt |
-| `src/agent/teammate-runner.ts` | **Modify** — Integrate `createInProcessCanUseTool()` with permission bridge |
-| `src/agent/loader.ts` | **Modify** — Register new built-in agents |
-| `src/server/routes/` | **Modify** — Add `/session/{id}/permissions` route for SSE permission events |
+### 5.5 — Teammate Classifier
 
-### Verification
+| Feature | Status | Source |
+|---|:---:|---|
+| `tryTeammateClassifier()` pre-approval | ✅ | [`permission/teammate-classifier.ts`](../../packages/core/src/permission/teammate-classifier.ts) |
+| Command permission pre-filter | ✅ | [`permission/teammate-classifier.ts`](../../packages/core/src/permission/teammate-classifier.ts) |
+| Pseudo-transcript builder | ✅ | [`permission/teammate-classifier.ts`](../../packages/core/src/permission/teammate-classifier.ts) |
+| 10s classifier timeout | ✅ | [`permission/teammate-classifier.ts`](../../packages/core/src/permission/teammate-classifier.ts) |
+| `ClassifierUnavailableError` handling | ✅ | [`permission/teammate-classifier.ts`](../../packages/core/src/permission/teammate-classifier.ts) |
 
-- Typecheck: `bun typecheck`
-- Test: `bun test test/agent/permission-sync` + `bun test test/agent/built-in`
-- Behavioral: Teammate requests bash permission → appears in leader UI → user approves → teammate proceeds. Verification agent runs read-only → produces VERDICT.
-
----
-
-## Execution Order
-
-```
-1. speckit.specify → Phase 1 spec
-2. speckit.plan    → Phase 1 plan
-3. speckit.tasks   → Phase 1 tasks
-4. speckit.implement → Phase 1 implementation
-5. Verify Phase 1 (typecheck, tests)
-6. Repeat 1-5 for Phase 2
-7. Repeat 1-5 for Phase 3
-8. Repeat 1-5 for Phase 4
-```
-
-> **Gate:** Phase 2 requires Phase 1 (coordinator mode must exist for tool filtering context).  
-> **Gate:** Phase 3 requires Phase 2 (teammate runner needs mailbox and send_message).  
-> **Gate:** Phase 4 requires Phase 3 (permission sync needs the in-process runner).
+> **Architecture:** Permissions use a dual-transport model:
+> - **Primary (in-process):** Handler registration + `Deferred` promise resolution for same-process teammates.
+> - **Fallback (file-based):** Atomic writes to `permissions/pending/` with polling at 500ms. Supports future cross-process teammates.
+> - **Propagation:** "Always allow" rules are scoped to the requesting teammate only — no team-wide propagation.
 
 ---
 
-## Estimated Complexity
+## 6. Built-in Agent Profiles
 
-| Phase | New Files | Modified Files | LOC (est.) | Complexity |
-|---|---|---|---|---|
-| 1 — Coordinator Mode | 3 | 5 | ~600 | Medium |
-| 2 — SendMessage + Mailbox | 2 | 3 | ~1200 | High |
-| 3 — Teammate Runner + Teams | 7 | 4 | ~2500 | Very High |
-| 4 — Permission Sync + Agents | 4 | 3 | ~1500 | High |
-| **Total** | **16** | **15** | **~5800** | |
+Specialized agent profiles with tool restrictions, system prompt overrides, and model selection policies.
+
+### 6.1 — Registry
+
+| Feature | Status | Source |
+|---|:---:|---|
+| `BuiltInAgentProfile` interface | ✅ | [`coordinator/built-in-agents.ts`](../../packages/core/src/coordinator/built-in-agents.ts) |
+| `getBuiltInAgents()` (unconditional) | ✅ | [`coordinator/built-in-agents.ts`](../../packages/core/src/coordinator/built-in-agents.ts) |
+| `findBuiltInAgent()` by type | ✅ | [`coordinator/built-in-agents.ts`](../../packages/core/src/coordinator/built-in-agents.ts) |
+| `isBuiltInAgentType()` check | ✅ | [`coordinator/built-in-agents.ts`](../../packages/core/src/coordinator/built-in-agents.ts) |
+
+### 6.2 — Verification Agent
+
+| Feature | Status | Source |
+|---|:---:|---|
+| Read-only tool enforcement | ✅ | [`coordinator/verification-agent.ts`](../../packages/core/src/coordinator/verification-agent.ts) |
+| Disallowed tools list (write/edit/delete/patch) | ✅ | [`coordinator/verification-agent.ts`](../../packages/core/src/coordinator/verification-agent.ts) |
+| Adversarial system prompt (~130 lines) | ✅ | [`coordinator/verification-agent.ts`](../../packages/core/src/coordinator/verification-agent.ts) |
+| VERDICT: PASS / FAIL / PARTIAL reporting | ✅ | [`coordinator/verification-agent.ts`](../../packages/core/src/coordinator/verification-agent.ts) |
+| Critical reminder (anti-drift) | ✅ | [`coordinator/verification-agent.ts`](../../packages/core/src/coordinator/verification-agent.ts) |
+| Category-specific verification strategies | ✅ | [`coordinator/verification-agent.ts`](../../packages/core/src/coordinator/verification-agent.ts) |
+| Coordinator prompt documentation | ✅ | [`coordinator/coordinator-prompt.ts`](../../packages/core/src/coordinator/coordinator-prompt.ts) |
+
+### 6.3 — Guide Agent (Planned)
+
+| Feature | Status | Source |
+|---|:---:|---|
+| Documentation assistant with read-only tools + web fetch | ❌ | Planned |
+| Cost-optimized model (small/haiku equivalent) | ❌ | Planned |
+| Skills/MCP context injection | ❌ | Planned |
 
 ---
 
-## Cross-References
+## 7. Team Helpers & Infrastructure
 
-- **Roadmap Prerequisite:** `disallowedTools` enforcement (agent/filter.ts) must be complete before Phase 1 coordinator tool filtering can function.
-- **Fork Subagent Exclusivity:** Phase 4 of agents-platform-roadmap.md (Fork Subagent ✅) is mutually exclusive with coordinator mode — `isForkSubagentEnabled()` already rejects when `isCoordinator` is true.
-- **Engine Decoupling:** The Checkpointer interface from the engine-decoupling roadmap should be used for any new persistence needs in the teammate runner.
-- **Project-Scoped Persistence:** Team directories under `~/.liteai/teams/` should follow the same lifecycle management as project persistence directories.
+| Feature | Status | Source |
+|---|:---:|---|
+| Team directory management | ✅ | [`coordinator/team-helpers.ts`](../../packages/core/src/coordinator/team-helpers.ts) |
+| Team name sanitization | ✅ | [`coordinator/team-helpers.ts`](../../packages/core/src/coordinator/team-helpers.ts) |
+| Team config read/write | ✅ | [`coordinator/team-helpers.ts`](../../packages/core/src/coordinator/team-helpers.ts) |
+| Team directory cleanup on session exit | ✅ | [`coordinator/team-helpers.ts`](../../packages/core/src/coordinator/team-helpers.ts) |
+| Scratchpad directory (`teamScratchpadDir()`) | ✅ | [`coordinator/team-helpers.ts`](../../packages/core/src/coordinator/team-helpers.ts) |
+| Barrel export (`coordinator/index.ts`) | ✅ | [`coordinator/index.ts`](../../packages/core/src/coordinator/index.ts) |
+
+---
+
+## 8. StructuredOutput Tool (Coordinator Scoping)
+
+| Feature | Status | Source |
+|---|:---:|---|
+| `structured_output` as proper `Tool.Info` | ✅ | [`tool/structured_output.ts`](../../packages/core/src/tool/structured_output.ts) |
+| `STRUCTURED_OUTPUT_TOOL_NAME` constant | ✅ | [`tool/structured_output.ts`](../../packages/core/src/tool/structured_output.ts) |
+| WeakMap schema caching | ✅ | [`tool/structured_output.ts`](../../packages/core/src/tool/structured_output.ts) |
+| Coordinator allowlist entry | ✅ | [`coordinator/coordinator-mode.ts`](../../packages/core/src/coordinator/coordinator-mode.ts) |
+| Excluded from `ToolRegistry.all()` (injected on demand) | ✅ | [`tool/structured_output.ts`](../../packages/core/src/tool/structured_output.ts) |
+
+---
+
+## Summary
+
+| Category | ✅ | 🔶 | ❌ | Total |
+|---|:---:|:---:|:---:|:---:|
+| Coordinator Mode | 9 | 0 | 0 | 9 |
+| Coordinator Tools | 7 | 0 | 0 | 7 |
+| Message Routing | 5 | 0 | 0 | 5 |
+| Teammate Mailbox | 6 | 0 | 0 | 6 |
+| Structured Swarm Messages | 4 | 0 | 0 | 4 |
+| Type Foundation | 6 | 0 | 0 | 6 |
+| Agent Context & Isolation | 7 | 0 | 0 | 7 |
+| Spawn & Lifecycle | 5 | 0 | 0 | 5 |
+| Core Runner Loop | 8 | 0 | 0 | 8 |
+| Events & Prompt | 5 | 0 | 0 | 5 |
+| Permission Sync Foundation | 7 | 0 | 0 | 7 |
+| Permission Bridge | 7 | 0 | 0 | 7 |
+| Leader Bridge Handler | 4 | 0 | 0 | 4 |
+| PermissionService Integration | 3 | 0 | 0 | 3 |
+| Teammate Classifier | 5 | 0 | 0 | 5 |
+| Built-in Registry | 4 | 0 | 0 | 4 |
+| Verification Agent | 7 | 0 | 0 | 7 |
+| Guide Agent | 0 | 0 | 3 | 3 |
+| Team Helpers | 6 | 0 | 0 | 6 |
+| StructuredOutput Scoping | 5 | 0 | 0 | 5 |
+| **Total** | **114** | **0** | **3** | **117** |
