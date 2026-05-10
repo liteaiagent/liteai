@@ -14,6 +14,7 @@ import type { Provider } from "../../provider/provider"
 import { ModelID } from "../../provider/schema"
 import { ProviderTransform } from "../../provider/transform"
 import { ToolRegistry } from "../../tool/registry"
+import { STRUCTURED_OUTPUT_TOOL_NAME } from "../../tool/structured_output"
 import { Session } from ".."
 import type { Message } from "../message"
 import type { SessionProcessor } from "../processor"
@@ -371,17 +372,59 @@ export async function resolveTools(input: {
   return tools
 }
 
-/** @internal Exported for testing */
+/**
+ * Schema-validated variant of the StructuredOutput tool.
+ *
+ * The base StructuredOutputTool is registered in the ToolRegistry with a
+ * passthrough schema. When the SDK caller provides a `json_schema` format,
+ * this factory creates a variant that:
+ * 1. Overrides the inputSchema with the caller's JSON schema
+ * 2. Hooks into onSuccess to capture the validated output
+ *
+ * Matches Claude Code's `createSyntheticOutputTool(jsonSchema)` pattern
+ * where the base SyntheticOutputTool is cloned with Ajv validation.
+ *
+ * Uses WeakMap identity-caching on the schema object so repeated calls
+ * with the same schema reference (e.g., SDK callers reusing a schema)
+ * skip tool construction.
+ *
+ * @internal Exported for testing
+ */
+const schemaToolCache = new WeakMap<object, AITool>()
+
 export function createStructuredOutputTool(input: {
   schema: Record<string, unknown>
   onSuccess: (output: unknown) => void
 }): AITool {
+  // WeakMap lookup — cache hit if same schema object reference
+  const cached = schemaToolCache.get(input.schema)
+  if (cached) {
+    // Clone with fresh onSuccess callback (schema is cached, callback is per-turn)
+    return tool({
+      // biome-ignore lint/suspicious/noExplicitAny: AI SDK tool() id requires specific branded type
+      id: STRUCTURED_OUTPUT_TOOL_NAME as any,
+      description: STRUCTURED_OUTPUT_DESCRIPTION,
+      inputSchema: (cached as { inputSchema: ReturnType<typeof jsonSchema> }).inputSchema,
+      async execute(args) {
+        input.onSuccess(args)
+        return {
+          output: "Structured output captured successfully.",
+          title: "Structured Output",
+          metadata: { valid: true },
+        }
+      },
+      toModelOutput(result) {
+        return { type: "text", value: result.output }
+      },
+    })
+  }
+
   // Remove $schema property if present (not needed for tool input)
   const { $schema, ...toolSchema } = input.schema
 
-  return tool({
+  const created = tool({
     // biome-ignore lint/suspicious/noExplicitAny: AI SDK tool() id requires specific branded type
-    id: "StructuredOutput" as any,
+    id: STRUCTURED_OUTPUT_TOOL_NAME as any,
     description: STRUCTURED_OUTPUT_DESCRIPTION,
     // biome-ignore lint/suspicious/noExplicitAny: AI SDK jsonSchema() accepts opaque schema objects
     inputSchema: jsonSchema(toolSchema as any),
@@ -401,4 +444,7 @@ export function createStructuredOutputTool(input: {
       }
     },
   })
+
+  schemaToolCache.set(input.schema, created)
+  return created
 }

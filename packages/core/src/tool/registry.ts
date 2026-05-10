@@ -71,6 +71,11 @@ export namespace ToolRegistry {
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       PlanEnterTool,
       PlanExitTool,
+      // StructuredOutputTool intentionally excluded from base pool.
+      // Like Claude Code's specialTools filter, it's only injected by
+      // query.ts when json_schema format is active (via createStructuredOutputTool).
+      // Including it unconditionally wastes tokens and confuses the model
+      // with "You MUST call this tool" in sessions that don't want structured output.
     ]
 
     const { AgentMemory } = await import("../agent/memory")

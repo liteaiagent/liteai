@@ -3,6 +3,7 @@ import { ASYNC_AGENT_ALLOWED_TOOLS } from "../agent/filter"
 import { Brand } from "../brand"
 import { Flag } from "../flag/flag"
 import type { Session } from "../session"
+import { STRUCTURED_OUTPUT_TOOL_NAME } from "../tool/structured_output"
 
 const logger = Log.create({ service: "coordinator" })
 
@@ -78,7 +79,7 @@ const COORDINATOR_ALLOWED_TOOLS = new Set([
   "task_stop",
   "team_create",
   "team_delete",
-  "StructuredOutput",
+  STRUCTURED_OUTPUT_TOOL_NAME,
 ])
 
 /**

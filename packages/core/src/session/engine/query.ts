@@ -90,7 +90,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       break
     }
 
-    // Use the shared in-memory buffer — no DB read on every turn (FR-2, FR-3)
+    // Use the shared in-memory buffer
     let msgs = msgsBuffer.current
 
     // ── Scan for last user/assistant messages ──
@@ -245,7 +245,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     const maxSteps = agent.steps ?? Infinity
     const isLastStep = step >= maxSteps
 
-    // ── Read PlanModeState at turn start — synchronous in-memory access (T006/FR-001) ──
+    // ── Read PlanModeState at turn start — synchronous in-memory access ──
     let planModeState: PlanModeState = planModeStateRef.get()
 
     const text = msgs
@@ -365,10 +365,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       },
     })
 
-    // ── Inject StructuredOutput tool if JSON schema mode enabled ──
-    // Injected BEFORE coordinator filter so the allowlist governs it
-    // (matches Claude Code where StructuredOutput is a registered tool
-    // in COORDINATOR_MODE_ALLOWED_TOOLS, not a post-filter bypass).
+    // ── Override StructuredOutput with schema-validated variant ──
+    // The base StructuredOutputTool is in the registry (passthrough schema).
+    // When json_schema format is active, we replace it with a variant that
+    // validates against the caller's schema and captures the output.
+    // Matches Claude Code's createSyntheticOutputTool(jsonSchema) pattern.
     const format: Message.OutputFormat = lastUser.format ?? { type: "text" }
     if (format.type === "json_schema") {
       tools.StructuredOutput = createStructuredOutputTool({
@@ -446,11 +447,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
         ...Message.toModelMessages(msgs, model),
         ...(isLastStep
           ? [
-              {
-                role: "assistant" as const,
-                content: await Bundled.miscPrompt("max-steps"),
-              },
-            ]
+            {
+              role: "assistant" as const,
+              content: await Bundled.miscPrompt("max-steps"),
+            },
+          ]
           : []),
       ],
       tools,
@@ -581,10 +582,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
           timing: { start: assistantMessage.time.created, end: stepTimingEnd },
           tokenUsage: assistantMessage.tokens
             ? {
-                input: assistantMessage.tokens.input,
-                output: assistantMessage.tokens.output,
-                reasoning: assistantMessage.tokens.reasoning,
-              }
+              input: assistantMessage.tokens.input,
+              output: assistantMessage.tokens.output,
+              reasoning: assistantMessage.tokens.reasoning,
+            }
             : undefined,
           traceSpanID: trace.getActiveSpan()?.spanContext().spanId,
         },
