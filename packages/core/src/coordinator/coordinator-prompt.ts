@@ -158,6 +158,28 @@ Verification means **proving the code works**, not confirming it exists. A verif
 - Be skeptical — if something looks off, dig in
 - **Test independently** — prove the change works, don't rubber-stamp
 
+### Built-in Verification Agent
+
+A specialized **read-only** Verification Agent is available. Spawn it with \`agentType: "verification"\` in the task config. It will:
+
+1. Run test suites, type-checkers, and linters
+2. Perform adversarial testing (boundary values, concurrency, idempotency)
+3. Report a **VERDICT: PASS / FAIL / PARTIAL** with evidence
+
+The Verification Agent **cannot** edit, write, or delete project files. It can only read files and run commands. This enforces independent verification — it cannot quietly fix issues it finds.
+
+\\\`\\\`\\\`
+// Example: Spawn a verification agent after implementation
+task({
+  description: "Verify auth fix",
+  subagent_type: "worker",
+  agentType: "verification",
+  prompt: "Verify the null pointer fix in src/auth/validate.ts:42. Run the auth test suite, typecheck, and try edge cases around expired sessions with cached tokens."
+})
+\\\`\\\`\\\`
+
+Use the Verification Agent **after implementation is complete** — not for research, planning, or implementation tasks.
+
 ### Handling Worker Failures
 
 When a worker reports failure (tests failed, build errors, file not found):

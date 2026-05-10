@@ -14,6 +14,7 @@
 import { Log } from "@liteai/util/log"
 import type { AppState, ParentContext, TeammateAgentContext } from "../agent/context"
 import { Bus } from "../bus"
+import { findBuiltInAgent } from "./built-in-agents"
 import { sanitizeTeamName } from "./team-helpers"
 import { createTeammateContext } from "./teammate-context"
 import { TeammateEvent } from "./teammate-events"
@@ -42,6 +43,11 @@ export interface InProcessSpawnConfig {
   planModeRequired: boolean
   /** Model override (undefined = inherit from leader) */
   model?: string
+  /**
+   * Built-in agent type (e.g., 'verification').
+   * When set, applies the profile's tool restrictions, system prompt, and color.
+   */
+  agentType?: string
 }
 
 export interface InProcessSpawnOutput {
@@ -100,7 +106,10 @@ export async function spawnInProcessTeammate(
 
   const agentId = formatAgentId(sanitizedName, config.teamName)
   const taskId = `teammate-${agentId}-${Date.now().toString(36)}`
-  const color = config.color ?? assignTeammateColor()
+
+  // Resolve built-in agent profile (if agentType specified)
+  const builtInProfile = config.agentType ? findBuiltInAgent(config.agentType) : undefined
+  const color = config.color ?? builtInProfile?.color ?? assignTeammateColor()
 
   log.info("spawning in-process teammate", {
     agentId,
@@ -154,7 +163,7 @@ export async function spawnInProcessTeammate(
             ...state.teamContext.teammates,
             [agentId]: {
               name: sanitizedName,
-              agentType: "teammate",
+              agentType: config.agentType ?? "teammate",
               color,
               spawnedAt: Date.now(),
               cwd: teammateContext.cwd,

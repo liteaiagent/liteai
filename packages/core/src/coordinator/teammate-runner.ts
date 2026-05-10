@@ -16,6 +16,7 @@ import type { ModelID, ProviderID } from "../provider/schema"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/engine"
 import { MessageID, SessionID } from "../session/schema"
+import type { BuiltInAgentProfile } from "./built-in-agents"
 import { createIdleNotification, isShutdownRequest } from "./swarm-messages"
 import { readTeamFile, type TeamFile } from "./team-helpers"
 import { runWithTeammateContext } from "./teammate-context"
@@ -38,6 +39,9 @@ export interface TeammateRunnerConfig {
   model?: { providerID: string; modelID: string }
   /** Agent definition name (defaults to system default) */
   agentName?: string
+  /** Built-in agent profile (e.g., verification agent). When set, applies
+   *  system prompt injection and critical reminder to every iteration. */
+  agentProfile?: BuiltInAgentProfile
 }
 
 export interface TeammateRunnerResult {
@@ -281,7 +285,11 @@ async function executeTeammatePrompt(
     }))
 
     // Build the full prompt with teammate system addendum
-    const fullPrompt = `${TEAMMATE_SYSTEM_PROMPT_ADDENDUM}\n\n${prompt}`
+    // If a built-in agent profile is active, inject its system prompt and critical reminder
+    const profilePrefix = config.agentProfile
+      ? `${config.agentProfile.systemPrompt}\n\n${config.agentProfile.criticalReminder ?? ""}\n\n`
+      : ""
+    const fullPrompt = `${profilePrefix}${TEAMMATE_SYSTEM_PROMPT_ADDENDUM}\n\n${prompt}`
 
     // Resolve prompt parts
     const parts = await SessionPrompt.resolvePromptParts(fullPrompt)

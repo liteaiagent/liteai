@@ -201,6 +201,77 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
         }
 
         if (appState?.shouldAvoidPermissionPrompts) {
+          // ── Phase 4: Teammate Permission Bridge Path ──
+          // If a permission bridge is registered and this is a teammate context,
+          // try classifier pre-approval first, then forward to the leader bridge
+          // instead of silently denying.
+          const { PermissionBridge } = yield* Effect.promise(() => import("@/coordinator/permission-bridge"))
+          if (PermissionBridge.isRegistered() && ctx?.agentId) {
+            // Step 1: Try classifier pre-approval for command permissions
+            const { tryTeammateClassifier } = yield* Effect.promise(() => import("@/permission/teammate-classifier"))
+            const classifierResult = yield* Effect.promise(() =>
+              tryTeammateClassifier(
+                {
+                  permission: request.permission,
+                  patterns: request.patterns,
+                  metadata: request.metadata,
+                },
+                {
+                  agentId: ctx.agentId,
+                  agentName: "agentName" in ctx ? (ctx as { agentName: string }).agentName : undefined,
+                  cwd: "cwd" in ctx ? (ctx as { cwd: string }).cwd : undefined,
+                },
+              ),
+            )
+
+            if (classifierResult === "SAFE") {
+              log.info("teammate classifier auto-approved", {
+                permission: request.permission,
+                agentId: ctx.agentId,
+              })
+              return
+            }
+
+            // Step 2: Forward to leader via bridge
+            const { createPermissionRequest } = yield* Effect.promise(() => import("@/coordinator/permission-sync"))
+            const bridgeRequest = createPermissionRequest({
+              toolName: request.permission,
+              toolUseId: request.tool?.callID ?? `perm-${request.id}`,
+              description: `${request.permission} on ${request.patterns.join(", ")}`,
+              input: request.metadata,
+              workerId: ctx.agentId,
+              workerName: "agentName" in ctx ? (ctx as { agentName: string }).agentName : ctx.agentId,
+              workerColor: "agentColor" in ctx ? (ctx as { agentColor?: string }).agentColor : undefined,
+              teamName: "teamName" in ctx ? (ctx as { teamName: string }).teamName : "default",
+            })
+
+            try {
+              const resolution = yield* Effect.promise(() => PermissionBridge.forward(bridgeRequest))
+
+              if (resolution.decision === "approved") {
+                log.info("teammate permission approved by leader", {
+                  permission: request.permission,
+                  agentId: ctx.agentId,
+                  requestId: bridgeRequest.id,
+                })
+                return
+              }
+
+              // Rejected — return appropriate error
+              if (resolution.feedback) {
+                return yield* new CorrectedError({ feedback: resolution.feedback })
+              }
+              return yield* new RejectedError()
+            } catch (bridgeError: unknown) {
+              // Bridge failure — fall through to PrePermissionDeny hook
+              log.warn("teammate permission bridge failed — falling through to hook", {
+                agentId: ctx.agentId,
+                error: bridgeError instanceof Error ? bridgeError.message : String(bridgeError),
+              })
+            }
+          }
+
+          // ── Original PrePermissionDeny hook path (non-teammate or bridge not registered) ──
           const { Hook } = yield* Effect.promise(() => import("@/hook"))
           const hookResult = yield* Effect.promise(() =>
             Hook.dispatch("PrePermissionDeny", {

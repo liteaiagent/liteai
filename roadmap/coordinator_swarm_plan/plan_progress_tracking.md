@@ -2,7 +2,7 @@
 
 > **Reference Path:** `d:\liteai\roadmap\core_features\coordinator_swarm_plan\`
 > **Comparison Target:** `D:\claude-code\src`
-> **Last Updated:** 2026-05-10
+> **Last Updated:** 2026-05-10 (Phase 4 completed)
 
 ---
 
@@ -69,9 +69,31 @@ Full in-process teammate execution system achieving feature parity with Claude C
 
 ---
 
-## ⏳ Phase 4: Permission Synchronization & Verification (NOT STARTED)
+## ✅ Phase 4: Permission Synchronization & Verification (COMPLETED)
 
-**What needs to be implemented:**
-1. **Permission Mailbox Bridge**: Teammates write `SwarmPermissionRequest` to `~/.liteai/teams/{team}/permissions/pending/` and poll mailbox for leader resolution.
-2. **Classifier Auto-Approval**: Decouple teammates from racing against main UI; asynchronous classifier bash command approval.
-3. **Verification Agent**: Read-only verification profile (disallowing `edit`, `write`, `apply_patch`) with adversarial verification prompt.
+Dual-transport permission synchronization, classifier pre-approval, and built-in verification agent — achieving feature parity with Claude Code's `permissionSync.ts`, `leaderPermissionBridge.ts`, and `verificationAgent.ts`.
+
+**What was delivered:**
+- **Permission Sync Foundation (`permission-sync.ts`)**: Zod schemas (`SwarmPermissionRequest`, `PermissionResolution`, `PermissionSuggestion`), request factory with unique ID generation, and full file-based storage — `permissions/pending/` and `permissions/resolved/` directories under the team directory with atomic writes (`.tmp` → rename) and `cleanupOldResolutions()` for disk hygiene.
+- **Dual-Transport Bridge (`permission-bridge.ts`)**: Singleton `PermissionBridge` with two transport paths:
+  - **Primary (in-process):** Handler registration + `Deferred` promise resolution — teammate calls `forward()`, leader calls `resolve()`.
+  - **Fallback (file-based):** Teammate writes to `pending/` directory and polls `resolved/` at 500ms intervals with 5-minute timeout. Supports future cross-process teammates.
+  - Bus events: `TeammatePermissionEvent.Asked` and `.Resolved` for SSE/UI consumers.
+- **Bridge Handler (`permission-bridge-handler.ts`)**: `setupPermissionBridgeHandler()` registers the handler on session start and returns a `decisionCallback` for the UI layer. `resolveFileBasedPermission()` for cross-process resolution.
+- **Teammate Classifier (`permission/teammate-classifier.ts`)**: Pre-approval adapter that routes `run_command`/`bash`/`execute`/`shell` permissions through existing `classifyYoloAction()` with a 10s timeout. Builds pseudo-transcript from command metadata. SAFE → auto-approve, DANGEROUS/null → escalate to leader.
+- **PermissionService Integration (`permission/service.ts`)**: New teammate bridge path in `ask()`: when `shouldAvoidPermissionPrompts` is true and bridge is registered with a teammate context → classifier pre-approval → bridge forward → fallback to existing `PrePermissionDeny` hook path.
+- **Verification Agent (`verification-agent.ts`)**: Read-only agent profile with adversarial system prompt enforcing CANNOT-edit constraints, anti-patterns list, category-specific verification strategies, and mandatory VERDICT: PASS/FAIL/PARTIAL reporting format. Critical reminder prepended to every iteration to prevent prompt drift.
+- **Built-in Agent Registry (`built-in-agents.ts`)**: Extensible registry with `findBuiltInAgent()`, `getBuiltInAgents()`, `isBuiltInAgentType()`. Verification agent unconditionally available in coordinator mode (no feature flags).
+- **Spawn Integration (`teammate-spawn.ts`)**: `InProcessSpawnConfig.agentType` resolves built-in profile for color override and type registration in `teamContext.teammates`.
+- **Runner Integration (`teammate-runner.ts`)**: `TeammateRunnerConfig.agentProfile` injects system prompt and critical reminder for profiled agents.
+- **Coordinator Prompt (`coordinator-prompt.ts`)**: Added verification agent documentation section with `agentType: "verification"` usage example and spawn guidelines.
+- **Exports**: All Phase 4 modules exported from `coordinator/index.ts` barrel.
+
+**Architectural Decisions:**
+1. **Classifier model**: Uses global small model via existing `classifyYoloAction()` — no per-tenant configuration.
+2. **Permission propagation**: "Always allow" rules scoped to requesting teammate only — no team-wide propagation (stricter than Claude Code).
+3. **Verification agent gating**: Unconditionally available in coordinator mode — no feature flags (v-Next clean release).
+4. **File-based fallback**: Fully implemented (not stubbed) — atomic writes, cleanup, 5-minute polling timeout.
+
+**Validation:** Typecheck clean, lint clean, 37/37 Phase 4 tests pass across 3 test files (permission-sync, permission-bridge, verification-agent).
+
