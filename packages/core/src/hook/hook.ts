@@ -22,6 +22,7 @@ export const Event = z.enum([
   "PreCompact",
   "PostCompact",
   "PermissionRequest",
+  "PrePermissionDeny",
   "InstructionsLoaded",
   "ConfigChange",
   "StopFailure",

@@ -430,6 +430,127 @@ test("ask - returns pending promise when action is ask", async () => {
   })
 }, 30_000)
 
+test("ask - bypassPermissions mode resolves immediately", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const state = { permissionMode: "bypassPermissions" }
+      const mockCtx = {
+        getAppState: () => state,
+        // biome-ignore lint/suspicious/noExplicitAny: minimal mock
+      } as any
+
+      await (await import("../../src/agent/context")).AgentExecutionContext.run(mockCtx, async () => {
+        const result = await PermissionNext.ask({
+          sessionID: SessionID.make("session_test"),
+          permission: "bash",
+          patterns: ["ls"],
+          metadata: {},
+          always: [],
+          ruleset: [{ permission: "bash", pattern: "*", action: "ask" }],
+        })
+        expect(result).toBeUndefined()
+      })
+    },
+  })
+}, 30_000)
+
+test("ask - dontAsk mode throws DeniedError", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const state = { permissionMode: "dontAsk" }
+      const mockCtx = {
+        getAppState: () => state,
+        // biome-ignore lint/suspicious/noExplicitAny: minimal mock
+      } as any
+
+      await (await import("../../src/agent/context")).AgentExecutionContext.run(mockCtx, async () => {
+        await expect(
+          PermissionNext.ask({
+            sessionID: SessionID.make("session_test"),
+            permission: "bash",
+            patterns: ["ls"],
+            metadata: {},
+            always: [],
+            ruleset: [{ permission: "bash", pattern: "*", action: "ask" }],
+          }),
+        ).rejects.toBeInstanceOf(PermissionNext.DeniedError)
+      })
+    },
+  })
+}, 30_000)
+
+test("ask - plan mode throws DeniedError", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const state = { permissionMode: "plan" }
+      const mockCtx = {
+        getAppState: () => state,
+        // biome-ignore lint/suspicious/noExplicitAny: minimal mock
+      } as any
+
+      await (await import("../../src/agent/context")).AgentExecutionContext.run(mockCtx, async () => {
+        await expect(
+          PermissionNext.ask({
+            sessionID: SessionID.make("session_test"),
+            permission: "bash",
+            patterns: ["ls"],
+            metadata: {},
+            always: [],
+            ruleset: [{ permission: "bash", pattern: "*", action: "ask" }],
+          }),
+        ).rejects.toBeInstanceOf(PermissionNext.DeniedError)
+      })
+    },
+  })
+}, 30_000)
+
+test("ask - acceptEdits mode allows edit permissions and prompts others", async () => {
+  await using tmp = await tmpdir({ git: true })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const state = { permissionMode: "acceptEdits" }
+      const mockCtx = {
+        getAppState: () => state,
+        // biome-ignore lint/suspicious/noExplicitAny: minimal mock
+      } as any
+
+      await (await import("../../src/agent/context")).AgentExecutionContext.run(mockCtx, async () => {
+        // Edit category is allowed
+        const result = await PermissionNext.ask({
+          sessionID: SessionID.make("session_test"),
+          permission: "edit",
+          patterns: ["file.txt"],
+          metadata: {},
+          always: [],
+          ruleset: [{ permission: "edit", pattern: "*", action: "ask" }],
+        })
+        expect(result).toBeUndefined()
+
+        // Non-edit category returns pending promise (prompts)
+        const promise = PermissionNext.ask({
+          sessionID: SessionID.make("session_test"),
+          permission: "bash",
+          patterns: ["ls"],
+          metadata: {},
+          always: [],
+          ruleset: [{ permission: "bash", pattern: "*", action: "ask" }],
+        })
+        expect(promise).toBeInstanceOf(Promise)
+
+        await rejectAll()
+        await promise.catch(() => {})
+      })
+    },
+  })
+}, 30_000)
+
 test("ask - adds request to pending list", async () => {
   await using tmp = await tmpdir({ git: true })
   await Instance.provide({

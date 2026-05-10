@@ -109,7 +109,6 @@ export const SendMessageTool = Tool.define("send_message", {
         abortController: agentCtx.abortController,
         readFileState: agentCtx.readFileState,
         contentReplacementState: agentCtx.contentReplacementState,
-        toolDecisions: agentCtx.toolDecisions,
         getAppState: agentCtx.getAppState,
         setAppState: agentCtx.setAppState,
         setAppStateForTasks: agentCtx.setAppStateForTasks,

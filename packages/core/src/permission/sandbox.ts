@@ -8,8 +8,7 @@ export interface SandboxOptions {
 export interface PermissionContext {
   permissionMode?: Agent.AgentDefinition["permissionMode"]
   shouldAvoidPermissionPrompts?: boolean
-  awaitAutomatedChecksBeforeDialog?: boolean
-  toolDecisions?: Record<string, import("../agent/context").ToolDecision>
+  // TODO: Phase 3 (swarm) will add canShowPermissionPrompts=true path for teammates
 }
 
 const PERMISSION_MODE_RANKS: Record<string, number> = {
@@ -47,40 +46,9 @@ export class PermissionSandbox {
 
     if (options.isAsync && !options.canShowPermissionPrompts) {
       childContext.shouldAvoidPermissionPrompts = true
-    } else if (options.isAsync && options.canShowPermissionPrompts) {
-      childContext.awaitAutomatedChecksBeforeDialog = true
     }
-
-    if (agentDef.tools) {
-      const allowedTools: string[] = []
-      if (Array.isArray(agentDef.tools)) {
-        allowedTools.push(...agentDef.tools)
-      } else if (typeof agentDef.tools === "object") {
-        for (const [key, val] of Object.entries(agentDef.tools)) {
-          if (val) allowedTools.push(key)
-        }
-      }
-
-      const newDecisions: Record<string, import("../agent/context").ToolDecision> = {}
-
-      // Preserve CLI-level rules
-      const parentDecisions = parent.toolDecisions
-      if (parentDecisions) {
-        for (const [tool, decision] of Object.entries(parentDecisions)) {
-          if (typeof decision === "object" && decision !== null && decision.source === "cliArg") {
-            newDecisions[tool] = decision
-          }
-        }
-      }
-
-      for (const tool of allowedTools) {
-        if (!newDecisions[tool]) {
-          newDecisions[tool] = { result: true, source: "sandbox" }
-        }
-      }
-
-      childContext.toolDecisions = newDecisions
-    }
+    // TODO: Phase 3 (swarm) — when isAsync && canShowPermissionPrompts,
+    // teammates will need an automated-checks-first dialog path.
 
     return childContext
   }
@@ -94,7 +62,6 @@ export function applyPermissionSandboxToContext(
   const parentPermissionCtx = {
     permissionMode: context.getAppState().permissionMode,
     shouldAvoidPermissionPrompts: context.getAppState().shouldAvoidPermissionPrompts,
-    toolDecisions: context.toolDecisions,
   }
   const derivedPermissionCtx = PermissionSandbox.apply(parentPermissionCtx, agentDef, opts)
 
@@ -102,9 +69,5 @@ export function applyPermissionSandboxToContext(
     ...state,
     permissionMode: derivedPermissionCtx.permissionMode,
     ...(derivedPermissionCtx.shouldAvoidPermissionPrompts ? { shouldAvoidPermissionPrompts: true } : {}),
-    ...(derivedPermissionCtx.awaitAutomatedChecksBeforeDialog ? { awaitAutomatedChecksBeforeDialog: true } : {}),
   }))
-  if (derivedPermissionCtx.toolDecisions) {
-    context.toolDecisions = derivedPermissionCtx.toolDecisions
-  }
 }

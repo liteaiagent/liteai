@@ -34,6 +34,9 @@ The reference implementation is a **CLI application** (single-tenant, single-pro
 ## Dependency Chain
 
 ```
+Phase 0: Permission System Hardening (Subagent attribution, mode activation)
+        │
+        ▼
 Phase 1: Coordinator Mode State Machine + System Prompt
         │
         ▼

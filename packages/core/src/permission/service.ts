@@ -1,7 +1,7 @@
 import { Log } from "@liteai/util/log"
 import { Deferred, Effect, Layer, Schema, ServiceMap } from "effect"
 import z from "zod"
-import { AgentExecutionContext } from "@/agent/context"
+import { AgentExecutionContext, type AppState } from "@/agent/context"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Instance } from "@/project/instance"
@@ -14,6 +14,9 @@ import { Wildcard } from "@/util/wildcard"
 import { PermissionID } from "./schema"
 
 const log = Log.create({ service: "permission" })
+
+/** Permissions that `acceptEdits` mode auto-allows without prompting. */
+const EDIT_PERMISSIONS = new Set(["edit", "write", "multiedit", "apply_patch"])
 
 export const Action = z.enum(["allow", "deny", "ask"]).meta({
   ref: "PermissionAction",
@@ -50,6 +53,8 @@ export const Request = z
         callID: z.string(),
       })
       .optional(),
+    agentId: z.string().optional(),
+    agentName: z.string().optional(),
   })
   .meta({
     ref: "PermissionRequest",
@@ -166,13 +171,56 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
         if (!pending) return
 
         const ctx = AgentExecutionContext.getStore()
+        let appState: AppState | undefined
         if (ctx && "getAppState" in ctx) {
-          const appState = ctx.getAppState()
-          if (appState.shouldAvoidPermissionPrompts) {
-            return yield* new DeniedError({
-              ruleset: [{ permission: request.permission, pattern: "background-agent", action: "deny" }],
-            })
+          appState = ctx.getAppState()
+        }
+
+        const permMode = appState?.permissionMode
+
+        if (permMode === "bypassPermissions") {
+          return
+        }
+
+        if (permMode === "dontAsk") {
+          return yield* new DeniedError({
+            ruleset: [{ permission: request.permission, pattern: "dontAsk-mode", action: "deny" }],
+          })
+        }
+
+        if (permMode === "plan") {
+          return yield* new DeniedError({
+            ruleset: [{ permission: request.permission, pattern: "plan-mode", action: "deny" }],
+          })
+        }
+
+        if (permMode === "acceptEdits") {
+          if (EDIT_PERMISSIONS.has(request.permission)) {
+            return
           }
+        }
+
+        if (appState?.shouldAvoidPermissionPrompts) {
+          const { Hook } = yield* Effect.promise(() => import("@/hook"))
+          const hookResult = yield* Effect.promise(() =>
+            Hook.dispatch("PrePermissionDeny", {
+              session_id: request.sessionID,
+              hook_event_name: "PrePermissionDeny",
+              // biome-ignore lint/suspicious/noExplicitAny: AgentContext might not have cwd in teammate mode
+              cwd: (ctx && "cwd" in ctx ? (ctx as any).cwd : undefined) || process.cwd(),
+              permission: request.permission,
+              patterns: request.patterns,
+              agentId: ctx?.agentId,
+            }),
+          )
+
+          if (hookResult.proceed) {
+            return
+          }
+
+          return yield* new DeniedError({
+            ruleset: [{ permission: request.permission, pattern: "background-agent", action: "deny" }],
+          })
         }
 
         const id = request.id ?? PermissionID.ascending()
@@ -255,10 +303,17 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
           yield* Deferred.succeed(item.deferred, undefined)
         }
 
-        // TODO: we don't save the permission ruleset to disk yet until there's
-        // UI to manage it
-        // db().insert(PermissionTable).values({ projectID: Instance.project.id, data: s.approved })
-        //   .onConflictDoUpdate({ target: PermissionTable.projectID, set: { data: s.approved } }).run()
+        if (input.reply === "always") {
+          yield* Effect.sync(() =>
+            Database.use((db) =>
+              db
+                .insert(PermissionTable)
+                .values({ project_id: Instance.project.id, data: state.approved })
+                .onConflictDoUpdate({ target: PermissionTable.project_id, set: { data: state.approved } })
+                .run(),
+            ),
+          )
+        }
       })
 
       const list = Effect.fn("PermissionService.list")(function* () {

@@ -198,11 +198,11 @@ describe("Agent Lifecycle", () => {
             queryTracking: { depth: 1 },
             abortController: new AbortController(),
             readFileState: new Map(),
-            toolDecisions: undefined,
             getAppState: () => ({}),
             setAppState: () => {},
             setAppStateForTasks: () => {},
             cwd: process.cwd(),
+            isFork: false,
           } as import("@/agent/context").SubagentContext
 
           runWithAgentContext(ctx, async () => {

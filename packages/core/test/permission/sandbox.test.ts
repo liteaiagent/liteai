@@ -14,7 +14,6 @@ describe("PermissionSandbox", () => {
       sessionId: "test-session",
       abortController: new AbortController(),
       readFileState: new Map(),
-      toolDecisions: state.toolDecisions,
       getAppState: () => state,
       // biome-ignore lint/suspicious/noExplicitAny: mock
       setAppState: (updater: any) => {
@@ -81,59 +80,5 @@ describe("PermissionSandbox", () => {
     applySandboxToContext(context, agentDef)
 
     expect(context.getAppState().permissionMode).toBe("bubble")
-  })
-
-  test("tool allow-list replacement (not merge)", () => {
-    const context = createMockContext({
-      toolDecisions: {
-        read_file: { result: true, source: "user" },
-        run_command: { result: false, source: "user" },
-      },
-    })
-    const agentDef = createMockAgentDef({ tools: ["write_file", "search"] })
-
-    applySandboxToContext(context, agentDef)
-
-    const newDecisions = context.toolDecisions
-    expect(newDecisions).toBeDefined()
-    expect(newDecisions?.read_file).toBeUndefined()
-    expect(newDecisions?.run_command).toBeUndefined()
-    expect(newDecisions?.write_file).toEqual({ result: true, source: "sandbox" })
-    expect(newDecisions?.search).toEqual({ result: true, source: "sandbox" })
-  })
-
-  test("tool allow-list object format replacement", () => {
-    const context = createMockContext({
-      toolDecisions: {
-        read_file: { result: true, source: "user" },
-      },
-    })
-    const agentDef = createMockAgentDef({ tools: { write_file: true, denied_tool: false } })
-
-    applySandboxToContext(context, agentDef)
-
-    const newDecisions = context.toolDecisions
-    expect(newDecisions).toBeDefined()
-    expect(newDecisions?.read_file).toBeUndefined()
-    expect(newDecisions?.write_file).toEqual({ result: true, source: "sandbox" })
-    expect(newDecisions?.denied_tool).toBeUndefined()
-  })
-
-  test("CLI-level rule preservation", () => {
-    const context = createMockContext({
-      toolDecisions: {
-        mcp_server_1: { result: true, source: "cliArg" },
-        run_command: { result: true, source: "user" },
-      },
-    })
-    const agentDef = createMockAgentDef({ tools: ["write_file"] })
-
-    applySandboxToContext(context, agentDef)
-
-    const newDecisions = context.toolDecisions
-    expect(newDecisions).toBeDefined()
-    expect(newDecisions?.mcp_server_1).toEqual({ result: true, source: "cliArg" })
-    expect(newDecisions?.run_command).toBeUndefined()
-    expect(newDecisions?.write_file).toEqual({ result: true, source: "sandbox" })
   })
 })

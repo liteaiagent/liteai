@@ -168,14 +168,6 @@ describe("Agent Context", () => {
       parent.abortController.abort("parent-reason")
       expect(ctx.abortController.signal.aborted).toBe(true)
     })
-
-    it("toolDecisions are always reset to undefined", () => {
-      const parent = createParent({
-        toolDecisions: { "some-tool": { result: true, source: "user" } },
-      })
-      const ctx = createSubagentContext(parent, createAgent({ name: "a" }), "test-id")
-      expect(ctx.toolDecisions).toBeUndefined()
-    })
   })
 
   describe("R010 — setAppStateForTasks passthrough", () => {

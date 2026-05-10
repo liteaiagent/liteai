@@ -10,12 +10,6 @@ export interface ThinkingConfig {
   budget?: number
 }
 
-export interface ToolDecision {
-  result: boolean
-  source: string
-  [key: string]: unknown
-}
-
 export interface ExecController {
   exec(
     cmd: string,
@@ -33,7 +27,6 @@ export interface BackgroundTaskState {
 export interface AppState {
   shouldAvoidPermissionPrompts?: boolean
   permissionMode?: Agent.Info["permissionMode"]
-  toolDecisions?: Record<string, ToolDecision>
   /** Per-agent activity descriptions from the periodic summarization loop. */
   agentSummaries?: Record<string, string>
   /** Name-to-agentId registry for background agents. */
@@ -56,7 +49,6 @@ export interface ParentContext {
   readFileState: Map<string, any>
   // biome-ignore lint/suspicious/noExplicitAny: compatibility with Session state requires any
   contentReplacementState?: any
-  toolDecisions?: Record<string, ToolDecision>
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void
   /**
@@ -94,7 +86,6 @@ export interface SubagentContext {
   queryTracking: { depth: number }
   /** Whether this invocation is a fresh spawn or a resume. */
   invocationKind: "spawn" | "resume"
-  toolDecisions?: Record<string, ToolDecision>
   thinkingConfig?: ThinkingConfig
   getAppState: () => AppState
   setAppState: (updater: (state: AppState) => AppState) => void
@@ -246,7 +237,6 @@ export function createSubagentContext(
     abortController,
     readFileState: new Map(parent.readFileState), // shallow clone
     contentReplacementState,
-    toolDecisions: undefined, // fresh
     thinkingConfig: agent.thinking
       ? {
           ...(parent.thinkingConfig || {}),

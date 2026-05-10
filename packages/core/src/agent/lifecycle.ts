@@ -384,7 +384,6 @@ export async function runAsyncAgentLifecycle(
       queryTracking: { depth: 1 },
       abortController: new AbortController(),
       readFileState: new Map(),
-      toolDecisions: undefined,
       getAppState: () => ({}),
       setAppState: () => {},
       setAppStateForTasks: () => {},

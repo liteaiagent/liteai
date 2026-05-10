@@ -107,11 +107,10 @@ When a sub-agent is spawned, the system creates an isolated execution context vi
 | **Cloned** | `readFileState`, `contentReplacementState` | Deep-copied. Sub-agent mutations do not affect parent. |
 | **Linked** | `abortController` | Child linked to parent. Parent abort → child abort. Child abort ↛ parent abort. |
 | **Wrapped** | `getAppState` | Wrapped to set `shouldAvoidPermissionPrompts` for background agents. |
-| **Fresh** | `toolDecisions`, `messages`, `queryTracking` | New instances. Sub-agent starts with clean slate for mutable state. |
+| **Fresh** | `messages`, `queryTracking` | New instances. Sub-agent starts with clean slate for mutable state. |
 
 ### Key Isolation Guarantees
 
-- **Tool decisions** are never inherited — the sub-agent makes its own approval decisions
 - **`setAppState`** is a no-op by default (mutations don't leak to parent), unless `shareSetAppState: true` is explicitly set via `SubagentContextOverrides`
 - **`queryTracking.depth`** is incremented for recursion observability
 - **`thinkingConfig`** is disabled by default for all sub-agents to control token costs, unless the agent definition sets `thinking: true`

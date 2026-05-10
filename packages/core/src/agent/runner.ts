@@ -192,7 +192,6 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
       abortController: new AbortController(),
       readFileState: new Map(),
       contentReplacementState: {},
-      toolDecisions: undefined, // Default for root agents, maybe retrieved from session elsewhere if available
       getAppState: () => ({}),
       setAppState: () => {},
       model: agentDef.model ?? (await Provider.defaultModel()),
