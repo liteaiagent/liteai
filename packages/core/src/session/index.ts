@@ -9,7 +9,7 @@ import z from "zod"
 import { Brand } from "@/brand"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
-import { PermissionNext } from "@/permission/next"
+
 import type { Provider } from "@/provider/provider"
 import { ModelID, ProviderID } from "@/provider/schema"
 import { Snapshot } from "@/snapshot"
@@ -98,7 +98,6 @@ export namespace Session {
       summary,
       share,
       revert,
-      permission: row.permission ?? undefined,
       time: {
         created: row.time_created,
         updated: row.time_updated,
@@ -129,7 +128,6 @@ export namespace Session {
       summary_files: info.summary?.files,
       summary_diffs: info.summary?.diffs,
       revert: info.revert ?? null,
-      permission: info.permission,
       time_created: info.time.created,
       time_updated: info.time.updated,
       time_compacting: info.time.compacting,
@@ -181,7 +179,6 @@ export namespace Session {
         compacting: z.number().optional(),
         archived: z.number().optional(),
       }),
-      permission: PermissionNext.Ruleset.optional(),
       revert: z
         .object({
           messageID: MessageID.zod,
@@ -257,7 +254,6 @@ export namespace Session {
       .object({
         parentID: SessionID.zod.optional(),
         title: z.string().optional(),
-        permission: Info.shape.permission,
         workspaceID: WorkspaceID.zod.optional(),
       })
       .optional(),
@@ -266,7 +262,6 @@ export namespace Session {
         parentID: input?.parentID,
         directory: Instance.directory,
         title: input?.title,
-        permission: input?.permission,
         workspaceID: input?.workspaceID,
       })
     },
@@ -469,7 +464,6 @@ export namespace Session {
     parentID?: SessionID
     workspaceID?: WorkspaceID
     directory: string
-    permission?: PermissionNext.Ruleset
   }) {
     const result: Info = {
       id: SessionID.descending(input.id),
@@ -480,7 +474,6 @@ export namespace Session {
       workspaceID: input.workspaceID,
       parentID: input.parentID,
       title: input.title ?? createDefaultTitle(!!input.parentID),
-      permission: input.permission,
       time: {
         created: Date.now(),
         updated: Date.now(),
@@ -652,27 +645,6 @@ export namespace Session {
         const row = db
           .update(SessionTable)
           .set({ time_archived: input.time })
-          .where(eq(SessionTable.id, input.sessionID))
-          .returning()
-          .get()
-        if (!row) throw new NotFoundError({ message: `Session not found: ${input.sessionID}` })
-        const info = fromRow(row)
-        Database.effect(() => Bus.publish(Event.Updated, { info }))
-        return info
-      })
-    },
-  )
-
-  export const setPermission = fn(
-    z.object({
-      sessionID: SessionID.zod,
-      permission: PermissionNext.Ruleset,
-    }),
-    async (input) => {
-      return Database.use((db) => {
-        const row = db
-          .update(SessionTable)
-          .set({ permission: input.permission, time_updated: Date.now() })
           .where(eq(SessionTable.id, input.sessionID))
           .returning()
           .get()

@@ -84,7 +84,7 @@ export async function resolveTools(input: {
         ...req,
         sessionID: input.session.id,
         tool: { messageID: input.processor.message.id, callID: options.toolCallId },
-        ruleset: PermissionNext.merge(input.agent.permission, input.session.permission ?? []),
+        ruleset: input.agent.permission ?? [],
         agentId: agentCtx?.agentId,
         agentName: agentCtx?.type === "subagent" ? agentCtx.agentType : undefined,
       })

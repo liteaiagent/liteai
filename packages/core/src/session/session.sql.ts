@@ -33,7 +33,6 @@ export const SessionTable = sqliteTable(
     summary_files: integer(),
     summary_diffs: text({ mode: "json" }).$type<Snapshot.FileDiff[]>(),
     revert: text({ mode: "json" }).$type<{ messageID: MessageID; partID?: PartID; snapshot?: string; diff?: string }>(),
-    permission: text({ mode: "json" }).$type<PermissionNext.Ruleset>(),
     plan_mode: text({ mode: "json" }).$type<PlanModeState>(),
     session_mode: text().notNull().default("Normal"),
     tool_profile: text().notNull().default("Plan"),

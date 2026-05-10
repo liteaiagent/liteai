@@ -545,15 +545,7 @@ export const GithubRunCommand = cmd({
 
         // Setup liteai session
         const repoData = await fetchRepo()
-        session = await Session.create({
-          permission: [
-            {
-              permission: "ask_user",
-              action: "deny",
-              pattern: "*",
-            },
-          ],
-        })
+        session = await Session.create(undefined)
         subscribeSessionEvents()
         shareId = await (async () => {
           if (share === false) return
@@ -986,10 +978,6 @@ export const GithubRunCommand = cmd({
 
         // No text part (tool-only or reasoning-only) - ask agent to summarize
         console.log("Requesting summary from agent...")
-        await Session.setPermission({
-          sessionID: session.id,
-          permission: [{ permission: "*", action: "deny", pattern: "*" }],
-        })
         const summary = await SessionPrompt.prompt({
           sessionID: session.id,
           messageID: MessageID.ascending(),
@@ -1002,7 +990,7 @@ export const GithubRunCommand = cmd({
             {
               id: PartID.ascending(),
               type: "text",
-              text: "Summarize the actions (tool calls & reasoning) you did for the user in 1-2 sentences.",
+              text: "Summarize the actions (tool calls & reasoning) you did for the user in 1-2 sentences. Do NOT use any tools — respond with text only.",
             },
           ],
         })

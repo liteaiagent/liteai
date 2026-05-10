@@ -698,7 +698,6 @@ async function runSessionInner(input: {
                 model,
                 lastUser,
                 sessionID,
-                session,
                 abort,
                 msgs,
                 telemetryTracker,
@@ -1071,7 +1070,6 @@ async function processSubtask(input: {
   model: Provider.Model
   lastUser: Message.User
   sessionID: SessionID
-  session: Session.Info
   abort: AbortSignal
   msgs: Message.WithParts[]
   telemetryTracker?: TelemetryTracker
@@ -1079,8 +1077,7 @@ async function processSubtask(input: {
   checkpointer: Checkpointer
   tracker: PromiseTracker
 }): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
-  const { task, lastUser, sessionID, session, abort, msgs, telemetryTracker, telemetryBatchId, checkpointer, tracker } =
-    input
+  const { task, lastUser, sessionID, abort, msgs, telemetryTracker, telemetryBatchId, checkpointer, tracker } = input
   const taskTool = await TaskTool.init()
   const taskModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {
@@ -1180,7 +1177,7 @@ async function processSubtask(input: {
       await PermissionNext.ask({
         ...req,
         sessionID: sessionID,
-        ruleset: PermissionNext.merge(taskAgent.permission, session.permission ?? []),
+        ruleset: taskAgent.permission ?? [],
       })
     },
   }

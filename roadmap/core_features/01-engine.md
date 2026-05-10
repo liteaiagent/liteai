@@ -147,6 +147,14 @@
 | Risk Classifier | ✅ | [`permission/classifier.ts`](../../packages/core/src/permission/classifier.ts) |
 | Permission Next (v2) | ✅ | [`permission/next.ts`](../../packages/core/src/permission/next.ts) |
 | Sandbox Mode | ✅ | [`permission/sandbox.ts`](../../packages/core/src/permission/sandbox.ts) |
+| Project-level persistence | ✅ | [`session/session.sql.ts`](../../packages/core/src/session/session.sql.ts) `PermissionTable` |
+
+> **Architecture:** Aligned with Claude Code's permission model:
+> - **Durable rules** → `PermissionTable` (project-keyed, cross-session)
+> - **Agent-level rules** → `agent.permission` (in-memory, per agent definition)
+> - **Session-scoped rules** → runtime-only (no DB persistence)
+>
+> **Future (Phase 2):** Consolidate "always allow" rules from `PermissionTable` (SQLite) to project settings files (`.liteai/settings.json`) for full Claude Code parity.
 
 ---
 
@@ -227,9 +235,9 @@
 | Session Tasks | 3 | 0 | 0 | 3 |
 | Sub-Agents | 4 | 0 | 0 | 4 |
 | Message System | 7 | 0 | 0 | 7 |
-| Permission System | 6 | 0 | 0 | 6 |
+| Permission System | 7 | 0 | 0 | 7 |
 | Native Tools | 25 | 1 | 0 | 26 |
 | Output Formatting | 2 | 0 | 0 | 2 |
 | Patch System | 1 | 0 | 0 | 1 |
 | Question Service | 3 | 0 | 0 | 3 |
-| **Total** | **99** | **1** | **0** | **100** |
+| **Total** | **100** | **1** | **0** | **101** |

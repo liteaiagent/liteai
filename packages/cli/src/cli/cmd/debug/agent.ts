@@ -144,7 +144,7 @@ async function createToolContext(agent: Agent.Info) {
   }
   await Session.updateMessage(message)
 
-  const ruleset = PermissionNext.merge(agent.permission, session.permission ?? [])
+  const ruleset = agent.permission ?? []
 
   return {
     sessionID: session.id,
