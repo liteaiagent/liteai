@@ -1,0 +1,23 @@
+- [x] Part 1: Mode Detection + Session Persistence
+  - [x] Modify `packages/core/src/flag/flag.ts` (Add `LITEAI_COORDINATOR_MODE`)
+  - [x] Create `packages/core/src/coordinator/coordinator-mode.ts` (`isCoordinatorMode`, `matchSessionMode`)
+  - [x] Modify `packages/core/src/session/index.ts` (Wire `sessionMode` to `createNext`)
+  - [x] Modify `packages/core/src/agent/fork.ts` (Wire `isCoordinatorMode`)
+  - [x] Create `packages/core/src/coordinator/index.ts` (Barrel export)
+- [x] Part 2: Coordinator System Prompt
+  - [x] Create `packages/core/src/coordinator/coordinator-prompt.ts`
+- [x] Part 3: Tool Filtering + Context Injection + Wiring
+  - [x] Update `packages/core/src/coordinator/coordinator-mode.ts` (`applyCoordinatorToolFilter`, `getCoordinatorUserContext`)
+  - [x] Modify `packages/core/src/session/engine/query.ts` (System prompt override + tool filter + context injection)
+- [x] Part 4: Coordinator Tools
+  - [x] Create `packages/core/src/coordinator/team-helpers.ts`
+  - [x] Modify `packages/core/src/agent/context.ts` (Add `teamContext`)
+  - [x] Create `packages/core/src/tool/task_stop.ts`
+  - [x] Create `packages/core/src/tool/team_create.ts`
+  - [x] Create `packages/core/src/tool/team_delete.ts`
+  - [x] Modify `packages/core/src/tool/registry.ts` (Register tools)
+- [x] Tests and Validation
+  - [x] Create `packages/core/test/coordinator/coordinator-mode.test.ts`
+  - [x] Run `bun typecheck`
+  - [x] Run `bun lint:fix`
+  - [x] Run `bun test test/coordinator`
