@@ -78,6 +78,7 @@ const COORDINATOR_ALLOWED_TOOLS = new Set([
   "task_stop",
   "team_create",
   "team_delete",
+  "StructuredOutput",
 ])
 
 /**

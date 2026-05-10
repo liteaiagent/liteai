@@ -391,6 +391,19 @@ export async function runAsyncAgentLifecycle(
     } as import("./context").SubagentContext)
 
   return await runWithAgentContext(context, async () => {
+    const effectiveDeps = summarizationDeps ?? options?.summarizationDeps
+    const rootSetAppState = effectiveDeps?.setAppStateForTasks
+
+    if (rootSetAppState) {
+      rootSetAppState((state) => ({
+        ...state,
+        agentNameRegistry: {
+          ...state.agentNameRegistry,
+          [agentName]: agentId,
+        },
+      }))
+    }
+
     let status: "completed" | "failed" | "killed" = "completed"
     let error: Error | undefined
     let usage: UsageMetrics = { totalTokens: 0, toolCalls: 0, duration: 0 }
@@ -435,6 +448,16 @@ export async function runAsyncAgentLifecycle(
       error = err instanceof Error ? err : new Error(String(err))
       throw err // We rethrow usually, but we must enqueue notification first
     } finally {
+      if (rootSetAppState) {
+        rootSetAppState((state) => {
+          const registry = { ...state.agentNameRegistry }
+          if (registry[agentName] === agentId) {
+            delete registry[agentName]
+          }
+          return { ...state, agentNameRegistry: registry }
+        })
+      }
+
       stopTracking()
 
       // Stop summarization before notifications — no point summarizing a

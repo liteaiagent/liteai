@@ -354,8 +354,6 @@ export const RunCommand = cmd({
       process.exit(1)
     }
 
-
-
     function title() {
       if (args.title === undefined) return
       if (args.title !== "") return args.title

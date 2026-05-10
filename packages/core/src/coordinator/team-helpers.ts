@@ -20,6 +20,7 @@ export interface TeamMember {
   agentType: string
   joinedAt: number
   cwd: string
+  color?: string
   isActive?: boolean
 }
 

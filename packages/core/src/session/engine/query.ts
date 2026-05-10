@@ -365,15 +365,10 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       },
     })
 
-    const { isCoordinatorMode, applyCoordinatorToolFilter, getCoordinatorUserContext, getCoordinatorSystemPrompt } =
-      await import("../../coordinator")
-
-    const inCoordinatorMode = isCoordinatorMode(session.sessionMode)
-    if (inCoordinatorMode) {
-      tools = applyCoordinatorToolFilter(tools) as typeof tools
-    }
-
     // ── Inject StructuredOutput tool if JSON schema mode enabled ──
+    // Injected BEFORE coordinator filter so the allowlist governs it
+    // (matches Claude Code where StructuredOutput is a registered tool
+    // in COORDINATOR_MODE_ALLOWED_TOOLS, not a post-filter bypass).
     const format: Message.OutputFormat = lastUser.format ?? { type: "text" }
     if (format.type === "json_schema") {
       tools.StructuredOutput = createStructuredOutputTool({
@@ -382,6 +377,14 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
           structuredOutput = output
         },
       })
+    }
+
+    const { isCoordinatorMode, applyCoordinatorToolFilter, getCoordinatorUserContext, getCoordinatorSystemPrompt } =
+      await import("../../coordinator")
+
+    const inCoordinatorMode = isCoordinatorMode(session.sessionMode)
+    if (inCoordinatorMode) {
+      tools = applyCoordinatorToolFilter(tools) as typeof tools
     }
 
     // ── Summary generation (fire-and-forget on first step) ──
