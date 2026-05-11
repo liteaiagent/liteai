@@ -96,7 +96,7 @@ main .content-panel:first-child h1 {
   background: var(--sl-color-bg-inline-code);
 }
 
-.sl-markdown-content pre {
+.sl-markdown-content pre:not(.mermaid) {
   border-radius: 10px !important;
   border: 1px solid var(--sl-color-hairline) !important;
   font-size: var(--fs-small) !important;
@@ -263,4 +263,22 @@ starlight-toc .current-header a {
   .sl-markdown-content {
     max-width: 80ch;
   }
+}
+
+/* ================================================================
+   8. MERMAID DIAGRAMS
+   ================================================================ */
+pre.mermaid {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 1rem 0 !important;
+  margin: 1.5rem 0 !important;
+  text-align: center;
+  overflow-x: auto;
+}
+
+pre.mermaid[data-processed] svg {
+  max-width: 100%;
+  height: auto;
 }

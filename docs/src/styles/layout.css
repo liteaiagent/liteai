@@ -316,21 +316,29 @@ body > .page > header button[data-open-modal]:hover {
 }
 
 /* ================================================================
-   9. RIGHT SIDEBAR / TOC — Compact
+   9. RIGHT SIDEBAR / TOC — Capped width, content expands
+   ================================================================
+   Starlight's default formula splits leftover viewport space between
+   the content area and the right sidebar. This override gives ALL
+   extra space to the content, capping the right sidebar at the same
+   width as the left sidebar (--sl-sidebar-width).
    ================================================================ */
 @media (min-width: 72rem) {
+  /* Cap the right sidebar container to left sidebar width */
   .right-sidebar-container {
-    width: clamp(12rem, 18vw, 16rem) !important;
+    width: var(--sl-sidebar-width) !important;
     flex-shrink: 0 !important;
   }
 
-  :global([data-has-sidebar][data-has-toc]) .main-pane {
-    width: calc(100% - clamp(12rem, 18vw, 16rem)) !important;
+  /* The fixed-position inner panel — match container width */
+  .right-sidebar {
+    width: inherit !important;
   }
 
-  .right-sidebar-panel .sl-container {
-    max-width: 100% !important;
-    width: 100% !important;
+  /* Content area gets ALL remaining space, centered */
+  [data-has-sidebar][data-has-toc] .main-pane {
+    width: calc(100% - var(--sl-sidebar-width)) !important;
+    --sl-content-margin-inline: auto !important;
   }
 }
 

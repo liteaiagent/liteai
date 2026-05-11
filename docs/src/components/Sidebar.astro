@@ -1,0 +1,64 @@
+---
+/**
+ * Custom Sidebar — contextual filtering.
+ *
+ * When the top navigation bar already communicates the active section,
+ * showing every section in the sidebar is redundant. This override
+ * filters the sidebar to display only the entries belonging to the
+ * current top-level section, determined by the URL path.
+ */
+import MobileMenuFooter from "virtual:starlight/components/MobileMenuFooter";
+import SidebarPersister from "@astrojs/starlight/components/SidebarPersister.astro";
+import SidebarSublist from "@astrojs/starlight/components/SidebarSublist.astro";
+import type { SidebarEntry } from "@astrojs/starlight/utils/routing/types";
+
+const { sidebar } = Astro.locals.starlightRoute;
+const path = Astro.url.pathname;
+
+/**
+ * Map the first URL segment to the sidebar group label.
+ * e.g.  /getting-started/overview/  →  "Getting Started"
+ *       /build/custom-subagents/    →  "Build with LiteAI"
+ *
+ * The homepage ("/") is treated as part of "Getting Started".
+ */
+const segmentToLabel: Record<string, string> = {
+  "getting-started": "Getting Started",
+  build: "Build with LiteAI",
+  architecture: "Architecture",
+  configuration: "Configuration",
+  reference: "Reference",
+  platforms: "Platforms",
+  roadmap: "Roadmap",
+};
+
+// Extract the first path segment: "/build/foo/" → "build"
+const segments = path.split("/").filter(Boolean);
+const firstSegment = segments[0] ?? "";
+const activeLabel = segmentToLabel[firstSegment] ?? "Getting Started"; // homepage fallback
+
+/**
+ * Find the matching top-level group and return its *children* only.
+ * This removes the redundant section header from the sidebar since
+ * the top navigation bar already identifies the section.
+ */
+function getContextualSidebar(entries: SidebarEntry[]): SidebarEntry[] {
+  for (const entry of entries) {
+    if (entry.type === "group" && entry.label === activeLabel) {
+      return entry.entries;
+    }
+  }
+  // Fallback: return everything if no match (shouldn't happen)
+  return entries;
+}
+
+const filtered = getContextualSidebar(sidebar);
+---
+
+<SidebarPersister>
+  <SidebarSublist sublist={filtered} />
+</SidebarPersister>
+
+<div class="md:sl-hidden">
+  <MobileMenuFooter />
+</div>

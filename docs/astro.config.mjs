@@ -1,10 +1,12 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import mermaid from 'astro-mermaid';
 
 // https://astro.build/config
 export default defineConfig({
 	integrations: [
+		mermaid({ theme: 'dark' }),
 		starlight({
 			title: 'LiteAI',
 			customCss: [
@@ -14,21 +16,17 @@ export default defineConfig({
 			],
 			components: {
 				Header: './src/components/Header.astro',
+				Sidebar: './src/components/Sidebar.astro',
 			},
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/liteaiagent/liteai' }],
 			sidebar: [
 				{
 					label: 'Getting Started',
 					items: [
-						{
-							label: 'Getting started',
-							items: [
-								{ label: 'Quickstart', slug: '' },
-								{ label: 'Overview', slug: 'getting-started/overview' },
-								{ label: 'Reading paths', slug: 'getting-started/reading-paths' },
-								{ label: 'Changelog', slug: 'getting-started/changelog' },
-							],
-						},
+						{ label: 'Quickstart', link: '/' },
+						{ label: 'Overview', slug: 'getting-started/overview' },
+						{ label: 'Reading paths', slug: 'getting-started/reading-paths' },
+						{ label: 'Changelog', slug: 'getting-started/changelog' },
 						{
 							label: 'Core concepts',
 							items: [
@@ -109,67 +107,42 @@ export default defineConfig({
 				{
 					label: 'Configuration',
 					items: [
-						{
-							label: 'Configuration',
-							items: [
-								{ label: 'Settings', slug: 'configuration/settings' },
-								{ label: 'Project setup', slug: 'configuration/project-setup' },
-							],
-						},
+						{ label: 'Settings', slug: 'configuration/settings' },
+						{ label: 'Project setup', slug: 'configuration/project-setup' },
 					],
 				},
 				{
 					label: 'Reference',
 					items: [
-						{
-							label: 'Reference',
-							items: [
-								{ label: 'CLI reference', slug: 'reference/cli-reference' },
-								{ label: 'Commands', slug: 'reference/commands' },
-								{ label: 'Environment variables', slug: 'reference/environment-variables' },
-								{ label: 'Tools reference', slug: 'reference/tools-reference' },
-								{ label: 'Interactive mode', slug: 'reference/interactive-mode' },
-								{ label: 'Checkpointing', slug: 'reference/checkpointing' },
-								{ label: 'Hooks reference', slug: 'reference/hooks-reference' },
-								{ label: 'Plugins reference', slug: 'reference/plugins-reference' },
-								{ label: 'Channels reference', slug: 'reference/channels-reference' },
-							],
-						},
-						{
-							label: 'Glossary',
-							items: [
-								{ label: 'Glossary', slug: 'reference/glossary' },
-							],
-						},
+						{ label: 'CLI reference', slug: 'reference/cli-reference' },
+						{ label: 'Commands', slug: 'reference/commands' },
+						{ label: 'Environment variables', slug: 'reference/environment-variables' },
+						{ label: 'Tools reference', slug: 'reference/tools-reference' },
+						{ label: 'Interactive mode', slug: 'reference/interactive-mode' },
+						{ label: 'Checkpointing', slug: 'reference/checkpointing' },
+						{ label: 'Hooks reference', slug: 'reference/hooks-reference' },
+						{ label: 'Plugins reference', slug: 'reference/plugins-reference' },
+						{ label: 'Channels reference', slug: 'reference/channels-reference' },
+						{ label: 'Glossary', slug: 'reference/glossary' },
 					],
 				},
 				{
 					label: 'Platforms',
 					items: [
-						{
-							label: 'Platforms and integrations',
-							items: [
-								{ label: 'Overview', slug: 'platforms/overview' },
-								{ label: 'CLI', slug: 'platforms/cli' },
-								{ label: 'Web UI', slug: 'platforms/web' },
-								{ label: 'VS Code', slug: 'platforms/vscode' },
-								{ label: 'Remote Control', slug: 'platforms/remote-control' },
-							],
-						},
+						{ label: 'Overview', slug: 'platforms/overview' },
+						{ label: 'CLI', slug: 'platforms/cli' },
+						{ label: 'Web UI', slug: 'platforms/web' },
+						{ label: 'VS Code', slug: 'platforms/vscode' },
+						{ label: 'Remote Control', slug: 'platforms/remote-control' },
 					],
 				},
 				{
 					label: 'Roadmap',
 					items: [
-						{
-							label: 'Feature roadmap',
-							items: [
-								{ label: 'Feature status overview', slug: 'roadmap/feature-status' },
-								{ label: 'Engine & session', slug: 'roadmap/engine-session' },
-								{ label: 'Addons & configuration', slug: 'roadmap/addons-configuration' },
-								{ label: 'Context & memory', slug: 'roadmap/context-memory-roadmap' },
-							],
-						},
+						{ label: 'Feature status overview', slug: 'roadmap/feature-status' },
+						{ label: 'Engine & session', slug: 'roadmap/engine-session' },
+						{ label: 'Addons & configuration', slug: 'roadmap/addons-configuration' },
+						{ label: 'Context & memory', slug: 'roadmap/context-memory-roadmap' },
 					],
 				},
 			],
