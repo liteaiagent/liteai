@@ -1,0 +1,240 @@
+/* LiteAI Premium Starlight Overhaul */
+
+/* Load Inter font */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
+:root {
+  /* Vibrant Dark Mode Palette */
+  --sl-color-bg: hsl(230, 20%, 8%);
+  --sl-color-bg-nav: hsla(230, 20%, 8%, 0.7);
+  --sl-color-bg-sidebar: hsla(230, 20%, 8%, 0.5);
+  
+  --sl-color-text: hsl(230, 15%, 80%);
+  --sl-color-text-accent: hsl(230, 80%, 75%);
+  --sl-color-text-invert: hsl(0, 0%, 10%);
+  
+  --sl-color-white: hsl(0, 0%, 100%);
+  --sl-color-gray-1: hsl(230, 15%, 90%);
+  --sl-color-gray-2: hsl(230, 15%, 80%);
+  --sl-color-gray-3: hsl(230, 15%, 65%);
+  --sl-color-gray-4: hsl(230, 15%, 50%);
+  --sl-color-gray-5: hsl(230, 15%, 35%);
+  --sl-color-gray-6: hsl(230, 15%, 20%);
+  
+  --sl-color-accent: hsl(245, 90%, 65%);
+  --sl-color-accent-high: hsl(245, 90%, 75%);
+  --sl-color-accent-low: hsla(245, 90%, 65%, 0.15);
+  
+  --sl-color-hairline: hsla(230, 20%, 30%, 0.3);
+  --sl-color-hairline-shade: hsla(230, 20%, 10%, 0.5);
+  --sl-color-bg-inline-code: hsla(245, 90%, 65%, 0.15);
+  
+  --sl-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sl-font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  --sl-nav-gap: 30px;
+}
+
+body {
+  font-family: var(--sl-font) !important;
+  background-color: var(--sl-color-bg);
+  background-image: radial-gradient(circle at 15% 50%, hsla(245, 90%, 65%, 0.05), transparent 25%),
+                    radial-gradient(circle at 85% 30%, hsla(280, 90%, 65%, 0.05), transparent 25%);
+  background-attachment: fixed;
+}
+
+/* Glassmorphism: Header */
+.header:where(.astro-tcroauqe), :global(:root[data-has-sidebar]) body > .page > header {
+  background: var(--sl-color-bg-nav) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--sl-color-hairline) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 1rem 2rem !important;
+}
+
+/* Glassmorphism: Sidebar */
+#starlight__sidebar {
+  background: var(--sl-color-bg-sidebar) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid var(--sl-color-hairline) !important;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar styling overrides */
+nav.sidebar {
+  padding-top: 1.5rem !important;
+}
+
+nav.sidebar .sl-container ul li details summary span {
+  font-weight: 600 !important;
+  color: var(--sl-color-white) !important;
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+}
+
+nav.sidebar .sl-container ul li a {
+  padding: 0.4rem 1.5rem !important;
+  border-radius: 6px;
+  margin: 0.1rem 1rem !important;
+  width: auto !important;
+  color: var(--sl-color-gray-3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+nav.sidebar .sl-container ul li a:hover {
+  background: hsla(245, 90%, 65%, 0.1) !important;
+  color: var(--sl-color-white);
+  transform: translateX(4px);
+}
+
+nav.sidebar .sl-container ul li a[aria-current="page"] {
+  background: linear-gradient(90deg, hsla(245, 90%, 65%, 0.2), transparent) !important;
+  color: var(--sl-color-accent-high) !important;
+  border-left: 2px solid var(--sl-color-accent);
+  border-radius: 0 6px 6px 0;
+  margin-left: 0 !important;
+  padding-left: calc(1.5rem + 1rem - 2px) !important;
+}
+
+/* Middle Group for Top Navigation Links (Custom Header) */
+.middle-group {
+  display: flex;
+  gap: var(--sl-nav-gap);
+  align-items: center;
+  margin-left: auto;
+  margin-right: 2rem;
+}
+
+@media (max-width: 50rem) {
+  .middle-group {
+    display: none;
+  }
+}
+
+.middle-group a.nav-link {
+  color: var(--sl-color-gray-2);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 0.25rem;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.middle-group a.nav-link:hover, .middle-group a.nav-link.active {
+  color: var(--sl-color-white);
+}
+
+.middle-group a.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sl-color-accent), hsla(280, 90%, 65%, 1));
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.middle-group a.nav-link:hover::after, .middle-group a.nav-link.active::after {
+  width: 100%;
+}
+
+/* Card overrides */
+.sl-card {
+  background: hsla(230, 20%, 15%, 0.4) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--sl-color-hairline) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+  border-radius: 12px !important;
+}
+
+.sl-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 15px hsla(245, 90%, 65%, 0.1) !important;
+  border-color: var(--sl-color-accent) !important;
+}
+
+.sl-card .title {
+  color: var(--sl-color-white) !important;
+  font-weight: 600 !important;
+  font-size: 1.2rem !important;
+}
+
+/* Markdown typography and links */
+.sl-markdown-content a {
+  color: var(--sl-color-accent-high) !important;
+  text-decoration-color: var(--sl-color-accent-low) !important;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.sl-markdown-content a:hover {
+  color: var(--sl-color-white) !important;
+  text-decoration-color: var(--sl-color-accent-high) !important;
+}
+
+.sl-markdown-content h1, .sl-markdown-content h2, .sl-markdown-content h3 {
+  color: var(--sl-color-white) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h1 {
+  background: linear-gradient(to right, #fff, var(--sl-color-gray-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 2.5rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* Primary buttons (Hero) */
+.hero .action.primary {
+  background: linear-gradient(135deg, var(--sl-color-accent), hsla(280, 90%, 65%, 1)) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 15px hsla(245, 90%, 65%, 0.3);
+  transition: all 0.3s ease !important;
+  font-weight: 600 !important;
+  padding: 0.8rem 1.8rem !important;
+  border-radius: 8px !important;
+}
+
+.hero .action.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px hsla(245, 90%, 65%, 0.5);
+  filter: brightness(1.1);
+}
+
+.hero .action.secondary {
+  background: hsla(230, 20%, 20%, 0.5) !important;
+  border: 1px solid var(--sl-color-hairline) !important;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease !important;
+  border-radius: 8px !important;
+}
+
+.hero .action.secondary:hover {
+  background: hsla(230, 20%, 30%, 0.8) !important;
+  border-color: var(--sl-color-gray-3) !important;
+  color: var(--sl-color-white) !important;
+}
+
+/* Search bar styling */
+body > .page > header button[data-open-modal] {
+  background: hsla(230, 20%, 15%, 0.6);
+  border: 1px solid var(--sl-color-hairline);
+  transition: border-color 0.2s ease, background 0.2s ease;
+  border-radius: 8px;
+}
+
+body > .page > header button[data-open-modal]:hover {
+  background: hsla(230, 20%, 20%, 0.8);
+  border-color: var(--sl-color-gray-4);
+}
