@@ -29,7 +29,7 @@ function isActive(url: string) {
   
   <div class="middle-group sl-flex">
     {navLinks.map(({ name, url }) => (
-      <a class={`nav-link ${isActive(url) ? 'active' : ''}`} href={url}>{name}</a>
+      <a class="nav-link" aria-current={isActive(url) ? 'page' : undefined} href={url}>{name}</a>
     ))}
   </div>
   
