@@ -7,7 +7,11 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'LiteAI',
-			customCss: ['./src/styles/custom.css'],
+			customCss: [
+				'./src/styles/tokens.css',
+				'./src/styles/layout.css',
+				'./src/styles/content.css',
+			],
 			components: {
 				Header: './src/components/Header.astro',
 			},
@@ -19,8 +23,8 @@ export default defineConfig({
 						{
 							label: 'Getting started',
 							items: [
+								{ label: 'Quickstart', slug: '' },
 								{ label: 'Overview', slug: 'getting-started/overview' },
-								{ label: 'Quickstart', slug: 'getting-started/quickstart' },
 								{ label: 'Changelog', slug: 'getting-started/changelog' },
 							],
 						},

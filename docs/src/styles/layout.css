@@ -1,0 +1,340 @@
+/* ================================================================
+   LiteAI Docs — Layout
+   ================================================================
+   Header, navigation, sidebar, hamburger, theme toggle,
+   responsive breakpoints.
+   ================================================================ */
+
+/* ================================================================
+   1. GLOBAL BASE
+   ================================================================ */
+body {
+  font-family: var(--sl-font) !important;
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  background-color: var(--sl-color-bg);
+  background-image: radial-gradient(
+      circle at 15% 50%,
+      hsla(245, 85%, 60%, 0.04),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 85% 30%,
+      hsla(280, 85%, 60%, 0.04),
+      transparent 25%
+    );
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Accessibility ── */
+:focus-visible {
+  outline: 2px solid var(--sl-color-accent) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ================================================================
+   2. HEADER (Glassmorphism)
+   ================================================================ */
+.header:where(.astro-tcroauqe),
+:global(:root[data-has-sidebar]) body > .page > header {
+  background: var(--sl-color-bg-nav) !important;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border-bottom: 1px solid var(--sl-color-hairline) !important;
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.08),
+    inset 0 -1px 0 hsla(0, 0%, 100%, 0.04);
+  padding: 0.65rem var(--sp-page-x) !important;
+}
+
+/* ── Header inner items ── */
+header .site-title {
+  font-size: clamp(0.85rem, 1vw + 0.5rem, 1.05rem) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Right-group spacing ── */
+.right-group {
+  gap: clamp(0.5rem, 0.8vw, 1rem) !important;
+}
+
+/* ================================================================
+   3. TOP NAVIGATION (Middle Group)
+   ================================================================ */
+.middle-group a.nav-link {
+  color: var(--sl-color-gray-2);
+  text-decoration: none;
+  font-size: var(--fs-nav);
+  font-weight: 500;
+  padding: 0.4rem 0.3rem;
+  transition: color 0.25s ease;
+  position: relative;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.middle-group a.nav-link:hover,
+.middle-group a.nav-link[aria-current="page"] {
+  color: var(--sl-color-white);
+}
+
+.middle-group a.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0.3rem;
+  width: calc(100% - 0.6rem);
+  transform: scaleX(0);
+  transform-origin: center;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--sl-color-accent),
+    hsl(280, 80%, 62%)
+  );
+  transition: transform 0.3s cubic-bezier(0.22, 0.68, 0, 1.2);
+  border-radius: 2px;
+}
+
+.middle-group a.nav-link:hover::after,
+.middle-group a.nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+/* ================================================================
+   4. HAMBURGER BUTTON — Move to LEFT (Gemini CLI style)
+   ================================================================ */
+starlight-menu-button button {
+  inset-inline-end: unset !important;
+  inset-inline-start: var(--sl-nav-pad-x) !important;
+}
+
+/* Header needs left padding instead of right when sidebar present */
+:root[data-has-sidebar] body > .page > header {
+  padding-inline-start: calc(
+    var(--sl-nav-gap) + var(--sl-nav-pad-x) + var(--sl-menu-button-size)
+  ) !important;
+  padding-inline-end: var(--sl-nav-pad-x) !important;
+}
+
+/* ── Light mode hamburger — proper contrast ── */
+:root[data-theme="light"] starlight-menu-button button {
+  background-color: hsl(230, 15%, 92%) !important;
+  color: hsl(230, 15%, 25%) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+:root[data-theme="light"] starlight-menu-button [aria-expanded="true"] button {
+  background-color: hsl(230, 12%, 85%) !important;
+}
+
+/* ================================================================
+   5. THEME TOGGLE — Icon-only on mobile
+   ================================================================ */
+@media (max-width: 50rem) {
+  starlight-theme-select {
+    flex-shrink: 0;
+  }
+
+  starlight-theme-select select {
+    width: 2rem !important;
+    padding-inline-end: 0 !important;
+    color: transparent !important;
+    background-position: center !important;
+  }
+
+  /* Hide the dropdown arrow text on mobile */
+  starlight-theme-select .icon {
+    margin-inline-end: 0 !important;
+  }
+}
+
+/* ================================================================
+   6. SIDEBAR (Glassmorphism + Responsive)
+   ================================================================ */
+#starlight__sidebar {
+  background: var(--sl-color-bg-sidebar) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid var(--sl-color-hairline) !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+}
+
+sl-sidebar-state-persist {
+  padding-top: 1rem !important;
+}
+
+/* ── Group headings ── */
+sl-sidebar-state-persist .sl-container ul li details summary span,
+sl-sidebar-state-persist details summary .group-label {
+  font-weight: 600 !important;
+  font-size: var(--fs-sidebar-group) !important;
+  color: var(--sl-color-white) !important;
+  opacity: 0.92;
+  letter-spacing: 0.015em;
+  text-transform: none;
+}
+
+/* ── Top-level sidebar section labels ── */
+sl-sidebar-state-persist > .sl-container > ul > li > details > summary > span,
+sl-sidebar-state-persist .top-level > summary > span,
+sl-sidebar-state-persist .top-level > li > details > summary > .group-label > .large {
+  font-size: var(--fs-sidebar-group) !important;
+}
+
+/* ── Sidebar links ── */
+sl-sidebar-state-persist .sl-container ul li a,
+sl-sidebar-state-persist a {
+  padding: 0.35rem 1rem !important;
+  border-radius: 6px;
+  margin: 1px 0.5rem !important;
+  width: auto !important;
+  color: var(--sl-color-gray-3);
+  font-size: var(--fs-sidebar) !important;
+  line-height: 1.45;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.25s ease;
+  touch-action: manipulation;
+}
+
+sl-sidebar-state-persist .sl-container ul li a:hover,
+sl-sidebar-state-persist a:hover {
+  background: hsla(245, 80%, 60%, 0.08) !important;
+  color: var(--sl-color-white);
+  transform: translateX(3px);
+}
+
+sl-sidebar-state-persist .sl-container ul li a[aria-current="page"],
+sl-sidebar-state-persist a[aria-current="page"] {
+  background: linear-gradient(
+    90deg,
+    hsla(245, 80%, 60%, 0.16),
+    transparent
+  ) !important;
+  color: var(--sl-color-accent-high) !important;
+  border-left: 2px solid var(--sl-color-accent);
+  border-radius: 0 6px 6px 0;
+  margin-left: 0 !important;
+  padding-left: calc(1rem + 0.5rem - 2px) !important;
+  font-weight: 500;
+}
+
+/* ================================================================
+   7. SEARCH BAR
+   ================================================================ */
+body > .page > header button[data-open-modal] {
+  background: hsla(230, 20%, 14%, 0.5);
+  border: 1px solid var(--sl-color-hairline);
+  transition: border-color 0.2s ease, background 0.2s ease;
+  border-radius: 8px;
+  font-size: var(--fs-small) !important;
+  touch-action: manipulation;
+}
+
+body > .page > header button[data-open-modal]:hover {
+  background: hsla(230, 20%, 20%, 0.7);
+  border-color: var(--sl-color-gray-4);
+}
+
+/* ================================================================
+   8. RESPONSIVE BREAKPOINTS
+   ================================================================ */
+
+/* ── Mobile (<50rem) ── */
+@media (max-width: 50rem) {
+  #starlight__sidebar {
+    background: var(--sl-color-bg) !important;
+    backdrop-filter: none;
+  }
+
+  .header:where(.astro-tcroauqe),
+  :global(:root[data-has-sidebar]) body > .page > header {
+    padding: 0.5rem 1rem !important;
+  }
+
+  /* Re-apply left padding for hamburger on mobile */
+  :root[data-has-sidebar] body > .page > header {
+    padding-inline-start: calc(
+      var(--sl-nav-gap) + 1rem + var(--sl-menu-button-size)
+    ) !important;
+  }
+
+  .main-pane {
+    padding-inline: var(--sp-page-x) !important;
+  }
+
+  .right-sidebar-container {
+    font-size: var(--fs-small) !important;
+  }
+}
+
+/* ── Tablet (50rem–72rem) ── */
+@media (min-width: 50rem) and (max-width: 72rem) {
+  :root {
+    --sl-sidebar-width: 15rem;
+  }
+
+  sl-sidebar-state-persist .sl-container ul li a,
+  sl-sidebar-state-persist a {
+    padding: 0.3rem 0.7rem !important;
+    margin: 1px 0.35rem !important;
+    font-size: var(--fs-sidebar) !important;
+  }
+
+  /* Reset hamburger override on desktop — not needed */
+  :root[data-has-sidebar] body > .page > header {
+    padding-inline-start: var(--sl-nav-pad-x) !important;
+    padding-inline-end: var(--sl-nav-pad-x) !important;
+  }
+}
+
+/* ── Large Desktop (>90rem) ── */
+@media (min-width: 90rem) {
+  :root {
+    --sl-sidebar-width: 18rem;
+  }
+}
+
+/* Desktop: reset header padding override from mobile */
+@media (min-width: 50rem) {
+  :root[data-has-sidebar] body > .page > header {
+    padding-inline-start: var(--sl-nav-pad-x) !important;
+    padding-inline-end: var(--sl-nav-pad-x) !important;
+  }
+}
+
+/* ================================================================
+   9. RIGHT SIDEBAR / TOC — Compact
+   ================================================================ */
+@media (min-width: 72rem) {
+  .right-sidebar-container {
+    width: clamp(12rem, 18vw, 16rem) !important;
+    flex-shrink: 0 !important;
+  }
+
+  :global([data-has-sidebar][data-has-toc]) .main-pane {
+    width: calc(100% - clamp(12rem, 18vw, 16rem)) !important;
+  }
+
+  .right-sidebar-panel .sl-container {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+.right-sidebar-panel h2 {
+  font-size: var(--fs-small) !important;
+  margin-bottom: 0.5rem !important;
+}

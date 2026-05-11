@@ -1,5 +1,4 @@
 ---
-import Default from "@astrojs/starlight/components/Header.astro"
 import SiteTitle from "@astrojs/starlight/components/SiteTitle.astro"
 import ThemeSelect from "@astrojs/starlight/components/ThemeSelect.astro"
 import Search from "@astrojs/starlight/components/Search.astro"
@@ -16,7 +15,6 @@ const navLinks = [
 ]
 
 function isActive(url: string) {
-  // Check if current path starts with the base folder of the url
   const base = url.split('/')[1];
   return path.includes(`/${base}/`);
 }
@@ -43,7 +41,7 @@ function isActive(url: string) {
 <style>
   .header {
     gap: var(--sl-nav-gap);
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     height: 100%;
     width: 100%;
@@ -56,13 +54,27 @@ function isActive(url: string) {
     flex: 0 0 auto;
   }
 
-  .right-group {
-    gap: 1.5rem;
+  .middle-group {
+    display: flex;
+    gap: var(--sl-nav-gap);
     align-items: center;
     flex: 0 0 auto;
   }
+
+  .right-group {
+    gap: 1rem;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
   
-  /* Layout calculation for the middle group and right group */
+  @media (max-width: 55rem) {
+    .middle-group {
+      display: none;
+    }
+  }
+
+  /* Desktop grid layout for sidebar alignment */
   @media (min-width: 50rem) {
     :global(:root[data-has-sidebar]) {
       --__sidebar-pad: calc(2 * var(--sl-nav-pad-x));

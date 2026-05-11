@@ -1,0 +1,266 @@
+/* ================================================================
+   LiteAI Docs — Content Styles
+   ================================================================
+   Typography, cards, pagination, callouts, TOC, scrollbar.
+   ================================================================ */
+
+/* ================================================================
+   1. MARKDOWN CONTENT — TYPOGRAPHY (Fluid)
+   ================================================================ */
+.sl-markdown-content {
+  line-height: 1.7 !important;
+  font-size: var(--fs-body) !important;
+  max-width: 75ch;
+}
+
+/* ── Headings ── */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4 {
+  color: var(--sl-color-white) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.025em;
+  line-height: 1.25 !important;
+}
+
+.sl-markdown-content h1 {
+  font-size: var(--fs-h1) !important;
+  margin-bottom: 1.25rem !important;
+  margin-top: 0 !important;
+  letter-spacing: -0.035em;
+  background: linear-gradient(to right, #fff, var(--sl-color-gray-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sl-markdown-content h2 {
+  font-size: var(--fs-h2) !important;
+  margin-top: 2rem !important;
+  margin-bottom: 0.75rem !important;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+.sl-markdown-content h3 {
+  font-size: var(--fs-h3) !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.sl-markdown-content h4 {
+  font-size: var(--fs-body) !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.4rem !important;
+  font-weight: 600 !important;
+}
+
+/* ── Page-level title (Starlight's auto-generated heading) ── */
+.content-panel h1#_top,
+main .content-panel:first-child h1 {
+  font-size: var(--fs-h1) !important;
+  background: linear-gradient(to right, #fff, var(--sl-color-gray-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.035em;
+  line-height: 1.2 !important;
+  margin-bottom: 0.4rem !important;
+}
+
+/* ── Paragraphs ── */
+.sl-markdown-content p {
+  margin-bottom: 1rem;
+  font-size: inherit;
+}
+
+/* ── Links ── */
+.sl-markdown-content a {
+  color: var(--sl-color-accent-high) !important;
+  text-decoration-color: var(--sl-color-accent-low) !important;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.sl-markdown-content a:hover {
+  color: var(--sl-color-white) !important;
+  text-decoration-color: var(--sl-color-accent-high) !important;
+}
+
+/* ── Code blocks ── */
+.sl-markdown-content code:not(pre code) {
+  font-size: 0.88em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--sl-color-bg-inline-code);
+}
+
+.sl-markdown-content pre {
+  border-radius: 10px !important;
+  border: 1px solid var(--sl-color-hairline) !important;
+  font-size: var(--fs-small) !important;
+  line-height: 1.6;
+}
+
+/* ── Lists ── */
+.sl-markdown-content ul,
+.sl-markdown-content ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.sl-markdown-content li {
+  margin-bottom: 0.3rem;
+  line-height: 1.6;
+}
+
+/* ── Tables ── */
+.sl-markdown-content table {
+  font-size: var(--fs-small);
+  border-collapse: collapse;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.sl-markdown-content th,
+.sl-markdown-content td {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--sl-color-hairline);
+}
+
+/* ── Blockquotes ── */
+.sl-markdown-content blockquote {
+  border-left: 3px solid var(--sl-color-accent);
+  padding-left: 1rem;
+  color: var(--sl-color-gray-2);
+  font-style: italic;
+  margin: 1.25rem 0;
+}
+
+/* ================================================================
+   2. CARDS
+   ================================================================ */
+.sl-card {
+  background: hsla(230, 20%, 14%, 0.35) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--sl-color-hairline) !important;
+  transition: transform 0.35s cubic-bezier(0.22, 0.68, 0, 1.1),
+    box-shadow 0.35s ease, border-color 0.35s ease !important;
+  border-radius: 12px !important;
+  box-shadow: inset 0 1px 1px hsla(0, 0%, 100%, 0.04) !important;
+  padding: clamp(0.8rem, 1.5vw, 1.25rem) !important;
+}
+
+.sl-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.25),
+    0 0 16px hsla(245, 80%, 60%, 0.12),
+    inset 0 1px 1px hsla(0, 0%, 100%, 0.08) !important;
+  border-color: var(--sl-color-accent) !important;
+}
+
+.sl-card .title {
+  color: var(--sl-color-white) !important;
+  font-weight: 600 !important;
+  font-size: clamp(0.875rem, 0.25vw + 0.8rem, 1rem) !important;
+}
+
+.sl-card .body {
+  font-size: var(--fs-small) !important;
+  line-height: 1.55;
+  color: var(--sl-color-gray-3) !important;
+}
+
+/* ================================================================
+   3. PAGINATION (Next / Previous links)
+   ================================================================ */
+.pagination-links {
+  font-size: var(--fs-body);
+}
+
+.pagination-links a {
+  border: 1px solid var(--sl-color-hairline) !important;
+  border-radius: 10px !important;
+  padding: clamp(0.6rem, 1.2vw, 1rem) !important;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.pagination-links a:hover {
+  border-color: var(--sl-color-accent) !important;
+  background: hsla(245, 80%, 60%, 0.04) !important;
+}
+
+.pagination-links .link-title {
+  font-size: clamp(0.875rem, 0.25vw + 0.75rem, 1rem) !important;
+}
+
+/* ================================================================
+   4. TABLE OF CONTENTS (Right sidebar)
+   ================================================================ */
+starlight-toc a {
+  line-height: 1.5;
+}
+
+starlight-toc .current-header a {
+  color: var(--sl-color-accent-high) !important;
+}
+
+/* "On this page" heading */
+.right-sidebar-panel h2 {
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-4) !important;
+}
+
+/* ================================================================
+   5. ASIDES / CALLOUTS (Starlight built-in)
+   ================================================================ */
+.starlight-aside {
+  border-radius: 10px !important;
+  font-size: var(--fs-body) !important;
+  padding: clamp(0.6rem, 1.2vw, 1rem) !important;
+}
+
+.starlight-aside .starlight-aside__title {
+  font-size: var(--fs-body) !important;
+  font-weight: 600 !important;
+}
+
+/* ================================================================
+   6. SCROLLBAR (subtle)
+   ================================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsla(230, 15%, 40%, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsla(230, 15%, 50%, 0.5);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsla(230, 15%, 40%, 0.3) transparent;
+}
+
+/* ================================================================
+   7. LARGE DESKTOP — wider content
+   ================================================================ */
+@media (min-width: 90rem) {
+  .sl-markdown-content {
+    max-width: 80ch;
+  }
+}
