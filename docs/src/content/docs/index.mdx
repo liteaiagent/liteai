@@ -1,8 +1,78 @@
 ---
 title: Quickstart
-description: Get started with LiteAI — install, configure, and run your first session.
+description: Get started with LiteAI — install, configure, and run your first session in under 3 minutes.
 ---
 
 # Quickstart
 
-Content coming soon...
+LiteAI is a multi-tenant, multi-session AI coding agent that runs as a local server. It connects to your LLM provider, understands your codebase, and executes tasks using a rich set of built-in tools.
+
+## Install
+
+```bash
+# Using bun (recommended)
+bun install -g @liteai/cli
+
+# Using npm
+npm install -g @liteai/cli
+```
+
+## Configure a provider
+
+LiteAI needs an API key for at least one LLM provider. Set it as an environment variable:
+
+```bash
+# Anthropic (Claude)
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# OpenAI
+export OPENAI_API_KEY="sk-..."
+
+# Google (Gemini)
+export GOOGLE_API_KEY="AI..."
+```
+
+Or add it to your global settings file at `~/.liteai/settings.json`:
+
+```json
+{
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-20250514"
+}
+```
+
+## Start a session
+
+Navigate to your project directory and launch LiteAI:
+
+```bash
+cd /path/to/your/project
+liteai
+```
+
+LiteAI will start a local server, detect your project workspace, and open an interactive session. You can now type natural language prompts to:
+
+- **Ask questions** about your codebase
+- **Edit files** with AI-assisted refactoring
+- **Run commands** through the integrated terminal
+- **Plan changes** before executing them (Plan mode)
+- **Delegate work** to a team of agents (Coordinator mode)
+
+## Switch modes
+
+LiteAI supports multiple session modes for different workflows:
+
+| Mode | What it does | When to use |
+|---|---|---|
+| **Build** | Agent can read, write, and execute | Default — everyday coding tasks |
+| **Plan** | Agent can only read and suggest | Exploring approaches before committing |
+| **Coordinator** | Agent delegates to specialized workers | Complex, multi-file tasks |
+
+Switch modes from the prompt tray or via the `/mode` command.
+
+## What's next?
+
+- [**Overview**](/getting-started/overview) — Learn what LiteAI can do
+- [**Reading paths**](/getting-started/reading-paths) — Find the docs most relevant to your experience level
+- [**How LiteAI works**](/getting-started/how-liteai-works) — Understand the architecture at a high level
+- [**Common workflows**](/getting-started/common-workflows) — Practical patterns for daily use

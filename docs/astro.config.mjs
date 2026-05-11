@@ -25,6 +25,7 @@ export default defineConfig({
 							items: [
 								{ label: 'Quickstart', slug: '' },
 								{ label: 'Overview', slug: 'getting-started/overview' },
+								{ label: 'Reading paths', slug: 'getting-started/reading-paths' },
 								{ label: 'Changelog', slug: 'getting-started/changelog' },
 							],
 						},
@@ -74,7 +75,6 @@ export default defineConfig({
 								{ label: 'Push external events to LiteAI', slug: 'build/external-events' },
 								{ label: 'Run prompts on a schedule', slug: 'build/scheduled-prompts' },
 								{ label: 'Programmatic usage', slug: 'build/programmatic-usage' },
-								{ label: 'Launch sessions from links', slug: 'build/session-links' },
 							],
 						},
 						{
@@ -84,6 +84,24 @@ export default defineConfig({
 								{ label: 'Troubleshoot performance and stability', slug: 'build/troubleshoot-performance' },
 								{ label: 'Debug configuration', slug: 'build/debug-configuration' },
 								{ label: 'Error reference', slug: 'build/error-reference' },
+							],
+						},
+					],
+				},
+				{
+					label: 'Architecture',
+					items: [
+						{
+							label: 'Technical deep dives',
+							items: [
+								{ label: 'System overview', slug: 'architecture/system-overview' },
+								{ label: 'Session engine & loop', slug: 'architecture/session-engine' },
+								{ label: 'Provider system', slug: 'architecture/provider-system' },
+								{ label: 'Transport channels', slug: 'architecture/transport-channels' },
+								{ label: 'Coordinator & swarms', slug: 'architecture/coordinator-swarms' },
+								{ label: 'Context & memory pipeline', slug: 'architecture/context-memory' },
+								{ label: 'Telemetry & observability', slug: 'architecture/telemetry' },
+								{ label: 'Security model', slug: 'architecture/security-model' },
 							],
 						},
 					],
@@ -132,10 +150,24 @@ export default defineConfig({
 							label: 'Platforms and integrations',
 							items: [
 								{ label: 'Overview', slug: 'platforms/overview' },
-								{ label: 'Remote Control', slug: 'platforms/remote-control' },
 								{ label: 'CLI', slug: 'platforms/cli' },
 								{ label: 'Web UI', slug: 'platforms/web' },
 								{ label: 'VS Code', slug: 'platforms/vscode' },
+								{ label: 'Remote Control', slug: 'platforms/remote-control' },
+							],
+						},
+					],
+				},
+				{
+					label: 'Roadmap',
+					items: [
+						{
+							label: 'Feature roadmap',
+							items: [
+								{ label: 'Feature status overview', slug: 'roadmap/feature-status' },
+								{ label: 'Engine & session', slug: 'roadmap/engine-session' },
+								{ label: 'Addons & configuration', slug: 'roadmap/addons-configuration' },
+								{ label: 'Context & memory', slug: 'roadmap/context-memory-roadmap' },
 							],
 						},
 					],
