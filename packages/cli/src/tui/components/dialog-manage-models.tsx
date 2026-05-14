@@ -1,7 +1,6 @@
 import { type Color, Text } from "@liteai/ink"
 import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
-import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
 import { useTheme } from "../context/theme"
 import { selectProviders, useAppState } from "../state"
@@ -15,10 +14,9 @@ import { DialogSelect } from "../ui/dialog-select"
  * indicators showing current visibility state. Enter toggles visibility.
  * Mirrors the web's "Manage Models" dialog (settings-models.tsx / dialog-manage-models.tsx).
  */
-export function DialogManageModels(props: { onBack?: () => void }) {
+export function DialogManageModels(props: { onBack?: () => void; onClose?: () => void }) {
   const local = useLocal()
   const providers = useAppState(selectProviders())
-  const dialog = useDialog()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
 
@@ -66,7 +64,7 @@ export function DialogManageModels(props: { onBack?: () => void }) {
     }
 
     return allModels
-  }, [query, providers, local.model, theme, dialog])
+  }, [query, providers, local.model, theme])
 
   return (
     <DialogSelect<{ providerID: string; modelID: string }>

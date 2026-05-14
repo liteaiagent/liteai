@@ -11,13 +11,6 @@ export const KeybindingOverrides = z
   .optional()
 
 export const TuiOptions = z.object({
-  scroll_speed: z.number().min(0.001).optional().describe("TUI scroll speed"),
-  scroll_acceleration: z
-    .object({
-      enabled: z.boolean().describe("Enable scroll acceleration"),
-    })
-    .optional()
-    .describe("Scroll acceleration settings"),
   diff_style: z
     .enum(["auto", "stacked"])
     .optional()

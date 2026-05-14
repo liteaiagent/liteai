@@ -1,10 +1,10 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import { Log } from "@liteai/util/log"
 import { useEffect, useMemo, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
+import { useNavigation } from "../hooks/use-navigation"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { selectMcpConfig, useAppState } from "../state"
 import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
@@ -31,11 +31,11 @@ function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean 
   return <Text color={theme.textMuted as Color}>○ disabled</Text>
 }
 
-export function DialogMcp() {
+export function DialogMcp({ onClose }: { onClose: () => void }) {
   const local = useLocal()
   const mcp = useAppState((s) => s.mcp)
   const sdk = useSDK()
-  const dialog = useDialog()
+  const navigation = useNavigation()
   const { theme } = useTheme()
   const [loading, setLoading] = useState<string | null>(null)
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
@@ -95,18 +95,19 @@ export function DialogMcp() {
       options={options}
       onMove={setSelectedOption}
       onSelect={(option) => {
-        dialog.push(() => <McpDetail name={option.value} />)
+        navigation.open(<McpDetail name={option.value} onClose={onClose} />)
       }}
+      onEscape={onClose}
     />
   )
 }
 
-function McpDetail(props: { name: string }) {
+function McpDetail(props: { name: string; onClose: () => void }) {
   const mcpConfigMap = useAppState(selectMcpConfig())
   const mcpStatusMap = useAppState((s) => s.mcp)
   const sdk = useSDK()
   const local = useLocal()
-  const dialog = useDialog()
+  const navigation = useNavigation()
   const { theme } = useTheme()
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -282,7 +283,9 @@ function McpDetail(props: { name: string }) {
             setLoading(null)
           }
         } else if (option.value === "tools") {
-          dialog.push(() => <McpToolsList name={props.name} onBack={() => dialog.pop()} />)
+          navigation.open(
+            <McpToolsList name={props.name} onBack={() => navigation.open(<DialogMcp onClose={props.onClose} />)} />,
+          )
         }
       }}
     />

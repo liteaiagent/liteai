@@ -1,6 +1,5 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import { useMemo, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { DialogSelect } from "../ui/dialog-select"
@@ -9,10 +8,10 @@ interface DialogTagProps {
   sessionID: string
   existingTags: string[]
   allTags: string[]
+  onClose: () => void
 }
 
 export function DialogTag(props: DialogTagProps) {
-  const dialog = useDialog()
   const sdk = useSDK()
   const { theme } = useTheme()
   const [filter, setFilter] = useState("")
@@ -51,7 +50,7 @@ export function DialogTag(props: DialogTagProps) {
           sessionID: props.sessionID,
           tags: newTags,
         })
-        dialog.clear()
+        props.onClose()
       }}
       header={
         props.existingTags.length > 0 ? (

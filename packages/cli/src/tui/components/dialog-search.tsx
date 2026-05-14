@@ -1,8 +1,6 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useDialog } from "../context/dialog"
-import { useSDK } from "../context/sdk"
 import { useDebouncedValue } from "../hooks/use-debounced-value"
 import { FuzzyPicker } from "../ui/fuzzy-picker"
 import { openFileInEditor } from "../util/editor"
@@ -85,9 +83,10 @@ function normalizePath(p: string) {
   return p
 }
 
-export function DialogSearch(): React.ReactNode {
+import { useSDK } from "../context/sdk"
+
+export function DialogSearch({ onClose }: { onClose: () => void }): React.ReactNode {
   const sdk = useSDK()
-  const dialog = useDialog()
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResult[]>([])
   const debounced = useDebouncedValue(query, 150)
@@ -147,7 +146,7 @@ export function DialogSearch(): React.ReactNode {
       previewPosition="right"
       onQueryChange={setQuery}
       onSelect={(r) => openFileInEditor(r.file, r.line)}
-      onCancel={() => dialog.pop()}
+      onCancel={onClose}
       emptyMessage={(q) => (q ? "No matches found" : "Type to search…")}
       matchLabel={results.length > 0 ? `${results.length} matches` : undefined}
     />

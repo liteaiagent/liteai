@@ -1,15 +1,16 @@
 import { type Color, Text } from "@liteai/ink"
 import type React from "react"
 import { useMemo } from "react"
-import { useDialog } from "../context/dialog"
 import { useSession } from "../context/session"
 import { useTheme } from "../context/theme"
 import { selectPermissions, useAppState } from "../state"
 import { DialogSelect } from "../ui/dialog-select"
 
-export function DialogPermissions(): React.ReactNode {
-  // biome-ignore lint/correctness/noUnusedVariables: reserved for future actions
-  const dialog = useDialog()
+type Props = {
+  onClose: () => void
+}
+
+export function DialogPermissions({ onClose }: Props): React.ReactNode {
   const { theme } = useTheme()
   const sessionID = useSession().sessionID
 
@@ -39,6 +40,7 @@ export function DialogPermissions(): React.ReactNode {
       header={<Text color={theme.textMuted as Color}>{permissions.length} pending approvals</Text>}
       options={options}
       onSelect={() => {}} // View-only for now
+      onEscape={onClose}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Esc close</Text>}
     />
   )

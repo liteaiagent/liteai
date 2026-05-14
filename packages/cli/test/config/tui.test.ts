@@ -49,7 +49,7 @@ test("flattens nested tui key inside tui.json", async () => {
         path.join(dir, ".liteai", "tui.json"),
         JSON.stringify({
           theme: "outer",
-          tui: { scroll_speed: 3, diff_style: "stacked" },
+          tui: { errorVerbosity: "low", diff_style: "stacked" },
         }),
       )
     },
@@ -59,7 +59,7 @@ test("flattens nested tui key inside tui.json", async () => {
     directory: tmp.path,
     fn: async () => {
       const config = await TuiConfig.get()
-      expect(config.scroll_speed).toBe(3)
+      expect(config.errorVerbosity).toBe("low")
       expect(config.diff_style).toBe("stacked")
       // top-level keys take precedence over nested tui keys
       expect(config.theme).toBe("outer")
@@ -75,7 +75,7 @@ test("top-level keys in tui.json take precedence over nested tui key", async () 
         path.join(dir, ".liteai", "tui.json"),
         JSON.stringify({
           diff_style: "auto",
-          tui: { diff_style: "stacked", scroll_speed: 2 },
+          tui: { diff_style: "stacked", errorVerbosity: "low" },
         }),
       )
     },
@@ -86,7 +86,7 @@ test("top-level keys in tui.json take precedence over nested tui key", async () 
     fn: async () => {
       const config = await TuiConfig.get()
       expect(config.diff_style).toBe("auto")
-      expect(config.scroll_speed).toBe(2)
+      expect(config.errorVerbosity).toBe("low")
     },
   })
 })

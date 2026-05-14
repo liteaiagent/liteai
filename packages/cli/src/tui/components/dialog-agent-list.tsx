@@ -11,7 +11,7 @@ import { DialogSelect } from "../ui/dialog-select"
 import { DialogAgentDetail } from "./dialog-agent-detail"
 import { DialogAgentEditor } from "./dialog-agent-editor"
 
-export function DialogAgentList() {
+export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) {
   const local = useLocal()
   const dialog = useDialog()
   const sdk = useSDK()

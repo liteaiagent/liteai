@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef } from "react"
-import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"
 import type { DialogSelectRef } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 
-export function DialogTheme() {
+type Props = {
+  onClose: () => void
+}
+
+export function DialogTheme({ onClose }: Props) {
   const { all, selected, set } = useTheme()
-  const dialog = useDialog()
 
   const options = useMemo(() => {
     return all()
@@ -39,8 +41,9 @@ export function DialogTheme() {
       onSelect={(opt) => {
         set(opt.value)
         confirmed.current = true
-        dialog.clear()
+        onClose()
       }}
+      onEscape={onClose}
       onFilter={(query) => {
         if (query.length === 0) {
           set(initial.current)

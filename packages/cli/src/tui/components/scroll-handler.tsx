@@ -2,7 +2,7 @@ import type { ScrollBoxHandle } from "@liteai/ink"
 import { useInput } from "@liteai/ink"
 import type React from "react"
 import { useRef } from "react"
-import { useTuiConfig } from "../context/tui-config"
+
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 
@@ -241,15 +241,14 @@ type Props = {
  */
 export function ScrollHandler({ scrollRef }: Props): null {
   useRegisterKeybindingContext("Scroll")
-  const config = useTuiConfig()
 
   // Lazy-init wheel acceleration state so TERM_PROGRAM probe has settled
   const wheelAccel = useRef<WheelAccelState | null>(null)
 
-  // Read configured scroll speed (from tui config or env)
+  // Read scroll speed from env (OS-level setting, not app config)
   const scrollSpeedRef = useRef<number | null>(null)
   if (scrollSpeedRef.current === null) {
-    scrollSpeedRef.current = config.scroll_speed ?? readScrollSpeedBase()
+    scrollSpeedRef.current = readScrollSpeedBase()
   }
 
   useInput((_input, key, event) => {

@@ -12,7 +12,11 @@ type DiagResult = {
   details?: string
 }
 
-export function DialogDoctor(): React.ReactNode {
+type Props = {
+  onClose: () => void
+}
+
+export function DialogDoctor({ onClose }: Props): React.ReactNode {
   const sdk = useSDK()
   const { theme } = useTheme()
   const [results, setResults] = useState<DiagResult[] | null>(null)
@@ -43,6 +47,7 @@ export function DialogDoctor(): React.ReactNode {
         description: r.message,
       }))}
       onSelect={() => {}}
+      onEscape={onClose}
       footerContent={
         <Text color={theme.textMuted as Color}>
           {results.filter((r) => r.status === "error").length} errors ·

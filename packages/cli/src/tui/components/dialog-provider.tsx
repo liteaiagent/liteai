@@ -160,7 +160,7 @@ function MethodRunner({
   )
 }
 
-export function DialogProvider() {
+export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } = {}) {
   const provider_next = useAppState((s) => s.provider_next)
   const { bootstrap } = useAppActions()
   const dialog = useDialog()
@@ -295,7 +295,7 @@ function AutoMethod({
         }
         await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
         await bootstrap()
-        dialog.replace(() => <DialogModel providerID={providerID} />)
+        dialog.replace(() => <DialogModel providerID={providerID} onClose={() => dialog.clear()} />)
       })
     return () => {
       active = false
@@ -350,7 +350,7 @@ function CodeMethod({
         if (!err) {
           await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
           await bootstrap()
-          dialog.replace(() => <DialogModel providerID={providerID} />)
+          dialog.replace(() => <DialogModel providerID={providerID} onClose={() => dialog.clear()} />)
           return
         }
         setError(true)
@@ -402,7 +402,7 @@ function ApiMethod({ providerID, title }: { providerID: string; title: string })
         })
         await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
         await bootstrap()
-        dialog.replace(() => <DialogModel providerID={providerID} />)
+        dialog.replace(() => <DialogModel providerID={providerID} onClose={() => dialog.clear()} />)
       }}
     />
   )

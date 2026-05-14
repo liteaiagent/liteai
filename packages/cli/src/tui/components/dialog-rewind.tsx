@@ -17,7 +17,7 @@ import { selectMessages, useAppActions, useAppState } from "../state"
 import { Dialog } from "../ui/dialog"
 import { DialogRewindActions } from "./dialog-rewind-actions"
 
-export function DialogRewind(): React.ReactNode {
+export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): React.ReactNode {
   const dialog = useDialog()
   const session = useSession()
   const sdk = useSDK()

@@ -309,12 +309,15 @@ async function load(text: string, options: { path: string } | { dir: string; sou
   const normalized = (() => {
     if (!data || typeof data !== "object" || Array.isArray(data)) return data
     const copy = { ...(data as Record<string, unknown>) }
-    const hadLegacy = "theme" in copy || "keybinds" in copy || "tui" in copy
+    // Legacy migration: top-level `theme` and `keybinds` were moved into the `tui` namespace.
+    // Strip them and warn, but leave `tui` intact — it's a first-class schema field now.
+    const hadLegacy = "theme" in copy || "keybinds" in copy
     if (!hadLegacy) return copy
     delete copy.theme
     delete copy.keybinds
-    delete copy.tui
-    log.warn("tui keys in liteai config are deprecated; move them to tui.json", { path: source })
+    log.warn("top-level 'theme' and 'keybinds' in settings.json are deprecated; use the 'tui' namespace instead", {
+      path: source,
+    })
     return copy
   })()
 

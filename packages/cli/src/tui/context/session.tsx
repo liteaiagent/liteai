@@ -17,7 +17,7 @@
 import type { FilePartInput, TextPartInput } from "@liteai/sdk"
 import { Log } from "@liteai/util/log"
 import type React from "react"
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react"
 import { selectIsWorking, useAppState, useSetAppState } from "../state"
 import type { PromptInputMode } from "../types/text-input"
 import { useLocal } from "./local"
@@ -56,14 +56,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const toast = useToast()
 
   // Track session ID: either from route (resuming) or auto-created
-  const initialSessionID = route.data.type === "session" ? route.data.sessionID : undefined
+  const initialSessionID = route.data.sessionID
   const [createdSessionID, setCreatedSessionID] = useState<string | undefined>(undefined)
-
-  useEffect(() => {
-    if (route.data.type === "home") {
-      setCreatedSessionID(undefined)
-    }
-  }, [route.data.type])
 
   const sessionID = initialSessionID ?? createdSessionID
 
@@ -113,8 +107,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     async (input: string, mode: PromptInputMode, attachments?: FilePartInput[]) => {
       // ── Pre-flight model validation ─────────────────────────────────
       // Validate model availability *before* session creation so the error
-      // surfaces on the current page (e.g. home) instead of navigating to
-      // an empty session page that immediately shows a "model not found" error.
+      // surfaces immediately instead of creating an empty session that
+      // shows a "model not found" error.
       const model = local.model.current()
       if (!model) {
         toast.show({

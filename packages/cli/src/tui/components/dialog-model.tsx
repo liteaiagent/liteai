@@ -2,9 +2,9 @@ import { type Color, Text } from "@liteai/ink"
 import fuzzysort from "fuzzysort"
 import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
-import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
 import { useTheme } from "../context/theme"
+import { useNavigation } from "../hooks/use-navigation"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { selectProviders, useAppState } from "../state"
 import type { DialogSelectOption } from "../ui/dialog-select"
@@ -16,11 +16,16 @@ export function useConnected() {
   return connected.length > 0
 }
 
-export function DialogModel(props: { providerID?: string }) {
+type Props = {
+  providerID?: string
+  onClose: () => void
+}
+
+export function DialogModel(props: Props) {
   const local = useLocal()
   const availableProviders = useAppState(selectProviders())
   const syncConnected = useAppState((s) => s.provider_next.connected)
-  const dialog = useDialog()
+  const navigation = useNavigation()
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
   const [selectedOption, setSelectedOption] = useState<
@@ -59,7 +64,7 @@ export function DialogModel(props: { providerID?: string }) {
             disabled: false,
             footer: model.cost?.input === 0 && provider.id === "google-code-assist" ? "Free" : undefined,
             onSelect: () => {
-              dialog.clear()
+              props.onClose()
               local.model.set({ providerID: provider.id, modelID: model.id }, { recent: true })
             },
           },
@@ -104,7 +109,7 @@ export function DialogModel(props: { providerID?: string }) {
                   <Text color={theme.textMuted as Color}>↺</Text>
                 ) : undefined,
                 onSelect() {
-                  dialog.clear()
+                  props.onClose()
                   local.model.set({ providerID: provider.id, modelID: model }, { recent: true })
                 },
               }) as DialogSelectOption<{ providerID: string; modelID: string }>,
@@ -126,7 +131,7 @@ export function DialogModel(props: { providerID?: string }) {
             ...option,
             value: { providerID: option.value, modelID: "" }, // Type coercion
             category: "Connect a provider",
-            onSelect: () => dialog.replace(() => <DialogProvider />),
+            onSelect: () => navigation.open(<DialogProvider onClose={navigation.close} />),
           }))
           .slice(0, 6)
       : []
@@ -139,7 +144,18 @@ export function DialogModel(props: { providerID?: string }) {
     }
 
     return [...favoriteOptions, ...recentOptions, ...providerOptions, ...popularProviders]
-  }, [query, showExtra, connected, local.model, availableProviders, props.providerID, providers, dialog, theme])
+  }, [
+    query,
+    showExtra,
+    connected,
+    local.model,
+    availableProviders,
+    props.providerID,
+    providers,
+    navigation,
+    theme,
+    props.onClose,
+  ])
 
   const provider = props.providerID ? availableProviders.find((x) => x.id === props.providerID) : null
   const title = provider?.name ?? "Select model"
@@ -147,7 +163,7 @@ export function DialogModel(props: { providerID?: string }) {
   useKeybindings(
     {
       "model:providerList": () => {
-        dialog.replace(() => <DialogProvider />)
+        navigation.open(<DialogProvider onClose={navigation.close} />)
       },
       "model:favoriteToggle": () => {
         if (selectedOption && connected) {
@@ -166,6 +182,7 @@ export function DialogModel(props: { providerID?: string }) {
       title={title}
       current={local.model.current()}
       onMove={setSelectedOption}
+      onEscape={props.onClose}
       footerContent={
         <Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+a providers · ctrl+f favorite</Text>
       }

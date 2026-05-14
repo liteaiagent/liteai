@@ -1,15 +1,14 @@
 import { useMemo } from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { selectSessions, useAppState } from "../state"
 import { DialogPrompt } from "../ui/dialog-prompt"
 
 interface DialogSessionRenameProps {
   session: string
+  onClose: () => void
 }
 
 export function DialogSessionRename(props: DialogSessionRenameProps) {
-  const dialog = useDialog()
   const sessionsList = useAppState(selectSessions())
   const sdk = useSDK()
   const session = useMemo(() => sessionsList.find((s) => s.id === props.session), [sessionsList, props.session])
@@ -24,9 +23,9 @@ export function DialogSessionRename(props: DialogSessionRenameProps) {
           sessionID: props.session,
           title: value,
         })
-        dialog.clear()
+        props.onClose()
       }}
-      onCancel={() => dialog.clear()}
+      onCancel={props.onClose}
     />
   )
 }

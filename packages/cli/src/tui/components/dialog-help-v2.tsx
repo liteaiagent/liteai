@@ -1,7 +1,6 @@
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import type React from "react"
-import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"
 import { useKeybindingContext, useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { getBindingDisplayText } from "../keybindings/resolver"
@@ -11,13 +10,12 @@ import { Dialog } from "../ui/dialog"
 import { Tab, Tabs } from "./design-system/Tabs"
 import { TUI_COMMANDS } from "./prompt/prompt-input"
 
-export function DialogHelpV2(): React.ReactNode {
-  const dialog = useDialog()
+export function DialogHelpV2({ onClose }: { onClose: () => void }): React.ReactNode {
   const command = useAppState((s) => s.command)
   const { bindings } = useKeybindingContext()
 
   useRegisterKeybindingContext("Help")
-  useKeybinding("help:dismiss", () => dialog.clear(), { context: "Help" })
+  useKeybinding("help:dismiss", () => onClose(), { context: "Help" })
 
   const { theme } = useTheme()
 
@@ -38,7 +36,7 @@ export function DialogHelpV2(): React.ReactNode {
   const allCommands = [...(command ?? []), ...TUI_COMMANDS].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <Dialog title="Help" hideInputGuide onCancel={() => dialog.clear()}>
+    <Dialog title="Help" hideInputGuide onCancel={onClose}>
       <Tabs title="" color="info">
         <Tab title="General" id="General">
           <Box flexDirection="column" gap={1} marginTop={1} paddingX={1}>

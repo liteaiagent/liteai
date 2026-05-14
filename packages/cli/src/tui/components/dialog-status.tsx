@@ -3,7 +3,7 @@ import { useMemo } from "react"
 import { useTheme } from "../context/theme"
 import { useAppState } from "../state"
 
-export function DialogStatus() {
+export function DialogStatus({ onClose: _onClose }: { onClose: () => void }) {
   const mcp = useAppState((s) => s.mcp)
   const lsp = useAppState((s) => s.lsp)
   const formatter = useAppState((s) => s.formatter)

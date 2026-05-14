@@ -1,14 +1,16 @@
 import { type Color, Text } from "@liteai/ink"
 import type React from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { DialogSelect } from "../ui/dialog-select"
 
-export function DialogEffort(): React.ReactNode {
+type Props = {
+  onClose: () => void
+}
+
+export function DialogEffort({ onClose }: Props): React.ReactNode {
   const sdk = useSDK()
-  const dialog = useDialog()
   const { theme } = useTheme()
   const toast = useToast()
 
@@ -29,8 +31,9 @@ export function DialogEffort(): React.ReactNode {
           config: { effort: option.value } as any,
         })
         toast.show({ variant: "success", message: `Effort set to ${option.value}` })
-        dialog.pop()
+        onClose()
       }}
+      onEscape={onClose}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · Esc cancel</Text>}
     />
   )

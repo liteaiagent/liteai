@@ -1,5 +1,5 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext } from "@liteai/ink"
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { DialogMemory } from "../../components/dialog-memory"
 import { DialogSearch } from "../../components/dialog-search"
 import { DialogSessionList } from "../../components/dialog-session-list"
@@ -16,6 +16,7 @@ import { TranscriptSearch } from "../../components/transcript-search"
 import { isCompactEligible } from "../../constants/compact-allowlist"
 import { useDialog } from "../../context/dialog"
 import { MessageCursorContext } from "../../context/message-cursor"
+import { ModalPaneProvider, useModalPane } from "../../context/modal-pane"
 import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
@@ -109,10 +110,10 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
           />
         ))
       },
-      "chat:newSession": () => route.navigate({ type: "home" }),
-      "chat:sessionList": () => dialog.push(() => <DialogSessionList />),
-      "chat:memory": () => dialog.push(() => <DialogMemory />),
-      "chat:workspaceSearch": () => dialog.push(() => <DialogSearch />),
+      "chat:newSession": () => route.navigate({ type: "session" }),
+      "chat:sessionList": () => dialog.push(() => <DialogSessionList onClose={() => dialog.clear()} />),
+      "chat:memory": () => dialog.push(() => <DialogMemory onClose={() => dialog.clear()} />),
+      "chat:workspaceSearch": () => dialog.push(() => <DialogSearch onClose={() => dialog.clear()} />),
       "chat:enterMessageCursor": cursor.enterCursor,
       "chat:transcriptSearch": () => setShowTranscriptSearch(true),
     },
@@ -217,58 +218,62 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
 
   return (
     <StatsProvider>
-      <SessionProvider
-        value={{
-          sessionID,
-          width: terminalSize?.columns ?? 80,
-          conceal: false,
-          showThinking,
-          showTimestamps,
-          displayMode,
-          showDetails,
-          showGenericToolOutput,
-          diffWrapMode: "none",
-          showPreCompaction,
-          isToolCompact,
-          lastReasoningId,
-          tui: tuiConfig,
-        }}
-      >
-        <SessionLayout
-          scrollRef={scrollRef}
-          scrollable={
-            <MessageCursorContext.Provider
-              value={{
-                selectedMessageId: cursor.selectedMessage?.id,
-                isExpanded: (id) => cursor.expandedIds.has(id),
-                selectMessage: cursor.selectMessage,
-              }}
-            >
-              <Messages scrollRef={scrollRef} />
-            </MessageCursorContext.Provider>
-          }
-          bottom={
-            <SessionBottom
-              sessionID={sessionID}
-              cursorContext={makeActionCtx()}
-              onSearch={() => setShowTranscriptSearch(true)}
-            />
-          }
-          overlay={
-            <Box flexDirection="column">
-              {permissionRequest && <PermissionPrompt request={permissionRequest} />}
-              {questionRequest && <QuestionPrompt request={questionRequest} />}
-              {showTranscriptSearch && (
-                <TranscriptSearch
-                  onClose={() => setShowTranscriptSearch(false)}
-                  onNavigate={(id) => cursor.selectMessage(id)}
+      <ModalPaneProvider>
+        <SessionProvider
+          value={{
+            sessionID,
+            width: terminalSize?.columns ?? 80,
+            conceal: false,
+            showThinking,
+            showTimestamps,
+            displayMode,
+            showDetails,
+            showGenericToolOutput,
+            diffWrapMode: "none",
+            showPreCompaction,
+            isToolCompact,
+            lastReasoningId,
+            tui: tuiConfig,
+          }}
+        >
+          <SessionLayoutBridge scrollRef={scrollRef}>
+            <SessionLayout
+              scrollRef={scrollRef}
+              scrollable={
+                <MessageCursorContext.Provider
+                  value={{
+                    selectedMessageId: cursor.selectedMessage?.id,
+                    isExpanded: (id) => cursor.expandedIds.has(id),
+                    selectMessage: cursor.selectMessage,
+                  }}
+                >
+                  <Messages scrollRef={scrollRef} />
+                </MessageCursorContext.Provider>
+              }
+              bottom={
+                <SessionBottom
+                  sessionID={sessionID}
+                  cursorContext={makeActionCtx()}
+                  onSearch={() => setShowTranscriptSearch(true)}
                 />
-              )}
-            </Box>
-          }
-        />
-        <ScrollHandler scrollRef={scrollRef} />
-      </SessionProvider>
+              }
+              overlay={
+                <Box flexDirection="column">
+                  {permissionRequest && <PermissionPrompt request={permissionRequest} />}
+                  {questionRequest && <QuestionPrompt request={questionRequest} />}
+                  {showTranscriptSearch && (
+                    <TranscriptSearch
+                      onClose={() => setShowTranscriptSearch(false)}
+                      onNavigate={(id) => cursor.selectMessage(id)}
+                    />
+                  )}
+                </Box>
+              }
+            />
+          </SessionLayoutBridge>
+          <ScrollHandler scrollRef={scrollRef} />
+        </SessionProvider>
+      </ModalPaneProvider>
     </StatsProvider>
   )
 }
@@ -276,6 +281,29 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
 import { useSDK } from "../../context/sdk"
 import { useCompactCircuitBreaker } from "../../hooks/use-compact-circuit-breaker"
 import { useQueueProcessor } from "../../hooks/use-queue-processor"
+
+/**
+ * SessionLayoutBridge — wires ModalPaneContext into SessionLayout's `modal` slot.
+ *
+ * Sits between SessionRoute and SessionLayout. Reads the current modal content
+ * and scrollRef from the ModalPaneContext and clones the SessionLayout child
+ * to inject them as props. This keeps SessionRoute clean (it doesn't need to
+ * know about modal state) while providing the bridge between the context and
+ * the layout's rendering infrastructure.
+ */
+function SessionLayoutBridge({
+  scrollRef: _sessionScrollRef,
+  children,
+}: {
+  scrollRef: React.RefObject<ScrollBoxHandle | null>
+  children: React.ReactElement<React.ComponentProps<typeof SessionLayout>>
+}) {
+  const modalPane = useModalPane()
+  return React.cloneElement(children, {
+    modal: modalPane.content,
+    modalScrollRef: modalPane.scrollRef,
+  })
+}
 
 function SessionBottom({
   sessionID,

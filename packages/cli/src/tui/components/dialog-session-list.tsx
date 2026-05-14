@@ -26,7 +26,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue
 }
 
-export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: string }) {
+export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: string; onClose?: () => void }) {
   const dialog = useDialog()
   const route = useRoute()
   const sessionsList = useAppState(selectSessions())
@@ -192,14 +192,21 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
       setToDelete(selectedOption.value)
     } else if (input === "r") {
       if (!selectedOption) return
-      dialog.replace(() => <DialogSessionRename session={selectedOption.value} />)
+      dialog.replace(() => <DialogSessionRename session={selectedOption.value} onClose={() => dialog.clear()} />)
     } else if (input === "t") {
       if (!selectedOption) return
       const session = sessionsList.find((s) => s.id === selectedOption.value)
       if (!session) return
       const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
       const existingTags = sessionExt.tags || []
-      dialog.replace(() => <DialogTag sessionID={selectedOption.value} existingTags={existingTags} allTags={tags} />)
+      dialog.replace(() => (
+        <DialogTag
+          sessionID={selectedOption.value}
+          existingTags={existingTags}
+          allTags={tags}
+          onClose={() => dialog.clear()}
+        />
+      ))
     } else if (input === "u") {
       if (!selectedOption) return
       const session = sessionsList.find((s) => s.id === selectedOption.value)

@@ -2,7 +2,6 @@ import { Box, Text } from "@liteai/ink"
 import { Log } from "@liteai/util/log"
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { useSession } from "../context/session"
 import { Dialog } from "../ui/dialog"
@@ -17,10 +16,13 @@ type ContextBreakdownInfo = {
   providerID: string
 }
 
-export function DialogContext(): React.ReactNode {
+type Props = {
+  onClose: () => void
+}
+
+export function DialogContext({ onClose }: Props): React.ReactNode {
   const sdk = useSDK()
   const session = useSession()
-  const dialog = useDialog()
   const [breakdown, setBreakdown] = useState<ContextBreakdownInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -46,7 +48,7 @@ export function DialogContext(): React.ReactNode {
   }, [sdk, session.sessionID])
 
   return (
-    <Dialog title="Context Window" onCancel={() => dialog.pop()}>
+    <Dialog title="Context Window" onCancel={onClose}>
       <Box flexDirection="column" gap={1} marginTop={1}>
         {loading ? (
           <Text dim>Loading context breakdown...</Text>

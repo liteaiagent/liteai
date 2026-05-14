@@ -53,8 +53,14 @@ export namespace TuiConfig {
     const custom = customPath()
     const managed = Config.managedConfigDir()
 
-    let result: Info = {}
+    // Start with portable settings from core config's `tui` namespace (settings.json).
+    // This gives cross-machine sync for free — the backend manages settings.json.
+    const coreConfig = await Config.get()
+    // Core schema uses broad `string` for keybinds.context; CLI uses a narrow enum.
+    // The cast is safe — mergeInfo validates context values downstream.
+    let result: Info = (coreConfig.tui as Info) ?? {}
 
+    // Overlay local tui.json files (machine-specific overrides take precedence)
     for (const file of ConfigPaths.fileInDirectory(Global.Path.config, "tui")) {
       result = mergeInfo(result, await loadFile(file))
     }
@@ -126,26 +132,37 @@ export namespace TuiConfig {
   }
 
   /**
-   * Persist a partial TUI config update to the global tui.json file.
-   * Uses JSONC-aware patching to preserve comments and formatting.
+   * Persist a partial TUI config update to the core settings.json `tui` namespace.
+   * Uses JSONC-aware patching via Config.updateGlobal() for cross-machine sync.
+   *
+   * Falls back to local tui.json patching if core config write fails (file-lock, etc).
    */
   export async function update(patch: Partial<Info>): Promise<void> {
-    const filepath = path.join(Global.Path.config, "tui.json")
-    const before = await Filesystem.readText(filepath).catch((err: NodeJS.ErrnoException) => {
-      if (err.code === "ENOENT") return "{}"
-      throw err
-    })
-
-    let updated = before
-    for (const [key, value] of Object.entries(patch)) {
-      if (value === undefined) continue
-      const edits = modify(updated, [key], value, {
-        formattingOptions: { insertSpaces: true, tabSize: 2 },
+    try {
+      // Write to core config's `tui` namespace — this is the portable path.
+      // Config.updateGlobal merges deeply, so we wrap in { tui: ... }.
+      await Config.updateGlobal({ tui: patch })
+      log.info("persisted tui config to settings.json", { keys: Object.keys(patch) })
+    } catch (error) {
+      // Fallback: write to local tui.json if core config is unavailable.
+      log.warn("failed to write to settings.json, falling back to tui.json", { error })
+      const filepath = path.join(Global.Path.config, "tui.json")
+      const before = await Filesystem.readText(filepath).catch((err: NodeJS.ErrnoException) => {
+        if (err.code === "ENOENT") return "{}"
+        throw err
       })
-      updated = applyEdits(updated, edits)
-    }
 
-    await Filesystem.write(filepath, updated)
-    log.info("persisted tui config update", { filepath, keys: Object.keys(patch) })
+      let updated = before
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === undefined) continue
+        const edits = modify(updated, [key], value, {
+          formattingOptions: { insertSpaces: true, tabSize: 2 },
+        })
+        updated = applyEdits(updated, edits)
+      }
+
+      await Filesystem.write(filepath, updated)
+      log.info("persisted tui config to tui.json (fallback)", { filepath, keys: Object.keys(patch) })
+    }
   }
 }

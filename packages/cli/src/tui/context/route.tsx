@@ -2,19 +2,13 @@ import type React from "react"
 import { createContext, useContext, useMemo, useState } from "react"
 import type { PromptInfo } from "../types"
 
-export type HomeRoute = {
-  type: "home"
-  initialPrompt?: PromptInfo
-  workspaceID?: string
-}
-
 export type SessionRoute = {
   type: "session"
-  sessionID: string
+  sessionID?: string
   initialPrompt?: PromptInfo
 }
 
-export type Route = HomeRoute | SessionRoute
+export type Route = SessionRoute
 
 export type RouteContextValue = {
   readonly data: Route
@@ -40,7 +34,7 @@ export function RouteProvider({ children }: { children?: React.ReactNode }) {
         // ignore
       }
     }
-    return { type: "home" }
+    return { type: "session" }
   })
 
   const value = useMemo(

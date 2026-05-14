@@ -679,6 +679,34 @@ export const Info = z
       })
       .optional()
       .describe("Telemetry settings. Telemetry is enabled by default — set disabled:true to opt out."),
+    tui: z
+      .object({
+        theme: z.string().optional().describe("Color theme name for the CLI TUI"),
+        keybinds: z
+          .array(
+            z.object({
+              context: z.string(),
+              bindings: z.record(z.string(), z.string().nullable()),
+            }),
+          )
+          .optional()
+          .describe("Custom keybinding overrides (array of { context, bindings } blocks)"),
+        errorVerbosity: z
+          .enum(["low", "full"])
+          .optional()
+          .describe("Error verbosity level in the TUI. 'low' shows minimal errors, 'full' shows stack traces."),
+        diff_style: z
+          .enum(["auto", "stacked"])
+          .optional()
+          .describe("Diff rendering style. 'auto' chooses based on terminal width, 'stacked' always stacks."),
+        output_file_threshold: z
+          .number()
+          .min(100)
+          .optional()
+          .describe("Maximum lines before truncating file output in the TUI (default: 500)"),
+      })
+      .optional()
+      .describe("CLI TUI settings. Portable across machines — syncs via settings.json."),
   })
   .strict()
   .meta({

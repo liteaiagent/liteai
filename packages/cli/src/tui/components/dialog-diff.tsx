@@ -1,7 +1,6 @@
 import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
 import type React from "react"
 import { useContext, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useSession } from "../context/session"
 import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
@@ -10,8 +9,7 @@ import { useAppState } from "../state"
 import { Dialog } from "../ui/dialog"
 import { StructuredDiff } from "./structured-diff"
 
-export function DialogDiff(): React.ReactNode {
-  const dialog = useDialog()
+export function DialogDiff({ onClose }: { onClose: () => void }): React.ReactNode {
   const session = useSession()
   const session_diff = useAppState((s) => s.session_diff)
   const { theme } = useTheme()
@@ -41,7 +39,7 @@ export function DialogDiff(): React.ReactNode {
     {
       "diff:dismiss": () => {
         if (viewMode === "detail") setViewMode("list")
-        else dialog.pop()
+        else onClose()
       },
       "diff:previousFile": () => {
         if (viewMode === "list") {
@@ -66,7 +64,7 @@ export function DialogDiff(): React.ReactNode {
 
   if (diffs.length === 0) {
     return (
-      <Dialog title="Session Diff" onCancel={() => dialog.pop()} hideInputGuide>
+      <Dialog title="Session Diff" onCancel={onClose} hideInputGuide>
         <Box padding={1}>
           <Text dim>No file changes in this session.</Text>
         </Box>
@@ -79,7 +77,7 @@ export function DialogDiff(): React.ReactNode {
       title={viewMode === "list" ? "Session Diff" : `Diff: ${selectedDiff?.file}`}
       onCancel={() => {
         if (viewMode === "detail") setViewMode("list")
-        else dialog.pop()
+        else onClose()
       }}
       hideInputGuide
     >

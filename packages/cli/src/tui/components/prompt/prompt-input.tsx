@@ -35,8 +35,8 @@ import { Box, type Color, TerminalSizeContext, useInput } from "@liteai/ink"
 import type { Command, FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import stripAnsi from "strip-ansi"
-import { useDialog } from "../../context/dialog"
 import { useExit } from "../../context/exit"
+import { useModalPane } from "../../context/modal-pane"
 import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSDK } from "../../context/sdk"
@@ -58,6 +58,7 @@ import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/t
 import { editPromptInEditor } from "../../util/editor"
 import { detectInputHighlights } from "../../util/text-highlighting"
 import { DialogAgentList } from "../dialog-agent-list"
+import { DialogConfig } from "../dialog-config"
 import { DialogContext as DialogContextView } from "../dialog-context"
 import { DialogDiff } from "../dialog-diff"
 import { DialogDoctor } from "../dialog-doctor"
@@ -116,6 +117,7 @@ type PromptInputProps = {
 export const TUI_COMMANDS: Command[] = [
   { name: "agents", description: "Manage custom agents", template: "", hints: [] },
   { name: "compact", description: "Summarize and compact the session history", template: "", hints: [] },
+  { name: "config", description: "Open config panel", template: "", hints: [] },
   { name: "context", description: "View token usage breakdown and limits", template: "", hints: [] },
   { name: "diff", description: "View modified files in the session", template: "", hints: [] },
   { name: "doctor", description: "Run system diagnostics", template: "", hints: [] },
@@ -160,16 +162,16 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   const agent = useAppState((s) => s.agent)
   const mcp_resource = useAppState((s) => s.mcp_resource)
   const { theme } = useTheme()
-  const dialog = useDialog()
+  const modalPane = useModalPane()
   const promptRefCtx = usePromptRef()
   const sdk = useSDK()
 
-  // ── Dialog-aware focus ──────────────────────────────────────────────────
-  // When a dialog (e.g., /models, /theme) is open, all prompt input handling
+  // ── Modal-aware focus ──────────────────────────────────────────────────
+  // When a modal pane (e.g., /models, /theme) is open, all prompt input handling
   // must be disabled so arrow keys, Enter, and character input only reach the
-  // active dialog. Without this gate, both the dialog and the prompt's text
+  // active modal. Without this gate, both the modal and the prompt's text
   // input process the same keystrokes simultaneously.
-  const isDialogOpen = dialog.stack.length > 0
+  const isDialogOpen = modalPane.isOpen
 
   // ── Terminal dimensions ─────────────────────────────────────────────────
   const terminalSize = useContext(TerminalSizeContext)
@@ -334,20 +336,21 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // Extracted so both the suggestion branch and direct-input branch can use them.
   const tuiInterceptors: Record<string, () => void> = useMemo(
     () => ({
-      agents: () => dialog.push(() => <DialogAgentList />),
+      agents: () => modalPane.openModal(<DialogAgentList onClose={modalPane.closeModal} />),
       compact: () => {
         if (session.sessionID) {
           void sdk.client.project.session.summarize({ sessionID: session.sessionID, projectID: sdk.projectID })
         }
       },
-      context: () => dialog.push(() => <DialogContextView />),
-      diff: () => dialog.push(() => <DialogDiff />),
-      doctor: () => dialog.push(() => <DialogDoctor />),
-      effort: () => dialog.push(() => <DialogEffort />),
+      config: () => modalPane.openModal(<DialogConfig onClose={modalPane.closeModal} />),
+      context: () => modalPane.openModal(<DialogContextView onClose={modalPane.closeModal} />),
+      diff: () => modalPane.openModal(<DialogDiff onClose={modalPane.closeModal} />),
+      doctor: () => modalPane.openModal(<DialogDoctor onClose={modalPane.closeModal} />),
+      effort: () => modalPane.openModal(<DialogEffort onClose={modalPane.closeModal} />),
       export: () => {
         const sid = session.sessionID
         if (!sid) return
-        dialog.push(() => (
+        modalPane.openModal(
           <DialogExportOptions
             defaultFilename={`liteai-session-${sid.slice(0, 8)}.md`}
             defaultThinking={false}
@@ -369,22 +372,22 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
                 await fs.writeFile(opts.filename, content, "utf-8")
                 toast.show({ variant: "success", message: `Exported to ${opts.filename}` })
               }
-              dialog.pop()
+              modalPane.closeModal()
             }}
-            onCancel={() => dialog.pop()}
-          />
-        ))
+            onCancel={modalPane.closeModal}
+          />,
+        )
       },
-      feedback: () => dialog.push(() => <DialogFeedback onDone={() => dialog.pop()} />),
-      find: () => dialog.push(() => <DialogSearch />),
+      feedback: () => modalPane.openModal(<DialogFeedback onDone={modalPane.closeModal} />),
+      find: () => modalPane.openModal(<DialogSearch onClose={modalPane.closeModal} />),
       search: () => onSearch?.(),
-      help: () => dialog.push(() => <DialogHelpV2 />),
-      history: () => dialog.push(() => <DialogRewind />),
-      mcp: () => dialog.push(() => <DialogMcp />),
-      memory: () => dialog.push(() => <DialogMemory />),
-      models: () => dialog.push(() => <DialogModel />),
-      clear: () => route.navigate({ type: "home" }),
-      permissions: () => dialog.push(() => <DialogPermissions />),
+      help: () => modalPane.openModal(<DialogHelpV2 onClose={modalPane.closeModal} />),
+      history: () => modalPane.openModal(<DialogRewind onClose={modalPane.closeModal} />),
+      mcp: () => modalPane.openModal(<DialogMcp onClose={modalPane.closeModal} />),
+      memory: () => modalPane.openModal(<DialogMemory onClose={modalPane.closeModal} />),
+      models: () => modalPane.openModal(<DialogModel onClose={modalPane.closeModal} />),
+      clear: () => route.navigate({ type: "session" }),
+      permissions: () => modalPane.openModal(<DialogPermissions onClose={modalPane.closeModal} />),
       plan: () => {
         const sid = session.sessionID
         if (!sid) return
@@ -397,22 +400,23 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           toast.show({ variant: "warning", message: "Plan mode not supported yet" })
         }
       },
-      plugins: () => dialog.push(() => <DialogPlugin />),
-      provider: () => dialog.push(() => <DialogProvider />),
-      rewind: () => dialog.push(() => <DialogRewind />),
-      sessions: () => dialog.push(() => <DialogSessionList />),
-      theme: () => dialog.push(() => <DialogTheme />),
-      timeline: () => dialog.push(() => <DialogRewind />),
-      status: () => dialog.push(() => <DialogStatus />),
-      style: () => dialog.push(() => <DialogOutputStyle onDone={() => dialog.pop()} />),
+      plugins: () => modalPane.openModal(<DialogPlugin onClose={modalPane.closeModal} />),
+      provider: () => modalPane.openModal(<DialogProvider onClose={modalPane.closeModal} />),
+      rewind: () => modalPane.openModal(<DialogRewind onClose={modalPane.closeModal} />),
+      sessions: () => modalPane.openModal(<DialogSessionList onClose={modalPane.closeModal} />),
+      theme: () => modalPane.openModal(<DialogTheme onClose={modalPane.closeModal} />),
+      timeline: () => modalPane.openModal(<DialogRewind onClose={modalPane.closeModal} />),
+      status: () => modalPane.openModal(<DialogStatus onClose={modalPane.closeModal} />),
+      style: () => modalPane.openModal(<DialogOutputStyle onDone={modalPane.closeModal} />),
+      settings: () => modalPane.openModal(<DialogConfig onClose={modalPane.closeModal} />),
       stats: () => {
         const sid = session.sessionID
         if (sid) {
-          dialog.push(() => <DialogStats sessionID={sid} />)
+          modalPane.openModal(<DialogStats sessionID={sid} onClose={modalPane.closeModal} />)
         }
       },
     }),
-    [dialog, route, session.sessionID, sdk.client, sdk.projectID],
+    [modalPane, route, session.sessionID, sdk.client, sdk.projectID],
   )
 
   const onSubmit = useCallback(
@@ -487,7 +491,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       const trimmed = inputParam.trimEnd()
 
       if (trimmed === "?") {
-        dialog.push(() => <DialogHelpV2 />)
+        modalPane.openModal(<DialogHelpV2 onClose={modalPane.closeModal} />)
         trackAndSetInput("")
         setCursorOffset(0)
         return
@@ -566,7 +570,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       agent,
       sdk,
       tuiInterceptors,
-      dialog,
+      modalPane,
       atCompleter,
       atSelectedIndex,
       isLoading,
@@ -681,7 +685,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   })
 
   useKeybinding("chat:agents", () => {
-    dialog.push(() => <DialogAgentList />)
+    modalPane.openModal(<DialogAgentList onClose={modalPane.closeModal} />)
   })
 
   useKeybinding("chat:stash", () => {

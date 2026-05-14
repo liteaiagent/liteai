@@ -40,7 +40,7 @@ type PluginError = {
   reason: string
 }
 
-export function DialogPlugin() {
+export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
   const dialog = useDialog()
   const { theme } = useTheme()
   const sdk = useSDK()

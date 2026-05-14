@@ -1,6 +1,5 @@
 import { Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
 import { useContext, useMemo, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"
 import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
@@ -10,6 +9,7 @@ import { Heatmap } from "./heatmap"
 
 type Props = {
   sessionID: string
+  onClose: () => void
 }
 
 const FACTOIDS = [
@@ -18,8 +18,7 @@ const FACTOIDS = [
   { threshold: 100_000, text: "That's a short novel worth of tokens." },
 ]
 
-export function DialogStats({ sessionID }: Props) {
-  const _dialog = useDialog()
+export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   const { theme } = useTheme()
   const session_diff = useAppState((s) => s.session_diff)
   const stats = useSessionStats(sessionID)

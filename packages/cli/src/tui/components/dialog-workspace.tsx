@@ -174,7 +174,7 @@ export function DialogWorkspaceList() {
         return
       }
       route.navigate({
-        type: "home",
+        type: "session",
       })
       dialog.clear()
       return
@@ -205,8 +205,8 @@ export function DialogWorkspaceList() {
   }
 
   const currentWorkspaceID = useMemo(() => {
-    if (route.data.type === "session") {
-      return sessions.find((s) => s.id === (route.data as { sessionID: string }).sessionID)?.workspaceID ?? "__local__"
+    if (route.data.sessionID) {
+      return sessions.find((s) => s.id === route.data.sessionID)?.workspaceID ?? "__local__"
     }
     return "__local__"
   }, [route.data, sessions])
@@ -304,7 +304,7 @@ export function DialogWorkspaceList() {
         }
         if (currentWorkspaceID === selectedOption.value) {
           route.navigate({
-            type: "home",
+            type: "session",
           })
         }
         await actions.workspace.sync()

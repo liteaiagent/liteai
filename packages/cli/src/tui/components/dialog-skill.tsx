@@ -1,21 +1,16 @@
 import type { ProjectSkillListResponse } from "@liteai/sdk"
 import { useEffect, useMemo, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 
 export type DialogSkillProps = {
   onSelect: (skill: string) => void
+  onClose: () => void
 }
 
 export function DialogSkill(props: DialogSkillProps) {
-  const dialog = useDialog()
   const sdk = useSDK()
-
-  useEffect(() => {
-    dialog.setSize("large")
-  }, [dialog])
 
   const [skills, setSkills] = useState<ProjectSkillListResponse>([])
 
@@ -44,10 +39,10 @@ export function DialogSkill(props: DialogSkillProps) {
       category: "Skills",
       onSelect: () => {
         props.onSelect(skill.name)
-        dialog.clear()
+        props.onClose()
       },
     }))
-  }, [skills, props, dialog])
+  }, [skills, props])
 
-  return <DialogSelect title="Skills" placeholder="Search skills..." options={options} />
+  return <DialogSelect title="Skills" placeholder="Search skills..." options={options} onEscape={props.onClose} />
 }
