@@ -71,10 +71,10 @@ import { DialogModel } from "../dialog-model"
 import { DialogOutputStyle } from "../dialog-output-style"
 import { DialogPermissions } from "../dialog-permissions"
 import { DialogPlugin } from "../dialog-plugin"
+import { DialogProvider } from "../dialog-provider"
 import { DialogRewind } from "../dialog-rewind"
 import { DialogSearch } from "../dialog-search"
 import { DialogSessionList } from "../dialog-session-list"
-import { DialogSettings } from "../dialog-settings"
 import { DialogStats } from "../dialog-stats"
 import { DialogStatus } from "../dialog-status"
 import { DialogTheme } from "../dialog-theme"
@@ -135,9 +135,9 @@ export const TUI_COMMANDS: Command[] = [
   { name: "permissions", description: "View pending permission requests", template: "", hints: [] },
   { name: "plan", description: "Toggle plan mode (think before acting)", template: "", hints: [] },
   { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
+  { name: "provider", description: "Connect or disconnect AI providers", template: "", hints: [] },
   { name: "rewind", description: "Time-travel through conversation history", template: "", hints: [] },
   { name: "sessions", description: "List and switch between sessions", template: "", hints: [] },
-  { name: "settings", description: "Open settings", template: "", hints: [] },
   { name: "stats", description: "Show session statistics and token usage", template: "", hints: [] },
   { name: "status", description: "Show system status", template: "", hints: [] },
   { name: "theme", description: "Change the color theme", template: "", hints: [] },
@@ -398,9 +398,9 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
         }
       },
       plugins: () => dialog.push(() => <DialogPlugin />),
+      provider: () => dialog.push(() => <DialogProvider />),
       rewind: () => dialog.push(() => <DialogRewind />),
       sessions: () => dialog.push(() => <DialogSessionList />),
-      settings: () => dialog.push(() => <DialogSettings />),
       theme: () => dialog.push(() => <DialogTheme />),
       timeline: () => dialog.push(() => <DialogRewind />),
       status: () => dialog.push(() => <DialogStatus />),

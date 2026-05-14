@@ -32,7 +32,8 @@ export function useDialogProviderOptions() {
     const sorted = [...allProviders].sort((a, b) => {
       const pA = PROVIDER_PRIORITY[a.id] ?? 99
       const pB = PROVIDER_PRIORITY[b.id] ?? 99
-      return pA - pB
+      if (pA !== pB) return pA - pB
+      return a.name.localeCompare(b.name)
     })
 
     return sorted.map(
@@ -174,6 +175,7 @@ export function DialogProvider() {
   const connectedOptions = useMemo(() => {
     return (provider_next?.all || [])
       .filter((p) => connectedSet.has(p.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
       .map(
         (p) =>
           ({
@@ -190,7 +192,8 @@ export function DialogProvider() {
     const sorted = [...available].sort((a, b) => {
       const pA = PROVIDER_PRIORITY[a.id] ?? 99
       const pB = PROVIDER_PRIORITY[b.id] ?? 99
-      return pA - pB
+      if (pA !== pB) return pA - pB
+      return a.name.localeCompare(b.name)
     })
 
     return sorted.map(

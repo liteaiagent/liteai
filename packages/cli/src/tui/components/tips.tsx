@@ -1,6 +1,6 @@
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTheme } from "../context/theme.tsx"
 import { useKeybindingContext } from "../keybindings/keybinding-context.tsx"
 
@@ -50,10 +50,22 @@ export function Tips() {
     })
   }, [getDisplayText])
 
-  const parts = useMemo(() => {
-    const tip = tips[Math.floor(Math.random() * tips.length)]
-    return parse(tip)
-  }, [tips])
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length))
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex((prev) => {
+        let next: number
+        do {
+          next = Math.floor(Math.random() * tips.length)
+        } while (next === prev && tips.length > 1)
+        return next
+      })
+    }, 30_000)
+    return () => clearInterval(interval)
+  }, [tips.length])
+
+  const parts = useMemo(() => parse(tips[tipIndex] ?? tips[0]), [tips, tipIndex])
 
   return (
     <Box flexDirection="row">
