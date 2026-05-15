@@ -1,6 +1,5 @@
 import { Box, type Color, Text, useInput } from "@liteai/ink"
 import { useEffect, useMemo, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
@@ -41,7 +40,6 @@ type PluginError = {
 }
 
 export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
-  const dialog = useDialog()
   const { theme } = useTheme()
   const sdk = useSDK()
   const [tab, setTab] = useState<Tab>("discover")
@@ -103,7 +101,7 @@ export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
 
   useInput((_char, _key, evt) => {
     if (evt?.keypress?.name === "escape") {
-      dialog.clear()
+      _onClose()
       return
     }
     if (evt?.keypress?.name === "left") {
@@ -178,7 +176,7 @@ export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
             theme={theme}
             onAdded={() => void refetchMarketplaces()}
             onRemoved={() => void refetchMarketplaces()}
-            dialog={dialog}
+            onClose={_onClose}
           />
         )}
 
@@ -392,8 +390,15 @@ function MarketplacesTab(props: {
   theme: ReturnType<typeof useTheme>["theme"]
   onAdded: () => void
   onRemoved: () => void
-  dialog: ReturnType<typeof useDialog>
+  onClose: () => void
 }) {
+  type ViewState =
+    | { type: "list" }
+    | { type: "add" }
+    | { type: "remove"; id: string; name: string }
+
+  const [view, setView] = useState<ViewState>({ type: "list" })
+
   const options = useMemo(
     () =>
       [
@@ -428,19 +433,7 @@ function MarketplacesTab(props: {
         if (!selectedOption || selectedOption.value === "__add__") return
         const m = props.marketplaces.find((mx) => mx.id === selectedOption.value)
         if (!m) return
-        props.dialog.push(() => (
-          <RemoveMarketplaceDialog
-            name={m.name}
-            id={m.id}
-            sdk={props.sdk}
-            theme={props.theme}
-            onDone={() => {
-              props.dialog.pop()
-              props.onRemoved()
-            }}
-            onCancel={() => props.dialog.pop()}
-          />
-        ))
+        setView({ type: "remove", id: m.id, name: m.name })
       },
       "select:update": async () => {
         if (!selectedOption || selectedOption.value === "__add__") return
@@ -463,6 +456,36 @@ function MarketplacesTab(props: {
     { context: "Select" },
   )
 
+  if (view.type === "add") {
+    return (
+      <AddMarketplaceDialog
+        sdk={props.sdk}
+        theme={props.theme}
+        onDone={() => {
+          setView({ type: "list" })
+          props.onAdded()
+        }}
+        onCancel={() => setView({ type: "list" })}
+      />
+    )
+  }
+
+  if (view.type === "remove") {
+    return (
+      <RemoveMarketplaceDialog
+        name={view.name}
+        id={view.id}
+        sdk={props.sdk}
+        theme={props.theme}
+        onDone={() => {
+          setView({ type: "list" })
+          props.onRemoved()
+        }}
+        onCancel={() => setView({ type: "list" })}
+      />
+    )
+  }
+
   return (
     <DialogSelect
       title="Manage marketplaces"
@@ -476,19 +499,10 @@ function MarketplacesTab(props: {
       onMove={setSelectedOption}
       onSelect={(opt) => {
         if (opt.value === "__add__") {
-          props.dialog.push(() => (
-            <AddMarketplaceDialog
-              sdk={props.sdk}
-              theme={props.theme}
-              onDone={() => {
-                props.dialog.pop()
-                props.onAdded()
-              }}
-              onCancel={() => props.dialog.pop()}
-            />
-          ))
+          setView({ type: "add" })
         }
       }}
+      onEscape={props.onClose}
     />
   )
 }

@@ -1,7 +1,6 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import type { Agent } from "@liteai/sdk"
 import { useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
@@ -9,10 +8,17 @@ import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { TextInput } from "./text-input"
 
-export function DialogAgentEditor({ agent }: { agent?: Agent }) {
+export function DialogAgentEditor({
+  agent,
+  onBack,
+  onClose,
+}: {
+  agent?: Agent
+  onBack?: () => void
+  onClose?: () => void
+}) {
   const sdk = useSDK()
   const toast = useToast()
-  const dialog = useDialog()
   const { theme } = useTheme()
   const isNew = !agent
 
@@ -36,7 +42,7 @@ export function DialogAgentEditor({ agent }: { agent?: Agent }) {
       "confirm:next": () => setFocusIndex((i) => (i + 1) % fields.length),
       "confirm:nextField": () => setFocusIndex((i) => (i + 1) % fields.length),
       "confirm:previous": () => setFocusIndex((i) => (i - 1 + fields.length) % fields.length),
-      "confirm:no": () => dialog.pop(),
+      "confirm:no": () => onBack?.(),
       "confirm:yes": save,
     },
     { context: "Confirmation" },
@@ -65,7 +71,7 @@ export function DialogAgentEditor({ agent }: { agent?: Agent }) {
         } as Parameters<typeof sdk.client.project.agent.update>[0])
       }
       toast.show({ variant: "success", message: `Agent ${isNew ? "created" : "updated"}` })
-      dialog.clear()
+      onClose?.()
     } catch (err: unknown) {
       toast.show({ variant: "error", message: (err as Error).message || "Failed to save agent" })
     }

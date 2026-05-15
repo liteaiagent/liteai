@@ -1,6 +1,5 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import type { Agent } from "@liteai/sdk"
-import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
@@ -18,17 +17,24 @@ function LabelValue({ label, value }: { label: string; value: string | React.Rea
   )
 }
 
-export function DialogAgentDetail({ agent }: { agent: Agent }) {
-  const dialog = useDialog()
+export function DialogAgentDetail({
+  agent,
+  onBack,
+  onEdit,
+}: {
+  agent: Agent
+  onBack?: () => void
+  onEdit?: () => void
+}) {
   const { theme } = useTheme()
   useRegisterKeybindingContext("Confirmation")
 
   useKeybindings(
     {
-      "confirm:no": () => dialog.pop(),
+      "confirm:no": () => onBack?.(),
       "confirm:yes": () => {
         if (!agent.native) {
-          dialog.push(() => <DialogAgentEditor agent={agent} />)
+          onEdit?.()
         }
       },
     },

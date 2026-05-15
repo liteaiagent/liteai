@@ -4,7 +4,6 @@ import { Box, Text, useInput } from "@liteai/ink"
 import type { Message, Session } from "@liteai/sdk"
 import type React from "react"
 import { useCallback, useEffect, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useSession } from "../context/session"
@@ -17,8 +16,7 @@ import { selectMessages, useAppActions, useAppState } from "../state"
 import { Dialog } from "../ui/dialog"
 import { DialogRewindActions } from "./dialog-rewind-actions"
 
-export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): React.ReactNode {
-  const dialog = useDialog()
+export function DialogRewind(props: { onClose?: () => void }): React.ReactNode {
   const session = useSession()
   const sdk = useSDK()
   const route = useRoute()
@@ -33,6 +31,7 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
 
   const [selectedIndex, setSelectedIndex] = useState(userMessages.length > 0 ? userMessages.length - 1 : 0)
   const [actionLoading, setActionLoading] = useState(false)
+  const [view, setView] = useState<"main" | "actions">("main")
 
   // Query child sessions to show fork indicators (⑂) on turns that have forks
   const [childSessions, setChildSessions] = useState<Session[]>([])
@@ -69,14 +68,7 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
 
   const handleShowActionMenu = () => {
     if (!selectedMessage) return
-    dialog.push(() => (
-      <DialogRewindActions
-        sessionID={session.sessionID ?? ""}
-        messageID={selectedMessage.id}
-        turnLabel={getTurnLabel(selectedMessage)}
-        onComplete={() => dialog.pop()}
-      />
-    ))
+    setView("actions")
   }
 
   // Direct fork — bypasses action menu
@@ -96,7 +88,7 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
         variant: "success",
         message: `Session forked from ${getTurnLabel(selectedMessage)}`,
       })
-      dialog.clear()
+      props.onClose?.()
       route.navigate({
         type: "session",
         sessionID: res.data?.id ?? "",
@@ -110,7 +102,7 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
     } finally {
       setActionLoading(false)
     }
-  }, [selectedMessage, actionLoading, session.sessionID, sdk, toast, dialog, route, getTurnLabel])
+  }, [selectedMessage, actionLoading, session.sessionID, sdk, toast, props.onClose, route, getTurnLabel])
 
   // Direct revert — bypasses action menu
   const handleDirectRevert = useCallback(async () => {
@@ -130,7 +122,7 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
         message: `Reverted to ${getTurnLabel(selectedMessage)} (use /unrevert to undo)`,
       })
       sessionActions.sync(sessionID)
-      dialog.clear()
+      props.onClose?.()
     } catch (e: unknown) {
       const err = e as Error
       toast.show({
@@ -140,12 +132,12 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
     } finally {
       setActionLoading(false)
     }
-  }, [selectedMessage, actionLoading, session.sessionID, sdk, toast, dialog, sessionActions, getTurnLabel])
+  }, [selectedMessage, actionLoading, session.sessionID, sdk, toast, props.onClose, sessionActions, getTurnLabel])
 
   useRegisterKeybindingContext("Select")
   useKeybindings(
     {
-      "select:cancel": () => dialog.pop(),
+      "select:cancel": () => props.onClose?.(),
       "select:previous": () => setSelectedIndex((i) => Math.max(0, i - 1)),
       "select:next": () => setSelectedIndex((i) => Math.min(userMessages.length - 1, i + 1)),
       "select:accept": handleShowActionMenu,
@@ -167,8 +159,20 @@ export function DialogRewind({ onClose: _onClose }: { onClose: () => void }): Re
   const additions = diffs.reduce((sum, d) => sum + d.additions, 0)
   const deletions = diffs.reduce((sum, d) => sum + d.deletions, 0)
 
+  if (view === "actions") {
+    return (
+      <DialogRewindActions
+        sessionID={session.sessionID ?? ""}
+        messageID={selectedMessage?.id ?? ""}
+        turnLabel={selectedMessage ? getTurnLabel(selectedMessage) : ""}
+        onComplete={() => setView("main")}
+        onClose={props.onClose}
+      />
+    )
+  }
+
   return (
-    <Dialog title={actionLoading ? "Working..." : "Time Travel (Rewind)"} onCancel={() => dialog.pop()}>
+    <Dialog title={actionLoading ? "Working..." : "Time Travel (Rewind)"} onCancel={() => props.onClose?.()}>
       <Box flexDirection="row" width="100%" gap={2} marginTop={1}>
         <Box flexDirection="column" width="50%">
           <Text bold color={theme.info as Color}>
