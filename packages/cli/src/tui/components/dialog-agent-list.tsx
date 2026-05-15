@@ -19,10 +19,7 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
   const agents = local.agent.list()
   const [hovered, setHovered] = useState<Agent | null>(null)
 
-  type ViewState =
-    | { type: "list" }
-    | { type: "detail"; agent: Agent }
-    | { type: "editor"; agent?: Agent }
+  type ViewState = { type: "list" } | { type: "detail"; agent: Agent } | { type: "editor"; agent?: Agent }
 
   const [view, setView] = useState<ViewState>({ type: "list" })
 

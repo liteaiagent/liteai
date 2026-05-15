@@ -9,7 +9,7 @@ import { useKeybindings } from "../keybindings/use-keybinding"
 import { selectProviders, useAppState } from "../state"
 import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
-import { DialogProvider, useDialogProviderOptions } from "./dialog-provider"
+import { DialogProvider, useProviderDisplayOptions } from "./dialog-provider"
 
 export function useConnected() {
   const connected = useAppState((s) => s.provider_next.connected)
@@ -33,7 +33,7 @@ export function DialogModel(props: Props) {
   >()
 
   const connected = useConnected()
-  const providers = useDialogProviderOptions()
+  const providers = useProviderDisplayOptions()
 
   const showExtra = connected && !props.providerID
 

@@ -12,7 +12,7 @@ import { DialogSessionList } from "./dialog-session-list"
 
 // openWorkspace function port
 async function openWorkspace(input: {
-  dialog: { clear: () => void }
+  onClose?: () => void
   route: ReturnType<typeof useRoute>
   sdk: ReturnType<typeof useSDK>
   actions: ReturnType<typeof useAppActions>
@@ -35,7 +35,7 @@ async function openWorkspace(input: {
       type: "session",
       sessionID: session.id,
     })
-    input.dialog.clear()
+    input.onClose?.()
     return
   }
   let created: Session | undefined
@@ -68,11 +68,14 @@ async function openWorkspace(input: {
     type: "session",
     sessionID: created.id,
   })
-  input.dialog.clear()
+  input.onClose?.()
 }
 
 // DialogWorkspaceCreate component port
-export function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) => Promise<void>; onClose?: () => void }) {
+export function DialogWorkspaceCreate(props: {
+  onSelect: (workspaceID: string) => Promise<void>
+  onClose?: () => void
+}) {
   const actions = useAppActions()
   const sdk = useSDK()
   const toast = useToast()
@@ -157,10 +160,9 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
 
   const [view, setView] = useState<ViewState>({ type: "list" })
 
-  const open = (workspaceID: string, forceCreate?: boolean) => {
-    const fakeDialog = { clear: () => props.onClose?.() } as any
+  const open = (workspaceID: string, forceCreate?: boolean) =>
     openWorkspace({
-      dialog: fakeDialog,
+      onClose: props.onClose,
       route,
       sdk,
       actions,
@@ -168,7 +170,6 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
       workspaceID,
       forceCreate,
     })
-  }
 
   async function selectWorkspace(workspaceID: string) {
     if (workspaceID === "__local__") {

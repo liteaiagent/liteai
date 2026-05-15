@@ -1,5 +1,5 @@
 import { Box, type Color, Text } from "@liteai/ink"
-import type { ProviderAuthAuthorization } from "@liteai/sdk"
+import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@liteai/sdk"
 import { useEffect, useMemo, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
@@ -11,6 +11,16 @@ import type { DialogSelectOption } from "../ui/dialog-select"
 import { DialogSelect } from "../ui/dialog-select"
 import { DialogModel } from "./dialog-model"
 
+/** Discriminated union describing the active sub-view within the provider dialog. */
+export type ProviderViewState =
+  | { type: "list" }
+  | { type: "method"; providerID: string; methodIndex: number; method: ProviderAuthMethod }
+  | { type: "api"; providerID: string; title: string }
+  | { type: "select-method"; providerID: string; methods: ProviderAuthMethod[] }
+  | { type: "code"; providerID: string; title: string; index: number; authorization: ProviderAuthAuthorization }
+  | { type: "auto"; providerID: string; title: string; index: number; authorization: ProviderAuthAuthorization }
+  | { type: "model"; providerID: string }
+
 const PROVIDER_PRIORITY: Record<string, number> = {
   "google-code-assist": 0,
   ai4all: 1,
@@ -20,19 +30,11 @@ const PROVIDER_PRIORITY: Record<string, number> = {
   google: 5,
 }
 
-export function useDialogProviderOptions(
-  onNavigate: (
-    view:
-      | { type: "method"; providerID: string; methodIndex: number; method: any }
-      | { type: "api"; providerID: string; title: string }
-      | { type: "select-method"; providerID: string; methods: any[] },
-  ) => void,
-) {
+/** Returns a sorted list of provider display options (title, value, description, category). */
+export function useProviderDisplayOptions() {
   const provider_next = useAppState((s) => s.provider_next)
-  const provider_auth = useAppState((s) => s.provider_auth)
-  const sdk = useSDK()
 
-  const options = useMemo(() => {
+  return useMemo(() => {
     const allProviders = provider_next?.all || []
     const sorted = [...allProviders].sort((a, b) => {
       const pA = PROVIDER_PRIORITY[a.id] ?? 99
@@ -54,24 +56,34 @@ export function useDialogProviderOptions(
             } as Record<string, string>
           )[provider.id],
           category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
-          onSelect: () => {
-            const methods = provider_auth?.[provider.id] ?? [{ type: "api", label: "API key" }]
-
-            if (methods.length === 1) {
-              const method = methods[0]
-              if (method.type === "api") {
-                onNavigate({ type: "api", providerID: provider.id, title: method.label })
-                return
-              }
-            }
-
-            onNavigate({ type: "select-method", providerID: provider.id, methods })
-          },
         }) as DialogSelectOption<string>,
     )
-  }, [provider_next?.all, provider_auth, sdk, onNavigate])
+  }, [provider_next?.all])
+}
 
-  return options
+/**
+ * Returns a `connect` function that initiates the auth flow for a given provider.
+ * Resolves the correct auth method(s) and navigates to the appropriate view.
+ */
+export function useProviderConnect(onNavigate: (view: ProviderViewState) => void) {
+  const provider_auth = useAppState((s) => s.provider_auth)
+
+  return useMemo(
+    () => (providerID: string) => {
+      const methods = provider_auth?.[providerID] ?? [{ type: "api" as const, label: "API key" }]
+
+      if (methods.length === 1) {
+        const method = methods[0]
+        if (method.type === "api") {
+          onNavigate({ type: "api", providerID, title: method.label })
+          return
+        }
+      }
+
+      onNavigate({ type: "select-method", providerID, methods: methods as ProviderAuthMethod[] })
+    },
+    [provider_auth, onNavigate],
+  )
 }
 
 // Complex OAuth flows implemented using a sequential component
@@ -85,7 +97,7 @@ function MethodRunner({
   providerID: string
   methodIndex: number
   method: import("@liteai/sdk").ProviderAuthMethod
-  onNavigate: (view: any) => void
+  onNavigate: (view: ProviderViewState) => void
   onClose?: () => void
 }) {
   const sdk = useSDK()
@@ -157,16 +169,7 @@ export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } =
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
 
-  type ViewState =
-    | { type: "list" }
-    | { type: "method"; providerID: string; methodIndex: number; method: import("@liteai/sdk").ProviderAuthMethod }
-    | { type: "api"; providerID: string; title: string }
-    | { type: "select-method"; providerID: string; methods: import("@liteai/sdk").ProviderAuthMethod[] }
-    | { type: "code"; providerID: string; title: string; index: number; authorization: ProviderAuthAuthorization }
-    | { type: "auto"; providerID: string; title: string; index: number; authorization: ProviderAuthAuthorization }
-    | { type: "model"; providerID: string }
-
-  const [view, setView] = useState<ViewState>({ type: "list" })
+  const [view, setView] = useState<ProviderViewState>({ type: "list" })
 
   const connectedSet = useMemo(() => new Set(provider_next?.connected || []), [provider_next?.connected])
 
@@ -212,7 +215,7 @@ export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } =
   }, [provider_next?.all, connectedSet])
 
   const allOptions = useMemo(() => [...connectedOptions, ...availableOptions], [connectedOptions, availableOptions])
-  const connectOptions = useDialogProviderOptions(setView)
+  const connectProvider = useProviderConnect(setView)
 
   const disconnect = async (providerID: string, name: string) => {
     if (disconnecting) return
@@ -244,7 +247,15 @@ export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } =
   )
 
   if (view.type === "method") {
-    return <MethodRunner providerID={view.providerID} methodIndex={view.methodIndex} method={view.method} onNavigate={setView} onClose={_onClose} />
+    return (
+      <MethodRunner
+        providerID={view.providerID}
+        methodIndex={view.methodIndex}
+        method={view.method}
+        onNavigate={setView}
+        onClose={_onClose}
+      />
+    )
   }
 
   if (view.type === "api") {
@@ -252,11 +263,29 @@ export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } =
   }
 
   if (view.type === "code") {
-    return <CodeMethod providerID={view.providerID} title={view.title} index={view.index} authorization={view.authorization} onNavigate={setView} onClose={_onClose} />
+    return (
+      <CodeMethod
+        providerID={view.providerID}
+        title={view.title}
+        index={view.index}
+        authorization={view.authorization}
+        onNavigate={setView}
+        onClose={_onClose}
+      />
+    )
   }
 
   if (view.type === "auto") {
-    return <AutoMethod providerID={view.providerID} title={view.title} index={view.index} authorization={view.authorization} onNavigate={setView} onClose={_onClose} />
+    return (
+      <AutoMethod
+        providerID={view.providerID}
+        title={view.title}
+        index={view.index}
+        authorization={view.authorization}
+        onNavigate={setView}
+        onClose={_onClose}
+      />
+    )
   }
 
   if (view.type === "model") {
@@ -298,8 +327,7 @@ export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } =
       }
       onSelect={(option) => {
         if (connectedSet.has(option.value)) return
-        const match = connectOptions.find((o) => o.value === option.value)
-        if (match?.onSelect) match.onSelect({} as any)
+        connectProvider(option.value)
       }}
     />
   )
@@ -317,7 +345,7 @@ function AutoMethod({
   providerID: string
   title: string
   authorization: ProviderAuthAuthorization
-  onNavigate: (view: any) => void
+  onNavigate: (view: ProviderViewState) => void
   onClose?: () => void
 }) {
   const { theme } = useTheme()
@@ -375,7 +403,7 @@ function CodeMethod({
   title: string
   providerID: string
   authorization: ProviderAuthAuthorization
-  onNavigate: (view: any) => void
+  onNavigate: (view: ProviderViewState) => void
   onClose?: () => void
 }) {
   const { theme } = useTheme()
@@ -421,7 +449,7 @@ function ApiMethod({
 }: {
   providerID: string
   title: string
-  onNavigate: (view: any) => void
+  onNavigate: (view: ProviderViewState) => void
   onClose?: () => void
 }) {
   const sdk = useSDK()

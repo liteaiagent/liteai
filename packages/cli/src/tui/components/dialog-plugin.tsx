@@ -392,10 +392,7 @@ function MarketplacesTab(props: {
   onRemoved: () => void
   onClose: () => void
 }) {
-  type ViewState =
-    | { type: "list" }
-    | { type: "add" }
-    | { type: "remove"; id: string; name: string }
+  type ViewState = { type: "list" } | { type: "add" } | { type: "remove"; id: string; name: string }
 
   const [view, setView] = useState<ViewState>({ type: "list" })
 

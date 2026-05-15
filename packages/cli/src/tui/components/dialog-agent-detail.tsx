@@ -3,7 +3,6 @@ import type { Agent } from "@liteai/sdk"
 import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
-import { DialogAgentEditor } from "./dialog-agent-editor"
 
 function LabelValue({ label, value }: { label: string; value: string | React.ReactNode }) {
   const { theme } = useTheme()

@@ -166,7 +166,6 @@ export function DialogRewind(props: { onClose?: () => void }): React.ReactNode {
         messageID={selectedMessage?.id ?? ""}
         turnLabel={selectedMessage ? getTurnLabel(selectedMessage) : ""}
         onComplete={() => setView("main")}
-        onClose={props.onClose}
       />
     )
   }
