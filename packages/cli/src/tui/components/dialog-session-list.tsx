@@ -1,7 +1,6 @@
 import { Box, type Color, Text, useInput } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
-import { useDialog } from "../context/dialog"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
@@ -27,7 +26,6 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: string; onClose?: () => void }) {
-  const dialog = useDialog()
   const route = useRoute()
   const sessionsList = useAppState(selectSessions())
   const sessionStatusMap = useAppState((s) => s.session_status)
@@ -44,6 +42,13 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   const [tags, setTags] = useState<string[]>([])
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
   const debouncedSearch = useDebounce(search, 150)
+
+  type ViewState =
+    | { type: "list" }
+    | { type: "rename"; sessionID: string }
+    | { type: "tag"; sessionID: string; existingTags: string[]; allTags: string[] }
+
+  const [view, setView] = useState<ViewState>({ type: "list" })
 
   useEffect(() => {
     sdk.client.project.session.tags({ projectID: sdk.projectID }).then((res) => {
@@ -192,21 +197,19 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
       setToDelete(selectedOption.value)
     } else if (input === "r") {
       if (!selectedOption) return
-      dialog.replace(() => <DialogSessionRename session={selectedOption.value} onClose={() => dialog.clear()} />)
+      setView({ type: "rename", sessionID: selectedOption.value })
     } else if (input === "t") {
       if (!selectedOption) return
       const session = sessionsList.find((s) => s.id === selectedOption.value)
       if (!session) return
       const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
       const existingTags = sessionExt.tags || []
-      dialog.replace(() => (
-        <DialogTag
-          sessionID={selectedOption.value}
-          existingTags={existingTags}
-          allTags={tags}
-          onClose={() => dialog.clear()}
-        />
-      ))
+      setView({
+        type: "tag",
+        sessionID: selectedOption.value,
+        existingTags,
+        allTags: tags,
+      })
     } else if (input === "u") {
       if (!selectedOption) return
       const session = sessionsList.find((s) => s.id === selectedOption.value)
@@ -225,8 +228,23 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   })
 
   useEffect(() => {
-    dialog.setSize("large")
-  }, [dialog])
+    // dialog.setSize("large")
+  }, [])
+
+  if (view.type === "rename") {
+    return <DialogSessionRename session={view.sessionID} onClose={() => setView({ type: "list" })} />
+  }
+
+  if (view.type === "tag") {
+    return (
+      <DialogTag
+        sessionID={view.sessionID}
+        existingTags={view.existingTags}
+        allTags={view.allTags}
+        onClose={() => setView({ type: "list" })}
+      />
+    )
+  }
 
   return (
     <DialogSelect
@@ -244,8 +262,9 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
           type: "session",
           sessionID: option.value,
         })
-        dialog.clear()
+        props.onClose?.()
       }}
+      onEscape={props.onClose}
       header={
         tags.length > 0 ? (
           <Box flexDirection="row" gap={1}>

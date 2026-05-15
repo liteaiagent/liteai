@@ -1,7 +1,6 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import type { Agent } from "@liteai/sdk"
 import { useMemo, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useLocal } from "../context/local"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
@@ -13,13 +12,16 @@ import { DialogAgentEditor } from "./dialog-agent-editor"
 
 export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) {
   const local = useLocal()
-  const dialog = useDialog()
   const sdk = useSDK()
   const toast = useToast()
   const { theme } = useTheme()
 
   const agents = local.agent.list()
   const [hovered, setHovered] = useState<Agent | null>(null)
+
+  type ViewState = { type: "list" } | { type: "detail"; agent: Agent } | { type: "editor"; agent?: Agent }
+
+  const [view, setView] = useState<ViewState>({ type: "list" })
 
   const options = useMemo(() => {
     const list = []
@@ -39,16 +41,16 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
         description: `${agent.model?.modelID || "default"} · ${toolCount} tool(s)`,
         category: agent.native ? "Built-in" : "Custom",
         disabled: false,
-        onSelect: () => dialog.push(() => <DialogAgentDetail agent={agent as Agent} />),
+        onSelect: () => setView({ type: "detail", agent: agent as Agent }),
       })
     }
     return list
-  }, [agents, dialog])
+  }, [agents])
 
   useKeybindings(
     {
       "agent:create": () => {
-        dialog.push(() => <DialogAgentEditor />)
+        setView({ type: "editor" })
       },
       "select:delete": async () => {
         if (!hovered) return
@@ -77,6 +79,26 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
     </Box>
   )
 
+  if (view.type === "detail") {
+    return (
+      <DialogAgentDetail
+        agent={view.agent}
+        onBack={() => setView({ type: "list" })}
+        onEdit={() => setView({ type: "editor", agent: view.agent })}
+      />
+    )
+  }
+
+  if (view.type === "editor") {
+    return (
+      <DialogAgentEditor
+        agent={view.agent}
+        onBack={() => setView({ type: "list" })}
+        onClose={() => setView({ type: "list" })}
+      />
+    )
+  }
+
   return (
     <DialogSelect
       title="Manage Agents"
@@ -84,6 +106,7 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
       options={options}
       footerContent={footer}
       onMove={(opt) => setHovered(opt.value)}
+      onEscape={_onClose}
     />
   )
 }

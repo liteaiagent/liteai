@@ -1,7 +1,6 @@
 import { type Color, Text } from "@liteai/ink"
 import { createLiteaiClient, type Session } from "@liteai/sdk"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useDialog } from "../context/dialog"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
@@ -13,7 +12,7 @@ import { DialogSessionList } from "./dialog-session-list"
 
 // openWorkspace function port
 async function openWorkspace(input: {
-  dialog: ReturnType<typeof useDialog>
+  onClose?: () => void
   route: ReturnType<typeof useRoute>
   sdk: ReturnType<typeof useSDK>
   actions: ReturnType<typeof useAppActions>
@@ -36,7 +35,7 @@ async function openWorkspace(input: {
       type: "session",
       sessionID: session.id,
     })
-    input.dialog.clear()
+    input.onClose?.()
     return
   }
   let created: Session | undefined
@@ -69,20 +68,18 @@ async function openWorkspace(input: {
     type: "session",
     sessionID: created.id,
   })
-  input.dialog.clear()
+  input.onClose?.()
 }
 
 // DialogWorkspaceCreate component port
-export function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) => Promise<void> }) {
-  const dialog = useDialog()
+export function DialogWorkspaceCreate(props: {
+  onSelect: (workspaceID: string) => Promise<void>
+  onClose?: () => void
+}) {
   const actions = useAppActions()
   const sdk = useSDK()
   const toast = useToast()
   const [creating, setCreating] = useState<string | undefined>()
-
-  useEffect(() => {
-    dialog.setSize("medium")
-  }, [dialog])
 
   const options = useMemo(() => {
     const type = creating
@@ -138,13 +135,13 @@ export function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) =
         if (option.value === "creating") return
         void createWorkspace(option.value)
       }}
+      onEscape={props.onClose}
     />
   )
 }
 
 // DialogWorkspaceList component port
-export function DialogWorkspaceList() {
-  const dialog = useDialog()
+export function DialogWorkspaceList(props: { onClose?: () => void }) {
   const route = useRoute()
   const actions = useAppActions()
   const sessions = useAppState(selectSessions())
@@ -156,9 +153,16 @@ export function DialogWorkspaceList() {
   const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
   const [counts, setCounts] = useState<Record<string, number | null | undefined>>({})
 
+  type ViewState =
+    | { type: "list" }
+    | { type: "create" }
+    | { type: "sessionList"; workspaceID?: string; localOnly?: boolean }
+
+  const [view, setView] = useState<ViewState>({ type: "list" })
+
   const open = (workspaceID: string, forceCreate?: boolean) =>
     openWorkspace({
-      dialog,
+      onClose: props.onClose,
       route,
       sdk,
       actions,
@@ -170,18 +174,18 @@ export function DialogWorkspaceList() {
   async function selectWorkspace(workspaceID: string) {
     if (workspaceID === "__local__") {
       if (localCount > 0) {
-        dialog.replace(() => <DialogSessionList localOnly={true} />)
+        setView({ type: "sessionList", localOnly: true })
         return
       }
       route.navigate({
         type: "session",
       })
-      dialog.clear()
+      props.onClose?.()
       return
     }
     const count = counts[workspaceID]
     if (count && count > 0) {
-      dialog.replace(() => <DialogSessionList workspaceID={workspaceID} />)
+      setView({ type: "sessionList", workspaceID })
       return
     }
 
@@ -198,7 +202,7 @@ export function DialogWorkspaceList() {
       .list({ roots: true, limit: 1, projectID: workspaceID })
       .catch(() => undefined)
     if (listed?.data?.length) {
-      dialog.replace(() => <DialogSessionList workspaceID={workspaceID} />)
+      setView({ type: "sessionList", workspaceID })
       return
     }
     await open(workspaceID)
@@ -279,9 +283,8 @@ export function DialogWorkspaceList() {
   )
 
   useEffect(() => {
-    dialog.setSize("large")
     void actions.workspace.sync()
-  }, [dialog, actions.workspace])
+  }, [actions.workspace])
 
   useKeybindings(
     {
@@ -313,6 +316,25 @@ export function DialogWorkspaceList() {
     { context: "Select" },
   )
 
+  if (view.type === "create") {
+    return (
+      <DialogWorkspaceCreate
+        onSelect={(workspaceID) => open(workspaceID, true)}
+        onClose={() => setView({ type: "list" })}
+      />
+    )
+  }
+
+  if (view.type === "sessionList") {
+    return (
+      <DialogSessionList
+        localOnly={view.localOnly}
+        workspaceID={view.workspaceID}
+        onClose={() => setView({ type: "list" })}
+      />
+    )
+  }
+
   return (
     <DialogSelect
       title="Workspaces"
@@ -326,12 +348,13 @@ export function DialogWorkspaceList() {
       onSelect={(option) => {
         setToDelete(undefined)
         if (option.value === "__create__") {
-          dialog.replace(() => <DialogWorkspaceCreate onSelect={(workspaceID) => open(workspaceID, true)} />)
+          setView({ type: "create" })
           return
         }
         void selectWorkspace(option.value)
       }}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+d delete</Text>}
+      onEscape={props.onClose}
     />
   )
 }
