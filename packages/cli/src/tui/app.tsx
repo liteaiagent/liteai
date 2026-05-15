@@ -6,7 +6,6 @@ import { Logo } from "./components/logo"
 import { PromptInput } from "./components/prompt/prompt-input"
 import { Tips } from "./components/tips"
 import { type Args, ArgsProvider } from "./context/args"
-import { DialogProvider } from "./context/dialog"
 import { ExitProvider } from "./context/exit"
 import { KVProvider } from "./context/kv"
 import { LocalProvider } from "./context/local"
@@ -158,7 +157,9 @@ function AppContent() {
     <>
       {tabs.map((id) => (
         <Box key={id} display={id === activeTabId ? "flex" : "none"} width="100%" height="100%" flexDirection="column">
-          <SessionRoute sessionID={id} />
+          <ModalPaneProvider>
+            <SessionRoute sessionID={id} />
+          </ModalPaneProvider>
         </Box>
       ))}
     </>
@@ -186,15 +187,13 @@ export function App(props: AppProps) {
                       <AppStateProvider>
                         <LocalProvider>
                           <RouteProvider>
-                            <DialogProvider>
-                              <PromptRefProvider>
-                                <SessionProvider>
-                                  <AlternateScreen>
-                                    <AppContent />
-                                  </AlternateScreen>
-                                </SessionProvider>
-                              </PromptRefProvider>
-                            </DialogProvider>
+                            <PromptRefProvider>
+                              <SessionProvider>
+                                <AlternateScreen>
+                                  <AppContent />
+                                </AlternateScreen>
+                              </SessionProvider>
+                            </PromptRefProvider>
                           </RouteProvider>
                         </LocalProvider>
                       </AppStateProvider>

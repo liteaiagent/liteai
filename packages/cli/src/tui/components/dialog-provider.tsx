@@ -160,7 +160,7 @@ function MethodRunner({
   )
 }
 
-export function DialogProvider({ onClose: _onClose }: { onClose?: () => void } = {}) {
+export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () => void } = {}) {
   const provider_next = useAppState((s) => s.provider_next)
   const { bootstrap } = useAppActions()
   const sdk = useSDK()

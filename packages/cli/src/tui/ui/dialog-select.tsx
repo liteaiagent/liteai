@@ -4,8 +4,6 @@ import fuzzysort from "fuzzysort"
 import type React from "react"
 import { useContext, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { TextInput } from "../components/text-input"
-import type { DialogContextType } from "../context/dialog"
-import { useDialog } from "../context/dialog"
 import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
@@ -19,7 +17,7 @@ export interface DialogSelectOption<T = unknown> {
   disabled?: boolean
   bg?: string
   gutter?: React.ReactNode
-  onSelect?: (ctx: DialogContextType) => void
+  onSelect?: () => void
 }
 
 export type DialogSelectRef<T> = {
@@ -48,7 +46,6 @@ export interface DialogSelectProps<T> {
 
 export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const { theme } = useTheme()
-  const dialog = useDialog()
   useRegisterKeybindingContext("Select")
   const terminalSize = useContext(TerminalSizeContext)
 
@@ -160,15 +157,13 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       "select:end": () => setSelectedIndex(flatOptions.length - 1),
       "select:accept": () => {
         if (selectedOption && !selectedOption.disabled) {
-          selectedOption.onSelect?.(dialog)
+          selectedOption.onSelect?.()
           props.onSelect?.(selectedOption)
         }
       },
       "select:cancel": () => {
         if (props.onEscape) {
           props.onEscape()
-        } else {
-          dialog.clear()
         }
       },
     },

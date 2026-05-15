@@ -14,9 +14,8 @@ import { ThinkingToggleDialog } from "../../components/thinking-toggle"
 import { TokenWarning } from "../../components/token-warning"
 import { TranscriptSearch } from "../../components/transcript-search"
 import { isCompactEligible } from "../../constants/compact-allowlist"
-import { useDialog } from "../../context/dialog"
 import { MessageCursorContext } from "../../context/message-cursor"
-import { ModalPaneProvider, useModalPane } from "../../context/modal-pane"
+import { useModalPane } from "../../context/modal-pane"
 import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
@@ -61,7 +60,7 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const folderName = useMemo(() => getFolderName(directory || process.cwd()), [directory])
   useWindowTitle({ sessionID, folderName })
   useRegisterKeybindingContext("Chat")
-  const dialog = useDialog()
+  const modalPane = useModalPane()
   const route = useRoute()
   const { copy } = useClipboard()
   const terminalSize = useContext(TerminalSizeContext)
@@ -98,22 +97,22 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     {
       "chat:sidebarToggle": () => setSidebarOpen((v) => !v),
       "chat:thinkingToggle": () => {
-        dialog.push(() => (
+        modalPane.openModal(
           <ThinkingToggleDialog
             currentValue={showThinking}
             onSelect={(enabled: boolean) => {
               setShowThinking(enabled)
-              dialog.pop()
+              modalPane.closeModal()
             }}
-            onCancel={() => dialog.pop()}
+            onCancel={() => modalPane.closeModal()}
             isMidConversation={messages.length > 0}
-          />
-        ))
+          />,
+        )
       },
       "chat:newSession": () => route.navigate({ type: "session" }),
-      "chat:sessionList": () => dialog.push(() => <DialogSessionList onClose={() => dialog.clear()} />),
-      "chat:memory": () => dialog.push(() => <DialogMemory onClose={() => dialog.clear()} />),
-      "chat:workspaceSearch": () => dialog.push(() => <DialogSearch onClose={() => dialog.clear()} />),
+      "chat:sessionList": () => modalPane.openModal(<DialogSessionList onClose={() => modalPane.closeModal()} />),
+      "chat:memory": () => modalPane.openModal(<DialogMemory onClose={() => modalPane.closeModal()} />),
+      "chat:workspaceSearch": () => modalPane.openModal(<DialogSearch onClose={() => modalPane.closeModal()} />),
       "chat:enterMessageCursor": cursor.enterCursor,
       "chat:transcriptSearch": () => setShowTranscriptSearch(true),
     },
@@ -218,62 +217,60 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
 
   return (
     <StatsProvider>
-      <ModalPaneProvider>
-        <SessionProvider
-          value={{
-            sessionID,
-            width: terminalSize?.columns ?? 80,
-            conceal: false,
-            showThinking,
-            showTimestamps,
-            displayMode,
-            showDetails,
-            showGenericToolOutput,
-            diffWrapMode: "none",
-            showPreCompaction,
-            isToolCompact,
-            lastReasoningId,
-            tui: tuiConfig,
-          }}
-        >
-          <SessionLayoutBridge scrollRef={scrollRef}>
-            <SessionLayout
-              scrollRef={scrollRef}
-              scrollable={
-                <MessageCursorContext.Provider
-                  value={{
-                    selectedMessageId: cursor.selectedMessage?.id,
-                    isExpanded: (id) => cursor.expandedIds.has(id),
-                    selectMessage: cursor.selectMessage,
-                  }}
-                >
-                  <Messages scrollRef={scrollRef} />
-                </MessageCursorContext.Provider>
-              }
-              bottom={
-                <SessionBottom
-                  sessionID={sessionID}
-                  cursorContext={makeActionCtx()}
-                  onSearch={() => setShowTranscriptSearch(true)}
-                />
-              }
-              overlay={
-                <Box flexDirection="column">
-                  {permissionRequest && <PermissionPrompt request={permissionRequest} />}
-                  {questionRequest && <QuestionPrompt request={questionRequest} />}
-                  {showTranscriptSearch && (
-                    <TranscriptSearch
-                      onClose={() => setShowTranscriptSearch(false)}
-                      onNavigate={(id) => cursor.selectMessage(id)}
-                    />
-                  )}
-                </Box>
-              }
-            />
-          </SessionLayoutBridge>
-          <ScrollHandler scrollRef={scrollRef} />
-        </SessionProvider>
-      </ModalPaneProvider>
+      <SessionProvider
+        value={{
+          sessionID,
+          width: terminalSize?.columns ?? 80,
+          conceal: false,
+          showThinking,
+          showTimestamps,
+          displayMode,
+          showDetails,
+          showGenericToolOutput,
+          diffWrapMode: "none",
+          showPreCompaction,
+          isToolCompact,
+          lastReasoningId,
+          tui: tuiConfig,
+        }}
+      >
+        <SessionLayoutBridge scrollRef={scrollRef}>
+          <SessionLayout
+            scrollRef={scrollRef}
+            scrollable={
+              <MessageCursorContext.Provider
+                value={{
+                  selectedMessageId: cursor.selectedMessage?.id,
+                  isExpanded: (id) => cursor.expandedIds.has(id),
+                  selectMessage: cursor.selectMessage,
+                }}
+              >
+                <Messages scrollRef={scrollRef} />
+              </MessageCursorContext.Provider>
+            }
+            bottom={
+              <SessionBottom
+                sessionID={sessionID}
+                cursorContext={makeActionCtx()}
+                onSearch={() => setShowTranscriptSearch(true)}
+              />
+            }
+            overlay={
+              <Box flexDirection="column">
+                {permissionRequest && <PermissionPrompt request={permissionRequest} />}
+                {questionRequest && <QuestionPrompt request={questionRequest} />}
+                {showTranscriptSearch && (
+                  <TranscriptSearch
+                    onClose={() => setShowTranscriptSearch(false)}
+                    onNavigate={(id) => cursor.selectMessage(id)}
+                  />
+                )}
+              </Box>
+            }
+          />
+        </SessionLayoutBridge>
+        <ScrollHandler scrollRef={scrollRef} />
+      </SessionProvider>
     </StatsProvider>
   )
 }
