@@ -1,14 +1,15 @@
-import type { ScrollBoxHandle } from "@liteai/ink"
-import { Box } from "@liteai/ink"
+import type { Color, ScrollBoxHandle } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import type { Message, Part, ReasoningPart } from "@liteai/sdk"
 import type React from "react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import { type SubagentInfo, SubagentProgress } from "../../components/subagent-progress"
 import { VirtualMessageList } from "../../components/virtual-message-list"
 import { useMessageCursorContext } from "../../context/message-cursor"
 import { useSession } from "../../context/session"
 import { useTheme } from "../../context/theme"
 import { selectMessages, useAppState } from "../../state"
+import { type LocalMessage, LocalMessageStore } from "../../state/local-messages"
 import { RichSpinner } from "../../ui/spinner"
 import { collapseToolParts } from "../../utils/collapse-tool-groups"
 import { useSessionContext } from "./ctx"
@@ -130,6 +131,12 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
 
   const hasActiveSubagents = subagentInfos.some((s) => s.isRunning)
 
+  // ── Local trail messages (Message Trail pattern) ────────────────────────
+  const sessionID = ctx.sessionID ?? ""
+  const localMessages = useSyncExternalStore(LocalMessageStore.subscribe, () =>
+    LocalMessageStore.getSnapshot(sessionID),
+  )
+
   return (
     <>
       <VirtualMessageList
@@ -141,6 +148,7 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
         trackStickyPrompt={true}
         selectedIndex={selectedIndex}
       />
+      {localMessages.length > 0 && <TrailMessages messages={localMessages} />}
       {showSpinner && (
         <Box paddingX={1} paddingTop={1} flexDirection="column">
           <RichSpinner
@@ -159,5 +167,22 @@ export function Messages({ scrollRef }: { scrollRef: React.RefObject<ScrollBoxHa
         </Box>
       )}
     </>
+  )
+}
+
+// ── Trail Message Rendering ─────────────────────────────────────────────
+
+function TrailMessages({ messages }: { messages: readonly LocalMessage[] }) {
+  const { theme } = useTheme()
+  return (
+    <Box flexDirection="column" paddingLeft={3} marginTop={1}>
+      {messages.map((msg) => (
+        <Box key={msg.id} paddingY={0}>
+          <Text color={theme.textMuted as Color} italic>
+            {msg.text}
+          </Text>
+        </Box>
+      ))}
+    </Box>
   )
 }

@@ -8,6 +8,8 @@ import { useNavigation } from "../hooks/use-navigation"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import type { SelectItem } from "../primitives/types"
 import { selectProviders, useAppState } from "../state"
+import { LocalMessageStore } from "../state/local-messages"
+import { SessionTabStore } from "../state/session-tab-store"
 import { SelectPane } from "../ui/select-pane"
 import { DialogProvider, useProviderDisplayOptions } from "./dialog-provider"
 
@@ -178,6 +180,13 @@ export function DialogModel(props: Props) {
       onSelect={(item) => {
         props.onClose()
         local.model.set(item.value, { recent: true })
+        // Record trail message for model change
+        if (item.value.modelID) {
+          const activeSession = SessionTabStore.getActiveSessionID()
+          if (activeSession) {
+            LocalMessageStore.add(activeSession, "model-change", `/model \u2192 ${item.label}`)
+          }
+        }
         // If this is a provider-only entry (popular providers when disconnected), open provider dialog
         if (!item.value.modelID) {
           navigation.open(<DialogProvider onClose={navigation.close} />)

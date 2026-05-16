@@ -9,6 +9,7 @@ import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import stripAnsi from "strip-ansi"
 import ThemedBox from "../../components/design-system/ThemedBox"
+import { ShellOutput } from "../../components/shell-output"
 import { StructuredDiff } from "../../components/structured-diff"
 import { COMPACT_DIFF_MAX_LINES } from "../../constants/compact-diff"
 import { useTheme } from "../../context/theme"
@@ -413,11 +414,6 @@ export function RunCommand(props: ToolProps) {
   })
   const [expanded, setExpanded] = useState(false)
   const lines = useMemo(() => output.split("\n"), [output])
-  const overflow = lines.length > 10
-  const limited = useMemo(() => {
-    if (expanded || !overflow) return output
-    return [...lines.slice(0, 10), "…"].join("\n")
-  }, [expanded, overflow, output, lines])
 
   const dir = useMemo(() => {
     const workdir = input.cwd
@@ -432,14 +428,27 @@ export function RunCommand(props: ToolProps) {
     return match ? absolute.replace(home, "~") : absolute
   }, [input.cwd, directory])
 
-  const title = useMemo(() => {
-    const desc = input.description ?? "Shell"
-    const wd = dir
-    if (!wd) return `# ${desc}`
-    return `# ${desc} in ${wd}`
-  }, [input, dir])
+  // Extract exit code from tool output (run_command returns JSON with exit_code)
+  const exitCode = useMemo(() => {
+    if (running) return undefined
+    if (props.part.state.status === "error") return 1
+    // Try to extract from output — typical format: "exit_code": N or exitCode: N
+    const raw = props.output ?? ""
+    const match = raw.match(/"?exit_?[Cc]ode"?\s*:\s*(\d+)/)
+    return match ? parseInt(match[1], 10) : props.part.state.status === "completed" ? 0 : undefined
+  }, [running, props.part.state.status, props.output])
+
+  // Compute duration from tool part timing
+  const durationMs = useMemo(() => {
+    const timing = extractToolTiming(props.part)
+    if (timing.startTime && timing.endTime) return timing.endTime - timing.startTime
+    return undefined
+  }, [props.part])
+
+  const toolError = props.part.state.status === "error" ? props.part.state.error : undefined
 
   if (metadata.output !== undefined) {
+    // Compact mode: single-line inline rendering
     if (ctx?.isToolCompact(props.tool)) {
       if (savedPath) {
         return (
@@ -455,8 +464,16 @@ export function RunCommand(props: ToolProps) {
       )
     }
 
+    // Large output saved to file — show preview inside BlockTool
     if (savedPath) {
       const preview = lines.slice(0, 50).join("\n")
+      const title = useMemo(() => {
+        const desc = input.description ?? "Shell"
+        const wd = dir
+        if (!wd) return `# ${desc}`
+        return `# ${desc} in ${wd}`
+      }, [input, dir])
+
       return (
         <BlockTool title={title} part={props.part} spinner={running} {...extractToolTiming(props.part)}>
           <Box flexDirection="column" gap={1}>
@@ -470,22 +487,19 @@ export function RunCommand(props: ToolProps) {
       )
     }
 
+    // Standard bordered shell output
     return (
-      <BlockTool
-        title={title}
-        part={props.part}
-        spinner={running}
-        onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
-        {...extractToolTiming(props.part)}
-      >
-        <Box flexDirection="column" gap={1}>
-          <Text color={theme.text as Color}>$ {input.command}</Text>
-          {output && <Text color={theme.text as Color}>{limited}</Text>}
-          {overflow && (
-            <Text color={theme.textMuted as Color}>{expanded ? "Click to collapse" : "Click to expand"}</Text>
-          )}
-        </Box>
-      </BlockTool>
+      <ShellOutput
+        command={input.command ?? ""}
+        cwd={dir}
+        output={output}
+        running={running}
+        exitCode={exitCode}
+        durationMs={durationMs}
+        onClick={lines.length > 5 ? () => setExpanded((prev) => !prev) : undefined}
+        expanded={expanded}
+        error={toolError}
+      />
     )
   }
 

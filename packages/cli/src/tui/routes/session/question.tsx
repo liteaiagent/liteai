@@ -1,7 +1,17 @@
+/**
+ * QuestionPrompt — multi-question support with counter-style navigation.
+ *
+ * Supports one-at-a-time question flow with a `Question 2/3:` counter header.
+ * Each question can have predefined options, free-form custom input, or both.
+ * Answers are submitted all at once after the final question is answered.
+ *
+ * @module routes/session/question
+ */
+
 import type { Color } from "@liteai/ink"
 import { Box, TerminalSizeContext, Text } from "@liteai/ink"
 import type { QuestionRequest } from "@liteai/sdk"
-import { useCallback, useContext, useState } from "react"
+import { useCallback, useContext, useMemo, useState } from "react"
 import ThemedBox from "../../components/design-system/ThemedBox"
 import { TextInput } from "../../components/text-input"
 import { useSDK } from "../../context/sdk"
@@ -15,27 +25,61 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
   const sdk = useSDK()
   const { theme } = useTheme()
   const terminalSize = useContext(TerminalSizeContext)
+
+  const questions = request.questions
+  const totalQuestions = questions.length
+
+  // Multi-question state: track current question index and accumulated answers
+  const [currentIdx, setCurrentIdx] = useState(0)
+  const [answers, setAnswers] = useState<string[]>(() => Array(totalQuestions).fill(""))
+
+  // Per-question UI state
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [customText, setCustomText] = useState("")
   const [cursorOffset, setCursorOffset] = useState(0)
   const [mode, setMode] = useState<InputMode>("options")
 
-  const questions = request.questions
-  const question = questions[0] // Simplified to first question for now
+  const question = questions[currentIdx]
   const options = question?.options ?? []
-  // custom defaults to true per API spec — allow typing a free-form answer
   const allowCustom = question?.custom !== false
 
-  const submitAnswer = useCallback(
-    (answer: string) => {
-      if (!answer.trim()) return
+  const resetQuestionUI = useCallback(() => {
+    setSelectedIdx(0)
+    setCustomText("")
+    setCursorOffset(0)
+    setMode(options.length > 0 ? "options" : "custom")
+  }, [options.length])
+
+  // Submit all answers to backend
+  const submitAll = useCallback(
+    (finalAnswers: string[]) => {
       sdk.client.project.question.reply({
         projectID: sdk.projectID,
         requestID: request.id,
-        answers: [[answer]],
+        answers: finalAnswers.map((a) => [a]),
       })
     },
     [sdk, request.id],
+  )
+
+  // Record answer for current question and advance or submit
+  const recordAnswer = useCallback(
+    (answer: string) => {
+      if (!answer.trim()) return
+      const updated = [...answers]
+      updated[currentIdx] = answer
+      setAnswers(updated)
+
+      if (currentIdx < totalQuestions - 1) {
+        // Advance to next question
+        setCurrentIdx(currentIdx + 1)
+        resetQuestionUI()
+      } else {
+        // All questions answered — submit
+        submitAll(updated)
+      }
+    },
+    [answers, currentIdx, totalQuestions, resetQuestionUI, submitAll],
   )
 
   const reject = useCallback(() => {
@@ -44,6 +88,14 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
       requestID: request.id,
     })
   }, [sdk, request.id])
+
+  // Navigate back to previous question
+  const goBack = useCallback(() => {
+    if (currentIdx > 0) {
+      setCurrentIdx(currentIdx - 1)
+      resetQuestionUI()
+    }
+  }, [currentIdx, resetQuestionUI])
 
   useRegisterKeybindingContext("Select", mode === "options")
   useKeybindings(
@@ -68,12 +120,16 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
         if (options.length > 0) {
           const selected = options[selectedIdx]
           if (selected) {
-            submitAnswer(selected.label)
+            recordAnswer(selected.label)
           }
         }
       },
       "select:cancel": () => {
-        reject()
+        if (currentIdx > 0) {
+          goBack()
+        } else {
+          reject()
+        }
       },
     },
     { context: "Select", isActive: mode === "options" },
@@ -89,7 +145,7 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
     { context: "Tabs", isActive: mode === "options" },
   )
 
-  // Custom input mode: up arrow or tab returns to option list; esc rejects
+  // Custom input mode: up arrow or tab returns to option list; esc goes back or rejects
   useKeybindings(
     {
       "select:previous": () => setMode("options"),
@@ -101,6 +157,7 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
       },
       "select:cancel": () => {
         if (customText) setCustomText("")
+        else if (currentIdx > 0) goBack()
         else reject()
       },
     },
@@ -109,18 +166,34 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
 
   const handleCustomSubmit = useCallback(
     (value: string) => {
-      submitAnswer(value)
+      recordAnswer(value)
     },
-    [submitAnswer],
+    [recordAnswer],
   )
+
+  // Counter header text
+  const headerText = useMemo(() => {
+    if (totalQuestions <= 1) return "Question"
+    return `Question ${currentIdx + 1}/${totalQuestions}`
+  }, [currentIdx, totalQuestions])
 
   if (!question) return null
 
   return (
-    <ThemedBox borderStyle="single" borderColor={theme.accent as Color} padding={1} flexDirection="column" gap={1}>
-      <Text bold color={theme.accent as Color}>
-        Question
-      </Text>
+    <ThemedBox borderStyle="round" borderColor={theme.accent as Color} padding={1} flexDirection="column" gap={1}>
+      {/* Header with counter */}
+      <Box flexDirection="row" gap={1}>
+        <Text bold color={theme.accent as Color}>
+          {headerText}
+        </Text>
+        {/* Progress dots for multi-question */}
+        {totalQuestions > 1 && (
+          <Text color={theme.textMuted as Color}>
+            {questions.map((_, i) => (i < currentIdx ? "●" : i === currentIdx ? "◉" : "○")).join(" ")}
+          </Text>
+        )}
+      </Box>
+
       <Text color={theme.text as Color}>{question.question}</Text>
 
       {options.length > 0 && (
@@ -172,7 +245,8 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
         {options.length > 0 && <Text color={theme.textMuted as Color}>↑↓ select</Text>}
         {allowCustom && options.length > 0 && <Text color={theme.textMuted as Color}>tab switch</Text>}
         <Text color={theme.textMuted as Color}>enter confirm</Text>
-        <Text color={theme.textMuted as Color}>esc dismiss</Text>
+        {currentIdx > 0 && <Text color={theme.textMuted as Color}>esc back</Text>}
+        <Text color={theme.textMuted as Color}>{currentIdx === 0 ? "esc dismiss" : ""}</Text>
       </Box>
     </ThemedBox>
   )

@@ -1,5 +1,6 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext } from "@liteai/ink"
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { CommandPalette } from "../../components/command-palette"
 import { DialogMemory } from "../../components/dialog-memory"
 import { DialogSearch } from "../../components/dialog-search"
 import { DialogSessionList } from "../../components/dialog-session-list"
@@ -7,12 +8,14 @@ import { Logo } from "../../components/logo"
 import { dispatchMessageAction, type MessageActionCaps } from "../../components/message-action-handlers"
 import type { MessageActionContext } from "../../components/message-action-registry"
 import { MessageActionsBar } from "../../components/message-actions-bar"
+import { PlanReview } from "../../components/plan-review"
 import { PromptInput } from "../../components/prompt/prompt-input"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
 import { ThinkingToggleDialog } from "../../components/thinking-toggle"
 import { Tips } from "../../components/tips"
+import { TodoTray } from "../../components/todo-tray"
 import { TokenWarning } from "../../components/token-warning"
 import { TranscriptSearch } from "../../components/transcript-search"
 import { isCompactEligible } from "../../constants/compact-allowlist"
@@ -33,8 +36,10 @@ import {
   selectPermissions,
   selectQuestions,
   selectSessionStatus,
+  selectTodos,
   useAppActions,
   useAppState,
+  useSetAppState,
 } from "../../state"
 import { type DisplayMode, SessionProvider } from "./ctx"
 import { Messages } from "./messages"
@@ -72,6 +77,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
   const [showTimestamps, _setShowTimestamps] = useState(false)
   const [showTranscriptSearch, setShowTranscriptSearch] = useState(false)
   const [showPreCompaction, setShowPreCompaction] = useState(false)
+  const [showTodoTray, setShowTodoTray] = useState(false)
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>("compact")
   const showDetails = displayMode === "transcript"
@@ -118,6 +124,20 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
       "chat:workspaceSearch": () => modalPane.openModal(<DialogSearch onClose={() => modalPane.closeModal()} />),
       "chat:enterMessageCursor": cursor.enterCursor,
       "chat:transcriptSearch": () => setShowTranscriptSearch(true),
+      "chat:commandPalette": () => {
+        modalPane.openModal(
+          <CommandPalette
+            onClose={() => modalPane.closeModal()}
+            onSelect={(commandName: string) => {
+              modalPane.closeModal()
+              // Delegate to the prompt interceptor path by prefilling & submitting the slash command
+              promptRef.current?.prefill(`/${commandName}`)
+              // Schedule a tick to let the prefill propagate before submitting
+              setTimeout(() => promptRef.current?.submit(), 0)
+            }}
+          />,
+        )
+      },
     },
     { context: "Chat", isActive: !cursor.active },
   )
@@ -129,6 +149,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
   useKeybindings(
     {
       "app:toggleTranscript": () => setDisplayMode((m) => (m === "compact" ? "transcript" : "compact")),
+      "app:toggleTodos": () => setShowTodoTray((v) => !v),
     },
     { context: "Global", isActive: true },
   )
@@ -200,6 +221,13 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
 
   const permissionRequest = useMemo(() => permissions[0], [permissions])
   const questionRequest = useMemo(() => questions[0], [questions])
+  const planApproval = useAppState((s) => s.planApproval)
+  const todos = useAppState(selectTodos(sessionID ?? ""))
+
+  const setAppState = useSetAppState()
+  const clearPlanApproval = useCallback(() => {
+    setAppState((prev) => ({ ...prev, planApproval: null }))
+  }, [setAppState])
 
   const isToolCompact = useCallback(
     (toolName: string) => {
@@ -275,6 +303,14 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
             }
             overlay={
               <Box flexDirection="column">
+                {planApproval && planApproval.sessionID === sessionID && (
+                  <PlanReview
+                    planText={planApproval.planText}
+                    planFilePath={planApproval.planFilePath}
+                    onApprove={clearPlanApproval}
+                    onReject={clearPlanApproval}
+                  />
+                )}
                 {permissionRequest && <PermissionPrompt request={permissionRequest} />}
                 {questionRequest && <QuestionPrompt request={questionRequest} />}
                 {showTranscriptSearch && (
@@ -283,6 +319,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
                     onNavigate={(id) => cursor.selectMessage(id)}
                   />
                 )}
+                {showTodoTray && <TodoTray todos={todos} onClose={() => setShowTodoTray(false)} />}
               </Box>
             }
           />

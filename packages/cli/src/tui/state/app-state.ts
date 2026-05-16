@@ -40,6 +40,22 @@ export interface AgentInstanceInfo {
   readonly usage?: { totalTokens: number; toolCalls: number; duration: number }
 }
 
+// ── Plan mode state ──────────────────────────────────────────────────────
+export interface PlanState {
+  /** Whether plan mode is active. */
+  readonly enabled: boolean
+  /** File path to the plan file on disk. */
+  readonly planFilePath?: string
+  /** Number of turns since the plan was last reminded to the model. */
+  readonly turnsSincePlanReminder?: number
+}
+
+export interface PlanApprovalRequest {
+  readonly sessionID: string
+  readonly planText: string
+  readonly planFilePath: string
+}
+
 // ── Main state shape ──────────────────────────────────────────────────
 export interface AppState {
   readonly status: "loading" | "partial" | "complete"
@@ -72,6 +88,8 @@ export interface AppState {
   }
   readonly workspaceList: readonly Workspace[]
   readonly agents: { readonly [agentId: string]: AgentInstanceInfo }
+  readonly plan: { readonly [sessionID: string]: PlanState }
+  readonly planApproval: PlanApprovalRequest | null
 }
 
 // ── Default / initial state factory ──────────────────────────────────
@@ -102,6 +120,8 @@ export function getDefaultAppState(): AppState {
     path: { home: "", state: "", config: "", worktree: "", directory: "" },
     workspaceList: [],
     agents: {},
+    plan: {},
+    planApproval: null,
   }
 }
 

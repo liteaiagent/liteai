@@ -397,5 +397,34 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       )
       break
     }
+
+    case "plan.state_changed": {
+      const sessionID = event.properties.sessionID as string
+      setState((prev) => ({
+        ...prev,
+        plan: {
+          ...prev.plan,
+          [sessionID]: {
+            enabled: true,
+            planFilePath: event.properties.planFilePath as string | undefined,
+            turnsSincePlanReminder: event.properties.turnsSincePlanReminder as number | undefined,
+          },
+        },
+      }))
+      break
+    }
+
+    case "plan.approval_requested": {
+      const sessionID = event.properties.sessionID as string
+      setState((prev) => ({
+        ...prev,
+        planApproval: {
+          sessionID,
+          planText: event.properties.planText as string,
+          planFilePath: event.properties.planFilePath as string,
+        },
+      }))
+      break
+    }
   }
 }

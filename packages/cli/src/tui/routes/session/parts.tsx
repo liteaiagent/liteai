@@ -86,6 +86,10 @@ function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPa
       marginTop={1}
       flexDirection="column"
       borderStyle="single"
+      borderLeft
+      borderTop={false}
+      borderRight={false}
+      borderBottom={false}
       borderColor={theme.backgroundElement as Color}
     >
       <Box>

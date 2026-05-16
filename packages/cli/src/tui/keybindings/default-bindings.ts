@@ -45,6 +45,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+x ctrl+k": "chat:killAgents",
       "meta+p": "chat:modelPicker",
       "meta+t": "chat:thinkingToggle",
+      "ctrl+p": "chat:commandPalette",
       enter: "chat:submit",
       up: "history:previous",
       down: "history:next",
