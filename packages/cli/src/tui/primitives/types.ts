@@ -30,6 +30,10 @@ export interface SelectItem<T> {
   disabled?: boolean
   /** Optional grouping key — items sharing a category are rendered under a shared header. */
   category?: string
+  /** Optional trailing content (status badge, timestamp, shortcut hint). Rendered at end of row. */
+  footer?: ReactNode
+  /** Optional leading indicator before the label (spinner, icon, tab number). Rendered before label. */
+  gutter?: ReactNode
 }
 
 /**

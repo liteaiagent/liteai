@@ -3,9 +3,9 @@ import { useMemo, useState } from "react"
 import { filter, flatMap, map, pipe, sortBy } from "remeda"
 import { useLocal } from "../context/local"
 import { useTheme } from "../context/theme"
+import type { SelectItem } from "../primitives/types"
 import { selectProviders, useAppState } from "../state"
-import type { DialogSelectOption } from "../ui/dialog-select"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 /**
  * DialogManageModels — model visibility management.
@@ -37,8 +37,9 @@ export function DialogManageModels(props: { onBack?: () => void; onClose?: () =>
           map(([modelID, info]) => {
             const isVisible = local.model.visible({ providerID: provider.id, modelID })
             return {
+              key: `${provider.id}:${modelID}`,
               value: { providerID: provider.id, modelID },
-              title: info.name ?? modelID,
+              label: info.name ?? modelID,
               category: provider.name,
               disabled: false,
               footer: (
@@ -46,20 +47,16 @@ export function DialogManageModels(props: { onBack?: () => void; onClose?: () =>
                   {isVisible ? "[✓]" : "[ ]"}
                 </Text>
               ),
-              onSelect: () => {
-                local.model.setVisibility({ providerID: provider.id, modelID }, !isVisible)
-              },
-            } as DialogSelectOption<{ providerID: string; modelID: string }>
+            } as SelectItem<{ providerID: string; modelID: string }>
           }),
         ),
       ),
     )
 
     if (needle) {
-      // Simple filter by title/category since we manage skipFilter ourselves
       const lower = needle.toLowerCase()
       return allModels.filter(
-        (opt) => opt.title.toLowerCase().includes(lower) || (opt.category ?? "").toLowerCase().includes(lower),
+        (item) => item.label.toLowerCase().includes(lower) || (item.category ?? "").toLowerCase().includes(lower),
       )
     }
 
@@ -67,13 +64,14 @@ export function DialogManageModels(props: { onBack?: () => void; onClose?: () =>
   }, [query, providers, local.model, theme])
 
   return (
-    <DialogSelect<{ providerID: string; modelID: string }>
+    <SelectPane<{ providerID: string; modelID: string }>
       title="Manage Models"
       placeholder="Filter models..."
-      options={options}
+      items={options}
       skipFilter={true}
       onFilter={setQuery}
-      onEscape={props.onBack}
+      onSelect={(item) => local.model.setVisibility(item.value, !local.model.visible(item.value))}
+      onClose={props.onBack}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter toggle · Esc back</Text>}
     />
   )

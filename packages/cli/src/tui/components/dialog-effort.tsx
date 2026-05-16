@@ -3,7 +3,7 @@ import type React from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 type Props = {
   onClose: () => void
@@ -15,25 +15,25 @@ export function DialogEffort({ onClose }: Props): React.ReactNode {
   const toast = useToast()
 
   const options = [
-    { value: "low", title: "Low", description: "Fast, concise responses" },
-    { value: "medium", title: "Medium", description: "Balanced quality and speed" },
-    { value: "high", title: "High", description: "Thorough, detailed responses" },
+    { key: "low", value: "low", label: "Low", description: "Fast, concise responses" },
+    { key: "medium", value: "medium", label: "Medium", description: "Balanced quality and speed" },
+    { key: "high", value: "high", label: "High", description: "Thorough, detailed responses" },
   ]
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Set Effort Level"
-      options={options}
-      onSelect={async (option: { value: string }) => {
+      items={options}
+      onSelect={async (item) => {
         await sdk.client.project.config.update({
           projectID: sdk.projectID,
           // biome-ignore lint/suspicious/noExplicitAny: SDK method not typed yet
-          config: { effort: option.value } as any,
+          config: { effort: item.value } as any,
         })
-        toast.show({ variant: "success", message: `Effort set to ${option.value}` })
+        toast.show({ variant: "success", message: `Effort set to ${item.value}` })
         onClose()
       }}
-      onEscape={onClose}
+      onClose={onClose}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · Esc cancel</Text>}
     />
   )

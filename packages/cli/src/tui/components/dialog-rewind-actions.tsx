@@ -4,8 +4,9 @@ import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
+import type { SelectItem } from "../primitives/types"
 import { useAppActions } from "../state"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 type Props = {
   sessionID: string
@@ -24,34 +25,37 @@ export function DialogRewindActions({ sessionID, messageID, turnLabel, onComplet
   const { theme } = useTheme()
   const [loading, setLoading] = useState(false)
 
-  const options: DialogSelectOption<ActionValue>[] = [
+  const options: SelectItem<ActionValue>[] = [
     {
-      title: "Revert conversation",
+      key: "revert",
+      label: "Revert conversation",
       description: `Revert to ${turnLabel}. Future messages will be preserved in history.`,
       value: "revert",
     },
     {
-      title: "Fork from here",
+      key: "fork",
+      label: "Fork from here",
       description: `Create a new child session branching off from ${turnLabel}.`,
       value: "fork",
     },
     {
-      title: "Cancel",
+      key: "cancel",
+      label: "Cancel",
       value: "cancel",
       description: "Return to time travel.",
     },
   ]
 
   const handleSelect = useCallback(
-    async (option: DialogSelectOption<ActionValue>) => {
-      if (option.value === "cancel") {
+    async (item: SelectItem<ActionValue>) => {
+      if (item.value === "cancel") {
         onComplete()
         return
       }
 
       setLoading(true)
       try {
-        if (option.value === "revert") {
+        if (item.value === "revert") {
           await sdk.client.project.session.revert({
             projectID: sdk.projectID,
             sessionID,
@@ -63,7 +67,7 @@ export function DialogRewindActions({ sessionID, messageID, turnLabel, onComplet
           })
           sessionActions.sync(sessionID)
           onComplete()
-        } else if (option.value === "fork") {
+        } else if (item.value === "fork") {
           const res = await sdk.client.project.session.fork({
             projectID: sdk.projectID,
             sessionID,
@@ -93,11 +97,11 @@ export function DialogRewindActions({ sessionID, messageID, turnLabel, onComplet
   )
 
   return (
-    <DialogSelect
+    <SelectPane
       title={loading ? "Working..." : `Action for ${turnLabel}`}
-      options={options}
+      items={options}
       onSelect={handleSelect}
-      onEscape={onComplete}
+      onClose={onComplete}
       skipFilter={true}
       headerEnd={loading ? <Text color={theme.info as Color}>Loading...</Text> : undefined}
     />

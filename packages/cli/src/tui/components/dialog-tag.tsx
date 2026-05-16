@@ -1,8 +1,9 @@
 import { Box, type Color, Text } from "@liteai/ink"
+import type React from "react"
 import { useMemo, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 interface DialogTagProps {
   sessionID: string
@@ -19,18 +20,21 @@ export function DialogTag(props: DialogTagProps) {
   const options = useMemo(() => {
     const matchedTags = props.allTags.filter((t) => !props.existingTags.includes(t))
 
-    const items: Array<{ title: string; value: string; category: string; bg?: string }> = matchedTags.map((t) => ({
-      title: `#${t}`,
-      value: t,
-      category: "Existing Tags",
-    }))
+    const items: Array<{ key: string; label: string; value: string; category: string; gutter?: React.ReactNode }> =
+      matchedTags.map((t) => ({
+        key: t,
+        label: `#${t}`,
+        value: t,
+        category: "Existing Tags",
+      }))
 
     if (filter && !props.allTags.includes(filter) && !props.existingTags.includes(filter)) {
       items.unshift({
-        title: `Create tag "#${filter}"`,
+        key: `__new__${filter}`,
+        label: `Create tag "#${filter}"`,
         value: filter,
         category: "New Tag",
-        bg: theme.success as string,
+        gutter: <Text color={theme.success as Color}>+</Text>,
       })
     }
 
@@ -38,13 +42,13 @@ export function DialogTag(props: DialogTagProps) {
   }, [props.allTags, props.existingTags, filter, theme.success])
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Add Tag"
       placeholder="Type a new tag or select an existing one..."
-      options={options}
+      items={options}
       onFilter={setFilter}
-      onSelect={(opt) => {
-        const newTags = [...props.existingTags, opt.value]
+      onSelect={(item) => {
+        const newTags = [...props.existingTags, item.value]
         sdk.client.project.session.update({
           projectID: sdk.projectID,
           sessionID: props.sessionID,
@@ -52,6 +56,7 @@ export function DialogTag(props: DialogTagProps) {
         })
         props.onClose()
       }}
+      onClose={props.onClose}
       header={
         props.existingTags.length > 0 ? (
           <Box flexDirection="row" gap={1}>

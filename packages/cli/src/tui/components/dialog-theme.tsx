@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react"
 import { useTheme } from "../context/theme"
-import type { DialogSelectRef } from "../ui/dialog-select"
-import { DialogSelect } from "../ui/dialog-select"
+import type { SelectPaneRef } from "../ui/select-pane"
+import { SelectPane } from "../ui/select-pane"
 
 type Props = {
   onClose: () => void
@@ -14,13 +14,14 @@ export function DialogTheme({ onClose }: Props) {
     return all()
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
       .map((value) => ({
-        title: value,
+        key: value,
+        label: value,
         value: value,
       }))
   }, [all])
 
   const confirmed = useRef(false)
-  const selectRef = useRef<DialogSelectRef<string>>(null)
+  const selectRef = useRef<SelectPaneRef<string>>(null)
   const initial = useRef(selected)
 
   useEffect(() => {
@@ -30,20 +31,20 @@ export function DialogTheme({ onClose }: Props) {
   }, [set])
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Themes"
-      options={options}
+      items={options}
       current={initial.current}
       ref={selectRef}
-      onMove={(opt) => {
-        set(opt.value)
+      onHighlight={(item) => {
+        set(item.value)
       }}
-      onSelect={(opt) => {
-        set(opt.value)
+      onSelect={(item) => {
+        set(item.value)
         confirmed.current = true
         onClose()
       }}
-      onEscape={onClose}
+      onClose={onClose}
       onFilter={(query) => {
         if (query.length === 0) {
           set(initial.current)

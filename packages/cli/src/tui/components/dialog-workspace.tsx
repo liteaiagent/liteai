@@ -6,8 +6,9 @@ import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { selectSessions, useAppActions, useAppState } from "../state"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 import { DialogSessionList } from "./dialog-session-list"
 
 // openWorkspace function port
@@ -86,7 +87,8 @@ export function DialogWorkspaceCreate(props: {
     if (type) {
       return [
         {
-          title: `Creating ${type} workspace...`,
+          key: "creating",
+          label: `Creating ${type} workspace...`,
           value: "creating",
           description: "This can take a while for remote environments",
         },
@@ -94,7 +96,8 @@ export function DialogWorkspaceCreate(props: {
     }
     return [
       {
-        title: "Worktree",
+        key: "worktree",
+        label: "Worktree",
         value: "worktree",
         description: "Create a local git worktree",
       },
@@ -127,15 +130,15 @@ export function DialogWorkspaceCreate(props: {
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title={creating ? "Creating Workspace" : "New Workspace"}
       skipFilter={true}
-      options={options}
-      onSelect={(option) => {
-        if (option.value === "creating") return
-        void createWorkspace(option.value)
+      items={options}
+      onSelect={(item) => {
+        if (item.value === "creating") return
+        void createWorkspace(item.value)
       }}
-      onEscape={props.onClose}
+      onClose={props.onClose}
     />
   )
 }
@@ -150,7 +153,7 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
   const toast = useToast()
   const { theme } = useTheme()
   const [toDelete, setToDelete] = useState<string | undefined>()
-  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
+  const [selectedOption, setSelectedOption] = useState<SelectItem<string> | undefined>()
   const [counts, setCounts] = useState<Record<string, number | null | undefined>>({})
 
   type ViewState =
@@ -251,7 +254,8 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
     () =>
       [
         {
-          title: "Local",
+          key: "__local__",
+          label: "Local",
           value: "__local__",
           category: "Workspace",
           description: "Use the local machine",
@@ -260,7 +264,8 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
         ...workspaceList.map((workspace) => {
           const count = counts[workspace.id]
           return {
-            title: toDelete === workspace.id ? `Delete ${workspace.id}? Press ctrl+d again` : workspace.id,
+            key: workspace.id,
+            label: toDelete === workspace.id ? `Delete ${workspace.id}? Press ctrl+d again` : workspace.id,
             value: workspace.id,
             category: workspace.type,
             description: workspace.branch ? `Branch ${workspace.branch}` : undefined,
@@ -273,12 +278,13 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
           }
         }),
         {
-          title: "+ New workspace",
+          key: "__create__",
+          label: "+ New workspace",
           value: "__create__",
           category: "Actions",
           description: "Create a new workspace",
         },
-      ] as DialogSelectOption<string>[],
+      ] as SelectItem<string>[],
     [workspaceList, counts, localCount, toDelete],
   )
 
@@ -336,25 +342,25 @@ export function DialogWorkspaceList(props: { onClose?: () => void }) {
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Workspaces"
       skipFilter={true}
-      options={options}
+      items={options}
       current={currentWorkspaceID}
-      onMove={(option) => {
+      onHighlight={(item) => {
         setToDelete(undefined)
-        setSelectedOption(option)
+        setSelectedOption(item)
       }}
-      onSelect={(option) => {
+      onSelect={(item) => {
         setToDelete(undefined)
-        if (option.value === "__create__") {
+        if (item.value === "__create__") {
           setView({ type: "create" })
           return
         }
-        void selectWorkspace(option.value)
+        void selectWorkspace(item.value)
       }}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+d delete</Text>}
-      onEscape={props.onClose}
+      onClose={props.onClose}
     />
   )
 }

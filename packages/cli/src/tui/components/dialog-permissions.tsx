@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { useSession } from "../context/session"
 import { useTheme } from "../context/theme"
 import { selectPermissions, useAppState } from "../state"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 type Props = {
   onClose: () => void
@@ -29,18 +29,19 @@ export function DialogPermissions({ onClose }: Props): React.ReactNode {
   }, [permissions])
 
   const options = grouped.map(([tool, perms]) => ({
+    key: tool,
     value: tool,
-    title: tool,
+    label: tool,
     description: `${perms.length} pending`,
   }))
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Permissions"
       header={<Text color={theme.textMuted as Color}>{permissions.length} pending approvals</Text>}
-      options={options}
+      items={options}
       onSelect={() => {}} // View-only for now
-      onEscape={onClose}
+      onClose={onClose}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Esc close</Text>}
     />
   )

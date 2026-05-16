@@ -25,6 +25,17 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+t": "app:toggleTodos",
       "ctrl+r": "history:search",
       "meta+j": "app:toggleTerminal",
+      // Tab management
+      "ctrl+w": "global:closeTab",
+      "meta+1": "global:tab1",
+      "meta+2": "global:tab2",
+      "meta+3": "global:tab3",
+      "meta+4": "global:tab4",
+      "meta+5": "global:tab5",
+      "meta+6": "global:tab6",
+      "meta+7": "global:tab7",
+      "meta+8": "global:tab8",
+      "meta+9": "global:tab9",
     },
   },
   {
@@ -105,6 +116,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "shift+tab": "tabs:previous",
       right: "tabs:next",
       left: "tabs:previous",
+      escape: "global:close",
     },
   },
   {
@@ -262,6 +274,15 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "7": "select:digit7",
       "8": "select:digit8",
       "9": "select:digit9",
+      // Direct-action shortcuts (e.g. dialog-rewind f=fork, r=revert)
+      f: "select:directFork",
+      r: "select:directRevert",
+      // Session-list specific actions
+      "ctrl+d": "select:delete",
+      "ctrl+r": "select:rename",
+      "ctrl+t": "select:tag",
+      "ctrl+a": "select:archive",
+      "ctrl+u": "select:toggleArchive",
     },
   },
   {
@@ -269,6 +290,10 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
     bindings: {
       space: "plugin:toggle",
       i: "plugin:install",
+      // Tab cycling within the plugin dialog
+      right: "plugin:nextTab",
+      left: "plugin:previousTab",
+      escape: "plugin:close",
     },
   },
 ]

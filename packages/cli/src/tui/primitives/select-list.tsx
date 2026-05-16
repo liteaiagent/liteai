@@ -25,10 +25,16 @@ function DefaultSelectListItem<T>({
 
   return (
     <Box alignItems="flex-start">
-      {/* Selection indicator */}
-      <Box minWidth={2} flexShrink={0}>
-        <Text color={context.isActive ? (theme.primary as Color) : undefined}>{context.isActive ? "●" : " "}</Text>
-      </Box>
+      {/* Leading gutter (spinner, icon, tab number) */}
+      {item.gutter ? (
+        <Box minWidth={2} flexShrink={0}>
+          {item.gutter}
+        </Box>
+      ) : (
+        <Box minWidth={2} flexShrink={0}>
+          <Text color={context.isActive ? (theme.primary as Color) : undefined}>{context.isActive ? "●" : " "}</Text>
+        </Box>
+      )}
 
       {/* Number column */}
       {numberText && (
@@ -46,6 +52,17 @@ function DefaultSelectListItem<T>({
           <Text color={(context.isActive ? context.titleColor : theme.textMuted) as Color}>{item.description}</Text>
         )}
       </Box>
+
+      {/* Trailing footer */}
+      {item.footer && (
+        <Box flexShrink={0} marginLeft={1}>
+          {typeof item.footer === "string" ? (
+            <Text color={(context.isActive ? context.titleColor : theme.textMuted) as Color}>{item.footer}</Text>
+          ) : (
+            item.footer
+          )}
+        </Box>
+      )}
     </Box>
   )
 }

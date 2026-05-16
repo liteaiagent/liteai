@@ -5,10 +5,10 @@ import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { useAppActions, useAppState } from "../state"
 import { DialogPrompt } from "../ui/dialog-prompt"
-import type { DialogSelectOption } from "../ui/dialog-select"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 import { DialogModel } from "./dialog-model"
 
 /** Discriminated union describing the active sub-view within the provider dialog. */
@@ -46,7 +46,8 @@ export function useProviderDisplayOptions() {
     return sorted.map(
       (provider) =>
         ({
-          title: provider.name,
+          key: provider.id,
+          label: provider.name,
           value: provider.id,
           description: (
             {
@@ -56,7 +57,7 @@ export function useProviderDisplayOptions() {
             } as Record<string, string>
           )[provider.id],
           category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
-        }) as DialogSelectOption<string>,
+        }) as SelectItem<string>,
     )
   }, [provider_next?.all])
 }
@@ -131,16 +132,17 @@ function MethodRunner({
 
   if (prompt.type === "select") {
     return (
-      <DialogSelect
+      <SelectPane
         title={prompt.message}
-        options={prompt.options.map((o: { label: string; value: string; hint?: string }) => ({
-          title: o.label,
+        items={prompt.options.map((o: { label: string; value: string; hint?: string }) => ({
+          key: o.value,
+          label: o.label,
           value: o.value,
           description: o.hint,
         }))}
-        onEscape={onClose}
-        onSelect={(option) => {
-          setInputs((prev) => ({ ...prev, [prompt.key]: option.value }))
+        onClose={onClose}
+        onSelect={(item) => {
+          setInputs((prev) => ({ ...prev, [prompt.key]: item.value }))
           setStep((s) => s + 1)
         }}
       />
@@ -167,7 +169,7 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
   const { theme } = useTheme()
   const toast = useToast()
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
-  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
+  const [selectedOption, setSelectedOption] = useState<SelectItem<string> | undefined>()
 
   const [view, setView] = useState<ProviderViewState>({ type: "list" })
 
@@ -180,11 +182,12 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
       .map(
         (p) =>
           ({
-            title: p.name,
+            key: p.id,
+            label: p.name,
             value: p.id,
             description: disconnecting === p.id ? "(disconnecting...)" : "✓ connected",
             category: "Connected",
-          }) as DialogSelectOption<string>,
+          }) as SelectItem<string>,
       )
   }, [provider_next?.all, connectedSet, disconnecting])
 
@@ -200,7 +203,8 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
     return sorted.map(
       (provider) =>
         ({
-          title: provider.name,
+          key: provider.id,
+          label: provider.name,
           value: provider.id,
           description: (
             {
@@ -210,7 +214,7 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
             } as Record<string, string>
           )[provider.id],
           category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
-        }) as DialogSelectOption<string>,
+        }) as SelectItem<string>,
     )
   }, [provider_next?.all, connectedSet])
 
@@ -240,7 +244,7 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
       "select:delete": () => {
         if (!selectedOption) return
         if (!connectedSet.has(selectedOption.value)) return
-        disconnect(selectedOption.value, selectedOption.title)
+        disconnect(selectedOption.value, selectedOption.label)
       },
     },
     { context: "Select" },
@@ -294,15 +298,16 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
 
   if (view.type === "select-method") {
     return (
-      <DialogSelect
+      <SelectPane
         title="Select auth method"
-        options={view.methods.map((x, index) => ({
-          title: x.label,
+        items={view.methods.map((x, index) => ({
+          key: String(index),
+          label: x.label,
           value: String(index),
         }))}
-        onEscape={() => setView({ type: "list" })}
-        onSelect={async (option) => {
-          const index = Number.parseInt(option.value, 10)
+        onClose={() => setView({ type: "list" })}
+        onSelect={async (item) => {
+          const index = Number.parseInt(item.value, 10)
           const method = view.methods[index]
           if (method.type === "oauth") {
             setView({ type: "method", providerID: view.providerID, methodIndex: index, method })
@@ -315,19 +320,19 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Providers"
-      options={allOptions}
-      onMove={setSelectedOption}
-      onEscape={_onClose}
+      items={allOptions}
+      onHighlight={setSelectedOption}
+      onClose={_onClose}
       footerContent={
         connectedOptions.length > 0 ? (
           <Text color={theme.textMuted as Color}>↑↓ navigate · Enter connect · ctrl+d disconnect</Text>
         ) : undefined
       }
-      onSelect={(option) => {
-        if (connectedSet.has(option.value)) return
-        connectProvider(option.value)
+      onSelect={(item) => {
+        if (connectedSet.has(item.value)) return
+        connectProvider(item.value)
       }}
     />
   )

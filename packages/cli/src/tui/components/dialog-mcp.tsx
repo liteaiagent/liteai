@@ -6,8 +6,9 @@ import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useNavigation } from "../hooks/use-navigation"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { selectMcpConfig, useAppState } from "../state"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 function Status(props: { enabled: boolean; loading: boolean; isFailed?: boolean }) {
   const { theme } = useTheme()
@@ -38,7 +39,7 @@ export function DialogMcp({ onClose }: { onClose: () => void }) {
   const navigation = useNavigation()
   const { theme } = useTheme()
   const [loading, setLoading] = useState<string | null>(null)
-  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
+  const [selectedOption, setSelectedOption] = useState<SelectItem<string> | undefined>()
 
   const options = useMemo(() => {
     const mcpData = mcp
@@ -55,8 +56,9 @@ export function DialogMcp({ onClose }: { onClose: () => void }) {
       }
 
       return {
+        key: name,
         value: name,
-        title: name,
+        label: name,
         description: desc,
         footer: <Status enabled={local.mcp.isEnabled(name)} loading={loading === name} isFailed={isFailed} />,
         category: "User MCPs",
@@ -84,7 +86,7 @@ export function DialogMcp({ onClose }: { onClose: () => void }) {
   )
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Manage MCP servers"
       header={<Text color={theme.textMuted as Color}>{Object.keys(mcp ?? {}).length} servers</Text>}
       footerContent={
@@ -92,12 +94,12 @@ export function DialogMcp({ onClose }: { onClose: () => void }) {
           ↑↓ to navigate · Enter to confirm · Space to toggle · Esc to cancel
         </Text>
       }
-      options={options}
-      onMove={setSelectedOption}
-      onSelect={(option) => {
-        navigation.open(<McpDetail name={option.value} onClose={onClose} />)
+      items={options}
+      onHighlight={(item) => setSelectedOption(item)}
+      onSelect={(item) => {
+        navigation.open(<McpDetail name={item.value} onClose={onClose} />)
       }}
-      onEscape={onClose}
+      onClose={onClose}
     />
   )
 }
@@ -136,31 +138,36 @@ function McpDetail(props: { name: string; onClose: () => void }) {
   }, [sdk, props.name])
 
   const options = useMemo(
-    () => [
-      ...(mcpStatus?.status === "needs_auth" || mcpStatus?.status === "needs_client_registration"
-        ? [
-            {
-              value: "authenticate",
-              title: "Authenticate",
-              disabled: false,
-            },
-          ]
-        : []),
-      {
-        value: "tools",
-        title: "View tools",
-        disabled: !enabled,
-      },
-      {
-        value: "reconnect",
-        title: "Reconnect",
-        disabled: !enabled,
-      },
-      {
-        value: "toggle",
-        title: enabled ? "Disable" : "Enable",
-      },
-    ],
+    () =>
+      [
+        ...(mcpStatus?.status === "needs_auth" || mcpStatus?.status === "needs_client_registration"
+          ? [
+              {
+                key: "authenticate",
+                value: "authenticate",
+                label: "Authenticate",
+                disabled: false,
+              },
+            ]
+          : []),
+        {
+          key: "tools",
+          value: "tools",
+          label: "View tools",
+          disabled: !enabled,
+        },
+        {
+          key: "reconnect",
+          value: "reconnect",
+          label: "Reconnect",
+          disabled: !enabled,
+        },
+        {
+          key: "toggle",
+          value: "toggle",
+          label: enabled ? "Disable" : "Enable",
+        },
+      ] as SelectItem<string>[],
     [enabled, mcpStatus],
   )
 
@@ -231,14 +238,14 @@ function McpDetail(props: { name: string; onClose: () => void }) {
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title={`${props.name} MCP Server`}
       skipFilter={true}
       header={header()}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ to navigate · Enter to select</Text>}
-      options={options}
-      onSelect={async (option) => {
-        if (option.value === "authenticate") {
+      items={options}
+      onSelect={async (item) => {
+        if (item.value === "authenticate") {
           // biome-ignore lint/suspicious/noExplicitAny: API shape not in SDK
           const authUrl = (mcpStatus as any)?.authUrl
           if (authUrl) {
@@ -246,7 +253,7 @@ function McpDetail(props: { name: string; onClose: () => void }) {
             const args = process.platform === "win32" ? ["/c", "start", "", authUrl] : [authUrl]
             Bun.spawn([cmd, ...args], { stdout: "ignore", stderr: "ignore" })
           }
-        } else if (option.value === "toggle") {
+        } else if (item.value === "toggle") {
           if (loading !== null) return
           setLoading("toggle")
           try {
@@ -257,7 +264,7 @@ function McpDetail(props: { name: string; onClose: () => void }) {
           } finally {
             setLoading(null)
           }
-        } else if (option.value === "reconnect") {
+        } else if (item.value === "reconnect") {
           if (loading !== null) return
           setLoading("reconnect")
           try {
@@ -282,7 +289,7 @@ function McpDetail(props: { name: string; onClose: () => void }) {
           } finally {
             setLoading(null)
           }
-        } else if (option.value === "tools") {
+        } else if (item.value === "tools") {
           navigation.open(
             <McpToolsList name={props.name} onBack={() => navigation.open(<DialogMcp onClose={props.onClose} />)} />,
           )
@@ -331,17 +338,20 @@ function McpToolsList(props: { name: string; onBack: () => void }) {
 
   const options = useMemo(() => {
     return tools.map((t) => ({
-      title: typeof t === "string" ? t : t.name,
+      key: typeof t === "string" ? t : t.name,
+      label: typeof t === "string" ? t : t.name,
       value: typeof t === "string" ? t : t.name,
       description: typeof t === "string" ? undefined : t.description,
     }))
   }, [tools])
 
   return (
-    <DialogSelect
+    <SelectPane
       title={`${props.name} Tools`}
-      options={options}
+      items={options}
+      onSelect={() => {}}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ to navigate · Esc to back</Text>}
+      onClose={props.onBack}
     />
   )
 }

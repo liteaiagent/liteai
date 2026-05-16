@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { DialogPrompt } from "../ui/dialog-prompt"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 type Tab = "discover" | "installed" | "marketplaces" | "errors"
 
@@ -99,20 +100,14 @@ export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
     setTab(tabs[(idx + dir + tabs.length) % tabs.length])
   }
 
-  useInput((_char, _key, evt) => {
-    if (evt?.keypress?.name === "escape") {
-      _onClose()
-      return
-    }
-    if (evt?.keypress?.name === "left") {
-      cycleTab(-1)
-      return
-    }
-    if (evt?.keypress?.name === "right") {
-      cycleTab(1)
-      return
-    }
-  })
+  useKeybindings(
+    {
+      "tabs:previous": () => cycleTab(-1),
+      "tabs:next": () => cycleTab(1),
+      "global:close": _onClose,
+    },
+    { context: "Tabs" },
+  )
 
   const header = (
     <Box flexDirection="row" gap={2} paddingBottom={1}>
@@ -244,8 +239,9 @@ function DiscoverTab(props: {
 
     if (!selectedMarketplace) {
       return mps.map((m) => ({
+        key: m.id,
         value: m.id,
-        title: m.name,
+        label: m.name,
         description:
           typeof m.source === "string"
             ? m.source
@@ -253,12 +249,13 @@ function DiscoverTab(props: {
               ? ((m.source as { repo?: string; url?: string }).repo ?? (m.source as { url?: string }).url ?? "")
               : "",
         category: "Marketplaces",
-      })) as DialogSelectOption<string>[]
+      })) as SelectItem<string>[]
     }
 
     return allPlugins.map((p) => ({
+      key: `${p.marketplace}::${p.name}`,
       value: `${p.marketplace}::${p.name}`,
-      title: p.name,
+      label: p.name,
       description: p.description ?? "",
       footer: p.isInstalled ? (
         <Text color={props.theme.success as Color}>✓ installed</Text>
@@ -266,7 +263,7 @@ function DiscoverTab(props: {
         <Text color={props.theme.textMuted as Color}>○ not installed</Text>
       ),
       category: p.marketplaceName,
-    })) as DialogSelectOption<string>[]
+    })) as SelectItem<string>[]
   }, [marketplaces, selectedMarketplace, allPlugins, props.theme])
 
   const [installing, setInstalling] = useState<string | null>(null)
@@ -288,23 +285,23 @@ function DiscoverTab(props: {
           <Text color={props.theme.textMuted as Color}>← Back to marketplaces</Text>
         </Box>
       )}
-      <DialogSelect
+      <SelectPane
         title={
           selectedMarketplace
             ? `Discover plugins · ${(marketplaces ?? []).find((m) => m.id === selectedMarketplace)?.name ?? selectedMarketplace}`
             : "Discover plugins"
         }
         placeholder="Search..."
-        options={options}
+        items={options}
         footerContent={<Text color={props.theme.textMuted as Color}>Enter to install · Esc to back</Text>}
-        onSelect={async (opt) => {
+        onSelect={async (item) => {
           if (!selectedMarketplace) {
-            setSelectedMarketplace(opt.value as string)
+            setSelectedMarketplace(item.value as string)
             return
           }
-          const [marketplace, name] = (opt.value as string).split("::")
+          const [marketplace, name] = (item.value as string).split("::")
           if (installing) return
-          setInstalling(opt.value as string)
+          setInstalling(item.value as string)
           await props.sdk.fetch(
             `${props.sdk.url}/plugin/marketplace/${encodeURIComponent(marketplace)}/install/${encodeURIComponent(name)}`,
             { method: "POST" },
@@ -312,7 +309,7 @@ function DiscoverTab(props: {
           setInstalling(null)
           props.onInstall()
         }}
-        onEscape={() => {
+        onClose={() => {
           if (selectedMarketplace) setSelectedMarketplace(null)
         }}
       />
@@ -331,8 +328,9 @@ function InstalledTab(props: {
   const options = useMemo(
     () =>
       props.plugins.map((p) => ({
+        key: p.id,
         value: p.id,
-        title: p.name,
+        label: p.name,
         description: p.marketplace === "__local__" ? "local" : p.marketplace,
         footer: p.enabled ? (
           <Text color={props.theme.success as Color}>○ enabled</Text>
@@ -340,11 +338,11 @@ function InstalledTab(props: {
           <Text color={props.theme.textMuted as Color}>○ disabled</Text>
         ),
         category: p.marketplace === "__local__" ? "Local" : "User",
-      })) as DialogSelectOption<string>[],
+      })) as SelectItem<string>[],
     [props.plugins, props.theme],
   )
 
-  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
+  const [selectedOption, setSelectedOption] = useState<SelectItem<string> | undefined>()
 
   useKeybindings(
     {
@@ -371,14 +369,14 @@ function InstalledTab(props: {
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Installed plugins"
       placeholder="Search..."
-      options={options}
+      items={options}
       footerContent={
         <Text color={props.theme.textMuted as Color}>Space to toggle · ctrl+d to uninstall · Esc to back</Text>
       }
-      onMove={setSelectedOption}
+      onHighlight={setSelectedOption}
       onSelect={() => {}}
     />
   )
@@ -400,8 +398,9 @@ function MarketplacesTab(props: {
     () =>
       [
         {
+          key: "__add__",
           value: "__add__",
-          title: "+ Add Marketplace",
+          label: "+ Add Marketplace",
           category: "",
         },
         ...props.marketplaces.map((m) => {
@@ -412,17 +411,18 @@ function MarketplacesTab(props: {
                 ? (m.source as { repo: string }).repo
                 : (m.source as { url: string }).url
           return {
+            key: m.id,
             value: m.id,
-            title: m.name,
+            label: m.name,
             description: sourceTxt,
             category: "Installed",
           }
         }),
-      ] as DialogSelectOption<string>[],
+      ] as SelectItem<string>[],
     [props.marketplaces],
   )
 
-  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
+  const [selectedOption, setSelectedOption] = useState<SelectItem<string> | undefined>()
 
   useKeybindings(
     {
@@ -484,22 +484,22 @@ function MarketplacesTab(props: {
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Manage marketplaces"
       placeholder="Search..."
-      options={options}
+      items={options}
       footerContent={
         <Text color={props.theme.textMuted as Color}>
           Enter to select · ctrl+u to update · Del to remove · Esc to go back
         </Text>
       }
-      onMove={setSelectedOption}
-      onSelect={(opt) => {
-        if (opt.value === "__add__") {
+      onHighlight={setSelectedOption}
+      onSelect={(item) => {
+        if (item.value === "__add__") {
           setView({ type: "add" })
         }
       }}
-      onEscape={props.onClose}
+      onClose={props.onClose}
     />
   )
 }

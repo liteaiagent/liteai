@@ -16,9 +16,9 @@ import { useToast } from "../context/toast"
 import { useTuiConfig } from "../context/tui-config"
 import { useNavigation } from "../hooks/use-navigation"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { selectProviders, useAppState } from "../state"
-import type { DialogSelectOption } from "../ui/dialog-select"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 import { Tab, Tabs } from "../ui/tabs"
 import { DialogMcp } from "./dialog-mcp"
 import { DialogModel } from "./dialog-model"
@@ -75,99 +75,104 @@ function ConfigTab({ onClose }: { onClose: () => void }) {
     ? (currentProvider?.models[currentModel.modelID]?.name ?? currentModel.modelID)
     : "Not set"
 
-  const options: DialogSelectOption<string>[] = useMemo(
+  // Map config setting IDs to navigation actions
+  const actionMap = useMemo<Record<string, () => void>>(
+    () => ({
+      model: () => navigation.open(<DialogModel onClose={onClose} />),
+      provider: () => navigation.open(<DialogProvider onClose={onClose} />),
+      theme: () => navigation.open(<DialogTheme onClose={onClose} />),
+      errorVerbosity: () => {
+        const next = config.errorVerbosity === "low" ? "full" : "low"
+        config.update({ errorVerbosity: next })
+        toast.show({ variant: "success", message: `Error verbosity: ${next}` })
+      },
+      diff_style: () => {
+        const next = config.diff_style === "stacked" ? "auto" : "stacked"
+        config.update({ diff_style: next })
+        toast.show({ variant: "success", message: `Diff style: ${next}` })
+      },
+      mcp: () => navigation.open(<DialogMcp onClose={onClose} />),
+      plugins: () => navigation.open(<DialogPlugin onClose={onClose} />),
+      status: () => navigation.open(<DialogStatus onClose={onClose} />),
+    }),
+    [navigation, onClose, config, toast],
+  )
+
+  const options: SelectItem<string>[] = useMemo(
     () => [
       // --- Session ---
       {
+        key: "model",
         value: "model",
-        title: "Model",
+        label: "Model",
         description: currentModelName,
         category: "Session",
-        onSelect: () => navigation.open(<DialogModel onClose={onClose} />),
       },
       {
+        key: "provider",
         value: "provider",
-        title: "Providers",
+        label: "Providers",
         description: `${providerConnected.length} connected`,
         category: "Session",
-        onSelect: () => navigation.open(<DialogProvider onClose={onClose} />),
       },
 
       // --- Appearance ---
       {
+        key: "theme",
         value: "theme",
-        title: "Theme",
+        label: "Theme",
         description: config.theme ?? "default",
         category: "Appearance",
-        onSelect: () => navigation.open(<DialogTheme onClose={onClose} />),
       },
       {
+        key: "errorVerbosity",
         value: "errorVerbosity",
-        title: "Error Verbosity",
+        label: "Error Verbosity",
         description: config.errorVerbosity ?? "full",
         category: "Appearance",
-        onSelect: () => {
-          const next = config.errorVerbosity === "low" ? "full" : "low"
-          config.update({ errorVerbosity: next })
-          toast.show({ variant: "success", message: `Error verbosity: ${next}` })
-        },
       },
       {
+        key: "diff_style",
         value: "diff_style",
-        title: "Diff Style",
+        label: "Diff Style",
         description: config.diff_style ?? "auto",
         category: "Appearance",
-        onSelect: () => {
-          const next = config.diff_style === "stacked" ? "auto" : "stacked"
-          config.update({ diff_style: next })
-          toast.show({ variant: "success", message: `Diff style: ${next}` })
-        },
       },
 
       // --- Configuration ---
       {
+        key: "mcp",
         value: "mcp",
-        title: "MCP Servers",
+        label: "MCP Servers",
         description: `${Object.keys(mcpStatus).length} servers`,
         category: "Configuration",
-        onSelect: () => navigation.open(<DialogMcp onClose={onClose} />),
       },
       {
+        key: "plugins",
         value: "plugins",
-        title: "Plugins",
+        label: "Plugins",
         category: "Configuration",
-        onSelect: () => navigation.open(<DialogPlugin onClose={onClose} />),
       },
 
       // --- Diagnostics ---
       {
+        key: "status",
         value: "status",
-        title: "System Status",
+        label: "System Status",
         description: "MCP, LSP, formatters",
         category: "Diagnostics",
-        onSelect: () => navigation.open(<DialogStatus onClose={onClose} />),
       },
     ],
-    [
-      currentModelName,
-      providerConnected.length,
-      config.theme,
-      config.errorVerbosity,
-      config.diff_style,
-      mcpStatus,
-      navigation,
-      onClose,
-      config,
-      toast,
-    ],
+    [currentModelName, providerConnected.length, config.theme, config.errorVerbosity, config.diff_style, mcpStatus],
   )
 
   return (
-    <DialogSelect<string>
+    <SelectPane<string>
       title="Config"
       placeholder="Search settings..."
-      options={options}
-      onEscape={onClose}
+      items={options}
+      onSelect={(item) => actionMap[item.value]?.()}
+      onClose={onClose}
       footerContent={
         <Text color={theme.textMuted as Color}>↑↓ navigate · Enter open · ← → switch tabs · Esc close</Text>
       }

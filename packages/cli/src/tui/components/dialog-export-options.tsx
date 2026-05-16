@@ -1,7 +1,7 @@
 import { type Color, Text } from "@liteai/ink"
 import React from "react"
 import { useTheme } from "../context/theme"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 type ExportOptions = {
   filename: string
@@ -33,29 +33,32 @@ export function DialogExportOptions(props: Props): React.ReactNode {
   })
 
   const items = [
-    { value: "save", title: "Save to File", description: `Exports to ${options.filename}` },
-    { value: "open", title: "Open in Editor", description: "Opens markdown in your $EDITOR" },
+    { key: "save", value: "save", label: "Save to File", description: `Exports to ${options.filename}` },
+    { key: "open", value: "open", label: "Open in Editor", description: "Opens markdown in your $EDITOR" },
     {
+      key: "thinking",
       value: "thinking",
-      title: `Include Thinking: ${options.thinking ? "Yes" : "No"}`,
+      label: `Include Thinking: ${options.thinking ? "Yes" : "No"}`,
       description: "Include model thinking blocks",
     },
     {
+      key: "tools",
       value: "tools",
-      title: `Include Tools: ${options.toolDetails ? "Yes" : "No"}`,
+      label: `Include Tools: ${options.toolDetails ? "Yes" : "No"}`,
       description: "Include tool call details",
     },
     {
+      key: "metadata",
       value: "metadata",
-      title: `Include Metadata: ${options.assistantMetadata ? "Yes" : "No"}`,
+      label: `Include Metadata: ${options.assistantMetadata ? "Yes" : "No"}`,
       description: "Include token and model info",
     },
   ]
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Export Options"
-      options={items}
+      items={items}
       onSelect={(item: { value: string }) => {
         if (item.value === "save") {
           props.onConfirm({ ...options, openWithoutSaving: false })
@@ -69,6 +72,7 @@ export function DialogExportOptions(props: Props): React.ReactNode {
           setOptions((o) => ({ ...o, assistantMetadata: !o.assistantMetadata }))
         }
       }}
+      onClose={props.onCancel}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter to toggle/export · Esc cancel</Text>}
     />
   )

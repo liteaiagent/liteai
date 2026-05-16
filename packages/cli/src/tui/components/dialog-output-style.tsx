@@ -3,7 +3,8 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useToast } from "../context/toast"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import type { SelectItem } from "../primitives/types"
+import { SelectPane } from "../ui/select-pane"
 
 type StyleInfo = {
   name: string
@@ -54,43 +55,44 @@ export function DialogOutputStyle({ onDone }: Props): React.ReactNode {
     )
   }
 
-  const options: DialogSelectOption<string | null>[] = [
+  const items: SelectItem<string | null>[] = [
     {
-      title: "None (default)",
+      key: "__none__",
+      label: "None (default)",
       value: null,
       description: "Use no custom output style",
     },
     ...styles.map((s) => ({
-      title: s.title,
+      key: s.name,
+      label: s.title,
       value: s.name,
       description: s.description,
     })),
   ]
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Output Style"
       placeholder="Search styles..."
-      options={options}
+      items={items}
       current={activeStyle}
-      onSelect={async (option) => {
+      onSelect={async (item) => {
         try {
-          // Update config via the config PATCH endpoint
           await sdk.fetch(`${sdk.url}/project/${sdk.projectID}/config`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ outputStyle: option.value }),
+            body: JSON.stringify({ outputStyle: item.value }),
           })
           toast.show({
             variant: "success",
-            message: option.value ? `Output style set to "${option.title}"` : "Output style cleared",
+            message: item.value ? `Output style set to "${item.label}"` : "Output style cleared",
           })
         } catch (err) {
           toast.error(err)
         }
         onDone()
       }}
-      onEscape={onDone}
+      onClose={onDone}
     />
   )
 }

@@ -3,7 +3,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 type DiagResult = {
   name: string
@@ -38,16 +38,17 @@ export function DialogDoctor({ onClose }: Props): React.ReactNode {
   const statusIcon = (s: string) => (s === "ok" ? "✓" : s === "warn" ? "⚠" : "✗")
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Doctor — System Diagnostics"
       skipFilter
-      options={results.map((r) => ({
+      items={results.map((r) => ({
+        key: r.name,
         value: r.name,
-        title: `${statusIcon(r.status)} ${r.name}`,
+        label: `${statusIcon(r.status)} ${r.name}`,
         description: r.message,
       }))}
       onSelect={() => {}}
-      onEscape={onClose}
+      onClose={onClose}
       footerContent={
         <Text color={theme.textMuted as Color}>
           {results.filter((r) => r.status === "error").length} errors ·

@@ -6,7 +6,7 @@ import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { useKeybindings } from "../keybindings/use-keybinding"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 import { DialogAgentDetail } from "./dialog-agent-detail"
 import { DialogAgentEditor } from "./dialog-agent-editor"
 
@@ -36,12 +36,12 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
           : 0
 
       list.push({
+        key: agent.name,
         value: agent,
-        title: agent.name,
+        label: agent.name,
         description: `${agent.model?.modelID || "default"} · ${toolCount} tool(s)`,
         category: agent.native ? "Built-in" : "Custom",
         disabled: false,
-        onSelect: () => setView({ type: "detail", agent: agent as Agent }),
       })
     }
     return list
@@ -100,13 +100,14 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Manage Agents"
       current={local.agent.current()}
-      options={options}
+      items={options}
       footerContent={footer}
-      onMove={(opt) => setHovered(opt.value)}
-      onEscape={_onClose}
+      onHighlight={(item) => setHovered(item.value)}
+      onSelect={(item) => setView({ type: "detail", agent: item.value as Agent })}
+      onClose={_onClose}
     />
   )
 }

@@ -6,9 +6,9 @@ import { useLocal } from "../context/local"
 import { useTheme } from "../context/theme"
 import { useNavigation } from "../hooks/use-navigation"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { selectProviders, useAppState } from "../state"
-import type { DialogSelectOption } from "../ui/dialog-select"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 import { DialogProvider, useProviderDisplayOptions } from "./dialog-provider"
 
 export function useConnected() {
@@ -29,7 +29,7 @@ export function DialogModel(props: Props) {
   const { theme } = useTheme()
   const [query, setQuery] = useState("")
   const [selectedOption, setSelectedOption] = useState<
-    DialogSelectOption<{ providerID: string; modelID: string }> | undefined
+    SelectItem<{ providerID: string; modelID: string }> | undefined
   >()
 
   const connected = useConnected()
@@ -53,20 +53,16 @@ export function DialogModel(props: Props) {
         if (!provider) return []
         const model = provider.models[item.modelID]
         if (!model) return []
-        // Respect visibility — hidden models don't appear in picker
         if (!local.model.visible({ providerID: provider.id, modelID: model.id })) return []
         return [
           {
+            key: `${provider.id}:${model.id}`,
             value: { providerID: provider.id, modelID: model.id },
-            title: model.name ?? item.modelID,
+            label: model.name ?? item.modelID,
             description: provider.name,
             category,
             disabled: false,
             footer: model.cost?.input === 0 && provider.id === "google-code-assist" ? "Free" : undefined,
-            onSelect: () => {
-              props.onClose()
-              local.model.set({ providerID: provider.id, modelID: model.id }, { recent: true })
-            },
           },
         ]
       })
@@ -97,8 +93,9 @@ export function DialogModel(props: Props) {
           map(
             ([model, info]) =>
               ({
+                key: `${provider.id}:${model}`,
                 value: { providerID: provider.id, modelID: model },
-                title: info.name ?? model,
+                label: info.name ?? model,
                 // Show ★ for favorites, ↺ for recents in the provider section
                 description: favoriteSet.has(`${provider.id}:${model}`) ? "★" : undefined,
                 category: connected ? provider.name : undefined,
@@ -108,18 +105,14 @@ export function DialogModel(props: Props) {
                 gutter: recentSet.has(`${provider.id}:${model}`) ? (
                   <Text color={theme.textMuted as Color}>↺</Text>
                 ) : undefined,
-                onSelect() {
-                  props.onClose()
-                  local.model.set({ providerID: provider.id, modelID: model }, { recent: true })
-                },
-              }) as DialogSelectOption<{ providerID: string; modelID: string }>,
+              }) as SelectItem<{ providerID: string; modelID: string }>,
           ),
           // Bug 1 fix: Do NOT filter out models that appear in favorites/recents.
           // They now appear in BOTH their provider section AND the special sections,
           // with ★/↺ indicators to show their status.
           sortBy(
             (x) => (x.footer !== "Free" ? 1 : 0),
-            (x) => x.title,
+            (x) => x.label,
           ),
         )
       }),
@@ -128,18 +121,18 @@ export function DialogModel(props: Props) {
     const popularProviders = !connected
       ? providers
           .map((option) => ({
-            ...option,
-            value: { providerID: option.value, modelID: "" }, // Type coercion
+            key: `provider:${option.value}`,
+            value: { providerID: option.value, modelID: "" } as { providerID: string; modelID: string },
+            label: option.label ?? option.value,
             category: "Connect a provider",
-            onSelect: () => navigation.open(<DialogProvider onClose={navigation.close} />),
           }))
           .slice(0, 6)
       : []
 
     if (needle) {
       return [
-        ...fuzzysort.go(needle, providerOptions, { keys: ["title", "category"] }).map((x) => x.obj),
-        ...fuzzysort.go(needle, popularProviders, { keys: ["title"] }).map((x) => x.obj),
+        ...fuzzysort.go(needle, providerOptions, { keys: ["label", "category"] }).map((x) => x.obj),
+        ...fuzzysort.go(needle, popularProviders, { keys: ["label"] }).map((x) => x.obj),
       ]
     }
 
@@ -175,14 +168,22 @@ export function DialogModel(props: Props) {
   )
 
   return (
-    <DialogSelect<{ providerID: string; modelID: string }>
-      options={options}
+    <SelectPane<{ providerID: string; modelID: string }>
+      items={options}
       onFilter={setQuery}
       skipFilter={true}
       title={title}
       current={local.model.current()}
-      onMove={setSelectedOption}
-      onEscape={props.onClose}
+      onHighlight={setSelectedOption}
+      onSelect={(item) => {
+        props.onClose()
+        local.model.set(item.value, { recent: true })
+        // If this is a provider-only entry (popular providers when disconnected), open provider dialog
+        if (!item.value.modelID) {
+          navigation.open(<DialogProvider onClose={navigation.close} />)
+        }
+      }}
+      onClose={props.onClose}
       footerContent={
         <Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · ctrl+a providers · ctrl+f favorite</Text>
       }

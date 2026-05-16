@@ -1,13 +1,15 @@
-import { Box, type Color, Text, useInput } from "@liteai/ink"
+import { Box, type Color, Text } from "@liteai/ink"
 import { Locale } from "@liteai/util/locale"
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import { useRoute } from "../context/route"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
+import { useKeybindings } from "../keybindings/use-keybinding"
+import type { SelectItem } from "../primitives/types"
 import { selectSessions, useAppState } from "../state"
 import { SessionTabStore } from "../state/session-tab-store"
-import { DialogSelect, type DialogSelectOption } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 import { Spinner } from "../ui/spinner"
 import { DialogSessionRename } from "./dialog-session-rename"
 import { DialogTag } from "./dialog-tag"
@@ -40,7 +42,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   const [search, setSearch] = useState("")
   const [activeTag, setActiveTag] = useState<string | undefined>()
   const [tags, setTags] = useState<string[]>([])
-  const [selectedOption, setSelectedOption] = useState<DialogSelectOption<string> | undefined>()
+  const [selectedOption, setSelectedOption] = useState<SelectItem<string> | undefined>()
   const debouncedSearch = useDebounce(search, 150)
 
   type ViewState =
@@ -128,11 +130,11 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         const hasParent = !!x.parentID
         const isArchived = !!x.time.archived
         return {
-          title: isDeleting ? `Press ctrl+d again to confirm` : isArchived ? `📦 ${x.title}` : x.title,
+          key: x.id,
+          label: isDeleting ? `Press ctrl+d again to confirm` : isArchived ? `📦 ${x.title}` : x.title,
           description:
             (sessionExt.tags?.length ? `${sessionExt.tags.map((t: string) => `#${t}`).join(" ")} ` : "") +
             (sessionExt.description ?? ""),
-          bg: isDeleting ? theme.error : undefined,
           value: x.id,
           category,
           footer: isArchived ? <Text dim>{Locale.time(x.time.updated)}</Text> : Locale.time(x.time.updated),
@@ -152,7 +154,8 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
       const ftsOptions = ftsResults.map((r) => {
         const session = sessionsList.find((s) => s.id === r.sessionID)
         return {
-          title: session?.title ?? "Unknown Session",
+          key: `fts:${r.sessionID}`,
+          label: session?.title ?? "Unknown Session",
           description: r.snippet.replace(/<mark>/g, "").replace(/<\/mark>/g, ""),
           value: r.sessionID,
           category: "Message Matches",
@@ -171,64 +174,67 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
     return opts
   }, [sessions, toDelete, sessionStatusMap, theme.error, ftsResults, sessionsList, tabs])
 
-  useInput((input, key) => {
-    if (key.tab) {
-      const t = ["", ...tags]
-      const currentIdx = t.indexOf(activeTag ?? "")
-      const nextIdx = (currentIdx + 1) % t.length
-      setActiveTag(t[nextIdx] || undefined)
-      return
-    }
-
-    if (!key.ctrl) return
-
-    if (input === "a") {
-      setShowArchived((v) => !v)
-    } else if (input === "d") {
-      if (!selectedOption) return
-      if (toDelete === selectedOption.value) {
-        sdk.client.project.session.delete({
-          projectID: sdk.projectID,
+  useKeybindings(
+    {
+      "tabs:next": () => {
+        // Tab cycles through tag filters (local scope — not global tab switching)
+        const t = ["", ...tags]
+        const currentIdx = t.indexOf(activeTag ?? "")
+        const nextIdx = (currentIdx + 1) % t.length
+        setActiveTag(t[nextIdx] || undefined)
+      },
+      "select:delete": () => {
+        if (!selectedOption) return
+        if (toDelete === selectedOption.value) {
+          sdk.client.project.session.delete({
+            projectID: sdk.projectID,
+            sessionID: selectedOption.value,
+          })
+          setToDelete(undefined)
+          return
+        }
+        setToDelete(selectedOption.value)
+      },
+      "select:rename": () => {
+        if (!selectedOption) return
+        setView({ type: "rename", sessionID: selectedOption.value })
+      },
+      "select:tag": () => {
+        if (!selectedOption) return
+        const session = sessionsList.find((s) => s.id === selectedOption.value)
+        if (!session) return
+        const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
+        setView({
+          type: "tag",
           sessionID: selectedOption.value,
+          existingTags: sessionExt.tags || [],
+          allTags: tags,
         })
-        setToDelete(undefined)
-        return
-      }
-      setToDelete(selectedOption.value)
-    } else if (input === "r") {
-      if (!selectedOption) return
-      setView({ type: "rename", sessionID: selectedOption.value })
-    } else if (input === "t") {
-      if (!selectedOption) return
-      const session = sessionsList.find((s) => s.id === selectedOption.value)
-      if (!session) return
-      const sessionExt = session as import("@liteai/sdk").Session & { tags?: string[] }
-      const existingTags = sessionExt.tags || []
-      setView({
-        type: "tag",
-        sessionID: selectedOption.value,
-        existingTags,
-        allTags: tags,
-      })
-    } else if (input === "u") {
-      if (!selectedOption) return
-      const session = sessionsList.find((s) => s.id === selectedOption.value)
-      if (!session) return
-      const isNowArchived = !session.time.archived
-      void sdk.client.project.session.update({
-        sessionID: selectedOption.value,
-        projectID: sdk.projectID,
-        time: { archived: isNowArchived ? Date.now() : 0 },
-      })
-      toast.show({
-        variant: "success",
-        message: isNowArchived ? "Session archived" : "Session restored from archive",
-      })
-    }
-  })
+      },
+      "select:archive": () => {
+        setShowArchived((v) => !v)
+      },
+      "select:toggleArchive": () => {
+        if (!selectedOption) return
+        const session = sessionsList.find((s) => s.id === selectedOption.value)
+        if (!session) return
+        const isNowArchived = !session.time.archived
+        void sdk.client.project.session.update({
+          sessionID: selectedOption.value,
+          projectID: sdk.projectID,
+          time: { archived: isNowArchived ? Date.now() : 0 },
+        })
+        toast.show({
+          variant: "success",
+          message: isNowArchived ? "Session archived" : "Session restored from archive",
+        })
+      },
+    },
+    { context: "Select" },
+  )
 
   useEffect(() => {
-    // dialog.setSize("large")
+    // Cleanup: no-op placeholder retained for future size adjustments
   }, [])
 
   if (view.type === "rename") {
@@ -247,24 +253,24 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title={`Sessions (${sessions.length})`}
-      options={options}
+      items={options}
       skipFilter={true}
       current={currentSessionID}
       onFilter={setSearch}
-      onMove={(option) => {
+      onHighlight={(item) => {
         setToDelete(undefined)
-        setSelectedOption(option)
+        setSelectedOption(item)
       }}
-      onSelect={(option) => {
+      onSelect={(item) => {
         route.navigate({
           type: "session",
-          sessionID: option.value,
+          sessionID: item.value,
         })
         props.onClose?.()
       }}
-      onEscape={props.onClose}
+      onClose={props.onClose}
       header={
         tags.length > 0 ? (
           <Box flexDirection="row" gap={1}>

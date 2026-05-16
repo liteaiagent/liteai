@@ -3,7 +3,7 @@ import { Box, Text } from "@liteai/ink"
 import { useState } from "react"
 import { useTheme } from "../context/theme"
 import { useKeybinding } from "../keybindings/use-keybinding"
-import { DialogSelect } from "../ui/dialog-select"
+import { SelectPane } from "../ui/select-pane"
 
 export type ThinkingToggleDialogProps = {
   currentValue: boolean
@@ -82,22 +82,22 @@ export function ThinkingToggleDialog({
   }
 
   return (
-    <DialogSelect
+    <SelectPane
       title="Thinking Mode"
-      options={[
-        { title: "Enabled", value: true },
-        { title: "Disabled", value: false },
+      items={[
+        { key: "enabled", label: "Enabled", value: true },
+        { key: "disabled", label: "Disabled", value: false },
       ]}
       current={currentValue}
-      onSelect={(opt) => {
-        if (isMidConversation && opt.value !== currentValue) {
-          setPendingSelection(opt.value)
+      onSelect={(item) => {
+        if (isMidConversation && item.value !== currentValue) {
+          setPendingSelection(item.value)
           setShowWarning(true)
         } else {
-          onSelect(opt.value)
+          onSelect(item.value)
         }
       }}
-      onEscape={onCancel}
+      onClose={onCancel}
     />
   )
 }
