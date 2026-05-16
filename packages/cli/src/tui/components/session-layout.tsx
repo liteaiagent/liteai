@@ -132,7 +132,7 @@ export function SessionLayout({
             bottom={0}
             left={0}
             right={0}
-            height={terminalRows - MODAL_TRANSCRIPT_PEEK}
+            maxHeight={terminalRows - MODAL_TRANSCRIPT_PEEK}
             flexDirection="column"
             overflow="hidden"
             opaque={true}

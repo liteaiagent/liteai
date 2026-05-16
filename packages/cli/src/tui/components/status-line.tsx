@@ -3,7 +3,6 @@ import { memo, useContext, useMemo, useSyncExternalStore } from "react"
 import { useLocal } from "../context/local"
 import { useStats } from "../context/stats"
 import { useTheme } from "../context/theme"
-import { useOptionalSessionContext } from "../routes/session/ctx"
 import { type AppState, useAppState } from "../state"
 import { SessionTabStore } from "../state/session-tab-store"
 import { useExitState } from "./global-exit-handler"
@@ -16,23 +15,15 @@ type Segment = { priority: number; text: string; color: string }
 function buildSegments(
   stats: ReturnType<typeof useStats>,
   local: ReturnType<typeof useLocal>,
-  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff" | "session_status" | "provider_next">,
+  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff" | "session_status">,
   theme: ReturnType<typeof useTheme>["theme"],
   sessionID: string | undefined,
-  displayMode: "compact" | "transcript",
 ): Segment[] {
   const segments: Segment[] = []
 
   // 1. Model
   const parsed = local.model.parsed()
   segments.push({ priority: 1, text: parsed.model, color: theme.text as string })
-
-  // 1.5. Mode Indicator
-  if (displayMode === "transcript") {
-    segments.push({ priority: 1.5, text: "Transcript (ctrl+o)", color: theme.success as string })
-  } else {
-    segments.push({ priority: 1.5, text: "Compact (ctrl+o)", color: theme.textMuted as string })
-  }
 
   if (sessionID) {
     const session = state.sessions.find((s) => s.id === sessionID)
@@ -60,16 +51,6 @@ function buildSegments(
       }
       segments.push({ priority: 1.8, text: statusText, color: statusColor as string })
     }
-  }
-
-  // 1.9 Provider status — show when no provider connected (onboarding hint)
-  const connected = state.provider_next.connected
-  if (connected.length === 0) {
-    segments.push({
-      priority: 1.9,
-      text: "No provider · Run /connect",
-      color: theme.warning as string,
-    })
   }
 
   if (sessionID) {
@@ -160,7 +141,7 @@ function StatusLineInner({ sessionID }: Props) {
   const vcs = useAppState((s) => s.vcs)
   const session_diff = useAppState((s) => s.session_diff)
   const session_status = useAppState((s) => s.session_status)
-  const provider_next = useAppState((s) => s.provider_next)
+
   const local = useLocal()
   const stats = useStats()
   const terminalSize = useContext(TerminalSizeContext)
@@ -169,35 +150,11 @@ function StatusLineInner({ sessionID }: Props) {
   const columns = terminalSize?.columns ?? 80
   const budget = columns - 2 // paddingX={1} means 1 on each side
 
-  // Optional — null during boot state (no session) or when sessionID is undefined
-  const ctx = useOptionalSessionContext()
-
   const { tabs, activeTabId } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
 
   const allSegments = useMemo(
-    () =>
-      buildSegments(
-        stats,
-        local,
-        { sessions, config, path, vcs, session_diff, session_status, provider_next },
-        theme,
-        sessionID,
-        ctx?.displayMode ?? "compact",
-      ),
-    [
-      stats,
-      local,
-      sessions,
-      config,
-      path,
-      vcs,
-      session_diff,
-      session_status,
-      provider_next,
-      theme,
-      sessionID,
-      ctx?.displayMode,
-    ],
+    () => buildSegments(stats, local, { sessions, config, path, vcs, session_diff, session_status }, theme, sessionID),
+    [stats, local, sessions, config, path, vcs, session_diff, session_status, theme, sessionID],
   )
 
   const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])

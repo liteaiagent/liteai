@@ -27,6 +27,7 @@ import { Box, type Color, Text } from "@liteai/ink"
 import { useEffect, useMemo, useState } from "react"
 import { useTheme } from "../../context/theme"
 import { useKeybindingContext } from "../../keybindings/keybinding-context"
+import { useAppState } from "../../state"
 import type { PromptInputMode, VimMode } from "../../types/text-input"
 import { isVimModeEnabled } from "./utils"
 
@@ -153,6 +154,7 @@ export function PromptInputFooterLeftSide({
 function FooterHint({ mode, isLoading }: { mode: PromptInputMode; isLoading: boolean }) {
   const tipParts = useTip()
   const { theme } = useTheme()
+  const connected = useAppState((s) => s.provider_next.connected)
 
   if (mode === "bash") {
     return <Text dim>! for bash mode</Text>
@@ -168,12 +170,20 @@ function FooterHint({ mode, isLoading }: { mode: PromptInputMode; isLoading: boo
 
   return (
     <Box flexDirection="row" flexShrink={1} gap={0}>
-      <Text dim>? for shortcuts · ctrl+p palette</Text>
+      {connected.length === 0 ? (
+        <Text color={theme.warning as Color}>No provider · Run /connect</Text>
+      ) : (
+        <Text dim>? for shortcuts · ctrl+p palette · ctrl+o transcript</Text>
+      )}
       <Text color={theme.textMuted as Color}>{" | "}</Text>
       <Text color={theme.warning as Color}>● </Text>
       <Text color={theme.textMuted as Color}>Tip </Text>
       {tipParts.map((part, i) => (
-        <Text key={i} color={(part.highlight ? theme.text : theme.textMuted) as Color} wrap="truncate">
+        <Text
+          key={i}
+          color={(part.highlight ? theme.text : theme.textMuted) as Color}
+          wrap={i === tipParts.length - 1 ? "truncate" : undefined}
+        >
           {part.text}
         </Text>
       ))}

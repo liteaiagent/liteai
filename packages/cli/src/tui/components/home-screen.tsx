@@ -15,7 +15,7 @@
 import { Installation } from "@liteai/core/installation/index"
 import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
-import { useEffect } from "react"
+import { useCallback, useEffect } from "react"
 import { useKV } from "../context/kv"
 import { useLocal } from "../context/local"
 import { useTheme } from "../context/theme"
@@ -41,11 +41,16 @@ export function HomeScreen() {
   // The "Get Started" banner visibility is driven purely by `hasProviders` (live),
   // so the KV flag is informational only — useful for future feature gating.
   const isFirstRun = !kv.get("onboarding.completed")
+  const { set } = kv
+  const markOnboardingComplete = useCallback(() => {
+    set("onboarding.completed", "true")
+  }, [set])
+
   useEffect(() => {
     if (hasProviders && isFirstRun) {
-      kv.set("onboarding.completed", "true")
+      markOnboardingComplete()
     }
-  }, [hasProviders, isFirstRun, kv])
+  }, [hasProviders, isFirstRun, markOnboardingComplete])
 
   return (
     <Box flexDirection="column" paddingTop={1} paddingLeft={2} gap={1}>
