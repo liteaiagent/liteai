@@ -343,10 +343,8 @@ function SessionBottom({
   })
 
   const handleAutoCompact = useCallback(() => {
-    if (breaker.isBroken) return
-    void breaker.withCircuitBreaker(() =>
-      sdk.client.project.session.summarize({ sessionID: sessionID ?? "", projectID: sdk.projectID }),
-    )
+    if (!sessionID || breaker.isBroken) return
+    void breaker.withCircuitBreaker(() => sdk.client.project.session.summarize({ sessionID, projectID: sdk.projectID }))
   }, [breaker, sdk, sessionID])
 
   return (

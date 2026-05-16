@@ -286,7 +286,7 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 | Interaction Summary                     |
 | Model:        gemini-2.5-pro            |
 | Messages:     12                        |
-| Tool Calls:   8 ([OK] / 2 [FAIL])      |
+| Tool Calls:   8 (6 [OK] / 2 [FAIL])      |
 | Context:      45% used                  |
 | Cost:         $0.042                    |
 | Wall Time:    3m 22s                    |

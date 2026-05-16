@@ -52,6 +52,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const sdk = useSDK()
   const route = useRoute()
   const commands = useAppState((s) => s.command)
+  const connectedProviders = useAppState((s) => s.provider_next.connected)
   const local = useLocal()
   const toast = useToast()
 
@@ -105,15 +106,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const submit = useCallback(
     async (input: string, mode: PromptInputMode, attachments?: FilePartInput[]) => {
-      // ── Pre-flight model validation ─────────────────────────────────
-      // Validate model availability *before* session creation so the error
-      // surfaces immediately instead of creating an empty session that
-      // shows a "model not found" error.
+      // ── Pre-flight validation ────────────────────────────────────────
+      // Validate provider and model availability *before* session creation so
+      // the error surfaces immediately instead of creating an empty session.
+      if (connectedProviders.length === 0) {
+        toast.show({
+          variant: "error",
+          message: "No provider connected. Use /provider to add and connect a provider.",
+          duration: 5000,
+        })
+        return
+      }
+
       const model = local.model.current()
       if (!model) {
         toast.show({
           variant: "error",
-          message: "No model selected. Use /models to configure a provider and model.",
+          message: "No model selected. Use /provider to select a model.",
           duration: 5000,
         })
         return
@@ -186,7 +195,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }))
       }
     },
-    [ensureSession, sdk, local, commands, setState, toast],
+    [ensureSession, sdk, local, commands, connectedProviders, setState, toast],
   )
 
   // ── Abort ─────────────────────────────────────────────────────────────

@@ -17,7 +17,7 @@ function supportsUtf8(): boolean {
   // Explicit override takes priority
   if (process.env.LITEAI_ASCII === "1") return false
 
-  // Windows without a LANG or TERM override is likely a non-UTF-8 code page
+  // Windows without a LANG or LC_ALL override is likely a non-UTF-8 code page
   if (process.platform === "win32") {
     const lang = process.env.LANG ?? process.env.LC_ALL ?? ""
     if (!lang) return false
@@ -86,7 +86,9 @@ export interface ExitSummaryData {
 }
 
 export function formatExitSummary(data: ExitSummaryData): string {
-  const chars = supportsUtf8() ? UTF8 : ASCII
+  const utf8 = supportsUtf8()
+  const chars = utf8 ? UTF8 : ASCII
+  const ellipsis = utf8 ? "\u2026" : "..."
   const WIDTH = 45
 
   const totalToks =
@@ -140,7 +142,7 @@ export function formatExitSummary(data: ExitSummaryData): string {
 
   if (data.sessionID) {
     lines.push(blank())
-    lines.push(row("To resume", `liteai --resume ${data.sessionID.slice(0, 8)}…`))
+    lines.push(row("To resume", `liteai --resume ${data.sessionID.slice(0, 8)}${ellipsis}`))
   }
 
   lines.push(bottom)
