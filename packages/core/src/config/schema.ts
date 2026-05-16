@@ -708,6 +708,7 @@ export const Info = z
             "Character count above which tool output is saved to a file instead of rendered inline (default: 5000)",
           ),
       })
+      .strict()
       .optional()
       .describe("CLI TUI settings. Portable across machines — syncs via settings.json."),
   })

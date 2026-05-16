@@ -266,7 +266,9 @@ export async function shutdownTelemetry() {
       api.diag.disable()
       const apiLogs = await import("@opentelemetry/api-logs")
       apiLogs.logs.disable()
-    } catch {}
+    } catch (cleanupErr) {
+      diag.warn("OpenTelemetry API cleanup failed during shutdown", cleanupErr)
+    }
 
     globalMeterProvider = undefined
     globalLoggerProvider = undefined

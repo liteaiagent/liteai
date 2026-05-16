@@ -350,21 +350,28 @@ export function useSelectList<T>({
       // Since we removed windowing from the hook, page up/down should probably just jump by 10 for now.
       "select:pageUp": () => {
         clearNumberBuffer()
-        const nextIndex = Math.max(0, state.activeIndex - 10)
-        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: nextIndex } })
+        const rawTarget = Math.max(0, state.activeIndex - 10)
+        const validIndex = findNextValidIndex(rawTarget, "up", items, wrapAround)
+        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: validIndex } })
       },
       "select:pageDown": () => {
         clearNumberBuffer()
-        const nextIndex = Math.min(items.length - 1, state.activeIndex + 10)
-        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: nextIndex } })
+        const rawTarget = Math.min(items.length - 1, state.activeIndex + 10)
+        const validIndex = findNextValidIndex(rawTarget, "down", items, wrapAround)
+        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: validIndex } })
       },
       "select:home": () => {
         clearNumberBuffer()
-        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: 0 } })
+        const validIndex = findNextValidIndex(-1, "down", items, false)
+        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: validIndex !== -1 ? validIndex : 0 } })
       },
       "select:end": () => {
         clearNumberBuffer()
-        dispatch({ type: "SET_ACTIVE_INDEX", payload: { index: items.length - 1 } })
+        const validIndex = findNextValidIndex(items.length, "up", items, false)
+        dispatch({
+          type: "SET_ACTIVE_INDEX",
+          payload: { index: validIndex !== items.length ? validIndex : items.length - 1 },
+        })
       },
       "select:accept": () => handleNavigationAction("SELECT_CURRENT"),
       ...digitHandlers,

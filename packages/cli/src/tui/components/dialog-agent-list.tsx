@@ -10,7 +10,7 @@ import { SelectPane } from "../ui/select-pane"
 import { DialogAgentDetail } from "./dialog-agent-detail"
 import { DialogAgentEditor } from "./dialog-agent-editor"
 
-export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) {
+export function DialogAgentList({ onClose }: { onClose: () => void }) {
   const local = useLocal()
   const sdk = useSDK()
   const toast = useToast()
@@ -107,7 +107,7 @@ export function DialogAgentList({ onClose: _onClose }: { onClose: () => void }) 
       footerContent={footer}
       onHighlight={(item) => setHovered(item.value)}
       onSelect={(item) => setView({ type: "detail", agent: item.value as Agent })}
-      onClose={_onClose}
+      onClose={onClose}
     />
   )
 }

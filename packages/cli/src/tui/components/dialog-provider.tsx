@@ -1,6 +1,6 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@liteai/sdk"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
@@ -69,8 +69,8 @@ export function useProviderDisplayOptions() {
 export function useProviderConnect(onNavigate: (view: ProviderViewState) => void) {
   const provider_auth = useAppState((s) => s.provider_auth)
 
-  return useMemo(
-    () => (providerID: string) => {
+  return useCallback(
+    (providerID: string) => {
       const methods = provider_auth?.[providerID] ?? [{ type: "api" as const, label: "API key" }]
 
       if (methods.length === 1) {
@@ -162,7 +162,7 @@ function MethodRunner({
   )
 }
 
-export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () => void } = {}) {
+export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () => void }) {
   const provider_next = useAppState((s) => s.provider_next)
   const { bootstrap } = useAppActions()
   const sdk = useSDK()
@@ -306,7 +306,7 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
           value: String(index),
         }))}
         onClose={() => setView({ type: "list" })}
-        onSelect={async (item) => {
+        onSelect={(item) => {
           const index = Number.parseInt(item.value, 10)
           const method = view.methods[index]
           if (method.type === "oauth") {

@@ -47,10 +47,14 @@ export function DialogHelp({ onClose }: { onClose: () => void }): React.ReactNod
                   <Text bold color={theme.info as Color}>
                     {context}
                   </Text>
-                  {contextBindings.map((binding, idx: number) => {
+                  {contextBindings.map((binding) => {
                     const shortcut = getBindingDisplayText(binding.action ?? "", binding.context, bindings)
                     return (
-                      <Box key={idx} flexDirection="row" justifyContent="space-between">
+                      <Box
+                        key={`${binding.context}:${binding.action}`}
+                        flexDirection="row"
+                        justifyContent="space-between"
+                      >
                         <Text>{binding.action}</Text>
                         <Text dim>{shortcut}</Text>
                       </Box>

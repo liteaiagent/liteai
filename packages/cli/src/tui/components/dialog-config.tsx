@@ -163,7 +163,14 @@ function ConfigTab({ onClose }: { onClose: () => void }) {
         category: "Diagnostics",
       },
     ],
-    [currentModelName, providerConnected.length, config.theme, config.errorVerbosity, config.diff_style, mcpStatus],
+    [
+      currentModelName,
+      providerConnected.length,
+      config.theme,
+      config.errorVerbosity,
+      config.diff_style,
+      Object.keys(mcpStatus).length,
+    ],
   )
 
   return (

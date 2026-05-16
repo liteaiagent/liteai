@@ -6,6 +6,7 @@
  */
 import z from "zod"
 import { BusEvent } from "@/bus/bus-event"
+import { Identifier } from "@/id/id"
 
 export const TeammateEvent = {
   /** Fired when a new teammate is spawned and registered in AppState. */
@@ -17,7 +18,7 @@ export const TeammateEvent = {
       agentName: z.string(),
       color: z.string().optional(),
       taskId: z.string(),
-      parentSessionId: z.string(),
+      parentSessionId: Identifier.schema("session"),
     }),
   ),
 

@@ -413,7 +413,7 @@ export function PromptInput({ debug, verbose, isLoading, focus, hint, cursorMode
         }
       },
     }),
-    [modalPane, route, session.sessionID, sdk.client, sdk.projectID],
+    [modalPane, route, session.sessionID, sdk.client, sdk.projectID, toast, store],
   )
 
   const onSubmit = useCallback(

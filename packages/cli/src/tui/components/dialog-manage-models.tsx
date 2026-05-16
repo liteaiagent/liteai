@@ -14,7 +14,7 @@ import { SelectPane } from "../ui/select-pane"
  * indicators showing current visibility state. Enter toggles visibility.
  * Mirrors the web's "Manage Models" dialog (settings-models.tsx / dialog-manage-models.tsx).
  */
-export function DialogManageModels(props: { onBack?: () => void; onClose?: () => void }) {
+export function DialogManageModels(props: { onBack?: () => void }) {
   const local = useLocal()
   const providers = useAppState(selectProviders())
   const { theme } = useTheme()

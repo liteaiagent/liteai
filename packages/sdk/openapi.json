@@ -11209,7 +11209,8 @@
                 "type": "string"
               },
               "parentSessionId": {
-                "type": "string"
+                "type": "string",
+                "pattern": "^ses.*"
               }
             },
             "required": ["teamName", "agentId", "agentName", "taskId", "parentSessionId"]
@@ -13402,12 +13403,13 @@
                 "enum": ["auto", "stacked"]
               },
               "output_file_threshold": {
-                "description": "Maximum lines before truncating file output in the TUI (default: 500)",
+                "description": "Character count above which tool output is saved to a file instead of rendered inline (default: 5000)",
                 "type": "integer",
                 "minimum": 100,
                 "maximum": 9007199254740991
               }
-            }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false

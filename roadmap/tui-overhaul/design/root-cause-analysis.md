@@ -62,13 +62,11 @@ Each dialog reinvents selection/navigation/chrome:
 
 `BlankSession` had no consumer of `modalPane.content`. Modal stored in context but never rendered to DOM. **Status: Fixed** in conversation `3c7f0cae`.
 
-### Bug #2: Dual `useInput` Conflict ⚠️ PARTIALLY FIXED
+### Bug #2: Dual `useInput` Conflict ✅ FIXED
 
-`DialogSelect` has both `TextInput` (with `useInput`) AND `useKeybindings` processing the same keys.
+`DialogSelect` had both `TextInput` (with `useInput`) AND `useKeybindings` processing the same keys.
 
-**Partially fixed**: `inputFilter` blocks navigation keys from TextInput (conversation `5d1cd26f`). But two hooks still register — the fix is a filter, not structural elimination.
-
-**Full fix**: Phase 2 refactors `DialogSelect` to compose primitives (one `useKeybindings` call, no competing `useInput`).
+**Resolved**: Phase 2 replaced `DialogSelect` with `SelectPane` (composing `useSelectList` + `SelectList`), which uses a single `useKeybindings` call. The competing `useInput` from `TextInput` was structurally eliminated. See `select-pane.tsx`.
 
 ### Bug #3: `j`/`k`/`space` Keybinding Conflicts ✅ FIXED
 
@@ -76,25 +74,26 @@ Vim navigation bindings (`j`/`k`) conflicted with typing in filter input. `space
 
 **Status: Fixed** — `j`/`k` removed from Select context in conversation `5d1cd26f`.
 
-### Bug #4: `useNavigation.replace` Race Condition ⚠️ OPEN
+### Bug #4: `useNavigation.replace` Race Condition ✅ FIXED
 
 ```typescript
+// OLD (two setState calls → potential focus flicker):
 replace: (content) => {
   modalPane.closeModal()      // setState(null)  
   modalPane.openModal(content) // setState(content)
 }
+
+// NEW (single atomic call → one render cycle):
+replace: (content) => modalPane.replaceTop(content)
 ```
 
-React may not batch in all async paths → focus flicker. **Fix**: Phase 3 introduces atomic `replaceTop`.
+**Resolved**: Phase 3 implemented `replaceTop` in `ModalPaneProvider` — a single `setState` call that atomically swaps the top of the stack. `useNavigation.replace()` now delegates directly to `modalPane.replaceTop()`. See `use-navigation.ts:34`.
 
-### Bug #5: Escape Deadlock in Nested Dialogs ⚠️ OPEN
+### Bug #5: Escape Deadlock in Nested Dialogs ✅ FIXED
 
-When `DialogConfig` → opens `DialogModel`:
-- Both bind Escape in different contexts
-- Which fires first is non-deterministic
-- Result: Escape may close everything, or close the wrong thing
+When `DialogConfig` → opened `DialogModel`, both bound Escape in different contexts. Which fired first was non-deterministic — Escape could close everything or close the wrong dialog.
 
-**Fix**: Phase 3 introduces modal stack with push/pop semantics.
+**Resolved**: Phase 3 implemented modal stack with `pushModal`/`popModal` semantics in `ModalPaneProvider`. `DialogConfig` uses `navigation.open()` to push `DialogModel` onto the stack; Escape in `DialogModel` calls `navigation.close()` (= `popModal`), returning to `DialogConfig` deterministically. See `dialog-config.tsx`, `dialog-model.tsx`.
 
 ---
 
@@ -130,6 +129,6 @@ packages/cli/src/tui/
 
 ## Assessment
 
-> **Categories 1 + 3**: Mostly fixed in prior sessions.  
-> **Category 2**: Partially fixed (inputFilter). Full fix in Phase 2-3.  
-> **Category 4**: This is the real investment — Phase 1 delivers the shared primitives.
+> **Categories 1 + 3**: Fixed in prior sessions.
+> **Category 2**: ✅ Fully resolved — Phase 2 eliminated `DialogSelect`, Phase 3 implemented atomic `replaceTop` and modal stack.
+> **Category 4**: ✅ Delivered — Phase 1 built shared primitives (`useSelectList`, `SelectList`, `useDialogLifecycle`, `DialogPane`). Phase 2 migrated all dialog components.

@@ -3,7 +3,8 @@
 > **Status**: Active  
 > **Scope**: `@liteai/cli` — Terminal User Interface layer  
 > **References**: [Gemini CLI](D:\gemini-cli), [Claude Code](D:\claude-code)  
-> **Supersedes**: `roadmap/tui-architecture/`, `roadmap/settings-ui-overhaul/`
+> **Supersedes**: `roadmap/tui-overhaul/tui-architecture/`, `roadmap/tui-overhaul/settings-ui-overhaul/`
+> *(Historical source docs — preserved for traceability, archived to `roadmap/done/` after Phase 5)*
 
 ---
 
@@ -64,8 +65,8 @@ gantt
 | **1** | [Standard Primitives](./phase-1-primitives.md) | Build the 3 hooks + 2 components every dialog composes from | Medium | ✅ Done |
 | **2** | [Component Migration](./phase-2-migration.md) | Migrate 12+ dialog components to standard primitives, eliminate raw `useInput` | Medium-High | ✅ Done |
 | **3** | [Focus & Navigation](./phase-3-focus.md) | Centralize focus management, modal stack semantics, nested escape chains, eliminate BlankSession split | Medium | ✅ Done |
-| **4** | [Visual Design & UX](./phase-4-visual.md) | Message Trail pattern, Plan Mode, Command Palette, Shell rendering, Todo tray | High | 🟡 Not Started |
-| **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse | Low-Medium | 🟡 Not Started |
+| **4** | [Visual Design & UX](./phase-4-visual.md) | Message Trail pattern, Plan Mode, Command Palette, Shell rendering, Todo tray | High | ✅ Done |
+| **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse, alternate screen (keep as default — required for sidebar/session-list layout) | Low-Medium | 🟡 Not Started |
 
 ---
 

@@ -1,8 +1,9 @@
 # Phase 4: Visual Design & UX
 
-> **Status**: Not Started  
+> **Status**: ✅ Complete  
 > **Depends On**: Phase 3 (Focus & Navigation)  
-> **Estimated Effort**: High (~1-2 weeks)
+> **Estimated Effort**: High (~1-2 weeks)  
+> **Completed**: 2026-05-16
 
 ---
 
@@ -386,12 +387,12 @@ Prompt stays mounted and visible during HITL. Confirmation renders IN scroll are
 
 ## Acceptance Criteria
 
-- [ ] Model picker renders with grouped items and footer hints
-- [ ] All user-initiated actions record a message in the scrollable area (Message Trail)
-- [ ] Plan mode uses bordered confirmation in scrollable area with approval options
-- [ ] Command palette opens with Ctrl+P, supports fuzzy filter, executes actions
-- [ ] Shell commands render with bordered output, exit code, and duration
-- [ ] Todo tray renders above prompt, toggles with ctrl+t
-- [ ] Thinking blocks use left-border style in transcript mode
-- [ ] Permission prompts render inside scrollable area with proper selection
-- [ ] Icon system is consistent across all screens
+- [x] Model picker renders with grouped items and footer hints
+- [x] All user-initiated actions record a message in the scrollable area (Message Trail) — `LocalMessageStore` + `dialog-model.tsx` wiring
+- [x] Plan mode uses bordered confirmation in scrollable area with approval options — `plan-review.tsx` + `app-state-events.ts` handlers
+- [x] Command palette opens with Ctrl+P, supports fuzzy filter, executes actions — `command-palette.tsx` + `command-registry.ts`
+- [x] Shell commands render with bordered output, exit code, and duration — `shell-output.tsx` wired into `RunCommand`
+- [x] Todo tray renders above prompt, toggles with ctrl+t — `todo-tray.tsx` + `app:toggleTodos` keybinding
+- [x] Thinking blocks use left-border style in transcript mode — `ReasoningPartView` refactored in `parts.tsx`
+- [x] Permission prompts render inside scrollable area with proper selection — `permission.tsx` polished with round borders, typed headers
+- [x] Icon system is consistent across all screens — status icons (`○◑●✗`), selection cursor (`→`), spinner (`◌`)

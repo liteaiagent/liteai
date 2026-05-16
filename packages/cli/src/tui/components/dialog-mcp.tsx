@@ -290,9 +290,7 @@ function McpDetail(props: { name: string; onClose: () => void }) {
             setLoading(null)
           }
         } else if (item.value === "tools") {
-          navigation.open(
-            <McpToolsList name={props.name} onBack={() => navigation.open(<DialogMcp onClose={props.onClose} />)} />,
-          )
+          navigation.open(<McpToolsList name={props.name} onBack={() => navigation.close()} />)
         }
       }}
     />
@@ -329,12 +327,7 @@ function McpToolsList(props: { name: string; onBack: () => void }) {
     }
   }, [sdk, props.name])
 
-  useKeybindings(
-    {
-      "select:cancel": props.onBack,
-    },
-    { context: "Select" },
-  )
+  // SelectPane's useDialogLifecycle already handles select:cancel via onClose={props.onBack}
 
   const options = useMemo(() => {
     return tools.map((t) => ({

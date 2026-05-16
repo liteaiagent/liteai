@@ -21,7 +21,7 @@
 
 import { Box, type Color, Text } from "@liteai/ink"
 import type React from "react"
-import { createContext, useContext, useMemo, useState } from "react"
+import { createContext, useContext, useMemo } from "react"
 import { useTheme } from "../context/theme"
 import { useKeybindings } from "../keybindings/use-keybinding"
 
@@ -67,7 +67,6 @@ const TabsCtx = createContext<TabsContextValue>({ selectedTab: "" })
 
 export function Tabs(props: TabsProps) {
   const { theme } = useTheme()
-  const [headerFocused] = useState(true)
 
   // Extract tab metadata from children
   const tabs = useMemo(
@@ -99,7 +98,7 @@ export function Tabs(props: TabsProps) {
     },
     {
       context: "Tabs",
-      isActive: headerFocused && !props.disableNavigation,
+      isActive: !props.disableNavigation,
     },
   )
 

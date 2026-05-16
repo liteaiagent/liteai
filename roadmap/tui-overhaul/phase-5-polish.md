@@ -259,11 +259,13 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 
 ### Target Output
 
-> **Encoding note**: The box-drawing characters below (`┌─┐ │ └┘`) and symbols (`✓ ✗`) require a UTF-8 capable terminal. The implementation must detect encoding support and provide an ASCII fallback:
-> - Detect: `process.platform === 'win32' && !process.env.LANG` or `process.stdout.hasColors?.() === false` as proxy for non-UTF-8 environments
-> - UTF-8 path: render with box-drawing chars and `✓`/`✗`
-> - ASCII fallback: use `+---+` / `| |` borders and `[OK]`/`[FAIL]` labels
-> - Expose `LITEAI_ASCII=1` env var or `output.ascii: true` config flag to force ASCII mode
+> **Encoding note**: The box-drawing characters below (`┌─┐ │ └┘`) and symbols (`✓ ✗`) require a UTF-8 capable terminal. The implementation detects encoding support and provides an ASCII fallback:
+> - Override: `LITEAI_ASCII=1` env var forces ASCII mode unconditionally
+> - Non-TTY: piped/redirected stdout → ASCII
+> - Modern terminal detection: `WT_SESSION` (Windows Terminal), `TERM_PROGRAM ∈ {vscode, cursor, windsurf}` → UTF-8
+> - Locale regex: `/utf-?8/i` against `LANG`/`LC_CTYPE`/`LC_ALL` → UTF-8
+> - Windows fallback: `win32` with no locale AND no modern terminal indicator → ASCII (legacy cmd.exe/PowerShell)
+> - Non-Windows TTY with no locale → UTF-8 (most modern \*nix terminals default to it)
 
 **UTF-8 terminal:**
 ```
@@ -286,7 +288,7 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 | Interaction Summary                     |
 | Model:        gemini-2.5-pro            |
 | Messages:     12                        |
-| Tool Calls:   8 (6 [OK] / 2 [FAIL])      |
+| Tool Calls:   8 (6 [OK] / 2 [FAIL])     |
 | Context:      45% used                  |
 | Cost:         $0.042                    |
 | Wall Time:    3m 22s                    |
@@ -302,25 +304,44 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 
 ---
 
-## Deliverable 8: Alternate Screen Investigation
+## Deliverable 8: Alternate Screen — Investigation Complete
 
-> **Noted 2026-05-16**: Both Claude Code and Gemini CLI show the shell command (`PS D:\test_ws> claude`) above their TUI because they render in the terminal's normal buffer. LiteAI hides this.
+> **Investigated 2026-05-17**: LiteAI unconditionally uses alternate screen (`<AlternateScreen>` in `app.tsx:143`). Both Claude Code and Gemini CLI default to normal buffer because their UIs are single-column vertical layouts. LiteAI's planned sidebar + session-list navigation requires 2D viewport control, which commits us to alternate screen.
 
-### Investigation Items
+### Decision: Keep Alternate Screen as Default
 
-1. **Determine current LiteAI buffer mode**: Identify where alternate screen is activated (Ink config, explicit escape sequences, or wrapper component)
-2. **Evaluate normal buffer mode**: Both reference CLIs default to normal buffer. Assess whether LiteAI should follow suit.
-3. **Config option**: If alternate screen is useful for some workflows (e.g., clean terminal on exit), make it configurable:
-   ```typescript
-   // tui-schema.ts
-   alternate_screen: { type: 'boolean', default: false }
-   ```
+**Rationale**: A sidebar (session list on back-button) requires fixed-viewport layout — the terminal must be a 2D grid where height AND width are constrained. Normal buffer mode cannot support this because:
+- No height ceiling → `flexGrow` in ScrollBox unbounded → scroll breaks
+- No absolute cursor positioning → sidebar can't repaint independently of main content
+- Back-button navigation triggers full left-panel repaint → visual corruption in normal buffer
+
+Claude Code and Gemini CLI don't have sidebars — that's why they can default to normal buffer.
+
+### Config Option (opt-out for edge cases)
+
+```typescript
+// tui-schema.ts
+alternate_screen: { type: 'boolean', default: true }
+```
+
+Auto-disable for `tmux -CC` (iTerm2 integration mode) where mouse tracking corrupts terminal state.
+
+### tmux / SSH Limitations
+
+| Issue | Environment | Severity | Mitigation |
+|-------|------------|----------|------------|
+| Mouse tracking conflict | tmux `set -g mouse on` | High | Detect tmux mouse state, show PgUp/PgDn hint |
+| tmux -CC breaks mouse | iTerm2 integration | Breaking | Auto-detect, fall back to single-column layout |
+| Copy mode empty | tmux `Prefix + [` | Medium | Users use TUI selection instead |
+| Detach/reattach glitch | tmux detach | Medium | `SIGCONT` → `reenterAltScreen()` (already handled) |
+| SSH reconnect stale state | SSH disconnect | High | `reassertTerminalModes()` (already handled in Ink) |
+| High-latency frame tearing | SSH over slow link | Medium | BSU/ESU atomic framing (already implemented) |
 
 | CLI | Buffer Mode | Shell Command Visible? |
 |-----|------------|------------------------|
 | Claude Code | Normal (conditionally alternate) | Yes |
 | Gemini CLI | Normal (conditionally alternate) | Yes |
-| LiteAI | Alternate (presumed, needs confirmation) | No |
+| LiteAI | Alternate (always, by design) | No — required for sidebar layout |
 
 ---
 
@@ -329,9 +350,9 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 After Phase 5 completion, archive the superseded documents:
 
 ```bash
-# Move originals to done/
-mv roadmap/tui-architecture/ roadmap/done/tui-architecture/
-mv roadmap/settings-ui-overhaul/ roadmap/done/settings-ui-overhaul/
+# Move superseded sub-documents to done/
+mv roadmap/tui-overhaul/tui-architecture/ roadmap/done/tui-architecture/
+mv roadmap/tui-overhaul/settings-ui-overhaul/ roadmap/done/settings-ui-overhaul/
 ```
 
 ---
@@ -348,6 +369,6 @@ mv roadmap/settings-ui-overhaul/ roadmap/done/settings-ui-overhaul/
 - [ ] Component catalog documentation is complete
 - [ ] Feature status document is updated
 - [ ] Exit summary renders on quit (Gemini CLI style)
-- [ ] Alternate screen mode investigated and configurable
+- [ ] Alternate screen kept as default, configurable opt-out, tmux -CC auto-detection added
 - [ ] Original documents archived to `roadmap/done/`
 - [ ] No known regressions from prior sessions' work

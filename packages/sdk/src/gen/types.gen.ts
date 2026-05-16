@@ -1802,7 +1802,7 @@ export type Config = {
          */
         diff_style?: 'auto' | 'stacked';
         /**
-         * Maximum lines before truncating file output in the TUI (default: 500)
+         * Character count above which tool output is saved to a file instead of rendered inline (default: 5000)
          */
         output_file_threshold?: number;
     };

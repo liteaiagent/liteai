@@ -142,9 +142,10 @@ export function SelectPane<T>(props: SelectPaneProps<T>): React.ReactNode {
     },
   }))
 
-  // Scroll windowing: half the terminal height minus chrome overhead
+  // Chrome overhead: title bar, filter input, header, footer, scroll indicators, padding
+  const SCROLL_CHROME_OVERHEAD = 6
   const terminalHeight = terminalSize?.rows ?? 24
-  const visibleCount = Math.max(3, Math.floor(terminalHeight / 2) - 6)
+  const visibleCount = Math.max(3, Math.floor(terminalHeight / 2) - SCROLL_CHROME_OVERHEAD)
 
   return (
     <Box flexDirection="column" gap={1} paddingBottom={1}>

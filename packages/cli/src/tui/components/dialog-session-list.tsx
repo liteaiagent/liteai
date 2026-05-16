@@ -172,7 +172,7 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
     }
 
     return opts
-  }, [sessions, toDelete, sessionStatusMap, theme.error, ftsResults, sessionsList, tabs])
+  }, [sessions, toDelete, sessionStatusMap, ftsResults, sessionsList, tabs])
 
   useKeybindings(
     {
@@ -228,23 +228,26 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
         const session = sessionsList.find((s) => s.id === selectedOption.value)
         if (!session) return
         const isNowArchived = !session.time.archived
-        void sdk.client.project.session.update({
-          sessionID: selectedOption.value,
-          projectID: sdk.projectID,
-          time: { archived: isNowArchived ? Date.now() : 0 },
-        })
-        toast.show({
-          variant: "success",
-          message: isNowArchived ? "Session archived" : "Session restored from archive",
-        })
+        void (async () => {
+          try {
+            await sdk.client.project.session.update({
+              sessionID: selectedOption.value,
+              projectID: sdk.projectID,
+              time: { archived: isNowArchived ? Date.now() : 0 },
+            })
+            toast.show({
+              variant: "success",
+              message: isNowArchived ? "Session archived" : "Session restored from archive",
+            })
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err)
+            toast.show({ variant: "error", message: `Failed to update session: ${message}` })
+          }
+        })()
       },
     },
     { context: "Select" },
   )
-
-  useEffect(() => {
-    // Cleanup: no-op placeholder retained for future size adjustments
-  }, [])
 
   if (view.type === "rename") {
     return <DialogSessionRename session={view.sessionID} onClose={() => setView({ type: "list" })} />

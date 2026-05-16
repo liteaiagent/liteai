@@ -13,7 +13,7 @@ type Props = {
 }
 
 export function DialogMemory({ onClose }: Props): React.ReactNode {
-  const { theme: _theme } = useTheme()
+  useTheme()
   const { files, loading } = useMemoryFiles()
 
   const items = useMemo<SelectItem<MemoryItem>[]>(

@@ -104,7 +104,7 @@ export function PlanReview({ planText, planFilePath, onApprove, onReject }: Plan
 
       {/* Footer hints */}
       <Box gap={2} marginTop={0}>
-        <Text color={theme.textMuted as Color}>←/→ select</Text>
+        <Text color={theme.textMuted as Color}>↑/↓ select</Text>
         <Text color={theme.textMuted as Color}>enter confirm</Text>
         <Text color={theme.textMuted as Color}>esc reject</Text>
       </Box>

@@ -139,18 +139,7 @@ export function DialogModel(props: Props) {
     }
 
     return [...favoriteOptions, ...recentOptions, ...providerOptions, ...popularProviders]
-  }, [
-    query,
-    showExtra,
-    connected,
-    local.model,
-    availableProviders,
-    props.providerID,
-    providers,
-    navigation,
-    theme,
-    props.onClose,
-  ])
+  }, [query, showExtra, connected, local.model, availableProviders, props.providerID, providers, syncConnected, theme])
 
   const provider = props.providerID ? availableProviders.find((x) => x.id === props.providerID) : null
   const title = provider?.name ?? "Select model"

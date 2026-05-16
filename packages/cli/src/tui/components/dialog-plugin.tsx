@@ -66,7 +66,7 @@ export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
   useEffect(() => {
     void refetchInstalled()
     void refetchMarketplaces()
-  }, [sdk.url, sdk.fetch])
+  }, [sdk])
 
   const errors = useMemo<PluginError[]>(() => {
     const all = installed ?? []
@@ -297,12 +297,12 @@ function DiscoverTab(props: {
         footerContent={<Text color={props.theme.textMuted as Color}>Enter to install · Esc to back</Text>}
         onSelect={async (item) => {
           if (!selectedMarketplace) {
-            setSelectedMarketplace(item.value as string)
+            setSelectedMarketplace(item.value)
             return
           }
-          const [marketplace, name] = (item.value as string).split("::")
+          const [marketplace, name] = item.value.split("::")
           if (installing) return
-          setInstalling(item.value as string)
+          setInstalling(item.value)
           await props.sdk.fetch(
             `${props.sdk.url}/plugin/marketplace/${encodeURIComponent(marketplace)}/install/${encodeURIComponent(name)}`,
             { method: "POST" },

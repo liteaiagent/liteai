@@ -36,7 +36,7 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
       "tabs:next": () => setTab((t) => (t === "session" ? "global" : "session")),
       "tabs:previous": () => setTab((t) => (t === "session" ? "global" : "session")),
       "select:cycleRange": () => setDateRange((r) => RANGES[(RANGES.indexOf(r) + 1) % RANGES.length]),
-      "global:close": () => _onClose(),
+      "global:close": _onClose,
     },
     { context: "Tabs" },
   )

@@ -13,22 +13,37 @@ import type { SessionStats } from "../hooks/use-session-stats"
 
 // ── Encoding detection ─────────────────────────────────────────────────────
 
+/**
+ * Known modern terminals that support UTF-8 regardless of LANG/LC_ALL.
+ * Matches the xterm.js detection used in scroll-handler.tsx.
+ */
+const KNOWN_UTF8_TERM_PROGRAMS = new Set(["vscode", "cursor", "windsurf"])
+
 function supportsUtf8(): boolean {
   // Explicit override takes priority
   if (process.env.LITEAI_ASCII === "1") return false
 
-  // Windows without a LANG or LC_ALL override is likely a non-UTF-8 code page
-  if (process.platform === "win32") {
-    const lang = process.env.LANG ?? process.env.LC_ALL ?? ""
-    if (!lang) return false
-  }
+  // Non-TTY output (piped, redirected) — fall back to ASCII for safety
+  if (!process.stdout.isTTY) return false
 
-  // Check stdout encoding capability as a final proxy
-  if (typeof process.stdout.getColorDepth === "function") {
-    return process.stdout.getColorDepth() > 1
-  }
+  // Known modern terminals — these always support UTF-8
+  if (process.env.WT_SESSION) return true // Windows Terminal
+  const tp = process.env.TERM_PROGRAM
+  if (tp && KNOWN_UTF8_TERM_PROGRAMS.has(tp)) return true
 
-  return true
+  // Locale explicitly declares UTF-8
+  const locale = process.env.LANG ?? process.env.LC_CTYPE ?? process.env.LC_ALL ?? ""
+  if (locale && /utf-?8/i.test(locale)) return true
+
+  // Windows without locale vars AND no modern terminal indicator — likely
+  // legacy cmd.exe or PowerShell without `chcp 65001`. Fall back to ASCII.
+  if (process.platform === "win32" && !locale) return false
+
+  // Non-Windows TTY with no explicit locale — conservatively assume UTF-8
+  // (most modern *nix terminals default to UTF-8)
+  if (!locale) return true
+
+  return false
 }
 
 // ── Box drawing ────────────────────────────────────────────────────────────
