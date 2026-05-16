@@ -251,6 +251,17 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       pagedown: "select:pageDown",
       home: "select:home",
       end: "select:end",
+      // Digit keys for number quick-select (gated by showNumbers in useSelectList)
+      "0": "select:digit0",
+      "1": "select:digit1",
+      "2": "select:digit2",
+      "3": "select:digit3",
+      "4": "select:digit4",
+      "5": "select:digit5",
+      "6": "select:digit6",
+      "7": "select:digit7",
+      "8": "select:digit8",
+      "9": "select:digit9",
     },
   },
   {
