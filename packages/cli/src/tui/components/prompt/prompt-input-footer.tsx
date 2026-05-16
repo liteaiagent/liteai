@@ -7,6 +7,13 @@
  * │ [FooterLeftSide]                         [Notifications] │
  * └──────────────────────────────────────────────────────────┘
  *
+ * Slash stall fix: we always render the same component tree structure.
+ * When suggestions are active we render PromptCommandSuggestions *instead of*
+ * PromptInputFooterLeftSide in the left slot — but via conditional content
+ * inside a stable Box, not by swapping the Box itself out. This prevents Ink
+ * from doing a full subtree unmount/remount which caused the one-frame visual
+ * stall when clearing a "/" input.
+ *
  * Stripped:
  * - AutocompleteFooterSuggestions overlay (tab completion)
  * - PromptInputHelpMenu
@@ -73,19 +80,52 @@ export function PromptInputFooter({
   const columns = terminalSize?.columns ?? 80
   const isNarrow = useMemo(() => columns < 80, [columns])
 
-  if (atIsLoading || (atSuggestions && atSuggestions.length > 0)) {
+  // Determine which overlay is active.
+  // We still render the stable left-side box but replace its content — this
+  // avoids the one-frame stall caused by full subtree unmount/remount.
+  const hasAtSuggestions = atIsLoading || (atSuggestions?.length ?? 0) > 0
+  const hasCommandSuggestions = !hasAtSuggestions && (commandSuggestions?.length ?? 0) > 0
+
+  const leftContent = (() => {
+    if (searchState?.isSearching) {
+      return (
+        <HistorySearchInput
+          value={searchState.query}
+          onChange={searchState.setQuery}
+          hasFailedMatch={searchState.hasFailedMatch}
+        />
+      )
+    }
+
+    if (hasAtSuggestions) {
+      return (
+        <PromptCommandSuggestions
+          suggestions={atSuggestions ?? []}
+          selectedIndex={atSelectedIndex ?? 0}
+          isLoading={atIsLoading}
+        />
+      )
+    }
+
+    if (hasCommandSuggestions) {
+      return (
+        <PromptCommandSuggestions suggestions={commandSuggestions ?? []} selectedIndex={commandSelectedIndex ?? 0} />
+      )
+    }
+
     return (
-      <PromptCommandSuggestions
-        suggestions={atSuggestions ?? []}
-        selectedIndex={atSelectedIndex ?? 0}
-        isLoading={atIsLoading}
+      <PromptInputFooterLeftSide
+        exitMessage={exitMessage}
+        vimMode={vimMode}
+        mode={mode}
+        suppressHint={false}
+        isLoading={isLoading}
+        isPasting={isPasting}
+        config={config}
+        hint={hint}
       />
     )
-  }
-
-  if (commandSuggestions && commandSuggestions.length > 0) {
-    return <PromptCommandSuggestions suggestions={commandSuggestions} selectedIndex={commandSelectedIndex ?? 0} />
-  }
+  })()
 
   return (
     <Box
@@ -94,29 +134,12 @@ export function PromptInputFooter({
       paddingX={2}
       gap={isNarrow ? 0 : 1}
     >
-      {/* Left side: exit message / vim mode / hints / history search */}
-      <Box flexDirection="column" flexShrink={isNarrow ? 0 : 1}>
-        {searchState?.isSearching ? (
-          <HistorySearchInput
-            value={searchState.query}
-            onChange={searchState.setQuery}
-            hasFailedMatch={searchState.hasFailedMatch}
-          />
-        ) : (
-          <PromptInputFooterLeftSide
-            exitMessage={exitMessage}
-            vimMode={vimMode}
-            mode={mode}
-            suppressHint={false}
-            isLoading={isLoading}
-            isPasting={isPasting}
-            config={config}
-            hint={hint}
-          />
-        )}
+      {/* Left slot: stable box — content changes without unmounting the box */}
+      <Box flexDirection="column" flexShrink={isNarrow ? 0 : 1} flexGrow={1}>
+        {leftContent}
       </Box>
 
-      {/* Right side: model name / debug / toast */}
+      {/* Right side: toasts / debug */}
       <Box flexShrink={1} gap={1}>
         <Notifications debug={debug} verbose={verbose} isInputWrapped={isInputWrapped} isNarrow={isNarrow} />
       </Box>

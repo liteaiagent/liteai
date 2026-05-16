@@ -4,7 +4,7 @@ import { CommandPalette } from "../../components/command-palette"
 import { DialogMemory } from "../../components/dialog-memory"
 import { DialogSearch } from "../../components/dialog-search"
 import { DialogSessionList } from "../../components/dialog-session-list"
-import { Logo } from "../../components/logo"
+import { HomeScreen } from "../../components/home-screen"
 import { dispatchMessageAction, type MessageActionCaps } from "../../components/message-action-handlers"
 import type { MessageActionContext } from "../../components/message-action-registry"
 import { MessageActionsBar } from "../../components/message-actions-bar"
@@ -13,8 +13,6 @@ import { PromptInput } from "../../components/prompt/prompt-input"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
-import { ThinkingToggleDialog } from "../../components/thinking-toggle"
-import { Tips } from "../../components/tips"
 import { TodoTray } from "../../components/todo-tray"
 import { TokenWarning } from "../../components/token-warning"
 import { TranscriptSearch } from "../../components/transcript-search"
@@ -25,6 +23,7 @@ import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
 import { useSession } from "../../context/session"
 import { StatsProvider, useStats } from "../../context/stats"
+import { useToast } from "../../context/toast"
 import { useTuiConfig } from "../../context/tui-config"
 import { useClipboard } from "../../hooks/use-clipboard"
 import { useMessageCursor } from "../../hooks/use-message-cursor"
@@ -69,6 +68,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
   useRegisterKeybindingContext("Chat")
   const modalPane = useModalPane()
   const route = useRoute()
+  const toast = useToast()
   const { copy } = useClipboard()
   const terminalSize = useContext(TerminalSizeContext)
   const [_sidebarOpen, setSidebarOpen] = useState(false)
@@ -106,17 +106,11 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
     {
       "chat:sidebarToggle": () => setSidebarOpen((v) => !v),
       "chat:thinkingToggle": () => {
-        modalPane.openModal(
-          <ThinkingToggleDialog
-            currentValue={showThinking}
-            onSelect={(enabled: boolean) => {
-              setShowThinking(enabled)
-              modalPane.closeModal()
-            }}
-            onCancel={() => modalPane.closeModal()}
-            isMidConversation={messages.length > 0}
-          />,
-        )
+        setShowThinking((prev) => {
+          const next = !prev
+          toast.show({ variant: "success", message: `Thinking: ${next ? "on" : "off"}` })
+          return next
+        })
       },
       "chat:newSession": () => route.navigate({ type: "session" }),
       "chat:sessionList": () => modalPane.openModal(<DialogSessionList onClose={() => modalPane.closeModal()} />),
@@ -281,13 +275,9 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
                 }}
               >
                 {messages.length === 0 ? (
-                  // Boot state or empty session: show logo + tips in the scrollable area.
-                  // Same component tree as active sessions — data-level guard, not a branch.
-                  <Box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
-                    <Logo />
-                    <Box height={2} />
-                    <Tips />
-                  </Box>
+                  // Boot state or empty session: show compact home screen banner.
+                  // The banner scrolls up naturally when messages arrive.
+                  <HomeScreen />
                 ) : (
                   <Messages scrollRef={scrollRef} />
                 )}

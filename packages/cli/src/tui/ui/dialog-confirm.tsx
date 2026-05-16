@@ -1,9 +1,9 @@
 import { Box, Text } from "@liteai/ink"
 import type React from "react"
 import { useState } from "react"
+import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
-import { Dialog } from "./dialog"
-
+import { DialogPane } from "../primitives/dialog-pane"
 export type DialogConfirmProps = {
   title: string
   message: string
@@ -13,6 +13,8 @@ export type DialogConfirmProps = {
 
 export function DialogConfirm({ title, message, onConfirm, onCancel }: DialogConfirmProps): React.ReactNode {
   const [active, setActive] = useState<"confirm" | "cancel">("confirm")
+
+  useRegisterKeybindingContext("Confirmation")
 
   useKeybindings(
     {
@@ -25,7 +27,7 @@ export function DialogConfirm({ title, message, onConfirm, onCancel }: DialogCon
   )
 
   return (
-    <Dialog title={title} onCancel={() => onCancel?.()} isCancelActive>
+    <DialogPane title={title}>
       <Box paddingBottom={1}>
         <Text dim>{message}</Text>
       </Box>
@@ -37,6 +39,6 @@ export function DialogConfirm({ title, message, onConfirm, onCancel }: DialogCon
           <Text color={active === "confirm" ? "ansi:blue" : "ansi:blackBright"}>Confirm</Text>
         </Box>
       </Box>
-    </Dialog>
+    </DialogPane>
   )
 }

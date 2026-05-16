@@ -3,6 +3,7 @@ import { useContext, useMemo, useState } from "react"
 import { useTheme } from "../context/theme"
 import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
+import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { useAppState } from "../state"
 import { ContextUsageDisplay } from "./context-usage-display"
@@ -20,6 +21,7 @@ const FACTOIDS = [
 ]
 
 export function DialogStats({ sessionID, onClose: _onClose }: Props) {
+  useRegisterKeybindingContext("Tabs")
   const { theme } = useTheme()
   const session_diff = useAppState((s) => s.session_diff)
   const stats = useSessionStats(sessionID)

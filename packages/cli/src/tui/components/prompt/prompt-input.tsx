@@ -141,7 +141,7 @@ export const TUI_COMMANDS: Command[] = [
   { name: "permissions", description: "View pending permission requests", template: "", hints: [] },
   { name: "plan", description: "Toggle plan mode (think before acting)", template: "", hints: [] },
   { name: "plugins", description: "Manage installed plugins", template: "", hints: [] },
-  { name: "provider", description: "Connect or disconnect AI providers", template: "", hints: [] },
+  { name: "connect", description: "Connect or disconnect AI providers", template: "", hints: [] },
   { name: "rewind", description: "Time-travel through conversation history", template: "", hints: [] },
   { name: "sessions", description: "List and switch between sessions", template: "", hints: [] },
   { name: "stats", description: "Show session statistics and token usage", template: "", hints: [] },
@@ -398,7 +398,7 @@ export function PromptInput({ debug, verbose, isLoading, focus, hint, cursorMode
         }
       },
       plugins: () => modalPane.openModal(<DialogPlugin onClose={modalPane.closeModal} />),
-      provider: () => modalPane.openModal(<DialogProvider onClose={modalPane.closeModal} />),
+      connect: () => modalPane.openModal(<DialogProvider onClose={modalPane.closeModal} />),
       rewind: () => modalPane.openModal(<DialogRewind onClose={modalPane.closeModal} />),
       sessions: () => modalPane.openModal(<DialogSessionList onClose={modalPane.closeModal} />),
       theme: () => modalPane.openModal(<DialogTheme onClose={modalPane.closeModal} />),

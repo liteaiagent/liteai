@@ -132,7 +132,7 @@ export function SessionLayout({
             bottom={0}
             left={0}
             right={0}
-            maxHeight={terminalRows - MODAL_TRANSCRIPT_PEEK}
+            height={terminalRows - MODAL_TRANSCRIPT_PEEK}
             flexDirection="column"
             overflow="hidden"
             opaque={true}
@@ -140,7 +140,7 @@ export function SessionLayout({
             <Box flexShrink={0}>
               <Text color={"gray" as Color}>{"▔".repeat(columns)}</Text>
             </Box>
-            <Box flexDirection="column" paddingX={2} flexShrink={0} overflow="hidden">
+            <Box flexDirection="column" paddingX={2} flexGrow={1} overflowY="hidden">
               {modal}
             </Box>
           </Box>

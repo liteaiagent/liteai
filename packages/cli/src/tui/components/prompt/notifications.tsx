@@ -3,9 +3,8 @@
  * Adapted port from MVP `PromptInput/Notifications.tsx`.
  *
  * Displays (right side of footer):
- * 1. Model name — from `useLocal().model.parsed()`
- * 2. Debug indicator — when verbose/debug mode is active
- * 3. Toast messages — from `useToast().toasts` with variant-based colors
+ * 1. Debug indicator — when verbose/debug mode is active
+ * 2. Toast messages — from `useToast().toasts` with variant-based colors
  *
  * Stripped:
  * - All feature-flag gated code (VOICE_MODE, KAIROS, KAIROS_BRIEF)
@@ -24,7 +23,6 @@
  */
 
 import { Box, type Color, Text } from "@liteai/ink"
-import { useLocal } from "../../context/local"
 import { useTheme } from "../../context/theme"
 import { useToast } from "../../context/toast"
 
@@ -54,11 +52,9 @@ function variantColor(variant: string, theme: Record<string, unknown>): Color | 
 }
 
 export function Notifications({ debug, verbose, isNarrow }: NotificationsProps) {
-  const local = useLocal()
   const toast = useToast()
   const { theme } = useTheme()
 
-  const parsed = local.model.parsed()
   const alignItems = isNarrow ? "flex-start" : "flex-end"
 
   return (
@@ -87,13 +83,6 @@ export function Notifications({ debug, verbose, isNarrow }: NotificationsProps) 
           </Text>
         </Box>
       )}
-
-      {/* Model name display */}
-      <Box>
-        <Text dim wrap="truncate">
-          {parsed.model}
-        </Text>
-      </Box>
     </Box>
   )
 }

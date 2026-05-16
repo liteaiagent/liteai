@@ -2,8 +2,8 @@ import { Box } from "@liteai/ink"
 import type React from "react"
 import { useState } from "react"
 import { TextInput } from "../components/text-input"
-import { Dialog } from "./dialog"
-
+import { DialogPane } from "../primitives/dialog-pane"
+import { useDialogLifecycle } from "../primitives/use-dialog-lifecycle"
 export type DialogPromptProps = {
   title: string
   description?: React.ReactNode
@@ -23,8 +23,14 @@ export function DialogPrompt({
 }: DialogPromptProps): React.ReactNode {
   const [input, setInput] = useState(value)
 
+  useDialogLifecycle({
+    contextName: "Select",
+    onClose: () => onCancel?.(),
+    isActive: !!onCancel,
+  })
+
   return (
-    <Dialog title={title} onCancel={() => onCancel?.()} isCancelActive>
+    <DialogPane title={title}>
       <Box flexDirection="column" gap={1} paddingBottom={1}>
         {description && <Box>{description}</Box>}
         <Box borderStyle="round" paddingX={1} borderColor="ansi:blue" width="100%">
@@ -38,6 +44,6 @@ export function DialogPrompt({
           />
         </Box>
       </Box>
-    </Dialog>
+    </DialogPane>
   )
 }

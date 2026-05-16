@@ -67,7 +67,7 @@ function buildSegments(
   if (connected.length === 0) {
     segments.push({
       priority: 1.9,
-      text: "No provider · Run /provider",
+      text: "No provider · Run /connect",
       color: theme.warning as string,
     })
   }
