@@ -104,6 +104,11 @@ type PromptInputProps = {
   readonly debug: boolean
   readonly verbose: boolean
   readonly isLoading: boolean
+  /**
+   * Whether the prompt has input focus. Derived by the parent (SessionRoute) from
+   * `!modalPane.isOpen && !cursor.active`. Required — no internal fallback.
+   */
+  readonly focus: boolean
   readonly hint?: React.ReactNode
   readonly workspaceID?: string
   /** When true, input is suppressed (cursor mode is active) */
@@ -150,7 +155,7 @@ export const TUI_COMMANDS: Command[] = [
   },
 ]
 
-export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive, onSearch }: PromptInputProps) {
+export function PromptInput({ debug, verbose, isLoading, focus, hint, cursorModeActive, onSearch }: PromptInputProps) {
   const config = useTuiConfig()
   const session = useSession()
   const exit = useExit()
@@ -164,13 +169,6 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   const modalPane = useModalPane()
   const promptRefCtx = usePromptRef()
   const sdk = useSDK()
-
-  // ── Modal-aware focus ──────────────────────────────────────────────────
-  // When a modal pane (e.g., /models, /theme) is open, all prompt input handling
-  // must be disabled so arrow keys, Enter, and character input only reach the
-  // active modal. Without this gate, both the modal and the prompt's text
-  // input process the same keystrokes simultaneously.
-  const isDialogOpen = modalPane.isOpen
 
   // ── Terminal dimensions ─────────────────────────────────────────────────
   const terminalSize = useContext(TerminalSizeContext)
@@ -200,7 +198,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
     mcpResources: mcp_resource,
     projectID: sdk.projectID,
     sdk: sdk.client,
-    enabled: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
+    enabled: focus && !searchState.isSearching && !cursorModeActive,
   })
 
   const [atSelectedIndex, setAtSelectedIndex] = useState(0)
@@ -581,7 +579,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // ── Register PromptRef ──────────────────────────────────────────────────
   useEffect(() => {
     promptRefCtx.set({
-      focused: !isDialogOpen && !cursorModeActive,
+      focused: focus && !cursorModeActive,
       current: { input, parts: [] },
       set: () => {},
       reset: () => {
@@ -602,7 +600,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       },
     })
     return () => promptRefCtx.set(undefined)
-  }, [isDialogOpen, cursorModeActive, mode, input, trackAndSetInput, setCursorOffset, onSubmit, promptRefCtx])
+  }, [focus, cursorModeActive, mode, input, trackAndSetInput, setCursorOffset, onSubmit, promptRefCtx])
 
   // ── Image paste handler ─────────────────────────────────────────────────
   const onImagePaste = useCallback(
@@ -752,7 +750,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
         setExitMessage({ show: false })
       }
     },
-    { isActive: !isDialogOpen && !cursorModeActive },
+    { isActive: focus && !cursorModeActive },
   )
 
   // ── Border color ────────────────────────────────────────────────────────
@@ -849,8 +847,8 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
     onIsPastingChange: () => {
       // paste state managed by usePasteHandler
     },
-    focus: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
-    showCursor: !searchState.isSearching && !isDialogOpen && !cursorModeActive,
+    focus: focus && !searchState.isSearching && !cursorModeActive,
+    showCursor: focus && !searchState.isSearching && !cursorModeActive,
     highlights,
     inlineGhostText,
     onTab,

@@ -3,6 +3,7 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { DialogMemory } from "../../components/dialog-memory"
 import { DialogSearch } from "../../components/dialog-search"
 import { DialogSessionList } from "../../components/dialog-session-list"
+import { Logo } from "../../components/logo"
 import { dispatchMessageAction, type MessageActionCaps } from "../../components/message-action-handlers"
 import type { MessageActionContext } from "../../components/message-action-registry"
 import { MessageActionsBar } from "../../components/message-actions-bar"
@@ -11,6 +12,7 @@ import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
 import { ThinkingToggleDialog } from "../../components/thinking-toggle"
+import { Tips } from "../../components/tips"
 import { TokenWarning } from "../../components/token-warning"
 import { TranscriptSearch } from "../../components/transcript-search"
 import { isCompactEligible } from "../../constants/compact-allowlist"
@@ -44,7 +46,7 @@ function getFolderName(dir: string): string {
   return parts[parts.length - 1] || dir
 }
 
-export function SessionRoute({ sessionID }: { sessionID: string }) {
+export function SessionRoute({ sessionID }: { sessionID?: string }) {
   const {
     session: { sync: syncSession, cleanup: cleanupSession },
   } = useAppActions()
@@ -85,8 +87,9 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
   const promptRef = usePromptRef()
   useRegisterKeybindingContext("MessageActions")
 
-  // Sync session on mount
+  // Sync session on mount — guarded: no-op during boot state (sessionID undefined)
   useEffect(() => {
+    if (!sessionID) return
     syncSession(sessionID)
     return () => {
       cleanupSession(sessionID)
@@ -118,6 +121,10 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
     },
     { context: "Chat", isActive: !cursor.active },
   )
+
+  // Focus arbiter: prompt receives focus only when no modal is open and cursor is inactive.
+  // Derived here (SessionRoute level) so the single owner drives all downstream focus gating.
+  const promptFocused = !modalPane.isOpen && !cursor.active
 
   useKeybindings(
     {
@@ -245,12 +252,23 @@ export function SessionRoute({ sessionID }: { sessionID: string }) {
                   selectMessage: cursor.selectMessage,
                 }}
               >
-                <Messages scrollRef={scrollRef} />
+                {messages.length === 0 ? (
+                  // Boot state or empty session: show logo + tips in the scrollable area.
+                  // Same component tree as active sessions — data-level guard, not a branch.
+                  <Box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+                    <Logo />
+                    <Box height={2} />
+                    <Tips />
+                  </Box>
+                ) : (
+                  <Messages scrollRef={scrollRef} />
+                )}
               </MessageCursorContext.Provider>
             }
             bottom={
               <SessionBottom
                 sessionID={sessionID}
+                focus={promptFocused}
                 cursorContext={makeActionCtx()}
                 onSearch={() => setShowTranscriptSearch(true)}
               />
@@ -304,10 +322,12 @@ function SessionLayoutBridge({
 
 function SessionBottom({
   sessionID,
+  focus,
   cursorContext,
   onSearch,
 }: {
-  sessionID: string
+  sessionID?: string
+  focus: boolean
   cursorContext: MessageActionContext | null
   onSearch?: () => void
 }) {
@@ -324,7 +344,9 @@ function SessionBottom({
 
   const handleAutoCompact = useCallback(() => {
     if (breaker.isBroken) return
-    void breaker.withCircuitBreaker(() => sdk.client.project.session.summarize({ sessionID, projectID: sdk.projectID }))
+    void breaker.withCircuitBreaker(() =>
+      sdk.client.project.session.summarize({ sessionID: sessionID ?? "", projectID: sdk.projectID }),
+    )
   }, [breaker, sdk, sessionID])
 
   return (
@@ -335,6 +357,7 @@ function SessionBottom({
         debug={false}
         verbose={false}
         isLoading={session.isLoading}
+        focus={focus}
         cursorModeActive={!!cursorContext}
         onSearch={onSearch}
       />

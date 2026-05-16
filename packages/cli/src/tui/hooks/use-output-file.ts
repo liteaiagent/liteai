@@ -12,7 +12,12 @@ import { writeOutputFile } from "../util/output-file"
  * The write is only triggered once: after `savedPath` is set subsequent
  * renders are no-ops even if `output` keeps growing.
  */
-export function useOutputFile(opts: { output: string; sessionID: string; callID: string; threshold?: number }): {
+export function useOutputFile(opts: {
+  output: string
+  sessionID: string | undefined
+  callID: string
+  threshold?: number
+}): {
   savedPath: string | null
 } {
   const config = useTuiConfig()
@@ -20,7 +25,7 @@ export function useOutputFile(opts: { output: string; sessionID: string; callID:
   const [savedPath, setSavedPath] = useState<string | null>(null)
 
   useEffect(() => {
-    if (opts.output.length > limit && !savedPath) {
+    if (opts.sessionID && opts.output.length > limit && !savedPath) {
       writeOutputFile({
         sessionID: opts.sessionID,
         callID: opts.callID,

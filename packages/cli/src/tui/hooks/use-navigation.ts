@@ -30,13 +30,8 @@ export function useNavigation(): NavigationAPI {
     return {
       open: (content: ReactNode) => modalPane.pushModal(content),
       close: () => modalPane.popModal(),
-      replace: (content: ReactNode) => {
-        // Atomic: pop current + push new in sequence.
-        // Both are functional setState calls against the same state,
-        // so React batches them into a single render.
-        modalPane.popModal()
-        modalPane.pushModal(content)
-      },
+      // Single replaceTop call = single render cycle = no focus flicker.
+      replace: (content: ReactNode) => modalPane.replaceTop(content),
     }
   }, [modalPane])
 }

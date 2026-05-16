@@ -3,21 +3,22 @@ import { memo, useContext, useMemo, useSyncExternalStore } from "react"
 import { useLocal } from "../context/local"
 import { useStats } from "../context/stats"
 import { useTheme } from "../context/theme"
-import { useSessionContext } from "../routes/session/ctx"
+import { useOptionalSessionContext } from "../routes/session/ctx"
 import { type AppState, useAppState } from "../state"
 import { SessionTabStore } from "../state/session-tab-store"
 import { useExitState } from "./global-exit-handler"
 
-type Props = { sessionID: string }
+/** sessionID is optional — StatusLine renders in both boot (undefined) and active states. */
+type Props = { sessionID?: string }
 
 type Segment = { priority: number; text: string; color: string }
 
 function buildSegments(
   stats: ReturnType<typeof useStats>,
   local: ReturnType<typeof useLocal>,
-  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff" | "session_status">,
+  state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff" | "session_status" | "provider_next">,
   theme: ReturnType<typeof useTheme>["theme"],
-  sessionID: string,
+  sessionID: string | undefined,
   displayMode: "compact" | "transcript",
 ): Segment[] {
   const segments: Segment[] = []
@@ -33,88 +34,100 @@ function buildSegments(
     segments.push({ priority: 1.5, text: "Compact (ctrl+o)", color: theme.textMuted as string })
   }
 
-  const session = state.sessions.find((s) => s.id === sessionID)
-  if (session?.toolProfile === "Plan") {
-    segments.push({ priority: 1.6, text: "📋 Plan", color: theme.warning as string })
-  }
-
-  // effort is a server-side config field not yet reflected in the SDK Config type
-  const effort = (state.config as Record<string, unknown>).effort as string | undefined
-  if (effort && effort !== "medium") {
-    segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
-  }
-
-  // 1.8 Session Status (only non-idle states are worth showing)
-  const sessionStatus = state.session_status?.[sessionID]
-  if (sessionStatus && sessionStatus.type !== "idle") {
-    let statusColor = theme.textMuted
-    let statusText: string = sessionStatus.type
-    if (sessionStatus.type === "busy") {
-      statusColor = theme.primary
-      statusText = "busy..."
-    } else if (sessionStatus.type === "retry") {
-      statusColor = theme.warning
-      statusText = "retrying..."
+  if (sessionID) {
+    const session = state.sessions.find((s) => s.id === sessionID)
+    if (session?.toolProfile === "Plan") {
+      segments.push({ priority: 1.6, text: "📋 Plan", color: theme.warning as string })
     }
-    segments.push({ priority: 1.8, text: statusText, color: statusColor as string })
+
+    // effort is a server-side config field not yet reflected in the SDK Config type
+    const effort = (state.config as Record<string, unknown>).effort as string | undefined
+    if (effort && effort !== "medium") {
+      segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
+    }
+
+    // 1.8 Session Status (only non-idle states are worth showing)
+    const sessionStatus = state.session_status?.[sessionID]
+    if (sessionStatus && sessionStatus.type !== "idle") {
+      let statusColor = theme.textMuted
+      let statusText: string = sessionStatus.type
+      if (sessionStatus.type === "busy") {
+        statusColor = theme.primary
+        statusText = "busy..."
+      } else if (sessionStatus.type === "retry") {
+        statusColor = theme.warning
+        statusText = "retrying..."
+      }
+      segments.push({ priority: 1.8, text: statusText, color: statusColor as string })
+    }
   }
 
-  // 2. Context %
-  let ctxColor = theme.success
-  if (stats.contextUtilization >= 0.85) ctxColor = theme.error
-  else if (stats.contextUtilization >= 0.6) ctxColor = theme.warning
-  segments.push({
-    priority: 2,
-    text: `${Math.round(stats.contextUtilization * 100)}% ctx`,
-    color: ctxColor as string,
-  })
-
-  // 3. Cost (optional)
-  if (stats.totalCost !== null) {
-    segments.push({ priority: 3, text: `$${stats.totalCost.toFixed(3)}`, color: theme.text as string })
+  // 1.9 Provider status — show when no provider connected (onboarding hint)
+  const connected = state.provider_next.connected
+  if (connected.length === 0) {
+    segments.push({
+      priority: 1.9,
+      text: "No provider · Run /provider",
+      color: theme.warning as string,
+    })
   }
 
-  // 4. Tokens
-  const totalToks =
-    stats.totalTokens.input +
-    stats.totalTokens.output +
-    stats.totalTokens.reasoning +
-    stats.totalTokens.cache.read +
-    stats.totalTokens.cache.write
+  if (sessionID) {
+    // 2. Context %
+    let ctxColor = theme.success
+    if (stats.contextUtilization >= 0.85) ctxColor = theme.error
+    else if (stats.contextUtilization >= 0.6) ctxColor = theme.warning
+    segments.push({
+      priority: 2,
+      text: `${Math.round(stats.contextUtilization * 100)}% ctx`,
+      color: ctxColor as string,
+    })
 
-  let tokText = `${totalToks} tok`
-  if (totalToks >= 1_000_000) tokText = `${(totalToks / 1_000_000).toFixed(1)}M tok`
-  else if (totalToks >= 1_000) tokText = `${(totalToks / 1_000).toFixed(1)}k tok`
-  segments.push({ priority: 4, text: tokText, color: theme.textMuted as string })
+    // 3. Cost (optional)
+    if (stats.totalCost !== null) {
+      segments.push({ priority: 3, text: `$${stats.totalCost.toFixed(3)}`, color: theme.text as string })
+    }
 
-  // 5. CWD
+    // 4. Tokens
+    const totalToks =
+      stats.totalTokens.input +
+      stats.totalTokens.output +
+      stats.totalTokens.reasoning +
+      stats.totalTokens.cache.read +
+      stats.totalTokens.cache.write
+
+    let tokText = `${totalToks} tok`
+    if (totalToks >= 1_000_000) tokText = `${(totalToks / 1_000_000).toFixed(1)}M tok`
+    else if (totalToks >= 1_000) tokText = `${(totalToks / 1_000).toFixed(1)}k tok`
+    segments.push({ priority: 4, text: tokText, color: theme.textMuted as string })
+  }
+
+  // 5. CWD (always shown)
   const dir = state.path.directory || state.path.worktree || process.cwd()
   const parts = dir.replace(/\\/g, "/").split("/")
   const cwdText = parts[parts.length - 1] || dir
   segments.push({ priority: 5, text: cwdText, color: theme.textMuted as string })
 
-  // 6. Git Branch (optional)
+  // 6. Git Branch (always shown if available)
   if (state.vcs?.branch) {
     segments.push({ priority: 6, text: `⎇ ${state.vcs.branch}`, color: theme.textMuted as string })
   }
 
-  // 7. Code Changes (optional)
-  const diff = state.session_diff[sessionID]
-  if (diff && diff.length > 0) {
-    let additions = 0
-    let deletions = 0
-    for (const d of diff) {
-      additions += d.additions
-      deletions += d.deletions
+  if (sessionID) {
+    // 7. Code Changes (session-dependent)
+    const diff = state.session_diff[sessionID]
+    if (diff && diff.length > 0) {
+      let additions = 0
+      let deletions = 0
+      for (const d of diff) {
+        additions += d.additions
+        deletions += d.deletions
+      }
+      segments.push({ priority: 7, text: `+${additions} -${deletions}`, color: theme.textMuted as string })
     }
-    // Instead of multi-color in one segment string, we render it as text,
-    // but the StatusLine component will just use theme.textMuted for this generic text for simplicity.
-    // To support complex spans, we'd need a richer Segment type. For now, text is enough.
-    segments.push({ priority: 7, text: `+${additions} -${deletions}`, color: theme.textMuted as string })
   }
 
-  // 8. Session ID
-  segments.push({ priority: 8, text: sessionID.slice(0, 8), color: theme.textMuted as string })
+  // Note: Session ID segment (priority 8) removed — internal noise, surfaced in exit summary only.
 
   // Sort by priority ascending (1 is highest priority)
   segments.sort((a, b) => a.priority - b.priority)
@@ -147,6 +160,7 @@ function StatusLineInner({ sessionID }: Props) {
   const vcs = useAppState((s) => s.vcs)
   const session_diff = useAppState((s) => s.session_diff)
   const session_status = useAppState((s) => s.session_status)
+  const provider_next = useAppState((s) => s.provider_next)
   const local = useLocal()
   const stats = useStats()
   const terminalSize = useContext(TerminalSizeContext)
@@ -154,7 +168,9 @@ function StatusLineInner({ sessionID }: Props) {
 
   const columns = terminalSize?.columns ?? 80
   const budget = columns - 2 // paddingX={1} means 1 on each side
-  const ctx = useSessionContext()
+
+  // Optional — null during boot state (no session) or when sessionID is undefined
+  const ctx = useOptionalSessionContext()
 
   const { tabs, activeTabId } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
 
@@ -163,12 +179,25 @@ function StatusLineInner({ sessionID }: Props) {
       buildSegments(
         stats,
         local,
-        { sessions, config, path, vcs, session_diff, session_status },
+        { sessions, config, path, vcs, session_diff, session_status, provider_next },
         theme,
         sessionID,
         ctx?.displayMode ?? "compact",
       ),
-    [stats, local, sessions, config, path, vcs, session_diff, session_status, theme, sessionID, ctx?.displayMode],
+    [
+      stats,
+      local,
+      sessions,
+      config,
+      path,
+      vcs,
+      session_diff,
+      session_status,
+      provider_next,
+      theme,
+      sessionID,
+      ctx?.displayMode,
+    ],
   )
 
   const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])
@@ -191,12 +220,12 @@ function StatusLineInner({ sessionID }: Props) {
           {tabs.slice(0, 9).map((tab, idx) => {
             const isActive = tab === activeTabId
             const sessionTitle = sessions.find((s) => s.id === tab)?.title ?? tab.slice(0, 8)
-            const truncated = sessionTitle.length > 15 ? `${sessionTitle.slice(0, 12)}...` : sessionTitle
+            const truncatedTitle = sessionTitle.length > 15 ? `${sessionTitle.slice(0, 12)}...` : sessionTitle
             return (
               <Box key={tab} flexDirection="row" gap={0}>
                 <Text color={theme.textMuted as Color}>alt+{idx + 1} </Text>
                 <Text color={isActive ? (theme.primary as Color) : (theme.text as Color)} bold={isActive}>
-                  {truncated}
+                  {truncatedTitle}
                 </Text>
               </Box>
             )

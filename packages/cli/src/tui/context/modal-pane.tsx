@@ -35,6 +35,12 @@ export type ModalPaneAPI = {
   popModal: () => void
   /** Close the modal pane unconditionally, clearing the entire stack. */
   closeModal: () => void
+  /**
+   * Atomically replace the top of the stack with new content.
+   * Single setStack call = single render cycle = no focus flicker.
+   * Use for tab navigation within a dialog (e.g., Config tabs).
+   */
+  replaceTop: (content: ReactNode) => void
   /** Whether a modal pane is currently showing (stack is non-empty). */
   isOpen: boolean
   /** The topmost modal content, or null if the stack is empty. */
@@ -65,6 +71,12 @@ export function ModalPaneProvider({ children }: { children: ReactNode }) {
     setStack([])
   }, [])
 
+  const replaceTop = useCallback((node: ReactNode) => {
+    // Single setStack call = single render = no focus flicker during tab switching.
+    // Falls back to push if stack is empty (defensive guard, should not occur in practice).
+    setStack((prev) => (prev.length === 0 ? [node] : [...prev.slice(0, -1), node]))
+  }, [])
+
   const content = stack.length > 0 ? stack[stack.length - 1] : null
   const isOpen = stack.length > 0
 
@@ -74,11 +86,12 @@ export function ModalPaneProvider({ children }: { children: ReactNode }) {
       pushModal,
       popModal,
       closeModal,
+      replaceTop,
       isOpen,
       content,
       scrollRef,
     }),
-    [openModal, pushModal, popModal, closeModal, isOpen, content],
+    [openModal, pushModal, popModal, closeModal, replaceTop, isOpen, content],
   )
 
   return <ModalPaneCtx.Provider value={api}>{children}</ModalPaneCtx.Provider>

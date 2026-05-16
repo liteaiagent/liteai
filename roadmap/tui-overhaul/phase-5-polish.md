@@ -258,6 +258,14 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 3. Include resume command: `liteai --resume '<session-id>'`
 
 ### Target Output
+
+> **Encoding note**: The box-drawing characters below (`┌─┐ │ └┘`) and symbols (`✓ ✗`) require a UTF-8 capable terminal. The implementation must detect encoding support and provide an ASCII fallback:
+> - Detect: `process.platform === 'win32' && !process.env.LANG` or `process.stdout.hasColors?.() === false` as proxy for non-UTF-8 environments
+> - UTF-8 path: render with box-drawing chars and `✓`/`✗`
+> - ASCII fallback: use `+---+` / `| |` borders and `[OK]`/`[FAIL]` labels
+> - Expose `LITEAI_ASCII=1` env var or `output.ascii: true` config flag to force ASCII mode
+
+**UTF-8 terminal:**
 ```
 ┌─────────────────────────────────────────┐
 │ Interaction Summary                     │
@@ -270,6 +278,21 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 │                                         │
 │ To resume: liteai --resume <session-id> │
 └─────────────────────────────────────────┘
+```
+
+**ASCII fallback:**
+```
++-----------------------------------------+
+| Interaction Summary                     |
+| Model:        gemini-2.5-pro            |
+| Messages:     12                        |
+| Tool Calls:   8 ([OK] / 2 [FAIL])      |
+| Context:      45% used                  |
+| Cost:         $0.042                    |
+| Wall Time:    3m 22s                    |
+|                                         |
+| To resume: liteai --resume <session-id> |
++-----------------------------------------+
 ```
 
 ### Reference
@@ -297,7 +320,7 @@ When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to st
 |-----|------------|------------------------|
 | Claude Code | Normal (conditionally alternate) | Yes |
 | Gemini CLI | Normal (conditionally alternate) | Yes |
-| LiteAI | Always alternate (needs investigation) | No |
+| LiteAI | Alternate (presumed, needs confirmation) | No |
 
 ---
 

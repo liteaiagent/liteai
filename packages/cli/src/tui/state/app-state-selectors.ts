@@ -27,7 +27,8 @@ function getOrSet<K, V>(map: Map<K, V>, key: K, factory: () => V): V {
 }
 
 const messagesCache = new Map<string, (s: AppState) => readonly Message[]>()
-export function selectMessages(sessionID: string) {
+export function selectMessages(sessionID: string | undefined) {
+  if (!sessionID) return () => EMPTY_MESSAGES
   return getOrSet(messagesCache, sessionID, () => (s: AppState) => s.message[sessionID] ?? EMPTY_MESSAGES)
 }
 
@@ -37,12 +38,14 @@ export function selectParts(messageID: string) {
 }
 
 const permissionsCache = new Map<string, (s: AppState) => readonly PermissionRequest[]>()
-export function selectPermissions(sessionID: string) {
+export function selectPermissions(sessionID: string | undefined) {
+  if (!sessionID) return () => EMPTY_PERMISSIONS
   return getOrSet(permissionsCache, sessionID, () => (s: AppState) => s.permission[sessionID] ?? EMPTY_PERMISSIONS)
 }
 
 const questionsCache = new Map<string, (s: AppState) => readonly QuestionRequest[]>()
-export function selectQuestions(sessionID: string) {
+export function selectQuestions(sessionID: string | undefined) {
+  if (!sessionID) return () => EMPTY_QUESTIONS
   return getOrSet(questionsCache, sessionID, () => (s: AppState) => s.question[sessionID] ?? EMPTY_QUESTIONS)
 }
 
@@ -52,12 +55,14 @@ export function selectTodos(sessionID: string) {
 }
 
 const diffsCache = new Map<string, (s: AppState) => readonly Snapshot.FileDiff[]>()
-export function selectSessionDiff(sessionID: string) {
+export function selectSessionDiff(sessionID: string | undefined) {
+  if (!sessionID) return () => EMPTY_DIFFS
   return getOrSet(diffsCache, sessionID, () => (s: AppState) => s.session_diff[sessionID] ?? EMPTY_DIFFS)
 }
 
 const sessionStatusCache = new Map<string, (s: AppState) => SessionStatus | undefined>()
-export function selectSessionStatus(sessionID: string) {
+export function selectSessionStatus(sessionID: string | undefined) {
+  if (!sessionID) return () => undefined
   return getOrSet(sessionStatusCache, sessionID, () => (s: AppState) => s.session_status[sessionID])
 }
 

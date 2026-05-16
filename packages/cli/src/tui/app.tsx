@@ -1,20 +1,17 @@
-import { AlternateScreen, Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
-import { useContext, useEffect, useMemo, useSyncExternalStore } from "react"
+import { AlternateScreen, Box, useInput } from "@liteai/ink"
+import { useEffect, useSyncExternalStore } from "react"
 import type { TuiConfig } from "../cli/config/tui"
-import { GlobalExitHandler, useExitState } from "./components/global-exit-handler"
-import { Logo } from "./components/logo"
-import { PromptInput } from "./components/prompt/prompt-input"
-import { Tips } from "./components/tips"
+import { GlobalExitHandler } from "./components/global-exit-handler"
 import { type Args, ArgsProvider } from "./context/args"
 import { ExitProvider } from "./context/exit"
 import { KVProvider } from "./context/kv"
 import { LocalProvider } from "./context/local"
-import { ModalPaneProvider, useModalPane } from "./context/modal-pane"
+import { ModalPaneProvider } from "./context/modal-pane"
 import { PromptRefProvider } from "./context/prompt"
 import { RouteProvider, useRoute } from "./context/route"
 import { type EventSource, SDKProvider } from "./context/sdk"
 import { SessionProvider } from "./context/session"
-import { ThemeProvider, useTheme } from "./context/theme"
+import { ThemeProvider } from "./context/theme"
 import { ToastProvider, useToast } from "./context/toast"
 import { TuiConfigProvider } from "./context/tui-config"
 import { useIdleWindowTitle } from "./hooks/use-window-title"
@@ -36,124 +33,30 @@ export type AppProps = {
 }
 
 /**
- * BlankSession — renders when no session exists yet (boot or after /clear).
+ * AppContent — renders the active session(s) or the boot state.
  *
- * Shows a prompt input area with a logo and tips. When the user submits,
- * SessionProvider.ensureSession() creates a session and navigates to it,
- * which causes AppContent to render the full SessionRoute.
- */
-function BlankSession() {
-  return (
-    <ModalPaneProvider>
-      <BlankSessionContent />
-    </ModalPaneProvider>
-  )
-}
-
-/**
- * Inner content of BlankSession — separated so it can call useModalPane()
- * (which requires being inside a ModalPaneProvider).
+ * Both the boot state (no session yet) and the active session state render through
+ * the same `SessionRoute` component. The distinction is structural:
+ * - No session: single `SessionRoute` with no sessionID, wrapped in its own `ModalPaneProvider`
+ * - Active session(s): tab set of `SessionRoute` instances, each with its own `ModalPaneProvider`
  *
- * When a slash command calls modalPane.openModal(), the content is rendered
- * in the absolute-positioned modal slot at the bottom — mirroring
- * SessionLayout's modal rendering pattern.
+ * The remaining `if (!route.data.sessionID)` branch governs tab-wrapping only,
+ * not which component renders.
  */
-function BlankSessionContent() {
-  const { theme } = useTheme()
-  const exitState = useExitState()
-  const directory = useAppState((s) => s.path.directory)
-  const mcp = useAppState((s) => s.mcp)
-  const modalPane = useModalPane()
-  const terminalSize = useContext(TerminalSizeContext)
-  const terminalRows = terminalSize?.rows ?? 24
-  const columns = terminalSize?.columns ?? 80
-
-  /** Rows of transcript context kept visible above the modal pane's ▔ divider. */
-  const MODAL_TRANSCRIPT_PEEK = 2
-
-  const folderName = useMemo(() => {
-    const dir = directory || process.cwd()
-    const parts = dir.replace(/\\/g, "/").split("/")
-    return parts[parts.length - 1] || dir
-  }, [directory])
-  useIdleWindowTitle(folderName)
-
-  const connectedMcpCount = useMemo(() => {
-    return Object.values(mcp).filter((x) => x.status === "connected").length
-  }, [mcp])
-
-  const mcpError = useMemo(() => {
-    return Object.values(mcp).some((x) => x.status === "failed")
-  }, [mcp])
-
-  return (
-    <Box flexDirection="column" height="100%" paddingX={2}>
-      <Box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
-        <Logo />
-        <Box height={1} />
-        <Box width="100%" maxWidth={80}>
-          <PromptInput debug={false} verbose={false} isLoading={false} />
-        </Box>
-        <Box height={2} />
-        <Tips />
-      </Box>
-
-      <Box
-        flexDirection="row"
-        justifyContent="space-between"
-        paddingY={1}
-        borderStyle="single"
-        borderTop
-        borderBottom={false}
-        borderLeft={false}
-        borderRight={false}
-        borderColor={theme.backgroundElement as Color}
-      >
-        {exitState.pending ? (
-          <Text dim italic>
-            Press {exitState.keyName} again to exit
-          </Text>
-        ) : (
-          <Box gap={2}>
-            <Text color={theme.textMuted as Color}>{directory}</Text>
-            {connectedMcpCount > 0 && (
-              <Text color={theme.text as Color}>
-                <Text color={(mcpError ? theme.error : theme.success) as Color}>⊙ </Text>
-                {connectedMcpCount} MCP
-              </Text>
-            )}
-          </Box>
-        )}
-      </Box>
-
-      {/* Modal pane rendering slot — absolute-positioned bottom-anchored pane */}
-      {modalPane.content != null && (
-        <Box
-          position="absolute"
-          bottom={0}
-          left={0}
-          right={0}
-          maxHeight={terminalRows - MODAL_TRANSCRIPT_PEEK}
-          flexDirection="column"
-          overflow="hidden"
-          opaque={true}
-        >
-          <Box flexShrink={0}>
-            <Text color={"gray" as Color}>{"▔".repeat(columns)}</Text>
-          </Box>
-          <Box flexDirection="column" paddingX={2} flexShrink={0} overflow="hidden">
-            {modalPane.content}
-          </Box>
-        </Box>
-      )}
-    </Box>
-  )
-}
-
 function AppContent() {
   const route = useRoute()
   const toast = useToast()
+  const directory = useAppState((s) => s.path.directory)
   const { tabs, activeTabId } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
+
+  // Update terminal title with folder name during boot (no active session yet)
+  useIdleWindowTitle(
+    (() => {
+      const dir = directory || process.cwd()
+      const parts = dir.replace(/\\/g, "/").split("/")
+      return parts[parts.length - 1] || dir
+    })(),
+  )
 
   useEffect(() => {
     if (route.data.sessionID) {
@@ -174,7 +77,7 @@ function AppContent() {
       if (state.activeTabId) {
         route.navigate({ type: "session", sessionID: state.activeTabId })
       } else {
-        // Last tab closed — navigate to blank session (lazy creation on next submit)
+        // Last tab closed — navigate to boot state (lazy session creation on next submit)
         route.navigate({ type: "session" })
       }
       return
@@ -190,11 +93,17 @@ function AppContent() {
     }
   })
 
-  // No session ID yet — show prompt with logo (session created lazily on first submit)
+  // Boot state: no session yet — single SessionRoute with undefined sessionID.
+  // SessionRoute renders Logo + Tips when messages.length === 0.
   if (!route.data.sessionID) {
-    return <BlankSession />
+    return (
+      <ModalPaneProvider>
+        <SessionRoute />
+      </ModalPaneProvider>
+    )
   }
 
+  // Active session(s): tab set — each tab has its own isolated ModalPaneProvider.
   return (
     <>
       {tabs.map((id) => (

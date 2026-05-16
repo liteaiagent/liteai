@@ -59,13 +59,13 @@ gantt
     Phase 5 - Polish & Verification  :p5, after p4, 3
 ```
 
-| Phase | Name | Goal | Est. Effort |
-|-------|------|------|-------------|
-| **1** | [Standard Primitives](./phase-1-primitives.md) | Build the 3 hooks + 2 components every dialog composes from | Medium |
-| **2** | [Component Migration](./phase-2-migration.md) | Migrate 12+ dialog components to standard primitives, eliminate raw `useInput` | Medium-High |
-| **3** | [Focus & Navigation](./phase-3-focus.md) | Centralize focus management, modal stack semantics, nested escape chains, eliminate BlankSession split | Medium |
-| **4** | [Visual Design & UX](./phase-4-visual.md) | Message Trail pattern, Plan Mode, Command Palette, Shell rendering, Todo tray | High |
-| **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse | Low-Medium |
+| Phase | Name | Goal | Est. Effort | Status |
+|-------|------|------|-------------|--------|
+| **1** | [Standard Primitives](./phase-1-primitives.md) | Build the 3 hooks + 2 components every dialog composes from | Medium | ✅ Done |
+| **2** | [Component Migration](./phase-2-migration.md) | Migrate 12+ dialog components to standard primitives, eliminate raw `useInput` | Medium-High | ✅ Done |
+| **3** | [Focus & Navigation](./phase-3-focus.md) | Centralize focus management, modal stack semantics, nested escape chains, eliminate BlankSession split | Medium | ✅ Done |
+| **4** | [Visual Design & UX](./phase-4-visual.md) | Message Trail pattern, Plan Mode, Command Palette, Shell rendering, Todo tray | High | 🟡 Not Started |
+| **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse | Low-Medium | 🟡 Not Started |
 
 ---
 
@@ -168,5 +168,5 @@ These decisions are settled from prior analysis and should not be revisited:
 | Input conflicts (simultaneous handlers) | Systemic | Zero by construction |
 | Escape-to-close coverage | Inconsistent | 100% via `useDialogLifecycle` |
 | Visual consistency | 3+ wrapper patterns | 1 (`DialogPane`) |
-| Rendering code paths (boot vs session) | 2 divergent | 1 unified (`SessionRoute`) |
+| Rendering code paths (boot vs session) | 2 divergent | 1 unified (`SessionRoute`) | ✅ Done |
 | Context provider nesting | 15 wrappers | ~10 wrappers |

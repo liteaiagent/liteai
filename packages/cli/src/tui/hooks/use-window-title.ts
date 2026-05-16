@@ -25,7 +25,7 @@ function truncate(text: string, maxLen: number): string {
 }
 
 interface WindowTitleOptions {
-  sessionID: string
+  sessionID: string | undefined
   folderName: string
 }
 

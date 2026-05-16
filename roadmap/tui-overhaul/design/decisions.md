@@ -224,19 +224,21 @@ Several providers are wrappers over a single `useState`, `useRef`, or static rea
 
 ---
 
-## Decision 10: Zero-Branching Architecture
+## Decision 10: Unified Component Path
 
 ### Question
 > Should we have separate components for boot state (no session) vs active state (session running)?
 
 ### Decision
-**No. Single `SessionRoute` handles all states. No `BlankSession`, no `BootLayout`, no component-level branching.**
+**No. Unify around a single `SessionRoute` for both boot and active states. Eliminate `BlankSession`.** Some conditional rendering may remain (e.g., wrapping in `ModalPaneProvider` per tab, or rendering Logo + Tips vs Messages based on data), but the structural component entry point is the same.
 
 ### Rationale
 
 Both Claude Code and Gemini CLI use a single rendering path — when there's no history, the message area is empty but the layout is the same. LiteAI's `BlankSession` duplicated 120 lines of modal rendering logic, creating a parallel code path for focus management.
 
-The boot state is `SessionRoute` with `sessionID: undefined` and `messages.length === 0`. Data-level guards (selectors return `EMPTY_*` constants), not component-level branches. The `sessionID` cascade is minimal: 5 files need type widening, 0 changes to message/tool rendering.
+The boot state is `SessionRoute` with `sessionID: undefined` and `messages.length === 0`. Data-level guards (selectors return `EMPTY_*` constants) handle the undefined case. The `sessionID` cascade is minimal: 5 files need type widening, 0 changes to message/tool rendering.
+
+> **Note**: Conditional rendering is not eliminated — it is reduced to data-driven branches (empty vs non-empty messages) and structural concerns (single vs multi-tab wrapping). See `phase-3-focus.md` § Design Principle for the full breakdown.
 
 ---
 

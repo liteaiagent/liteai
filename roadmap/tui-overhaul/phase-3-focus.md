@@ -1,10 +1,21 @@
 # Phase 3: Focus & Navigation Architecture
 
-> **Status**: Not Started  
+> **Status**: ✅ Completed — 2026-05-16  
 > **Depends On**: Phase 2 (Component Migration)  
-> **Estimated Effort**: Medium (~3-5 days)
+> **Estimated Effort**: Medium (~3-5 days) — completed in 1 session
 >
-> **Design Session**: 2026-05-16 — zero-branching architecture finalized
+> **Design Session**: 2026-05-16 — unified component path architecture finalized
+
+### Delivered
+- `modal-pane.tsx` — `replaceTop` (atomic stack swap, no flicker)
+- `use-navigation.ts` — `replace` wired to `replaceTop`
+- `routes/session/ctx.tsx` — `sessionID: string | undefined`, `useOptionalSessionContext()`
+- `state/app-state-selectors.ts` — 5 selectors widened to `string | undefined`
+- `components/prompt/prompt-input.tsx` — `focus: boolean` required prop, internal modal check removed
+- `components/status-line.tsx` — unified boot + active, onboarding hint, session ID segment removed
+- `routes/session/index.tsx` — focus arbiter, Logo+Tips empty state, sync/cleanup guard
+- `app.tsx` — `BlankSession` + `BlankSessionContent` deleted (~120 lines), single `SessionRoute` path
+- `components/exit-summary.ts` — UTF-8/ASCII detected Gemini-style exit summary
 
 ---
 
@@ -42,9 +53,9 @@ Centralize focus management so that input conflicts are impossible by constructi
 
 ---
 
-## Design Principle: Zero Branching
+## Design Principle: Unified Component Path
 
-> **Decided 2026-05-16**: ONE component tree. ONE `SessionRoute`. ONE `StatusLine`. No `BootLayout`, no `BlankSessionContent`, no if/else split.
+> **Decided 2026-05-16**: ONE `SessionRoute` as the structural entry point. Data-driven conditionals (empty vs non-empty messages) replace structural branches (BlankSession vs SessionRoute). Some conditional rendering remains by design (tab wrapping, Logo vs Messages) but the layout infrastructure is identical in all states.
 
 The "boot state" is simply `SessionRoute` where `sessionID` is `undefined` and `messages.length === 0`. Data-level guards, not component-level branches.
 

@@ -89,7 +89,7 @@ ui/hooks/useSelectionList.ts                 — 485 lines (headless selection)
 
 ---
 
-## 3. LiteAI — "Context Provider Tree" (Target: Zero-Branching)
+## 3. LiteAI — "Context Provider Tree" (Target: Unified Component Path)
 
 **Source**: `d:\liteai\packages\cli\src\tui\`
 
@@ -149,7 +149,9 @@ Both codebases converge on the same architecture:
 └─────────────────────────────────────────────┘
 ```
 
-**LiteAI status**: Layer 1 enforced (Phase 2). Layer 2 implemented (`useSelectList` + `SelectList`). Layer 3 standardized (`Pane` primitive).
+**LiteAI status (current)**: Layer 1 enforced via `useKeybindings` (Phase 2 complete). Layer 2 implemented (`useSelectList` + `SelectList`, Phase 1 complete). Layer 3 standardized (`Pane` primitive, Phase 2 complete).
+
+**Target (Phase 3+)**: Focus arbiter centralized in `SessionRoute` (`focus: boolean` required prop). `BlankSession` eliminated — single `SessionRoute` handles boot and active states. `ModalPaneProvider` stack-based with `replaceTop` atomicity.
 
 ---
 
