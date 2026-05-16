@@ -449,6 +449,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           // server submission, so we short-circuit here.
           const interceptor = tuiInterceptors[selectedCmdName]
           if (interceptor) {
+            if (modalPane.isOpen) return // Prevent double-open
             interceptor()
             trackAndSetInput("")
             setCursorOffset(0)
@@ -502,6 +503,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
         const cmdName = cmdMatch[1]
         const interceptor = tuiInterceptors[cmdName]
         if (interceptor) {
+          if (modalPane.isOpen) return // Prevent double-open
           interceptor()
           trackAndSetInput("")
           setCursorOffset(0)

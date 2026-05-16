@@ -243,12 +243,14 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
     bindings: {
       up: "select:previous",
       down: "select:next",
-      j: "select:next",
-      k: "select:previous",
       "ctrl+n": "select:next",
       "ctrl+p": "select:previous",
       enter: "select:accept",
       escape: "select:cancel",
+      pageup: "select:pageUp",
+      pagedown: "select:pageDown",
+      home: "select:home",
+      end: "select:end",
     },
   },
   {

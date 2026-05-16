@@ -11183,6 +11183,119 @@
         },
         "required": ["type", "properties"]
       },
+      "Event.teammate.spawned": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "teammate.spawned"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "teamName": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": "string"
+              },
+              "agentName": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              },
+              "taskId": {
+                "type": "string"
+              },
+              "parentSessionId": {
+                "type": "string"
+              }
+            },
+            "required": ["teamName", "agentId", "agentName", "taskId", "parentSessionId"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.teammate.idle": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "teammate.idle"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "teamName": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": ["available", "interrupted", "failed"]
+              },
+              "summary": {
+                "type": "string"
+              }
+            },
+            "required": ["teamName", "agentId", "reason"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.teammate.active": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "teammate.active"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "teamName": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": "string"
+              },
+              "prompt": {
+                "type": "string"
+              }
+            },
+            "required": ["teamName", "agentId", "prompt"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
+      "Event.teammate.killed": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "teammate.killed"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "teamName": {
+                "type": "string"
+              },
+              "agentId": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": ["teamName", "agentId"]
+          }
+        },
+        "required": ["type", "properties"]
+      },
       "Todo": {
         "type": "object",
         "properties": {
@@ -11783,6 +11896,18 @@
           },
           {
             "$ref": "#/components/schemas/Event.liteai_cache_eviction_hint"
+          },
+          {
+            "$ref": "#/components/schemas/Event.teammate.spawned"
+          },
+          {
+            "$ref": "#/components/schemas/Event.teammate.idle"
+          },
+          {
+            "$ref": "#/components/schemas/Event.teammate.active"
+          },
+          {
+            "$ref": "#/components/schemas/Event.teammate.killed"
           },
           {
             "$ref": "#/components/schemas/Event.todo.updated"
@@ -13226,6 +13351,60 @@
               },
               "perfetto": {
                 "type": "boolean"
+              }
+            }
+          },
+          "tui": {
+            "description": "CLI TUI settings. Portable across machines — syncs via settings.json.",
+            "type": "object",
+            "properties": {
+              "theme": {
+                "description": "Color theme name for the CLI TUI",
+                "type": "string"
+              },
+              "keybinds": {
+                "description": "Custom keybinding overrides (array of { context, bindings } blocks)",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "context": {
+                      "type": "string"
+                    },
+                    "bindings": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["context", "bindings"]
+                }
+              },
+              "errorVerbosity": {
+                "description": "Error verbosity level in the TUI. 'low' shows minimal errors, 'full' shows stack traces.",
+                "type": "string",
+                "enum": ["low", "full"]
+              },
+              "diff_style": {
+                "description": "Diff rendering style. 'auto' chooses based on terminal width, 'stacked' always stacks.",
+                "type": "string",
+                "enum": ["auto", "stacked"]
+              },
+              "output_file_threshold": {
+                "description": "Maximum lines before truncating file output in the TUI (default: 500)",
+                "type": "number",
+                "minimum": 100
               }
             }
           }

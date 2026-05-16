@@ -1,30 +1,43 @@
 import type { ScrollBoxHandle } from "@liteai/ink"
-import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from "react"
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react"
 
 /**
- * ModalPaneContext — the replacement for DialogProvider's stack-based overlay system.
+ * ModalPaneContext — stack-based modal system for nested dialog navigation.
  *
- * Provides a single-slot modal API: one modal at a time, no stacking.
- * Content passed to `openModal` renders in SessionLayout's bottom-anchored
- * `modal` slot (absolute-positioned pane with ▔ divider + ModalContext).
+ * Provides a stack-based modal API: dialogs can push sub-views (e.g., Config → Models)
+ * and Escape pops back to the parent instead of closing everything.
  *
- * Pattern mirrors Claude Code's centeredModal approach: the REPL owns a single
- * ReactNode slot, and commands receive an `onClose` callback rather than
- * manipulating a dialog stack.
+ * **Stack semantics:**
+ * - `openModal(content)` — clears the stack and pushes one item (top-level dialog open)
+ * - `pushModal(content)` — pushes onto existing stack (sub-navigation within a dialog)
+ * - `popModal()` — pops top of stack; if stack empties, modal closes
+ * - `closeModal()` — clears entire stack unconditionally (hard close / Ctrl+C)
+ * - `content` — derived: `stack.at(-1) ?? null`
+ * - `isOpen` — derived: `stack.length > 0`
  *
  * @example
+ * // Top-level open (from slash command):
  * const { openModal, closeModal } = useModalPane()
  * openModal(<DialogModel onClose={closeModal} />)
+ *
+ * // Sub-navigation (from within a dialog, via useNavigation):
+ * const navigation = useNavigation()
+ * navigation.open(<DialogProvider onClose={navigation.close} />) // pushes
+ * navigation.close() // pops back to parent
  */
 
 export type ModalPaneAPI = {
-  /** Render content in the bottom-anchored modal pane. Replaces any currently open modal. */
+  /** Clear the stack and render content in the modal pane. Use for top-level dialog opens. */
   openModal: (content: ReactNode) => void
-  /** Close the currently open modal pane. Safe to call when no modal is open. */
+  /** Push content onto the modal stack. Use for sub-navigation within dialogs. */
+  pushModal: (content: ReactNode) => void
+  /** Pop the top of the modal stack. If stack empties, modal closes. Use for Escape/back. */
+  popModal: () => void
+  /** Close the modal pane unconditionally, clearing the entire stack. */
   closeModal: () => void
-  /** Whether a modal pane is currently showing. */
+  /** Whether a modal pane is currently showing (stack is non-empty). */
   isOpen: boolean
-  /** The current modal content (used by SessionRoute to wire into SessionLayout.modal). */
+  /** The topmost modal content, or null if the stack is empty. */
   content: ReactNode | null
   /** Scroll ref for the modal pane's internal ScrollBox (used by tabs, long lists). */
   scrollRef: React.RefObject<ScrollBoxHandle | null>
@@ -33,24 +46,40 @@ export type ModalPaneAPI = {
 const ModalPaneCtx = createContext<ModalPaneAPI | null>(null)
 
 export function ModalPaneProvider({ children }: { children: ReactNode }) {
-  const [content, setContent] = useState<ReactNode | null>(null)
+  const [stack, setStack] = useState<ReactNode[]>([])
   const scrollRef = useRef<ScrollBoxHandle | null>(null)
 
   const openModal = useCallback((node: ReactNode) => {
-    setContent(node)
+    setStack([node])
+  }, [])
+
+  const pushModal = useCallback((node: ReactNode) => {
+    setStack((prev) => [...prev, node])
+  }, [])
+
+  const popModal = useCallback(() => {
+    setStack((prev) => (prev.length <= 1 ? [] : prev.slice(0, -1)))
   }, [])
 
   const closeModal = useCallback(() => {
-    setContent(null)
+    setStack([])
   }, [])
 
-  const api: ModalPaneAPI = {
-    openModal,
-    closeModal,
-    isOpen: content != null,
-    content,
-    scrollRef,
-  }
+  const content = stack.length > 0 ? stack[stack.length - 1] : null
+  const isOpen = stack.length > 0
+
+  const api: ModalPaneAPI = useMemo(
+    () => ({
+      openModal,
+      pushModal,
+      popModal,
+      closeModal,
+      isOpen,
+      content,
+      scrollRef,
+    }),
+    [openModal, pushModal, popModal, closeModal, isOpen, content],
+  )
 
   return <ModalPaneCtx.Provider value={api}>{children}</ModalPaneCtx.Provider>
 }

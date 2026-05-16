@@ -899,6 +899,46 @@ export type EventLiteaiCacheEvictionHint = {
     };
 };
 
+export type EventTeammateSpawned = {
+    type: 'teammate.spawned';
+    properties: {
+        teamName: string;
+        agentId: string;
+        agentName: string;
+        color?: string;
+        taskId: string;
+        parentSessionId: string;
+    };
+};
+
+export type EventTeammateIdle = {
+    type: 'teammate.idle';
+    properties: {
+        teamName: string;
+        agentId: string;
+        reason: 'available' | 'interrupted' | 'failed';
+        summary?: string;
+    };
+};
+
+export type EventTeammateActive = {
+    type: 'teammate.active';
+    properties: {
+        teamName: string;
+        agentId: string;
+        prompt: string;
+    };
+};
+
+export type EventTeammateKilled = {
+    type: 'teammate.killed';
+    properties: {
+        teamName: string;
+        agentId: string;
+        reason?: string;
+    };
+};
+
 export type Todo = {
     /**
      * Brief description of the task
@@ -1061,7 +1101,7 @@ export type EventPtyDeleted = {
     };
 };
 
-export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
+export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
 
 export type GlobalEvent = {
     directory: string;
@@ -1735,6 +1775,36 @@ export type Config = {
             exportIntervalMs?: number;
         };
         perfetto?: boolean;
+    };
+    /**
+     * CLI TUI settings. Portable across machines — syncs via settings.json.
+     */
+    tui?: {
+        /**
+         * Color theme name for the CLI TUI
+         */
+        theme?: string;
+        /**
+         * Custom keybinding overrides (array of { context, bindings } blocks)
+         */
+        keybinds?: Array<{
+            context: string;
+            bindings: {
+                [key: string]: string | null;
+            };
+        }>;
+        /**
+         * Error verbosity level in the TUI. 'low' shows minimal errors, 'full' shows stack traces.
+         */
+        errorVerbosity?: 'low' | 'full';
+        /**
+         * Diff rendering style. 'auto' chooses based on terminal width, 'stacked' always stacks.
+         */
+        diff_style?: 'auto' | 'stacked';
+        /**
+         * Maximum lines before truncating file output in the TUI (default: 500)
+         */
+        output_file_threshold?: number;
     };
 };
 

@@ -266,6 +266,24 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
               disableCursorMovementForUpDownKeys={true}
               disableEscapeDoublePress={true}
               focus={true}
+              inputFilter={(_input, key) => {
+                // Navigation keys are handled exclusively by useKeybindings("Select").
+                // Filtering them here prevents the dual-useInput conflict where both
+                // the TextInput and the keybinding system process the same keystroke.
+                if (
+                  key.upArrow ||
+                  key.downArrow ||
+                  key.pageUp ||
+                  key.pageDown ||
+                  key.home ||
+                  key.end ||
+                  key.return ||
+                  key.escape
+                ) {
+                  return ""
+                }
+                return _input
+              }}
             />
           </Box>
         </Box>
