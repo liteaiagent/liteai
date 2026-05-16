@@ -1,5 +1,13 @@
 # TUI Settings & Homepage Rewrite — Session Handoff
 
+> **STATUS: SUPERSEDED** — The "hook-per-dialog" approach recommended here was evaluated
+> and rejected. The **Hybrid approach** (keep ModalPaneProvider with stack semantics +
+> extract primitives) was implemented instead. See
+> [04-implementation-plan.md](file:///d:/liteai/roadmap/tui-overhaul/settings-ui-overhaul/04-implementation-plan.md)
+> for the authoritative plan and
+> [04-proposed-primitives.md](file:///d:/liteai/roadmap/tui-overhaul/tui-architecture/04-proposed-primitives.md)
+> for the primitives specification. This document is retained for historical context only.
+
 > **Context**: This document captures all findings from conversation `5d1cd26f` (2026-05-15).
 > Use this as the starting prompt for the next session.
 
@@ -30,7 +38,7 @@ Three patches were applied in this session. They are correct but may be irreleva
 
 | File | Change | Keep/Revert? |
 |------|--------|-------------|
-| `app.tsx` | Split `BlankSession` into wrapper + `BlankSessionContent`, added modal rendering slot | **Revert** — homepage is being rewritten |
+| `app.tsx` | Split `BlankSession` into wrapper + `BlankSessionContent`, added modal rendering slot | **Keep** — required by 04-implementation-plan.md Phase 1 (BlankSession modal slot) |
 | `dialog-select.tsx` | Added `inputFilter` to block navigation keys from TextInput | **Keep** — this is a real bug fix regardless |
 | `default-bindings.ts` | Removed `j`/`k` from Select context, added `pageup`/`pagedown`/`home`/`end` | **Keep** — correct improvement |
 
@@ -73,17 +81,23 @@ D:\gemini-cli\packages\cli\src\ui\commands\modelCommand.ts     — Model command
 
 ## What to Build (Scope)
 
-### 1. Remove Current Homepage (`BlankSession`)
-The current `BlankSession` in `app.tsx:45-128` shows Logo + PromptInput + Tips. Replace with a cleaner boot-to-prompt design like Gemini CLI (no splash screen, just the prompt with a version line).
+> [!NOTE]
+> **Not implemented as described below.** The Hybrid approach was chosen instead:
+> ModalPaneProvider was upgraded with stack semantics, and a new primitives layer
+> (`useSelectList`, `useDialogLifecycle`, `SelectList`, `DialogPane`) was extracted.
+> See [04-implementation-plan.md](./04-implementation-plan.md) for the authoritative plan.
 
-### 2. Rewrite Settings/Dialog System
-Replace the broken `ModalPaneProvider` + `DialogSelect` + `tuiInterceptors` system with one of:
+### 1. ~~Remove Current Homepage (`BlankSession`)~~
+**Not done.** BlankSession was kept and upgraded with a ModalPaneProvider wrapper + modal rendering slot (Phase 1 of 04-implementation-plan.md). The homepage works correctly.
 
-**Recommended: Gemini CLI "hook-per-dialog" pattern**
-- Each dialog gets a `useXxxCommand()` hook returning `{ isOpen, open, close }`
-- All hooks live in the main app component (or a dedicated `useDialogManager`)
-- Slash commands return action descriptors, main component maps to dialog openers
-- Dialogs are conditionally rendered — no context, no providers, no stack
+### 2. ~~Rewrite Settings/Dialog System~~
+**Not done as described.** Instead of replacing ModalPaneProvider with hook-per-dialog, ModalPaneProvider was upgraded to stack-based semantics (`openModal`/`pushModal`/`popModal`/`closeModal`). `DialogSelect` was replaced by `SelectPane` composing the new primitives layer.
+
+~~**Recommended: Gemini CLI "hook-per-dialog" pattern**~~
+- ~~Each dialog gets a `useXxxCommand()` hook returning `{ isOpen, open, close }`~~
+- ~~All hooks live in the main app component (or a dedicated `useDialogManager`)~~
+- ~~Slash commands return action descriptors, main component maps to dialog openers~~
+- ~~Dialogs are conditionally rendered — no context, no providers, no stack~~
 
 **Why not Claude Code's pattern**: Claude Code's `local-jsx` return-JSX-from-command approach requires the REPL to own the rendering slot. That's essentially what our `ModalPaneProvider` tried to do (and failed). Gemini's approach is simpler — just boolean flags.
 
@@ -105,8 +119,8 @@ Key files that need rewriting or heavy modification:
 ```
 packages/cli/src/tui/
 ├── app.tsx                           ← REWRITE (BlankSession, AppContent)
-├── context/modal-pane.tsx            ← DELETE (replace with hook-per-dialog)
-├── hooks/use-navigation.ts           ← DELETE (no more modal navigation)
+├── context/modal-pane.tsx            ← KEPT — upgraded with stack semantics (push/pop)
+├── hooks/use-navigation.ts           ← KEPT — rewired to stack push/pop
 ├── components/
 │   ├── prompt/prompt-input.tsx       ← MODIFY (remove tuiInterceptors, add onSlashCommand callback)
 │   ├── session-layout.tsx            ← KEEP (modal slot can stay for session-level use)

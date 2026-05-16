@@ -186,11 +186,20 @@ export function DialogSessionList(props: { localOnly?: boolean; workspaceID?: st
       "select:delete": () => {
         if (!selectedOption) return
         if (toDelete === selectedOption.value) {
-          sdk.client.project.session.delete({
-            projectID: sdk.projectID,
-            sessionID: selectedOption.value,
-          })
-          setToDelete(undefined)
+          void (async () => {
+            try {
+              await sdk.client.project.session.delete({
+                projectID: sdk.projectID,
+                sessionID: selectedOption.value,
+              })
+              setToDelete(undefined)
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err)
+              console.error("[dialog-session-list] Failed to delete session:", err)
+              toast.show({ variant: "error", message: `Failed to delete session: ${message}` })
+              // Keep toDelete set so the user can retry
+            }
+          })()
           return
         }
         setToDelete(selectedOption.value)

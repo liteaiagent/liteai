@@ -13403,8 +13403,9 @@
               },
               "output_file_threshold": {
                 "description": "Maximum lines before truncating file output in the TUI (default: 500)",
-                "type": "number",
-                "minimum": 100
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 9007199254740991
               }
             }
           }

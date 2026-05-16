@@ -227,7 +227,9 @@ export function useSelectList<T>({
   const prevInitialIndexRef = useRef(initialIndex)
   const prevWrapAroundRef = useRef(wrapAround)
 
-  // Initialize/synchronize state when initialIndex or items change
+  // Initialize/synchronize state when initialIndex or items change.
+  // Refs track previous values for structural equality (areItemsEqual);
+  // the dep array ensures the effect only runs when inputs change referentially.
   useEffect(() => {
     const itemsChanged = !areItemsEqual(prevItemsRef.current, items)
     const initialIndexChanged = prevInitialIndexRef.current !== initialIndex
@@ -242,7 +244,7 @@ export function useSelectList<T>({
       prevInitialIndexRef.current = initialIndex
       prevWrapAroundRef.current = wrapAround
     }
-  })
+  }, [items, initialIndex, wrapAround])
 
   // Handle side effects based on state changes
   useEffect(() => {

@@ -63,6 +63,10 @@ let globalLoggerProvider: TLoggerProvider | undefined
 let globalNodeSdk: TNodeSDK | undefined
 
 export async function initializeTelemetry() {
+  if (globalNodeSdk) {
+    return
+  }
+
   if (!process.env.OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE) {
     process.env.OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE = "delta"
   }
@@ -252,6 +256,21 @@ export async function shutdownTelemetry() {
     if (error instanceof Error && error.message.includes("timeout")) {
     }
     throw error
+  } finally {
+    try {
+      const api = await import("@opentelemetry/api")
+      api.trace.disable()
+      api.metrics.disable()
+      api.context.disable()
+      api.propagation.disable()
+      api.diag.disable()
+      const apiLogs = await import("@opentelemetry/api-logs")
+      apiLogs.logs.disable()
+    } catch {}
+
+    globalMeterProvider = undefined
+    globalLoggerProvider = undefined
+    globalNodeSdk = undefined
   }
 }
 

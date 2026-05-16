@@ -701,9 +701,12 @@ export const Info = z
           .describe("Diff rendering style. 'auto' chooses based on terminal width, 'stacked' always stacks."),
         output_file_threshold: z
           .number()
+          .int()
           .min(100)
           .optional()
-          .describe("Maximum lines before truncating file output in the TUI (default: 500)"),
+          .describe(
+            "Character count above which tool output is saved to a file instead of rendered inline (default: 5000)",
+          ),
       })
       .optional()
       .describe("CLI TUI settings. Portable across machines — syncs via settings.json."),

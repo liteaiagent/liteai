@@ -1,9 +1,16 @@
 import { Box, type Color, Text } from "@liteai/ink"
 import { useMemo } from "react"
 import { useTheme } from "../context/theme"
+import { useDialogLifecycle } from "../primitives/use-dialog-lifecycle"
 import { useAppState } from "../state"
 
-export function DialogStatus({ onClose: _onClose }: { onClose: () => void }) {
+export function DialogStatus({ onClose }: { onClose: () => void }) {
+  useDialogLifecycle({
+    contextName: "Select",
+    onClose,
+    isActive: true,
+  })
+
   const mcp = useAppState((s) => s.mcp)
   const lsp = useAppState((s) => s.lsp)
   const formatter = useAppState((s) => s.formatter)

@@ -14,14 +14,14 @@ type StyleInfo = {
 }
 
 type Props = {
-  onDone: () => void
+  onClose: () => void
 }
 
 /**
  * Style picker dialog that fetches available styles from the core API
  * and allows the user to select one, updating the project config.
  */
-export function DialogOutputStyle({ onDone }: Props): React.ReactNode {
+export function DialogOutputStyle({ onClose }: Props): React.ReactNode {
   const sdk = useSDK()
   const toast = useToast()
   const [styles, setStyles] = useState<StyleInfo[]>([])
@@ -90,9 +90,9 @@ export function DialogOutputStyle({ onDone }: Props): React.ReactNode {
         } catch (err) {
           toast.error(err)
         }
-        onDone()
+        onClose()
       }}
-      onClose={onDone}
+      onClose={onClose}
     />
   )
 }

@@ -90,7 +90,10 @@ export function DialogSearch({ onClose }: { onClose: () => void }): React.ReactN
       items={items}
       skipFilter={true}
       onFilter={setQuery}
-      onSelect={(item) => openFileInEditor(item.value.file, item.value.line)}
+      onSelect={(item) => {
+        openFileInEditor(item.value.file, item.value.line)
+        onClose()
+      }}
       onClose={onClose}
       headerEnd={matchLabel}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter open · Esc close</Text>}

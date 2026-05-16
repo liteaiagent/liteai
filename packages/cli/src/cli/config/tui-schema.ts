@@ -21,6 +21,7 @@ export const TuiOptions = z.object({
     .describe("Control error verbosity: 'low' shows only the first line, 'full' shows the full stack trace"),
   output_file_threshold: z
     .number()
+    .int()
     .min(100)
     .optional()
     .describe("Character count above which tool output is saved to a file instead of rendered inline (default: 5000)"),

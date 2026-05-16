@@ -1,6 +1,6 @@
 # Implementation Plan — Hybrid Approach
 
-> Pending user selection. This plan is written for the **Hybrid** approach (keep modal pane + centralize focus).
+> This plan is written for the **Hybrid** approach (keep modal pane + centralize focus).
 > If Option A or B is selected instead, this document will be rewritten.
 
 ---
@@ -161,7 +161,7 @@ The core problem: `DialogSelect` has both `TextInput` (which calls `useInput`) A
 **Rationale**: `j`/`k` are vim navigation but they're also the most common letters people type when searching for models (e.g., "json", "jack"). Space is needed for search phrases. These bindings are hostile to a filter-enabled select.
 
 > [!NOTE]
-> The second Select context block (lines 243-251) appears to be a more correct version that already has `enter`/`escape`. Verify whether there are two contexts or if one overrides the other.
+> The second Select context block in default-bindings.ts (lines 243-251) appears to be a more correct version that already has `enter`/`escape`. Verify whether there are two contexts or if one overrides the other.
 
 ---
 

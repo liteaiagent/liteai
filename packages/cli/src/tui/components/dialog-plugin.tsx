@@ -147,6 +147,7 @@ export function DialogPlugin({ onClose: _onClose }: { onClose: () => void }) {
             loading={loading}
             sdk={sdk}
             theme={theme}
+            onClose={_onClose}
             onToggle={async (id, enabled) => {
               setLoading(true)
               await sdk.fetch(`${sdk.url}/plugin/${encodeURIComponent(id)}/${enabled ? "enable" : "disable"}`, {
@@ -322,6 +323,7 @@ function InstalledTab(props: {
   loading: boolean
   sdk: ReturnType<typeof useSDK>
   theme: ReturnType<typeof useTheme>["theme"]
+  onClose: () => void
   onToggle: (id: string, enabled: boolean) => void
   onUninstall: (id: string) => void
 }) {
@@ -378,6 +380,7 @@ function InstalledTab(props: {
       }
       onHighlight={setSelectedOption}
       onSelect={() => {}}
+      onClose={props.onClose}
     />
   )
 }

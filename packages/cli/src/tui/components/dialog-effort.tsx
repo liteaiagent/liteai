@@ -25,13 +25,19 @@ export function DialogEffort({ onClose }: Props): React.ReactNode {
       title="Set Effort Level"
       items={options}
       onSelect={async (item) => {
-        await sdk.client.project.config.update({
-          projectID: sdk.projectID,
-          // biome-ignore lint/suspicious/noExplicitAny: SDK method not typed yet
-          config: { effort: item.value } as any,
-        })
-        toast.show({ variant: "success", message: `Effort set to ${item.value}` })
-        onClose()
+        try {
+          await sdk.client.project.config.update({
+            projectID: sdk.projectID,
+            // biome-ignore lint/suspicious/noExplicitAny: SDK method not typed yet
+            config: { effort: item.value } as any,
+          })
+          toast.show({ variant: "success", message: `Effort set to ${item.value}` })
+          onClose()
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error("[dialog-effort] Failed to update effort:", err)
+          toast.show({ variant: "error", message: `Failed to set effort: ${message}` })
+        }
       }}
       onClose={onClose}
       footerContent={<Text color={theme.textMuted as Color}>↑↓ navigate · Enter select · Esc cancel</Text>}

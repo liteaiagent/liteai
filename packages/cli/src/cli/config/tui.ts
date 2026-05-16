@@ -57,8 +57,10 @@ export namespace TuiConfig {
     // This gives cross-machine sync for free — the backend manages settings.json.
     const coreConfig = await Config.get()
     // Core schema uses broad `string` for keybinds.context; CLI uses a narrow enum.
-    // The cast is safe — mergeInfo validates context values downstream.
-    let result: Info = (coreConfig.tui as Info) ?? {}
+    // Parse through TuiInfo so invalid context values are rejected deterministically,
+    // matching how loadFile() handles all other config sources.
+    const parsedTui = coreConfig.tui ? Info.safeParse(coreConfig.tui) : undefined
+    let result: Info = parsedTui?.success ? parsedTui.data : {}
 
     // Overlay local tui.json files (machine-specific overrides take precedence)
     for (const file of ConfigPaths.fileInDirectory(Global.Path.config, "tui")) {

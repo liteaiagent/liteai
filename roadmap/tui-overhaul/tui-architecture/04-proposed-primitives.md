@@ -229,6 +229,10 @@ function ProviderSelectDialog({ onClose, onSelect }) {
   useDialogLifecycle({ contextName: "ProviderSelect", onClose })
   
   // Selection: up/down/enter/numbers
+  // NOTE: `providers` is passed to both useSelectList and SelectList — this
+  // is intentional, not duplication. The hook uses items to navigate (index
+  // math, disabled-item skipping). The component uses items to render
+  // (windowing, category headers). Neither "owns" the list — the caller does.
   const selection = useSelectList({
     items: providers,
     onSelect: (provider) => onSelect(provider),

@@ -227,4 +227,4 @@ This keeps the modal system but makes focus management **explicit and centralize
 > - **Option B**: Fix existing modal pane system
 > - **Hybrid**: Keep modal pane + centralize focus management
 >
-> Implementation plan in [04-implementation-plan.md](./04-implementation-plan.md) will be written for the selected approach.
+> Decision: Hybrid

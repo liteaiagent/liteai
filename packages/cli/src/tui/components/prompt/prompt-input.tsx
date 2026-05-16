@@ -190,7 +190,8 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
   // ── History search state ────────────────────────────────────────────────
   const searchState = useHistorySearch()
 
-  const commandSuggestions = useCommandSuggestions(input, cursorOffset, [...(command ?? []), ...TUI_COMMANDS])
+  const allCommands = useMemo(() => [...(command ?? []), ...TUI_COMMANDS], [command])
+  const commandSuggestions = useCommandSuggestions(input, cursorOffset, allCommands)
 
   const atCompleter = useAtCompleter({
     input,
@@ -405,7 +406,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       theme: () => modalPane.openModal(<DialogTheme onClose={modalPane.closeModal} />),
       timeline: () => modalPane.openModal(<DialogRewind onClose={modalPane.closeModal} />),
       status: () => modalPane.openModal(<DialogStatus onClose={modalPane.closeModal} />),
-      style: () => modalPane.openModal(<DialogOutputStyle onDone={modalPane.closeModal} />),
+      style: () => modalPane.openModal(<DialogOutputStyle onClose={modalPane.closeModal} />),
       settings: () => modalPane.openModal(<DialogConfig onClose={modalPane.closeModal} />),
       stats: () => {
         const sid = session.sessionID
@@ -794,7 +795,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           applyCommandSuggestion(
             selected,
             false,
-            [...(command ?? []), ...TUI_COMMANDS],
+            allCommands,
             input,
             commandSuggestions.midCommandMatch,
             (value) => trackAndSetInput(value),
