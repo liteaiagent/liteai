@@ -6,7 +6,7 @@ import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { useAppState } from "../state"
-import { Dialog } from "../ui/dialog"
+import { Pane } from "./design-system/Pane"
 import { StructuredDiff } from "./structured-diff"
 
 export function DialogDiff({ onClose }: { onClose: () => void }): React.ReactNode {
@@ -64,23 +64,16 @@ export function DialogDiff({ onClose }: { onClose: () => void }): React.ReactNod
 
   if (diffs.length === 0) {
     return (
-      <Dialog title="Session Diff" onCancel={onClose} hideInputGuide>
+      <Pane color="info">
         <Box padding={1}>
           <Text dim>No file changes in this session.</Text>
         </Box>
-      </Dialog>
+      </Pane>
     )
   }
 
   return (
-    <Dialog
-      title={viewMode === "list" ? "Session Diff" : `Diff: ${selectedDiff?.file}`}
-      onCancel={() => {
-        if (viewMode === "detail") setViewMode("list")
-        else onClose()
-      }}
-      hideInputGuide
-    >
+    <Pane color="info">
       <Box flexDirection="column" marginTop={1}>
         {viewMode === "list" ? (
           <Box flexDirection="column">
@@ -130,6 +123,6 @@ export function DialogDiff({ onClose }: { onClose: () => void }): React.ReactNod
           )
         )}
       </Box>
-    </Dialog>
+    </Pane>
   )
 }

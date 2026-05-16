@@ -8,7 +8,7 @@ import type { RenderContext, SelectItem, SelectListProps } from "./types"
 /**
  * Default item renderer used when no custom `renderItem` is provided.
  */
-function DefaultSelectListItem<T>({
+export function DefaultSelectListItem<T>({
   item,
   context,
   showNumbers,

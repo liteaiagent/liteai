@@ -13,19 +13,34 @@ import type { SelectItem } from "../../src/tui/primitives/types"
 // We mock useReducer, useRef, useEffect to extract the reducer from the
 // module without needing a full React context.
 
-let capturedReducer: any = null
-let capturedInitialState: any = null
+type MockAction =
+  | { type: "MOVE_UP" | "MOVE_DOWN" | "SELECT_CURRENT" | "CLEAR_PENDING_FLAGS" }
+  | { type: "SET_ACTIVE_INDEX"; payload: { index: number } }
+  | { type: "INITIALIZE"; payload: { initialIndex: number; items: SelectItem<string>[]; wrapAround: boolean } }
+
+type MockState = {
+  activeIndex: number
+  pendingHighlight: boolean
+  pendingSelect: boolean
+  items: SelectItem<string>[]
+  wrapAround: boolean
+}
+
+type MockReducer = (state: MockState, action: MockAction) => MockState
+
+let capturedReducer: MockReducer | null = null
+let capturedInitialState: MockState | null = null
 let capturedKeybindingHandlers: Record<string, () => void> = {}
-let capturedKeybindingOptions: any = {}
+let capturedKeybindingOptions: Record<string, unknown> = {}
 
 // Mock React to capture reducer
 mock.module("react", () => ({
-  useReducer: (reducer: any, initialState: any) => {
-    capturedReducer = reducer
-    capturedInitialState = initialState
+  useReducer: <S, A>(reducer: (state: S, action: A) => S, initialState: S) => {
+    capturedReducer = reducer as unknown as MockReducer
+    capturedInitialState = initialState as unknown as MockState
     return [initialState, () => {}]
   },
-  useRef: (initial: any) => ({ current: initial }),
+  useRef: <T>(initial: T) => ({ current: initial }),
   useEffect: () => {},
 }))
 
@@ -34,7 +49,7 @@ mock.module("../../src/tui/keybindings/keybinding-context", () => ({
 }))
 
 mock.module("../../src/tui/keybindings/use-keybinding", () => ({
-  useKeybindings: (handlers: Record<string, () => void>, options: any) => {
+  useKeybindings: (handlers: Record<string, () => void>, options: Record<string, unknown>) => {
     capturedKeybindingHandlers = handlers
     capturedKeybindingOptions = options
   },
@@ -67,10 +82,10 @@ describe("useSelectList", () => {
   const initHook = (overrides: Partial<Parameters<typeof useSelectList<string>>[0]> = {}) => {
     useSelectList({ items, onSelect: mockOnSelect, ...overrides })
     return {
-      reducer: capturedReducer,
-      initialState: capturedInitialState,
+      reducer: capturedReducer as MockReducer,
+      initialState: capturedInitialState as MockState,
       handlers: capturedKeybindingHandlers,
-      options: capturedKeybindingOptions,
+      options: capturedKeybindingOptions as { isActive?: boolean; context?: string; showNumbers?: boolean },
     }
   }
 

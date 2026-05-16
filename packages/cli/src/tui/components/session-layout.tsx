@@ -1,6 +1,7 @@
 import type { Color, ScrollBoxHandle } from "@liteai/ink"
 import { Box, ScrollBox, TerminalSizeContext, Text } from "@liteai/ink"
 import React, { createContext, type ReactNode, type RefObject, useContext, useState, useSyncExternalStore } from "react"
+import { ModalContext } from "../context/modal-context"
 import { Toast } from "../ui/toast"
 import { StickyPromptHeader } from "./sticky-prompt-header"
 import { NewMessagesPill } from "./unseen-divider"
@@ -14,15 +15,6 @@ export const ScrollChromeContext = createContext<{
 }>({
   setStickyPrompt: () => {},
 })
-
-/**
- * Context for the slash-command modal pane.
- */
-export const ModalContext = createContext<{
-  rows: number
-  columns: number
-  scrollRef: RefObject<ScrollBoxHandle | null> | null
-} | null>(null)
 
 type Props = {
   /** Content that scrolls (messages, tool output) */

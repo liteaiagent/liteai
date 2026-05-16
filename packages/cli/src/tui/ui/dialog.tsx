@@ -1,6 +1,16 @@
-import type { ScrollBoxHandle } from "@liteai/ink"
+/**
+ * Dialog — a confirm/cancel overlay wrapper.
+ *
+ * Renders title + children inside a Pane (bordered region), registers
+ * `confirm:no` (Escape) in the Confirmation keybinding context, and shows
+ * a default Enter/Esc hint footer.
+ *
+ * For plain info dialogs with no confirm/cancel semantics (e.g. /help,
+ * /diff, /context) use `<Pane>` directly and manage your own keybindings.
+ */
+
 import { Box, Text } from "@liteai/ink"
-import React, { createContext, type RefObject, useContext } from "react"
+import type React from "react"
 import { Byline } from "../components/design-system/Byline"
 import { KeyboardShortcutHint } from "../components/design-system/KeyboardShortcutHint"
 import { Pane } from "../components/design-system/Pane"
@@ -8,26 +18,9 @@ import type { ThemeColors } from "../context/theme.tsx"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybinding } from "../keybindings/use-keybinding"
 
-// --- Modal Context ---
-type ModalCtx = {
-  rows: number
-  columns: number
-  scrollRef: RefObject<ScrollBoxHandle> | null
-}
-export const ModalContext = createContext<ModalCtx | null>(null)
-
-export function useIsInsideModal(): boolean {
-  return useContext(ModalContext) !== null
-}
-
-export function useModalOrTerminalSize(fallback: { rows: number; columns: number }): { rows: number; columns: number } {
-  const ctx = useContext(ModalContext)
-  return ctx ? { rows: ctx.rows, columns: ctx.columns } : fallback
-}
-
-export function useModalScrollRef(): RefObject<ScrollBoxHandle> | null {
-  return useContext(ModalContext)?.scrollRef ?? null
-}
+// Re-export modal context hooks for backward compatibility with any remaining
+// consumers that import from this path. The canonical source is context/modal-context.
+export { ModalContext, useIsInsideModal, useModalOrTerminalSize, useModalScrollRef } from "../context/modal-context"
 
 // --- Dialog Primitive ---
 type DialogProps = {

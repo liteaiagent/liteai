@@ -64,7 +64,7 @@ import { DialogDiff } from "../dialog-diff"
 import { DialogDoctor } from "../dialog-doctor"
 import { DialogEffort } from "../dialog-effort"
 import { DialogExportOptions } from "../dialog-export-options"
-import { DialogHelpV2 } from "../dialog-help-v2"
+import { DialogHelp } from "../dialog-help"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogMemory } from "../dialog-memory"
 import { DialogModel } from "../dialog-model"
@@ -379,7 +379,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       },
       find: () => modalPane.openModal(<DialogSearch onClose={modalPane.closeModal} />),
       search: () => onSearch?.(),
-      help: () => modalPane.openModal(<DialogHelpV2 onClose={modalPane.closeModal} />),
+      help: () => modalPane.openModal(<DialogHelp onClose={modalPane.closeModal} />),
       history: () => modalPane.openModal(<DialogRewind onClose={modalPane.closeModal} />),
       mcp: () => modalPane.openModal(<DialogMcp onClose={modalPane.closeModal} />),
       memory: () => modalPane.openModal(<DialogMemory onClose={modalPane.closeModal} />),
@@ -490,7 +490,7 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
       const trimmed = inputParam.trimEnd()
 
       if (trimmed === "?") {
-        modalPane.openModal(<DialogHelpV2 onClose={modalPane.closeModal} />)
+        modalPane.openModal(<DialogHelp onClose={modalPane.closeModal} />)
         trackAndSetInput("")
         setCursorOffset(0)
         return

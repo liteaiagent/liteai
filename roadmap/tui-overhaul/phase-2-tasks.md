@@ -1,116 +1,61 @@
 # Phase 2: Migration Tasks
 
-> Last audited: 2026-05-16T16:21 local
-> Typecheck status: ✅ 14/14 (zero errors)
-> Legacy `dialog-select` imports: ✅ 0 remaining
+> Last audited: 2026-05-16T16:39 local
+> Typecheck: ✅ 14/14 (zero errors)
+> Lint: ✅ 0 production errors (7 pre-existing test-file warnings in use-select-list.test.ts)
 
 ---
 
-## ✅ DONE — SelectPane Consumer Migration (Step 5)
-
+## ✅ DONE — Steps 1–5: SelectPane Consumer Migration
 All 19 dialogs migrated from `DialogSelect` → `SelectPane`. Zero legacy imports.
 
-| File | Status |
-|------|--------|
-| dialog-output-style.tsx | ✅ |
-| dialog-manage-models.tsx | ✅ |
-| dialog-mcp.tsx | ✅ |
-| dialog-model.tsx | ✅ |
-| dialog-skill.tsx | ✅ |
-| dialog-permissions.tsx | ✅ |
-| dialog-tag.tsx | ✅ |
-| dialog-config.tsx | ✅ actionMap dispatch pattern |
-| dialog-theme.tsx | ✅ SelectPaneRef |
-| dialog-workspace.tsx | ✅ both sub-components |
-| dialog-agent-list.tsx | ✅ |
-| thinking-toggle.tsx | ✅ |
-| dialog-plugin.tsx | ✅ useInput tab cycling → useKeybindings |
-| dialog-provider.tsx | ✅ all sub-views + useProviderDisplayOptions |
-| dialog-rewind-actions.tsx | ✅ |
-| dialog-session-list.tsx | ✅ useKeybindings for ctrl shortcuts |
-| dialog-export-options.tsx (components/) | ✅ |
-| dialog-agent-list.tsx | ✅ |
-| dialog-effort.tsx | ✅ (was already on new API) |
+## ✅ DONE — Step 6: Delete Orphaned Legacy `ui/` Files
+- [x] Deleted `ui/dialog-select.tsx`
+- [x] Deleted `ui/dialog-export-options.tsx` (old useInput/Dialog version)
 
----
+## ✅ DONE — Step 7: `ui/dialog-alert` + `ui/dialog-confirm` → `useKeybindings`
+- [x] `ui/dialog-alert.tsx` → `useKeybindings("Confirmation")` confirm:yes
+- [x] `ui/dialog-confirm.tsx` → `useKeybindings("Confirmation")` confirm:yes/no/previous/next
 
-## 🔲 Step 6 — Delete Orphaned Legacy Files in `ui/`
+## ✅ DONE — Step 8: Remaining `useInput` → `useKeybindings` in Components
+- [x] `components/dialog-stats.tsx` → `useKeybindings("Tabs")` tab cycle + `r` → `select:cycleRange`
+- [x] `components/dialog-rewind.tsx` → `useKeybindings("Select")` f/r direct-action shortcuts
+- [x] `components/dialog-plugin.tsx` (RemoveMarketplace) → `useKeybindings("Confirmation")`
+- [x] `routes/session/question.tsx` → `useKeybindings("Tabs"/"Select")` mode switching
+- [x] `components/design-system/Tabs.tsx` → `useKeybindings("Tabs")` both header + content opt-in blocks
 
-All consumers have been migrated. These files have no importers from component code.
+## ✅ DONE — Step 9: FuzzyPicker Elimination
+- [x] `components/dialog-search.tsx` → `SelectPane` with `skipFilter=true` + `onFilter` (server-side search)
+- [x] `components/dialog-memory.tsx` → `SelectPane` with built-in fuzzysort filter
+- [x] Deleted `ui/fuzzy-picker.tsx`
 
-- [ ] Delete `ui/dialog-select.tsx` — ✅ zero consumers confirmed
-- [ ] Delete `ui/dialog-export-options.tsx` — the old `useInput`/`Dialog`-based version; `prompt-input.tsx` already imports from `components/dialog-export-options`
+## ✅ DONE — Step 10: Feedback System Removal
+- [x] Deleted `components/dialog-feedback.tsx`
+- [x] Deleted `components/feedback-survey.tsx`
+- [x] Deleted `hooks/use-feedback-survey.ts`
+- [x] Removed `DialogFeedback` import + `feedback:` interceptor from `prompt/prompt-input.tsx`
 
-> ⚠️ `ui/dialog.tsx` **cannot** be deleted yet — still consumed by:
-> - `dialog-help-v2.tsx` (Dialog)
-> - `dialog-rewind.tsx` (Dialog)
-> - `dialog-feedback.tsx` (Dialog)
-> - `dialog-diff.tsx` (Dialog)
-> - `dialog-context.tsx` (Dialog)
-> - `components/design-system/Tabs.tsx` (useIsInsideModal, useModalScrollRef)
-> - `components/design-system/Pane.tsx` (useIsInsideModal)
+## ✅ DONE — Step 11: ModalContext Unification + `Dialog` Consumer Migration
 
----
+### ModalContext
+- [x] `context/modal-context.ts` — canonical source (pre-existing, now the single definition)
+- [x] `session-layout.tsx` — removed duplicate local `ModalContext`; now imports from `context/modal-context`
+- [x] `Pane.tsx` — import updated to `context/modal-context`
+- [x] `Tabs.tsx` — import updated to `context/modal-context`; fixed `RefObject<ScrollBoxHandle | null>` type
 
-## 🔲 Step 7 — Migrate `useInput` → `useKeybindings` in UI Primitives
+### Dialog consumers → Pane
+- [x] `components/dialog-help.tsx` *(renamed from dialog-help-v2)* — `<Pane>` + `help:dismiss` keybinding
+- [x] `components/dialog-diff.tsx` — `<Pane>` + existing `diff:dismiss` keybinding
+- [x] `components/dialog-context.tsx` — `<Pane>` + `useKeybinding("confirm:no")`
+- [x] `components/dialog-rewind.tsx` — `<Pane>` + existing `select:cancel` keybinding
 
-These are `ui/` files still using raw `useInput`. They are not `DialogSelect` consumers but need the same keybinding modernization pass.
-
-- [ ] `ui/dialog-alert.tsx` → replace `useInput(escape)` with `useDialogLifecycle`
-- [ ] `ui/dialog-confirm.tsx` → replace `useInput` with `useKeybindings("Confirmation")`
-
----
-
-## 🔲 Step 8 — Migrate `useInput` → `useKeybindings` in Components
-
-Non-SelectPane components that still use raw `useInput` for navigation.
-
-- [ ] `components/dialog-stats.tsx` — `useInput(escape + left/right)` → `useKeybindings("Tabs")`
-- [ ] `components/dialog-rewind.tsx` — `useInput(f/r/escape)` → `useKeybindings`
-- [ ] `components/dialog-plugin.tsx` (RemoveMarketplace sub-dialog) — `useInput(enter/escape)` → `useKeybindings`
-- [ ] `routes/session/question.tsx` — dual `useInput` blocks → `useKeybindings`
-- [ ] `components/design-system/Tabs.tsx` — dual `useInput` → `useKeybindings("Tabs")`
-
-> `app.tsx` `useInput` is intentional (global chord interceptor) — leave as-is.
-> `scroll-handler.tsx`, `base-text-input.tsx`, `prompt-input.tsx` — structural, not modal nav — out of scope.
-
----
-
-## 🔲 Step 9 — FuzzyPicker Elimination
-
-- [ ] `components/dialog-search.tsx` → rewrite using `SelectPane` (server-side search, `skipFilter=true`)
-- [ ] `components/dialog-memory.tsx` → rewrite using `SelectPane`
-- [ ] Delete `ui/fuzzy-picker.tsx` (after both consumers removed)
-
----
-
-## 🔲 Step 10 — Feedback System Removal
-
-The feedback system was decided to be removed (replaced by command palette in a future phase). No active consumers of `useFeedbackSurvey` outside its own definition.
-
-- [ ] Delete `components/dialog-feedback.tsx`
-- [ ] Delete `components/feedback-survey.tsx`
-- [ ] Delete `hooks/use-feedback-survey.ts`
-- [ ] Remove `DialogFeedback` import + render site in `components/prompt/prompt-input.tsx`
-
----
-
-## 🔲 Step 11 — Delete `ui/dialog.tsx` + Migrate Its Consumers
-
-Only unblocks after Steps 8 and 10 are complete (all `Dialog` consumers migrated).
-
-- [ ] `dialog-help-v2.tsx` — replace `<Dialog>` wrapper with `<DialogPane>` primitive
-- [ ] `dialog-rewind.tsx` — replace `<Dialog>` wrapper (Step 8 prerequisite)
-- [ ] `dialog-diff.tsx` — replace `<Dialog>` wrapper with `<DialogPane>`
-- [ ] `dialog-context.tsx` — replace `<Dialog>` wrapper
-- [ ] `Tabs.tsx` / `Pane.tsx` — extract `useIsInsideModal` to `context/modal-context`
-- [ ] Delete `ui/dialog.tsx`
+### ui/dialog.tsx
+- Intentionally retained for `dialog-alert` + `dialog-confirm` (confirm/cancel chrome with auto `confirm:no` registration).
+- ModalContext re-exported from `context/modal-context` — zero duplicate definitions.
+- `prompt-input.tsx` updated: `DialogHelpV2` → `DialogHelp`, `dialog-help-v2` → `dialog-help`
 
 ---
 
 ## 🔲 Step 12 — Final Verification
-
-- [ ] `bun typecheck` — must be 0 errors
-- [ ] `bun lint:fix` — source files must be warning-free (test file `any` warnings are pre-existing)
 - [ ] `bun test packages/cli/test/tui/` — scoped TUI test suite
-- [ ] Manual smoke test of all migrated dialogs
+- [ ] Manual smoke test: SelectPane dialogs, question prompt, rewind, search, memory, help, diff, context

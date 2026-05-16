@@ -13,7 +13,7 @@ import { useTurnDiffs } from "../hooks/use-turn-diffs"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { selectMessages, useAppActions, useAppState } from "../state"
-import { Dialog } from "../ui/dialog"
+import { Pane } from "./design-system/Pane"
 import { DialogRewindActions } from "./dialog-rewind-actions"
 
 export function DialogRewind(props: { onClose?: () => void }): React.ReactNode {
@@ -173,7 +173,12 @@ export function DialogRewind(props: { onClose?: () => void }): React.ReactNode {
   }
 
   return (
-    <Dialog title={actionLoading ? "Working..." : "Time Travel (Rewind)"} onCancel={() => props.onClose?.()}>
+    <Pane color="info">
+      <Box flexDirection="row" justifyContent="space-between" paddingBottom={1}>
+        <Text bold color={theme.info as Color}>
+          {actionLoading ? "Working..." : "Time Travel (Rewind)"}
+        </Text>
+      </Box>
       <Box flexDirection="row" width="100%" gap={2} marginTop={1}>
         <Box flexDirection="column" width="50%">
           <Text bold color={theme.info as Color}>
@@ -239,6 +244,6 @@ export function DialogRewind(props: { onClose?: () => void }): React.ReactNode {
       <Box marginTop={1} paddingX={1}>
         <Text color={theme.textMuted as Color}>↑↓ navigate · Enter action menu · f fork · r revert · esc cancel</Text>
       </Box>
-    </Dialog>
+    </Pane>
   )
 }

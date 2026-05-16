@@ -6,11 +6,11 @@ import { useKeybindingContext, useRegisterKeybindingContext } from "../keybindin
 import { getBindingDisplayText } from "../keybindings/resolver"
 import { useKeybinding } from "../keybindings/use-keybinding"
 import { useAppState } from "../state"
-import { Dialog } from "../ui/dialog"
+import { Pane } from "./design-system/Pane"
 import { Tab, Tabs } from "./design-system/Tabs"
 import { TUI_COMMANDS } from "./prompt/prompt-input"
 
-export function DialogHelpV2({ onClose }: { onClose: () => void }): React.ReactNode {
+export function DialogHelp({ onClose }: { onClose: () => void }): React.ReactNode {
   const command = useAppState((s) => s.command)
   const { bindings } = useKeybindingContext()
 
@@ -36,7 +36,7 @@ export function DialogHelpV2({ onClose }: { onClose: () => void }): React.ReactN
   const allCommands = [...(command ?? []), ...TUI_COMMANDS].sort((a, b) => a.name.localeCompare(b.name))
 
   return (
-    <Dialog title="Help" hideInputGuide onCancel={onClose}>
+    <Pane color="info">
       <Tabs title="" color="info">
         <Tab title="General" id="General">
           <Box flexDirection="column" gap={1} marginTop={1} paddingX={1}>
@@ -72,6 +72,6 @@ export function DialogHelpV2({ onClose }: { onClose: () => void }): React.ReactN
           </Box>
         </Tab>
       </Tabs>
-    </Dialog>
+    </Pane>
   )
 }

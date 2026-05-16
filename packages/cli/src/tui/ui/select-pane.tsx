@@ -20,7 +20,7 @@ import type React from "react"
 import { useContext, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { TextInput } from "../components/text-input"
 import { useTheme } from "../context/theme"
-import { SelectList } from "../primitives/select-list"
+import { DefaultSelectListItem, SelectList } from "../primitives/select-list"
 import type { SelectItem } from "../primitives/types"
 import { useDialogLifecycle } from "../primitives/use-dialog-lifecycle"
 import { useSelectList } from "../primitives/use-select-list"
@@ -248,8 +248,8 @@ export function SelectPane<T>(props: SelectPaneProps<T>): React.ReactNode {
               )
             }
 
-            // Default rendering (SelectList handles gutter/footer via DefaultSelectListItem)
-            return undefined
+            // Default rendering via explicitly delegating to DefaultSelectListItem
+            return <DefaultSelectListItem item={item} context={context} showNumbers={false} numberColumnWidth={0} />
           }}
         />
       </Box>

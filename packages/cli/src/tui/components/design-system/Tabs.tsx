@@ -1,9 +1,10 @@
 import type { KeyboardEvent } from "@liteai/ink"
-import { Box, ScrollBox, stringWidth, TerminalSizeContext, Text, useInput } from "@liteai/ink"
+import { Box, ScrollBox, stringWidth, TerminalSizeContext, Text } from "@liteai/ink"
 import type React from "react"
 import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { useIsInsideModal, useModalScrollRef } from "../../context/modal-context"
 import type { ThemeColors } from "../../context/theme.tsx"
-import { useIsInsideModal, useModalScrollRef } from "../../ui/dialog.tsx"
+import { useKeybindings } from "../../keybindings/use-keybinding"
 import ThemedText from "./ThemedText.tsx"
 
 type TabsProps = {
@@ -126,13 +127,12 @@ export function Tabs({
     setHeaderFocused(true)
   }
 
-  useInput(
-    // _input is required by the useInput signature but unused here since we only care about special keys
-    (_input, key) => {
-      if (key.rightArrow || key.tab) handleTabChange(1)
-      else if (key.leftArrow || (key.shift && key.tab)) handleTabChange(-1)
+  useKeybindings(
+    {
+      "tabs:next": () => handleTabChange(1),
+      "tabs:previous": () => handleTabChange(-1),
     },
-    { isActive: !hidden && !disableNavigation && headerFocused },
+    { context: "Tabs", isActive: !hidden && !disableNavigation && headerFocused },
   )
 
   // When the header is focused, down-arrow returns focus to content. Only
@@ -148,18 +148,18 @@ export function Tabs({
 
   // Opt-in: same tabs:next/previous actions, active from content. Focuses
   // the header so subsequent presses cycle via the handler above.
-  useInput(
-    // _input is required by the useInput signature but unused here since we only care about special keys
-    (_input, key) => {
-      if (key.rightArrow || key.tab) {
+  useKeybindings(
+    {
+      "tabs:next": () => {
         handleTabChange(1)
         setHeaderFocused(true)
-      } else if (key.leftArrow || (key.shift && key.tab)) {
+      },
+      "tabs:previous": () => {
         handleTabChange(-1)
         setHeaderFocused(true)
-      }
+      },
     },
-    { isActive: navFromContent && !headerFocused && optedIn && !hidden && !disableNavigation },
+    { context: "Tabs", isActive: navFromContent && !headerFocused && optedIn && !hidden && !disableNavigation },
   )
 
   // Calculate spacing to fill the available width. No keyboard hint in the

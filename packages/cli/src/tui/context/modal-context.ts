@@ -13,7 +13,7 @@ import { createContext, type RefObject, useContext } from "react"
 type ModalCtx = {
   rows: number
   columns: number
-  scrollRef: RefObject<ScrollBoxHandle> | null
+  scrollRef: RefObject<ScrollBoxHandle | null> | null
 }
 
 export const ModalContext = createContext<ModalCtx | null>(null)
@@ -30,6 +30,6 @@ export function useModalOrTerminalSize(fallback: { rows: number; columns: number
 }
 
 /** Returns the ScrollBox ref for the modal slot, or null when not inside a modal. */
-export function useModalScrollRef(): RefObject<ScrollBoxHandle> | null {
+export function useModalScrollRef(): RefObject<ScrollBoxHandle | null> | null {
   return useContext(ModalContext)?.scrollRef ?? null
 }

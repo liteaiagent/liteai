@@ -4,8 +4,10 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useSession } from "../context/session"
-import { Dialog } from "../ui/dialog"
+import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
+import { useKeybinding } from "../keybindings/use-keybinding"
 import { ContextUsageDisplay } from "./context-usage-display"
+import { Pane } from "./design-system/Pane"
 
 type ContextBreakdownInfo = {
   totalTokens: number
@@ -25,6 +27,9 @@ export function DialogContext({ onClose }: Props): React.ReactNode {
   const session = useSession()
   const [breakdown, setBreakdown] = useState<ContextBreakdownInfo | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useRegisterKeybindingContext("Confirmation")
+  useKeybinding("confirm:no", () => onClose(), { context: "Confirmation" })
 
   useEffect(() => {
     if (!session.sessionID) return
@@ -48,7 +53,7 @@ export function DialogContext({ onClose }: Props): React.ReactNode {
   }, [sdk, session.sessionID])
 
   return (
-    <Dialog title="Context Window" onCancel={onClose}>
+    <Pane color="info">
       <Box flexDirection="column" gap={1} marginTop={1}>
         {loading ? (
           <Text dim>Loading context breakdown...</Text>
@@ -89,6 +94,6 @@ export function DialogContext({ onClose }: Props): React.ReactNode {
           <Text color="ansi:red">Failed to load context breakdown</Text>
         )}
       </Box>
-    </Dialog>
+    </Pane>
   )
 }

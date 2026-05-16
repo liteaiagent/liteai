@@ -1,7 +1,7 @@
 import { Box } from "@liteai/ink"
 import type React from "react"
+import { useIsInsideModal } from "../../context/modal-context"
 import type { ThemeColors } from "../../context/theme.tsx"
-import { useIsInsideModal } from "../../ui/dialog.tsx"
 import { Divider } from "./Divider.tsx"
 
 type PaneProps = {
