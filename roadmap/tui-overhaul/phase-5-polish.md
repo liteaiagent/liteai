@@ -3,6 +3,8 @@
 > **Status**: Not Started  
 > **Depends On**: Phase 4 (Visual Design & UX)  
 > **Estimated Effort**: Low-Medium (~3-5 days)
+>
+> **Last Updated**: 2026-05-16 (added exit summary, alternate screen investigation)
 
 ---
 
@@ -13,6 +15,8 @@ Load these files before starting implementation.
 ### Roadmap Docs
 - `d:\liteai\roadmap\tui-overhaul\phase-5-polish.md` — this file (test matrix, lint rules, provider collapse)
 - `d:\liteai\roadmap\tui-overhaul\roadmap.md` — success criteria table
+- `d:\liteai\roadmap\tui-overhaul\design\architecture-comparison.md` — exit summary + alternate screen comparison
+- `d:\liteai\roadmap\tui-overhaul\tui-architecture\08-ui-visual-design.md` — visual design specs (reference for verification)
 
 ### LiteAI Source (provider collapse targets)
 - `d:\liteai\packages\cli\src\tui\app.tsx` — provider tree (15 wrappers)
@@ -241,6 +245,62 @@ AppConfigProvider              ← static: exit, config, args
 
 ---
 
+## Deliverable 7: Exit Summary (Gemini CLI Style)
+
+> **Decided 2026-05-16**: Adopt Gemini CLI's interaction summary pattern.
+
+When the user exits (Ctrl+C, `/quit`, or process signal), render a summary to stdout **after** Ink unmounts.
+
+### Implementation
+
+1. Capture stats snapshot before Ink cleanup (model, messages, tool calls, context %, cost, wall time, session ID)
+2. In the process exit handler, write formatted summary directly to `process.stdout`
+3. Include resume command: `liteai --resume '<session-id>'`
+
+### Target Output
+```
+┌─────────────────────────────────────────┐
+│ Interaction Summary                     │
+│ Model:        gemini-2.5-pro            │
+│ Messages:     12                        │
+│ Tool Calls:   8 (6 ✓ / 2 ✗)            │
+│ Context:      45% used                  │
+│ Cost:         $0.042                    │
+│ Wall Time:    3m 22s                    │
+│                                         │
+│ To resume: liteai --resume <session-id> │
+└─────────────────────────────────────────┘
+```
+
+### Reference
+- Gemini CLI: `ExitSummary` rendered on `/quit` with Session ID, Tool Calls, Success Rate, Performance stats
+- Claude Code: Minimal — `Resume this session with: claude --resume <id>` written to stdout
+- See `architecture-comparison.md` > Exit Summary Comparison for full analysis
+
+---
+
+## Deliverable 8: Alternate Screen Investigation
+
+> **Noted 2026-05-16**: Both Claude Code and Gemini CLI show the shell command (`PS D:\test_ws> claude`) above their TUI because they render in the terminal's normal buffer. LiteAI hides this.
+
+### Investigation Items
+
+1. **Determine current LiteAI buffer mode**: Identify where alternate screen is activated (Ink config, explicit escape sequences, or wrapper component)
+2. **Evaluate normal buffer mode**: Both reference CLIs default to normal buffer. Assess whether LiteAI should follow suit.
+3. **Config option**: If alternate screen is useful for some workflows (e.g., clean terminal on exit), make it configurable:
+   ```typescript
+   // tui-schema.ts
+   alternate_screen: { type: 'boolean', default: false }
+   ```
+
+| CLI | Buffer Mode | Shell Command Visible? |
+|-----|------------|------------------------|
+| Claude Code | Normal (conditionally alternate) | Yes |
+| Gemini CLI | Normal (conditionally alternate) | Yes |
+| LiteAI | Always alternate (needs investigation) | No |
+
+---
+
 ## Archive Original Documents
 
 After Phase 5 completion, archive the superseded documents:
@@ -264,5 +324,7 @@ mv roadmap/settings-ui-overhaul/ roadmap/done/settings-ui-overhaul/
 - [ ] `bun lint:fix` passes
 - [ ] Component catalog documentation is complete
 - [ ] Feature status document is updated
+- [ ] Exit summary renders on quit (Gemini CLI style)
+- [ ] Alternate screen mode investigated and configurable
 - [ ] Original documents archived to `roadmap/done/`
 - [ ] No known regressions from prior sessions' work

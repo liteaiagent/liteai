@@ -221,3 +221,83 @@ Several providers are wrappers over a single `useState`, `useRef`, or static rea
 4. `PromptRefProvider` → module-level ref export (no context needed)
 
 **Constraint**: All existing `useXxx()` hook APIs must be preserved — consumers don't change. This is a readability refactor, not a behavioral change.
+
+---
+
+## Decision 10: Zero-Branching Architecture
+
+### Question
+> Should we have separate components for boot state (no session) vs active state (session running)?
+
+### Decision
+**No. Single `SessionRoute` handles all states. No `BlankSession`, no `BootLayout`, no component-level branching.**
+
+### Rationale
+
+Both Claude Code and Gemini CLI use a single rendering path — when there's no history, the message area is empty but the layout is the same. LiteAI's `BlankSession` duplicated 120 lines of modal rendering logic, creating a parallel code path for focus management.
+
+The boot state is `SessionRoute` with `sessionID: undefined` and `messages.length === 0`. Data-level guards (selectors return `EMPTY_*` constants), not component-level branches. The `sessionID` cascade is minimal: 5 files need type widening, 0 changes to message/tool rendering.
+
+---
+
+## Decision 11: Onboarding — Claude Code Style (Non-Blocking)
+
+### Question
+> How should we handle fresh installation / no provider configured?
+
+### Decision
+**Non-blocking hint in StatusLine: `"No provider · Run /provider"`. No blocking wizard.**
+
+### Rationale
+
+Analyzed both reference CLIs:
+- **Claude Code**: Shows `Not logged in · Run /login` in the status line. On submit, shows inline error. User can explore the TUI freely.
+- **Gemini CLI**: Shows a mandatory `Get Started` dialog (blocking).
+
+Claude Code's simplicity is preferable — it doesn't block exploration, and LiteAI already has submit-time validation (`"No model selected. Use /models to configure a provider and model."` toast). A dedicated onboarding wizard can be added in a later phase if needed.
+
+---
+
+## Decision 12: Session ID Removed from StatusLine
+
+### Question
+> Should the StatusLine show the session ID?
+
+### Decision
+**No. Remove the session ID segment entirely.**
+
+### Rationale
+
+Session ID is internal noise with no user value during interaction. It's only useful when resuming a session later, which is served by the exit summary resume command. Removing it frees status line space for more useful information (model, context %, cost).
+
+---
+
+## Decision 13: Exit Summary — Gemini CLI Style
+
+### Question
+> What should happen when the user exits?
+
+### Decision
+**Render a Gemini CLI-style interaction summary to stdout after Ink unmounts.**
+
+### Rationale
+
+Analyzed both reference CLIs:
+- **Gemini CLI**: Rich `Interaction Summary` box with Session ID, Tool Calls, Performance stats, Resume command.
+- **Claude Code**: Minimal — just `Resume this session with: claude --resume <id>`.
+
+Gemini's richer summary provides immediate value to the user (cost awareness, session metrics). The resume command in both CLIs is essential. This requires capturing stats before unmount and writing to stdout in the cleanup handler.
+
+---
+
+## Decision 14: Focus Prop — Required, No Backward Compatibility
+
+### Question
+> Should `PromptInput.focus` be optional with a fallback to internal modal state checks?
+
+### Decision
+**No. `focus: boolean` is required. All callers must pass it. No fallback, no shim.**
+
+### Rationale
+
+Per Rule 0 (Zero Backward Compatibility): this is a new major release. An optional `focus` prop with `?? !modalPane.isOpen` fallback is a backward compatibility shim. Clean break: parent owns focus derivation, child receives explicit `focus: boolean`.

@@ -3,6 +3,8 @@
 > **Status**: Not Started  
 > **Depends On**: Phase 2 (Component Migration)  
 > **Estimated Effort**: Medium (~3-5 days)
+>
+> **Design Session**: 2026-05-16 — zero-branching architecture finalized
 
 ---
 
@@ -40,6 +42,75 @@ Centralize focus management so that input conflicts are impossible by constructi
 
 ---
 
+## Design Principle: Zero Branching
+
+> **Decided 2026-05-16**: ONE component tree. ONE `SessionRoute`. ONE `StatusLine`. No `BootLayout`, no `BlankSessionContent`, no if/else split.
+
+The "boot state" is simply `SessionRoute` where `sessionID` is `undefined` and `messages.length === 0`. Data-level guards, not component-level branches.
+
+```
+AppContent
+  └─ ModalPaneProvider
+       └─ SessionRoute(sessionID: string | undefined)
+            ├─ StatsProvider
+            ├─ SessionProvider (sessionID can be undefined)
+            ├─ SessionLayout
+            │    ├─ scrollable: Messages (renders Logo+Tips when empty)
+            │    ├─ bottom: SessionBottom
+            │    │    ├─ PromptInput (focus prop)
+            │    │    └─ StatusLine (unified — session-dependent segments skip when undefined)
+            │    └─ overlay: Permissions / Questions
+            └─ ScrollHandler
+```
+
+Boot and active session traverse the **exact same component tree**. Session-dependent data naturally degrades:
+- `selectMessages(undefined)` → `EMPTY_MESSAGES` (empty array)
+- `selectPermissions(undefined)` → `EMPTY_PERMISSIONS` (empty array)
+- `StatusLine` segments: session-dependent segments (status, ctx%, cost, tokens, diff) simply don't render
+- `Messages` component: empty `filteredMessages` → `VirtualMessageList` renders nothing
+- Logo + Tips: rendered when `messages.length === 0` (inside `scrollable` slot)
+
+### Reference CLI Analysis
+
+Both reference CLIs confirm the single-path approach:
+
+**Claude Code**: Uses sequential pre-REPL dialogs for onboarding (`showSetupScreens()`) then a single REPL layout for everything. `getFocusedInputDialog()` returns one of ~20 dialog states — all rendered within the same REPL. No separate "boot screen".
+
+**Gemini CLI**: Single `AppContainer` for everything. Auth state tracked inline (`authState === AuthState.Unauthenticated` shows blocking dialog inside same layout). Model checked at submit time, not boot.
+
+### Onboarding (Claude Code Style — Adopted)
+
+Claude Code shows `Not logged in · Run /login` in the status line. On submit, shows inline error. **No blocking wizard.** LiteAI adopts this:
+- StatusLine shows `No provider · Run /provider` when `provider_next.connected.length === 0`
+- Submit already shows `"No model selected. Use /models to configure a provider and model."` toast
+- A dedicated onboarding wizard is orthogonal — can be added in a later phase
+
+### Exit Summary (Gemini CLI Style — Adopted)
+
+Gemini CLI shows an `Interaction Summary` box on `/quit` with Session ID, Tool Calls, Performance stats, and a resume command. LiteAI will adopt this:
+- Capture stats snapshot before Ink unmounts
+- Write summary to stdout in cleanup handler (after TUI exits)
+
+```
+┌─────────────────────────────────────────┐
+│ Interaction Summary                     │
+│ Model:        gemini-2.5-pro            │
+│ Messages:     12                        │
+│ Tool Calls:   8 (6 ✓ / 2 ✗)            │
+│ Context:      45% used                  │
+│ Cost:         $0.042                    │
+│ Wall Time:    3m 22s                    │
+│                                         │
+│ To resume: liteai --resume <session-id> │
+└─────────────────────────────────────────┘
+```
+
+### Session ID Display — Removed
+
+> **Decided 2026-05-16**: The session ID segment in `StatusLine` (priority 8) is removed entirely. It is internal noise with no user value. Session ID is only surfaced in the exit summary resume command.
+
+---
+
 ## Problem Statement
 
 After Phase 2, all dialogs use `useKeybindings` instead of raw `useInput`. But the **focus arbitration** problem remains:
@@ -60,31 +131,28 @@ useInput(handler, { isActive: !modalPane.isOpen && !isComposing })
 ```
 
 ### Target (Centralized)
+
+> **Decided 2026-05-16**: Derive focus in `SessionRoute`, not `AppContent`. Keep it simple — no `useState` focus enum.
+
 ```tsx
-// AppContent owns focus state
-const [focusTarget, setFocusTarget] = useState<'prompt' | 'modal' | 'overlay'>('prompt')
+// SessionRoute derives focus
+const promptFocused = !modalPane.isOpen && !cursor.active
 
-// Derived from modal state
-useEffect(() => {
-  if (modalPane.isOpen) setFocusTarget('modal')
-  else if (overlayActive) setFocusTarget('overlay')
-  else setFocusTarget('prompt')
-}, [modalPane.isOpen, overlayActive])
-
-// Prompt receives explicit focus
-<PromptInput focus={focusTarget === 'prompt'} />
+// Pass to PromptInput
+<PromptInput focus={promptFocused} />
 ```
 
 ### Implementation
 
-#### `app.tsx` Changes
-- Add `focusTarget` state to `AppContent`
-- Derive from `modalPane.isOpen` + HITL overlay state
-- Pass `focus={focusTarget === 'prompt'}` to `PromptInput`
+#### `routes/session/index.tsx` Changes
+- Derive `promptFocused` from `!modalPane.isOpen && !cursor.active`
+- Pass `focus={promptFocused}` to `PromptInput` via `SessionBottom`
 
 #### `prompt-input.tsx` Changes
-- Accept `focus: boolean` prop (already partially exists as `isActive`)
-- Remove internal `modalPane.isOpen` checks — parent controls focus
+- Accept `focus: boolean` prop (required, not optional)
+- Remove internal `modalPane.isOpen` focus derivation entirely
+- At the `useTextInput` call: `focus: focus && !searchState.isSearching && !cursorModeActive`
+- All callers must pass `focus` — no fallback to internal modal state
 
 ---
 
@@ -202,62 +270,115 @@ replaceTop: (content: ReactNode) => void  // stack[-1] = content (single render)
 
 ---
 
-## Deliverable 5: BlankSession Elimination
+## Deliverable 5: BlankSession Elimination + Unified StatusLine
 
 ### Problem
 
 The `BlankSession` / `SessionRoute` split creates two divergent code paths:
 
-1. **Duplicated modal rendering**: `BlankSessionContent` manually reimplements 30 lines of absolute-positioned modal pane logic (L130-148 of `app.tsx`) that `SessionLayout` already provides. This duplication was the root cause of the original modal void bug.
+1. **Duplicated modal rendering**: `BlankSessionContent` manually reimplements 30 lines of absolute-positioned modal pane logic (L130-148 of `app.tsx`) that `SessionLayout` already provides.
 2. **Divergent focus paths**: Focus management, keybinding contexts, and overlay rendering work differently in blank vs. active states.
-3. **Two PromptInput mount points**: The same `<PromptInput>` renders in different container hierarchies, meaning focus gating and context behavior can diverge.
+3. **Two PromptInput mount points**: The same `<PromptInput>` renders in different container hierarchies.
 
-Both Gemini CLI and Claude Code use a **single rendering path** — when there's no history, the message area is empty but the layout is the same.
-
-### Solution: Unify Into `SessionRoute`
+### Solution: Zero Branching — Unify Into `SessionRoute`
 
 `SessionRoute` already handles lazy session creation via `SessionProvider.ensureSession()`. The blank state is simply "SessionRoute where `messages.length === 0`".
 
+#### `app.tsx` — Delete BlankSession, unify AppContent
+
 ```tsx
-// AppContent (after)
 function AppContent() {
   const route = useRoute()
-  // ... tab management ...
+  const sessionID = route.data.sessionID
 
-  // ALWAYS render through SessionRoute — it handles sessionID: undefined
+  // When no session, render single SessionRoute with undefined sessionID.
+  // When sessions exist, render tab set. Both use the same component.
+  if (!sessionID) {
+    return (
+      <ModalPaneProvider>
+        <SessionRoute />
+      </ModalPaneProvider>
+    )
+  }
+
   return (
     <>
-      {tabs.length === 0 ? (
-        <ModalPaneProvider>
-          <SessionRoute sessionID={undefined} />
-        </ModalPaneProvider>
-      ) : (
-        tabs.map(id => (
-          <Box key={id} display={id === activeTabId ? "flex" : "none"} ...>
-            <ModalPaneProvider>
-              <SessionRoute sessionID={id} />
-            </ModalPaneProvider>
-          </Box>
-        ))
-      )}
+      {tabs.map((id) => (
+        <Box key={id} display={id === activeTabId ? "flex" : "none"} ...>
+          <ModalPaneProvider>
+            <SessionRoute sessionID={id} />
+          </ModalPaneProvider>
+        </Box>
+      ))}
     </>
   )
 }
 ```
 
-Inside `SessionRoute`, when `sessionID` is undefined and `messages.length === 0`, render the Logo + Tips in the scrollable area:
+> The remaining `if (!sessionID)` is about tab wrapping (single vs multi), not rendering different components. Both branches render `<SessionRoute>`.
+
+#### `SessionRoute` — Conditional scrollable content
+
+The ONE conditional render — data-driven (empty vs non-empty messages), not structural:
 
 ```tsx
-// SessionRoute scrollable content (when no messages)
-{messages.length === 0 ? (
-  <Box flexGrow={1} alignItems="center" justifyContent="center">
-    <Logo />
-    <Tips />
-  </Box>
-) : (
-  <Messages scrollRef={scrollRef} />
-)}
+scrollable={
+  <MessageCursorContext.Provider value={...}>
+    {messages.length === 0 ? (
+      <Box flexGrow={1} flexDirection="column" alignItems="center" justifyContent="center">
+        <Logo />
+        <Box height={2} />
+        <Tips />
+      </Box>
+    ) : (
+      <Messages scrollRef={scrollRef} />
+    )}
+  </MessageCursorContext.Provider>
+}
 ```
+
+### `sessionID` Cascade Impact (Verified Minimal)
+
+> **Decided 2026-05-16**: Widen `sessionID` to `string | undefined`. The cascade is NOT 20+ files — it's 5 files with data-level guards.
+
+| File | Change | Nature |
+|------|--------|--------|
+| `ctx.tsx` | `sessionID: string` → `string \| undefined` | Type widen (1 line) |
+| `ctx.tsx` | Add `useOptionalSessionContext()` | Returns null instead of throwing |
+| `app-state-selectors.ts` | Widen 5 selector params | Short-circuit return `EMPTY_*` |
+| `status-line.tsx` | Widen prop, guard 5 segments, add onboarding segment | ~15 lines |
+| `index.tsx` (SessionRoute) | Widen prop, guard sync/cleanup | ~10 lines |
+| `tools.tsx` | **No change** — tool components never mount without messages |
+| `messages.tsx` | **No change** — `selectMessages(undefined)` returns empty array |
+| `parts.tsx` | **No change** — only renders inside MessageRow |
+| `compact-summary.tsx` | **No change** — only renders inside message context |
+
+**5 files modified, 0 functional changes to message/tool rendering.**
+
+### Unified StatusLine
+
+> **Decided 2026-05-16**: ONE StatusLine component for both boot and active states. Remove session ID segment entirely (internal noise).
+
+**a) Widen prop:** `sessionID: string` → `sessionID?: string`
+
+**b) Remove session ID segment** (priority 8)
+
+**c) Guard session-dependent segments** — segments 1.8, 2, 3, 4, 7 only render when `sessionID` is defined. Segments 1, 1.5, 1.6, 1.7, 5, 6 always render.
+
+**d) Add onboarding segment** (Claude Code style):
+```typescript
+// 1.9 Provider status — show when no provider connected
+const connected = state.provider_next?.connected ?? []
+if (connected.length === 0) {
+  segments.push({
+    priority: 1.9,
+    text: "No provider · Run /provider",
+    color: theme.warning as string,
+  })
+}
+```
+
+**e) Use `useOptionalSessionContext()`** instead of throwing `useSessionContext()` for `displayMode`.
 
 ### What Gets Eliminated
 
@@ -267,20 +388,29 @@ Inside `SessionRoute`, when `sessionID` is undefined and `messages.length === 0`
 | `BlankSessionContent` component | 90 lines | Manual modal rendering, status bar, MCP count |
 | Manual modal pane rendering | 18 lines | Duplicated from `SessionLayout` |
 | Conditional branch in `AppContent` | 3 lines | `if (!route.data.sessionID) return <BlankSession />` |
+| Session ID segment in StatusLine | 1 line | Internal noise |
 
-**Total**: ~117 lines removed, single code path for all states.
-
-### What `SessionRoute` Gains
-
-- Conditional Logo + Tips rendering when `messages.length === 0`
-- `sessionID` prop becomes `string | undefined` (was `string`)
-- StatusLine in blank state shows directory + MCP count (already in `SessionBottom`)
+**Total**: ~120 lines removed, single code path for all states.
 
 ### Migration Notes
 
 - `SessionProvider` already handles `sessionID: undefined` — it calls `ensureSession()` on first submit
-- `StatsProvider` and `SessionProvider` (display context) need to handle undefined `sessionID` gracefully (empty stats, no cursor)
+- `StatsProvider` degrades gracefully (all counters at 0)
 - Focus arbiter from Deliverable 1 works identically — it reads `modalPane.isOpen`, which is available in both paths
+- UI renders with empty prompt, session creation is lazy (on first submit)
+
+---
+
+## Deliverable 6: Exit Summary
+
+When the user exits (Ctrl+C or `/quit`), render a Gemini-style interaction summary before the process exits.
+
+Capture stats snapshot before Ink unmounts, write to stdout in cleanup handler.
+
+Data available from `useStats()`:
+- Model name, message count, tool call stats
+- Context utilization, total cost, wall time
+- Session ID for resume command
 
 ---
 
@@ -288,12 +418,14 @@ Inside `SessionRoute`, when `sessionID` is undefined and `messages.length === 0`
 
 | File | Change |
 |------|--------|
-| `context/modal-pane.tsx` | Stack-based state, `pushModal`, `popModal`, `replaceTop` |
-| `hooks/use-navigation.ts` | Wire to stack: open=push, close=pop, replace=replaceTop |
-| `app.tsx` | Focus arbiter + eliminate `BlankSession`/`BlankSessionContent`, unify into `SessionRoute` |
-| `components/prompt/prompt-input.tsx` | Accept `focus` prop, remove internal modal checks |
-| `components/session-layout.tsx` | Render `stack.at(-1)` instead of `content` |
-| `routes/session/index.tsx` | Accept `sessionID: string | undefined`, conditional Logo/Tips rendering |
+| `context/modal-pane.tsx` | Add `replaceTop` method |
+| `hooks/use-navigation.ts` | Wire `replace` to `replaceTop` |
+| `app.tsx` | Delete `BlankSession`/`BlankSessionContent`, unify into `SessionRoute` |
+| `components/prompt/prompt-input.tsx` | Accept `focus` prop |
+| `components/status-line.tsx` | Unify, remove session ID, guard segments, add onboarding |
+| `routes/session/ctx.tsx` | Widen `sessionID`, add `useOptionalSessionContext` |
+| `state/app-state-selectors.ts` | Widen 5 selectors to accept `undefined` |
+| `routes/session/index.tsx` | Widen prop, guard sync/cleanup, Logo+Tips, focus arbiter |
 
 ---
 
@@ -319,7 +451,9 @@ This already works in the keybinding resolver. After Phase 2, all components reg
 - [ ] `replaceTop`: tab navigation in Config does not cause focus flicker
 - [ ] No race condition in `replace` operation (single render cycle)
 - [ ] `BlankSession` and `BlankSessionContent` are deleted — zero references
-- [ ] Boot experience (Logo + Tips + Prompt) renders identically via `SessionRoute`
+- [ ] Boot experience (Logo + Tips + Prompt + unified StatusLine) renders via `SessionRoute`
 - [ ] All slash commands work identically at boot and mid-session
+- [ ] StatusLine: session ID segment removed, onboarding hint shows when no provider
+- [ ] Exit summary: Gemini-style interaction summary on quit
 - [ ] `bun typecheck` passes
 - [ ] `bun lint:fix` passes

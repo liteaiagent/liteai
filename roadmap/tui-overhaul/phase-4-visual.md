@@ -12,7 +12,8 @@ Load these files before starting implementation.
 
 ### Roadmap Docs
 - `d:\liteai\roadmap\tui-overhaul\phase-4-visual.md` — this file (screen blueprints, feature specs)
-- `d:\liteai\roadmap\tui-overhaul\design\architecture-comparison.md` — rendering slot comparison across CLIs
+- `d:\liteai\roadmap\tui-overhaul\design\architecture-comparison.md` — rendering slot comparison across CLIs, boot flow, exit summary
+- `d:\liteai\roadmap\tui-overhaul\tui-architecture\08-ui-visual-design.md` — **comprehensive screen-by-screen blueprint** (message rendering, thinking blocks, plan mode, command palette, shell commands, provider auth, icon system — 850 lines of verified design specs)
 
 ### LiteAI Source (modification targets — load per feature)
 
