@@ -1,5 +1,5 @@
 import type { Color } from "@liteai/ink"
-import { Box, TerminalSizeContext, Text, useInput } from "@liteai/ink"
+import { Box, TerminalSizeContext, Text } from "@liteai/ink"
 import type { QuestionRequest } from "@liteai/sdk"
 import { useCallback, useContext, useState } from "react"
 import ThemedBox from "../../components/design-system/ThemedBox"
@@ -79,38 +79,32 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
     { context: "Select", isActive: mode === "options" },
   )
 
-  useInput(
-    (_input, key) => {
-      if (mode !== "options") return
-      if (key.tab && allowCustom) {
-        setMode("custom")
-      }
+  // Tab key: switch between options and custom input modes
+  useKeybindings(
+    {
+      "tabs:next": () => {
+        if (allowCustom) setMode("custom")
+      },
     },
-    { isActive: mode === "options" },
+    { context: "Tabs", isActive: mode === "options" },
   )
 
-  // Handle custom text input mode — up arrow returns to option list
-  useInput(
-    (_input, key) => {
-      if (mode !== "custom") return
-
-      if (key.upArrow && !customText.includes("\n")) {
-        // Up arrow with single-line text → switch back to options
-        setMode("options")
-      }
-      if (key.tab && options.length > 0) {
-        setMode("options")
-      }
-      if (key.escape) {
-        if (customText) {
-          // First escape clears the text
-          setCustomText("")
-        } else {
-          reject()
-        }
-      }
+  // Custom input mode: up arrow or tab returns to option list; esc rejects
+  useKeybindings(
+    {
+      "select:previous": () => setMode("options"),
+      "tabs:next": () => {
+        if (options.length > 0) setMode("options")
+      },
+      "tabs:previous": () => {
+        if (options.length > 0) setMode("options")
+      },
+      "select:cancel": () => {
+        if (customText) setCustomText("")
+        else reject()
+      },
     },
-    { isActive: mode === "custom" },
+    { context: "Select", isActive: mode === "custom" },
   )
 
   const handleCustomSubmit = useCallback(

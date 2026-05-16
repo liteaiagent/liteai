@@ -117,6 +117,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       right: "tabs:next",
       left: "tabs:previous",
       escape: "global:close",
+      r: "select:cycleRange",
     },
   },
   {

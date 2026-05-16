@@ -64,7 +64,6 @@ import { DialogDiff } from "../dialog-diff"
 import { DialogDoctor } from "../dialog-doctor"
 import { DialogEffort } from "../dialog-effort"
 import { DialogExportOptions } from "../dialog-export-options"
-import { DialogFeedback } from "../dialog-feedback"
 import { DialogHelpV2 } from "../dialog-help-v2"
 import { DialogMcp } from "../dialog-mcp"
 import { DialogMemory } from "../dialog-memory"
@@ -378,7 +377,6 @@ export function PromptInput({ debug, verbose, isLoading, hint, cursorModeActive,
           />,
         )
       },
-      feedback: () => modalPane.openModal(<DialogFeedback onDone={modalPane.closeModal} />),
       find: () => modalPane.openModal(<DialogSearch onClose={modalPane.closeModal} />),
       search: () => onSearch?.(),
       help: () => modalPane.openModal(<DialogHelpV2 onClose={modalPane.closeModal} />),

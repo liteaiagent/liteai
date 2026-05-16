@@ -1,6 +1,7 @@
-import { Box, Text, useInput } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import type React from "react"
 import { useState } from "react"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { Dialog } from "./dialog"
 
 export type DialogConfirmProps = {
@@ -13,17 +14,15 @@ export type DialogConfirmProps = {
 export function DialogConfirm({ title, message, onConfirm, onCancel }: DialogConfirmProps): React.ReactNode {
   const [active, setActive] = useState<"confirm" | "cancel">("confirm")
 
-  useInput((_input, _key) => {
-    if (_key.return) {
-      if (active === "confirm") onConfirm?.()
-      else onCancel?.()
-      return
-    }
-
-    if (_key.leftArrow || _key.rightArrow) {
-      setActive((a) => (a === "confirm" ? "cancel" : "confirm"))
-    }
-  })
+  useKeybindings(
+    {
+      "confirm:yes": () => (active === "confirm" ? onConfirm?.() : onCancel?.()),
+      "confirm:no": () => onCancel?.(),
+      "confirm:previous": () => setActive((a) => (a === "confirm" ? "cancel" : "confirm")),
+      "confirm:next": () => setActive((a) => (a === "confirm" ? "cancel" : "confirm")),
+    },
+    { context: "Confirmation" },
+  )
 
   return (
     <Dialog title={title} onCancel={() => onCancel?.()} isCancelActive>

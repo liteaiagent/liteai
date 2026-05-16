@@ -1,8 +1,9 @@
-import { Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
+import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
 import { useContext, useMemo, useState } from "react"
 import { useTheme } from "../context/theme"
 import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { useAppState } from "../state"
 import { ContextUsageDisplay } from "./context-usage-display"
 import { Heatmap } from "./heatmap"
@@ -28,15 +29,17 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   const [dateRange, setDateRange] = useState<DateRange>("30d")
   const globalStats = useGlobalStats(dateRange)
 
-  useInput((input, key) => {
-    if (key.tab) {
-      setTab((t) => (t === "session" ? "global" : "session"))
-    }
-    if (tab === "global" && input === "r") {
-      const ranges: DateRange[] = ["7d", "30d", "90d", "all"]
-      setDateRange((r) => ranges[(ranges.indexOf(r) + 1) % ranges.length])
-    }
-  })
+  const RANGES: DateRange[] = ["7d", "30d", "90d", "all"]
+
+  useKeybindings(
+    {
+      "tabs:next": () => setTab((t) => (t === "session" ? "global" : "session")),
+      "tabs:previous": () => setTab((t) => (t === "session" ? "global" : "session")),
+      "select:cycleRange": () => setDateRange((r) => RANGES[(RANGES.indexOf(r) + 1) % RANGES.length]),
+      "global:close": () => _onClose(),
+    },
+    { context: "Tabs" },
+  )
 
   const diff = session_diff[sessionID]
   const changes = useMemo(() => {

@@ -1,6 +1,6 @@
 import type { Snapshot } from "@liteai/core/snapshot/index"
 import type { Color } from "@liteai/ink"
-import { Box, Text, useInput } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import type { Message, Session } from "@liteai/sdk"
 import type React from "react"
 import { useCallback, useEffect, useState } from "react"
@@ -146,15 +146,17 @@ export function DialogRewind(props: { onClose?: () => void }): React.ReactNode {
   )
 
   // Direct-action shortcuts: f = fork, r = revert (skip menu)
-  useInput((input, _key) => {
-    if (actionLoading) return
-    if (input === "f") {
-      void handleDirectFork()
-    }
-    if (input === "r") {
-      void handleDirectRevert()
-    }
-  })
+  useKeybindings(
+    {
+      "select:directFork": () => {
+        if (!actionLoading) void handleDirectFork()
+      },
+      "select:directRevert": () => {
+        if (!actionLoading) void handleDirectRevert()
+      },
+    },
+    { context: "Select" },
+  )
 
   const additions = diffs.reduce((sum, d) => sum + d.additions, 0)
   const deletions = diffs.reduce((sum, d) => sum + d.deletions, 0)

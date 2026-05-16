@@ -1,4 +1,4 @@
-import { Box, type Color, Text, useInput } from "@liteai/ink"
+import { Box, type Color, Text } from "@liteai/ink"
 import { useEffect, useMemo, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
@@ -521,14 +521,15 @@ function RemoveMarketplaceDialog(props: {
     props.onDone()
   }
 
-  useInput((_char, _key, evt) => {
-    if (evt?.keypress?.name === "return") {
-      void confirm()
-    }
-    if (evt?.keypress?.name === "escape" && !busy) {
-      props.onCancel()
-    }
-  })
+  useKeybindings(
+    {
+      "confirm:yes": () => void confirm(),
+      "confirm:no": () => {
+        if (!busy) props.onCancel()
+      },
+    },
+    { context: "Confirmation" },
+  )
 
   return (
     <Box paddingLeft={2} paddingRight={2} gap={1} flexDirection="column">

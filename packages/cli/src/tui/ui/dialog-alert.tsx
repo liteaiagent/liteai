@@ -1,5 +1,6 @@
-import { Box, Text, useInput } from "@liteai/ink"
+import { Box, Text } from "@liteai/ink"
 import type React from "react"
+import { useKeybindings } from "../keybindings/use-keybinding"
 import { Dialog } from "./dialog"
 
 export type DialogAlertProps = {
@@ -9,12 +10,12 @@ export type DialogAlertProps = {
 }
 
 export function DialogAlert({ title, message, onConfirm }: DialogAlertProps): React.ReactNode {
-  useInput((_input, _key, event) => {
-    if (!event) return
-    if (event.keypress.name === "return") {
-      onConfirm?.()
-    }
-  })
+  useKeybindings(
+    {
+      "confirm:yes": () => onConfirm?.(),
+    },
+    { context: "Confirmation" },
+  )
 
   return (
     <Dialog title={title} onCancel={() => onConfirm?.()} isCancelActive>
