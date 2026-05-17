@@ -926,6 +926,7 @@ export function PromptInput({ debug, verbose, isLoading, focus, hint, cursorMode
         atSuggestions={atCompleter.active ? atCompleter.items : []}
         atSelectedIndex={atSelectedIndex}
         atIsLoading={atCompleter.isLoading}
+        sessionID={session.sessionID}
       />
     </Box>
   )

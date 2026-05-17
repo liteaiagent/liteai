@@ -58,6 +58,7 @@ export const DEFAULT_BINDINGS: KeybindingBlock[] = [
       "ctrl+shift+f": "chat:workspaceSearch",
       [IMAGE_PASTE_KEY]: "chat:imagePaste",
       "shift+up": "chat:enterMessageCursor",
+      "shift+tab": "app:cyclePermissionMode",
       // LiteAI extensions
       "ctrl+x a": "chat:agents",
       "ctrl+x b": "chat:sidebarToggle",

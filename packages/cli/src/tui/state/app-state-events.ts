@@ -400,15 +400,25 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
 
     case "plan.state_changed": {
       const sessionID = event.properties.sessionID as string
+      const active = event.properties.active as boolean | undefined
       setState((prev) => ({
         ...prev,
         plan: {
           ...prev.plan,
           [sessionID]: {
-            enabled: true,
+            enabled: active !== false,
             planFilePath: event.properties.planFilePath as string | undefined,
             turnsSincePlanReminder: event.properties.turnsSincePlanReminder as number | undefined,
           },
+        },
+        permissionMode: {
+          ...prev.permissionMode,
+          [sessionID]:
+            active !== false
+              ? "plan"
+              : prev.permissionMode[sessionID] === "plan"
+                ? "default"
+                : (prev.permissionMode[sessionID] ?? "default"),
         },
       }))
       break
@@ -422,6 +432,19 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
           sessionID,
           planText: event.properties.planText as string,
           planFilePath: event.properties.planFilePath as string,
+        },
+      }))
+      break
+    }
+
+    case "permission_mode.changed": {
+      const sessionID = event.properties.sessionID as string
+      const permissionMode = event.properties.permissionMode as string
+      setState((prev) => ({
+        ...prev,
+        permissionMode: {
+          ...prev.permissionMode,
+          [sessionID]: permissionMode,
         },
       }))
       break

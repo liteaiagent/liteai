@@ -510,6 +510,62 @@ export const SessionRoutes = lazy(() =>
       },
     )
     .post(
+      "/:sessionID/permission-mode",
+      describeRoute({
+        summary: "Set permission mode",
+        description:
+          "Set the active permission mode for a running session. Affects how tool permissions are evaluated in real-time.",
+        operationId: "project.session.setPermissionMode",
+        responses: {
+          200: {
+            description: "Permission mode updated",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    permissionMode: z.string(),
+                  }),
+                ),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      validator(
+        "json",
+        z.object({
+          permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]),
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const { permissionMode } = c.req.valid("json")
+
+        // Plan mode has its own state machine (PlanModeStateRef) — keep it in sync.
+        // PlanModeStateRef.update() emits PlanStateChanged automatically on transitions.
+        const { PlanModeStateRef } = await import("../../session/plan-mode-state")
+        if (PlanModeStateRef.has(sessionID)) {
+          const ref = PlanModeStateRef.for(sessionID)
+          const planActive = ref.get().active
+          if (permissionMode === "plan" && !planActive) {
+            ref.update((s) => ({ ...s, active: true }))
+          } else if (permissionMode !== "plan" && planActive) {
+            ref.update((s) => ({ ...s, active: false }))
+          }
+        }
+
+        SessionPrompt.setPermissionMode(sessionID, permissionMode)
+        return c.json({ permissionMode })
+      },
+    )
+    .post(
       "/:sessionID/share",
       describeRoute({
         summary: "Share session",

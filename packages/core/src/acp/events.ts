@@ -58,6 +58,17 @@ export class ACPEventStreamer {
       }),
     )
 
+    this.busUnsubscribes.push(
+      Bus.subscribe(Session.Event.PermissionModeChanged, async (event) => {
+        if (this.eventAbort.signal.aborted) return
+        const session = this.sessionManager.tryGet(event.properties.sessionID)
+        if (!session) return
+        await this.connection.extNotification("permission_mode.changed", event.properties).catch((error) => {
+          log.error("failed to send permission_mode.changed to ACP", { error })
+        })
+      }),
+    )
+
     this.runEventSubscription().catch((error) => {
       if (this.eventAbort.signal.aborted) return
       log.error("event subscription failed", { error })

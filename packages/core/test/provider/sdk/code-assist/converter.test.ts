@@ -137,6 +137,34 @@ describe("toRequest", () => {
     expect(model.parts[0].thoughtSignature).toBe("sig2")
   })
 
+  test("assistant multiple tool-calls receive synthetic thoughtSignature if missing", () => {
+    const prompt: LanguageModelV2Prompt = [
+      { role: "user", content: [{ type: "text", text: "q" }] },
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "tc1",
+            toolName: "search",
+            input: { q: "test1" },
+          },
+          {
+            type: "tool-call",
+            toolCallId: "tc2",
+            toolName: "fetch",
+            input: { url: "test2" },
+          },
+        ],
+      },
+    ]
+    const req = toRequest({ model: "m", prompt })
+    const model = req.request.contents.find((c) => c.role === "model")
+    if (!model) throw new Error("expected model")
+    expect(model.parts[0].thoughtSignature).toBe("skip_thought_signature_validator")
+    expect(model.parts[1].thoughtSignature).toBe("skip_thought_signature_validator")
+  })
+
   test("tool result in tool role → user content", () => {
     const prompt: LanguageModelV2Prompt = [
       { role: "user", content: [{ type: "text", text: "q" }] },

@@ -247,6 +247,13 @@ export namespace Session {
         planFilePath: z.string(),
       }),
     ),
+    PermissionModeChanged: BusEvent.define(
+      "permission_mode.changed",
+      z.object({
+        sessionID: SessionID.zod,
+        permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]),
+      }),
+    ),
   }
 
   export const create = fn(

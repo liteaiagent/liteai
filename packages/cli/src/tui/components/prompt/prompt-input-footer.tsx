@@ -56,6 +56,7 @@ type PromptInputFooterProps = {
   readonly atSuggestions?: SuggestionItem[]
   readonly atSelectedIndex?: number
   readonly atIsLoading?: boolean
+  readonly sessionID?: string
 }
 
 export function PromptInputFooter({
@@ -75,6 +76,7 @@ export function PromptInputFooter({
   atSuggestions,
   atSelectedIndex,
   atIsLoading,
+  sessionID,
 }: PromptInputFooterProps) {
   const terminalSize = useContext(TerminalSizeContext)
   const columns = terminalSize?.columns ?? 80
@@ -123,6 +125,7 @@ export function PromptInputFooter({
         isPasting={isPasting}
         config={config}
         hint={hint}
+        sessionID={sessionID}
       />
     )
   })()

@@ -10,6 +10,7 @@ import type { MessageActionContext } from "../../components/message-action-regis
 import { MessageActionsBar } from "../../components/message-actions-bar"
 import { PlanReview } from "../../components/plan-review"
 import { PromptInput } from "../../components/prompt/prompt-input"
+import { TipBanner } from "../../components/prompt/tip-banner"
 import { ScrollHandler } from "../../components/scroll-handler"
 import { SessionLayout } from "../../components/session-layout"
 import { StatusLine } from "../../components/status-line"
@@ -21,6 +22,7 @@ import { MessageCursorContext } from "../../context/message-cursor"
 import { useModalPane } from "../../context/modal-pane"
 import { usePromptRef } from "../../context/prompt"
 import { useRoute } from "../../context/route"
+import { useSDK } from "../../context/sdk"
 import { useSession } from "../../context/session"
 import { StatsProvider, useStats } from "../../context/stats"
 import { useToast } from "../../context/toast"
@@ -38,8 +40,15 @@ import {
   selectTodos,
   useAppActions,
   useAppState,
+  useAppStore,
   useSetAppState,
 } from "../../state"
+import {
+  getNextPermissionMode,
+  isDefaultMode,
+  permissionModeSymbol,
+  permissionModeTitle,
+} from "../../util/permission-mode"
 import { type DisplayMode, SessionProvider } from "./ctx"
 import { Messages } from "./messages"
 import { PermissionPrompt } from "./permission"
@@ -59,6 +68,8 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
   const permissions = useAppState(selectPermissions(sessionID))
   const questions = useAppState(selectQuestions(sessionID))
   const session = useSession()
+  const sdk = useSDK()
+  const appStore = useAppStore()
   const tuiConfig = useTuiConfig()
 
   // Terminal title bar status (like Claude Code / Gemini CLI)
@@ -142,6 +153,31 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
 
   useKeybindings(
     {
+      "app:cyclePermissionMode": () => {
+        const sid = session.sessionID
+        if (!sid) return
+
+        const current = appStore.getState().permissionMode[sid] ?? "default"
+        const next = getNextPermissionMode(current)
+
+        // Optimistic TUI update
+        appStore.setState((prev) => ({
+          ...prev,
+          permissionMode: { ...prev.permissionMode, [sid]: next },
+        }))
+
+        // Server-side: setPermissionMode endpoint
+        void sdk.client.project.session.setPermissionMode({
+          sessionID: sid,
+          projectID: sdk.projectID,
+          permissionMode: next,
+        })
+
+        toast.show({
+          variant: isDefaultMode(next) ? "info" : "warning",
+          message: `${permissionModeSymbol(next)} ${permissionModeTitle(next)}`,
+        })
+      },
       "app:toggleTranscript": () => setDisplayMode((m) => (m === "compact" ? "transcript" : "compact")),
       "app:toggleTodos": () => setShowTodoTray((v) => !v),
     },
@@ -320,7 +356,6 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
   )
 }
 
-import { useSDK } from "../../context/sdk"
 import { useCompactCircuitBreaker } from "../../hooks/use-compact-circuit-breaker"
 import { useQueueProcessor } from "../../hooks/use-queue-processor"
 
@@ -378,6 +413,7 @@ function SessionBottom({
     <Box flexDirection="column" width="100%" flexShrink={0}>
       <TokenWarning utilization={stats.contextUtilization} onAutoCompact={handleAutoCompact} />
       {cursorContext && <MessageActionsBar ctx={cursorContext} />}
+      <TipBanner isLoading={session.isLoading} cursorModeActive={!!cursorContext} />
       <PromptInput
         debug={false}
         verbose={false}

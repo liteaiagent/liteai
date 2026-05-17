@@ -1,95 +1,31 @@
 /**
  * Footer left-side component.
- * Adapted port from MVP `PromptInput/PromptInputFooterLeftSide.tsx`.
  *
- * Renders (left side of footer):
+ * Renders (left side of footer below the input border):
  * 1. Exit message — "Press X again to exit"
  * 2. "Pasting text…" indicator
  * 3. Vim `-- INSERT --` indicator
  * 4. When loading: "esc to interrupt"
  * 5. When bash mode: "! for bash mode"
- * 6. Default idle state: "? for shortcuts · ctrl+p palette | ● Tip: [rotating tip]"
+ * 6. Mode indicator (when non-default) + essential shortcuts
  *
- * Stripped:
- * - React Compiler artifacts (_c(), $[n])
- * - BackgroundTaskStatus / Coordinator / Agent swarm pills
- * - TeamStatus / TeamsDialog
- * - ProactiveCountdown
- * - Remote session indicator
- * - PR badge
- * - Voice warmup hint
- * - Selection hints (fullscreen)
- * - Tungsten/tmux pill
- * - Permission mode cycling with auto-mode opt-in
+ * Tip rotation has been extracted to `tip-banner.tsx` and renders above the prompt.
+ *
+ * @module components/prompt/prompt-input-footer-left-side
  */
 
 import { Box, type Color, Text } from "@liteai/ink"
-import { useEffect, useMemo, useState } from "react"
 import { useTheme } from "../../context/theme"
-import { useKeybindingContext } from "../../keybindings/keybinding-context"
 import { useAppState } from "../../state"
 import type { PromptInputMode, VimMode } from "../../types/text-input"
+import {
+  isDefaultMode,
+  permissionModeColor,
+  permissionModeSymbol,
+  permissionModeTitle,
+} from "../../util/permission-mode"
 import { useExitState } from "../global-exit-handler"
 import { isVimModeEnabled } from "./utils"
-
-// ── Tip rotation (same pool as the old Tips component) ─────────────────────
-
-type TipPart = { text: string; highlight: boolean }
-
-function parseTip(tip: string): TipPart[] {
-  const parts: TipPart[] = []
-  const regex = /\{highlight\}(.*?)\{\/highlight\}/g
-  const matches = Array.from(tip.matchAll(regex))
-  let lastIndex = 0
-  for (const match of matches) {
-    const start = match.index ?? 0
-    if (start > lastIndex) parts.push({ text: tip.slice(lastIndex, start), highlight: false })
-    parts.push({ text: match[1], highlight: true })
-    lastIndex = start + match[0].length
-  }
-  if (lastIndex < tip.length) parts.push({ text: tip.slice(lastIndex), highlight: false })
-  return parts
-}
-
-function useTip() {
-  const { getDisplayText } = useKeybindingContext()
-  const tips = useMemo(() => {
-    return TIPS_SUBSET.map((tip) =>
-      tip.replace(/\[([^|]+)\|([^|]+)\|([^\]]+)\]/g, (_match, action, context, fallback) => {
-        const display = getDisplayText(action, context)
-        return `{highlight}${display || fallback}{/highlight}`
-      }),
-    )
-  }, [getDisplayText])
-
-  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * tips.length))
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTipIndex((prev) => {
-        let next: number
-        do {
-          next = Math.floor(Math.random() * tips.length)
-        } while (next === prev && tips.length > 1)
-        return next
-      })
-    }, 30_000)
-    return () => clearInterval(interval)
-  }, [tips.length])
-
-  return useMemo(() => parseTip(tips[tipIndex] ?? tips[0]), [tips, tipIndex])
-}
-
-/** Small curated subset — avoids duplicating the full list from tips.tsx */
-const TIPS_SUBSET = [
-  "Use {highlight}ctrl+p{/highlight} to open the command palette",
-  "Use {highlight}/compact{/highlight} to summarize and compress the session",
-  "Add {highlight}$schema{/highlight} to your config for autocomplete in your editor",
-  "Press {highlight}ctrl+r{/highlight} to search history",
-  "Press {highlight}esc{/highlight} twice to exit",
-  "Run {highlight}/connect{/highlight} to connect a new AI provider",
-  "Press {highlight}alt+v{/highlight} to paste images from your clipboard into the prompt",
-  "Run {highlight}liteai upgrade{/highlight} to update to the latest version",
-]
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +38,7 @@ type PromptInputFooterLeftSideProps = {
   readonly isPasting?: boolean
   readonly config: Record<string, unknown>
   readonly hint?: React.ReactNode
+  readonly sessionID?: string
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -115,13 +52,15 @@ export function PromptInputFooterLeftSide({
   isPasting,
   config,
   hint,
+  sessionID,
 }: PromptInputFooterLeftSideProps) {
   const globalExitState = useExitState()
 
   if (globalExitState.pending) {
+    const keyName = globalExitState.keyName ?? "esc"
     return (
       <Text dim key="exit-message">
-        Press {globalExitState.keyName?.toLowerCase()} again to exit
+        Press {keyName.toLowerCase()} again to exit
       </Text>
     )
   }
@@ -154,17 +93,17 @@ export function PromptInputFooterLeftSide({
 
       {hint && <Box key="external-hint">{hint}</Box>}
 
-      {!suppressHint && !showVim && <FooterHint mode={mode} isLoading={isLoading} />}
+      {!suppressHint && !showVim && <FooterHint mode={mode} isLoading={isLoading} sessionID={sessionID} />}
     </Box>
   )
 }
 
-// ── Footer hint: idle state shows shortcuts + rotating tip ───────────────────
+// ── Footer hint: mode indicator + essential shortcuts ─────────────────────
 
-function FooterHint({ mode, isLoading }: { mode: PromptInputMode; isLoading: boolean }) {
-  const tipParts = useTip()
+function FooterHint({ mode, isLoading, sessionID }: { mode: PromptInputMode; isLoading: boolean; sessionID?: string }) {
   const { theme } = useTheme()
   const connected = useAppState((s) => s.provider_next.connected)
+  const permMode = useAppState((s) => (sessionID ? (s.permissionMode[sessionID] ?? "default") : "default"))
 
   if (mode === "bash") {
     return <Text dim>! for bash mode</Text>
@@ -178,29 +117,23 @@ function FooterHint({ mode, isLoading }: { mode: PromptInputMode; isLoading: boo
     )
   }
 
-  return (
-    <Box flexDirection="row" flexShrink={1} flexGrow={1} justifyContent="space-between" gap={2}>
-      <Box flexDirection="row" flexShrink={1} gap={0}>
-        <Text color={theme.warning as Color}>● </Text>
-        <Text color={theme.textMuted as Color}>Tip </Text>
-        {tipParts.map((part, i) => (
-          <Text
-            key={i}
-            color={(part.highlight ? theme.text : theme.textMuted) as Color}
-            wrap={i === tipParts.length - 1 ? "truncate" : undefined}
-          >
-            {part.text}
-          </Text>
-        ))}
-      </Box>
+  if (connected.length === 0) {
+    return <Text color={theme.warning as Color}>No provider · Run /connect</Text>
+  }
 
-      <Box flexDirection="row" flexShrink={0}>
-        {connected.length === 0 ? (
-          <Text color={theme.warning as Color}>No provider · Run /connect</Text>
-        ) : (
-          <Text dim>? for shortcuts · ctrl+p palette · ctrl+o transcript</Text>
-        )}
-      </Box>
+  return (
+    <Box flexDirection="row" flexShrink={1} gap={1}>
+      {/* Mode indicator pill — only shown for non-default modes */}
+      {!isDefaultMode(permMode) && (
+        <>
+          <Text color={permissionModeColor(permMode) as Color}>
+            {permissionModeSymbol(permMode)} {permissionModeTitle(permMode).toLowerCase()} on
+          </Text>
+          <Text dim>·</Text>
+        </>
+      )}
+      {/* Persistent shortcut hints */}
+      <Text dim>shift+tab modes · ? help · ctrl+p palette</Text>
     </Box>
   )
 }

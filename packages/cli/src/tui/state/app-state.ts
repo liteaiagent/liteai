@@ -90,6 +90,7 @@ export interface AppState {
   readonly agents: { readonly [agentId: string]: AgentInstanceInfo }
   readonly plan: { readonly [sessionID: string]: PlanState }
   readonly planApproval: PlanApprovalRequest | null
+  readonly permissionMode: { readonly [sessionID: string]: string }
 }
 
 // ── Default / initial state factory ──────────────────────────────────
@@ -122,6 +123,7 @@ export function getDefaultAppState(): AppState {
     agents: {},
     plan: {},
     planApproval: null,
+    permissionMode: {},
   }
 }
 

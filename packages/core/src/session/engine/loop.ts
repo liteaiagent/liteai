@@ -245,6 +245,36 @@ export function cancel(sessionID: SessionID) {
 }
 
 /**
+ * Set the active permission mode for a running session.
+ *
+ * Mutates `state()[sessionID].appState.permissionMode` — the same object
+ * that `permission/service.ts` reads via `AgentExecutionContext.getAppState()`.
+ * Emits `PermissionModeChanged` via Bus for SSE → TUI propagation.
+ *
+ * No-ops if the session is not currently active (not an error — the mode
+ * will take effect when the session starts its next loop).
+ */
+export function setPermissionMode(
+  sessionID: SessionID,
+  mode: "default" | "acceptEdits" | "dontAsk" | "bypassPermissions" | "plan" | "bubble",
+) {
+  const s = state()
+  const entry = s[sessionID]
+  if (!entry) {
+    log.info("setPermissionMode: session not active, no-op", { sessionID, mode })
+    return
+  }
+
+  entry.appState = { ...entry.appState, permissionMode: mode }
+  log.info("setPermissionMode: updated", { sessionID, mode })
+
+  Bus.publish(Session.Event.PermissionModeChanged, {
+    sessionID,
+    permissionMode: mode,
+  })
+}
+
+/**
  * Safely abort an AbortController, swallowing any errors thrown by
  * abort event listeners added by providers.
  *

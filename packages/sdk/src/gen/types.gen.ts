@@ -1055,6 +1055,14 @@ export type EventPlanApprovalRequested = {
     };
 };
 
+export type EventPermissionModeChanged = {
+    type: 'permission_mode.changed';
+    properties: {
+        sessionID: string;
+        permissionMode: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+    };
+};
+
 export type EventVcsBranchUpdated = {
     type: 'vcs.branch.updated';
     properties: {
@@ -1101,7 +1109,7 @@ export type EventPtyDeleted = {
     };
 };
 
-export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
+export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventPermissionModeChanged | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
 
 export type GlobalEvent = {
     directory: string;
@@ -3859,6 +3867,40 @@ export type ProjectSessionAbortResponses = {
 };
 
 export type ProjectSessionAbortResponse = ProjectSessionAbortResponses[keyof ProjectSessionAbortResponses];
+
+export type ProjectSessionSetPermissionModeData = {
+    body?: {
+        permissionMode: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+    };
+    path: {
+        sessionID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/permission-mode';
+};
+
+export type ProjectSessionSetPermissionModeErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+};
+
+export type ProjectSessionSetPermissionModeError = ProjectSessionSetPermissionModeErrors[keyof ProjectSessionSetPermissionModeErrors];
+
+export type ProjectSessionSetPermissionModeResponses = {
+    /**
+     * Permission mode updated
+     */
+    200: {
+        permissionMode: string;
+    };
+};
+
+export type ProjectSessionSetPermissionModeResponse = ProjectSessionSetPermissionModeResponses[keyof ProjectSessionSetPermissionModeResponses];
 
 export type ProjectSessionUnshareData = {
     body?: never;

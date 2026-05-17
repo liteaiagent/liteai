@@ -218,8 +218,8 @@ function ensureThoughtSignatures(contents: Array<{ role: string; parts: CAPart[]
   }
   if (start === -1) return
 
-  // For every model turn from the active loop onward, ensure the first
-  // functionCall part has a thoughtSignature.
+  // For every model turn from the active loop onward, ensure all
+  // functionCall parts have a thoughtSignature.
   for (let i = start; i < contents.length; i++) {
     const turn = contents[i]
     if (turn.role !== "model") continue
@@ -228,7 +228,6 @@ function ensureThoughtSignatures(contents: Array<{ role: string; parts: CAPart[]
         if (!turn.parts[j].thoughtSignature) {
           turn.parts[j] = { ...turn.parts[j], thoughtSignature: SYNTHETIC_THOUGHT_SIGNATURE }
         }
-        break // only the first functionCall needs it
       }
     }
   }
