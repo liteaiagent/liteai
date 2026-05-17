@@ -132,10 +132,10 @@ export function HomeScreen() {
 function LogoMark({ color }: { color: Color }) {
   return (
     <Box flexDirection="column" flexShrink={0}>
-      <Text color={color}> ╱╲ </Text>
-      <Text color={color}>╱ ╲</Text>
-      <Text color={color}>╲ ╱</Text>
-      <Text color={color}> ╲╱ </Text>
+      <Text color={color}>{" ╱╲ "}</Text>
+      <Text color={color}>{"╱  ╲"}</Text>
+      <Text color={color}>{"╲  ╱"}</Text>
+      <Text color={color}>{" ╲╱ "}</Text>
     </Box>
   )
 }

@@ -130,10 +130,10 @@ function buildColumns(
 
 // ─── Compact fallback (narrow terminals) ───────────────────────────────────────
 
-type Segment = { text: string; color: string }
+type Segment = { id: string; text: string; color: string }
 
 function buildCompactSegments(columns: FooterColumn[]): Segment[] {
-  return columns.filter((c) => c.value !== "—").map((c) => ({ text: c.value, color: c.color }))
+  return columns.filter((c) => c.value !== "—").map((c) => ({ id: c.id, text: c.value, color: c.color }))
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -203,14 +203,14 @@ function StatusLineInner({ sessionID }: Props) {
     const fixedWidth = allColumns.filter((c) => !c.flexGrow).reduce((sum, c) => sum + c.width, 0)
     const gapCount = allColumns.length - 1
     const padding = 2 // paddingX={1}
-    const worktreeWidth = Math.max(8, termWidth - padding - fixedWidth - gapCount * COLUMN_GAP)
+    const maxFlexWidth = Math.max(8, termWidth - padding - fixedWidth - gapCount * COLUMN_GAP)
 
     return (
       <Box flexDirection="column" width="100%" flexShrink={0} marginTop={1}>
         {tabBar}
         <Box flexDirection="row" flexWrap="nowrap" paddingX={1} width="100%">
           {allColumns.map((col, idx) => {
-            const colWidth = col.flexGrow ? worktreeWidth : col.width
+            const colWidth = col.flexGrow ? Math.max(col.width, maxFlexWidth) : col.width
             return (
               <Box key={col.id} flexDirection="row" flexShrink={0}>
                 {idx > 0 && <Box width={COLUMN_GAP} />}
@@ -236,7 +236,7 @@ function StatusLineInner({ sessionID }: Props) {
       {tabBar}
       <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
         {compactSegments.map((seg, i) => (
-          <Box flexDirection="row" key={i} flexShrink={0}>
+          <Box flexDirection="row" key={seg.id} flexShrink={0}>
             {i > 0 && <Text color={theme.textMuted as Color}>{" │ "}</Text>}
             <Text color={seg.color as Color}>{seg.text}</Text>
           </Box>

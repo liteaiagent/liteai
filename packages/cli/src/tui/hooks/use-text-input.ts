@@ -231,8 +231,6 @@ export function useTextInput({
     ["f", () => cursor.right()],
     ["h", () => cursor.deleteTokenBefore() ?? cursor.backspace()],
     ["k", killToLineEnd],
-    ["n", () => downOrHistoryDown()],
-    ["p", () => upOrHistoryUp()],
     ["u", killToLineStart],
     ["w", killWordBefore],
     ["y", yank],

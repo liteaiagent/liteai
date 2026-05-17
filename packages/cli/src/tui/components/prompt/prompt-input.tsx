@@ -407,10 +407,7 @@ export function PromptInput({ debug, verbose, isLoading, focus, hint, cursorMode
       style: () => modalPane.openModal(<DialogOutputStyle onClose={modalPane.closeModal} />),
       settings: () => modalPane.openModal(<DialogConfig onClose={modalPane.closeModal} />),
       stats: () => {
-        const sid = session.sessionID
-        if (sid) {
-          modalPane.openModal(<DialogStats sessionID={sid} onClose={modalPane.closeModal} />)
-        }
+        modalPane.openModal(<DialogStats sessionID={session.sessionID} onClose={modalPane.closeModal} />)
       },
     }),
     [modalPane, route, session.sessionID, sdk.client, sdk.projectID, toast, store],

@@ -14,6 +14,7 @@ import { Process } from "@liteai/util/process"
 import { map, pipe, sortBy, values } from "remeda"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
+import { openUrlInBrowser } from "../../utils/browser"
 
 type PluginAuth = AuthHook
 
@@ -79,28 +80,7 @@ async function handlePluginAuth(plugin: { auth: PluginAuth }, provider: string, 
       console.log()
 
       // Best-effort browser open
-      try {
-        if (process.platform === "win32") {
-          // Use PowerShell Start-Process to avoid cmd.exe treating '&' in URLs as command separators
-          Bun.spawn(
-            [
-              "powershell.exe",
-              "-NoProfile",
-              "-NonInteractive",
-              "-WindowStyle",
-              "Hidden",
-              "-Command",
-              `Start-Process '${authorize.url.replace(/'/g, "''")}'`,
-            ],
-            { stdout: "ignore", stderr: "ignore" },
-          )
-        } else {
-          const cmd = process.platform === "darwin" ? "open" : "xdg-open"
-          Bun.spawn([cmd, authorize.url], { stdout: "ignore", stderr: "ignore" })
-        }
-      } catch {
-        // Browser open failed — URL is already displayed for manual copy
-      }
+      openUrlInBrowser(authorize.url)
     }
 
     if (authorize.method === "auto") {

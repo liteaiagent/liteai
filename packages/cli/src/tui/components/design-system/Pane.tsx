@@ -36,12 +36,8 @@ export function Pane({ children, color }: PaneProps): React.ReactNode {
   // padding. This lets slash-command screens that wrap in Pane (e.g.
   // /model → ModelPicker) route through the modal slot unchanged.
   if (useIsInsideModal()) {
-    // flexShrink=0: the modal slot's absolute Box has no explicit height
-    // (grows to fit, maxHeight cap). With flexGrow=1, re-renders cause
-    // yoga to resolve this Box's height to 0 against the undetermined
-    // parent — /permissions body blanks on Down arrow. See #23592.
     return (
-      <Box flexDirection="column" paddingX={1} flexShrink={0}>
+      <Box flexDirection="column" paddingX={1} flexGrow={1} overflowY="hidden">
         {children}
       </Box>
     )

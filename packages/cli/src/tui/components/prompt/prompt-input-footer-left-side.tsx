@@ -135,7 +135,7 @@ export function PromptInputFooterLeftSide({
   const showVim = isVimModeEnabled(config) && vimMode === "INSERT"
 
   return (
-    <Box justifyContent="flex-start" gap={1}>
+    <Box justifyContent="flex-start" width="100%" gap={1}>
       {showVim ? (
         <Text dim key="vim-insert">
           -- INSERT --
@@ -169,24 +169,28 @@ function FooterHint({ mode, isLoading }: { mode: PromptInputMode; isLoading: boo
   }
 
   return (
-    <Box flexDirection="row" flexShrink={1} gap={0}>
-      {connected.length === 0 ? (
-        <Text color={theme.warning as Color}>No provider · Run /connect</Text>
-      ) : (
-        <Text dim>? for shortcuts · ctrl+p palette · ctrl+o transcript</Text>
-      )}
-      <Text color={theme.textMuted as Color}>{" | "}</Text>
-      <Text color={theme.warning as Color}>● </Text>
-      <Text color={theme.textMuted as Color}>Tip </Text>
-      {tipParts.map((part, i) => (
-        <Text
-          key={i}
-          color={(part.highlight ? theme.text : theme.textMuted) as Color}
-          wrap={i === tipParts.length - 1 ? "truncate" : undefined}
-        >
-          {part.text}
-        </Text>
-      ))}
+    <Box flexDirection="row" flexShrink={1} flexGrow={1} justifyContent="space-between" gap={2}>
+      <Box flexDirection="row" flexShrink={1} gap={0}>
+        <Text color={theme.warning as Color}>● </Text>
+        <Text color={theme.textMuted as Color}>Tip </Text>
+        {tipParts.map((part, i) => (
+          <Text
+            key={i}
+            color={(part.highlight ? theme.text : theme.textMuted) as Color}
+            wrap={i === tipParts.length - 1 ? "truncate" : undefined}
+          >
+            {part.text}
+          </Text>
+        ))}
+      </Box>
+
+      <Box flexDirection="row" flexShrink={0}>
+        {connected.length === 0 ? (
+          <Text color={theme.warning as Color}>No provider · Run /connect</Text>
+        ) : (
+          <Text dim>? for shortcuts · ctrl+p palette · ctrl+o transcript</Text>
+        )}
+      </Box>
     </Box>
   )
 }

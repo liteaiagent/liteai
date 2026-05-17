@@ -50,9 +50,9 @@ interface StatsStoreState {
   perModel: Map<string, ModelMetrics> // key: `${providerID}/${modelID}`
 }
 
-export function useSessionStats(sessionID: string): SessionStats {
+export function useSessionStats(sessionID?: string): SessionStats {
   const sdk = useSDK()
-  const messages = useAppState(selectMessages(sessionID))
+  const messages = useAppState(selectMessages(sessionID ?? ""))
   const partsMap = useAppState((s) => s.part)
   const providers = useAppState((s) => s.provider)
   const local = useLocal()
@@ -150,7 +150,7 @@ export function useSessionStats(sessionID: string): SessionStats {
         switch (event.type) {
           case "message.updated": {
             const info = event.properties.info as Message
-            if (info.sessionID !== sessionID) return
+            if (!sessionID || info.sessionID !== sessionID) return
             if (info.role !== "assistant") return
 
             store.setState((state) => {
@@ -190,7 +190,7 @@ export function useSessionStats(sessionID: string): SessionStats {
           }
           case "message.part.updated": {
             const part = event.properties.part as Part
-            if (part.sessionID !== sessionID) return
+            if (!sessionID || part.sessionID !== sessionID) return
             if (part.type !== "tool") return
 
             store.setState((state) => {

@@ -62,10 +62,12 @@ Each provider adapter should be able to report quota information. Two strategies
 // packages/core/src/provider/quota.ts
 
 export interface QuotaBucket {
-  modelID: string
+  modelId: string
   providerID: string
   /** Fraction of quota remaining (0.0 = exhausted, 1.0 = full) */
   remainingFraction: number
+  /** Absolute remaining count, if known */
+  remainingAmount?: number
   /** ISO 8601 reset time, if known */
   resetTime?: string
   /** Human-readable quota metric name */
@@ -103,6 +105,7 @@ type QuotaUpdatedEvent = {
   type: "quota.updated"
   properties: {
     buckets: QuotaBucket[]
+    lastRefreshed: number
   }
 }
 ```
@@ -117,6 +120,7 @@ New `quota` slice in `AppState`:
 quota: {
   buckets: QuotaBucket[]
   lastRefreshed: number
+  stale: boolean
 }
 ```
 

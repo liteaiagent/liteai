@@ -7,10 +7,12 @@ import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import { useAppState } from "../state"
 import { ContextUsageDisplay } from "./context-usage-display"
+import { Pane } from "./design-system/Pane"
+import { Tab, Tabs } from "./design-system/Tabs"
 import { Heatmap } from "./heatmap"
 
 type Props = {
-  sessionID: string
+  sessionID?: string
   onClose: () => void
 }
 
@@ -27,7 +29,6 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   const stats = useSessionStats(sessionID)
   const terminalSize = useContext(TerminalSizeContext)
 
-  const [tab, setTab] = useState<"session" | "global">("session")
   const [dateRange, setDateRange] = useState<DateRange>("30d")
   const globalStats = useGlobalStats(dateRange)
 
@@ -35,8 +36,6 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
 
   useKeybindings(
     {
-      "tabs:next": () => setTab((t) => (t === "session" ? "global" : "session")),
-      "tabs:previous": () => setTab((t) => (t === "session" ? "global" : "session")),
       "select:cycleRange": () => setDateRange((r) => RANGES[(RANGES.indexOf(r) + 1) % RANGES.length]),
       "global:close": _onClose,
     },
@@ -44,10 +43,9 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   )
 
   // Defensive fallback: direct escape handler ensures Esc always closes the dialog.
+  // Defensive fallback: direct escape handler ensures Esc always closes the dialog.
   // The keybinding system's context resolution between Chat and Tabs can race,
-  // causing the Tabs "global:close" handler to be suppressed. This pattern is
-  // proven in dialog-provider.tsx's AuthUrlHeader.
-  //
+  // causing the Tabs "global:close" handler to be suppressed.
   // Mount guard: delay activation by one frame so stale escape bytes in the
   // terminal input buffer don't immediately close the dialog on mount.
   const [escActive, setEscActive] = useState(false)
@@ -62,7 +60,7 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
     { isActive: escActive },
   )
 
-  const diff = session_diff[sessionID]
+  const diff = sessionID ? session_diff[sessionID] : undefined
   const changes = useMemo(() => {
     if (!diff || diff.length === 0) return null
     let files = 0
@@ -298,29 +296,24 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   }
 
   return (
-    <Box paddingLeft={2} paddingRight={2} flexDirection="column" gap={1} paddingBottom={1}>
-      <Box flexDirection="row" justifyContent="space-between" paddingBottom={1}>
-        <Box flexDirection="row" gap={2}>
-          <Text color={tab === "session" ? (theme.primary as Color) : (theme.text as Color)} bold>
-            Session Statistics
-          </Text>
-          <Text color={theme.textMuted as Color}>|</Text>
-          <Text color={tab === "global" ? (theme.primary as Color) : (theme.text as Color)} bold>
-            Global Statistics
-          </Text>
-        </Box>
-        <Text color={theme.textMuted as Color}>tab cycle · esc close</Text>
-      </Box>
-
-      {tab === "session" ? renderSessionTab() : renderGlobalTab()}
-
-      {tab === "global" && (
-        <Box paddingTop={1}>
-          <Text color={theme.textMuted as Color}>
-            Range: <Text color={theme.primary as Color}>{dateRange}</Text> (Press 'r' to cycle)
-          </Text>
-        </Box>
-      )}
-    </Box>
+    <Pane color="primary">
+      <Tabs title="" color="primary" defaultTab={sessionID ? "Session Statistics" : "Global Statistics"}>
+        {sessionID && (
+          <Tab title="Session Statistics" id="Session Statistics">
+            {renderSessionTab()}
+          </Tab>
+        )}
+        <Tab title="Global Statistics" id="Global Statistics">
+          <Box flexDirection="column" gap={1}>
+            {renderGlobalTab()}
+            <Box paddingTop={1} paddingBottom={1}>
+              <Text color={theme.textMuted as Color}>
+                Range: <Text color={theme.primary as Color}>{dateRange}</Text> (Press 'r' to cycle)
+              </Text>
+            </Box>
+          </Box>
+        </Tab>
+      </Tabs>
+    </Pane>
   )
 }

@@ -303,19 +303,17 @@ export function schema(model: Provider.Model, schema: JSONSchema.BaseSchema | JS
       }
 
       const result: Record<string, unknown> = {}
-      const entries = obj as Record<string, unknown>
+      const objRecord = obj as Record<string, unknown>
 
       // Gemini does not support the `const` JSON Schema keyword (produced by
       // Zod's z.literal()). Convert `{ const: value }` → `{ enum: [value] }`
-      // before iterating so the enum-coercion logic below handles it uniformly.
-      if ("const" in entries) {
-        const constVal = entries.const
-        // Promote to single-element enum and drop the const key
-        entries.enum = [constVal]
-        delete entries.const
+      // before normal processing so the enum-coercion logic handles it uniformly.
+      if ("const" in objRecord) {
+        result.enum = [objRecord.const]
       }
 
-      for (const [key, value] of Object.entries(entries)) {
+      for (const [key, value] of Object.entries(objRecord)) {
+        if (key === "const") continue // Skip const, already converted to enum above
         if (key === "enum" && Array.isArray(value)) {
           // Convert all enum values to strings
           result[key] = value.map((v) => String(v))

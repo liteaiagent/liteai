@@ -1,14 +1,13 @@
 import type { KeyboardEvent } from "@liteai/ink"
 import { Box, ScrollBox, stringWidth, TerminalSizeContext, Text } from "@liteai/ink"
-import type React from "react"
-import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
 import { useIsInsideModal, useModalScrollRef } from "../../context/modal-context"
 import type { ThemeColors } from "../../context/theme.tsx"
 import { useKeybindings } from "../../keybindings/use-keybinding"
 import ThemedText from "./ThemedText.tsx"
 
 type TabsProps = {
-  children: Array<React.ReactElement<TabProps>>
+  children: React.ReactNode
   title?: string
   color?: keyof ThemeColors
   defaultTab?: string
@@ -82,7 +81,10 @@ export function Tabs({
 }: TabsProps): React.ReactNode {
   const terminalSize = useContext(TerminalSizeContext)
   const terminalWidth = terminalSize?.columns ?? 80
-  const tabs = children.map((child) => [child.props.id ?? child.props.title, child.props.title])
+  const validChildren = React.Children.toArray(children).filter(React.isValidElement) as Array<
+    React.ReactElement<TabProps>
+  >
+  const tabs = validChildren.map((child) => [child.props.id ?? child.props.title, child.props.title])
   const defaultTabIndex = defaultTab ? tabs.findIndex((tab) => defaultTab === tab[0]) : 0
 
   // Support both controlled and uncontrolled modes
@@ -190,14 +192,11 @@ export function Tabs({
         tabIndex={0}
         autoFocus
         onKeyDown={handleKeyDown}
-        // flexShrink=0 inside modal slot — the modal's absolute Box has no
-        // explicit height (grows to fit, maxHeight cap), so flexGrow=1 here
-        // resolves to 0 on re-render and the body blanks on Down arrow.
-        // See #23592. Outside modal, leave layout alone.
-        flexShrink={modalScrollRef ? 0 : undefined}
+        flexGrow={modalScrollRef ? 1 : undefined}
+        overflowY={modalScrollRef ? "hidden" : undefined}
       >
         {!hidden && (
-          <Box flexDirection="row" gap={1} flexShrink={modalScrollRef ? 0 : undefined}>
+          <Box flexDirection="row" gap={1} flexShrink={0}>
             {title !== undefined && (
               <ThemedText bold color={color}>
                 {title}
@@ -229,8 +228,8 @@ export function Tabs({
           // scroll off. The ref reaches REPL's ScrollKeybindingHandler via
           // ModalContext. Keyed by selectedTabIndex → remounts on tab
           // switch, resetting scrollTop to 0 without scrollTo() timing games.
-          <Box width={contentWidth} marginTop={hidden ? 0 : 1} flexShrink={0}>
-            <ScrollBox key={selectedTabIndex} ref={modalScrollRef} flexDirection="column" flexShrink={0}>
+          <Box width={contentWidth} marginTop={hidden ? 0 : 1} flexGrow={1} overflowY="hidden">
+            <ScrollBox key={selectedTabIndex} ref={modalScrollRef} flexDirection="column" flexGrow={1}>
               {children}
             </ScrollBox>
           </Box>
