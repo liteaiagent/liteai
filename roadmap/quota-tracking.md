@@ -54,7 +54,6 @@ Each provider adapter should be able to report quota information. Two strategies
 |---|---|---|
 | **Header parsing** | Google (Gemini API) | Parse `x-ratelimit-*` headers or `QuotaFailure` details from 429 responses |
 | **Dedicated API** | Google Code Assist | Call `retrieveUserQuota()` endpoint (same as Gemini CLI) |
-| **Passive tracking** | All providers | Count requests/tokens per model per window, estimate usage against known limits |
 
 #### New Core Types
 
@@ -141,7 +140,9 @@ quota
 23% used
 ```
 
-Shows `—` when quota data unavailable (non-Google providers, pre-first-fetch).
+*Note:* `QuotaBucket.remainingFraction` represents the fraction remaining (0.0 to 1.0). The UI must perform the conversion to display the used percentage: `100 * (1 - QuotaBucket.remainingFraction)`.
+
+Shows `—` as a placeholder when quota data is unavailable (e.g., non-Google providers or pre-first-fetch) to avoid confusion.
 
 ### Phase 4: 429 Error Enhancement
 
@@ -163,6 +164,6 @@ When a 429 error occurs:
 
 ## Open Questions
 
-- Should passive request counting (for providers without quota APIs) be Phase 1 or deferred?
+- Should passive request counting (for providers without quota APIs) be introduced as Phase 1, or deferred to a later phase?
 - Should quota data persist across sessions (local cache) or be session-scoped?
 - Do we want a configurable alert threshold (e.g., toast at 80% usage)?

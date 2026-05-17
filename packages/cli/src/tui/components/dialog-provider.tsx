@@ -530,18 +530,23 @@ function CodeMethod({
 
   const onSubmit = useCallback(
     async (value: string) => {
-      const { error: err } = await sdk.client.provider.oauth.callback({
-        providerID,
-        method: index,
-        code: value,
-      })
-      if (!err) {
-        await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
-        await bootstrap()
-        onNavigate({ type: "model", providerID })
-        return
+      try {
+        const { error: err } = await sdk.client.provider.oauth.callback({
+          providerID,
+          method: index,
+          code: value,
+        })
+        if (!err) {
+          await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
+          await bootstrap()
+          onNavigate({ type: "model", providerID })
+          return
+        }
+        setError(true)
+      } catch (err) {
+        console.error(err)
+        setError(true)
       }
-      setError(true)
     },
     [sdk, providerID, index, bootstrap, onNavigate],
   )

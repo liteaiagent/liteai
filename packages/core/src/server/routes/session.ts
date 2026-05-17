@@ -4,7 +4,7 @@ import { stream } from "hono/streaming"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import z from "zod"
 import { ModelID, ProviderID } from "@/provider/schema"
-import { MessageID, PartID, SessionID } from "@/session/schema"
+import { MessageID, PartID, SessionID, PermissionModeAll } from "@/session/schema"
 import { SessionStatus } from "@/session/status"
 import { SessionSummary } from "@/session/tasks/summary"
 import { Snapshot } from "@/snapshot"
@@ -523,7 +523,7 @@ export const SessionRoutes = lazy(() =>
               "application/json": {
                 schema: resolver(
                   z.object({
-                    permissionMode: z.string(),
+                    permissionMode: PermissionModeAll,
                   }),
                 ),
               },
@@ -541,7 +541,7 @@ export const SessionRoutes = lazy(() =>
       validator(
         "json",
         z.object({
-          permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]),
+          permissionMode: PermissionModeAll,
         }),
       ),
       async (c) => {

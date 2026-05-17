@@ -1,10 +1,11 @@
 import { Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
-import { useContext, useEffect, useMemo, useState } from "react"
+import { useContext, useMemo, useState } from "react"
 import { useTheme } from "../context/theme"
 import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
+import { useDelayedEscapeClose } from "../hooks/use-delayed-escape-close"
 import { useAppState } from "../state"
 import { ContextUsageDisplay } from "./context-usage-display"
 import { Pane } from "./design-system/Pane"
@@ -47,17 +48,7 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   // causing the Tabs "global:close" handler to be suppressed.
   // Mount guard: delay activation by one frame so stale escape bytes in the
   // terminal input buffer don't immediately close the dialog on mount.
-  const [escActive, setEscActive] = useState(false)
-  useEffect(() => {
-    const id = setTimeout(() => setEscActive(true), 50)
-    return () => clearTimeout(id)
-  }, [])
-  useInput(
-    (_input, key) => {
-      if (key.escape) _onClose()
-    },
-    { isActive: escActive },
-  )
+  useDelayedEscapeClose(_onClose)
 
   const diff = sessionID ? session_diff[sessionID] : undefined
   const changes = useMemo(() => {

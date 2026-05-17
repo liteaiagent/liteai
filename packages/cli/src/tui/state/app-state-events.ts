@@ -1,3 +1,4 @@
+import { PermissionModeCyclable } from "@liteai/core/session/schema"
 import type { Snapshot } from "@liteai/core/snapshot/index"
 import type {
   Event,
@@ -401,26 +402,43 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
     case "plan.state_changed": {
       const sessionID = event.properties.sessionID as string
       const active = event.properties.active as boolean | undefined
-      setState((prev) => ({
-        ...prev,
-        plan: {
-          ...prev.plan,
-          [sessionID]: {
-            enabled: active !== false,
-            planFilePath: event.properties.planFilePath as string | undefined,
-            turnsSincePlanReminder: event.properties.turnsSincePlanReminder as number | undefined,
+      setState((prev) => {
+        const isActivating = active !== false
+        
+        let newPermissionMode = prev.permissionMode[sessionID] ?? "default"
+        let newPrePlan = prev.prePlanPermissionMode[sessionID]
+
+        if (isActivating) {
+          if (newPermissionMode !== "plan") {
+            newPrePlan = newPermissionMode
+          }
+          newPermissionMode = "plan"
+        } else {
+          if (newPermissionMode === "plan") {
+            newPermissionMode = newPrePlan ?? "default"
+          }
+        }
+
+        return {
+          ...prev,
+          plan: {
+            ...prev.plan,
+            [sessionID]: {
+              enabled: isActivating,
+              planFilePath: event.properties.planFilePath as string | undefined,
+              turnsSincePlanReminder: event.properties.turnsSincePlanReminder as number | undefined,
+            },
           },
-        },
-        permissionMode: {
-          ...prev.permissionMode,
-          [sessionID]:
-            active !== false
-              ? "plan"
-              : prev.permissionMode[sessionID] === "plan"
-                ? "default"
-                : (prev.permissionMode[sessionID] ?? "default"),
-        },
-      }))
+          permissionMode: {
+            ...prev.permissionMode,
+            [sessionID]: newPermissionMode,
+          },
+          prePlanPermissionMode: {
+            ...prev.prePlanPermissionMode,
+            [sessionID]: newPrePlan as string, // Cast required if undefined, but dict value could just omit or keep undefined. Wait, dictionary allows string. Let's just cast.
+          },
+        }
+      })
       break
     }
 
@@ -440,6 +458,13 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
     case "permission_mode.changed": {
       const sessionID = event.properties.sessionID as string
       const permissionMode = event.properties.permissionMode as string
+
+      if (!(PermissionModeCyclable.options as readonly string[]).includes(permissionMode)) {
+        console.warn(
+          `[TUI] Received agent-only or unknown permission mode '${permissionMode}' for session ${sessionID}`,
+        )
+      }
+
       setState((prev) => ({
         ...prev,
         permissionMode: {

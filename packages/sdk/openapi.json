@@ -3613,7 +3613,8 @@
                   "type": "object",
                   "properties": {
                     "permissionMode": {
-                      "type": "string"
+                      "type": "string",
+                      "enum": ["default", "plan", "acceptEdits", "bypassPermissions", "dontAsk", "bubble"]
                     }
                   },
                   "required": ["permissionMode"]
@@ -3640,7 +3641,7 @@
                 "properties": {
                   "permissionMode": {
                     "type": "string",
-                    "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]
+                    "enum": ["default", "plan", "acceptEdits", "bypassPermissions", "dontAsk", "bubble"]
                   }
                 },
                 "required": ["permissionMode"]
@@ -11746,7 +11747,7 @@
               },
               "permissionMode": {
                 "type": "string",
-                "enum": ["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]
+                "enum": ["default", "plan", "acceptEdits", "bypassPermissions", "dontAsk", "bubble"]
               }
             },
             "required": ["sessionID", "permissionMode"]

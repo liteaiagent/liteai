@@ -1,7 +1,8 @@
 import { AlternateScreen, Box, useInput } from "@liteai/ink"
-import { useEffect, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useSyncExternalStore } from "react"
 import type { TuiConfig } from "../cli/config/tui"
 import { GlobalExitHandler } from "./components/global-exit-handler"
+import { clear as clearMessageQueue, getSnapshot as getQueueSnapshot } from "./stores/message-queue-store"
 import { type Args, ArgsProvider } from "./context/args"
 import { ExitProvider } from "./context/exit"
 import { KVProvider } from "./context/kv"
@@ -118,6 +119,19 @@ function AppContent() {
 }
 
 export function App(props: AppProps) {
+  // ── Ctrl+C queue intercept ──────────────────────────────────────────────
+  // When Ctrl+C fires and messages are queued, clear the queue and consume
+  // the keypress — preventing the double-press exit flow from triggering.
+  // This makes the "Ctrl+C to clear" label in QueuedMessageDisplay truthful.
+  const handleInterrupt = useCallback((): boolean => {
+    const queued = getQueueSnapshot()
+    if (queued.length > 0) {
+      clearMessageQueue()
+      return true // consumed — do not enter double-press exit flow
+    }
+    return false // not consumed — fall through to double-press exit
+  }, [])
+
   return (
     <ExitProvider>
       <TuiConfigProvider config={props.config}>
@@ -125,7 +139,7 @@ export function App(props: AppProps) {
           <ThemeProvider mode="dark">
             <ToastProvider>
               <KeybindingSetup>
-                <GlobalExitHandler>
+                <GlobalExitHandler onInterrupt={handleInterrupt}>
                   <SDKProvider
                     url={props.url}
                     directory={props.directory}

@@ -811,7 +811,7 @@ export class Session extends HeyApiClient {
         sessionID: string;
         projectID: string;
         workspace?: string;
-        permissionMode?: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+        permissionMode?: 'default' | 'plan' | 'acceptEdits' | 'bypassPermissions' | 'dontAsk' | 'bubble';
     }, options?: Options<never, ThrowOnError>) {
         const params = buildClientParams([parameters], [{ args: [
                     { in: 'path', key: 'sessionID' },

@@ -88,7 +88,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
   const [showTimestamps, _setShowTimestamps] = useState(false)
   const [showTranscriptSearch, setShowTranscriptSearch] = useState(false)
   const [showPreCompaction, setShowPreCompaction] = useState(false)
-  const [showTodoTray, setShowTodoTray] = useState(false)
+  const [todoTrayExpanded, setTodoTrayExpanded] = useState(false)
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>("compact")
   const showDetails = displayMode === "transcript"
@@ -179,7 +179,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
         })
       },
       "app:toggleTranscript": () => setDisplayMode((m) => (m === "compact" ? "transcript" : "compact")),
-      "app:toggleTodos": () => setShowTodoTray((v) => !v),
+      "app:toggleTodos": () => setTodoTrayExpanded((v) => !v),
     },
     { context: "Global", isActive: true },
   )
@@ -345,7 +345,9 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
                     onNavigate={(id) => cursor.selectMessage(id)}
                   />
                 )}
-                {showTodoTray && <TodoTray todos={todos} onClose={() => setShowTodoTray(false)} />}
+                {todos.length > 0 && (
+                  <TodoTray todos={todos} expanded={todoTrayExpanded} onClose={() => setTodoTrayExpanded(false)} />
+                )}
               </Box>
             }
           />

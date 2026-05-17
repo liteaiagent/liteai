@@ -34,10 +34,19 @@ const PRIORITY_COLOR_KEY: Record<string, "error" | "warning" | "textMuted"> = {
 
 interface TodoTrayProps {
   todos: readonly Todo[]
+  expanded: boolean
   onClose: () => void
 }
 
-export function TodoTray({ todos, onClose: _onClose }: TodoTrayProps) {
+function getCurrentTodo(todos: readonly Todo[]) {
+  return (
+    todos.find((todo) => todo.status === "in_progress") ??
+    todos.find((todo) => todo.status === "pending") ??
+    todos[todos.length - 1]
+  )
+}
+
+export function TodoTray({ todos, expanded, onClose: _onClose }: TodoTrayProps) {
   const { theme } = useTheme()
 
   const summary = useMemo(() => {
@@ -49,6 +58,8 @@ export function TodoTray({ todos, onClose: _onClose }: TodoTrayProps) {
     }
     return { completed, total }
   }, [todos])
+
+  const visibleTodos = useMemo(() => (expanded ? todos : [getCurrentTodo(todos)].filter(Boolean)), [expanded, todos])
 
   if (todos.length === 0) {
     return (
@@ -70,11 +81,12 @@ export function TodoTray({ todos, onClose: _onClose }: TodoTrayProps) {
         <Text color={theme.textMuted as Color}>
           ({summary.completed}/{summary.total})
         </Text>
+        {!expanded && <Text color={theme.textMuted as Color}>ctrl+t</Text>}
       </Box>
 
       {/* Todo items */}
       <Box flexDirection="column" marginTop={0}>
-        {todos.map((todo, i) => {
+        {visibleTodos.map((todo, i) => {
           const icon = STATUS_ICON[todo.status] ?? "?"
           const priorityKey = PRIORITY_COLOR_KEY[todo.priority] ?? "textMuted"
           const isDone = todo.status === "completed" || todo.status === "cancelled"

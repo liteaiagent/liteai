@@ -15,22 +15,20 @@
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+import { PermissionModeCyclable } from "@liteai/core/session/schema"
+
 /** User-cyclable permission modes. */
-export type PermissionMode = "default" | "plan" | "acceptEdits" | "bypassPermissions"
+export type PermissionMode = PermissionModeCyclable
 
 // ── Cycling ──────────────────────────────────────────────────────────────────
 
 /** Ordered cycle for Shift+Tab. Last element wraps to first. */
-const PERMISSION_MODE_ORDER: readonly PermissionMode[] = [
-  "default",
-  "plan",
-  "acceptEdits",
-  "bypassPermissions",
-] as const
+const PERMISSION_MODE_ORDER: readonly PermissionMode[] = PermissionModeCyclable.options
 
 /**
  * Pure function: returns the next mode in the cycle.
- * Unknown modes fall back to `"default"`.
+ * Unknown modes—including agent-only modes like "dontAsk" and "bubble"—will be 
+ * treated as unknown and thus fall back to "default" (PERMISSION_MODE_ORDER[0]).
  */
 export function getNextPermissionMode(current: string): PermissionMode {
   const idx = PERMISSION_MODE_ORDER.indexOf(current as PermissionMode)
@@ -63,17 +61,20 @@ const MODE_COLOR: Record<PermissionMode, string> = {
 
 /** Human-readable title for the mode. */
 export function permissionModeTitle(mode: string): string {
-  return MODE_TITLE[mode as PermissionMode] ?? MODE_TITLE.default
+  if (mode in MODE_TITLE) return MODE_TITLE[mode as PermissionMode]
+  return "Automated Agent"
 }
 
 /** Unicode symbol for the mode indicator. */
 export function permissionModeSymbol(mode: string): string {
-  return MODE_SYMBOL[mode as PermissionMode] ?? MODE_SYMBOL.default
+  if (mode in MODE_SYMBOL) return MODE_SYMBOL[mode as PermissionMode]
+  return "⚙"
 }
 
 /** Theme-aligned color string for the mode indicator. */
 export function permissionModeColor(mode: string): string {
-  return MODE_COLOR[mode as PermissionMode] ?? MODE_COLOR.default
+  if (mode in MODE_COLOR) return MODE_COLOR[mode as PermissionMode]
+  return "magenta"
 }
 
 /** Returns true when the mode is `"default"` — indicator should be hidden. */

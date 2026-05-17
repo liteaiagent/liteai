@@ -1,11 +1,11 @@
 import type { Color } from "@liteai/ink"
 import { Box, Text, useInput } from "@liteai/ink"
 import type React from "react"
-import { useEffect, useState } from "react"
 import { useTheme } from "../context/theme"
 import { useKeybindingContext, useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { getBindingDisplayText } from "../keybindings/resolver"
 import { useKeybinding } from "../keybindings/use-keybinding"
+import { useDelayedEscapeClose } from "../hooks/use-delayed-escape-close"
 import { useAppState } from "../state"
 import { Pane } from "./design-system/Pane"
 import { Tab, Tabs } from "./design-system/Tabs"
@@ -18,17 +18,7 @@ export function DialogHelp({ onClose }: { onClose: () => void }): React.ReactNod
   useRegisterKeybindingContext("Help")
   useKeybinding("help:dismiss", () => onClose(), { context: "Help" })
 
-  const [escActive, setEscActive] = useState(false)
-  useEffect(() => {
-    const id = setTimeout(() => setEscActive(true), 50)
-    return () => clearTimeout(id)
-  }, [])
-  useInput(
-    (_input, key) => {
-      if (key.escape) onClose()
-    },
-    { isActive: escActive },
-  )
+  useDelayedEscapeClose(onClose)
 
   const { theme } = useTheme()
 

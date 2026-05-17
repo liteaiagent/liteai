@@ -90,7 +90,15 @@ export interface AppState {
   readonly agents: { readonly [agentId: string]: AgentInstanceInfo }
   readonly plan: { readonly [sessionID: string]: PlanState }
   readonly planApproval: PlanApprovalRequest | null
+  /**
+   * Note: This uses a loose string type instead of the PermissionMode union.
+   * The TUI expects a 4-mode set while core exposes a 6-mode superset (including "dontAsk" and "bubble").
+   * This is an intentional compatibility choice to allow storing core-only modes.
+   * See tui/util/permission-mode.ts for the mapping logic.
+   */
   readonly permissionMode: { readonly [sessionID: string]: string }
+  /** Stores the permission mode before entering plan mode, to restore when deactivated. */
+  readonly prePlanPermissionMode: { readonly [sessionID: string]: string }
 }
 
 // ── Default / initial state factory ──────────────────────────────────
@@ -124,6 +132,7 @@ export function getDefaultAppState(): AppState {
     plan: {},
     planApproval: null,
     permissionMode: {},
+    prePlanPermissionMode: {},
   }
 }
 

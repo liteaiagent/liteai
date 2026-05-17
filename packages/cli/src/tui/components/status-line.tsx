@@ -1,4 +1,4 @@
-import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
+import { Box, type Color, stringWidth, TerminalSizeContext, Text } from "@liteai/ink"
 import { memo, useContext, useMemo, useSyncExternalStore } from "react"
 import { useLocal } from "../context/local"
 import { useStats } from "../context/stats"
@@ -48,7 +48,7 @@ function buildColumns(
     flexShrink = 0,
     wrap: FooterColumn["wrap"] = "truncate-end",
   ) => {
-    cols.push({ id, header, value, color, width: Math.max(header.length, value.length), flexShrink, wrap })
+    cols.push({ id, header, value, color, width: Math.max(stringWidth(header), stringWidth(value)), flexShrink, wrap })
   }
 
   // 1. Workspace

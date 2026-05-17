@@ -81,9 +81,12 @@ export function Tabs({
 }: TabsProps): React.ReactNode {
   const terminalSize = useContext(TerminalSizeContext)
   const terminalWidth = terminalSize?.columns ?? 80
-  const validChildren = React.Children.toArray(children).filter(React.isValidElement) as Array<
-    React.ReactElement<TabProps>
-  >
+  const validChildren = React.Children.toArray(children).filter((child): child is React.ReactElement<TabProps> => {
+    if (!React.isValidElement(child)) return false
+    if (child.type === Tab) return true
+    const props = child.props as Record<string, unknown>
+    return Boolean(props && "title" in props && "id" in props)
+  })
   const tabs = validChildren.map((child) => [child.props.id ?? child.props.title, child.props.title])
   const defaultTabIndex = defaultTab ? tabs.findIndex((tab) => defaultTab === tab[0]) : 0
 

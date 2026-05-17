@@ -30,7 +30,7 @@ import { and, Database, desc, eq, gte, isNotNull, isNull, like, NotFoundError, s
 import { FTS } from "../storage/fts"
 import { SessionPrompt } from "./engine"
 import { Message } from "./message"
-import { MessageID, PartID, SessionID } from "./schema"
+import { MessageID, PartID, SessionID, PermissionModeAll } from "./schema"
 import { MessageTable, PartTable, SessionTable } from "./session.sql"
 
 export namespace Session {
@@ -251,7 +251,7 @@ export namespace Session {
       "permission_mode.changed",
       z.object({
         sessionID: SessionID.zod,
-        permissionMode: z.enum(["default", "acceptEdits", "dontAsk", "bypassPermissions", "plan", "bubble"]),
+        permissionMode: PermissionModeAll,
       }),
     ),
   }

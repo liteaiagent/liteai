@@ -24,7 +24,6 @@ import {
   SendCommandInput,
   Skill,
   Task,
-  TodoWrite,
   WebFetch,
   WebSearch,
   Write,
@@ -158,7 +157,7 @@ function ToolPartView({ part, message }: { last: boolean; part: ToolPart; messag
     case "apply_patch":
       return <ApplyPatch {...toolprops} />
     case "todowrite":
-      return <TodoWrite {...toolprops} />
+      return null
     case "ask_user":
       return <Question {...toolprops} />
     case "skill":

@@ -3,6 +3,7 @@
  * Adapted port from MVP `PromptInput/PromptInputModeIndicator.tsx`.
  *
  * Renders:
+ * - Animated spinner (⠋⠙⠹…) while the agent is loading
  * - `❯ ` for prompt mode (using figures.pointer)
  * - `! ` for bash mode
  *
@@ -12,10 +13,27 @@
  * - React Compiler artifacts (_c(), $[n])
  */
 
-import { Box, type Color, Text } from "@liteai/ink"
+import { Box, type Color, Text, useAnimationFrame } from "@liteai/ink"
 import figures from "figures"
 import { useTheme } from "../../context/theme"
 import type { PromptInputMode } from "../../types/text-input"
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+
+const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"] as const
+const SPINNER_INTERVAL_MS = 80
+
+function LoadingSpinner({ color }: { color?: Color }) {
+  const [, time] = useAnimationFrame(SPINNER_INTERVAL_MS)
+  const frame = SPINNER_FRAMES[Math.floor(time / SPINNER_INTERVAL_MS) % SPINNER_FRAMES.length]
+  return (
+    <Text color={color}>
+      {frame}{" "}
+    </Text>
+  )
+}
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 type PromptInputModeIndicatorProps = {
   readonly mode: PromptInputMode
@@ -24,25 +42,21 @@ type PromptInputModeIndicatorProps = {
   readonly agentColor?: Color
 }
 
-function PromptChar({ isLoading, color }: { isLoading: boolean; color?: Color }) {
-  return (
-    <Text color={color} dim={isLoading}>
-      {figures.pointer}{" "}
-    </Text>
-  )
-}
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function PromptInputModeIndicator({ mode, isLoading, agentColor }: PromptInputModeIndicatorProps) {
   const { theme } = useTheme()
 
   return (
     <Box alignItems="flex-start" alignSelf="flex-start" flexWrap="nowrap" justifyContent="flex-start">
-      {mode === "bash" ? (
-        <Text color={theme.warning as Color} dim={isLoading}>
-          !{" "}
-        </Text>
+      {isLoading ? (
+        <LoadingSpinner color={theme.primary as Color} />
+      ) : mode === "bash" ? (
+        <Text color={theme.warning as Color}>{"! "}</Text>
       ) : (
-        <PromptChar isLoading={isLoading} color={agentColor} />
+        <Text color={agentColor}>
+          {figures.pointer}{" "}
+        </Text>
       )}
     </Box>
   )

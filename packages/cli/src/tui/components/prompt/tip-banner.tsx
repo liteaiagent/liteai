@@ -1,18 +1,19 @@
 /**
  * TipBanner — rotating tip line rendered above the prompt input.
  *
- * Extracted from `prompt-input-footer-left-side.tsx` so the tip has its own
- * dedicated line above the prompt border, making it visible without consuming
- * space inside the footer (which now shows the mode indicator + shortcuts).
+ * When the agent is loading, shows an animated "Thinking… Xs" line with
+ * elapsed time so the user always has clear visual feedback that work is
+ * in progress. When idle, shows the rotating tip rotation.
  *
- * Only renders when idle: hidden during loading, cursor mode, and search.
+ * Hidden during cursor mode to keep the UI clean.
  *
  * @module components/prompt/tip-banner
  */
 
 import { Box, type Color, Text } from "@liteai/ink"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "../../context/theme"
+import { useElapsedTime } from "../../hooks/use-elapsed-time"
 import { useKeybindingContext } from "../../keybindings/keybinding-context"
 
 // ── Tip parsing ──────────────────────────────────────────────────────────────
@@ -38,17 +39,17 @@ function parseTip(tip: string): TipPart[] {
 
 /** Small curated subset — avoids duplicating the full list from tips.tsx */
 const TIPS_SUBSET = [
-  "Use {highlight}ctrl+p{/highlight} to open the command palette",
+  "Use [chat:commandPalette|Chat|ctrl+p] to open the command palette",
   "Use {highlight}/compact{/highlight} to summarize and compress the session",
   "Add {highlight}$schema{/highlight} to your config for autocomplete in your editor",
-  "Press {highlight}ctrl+r{/highlight} to search history",
+  "Press [history:search|Global|ctrl+r] to search history",
   "Press {highlight}esc{/highlight} twice to exit",
   "Run {highlight}/connect{/highlight} to connect a new AI provider",
-  "Press {highlight}alt+v{/highlight} to paste images from your clipboard into the prompt",
+  "Press [prompt:pasteImage|Prompt|alt+v] to paste images from your clipboard into the prompt",
   "Run {highlight}liteai upgrade{/highlight} to update to the latest version",
 ]
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
+// ── Hooks ─────────────────────────────────────────────────────────────────────
 
 function useTip() {
   const { getDisplayText } = useKeybindingContext()
@@ -78,6 +79,40 @@ function useTip() {
   return useMemo(() => parseTip(tips[tipIndex] ?? tips[0]), [tips, tipIndex])
 }
 
+// ── Working banner ────────────────────────────────────────────────────────────
+
+/**
+ * Tracks the wall-clock time when loading begins. Resets to null when idle
+ * so the next loading phase starts a fresh counter.
+ */
+function useLoadingStartTime(isLoading: boolean): number | null {
+  const startTimeRef = useRef<number | null>(null)
+
+  if (isLoading && startTimeRef.current === null) {
+    // Capture start time on the first render where loading becomes true.
+    // Direct ref mutation during render is intentional here — it's a
+    // synchronous capture that must happen before useElapsedTime reads it.
+    startTimeRef.current = Date.now()
+  } else if (!isLoading) {
+    startTimeRef.current = null
+  }
+
+  return isLoading ? startTimeRef.current : null
+}
+
+function WorkingBanner({ startTime }: { startTime: number }) {
+  const { theme } = useTheme()
+  const { formatted } = useElapsedTime({ startTime, interval: 1000 })
+
+  return (
+    <Box flexDirection="row" flexShrink={1} gap={0} paddingLeft={1}>
+      <Text color={theme.primary as Color}>⠿ </Text>
+      <Text color={theme.primary as Color}>Thinking</Text>
+      <Text color={theme.textMuted as Color}>… {formatted}</Text>
+    </Box>
+  )
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface TipBannerProps {
@@ -88,14 +123,21 @@ interface TipBannerProps {
 }
 
 /**
- * Single dim line above the prompt: `● Tip: Use ctrl+p to open…`
- * Hidden during loading and cursor mode to keep the UI clean.
+ * Single line above the prompt:
+ * - While loading:      `⠿ Thinking… 3s`  — colored, elapsed time visible
+ * - While idle:         `● Tip: Use ctrl+p to open…`
+ * - During cursor mode: hidden
  */
 export function TipBanner({ isLoading, cursorModeActive }: TipBannerProps) {
   const { theme } = useTheme()
   const tipParts = useTip()
+  const startTime = useLoadingStartTime(isLoading)
 
-  if (isLoading || cursorModeActive) return null
+  if (cursorModeActive) return null
+
+  if (isLoading && startTime !== null) {
+    return <WorkingBanner startTime={startTime} />
+  }
 
   return (
     <Box flexDirection="row" flexShrink={1} gap={0} paddingLeft={1}>

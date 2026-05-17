@@ -8,6 +8,7 @@ import { ForkAgentConfig, isForkSubagentEnabled } from "../agent/fork"
 import DESCRIPTION from "../bundled/prompts/tools/task.txt"
 import { isCoordinatorMode } from "../coordinator/coordinator-mode"
 import { Provider } from "../provider/provider"
+import { ModelID, ProviderID } from "../provider/schema"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/engine"
 import { MessageID, SessionID } from "../session/schema"
@@ -58,12 +59,21 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       const agent = await Agent.get(effectiveType)
       if (!agent) throw new Error(`Unknown agent type: ${effectiveType} is not a valid agent type`)
 
+      let parent: { modelID: ModelID; providerID: ProviderID } | undefined
       const parentAssistant = ctx.messages.findLast((m) => m.info.id === ctx.messageID)
-      if (!parentAssistant || parentAssistant.info.role !== "assistant") throw new Error("Not an assistant message")
-
-      const parent = {
-        modelID: parentAssistant.info.modelID,
-        providerID: parentAssistant.info.providerID,
+      if (parentAssistant && parentAssistant.info.role === "assistant") {
+        parent = {
+          modelID: parentAssistant.info.modelID,
+          providerID: parentAssistant.info.providerID,
+        }
+      } else if (ctx.extra?.model) {
+        const m = ctx.extra.model as any
+        parent = {
+          modelID: ModelID.make(m.api?.id || m.id),
+          providerID: ProviderID.make(m.providerID),
+        }
+      } else {
+        throw new Error("Could not determine parent model for subagent")
       }
       const model = await (async () => {
         if (!agent.model) return parent

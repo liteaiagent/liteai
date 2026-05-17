@@ -36,3 +36,9 @@ export const PartID = Schema.String.pipe(
 )
 
 export type PartID = Schema.Schema.Type<typeof PartID>
+
+export const PermissionModeAll = z.enum(["default", "plan", "acceptEdits", "bypassPermissions", "dontAsk", "bubble"])
+export type PermissionModeAll = z.infer<typeof PermissionModeAll>
+
+export const PermissionModeCyclable = z.enum(["default", "plan", "acceptEdits", "bypassPermissions"])
+export type PermissionModeCyclable = z.infer<typeof PermissionModeCyclable>

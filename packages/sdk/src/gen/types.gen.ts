@@ -1059,7 +1059,7 @@ export type EventPermissionModeChanged = {
     type: 'permission_mode.changed';
     properties: {
         sessionID: string;
-        permissionMode: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+        permissionMode: 'default' | 'plan' | 'acceptEdits' | 'bypassPermissions' | 'dontAsk' | 'bubble';
     };
 };
 
@@ -3870,7 +3870,7 @@ export type ProjectSessionAbortResponse = ProjectSessionAbortResponses[keyof Pro
 
 export type ProjectSessionSetPermissionModeData = {
     body?: {
-        permissionMode: 'default' | 'acceptEdits' | 'dontAsk' | 'bypassPermissions' | 'plan' | 'bubble';
+        permissionMode: 'default' | 'plan' | 'acceptEdits' | 'bypassPermissions' | 'dontAsk' | 'bubble';
     };
     path: {
         sessionID: string;
@@ -3896,7 +3896,7 @@ export type ProjectSessionSetPermissionModeResponses = {
      * Permission mode updated
      */
     200: {
-        permissionMode: string;
+        permissionMode: 'default' | 'plan' | 'acceptEdits' | 'bypassPermissions' | 'dontAsk' | 'bubble';
     };
 };
 
