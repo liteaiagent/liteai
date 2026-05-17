@@ -1,15 +1,18 @@
-import { Box, type Color, Text } from "@liteai/ink"
+import { execSync } from "node:child_process"
+import { Box, type Color, type InputEvent, type Key, Text, useInput } from "@liteai/ink"
 import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@liteai/sdk"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
 import { useKeybindings } from "../keybindings/use-keybinding"
 import type { SelectItem } from "../primitives/types"
+import { useDialogLifecycle } from "../primitives/use-dialog-lifecycle"
 import { useAppActions, useAppState } from "../state"
 import { DialogPrompt } from "../ui/dialog-prompt"
 import { SelectPane } from "../ui/select-pane"
 import { DialogModel } from "./dialog-model"
+import { TextInput } from "./text-input"
 
 /** Discriminated union describing the active sub-view within the provider dialog. */
 export type ProviderViewState =
@@ -338,6 +341,126 @@ export function DialogProvider({ onClose: _onClose = () => {} }: { onClose?: () 
   )
 }
 
+// ── Static helpers (no React hooks — safe to call from any context) ──────────
+
+/** Circuit-breaker: hard-caps browser launches per process to prevent runaway loops. */
+let _browserLaunchCount = 0
+const BROWSER_LAUNCH_MAX = 3
+
+function openBrowser(url: string) {
+  if (_browserLaunchCount >= BROWSER_LAUNCH_MAX) return
+  _browserLaunchCount++
+  try {
+    if (process.platform === "win32") {
+      // Use PowerShell Start-Process to avoid cmd.exe treating '&' in URLs as command separators
+      Bun.spawn(
+        [
+          "powershell.exe",
+          "-NoProfile",
+          "-NonInteractive",
+          "-WindowStyle",
+          "Hidden",
+          "-Command",
+          `Start-Process '${url.replace(/'/g, "''")}'`,
+        ],
+        { stdout: "ignore", stderr: "ignore" },
+      )
+    } else {
+      const cmd = process.platform === "darwin" ? "open" : "xdg-open"
+      Bun.spawn([cmd, url], { stdout: "ignore", stderr: "ignore" })
+    }
+  } catch {
+    // Browser open is best-effort; URL is displayed for manual copy
+  }
+}
+
+/**
+ * Write text to the system clipboard using platform-native commands.
+ * Intentionally NOT a React hook — uses execSync directly to avoid
+ * render-loop hazards that caused the useClipboard infinite-loop incident.
+ */
+function copyToClipboard(text: string) {
+  try {
+    if (process.platform === "win32") {
+      execSync("clip.exe", { input: text, stdio: ["pipe", "ignore", "ignore"], timeout: 3000 })
+    } else if (process.platform === "darwin") {
+      execSync("pbcopy", { input: text, stdio: ["pipe", "ignore", "ignore"], timeout: 3000 })
+    } else {
+      execSync("xclip -selection clipboard", { input: text, stdio: ["pipe", "ignore", "ignore"], timeout: 3000 })
+    }
+  } catch {
+    // Clipboard copy is best-effort; URL is displayed for manual selection
+  }
+}
+
+/**
+ * Shared URL display for OAuth auth screens.
+ * Renders: title bar → instructions → URL at column 0 → clipboard hint.
+ * URL is deliberately rendered without padding or borders so that
+ * terminal text selection never picks up stray characters.
+ *
+ * Ctrl+C re-copies the URL to clipboard (since TUI line padding makes
+ * manual text selection unreliable for wrapped URLs).
+ */
+function AuthUrlHeader({
+  title,
+  url,
+  instructions,
+  onClose,
+}: {
+  title: string
+  url: string
+  instructions?: string
+  onClose?: () => void
+}) {
+  const { theme } = useTheme()
+  const toast = useToast()
+
+  useDialogLifecycle({
+    contextName: "Select",
+    onClose: () => onClose?.(),
+  })
+
+  // Copy URL to clipboard exactly once on mount (static function — no React loop risk)
+  const copiedRef = useRef(false)
+  useEffect(() => {
+    if (url && !copiedRef.current) {
+      copiedRef.current = true
+      copyToClipboard(url)
+    }
+  }, [url])
+
+  // Ctrl+C re-copies the URL to clipboard on demand
+  useInput((_input: string, key: Key, event: InputEvent) => {
+    if (key.ctrl && _input === "c") {
+      copyToClipboard(url)
+      toast.show({ variant: "success", message: "URL copied to clipboard" })
+      event.stopImmediatePropagation()
+    }
+  })
+
+  return (
+    <>
+      <Box paddingLeft={2} paddingRight={2} flexDirection="row" justifyContent="space-between">
+        <Text bold color={theme.text as Color}>
+          {title}
+        </Text>
+        <Text color={theme.textMuted as Color}>esc</Text>
+      </Box>
+      {instructions && (
+        <Box paddingLeft={2}>
+          <Text color={theme.textMuted as Color}>{instructions}</Text>
+        </Box>
+      )}
+      {/* URL at column 0 — no padding, no borders — so terminal selection stays clean */}
+      <Text color={theme.primary as Color}>{url}</Text>
+      <Box paddingLeft={2}>
+        <Text color={theme.textMuted as Color}>💡 URL copied to clipboard. Press Ctrl+C to copy again.</Text>
+      </Box>
+    </>
+  )
+}
+
 function AutoMethod({
   index,
   providerID,
@@ -353,9 +476,19 @@ function AutoMethod({
   onNavigate: (view: ProviderViewState) => void
   onClose?: () => void
 }) {
-  const { theme } = useTheme()
   const sdk = useSDK()
+  const { theme } = useTheme()
   const { bootstrap } = useAppActions()
+
+  // Auto-open browser exactly once on mount.
+  // Ref guard prevents re-fires; openBrowser has its own circuit-breaker.
+  const launchedRef = useRef(false)
+  useEffect(() => {
+    if (authorization.url && !launchedRef.current) {
+      launchedRef.current = true
+      openBrowser(authorization.url)
+    }
+  }, [authorization.url])
 
   useEffect(() => {
     let active = true
@@ -380,18 +513,16 @@ function AutoMethod({
   }, [sdk, providerID, index, onNavigate, onClose, bootstrap])
 
   return (
-    <Box paddingLeft={2} paddingRight={2} flexDirection="column" gap={1} paddingBottom={1}>
-      <Box flexDirection="row" justifyContent="space-between">
-        <Text bold color={theme.text as Color}>
-          {title}
-        </Text>
-        <Text color={theme.textMuted as Color}>esc</Text>
+    <Box flexDirection="column" gap={1} paddingBottom={1}>
+      <AuthUrlHeader
+        title={title}
+        url={authorization.url}
+        instructions="Attempting to open authentication page in your browser. Otherwise navigate to:"
+        onClose={onClose}
+      />
+      <Box paddingLeft={2}>
+        <Text color={theme.textMuted as Color}>Waiting for authorization...</Text>
       </Box>
-      <Box flexDirection="column" gap={1}>
-        <Text color={theme.primary as Color}>{authorization.url}</Text>
-        <Text color={theme.textMuted as Color}>{authorization.instructions}</Text>
-      </Box>
-      <Text color={theme.textMuted as Color}>Waiting for authorization...</Text>
     </Box>
   )
 }
@@ -414,35 +545,49 @@ function CodeMethod({
   const { theme } = useTheme()
   const sdk = useSDK()
   const { bootstrap } = useAppActions()
+  const [input, setInput] = useState("")
   const [error, setError] = useState(false)
 
-  return (
-    <DialogPrompt
-      title={title}
-      placeholder="Enter JSON"
-      onCancel={onClose}
-      onConfirm={async (value) => {
-        const { error: err } = await sdk.client.provider.oauth.callback({
-          providerID,
-          method: index,
-          code: value,
-        })
-        if (!err) {
-          await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
-          await bootstrap()
-          onNavigate({ type: "model", providerID })
-          return
-        }
-        setError(true)
-      }}
-      description={
-        <Box flexDirection="column" gap={1}>
-          <Text color={theme.textMuted as Color}>{authorization.instructions}</Text>
-          <Text color={theme.primary as Color}>{authorization.url}</Text>
-          {error && <Text color={theme.error as Color}>Invalid code</Text>}
-        </Box>
+  const onSubmit = useCallback(
+    async (value: string) => {
+      const { error: err } = await sdk.client.provider.oauth.callback({
+        providerID,
+        method: index,
+        code: value,
+      })
+      if (!err) {
+        await sdk.client.project.instance.dispose({ projectID: sdk.projectID })
+        await bootstrap()
+        onNavigate({ type: "model", providerID })
+        return
       }
-    />
+      setError(true)
+    },
+    [sdk, providerID, index, bootstrap, onNavigate],
+  )
+
+  return (
+    <Box flexDirection="column" gap={1} paddingBottom={1}>
+      <AuthUrlHeader
+        title={title}
+        url={authorization.url}
+        instructions={authorization.instructions}
+        onClose={onClose}
+      />
+      <Box paddingLeft={2} flexDirection="column" gap={1}>
+        {error && <Text color={theme.error as Color}>Invalid code</Text>}
+        <Box borderStyle="round" paddingX={1} borderColor="ansi:blue" width="100%">
+          <TextInput
+            value={input}
+            onChange={setInput}
+            placeholder="Enter JSON"
+            onSubmit={(val: string) => void onSubmit(val)}
+            focus={true}
+            disableEscapeDoublePress={true}
+          />
+        </Box>
+      </Box>
+    </Box>
   )
 }
 

@@ -1,5 +1,5 @@
-import { Box, type Color, TerminalSizeContext, Text } from "@liteai/ink"
-import { useContext, useMemo, useState } from "react"
+import { Box, type Color, TerminalSizeContext, Text, useInput } from "@liteai/ink"
+import { useContext, useEffect, useMemo, useState } from "react"
 import { useTheme } from "../context/theme"
 import { type DateRange, useGlobalStats } from "../hooks/use-global-stats"
 import { useSessionStats } from "../hooks/use-session-stats"
@@ -41,6 +41,25 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
       "global:close": _onClose,
     },
     { context: "Tabs" },
+  )
+
+  // Defensive fallback: direct escape handler ensures Esc always closes the dialog.
+  // The keybinding system's context resolution between Chat and Tabs can race,
+  // causing the Tabs "global:close" handler to be suppressed. This pattern is
+  // proven in dialog-provider.tsx's AuthUrlHeader.
+  //
+  // Mount guard: delay activation by one frame so stale escape bytes in the
+  // terminal input buffer don't immediately close the dialog on mount.
+  const [escActive, setEscActive] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setEscActive(true), 50)
+    return () => clearTimeout(id)
+  }, [])
+  useInput(
+    (_input, key) => {
+      if (key.escape) _onClose()
+    },
+    { isActive: escActive },
   )
 
   const diff = session_diff[sessionID]

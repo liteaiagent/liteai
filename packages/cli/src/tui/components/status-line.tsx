@@ -10,92 +10,107 @@ import { useExitState } from "./global-exit-handler"
 /** sessionID is optional — StatusLine renders in both boot (undefined) and active states. */
 type Props = { sessionID?: string }
 
-type Segment = { priority: number; text: string; color: string }
+// ─── Column definitions ────────────────────────────────────────────────────────
 
-function buildSegments(
+type FooterColumn = {
+  id: string
+  header: string
+  value: string
+  color: string
+  /** Measured width: max(header.length, value.length). Used for fixed-width layout. */
+  width: number
+  /** If true, this column absorbs remaining horizontal space. */
+  flexGrow?: boolean
+}
+
+/** Minimum gap (in chars) between adjacent columns. */
+const COLUMN_GAP = 2
+
+/**
+ * Build all footer columns. Every column is always present — missing data shows "—".
+ * All data values use theme.text (white). Only "—" placeholders and context % use
+ * distinct colors to avoid visual confusion.
+ */
+function buildColumns(
   stats: ReturnType<typeof useStats>,
   local: ReturnType<typeof useLocal>,
   state: Pick<AppState, "sessions" | "config" | "path" | "vcs" | "session_diff" | "session_status">,
   theme: ReturnType<typeof useTheme>["theme"],
   sessionID: string | undefined,
-): Segment[] {
-  const segments: Segment[] = []
+): FooterColumn[] {
+  const cols: FooterColumn[] = []
+  const textColor = theme.text as string
+  const mutedColor = theme.textMuted as string
 
-  // 1. Model
-  const parsed = local.model.parsed()
-  segments.push({ priority: 1, text: parsed.model, color: theme.text as string })
-
-  if (sessionID) {
-    const session = state.sessions.find((s) => s.id === sessionID)
-    if (session?.toolProfile === "Plan") {
-      segments.push({ priority: 1.6, text: "📋 Plan", color: theme.warning as string })
-    }
-
-    // effort is a server-side config field not yet reflected in the SDK Config type
-    const effort = (state.config as Record<string, unknown>).effort as string | undefined
-    if (effort && effort !== "medium") {
-      segments.push({ priority: 1.7, text: `⚡${effort}`, color: theme.textMuted as string })
-    }
-
-    // 1.8 Session Status (only non-idle states are worth showing)
-    const sessionStatus = state.session_status?.[sessionID]
-    if (sessionStatus && sessionStatus.type !== "idle") {
-      let statusColor = theme.textMuted
-      let statusText: string = sessionStatus.type
-      if (sessionStatus.type === "busy") {
-        statusColor = theme.primary
-        statusText = "busy..."
-      } else if (sessionStatus.type === "retry") {
-        statusColor = theme.warning
-        statusText = "retrying..."
-      }
-      segments.push({ priority: 1.8, text: statusText, color: statusColor as string })
-    }
+  const col = (id: string, header: string, value: string, color: string, flexGrow?: boolean) => {
+    cols.push({ id, header, value, color, width: Math.max(header.length, value.length), flexGrow })
   }
 
+  // 1. Worktree — absorbs remaining space
+  const dir = state.path.directory || state.path.worktree || process.cwd()
+  const dirParts = dir.replace(/\\/g, "/").split("/")
+  const cwdText = dirParts[dirParts.length - 1] || dir
+  col("worktree", "worktree", cwdText, textColor, true)
+
+  // 2. Model + badges
+  const parsed = local.model.parsed()
+  let modelText = parsed.model
   if (sessionID) {
-    // 2. Context %
-    let ctxColor = theme.success
-    if (stats.contextUtilization >= 0.85) ctxColor = theme.error
-    else if (stats.contextUtilization >= 0.6) ctxColor = theme.warning
-    segments.push({
-      priority: 2,
-      text: `${Math.round(stats.contextUtilization * 100)}% ctx`,
-      color: ctxColor as string,
-    })
-
-    // 3. Cost (optional)
-    if (stats.totalCost !== null) {
-      segments.push({ priority: 3, text: `$${stats.totalCost.toFixed(3)}`, color: theme.text as string })
+    const session = state.sessions.find((s) => s.id === sessionID)
+    if (session?.toolProfile === "Plan") modelText += " 📋"
+    const effort = (state.config as Record<string, unknown>).effort as string | undefined
+    if (effort && effort !== "medium") modelText += ` ⚡${effort}`
+    const sessionStatus = state.session_status?.[sessionID]
+    if (sessionStatus && sessionStatus.type !== "idle") {
+      if (sessionStatus.type === "busy") modelText += " busy…"
+      else if (sessionStatus.type === "retry") modelText += " retrying…"
+      else modelText += ` ${sessionStatus.type}`
     }
+  }
+  col("model", "model", modelText, textColor)
 
-    // 4. Tokens
+  // 3. Provider
+  const providerID = parsed.provider || "—"
+  col("provider", "provider", providerID, providerID === "—" ? mutedColor : textColor)
+
+  // 4. Context %
+  let ctxColor = theme.success as string
+  let ctxValue = "0% used"
+  if (sessionID) {
+    const pct = Math.round(stats.contextUtilization * 100)
+    ctxValue = `${pct}% used`
+    if (stats.contextUtilization >= 0.85) ctxColor = theme.error as string
+    else if (stats.contextUtilization >= 0.6) ctxColor = theme.warning as string
+  }
+  col("context", "context", ctxValue, ctxColor)
+
+  // 5. Cost
+  const costValue = sessionID && stats.totalCost !== null ? `$${stats.totalCost.toFixed(3)}` : "—"
+  col("cost", "cost", costValue, costValue === "—" ? mutedColor : textColor)
+
+  // 6. Tokens
+  let tokValue = "0"
+  if (sessionID) {
     const totalToks =
       stats.totalTokens.input +
       stats.totalTokens.output +
       stats.totalTokens.reasoning +
       stats.totalTokens.cache.read +
       stats.totalTokens.cache.write
-
-    let tokText = `${totalToks} tok`
-    if (totalToks >= 1_000_000) tokText = `${(totalToks / 1_000_000).toFixed(1)}M tok`
-    else if (totalToks >= 1_000) tokText = `${(totalToks / 1_000).toFixed(1)}k tok`
-    segments.push({ priority: 4, text: tokText, color: theme.textMuted as string })
+    if (totalToks >= 1_000_000) tokValue = `${(totalToks / 1_000_000).toFixed(1)}M`
+    else if (totalToks >= 1_000) tokValue = `${(totalToks / 1_000).toFixed(1)}k`
+    else tokValue = `${totalToks}`
   }
+  col("tokens", "tokens", tokValue, textColor)
 
-  // 5. CWD (always shown)
-  const dir = state.path.directory || state.path.worktree || process.cwd()
-  const parts = dir.replace(/\\/g, "/").split("/")
-  const cwdText = parts[parts.length - 1] || dir
-  segments.push({ priority: 5, text: cwdText, color: theme.textMuted as string })
+  // 7. Git
+  const gitValue = state.vcs?.branch ? `⎇ ${state.vcs.branch}` : "—"
+  col("git", "git", gitValue, gitValue === "—" ? mutedColor : textColor)
 
-  // 6. Git Branch (always shown if available)
-  if (state.vcs?.branch) {
-    segments.push({ priority: 6, text: `⎇ ${state.vcs.branch}`, color: theme.textMuted as string })
-  }
-
+  // 8. Changes
+  let changesValue = "—"
+  let changesColor = mutedColor
   if (sessionID) {
-    // 7. Code Changes (session-dependent)
     const diff = state.session_diff[sessionID]
     if (diff && diff.length > 0) {
       let additions = 0
@@ -104,34 +119,27 @@ function buildSegments(
         additions += d.additions
         deletions += d.deletions
       }
-      segments.push({ priority: 7, text: `+${additions} -${deletions}`, color: theme.textMuted as string })
+      changesValue = `+${additions} -${deletions}`
+      changesColor = textColor
     }
   }
+  col("changes", "changes", changesValue, changesColor)
 
-  // Note: Session ID segment (priority 8) removed — internal noise, surfaced in exit summary only.
-
-  // Sort by priority ascending (1 is highest priority)
-  segments.sort((a, b) => a.priority - b.priority)
-
-  return segments
+  return cols
 }
 
-function fitSegments(segments: Segment[], budget: number): { visible: Segment[]; truncated: boolean } {
-  const SEPARATOR_WIDTH = 3 // " │ "
-  let used = 0
-  const visible: Segment[] = []
+// ─── Compact fallback (narrow terminals) ───────────────────────────────────────
 
-  for (const seg of segments) {
-    const needed = seg.text.length + (visible.length > 0 ? SEPARATOR_WIDTH : 0)
-    // Always admit the first segment (model) even if it blows the budget
-    if (used + needed > budget && visible.length > 0) break
-    visible.push(seg)
-    used += needed
-  }
+type Segment = { text: string; color: string }
 
-  // Sort back to display order (which is priority order here, conveniently)
-  return { visible, truncated: visible.length < segments.length }
+function buildCompactSegments(columns: FooterColumn[]): Segment[] {
+  return columns.filter((c) => c.value !== "—").map((c) => ({ text: c.value, color: c.color }))
 }
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+
+/** Minimum width for two-row columnar mode. Below this, falls back to compact. */
+const WIDE_MODE_MIN_COLS = 100
 
 function StatusLineInner({ sessionID }: Props) {
   const { theme } = useTheme()
@@ -147,22 +155,20 @@ function StatusLineInner({ sessionID }: Props) {
   const terminalSize = useContext(TerminalSizeContext)
   const exitState = useExitState()
 
-  const columns = terminalSize?.columns ?? 80
-  const budget = columns - 2 // paddingX={1} means 1 on each side
+  const termWidth = terminalSize?.columns ?? 80
+  const isWideMode = termWidth >= WIDE_MODE_MIN_COLS
 
   const { tabs, activeTabId } = useSyncExternalStore(SessionTabStore.subscribe, SessionTabStore.getSnapshot)
 
-  const allSegments = useMemo(
-    () => buildSegments(stats, local, { sessions, config, path, vcs, session_diff, session_status }, theme, sessionID),
+  const allColumns = useMemo(
+    () => buildColumns(stats, local, { sessions, config, path, vcs, session_diff, session_status }, theme, sessionID),
     [stats, local, sessions, config, path, vcs, session_diff, session_status, theme, sessionID],
   )
-
-  const { visible, truncated } = useMemo(() => fitSegments(allSegments, budget), [allSegments, budget])
 
   // Exit pending: replace the entire status line with the exit prompt
   if (exitState.pending) {
     return (
-      <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
+      <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%" marginTop={1}>
         <Text dim italic>
           Press {exitState.keyName} again to exit
         </Text>
@@ -170,37 +176,71 @@ function StatusLineInner({ sessionID }: Props) {
     )
   }
 
-  return (
-    <Box flexDirection="column" width="100%" flexShrink={0}>
-      {tabs.length > 1 && (
-        <Box flexDirection="row" gap={2} paddingX={1} width="100%" marginBottom={0}>
-          {tabs.slice(0, 9).map((tab, idx) => {
-            const isActive = tab === activeTabId
-            const sessionTitle = sessions.find((s) => s.id === tab)?.title ?? tab.slice(0, 8)
-            const truncatedTitle = sessionTitle.length > 15 ? `${sessionTitle.slice(0, 12)}...` : sessionTitle
+  // ── Tab bar (multi-session) ──────────────────────────────────────────────
+  const tabBar =
+    tabs.length > 1 ? (
+      <Box flexDirection="row" gap={2} paddingX={1} width="100%" marginBottom={0}>
+        {tabs.slice(0, 9).map((tab, idx) => {
+          const isActive = tab === activeTabId
+          const sessionTitle = sessions.find((s) => s.id === tab)?.title ?? tab.slice(0, 8)
+          const truncatedTitle = sessionTitle.length > 15 ? `${sessionTitle.slice(0, 12)}...` : sessionTitle
+          return (
+            <Box key={tab} flexDirection="row" gap={0}>
+              <Text color={theme.textMuted as Color}>alt+{idx + 1} </Text>
+              <Text color={isActive ? (theme.primary as Color) : (theme.text as Color)} bold={isActive}>
+                {truncatedTitle}
+              </Text>
+            </Box>
+          )
+        })}
+      </Box>
+    ) : null
+
+  // ── Wide mode: two-row columnar layout ───────────────────────────────────
+  if (isWideMode) {
+    // Calculate available width for the flex-grow (worktree) column.
+    // Fixed columns get their measured width; gaps get COLUMN_GAP each.
+    const fixedWidth = allColumns.filter((c) => !c.flexGrow).reduce((sum, c) => sum + c.width, 0)
+    const gapCount = allColumns.length - 1
+    const padding = 2 // paddingX={1}
+    const worktreeWidth = Math.max(8, termWidth - padding - fixedWidth - gapCount * COLUMN_GAP)
+
+    return (
+      <Box flexDirection="column" width="100%" flexShrink={0} marginTop={1}>
+        {tabBar}
+        <Box flexDirection="row" flexWrap="nowrap" paddingX={1} width="100%">
+          {allColumns.map((col, idx) => {
+            const colWidth = col.flexGrow ? worktreeWidth : col.width
             return (
-              <Box key={tab} flexDirection="row" gap={0}>
-                <Text color={theme.textMuted as Color}>alt+{idx + 1} </Text>
-                <Text color={isActive ? (theme.primary as Color) : (theme.text as Color)} bold={isActive}>
-                  {truncatedTitle}
-                </Text>
+              <Box key={col.id} flexDirection="row" flexShrink={0}>
+                {idx > 0 && <Box width={COLUMN_GAP} />}
+                <Box flexDirection="column" width={colWidth}>
+                  <Text color={theme.textMuted as Color}>{col.header}</Text>
+                  <Text color={col.color as Color} bold={col.id === "model"} wrap="truncate-end">
+                    {col.value}
+                  </Text>
+                </Box>
               </Box>
             )
           })}
         </Box>
-      )}
+      </Box>
+    )
+  }
+
+  // ── Compact mode: single-row pipe-separated ──────────────────────────────
+  const compactSegments = buildCompactSegments(allColumns)
+
+  return (
+    <Box flexDirection="column" width="100%" flexShrink={0} marginTop={1}>
+      {tabBar}
       <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%">
-        {visible.map((seg, i) => (
-          <Box flexDirection="row" key={seg.priority} flexShrink={0}>
+        {compactSegments.map((seg, i) => (
+          <Box flexDirection="row" key={i} flexShrink={0}>
             {i > 0 && <Text color={theme.textMuted as Color}>{" │ "}</Text>}
-            <Text color={seg.color as Color}>{seg.priority === 1 ? <Text bold>{seg.text}</Text> : seg.text}</Text>
+            <Text color={seg.color as Color}>{seg.text}</Text>
           </Box>
         ))}
-        {truncated && (
-          <Box flexShrink={0}>
-            <Text color={theme.textMuted as Color}>…</Text>
-          </Box>
-        )}
       </Box>
     </Box>
   )
