@@ -2,6 +2,7 @@ import { execSync } from "node:child_process"
 import { Box, type Color, type InputEvent, type Key, Text, useInput } from "@liteai/ink"
 import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@liteai/sdk"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { openUrlInBrowser } from "../../utils/browser"
 import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useToast } from "../context/toast"
@@ -13,7 +14,6 @@ import { DialogPrompt } from "../ui/dialog-prompt"
 import { SelectPane } from "../ui/select-pane"
 import { DialogModel } from "./dialog-model"
 import { TextInput } from "./text-input"
-import { openUrlInBrowser } from "../../utils/browser"
 
 /** Discriminated union describing the active sub-view within the provider dialog. */
 export type ProviderViewState =

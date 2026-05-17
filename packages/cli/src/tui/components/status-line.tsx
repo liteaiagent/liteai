@@ -5,7 +5,6 @@ import { useStats } from "../context/stats"
 import { useTheme } from "../context/theme"
 import { type AppState, useAppState } from "../state"
 import { SessionTabStore } from "../state/session-tab-store"
-import { useExitState } from "./global-exit-handler"
 
 /** sessionID is optional — StatusLine renders in both boot (undefined) and active states. */
 type Props = { sessionID?: string }
@@ -19,12 +18,11 @@ type FooterColumn = {
   color: string
   /** Measured width: max(header.length, value.length). Used for fixed-width layout. */
   width: number
-  /** If true, this column absorbs remaining horizontal space. */
-  flexGrow?: boolean
+  /** If > 0, this column is allowed to shrink when space is tight. */
+  flexShrink?: number
+  /** How to wrap/truncate the text. Defaults to 'truncate-end'. */
+  wrap?: "truncate-middle" | "truncate-start" | "truncate-end"
 }
-
-/** Minimum gap (in chars) between adjacent columns. */
-const COLUMN_GAP = 2
 
 /**
  * Build all footer columns. Every column is always present — missing data shows "—".
@@ -42,17 +40,31 @@ function buildColumns(
   const textColor = theme.text as string
   const mutedColor = theme.textMuted as string
 
-  const col = (id: string, header: string, value: string, color: string, flexGrow?: boolean) => {
-    cols.push({ id, header, value, color, width: Math.max(header.length, value.length), flexGrow })
+  const col = (
+    id: string,
+    header: string,
+    value: string,
+    color: string,
+    flexShrink = 0,
+    wrap: FooterColumn["wrap"] = "truncate-end",
+  ) => {
+    cols.push({ id, header, value, color, width: Math.max(header.length, value.length), flexShrink, wrap })
   }
 
-  // 1. Worktree — absorbs remaining space
+  // 1. Workspace
   const dir = state.path.directory || state.path.worktree || process.cwd()
-  const dirParts = dir.replace(/\\/g, "/").split("/")
-  const cwdText = dirParts[dirParts.length - 1] || dir
-  col("worktree", "worktree", cwdText, textColor, true)
+  let displayPath = dir.replace(/\\/g, "/")
+  const home = state.path.home ? state.path.home.replace(/\\/g, "/") : ""
+  if (home && displayPath.startsWith(home)) {
+    displayPath = `~${displayPath.slice(home.length)}`
+  }
+  col("workspace", "workspace (/directory)", displayPath, textColor, 1, "truncate-middle")
 
-  // 2. Model + badges
+  // 2. Branch
+  const branchValue = state.vcs?.branch || "—"
+  col("branch", "branch", branchValue, branchValue === "—" ? mutedColor : textColor)
+
+  // 3. Model + badges
   const parsed = local.model.parsed()
   let modelText = parsed.model
   if (sessionID) {
@@ -69,11 +81,11 @@ function buildColumns(
   }
   col("model", "model", modelText, textColor)
 
-  // 3. Provider
+  // 4. Provider
   const providerID = parsed.provider || "—"
   col("provider", "provider", providerID, providerID === "—" ? mutedColor : textColor)
 
-  // 4. Context %
+  // 5. Context %
   let ctxColor = theme.success as string
   let ctxValue = "0% used"
   if (sessionID) {
@@ -84,11 +96,11 @@ function buildColumns(
   }
   col("context", "context", ctxValue, ctxColor)
 
-  // 5. Cost
+  // 6. Cost
   const costValue = sessionID && stats.totalCost !== null ? `$${stats.totalCost.toFixed(3)}` : "—"
   col("cost", "cost", costValue, costValue === "—" ? mutedColor : textColor)
 
-  // 6. Tokens
+  // 7. Tokens
   let tokValue = "0"
   if (sessionID) {
     const totalToks =
@@ -102,10 +114,6 @@ function buildColumns(
     else tokValue = `${totalToks}`
   }
   col("tokens", "tokens", tokValue, textColor)
-
-  // 7. Git
-  const gitValue = state.vcs?.branch ? `⎇ ${state.vcs.branch}` : "—"
-  col("git", "git", gitValue, gitValue === "—" ? mutedColor : textColor)
 
   // 8. Changes
   let changesValue = "—"
@@ -153,7 +161,6 @@ function StatusLineInner({ sessionID }: Props) {
   const local = useLocal()
   const stats = useStats()
   const terminalSize = useContext(TerminalSizeContext)
-  const exitState = useExitState()
 
   const termWidth = terminalSize?.columns ?? 80
   const isWideMode = termWidth >= WIDE_MODE_MIN_COLS
@@ -164,17 +171,6 @@ function StatusLineInner({ sessionID }: Props) {
     () => buildColumns(stats, local, { sessions, config, path, vcs, session_diff, session_status }, theme, sessionID),
     [stats, local, sessions, config, path, vcs, session_diff, session_status, theme, sessionID],
   )
-
-  // Exit pending: replace the entire status line with the exit prompt
-  if (exitState.pending) {
-    return (
-      <Box flexDirection="row" flexWrap="nowrap" gap={0} paddingX={1} width="100%" marginTop={1}>
-        <Text dim italic>
-          Press {exitState.keyName} again to exit
-        </Text>
-      </Box>
-    )
-  }
 
   // ── Tab bar (multi-session) ──────────────────────────────────────────────
   const tabBar =
@@ -198,31 +194,18 @@ function StatusLineInner({ sessionID }: Props) {
 
   // ── Wide mode: two-row columnar layout ───────────────────────────────────
   if (isWideMode) {
-    // Calculate available width for the flex-grow (worktree) column.
-    // Fixed columns get their measured width; gaps get COLUMN_GAP each.
-    const fixedWidth = allColumns.filter((c) => !c.flexGrow).reduce((sum, c) => sum + c.width, 0)
-    const gapCount = allColumns.length - 1
-    const padding = 2 // paddingX={1}
-    const maxFlexWidth = Math.max(8, termWidth - padding - fixedWidth - gapCount * COLUMN_GAP)
-
     return (
       <Box flexDirection="column" width="100%" flexShrink={0} marginTop={1}>
         {tabBar}
-        <Box flexDirection="row" flexWrap="nowrap" paddingX={1} width="100%">
-          {allColumns.map((col, idx) => {
-            const colWidth = col.flexGrow ? Math.max(col.width, maxFlexWidth) : col.width
-            return (
-              <Box key={col.id} flexDirection="row" flexShrink={0}>
-                {idx > 0 && <Box width={COLUMN_GAP} />}
-                <Box flexDirection="column" width={colWidth}>
-                  <Text color={theme.textMuted as Color}>{col.header}</Text>
-                  <Text color={col.color as Color} bold={col.id === "model"} wrap="truncate-end">
-                    {col.value}
-                  </Text>
-                </Box>
-              </Box>
-            )
-          })}
+        <Box flexDirection="row" flexWrap="nowrap" justifyContent="space-between" paddingX={1} width="100%">
+          {allColumns.map((col) => (
+            <Box key={col.id} flexDirection="column" width={col.width} flexShrink={col.flexShrink ?? 0}>
+              <Text color={theme.textMuted as Color}>{col.header}</Text>
+              <Text color={col.color as Color} bold={col.id === "model"} wrap={col.wrap || "truncate-end"}>
+                {col.value}
+              </Text>
+            </Box>
+          ))}
         </Box>
       </Box>
     )

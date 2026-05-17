@@ -1,9 +1,7 @@
 /**
  * PromptInput orchestrator — the main user input component.
- * Adapted port from MVP `PromptInput/PromptInput.tsx`.
  *
- * The MVP orchestrator was 2339 lines with ~90 imports. This port
- * distills the core responsibilities:
+ * Core responsibilities:
  *
  * 1. Text input with cursor management
  * 2. Mode switching (prompt/bash)
@@ -27,7 +25,6 @@
  * - Voice/STT integration
  * - Agent color / teammate view routing
  * - Fullscreen / alternate screen layout
- * - React Compiler artifacts (_c(), $[n])
  */
 
 import fs from "node:fs/promises"
@@ -51,7 +48,8 @@ import { useHistorySearch } from "../../hooks/use-history-search"
 import { usePasteHandler } from "../../hooks/use-paste-handler"
 import { formatSessionExport } from "../../hooks/use-session-export"
 import { useSlashSuggestion } from "../../hooks/use-slash-suggestion"
-import { useKeybinding } from "../../keybindings/use-keybinding"
+import { useRegisterKeybindingContext } from "../../keybindings/keybinding-context"
+import { useKeybinding, useKeybindings } from "../../keybindings/use-keybinding"
 import { useAppState, useAppStore } from "../../state"
 import { clear as clearQueue, enqueue, getSnapshot } from "../../stores/message-queue-store"
 import type { BaseTextInputProps, PromptInputMode, VimMode } from "../../types/text-input"
@@ -670,11 +668,38 @@ export function PromptInput({ debug, verbose, isLoading, focus, hint, cursorMode
   })
 
   // ── Exit double-press ───────────────────────────────────────────────────
-  const [_exitPending, setExitPending] = useState(false)
-  const doublePressEsc = useDoublePress(setExitPending, () => {
-    // Double-press: hard exit
-    void exit()
-  })
+  const doublePressEsc = useDoublePress(
+    (pending) => setExitMessage({ show: pending, key: "esc" }),
+    () => {
+      // Double-press: hard exit
+      void exit()
+    },
+  )
+
+  useRegisterKeybindingContext("HistorySearch", searchState.isSearching)
+  useKeybindings(
+    {
+      "historySearch:cancel": () => {
+        searchState.cancelSearch()
+      },
+      "historySearch:accept": () => {
+        if (searchState.match) {
+          trackAndSetInput(searchState.match.display)
+          setCursorOffset(searchState.match.display.length)
+        }
+        searchState.cancelSearch()
+      },
+      "historySearch:execute": () => {
+        if (searchState.match) {
+          trackAndSetInput(searchState.match.display)
+          setCursorOffset(searchState.match.display.length)
+          searchState.cancelSearch()
+          void onSubmit(searchState.match.display)
+        }
+      },
+    },
+    { context: "HistorySearch", isActive: searchState.isSearching },
+  )
 
   useKeybinding("history:search", () => {
     searchState.startSearch()

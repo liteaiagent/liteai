@@ -43,7 +43,6 @@ export function DialogStats({ sessionID, onClose: _onClose }: Props) {
   )
 
   // Defensive fallback: direct escape handler ensures Esc always closes the dialog.
-  // Defensive fallback: direct escape handler ensures Esc always closes the dialog.
   // The keybinding system's context resolution between Chat and Tabs can race,
   // causing the Tabs "global:close" handler to be suppressed.
   // Mount guard: delay activation by one frame so stale escape bytes in the

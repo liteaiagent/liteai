@@ -29,6 +29,7 @@ import { useTheme } from "../../context/theme"
 import { useKeybindingContext } from "../../keybindings/keybinding-context"
 import { useAppState } from "../../state"
 import type { PromptInputMode, VimMode } from "../../types/text-input"
+import { useExitState } from "../global-exit-handler"
 import { isVimModeEnabled } from "./utils"
 
 // ── Tip rotation (same pool as the old Tips component) ─────────────────────
@@ -80,7 +81,6 @@ function useTip() {
 
 /** Small curated subset — avoids duplicating the full list from tips.tsx */
 const TIPS_SUBSET = [
-  "Press {highlight}?{/highlight} to view all keyboard shortcuts",
   "Use {highlight}ctrl+p{/highlight} to open the command palette",
   "Use {highlight}/compact{/highlight} to summarize and compress the session",
   "Add {highlight}$schema{/highlight} to your config for autocomplete in your editor",
@@ -116,6 +116,16 @@ export function PromptInputFooterLeftSide({
   config,
   hint,
 }: PromptInputFooterLeftSideProps) {
+  const globalExitState = useExitState()
+
+  if (globalExitState.pending) {
+    return (
+      <Text dim key="exit-message">
+        Press {globalExitState.keyName?.toLowerCase()} again to exit
+      </Text>
+    )
+  }
+
   if (exitMessage.show) {
     return (
       <Text dim key="exit-message">

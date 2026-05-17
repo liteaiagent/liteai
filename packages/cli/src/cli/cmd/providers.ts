@@ -12,9 +12,9 @@ import { Instance } from "@liteai/core/project/instance"
 import { ModelsDev } from "@liteai/core/provider/models"
 import { Process } from "@liteai/util/process"
 import { map, pipe, sortBy, values } from "remeda"
+import { openUrlInBrowser } from "../../utils/browser"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
-import { openUrlInBrowser } from "../../utils/browser"
 
 type PluginAuth = AuthHook
 

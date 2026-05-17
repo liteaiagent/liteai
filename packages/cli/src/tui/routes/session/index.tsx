@@ -91,7 +91,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
     partsMap as Record<string, import("@liteai/sdk").Part[]>,
   )
   const promptRef = usePromptRef()
-  useRegisterKeybindingContext("MessageActions")
+  useRegisterKeybindingContext("MessageActions", cursor.active)
 
   // Sync session on mount — guarded: no-op during boot state (sessionID undefined)
   useEffect(() => {
