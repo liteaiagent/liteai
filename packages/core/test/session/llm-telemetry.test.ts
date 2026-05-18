@@ -159,7 +159,7 @@ describe("session.llm telemetry metadata", () => {
         const resolved = await Provider.getModel(ProviderID.make(providerID), ModelID.make(modelID))
         const sessionID = SessionID.make("session-telemetry-1")
         const agent = {
-          name: "build",
+          name: "liteai",
           mode: "primary",
           options: {},
           permission: [{ permission: "*", pattern: "*", action: "allow" }],

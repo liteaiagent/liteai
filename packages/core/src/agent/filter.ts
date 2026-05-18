@@ -30,7 +30,7 @@ const ALL_LITEAI_TOOLS = new Set([
   "invalid",
   "list",
   "lsp",
-  "task",
+  "agent",
   "todoread",
   "apply_patch", // If it exists
   "batch",
@@ -48,7 +48,7 @@ export function filterToolsForAgent(tools: string[], isCustomAgent: boolean, isA
       return false
     }
 
-    if (isCustomAgent && tool === "task") {
+    if (isCustomAgent && tool === "agent") {
       return false
     }
 
@@ -95,9 +95,9 @@ export function resolveAgentTools(
         continue
       }
 
-      const agentMatch = spec.match(/^(?:agent|task)\((.+)\)$/i)
+      const agentMatch = spec.match(/^agent\((.+)\)$/i)
       if (agentMatch) {
-        set.add("task")
+        set.add("agent")
         allowedAgentTypes = agentMatch[1].split(",").map((s: string) => s.trim())
         continue
       }

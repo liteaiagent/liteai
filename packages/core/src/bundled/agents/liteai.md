@@ -1,5 +1,5 @@
 ---
-name: build
+name: liteai
 mode: primary
 description: "The default root agent (LiteAI). Full tool access, can invoke subagents and plan mode."
 tools:

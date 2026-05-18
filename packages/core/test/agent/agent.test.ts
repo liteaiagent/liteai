@@ -97,7 +97,7 @@ describe("Agent Hierarchy", () => {
           JSON.stringify({
             $schema: "https://liteai.com/config.json",
             agent: {
-              build: { description: "from_cfg", temperature: 0.9 },
+              liteai: { description: "from_cfg", temperature: 0.9 },
             },
           }),
         )
@@ -106,7 +106,7 @@ describe("Agent Hierarchy", () => {
         const agentsDir = path.join(liteaiDir, "agents")
         await fs.mkdir(agentsDir, { recursive: true })
         await fs.writeFile(
-          path.join(agentsDir, "build.md"),
+          path.join(agentsDir, "liteai.md"),
           `---
 description: from_project_agent_md
 temperature: 0.8
@@ -116,14 +116,14 @@ Prompt`,
 
         // Mock platform agents safely
         const spyPlatform = spyOn(AgentLoader, "loadPlatformAgents").mockResolvedValue({
-          build: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Awaited<
+          liteai: { source: "plugin", description: "from_plugin", temperature: 0.5 } as unknown as Awaited<
             ReturnType<typeof AgentLoader.loadPlatformAgents>
           >[string],
         })
 
         const result = await Agent.list()
-        const buildAgent = result.find((a) => a.name === "build")
-        expect(buildAgent?.name).toBe("build")
+        const buildAgent = result.find((a) => a.name === "liteai")
+        expect(buildAgent?.name).toBe("liteai")
 
         // Actual merge order is builtIn -> platform plugin -> config -> project markdown
         // So project markdown should win over cfg

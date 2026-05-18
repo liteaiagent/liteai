@@ -71,7 +71,7 @@ export const claude: PlatformProfile = {
     Grep: "grep",
     List: "list",
     NotebookEdit: "multiedit",
-    Agent: "task",
+    Agent: "agent",
     ExitPlanMode: "plan_exit",
     Bash: "run_command",
   },

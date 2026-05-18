@@ -8,7 +8,7 @@ const parameters = z.object({
   task_id: z.string().describe("The ID of the background task to stop"),
 })
 
-export const TaskStopTool = Tool.define("task_stop", {
+export const AgentStopTool = Tool.define("agent_stop", {
   description: `Stop a running background task by its ID.
 - Takes a task_id parameter identifying the task to stop
 - Returns a success or failure status

@@ -18,7 +18,7 @@ function createUserMessage(session: Session.Info, text = "hello"): Message.WithP
       sessionID: session.id,
       role: "user",
       time: { created: Date.now() },
-      agent: "build",
+      agent: "liteai",
       model: { providerID: "test", modelID: "test-model" },
     } as Message.User,
     parts: [

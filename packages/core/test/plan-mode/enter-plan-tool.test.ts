@@ -45,7 +45,7 @@ describe("PlanEnterTool", () => {
       sessionID: sessionID as SessionID,
       messageID: MessageID.ascending(),
       callID: "test-call",
-      agent: "build",
+      agent: "liteai",
       abort: new AbortController().signal,
       messages: [],
       metadata: () => {},

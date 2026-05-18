@@ -73,10 +73,10 @@ export function matchSessionMode(sessionMode: Session.Info["sessionMode"] | unde
  * from the coordinator's tool pool.
  */
 const COORDINATOR_ALLOWED_TOOLS = new Set([
-  "task",
+  "agent",
   "send_message",
   "yield_turn",
-  "task_stop",
+  "agent_stop",
   "team_create",
   "team_delete",
   STRUCTURED_OUTPUT_TOOL_NAME,
@@ -100,10 +100,10 @@ export function applyCoordinatorToolFilter(tools: Record<string, unknown>): Reco
  * be listed in the worker capabilities context.
  */
 const INTERNAL_COORDINATOR_TOOLS = new Set([
-  "task",
+  "agent",
   "send_message",
   "yield_turn",
-  "task_stop",
+  "agent_stop",
   "team_create",
   "team_delete",
 ])
@@ -124,7 +124,7 @@ export function getCoordinatorUserContext(
     .sort()
     .join(", ")
 
-  let content = `Workers spawned via the task tool have access to these tools: ${workerToolNames}`
+  let content = `Workers spawned via the agent tool have access to these tools: ${workerToolNames}`
 
   if (mcpClients.length > 0) {
     const serverNames = mcpClients.map((c) => c.name).join(", ")
