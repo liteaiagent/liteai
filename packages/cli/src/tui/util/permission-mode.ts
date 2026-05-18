@@ -27,7 +27,7 @@ const PERMISSION_MODE_ORDER: readonly PermissionMode[] = PermissionModeCyclable.
 
 /**
  * Pure function: returns the next mode in the cycle.
- * Unknown modes—including agent-only modes like "dontAsk" and "bubble"—will be 
+ * Unknown modes—including agent-only modes like "dontAsk" and "bubble"—will be
  * treated as unknown and thus fall back to "default" (PERMISSION_MODE_ORDER[0]).
  */
 export function getNextPermissionMode(current: string): PermissionMode {

@@ -7,12 +7,12 @@ import { useEffect, useState } from "react"
  */
 export function useDelayedEscapeClose(onClose: () => void, delayMs = 50) {
   const [escActive, setEscActive] = useState(false)
-  
+
   useEffect(() => {
     const id = setTimeout(() => setEscActive(true), delayMs)
     return () => clearTimeout(id)
   }, [delayMs])
-  
+
   useInput(
     (_input, key) => {
       if (key.escape) onClose()

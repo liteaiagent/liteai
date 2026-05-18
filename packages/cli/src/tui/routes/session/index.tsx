@@ -345,9 +345,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
                     onNavigate={(id) => cursor.selectMessage(id)}
                   />
                 )}
-                {todos.length > 0 && (
-                  <TodoTray todos={todos} expanded={todoTrayExpanded} onClose={() => setTodoTrayExpanded(false)} />
-                )}
+                {todos.length > 0 && <TodoTray todos={todos} expanded={todoTrayExpanded} />}
               </Box>
             }
           />

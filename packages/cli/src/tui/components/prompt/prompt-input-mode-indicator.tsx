@@ -26,11 +26,7 @@ const SPINNER_INTERVAL_MS = 80
 function LoadingSpinner({ color }: { color?: Color }) {
   const [, time] = useAnimationFrame(SPINNER_INTERVAL_MS)
   const frame = SPINNER_FRAMES[Math.floor(time / SPINNER_INTERVAL_MS) % SPINNER_FRAMES.length]
-  return (
-    <Text color={color}>
-      {frame}{" "}
-    </Text>
-  )
+  return <Text color={color}>{frame} </Text>
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -54,9 +50,7 @@ export function PromptInputModeIndicator({ mode, isLoading, agentColor }: Prompt
       ) : mode === "bash" ? (
         <Text color={theme.warning as Color}>{"! "}</Text>
       ) : (
-        <Text color={agentColor}>
-          {figures.pointer}{" "}
-        </Text>
+        <Text color={agentColor}>{figures.pointer} </Text>
       )}
     </Box>
   )

@@ -85,7 +85,7 @@ export function Tabs({
     if (!React.isValidElement(child)) return false
     if (child.type === Tab) return true
     const props = child.props as Record<string, unknown>
-    return Boolean(props && "title" in props && "id" in props)
+    return Boolean(props && "title" in props)
   })
   const tabs = validChildren.map((child) => [child.props.id ?? child.props.title, child.props.title])
   const defaultTabIndex = defaultTab ? tabs.findIndex((tab) => defaultTab === tab[0]) : 0

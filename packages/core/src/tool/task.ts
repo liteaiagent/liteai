@@ -66,10 +66,14 @@ export const TaskTool = Tool.define("task", async (ctx) => {
           modelID: parentAssistant.info.modelID,
           providerID: parentAssistant.info.providerID,
         }
-      } else if (ctx.extra?.model) {
-        const m = ctx.extra.model as any
+      } else if (ctx.extra?.model && typeof ctx.extra.model === "object") {
+        const m = ctx.extra.model as { api?: { id?: unknown }; id?: unknown; providerID?: unknown }
+        const modelIdStr = m.api?.id || m.id
+        if (typeof modelIdStr !== "string" || !modelIdStr || typeof m.providerID !== "string" || !m.providerID) {
+          throw new Error("Could not determine parent model for subagent: invalid ctx.extra.model")
+        }
         parent = {
-          modelID: ModelID.make(m.api?.id || m.id),
+          modelID: ModelID.make(modelIdStr),
           providerID: ProviderID.make(m.providerID),
         }
       } else {

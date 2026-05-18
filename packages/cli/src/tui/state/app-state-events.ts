@@ -404,7 +404,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       const active = event.properties.active as boolean | undefined
       setState((prev) => {
         const isActivating = active !== false
-        
+
         let newPermissionMode = prev.permissionMode[sessionID] ?? "default"
         let newPrePlan = prev.prePlanPermissionMode[sessionID]
 
@@ -435,7 +435,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
           },
           prePlanPermissionMode: {
             ...prev.prePlanPermissionMode,
-            [sessionID]: newPrePlan as string, // Cast required if undefined, but dict value could just omit or keep undefined. Wait, dictionary allows string. Let's just cast.
+            [sessionID]: newPrePlan ?? "",
           },
         }
       })

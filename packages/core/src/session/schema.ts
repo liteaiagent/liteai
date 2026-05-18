@@ -42,3 +42,10 @@ export type PermissionModeAll = z.infer<typeof PermissionModeAll>
 
 export const PermissionModeCyclable = z.enum(["default", "plan", "acceptEdits", "bypassPermissions"])
 export type PermissionModeCyclable = z.infer<typeof PermissionModeCyclable>
+
+// Enforce subset relationship at runtime
+for (const val of PermissionModeCyclable.options) {
+  if (!(PermissionModeAll.options as readonly string[]).includes(val)) {
+    throw new Error(`PermissionModeCyclable value '${val}' is missing from PermissionModeAll`)
+  }
+}

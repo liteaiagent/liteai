@@ -2,7 +2,6 @@ import { AlternateScreen, Box, useInput } from "@liteai/ink"
 import { useCallback, useEffect, useSyncExternalStore } from "react"
 import type { TuiConfig } from "../cli/config/tui"
 import { GlobalExitHandler } from "./components/global-exit-handler"
-import { clear as clearMessageQueue, getSnapshot as getQueueSnapshot } from "./stores/message-queue-store"
 import { type Args, ArgsProvider } from "./context/args"
 import { ExitProvider } from "./context/exit"
 import { KVProvider } from "./context/kv"
@@ -21,6 +20,7 @@ import { SessionRoute } from "./routes/session"
 import { useAppState } from "./state"
 import { AppStateProvider } from "./state/app-state-context"
 import { SessionTabStore } from "./state/session-tab-store"
+import { clear as clearMessageQueue, getSnapshot as getQueueSnapshot } from "./stores/message-queue-store"
 
 export type AppProps = {
   url: string

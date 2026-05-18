@@ -35,7 +35,6 @@ const PRIORITY_COLOR_KEY: Record<string, "error" | "warning" | "textMuted"> = {
 interface TodoTrayProps {
   todos: readonly Todo[]
   expanded: boolean
-  onClose: () => void
 }
 
 function getCurrentTodo(todos: readonly Todo[]) {
@@ -46,7 +45,7 @@ function getCurrentTodo(todos: readonly Todo[]) {
   )
 }
 
-export function TodoTray({ todos, expanded, onClose: _onClose }: TodoTrayProps) {
+export function TodoTray({ todos, expanded }: TodoTrayProps) {
   const { theme } = useTheme()
 
   const summary = useMemo(() => {
