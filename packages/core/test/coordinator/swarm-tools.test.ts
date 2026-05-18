@@ -260,14 +260,14 @@ describe("TeamDeleteTool", () => {
 
 // ─── task_stop ──────────────────────────────────────────────────────────────
 
-describe("TaskStopTool", () => {
+describe("AgentStopTool", () => {
   afterEach(() => {
     mock.restore()
   })
 
   test("H-1: rejects empty task_id", async () => {
-    const { TaskStopTool } = await import("../../src/tool/task_stop")
-    const execute = await initTool(TaskStopTool)
+    const { AgentStopTool } = await import("../../src/tool/agent_stop")
+    const execute = await initTool(AgentStopTool)
     const { ctx } = createMockRootContext()
     const toolCtx = createMockToolCtx()
 
@@ -277,8 +277,8 @@ describe("TaskStopTool", () => {
   })
 
   test("H-3: rejects invalid task_id format", async () => {
-    const { TaskStopTool } = await import("../../src/tool/task_stop")
-    const execute = await initTool(TaskStopTool)
+    const { AgentStopTool } = await import("../../src/tool/agent_stop")
+    const execute = await initTool(AgentStopTool)
     const { ctx } = createMockRootContext()
     const toolCtx = createMockToolCtx()
 

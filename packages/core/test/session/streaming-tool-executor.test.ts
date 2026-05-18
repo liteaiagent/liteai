@@ -64,7 +64,7 @@ describe("StreamingToolExecutor", () => {
     const ctrl = makeAbort()
     const executor = new StreamingToolExecutor(ctrl.signal)
 
-    const writeTools = ["edit", "write", "run_command", "multiedit", "task", "apply_patch"]
+    const writeTools = ["edit", "write", "run_command", "multiedit", "agent", "apply_patch"]
     for (const tool of writeTools) {
       executor.processEvent(toolStart(`t-${tool}`, tool))
     }

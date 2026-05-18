@@ -32,7 +32,7 @@ describe("session.prompt missing file", () => {
         const missing = path.join(tmp.path, "does-not-exist.ts")
         const msg: Message.WithParts = await SessionPrompt.prompt({
           sessionID: session.id,
-          agent: "build",
+          agent: "liteai",
           noReply: true,
           parts: [
             { type: "text", text: "please review @does-not-exist.ts" },
@@ -77,7 +77,7 @@ describe("session.prompt missing file", () => {
         const missing = path.join(tmp.path, "still-missing.ts")
         const msg = await SessionPrompt.prompt({
           sessionID: session.id,
-          agent: "build",
+          agent: "liteai",
           noReply: true,
           parts: [
             {
@@ -148,7 +148,7 @@ describe("session.prompt special characters", () => {
 
           const message = await SessionPrompt.prompt({
             sessionID: session.id,
-            agent: "build",
+            agent: "liteai",
             parts,
             noReply: true,
           })
@@ -192,7 +192,7 @@ describe("session.prompt agent variant", () => {
 
           const other = await SessionPrompt.prompt({
             sessionID: session.id,
-            agent: "build",
+            agent: "liteai",
             model: { providerID: ProviderID.make("opencode"), modelID: ModelID.make("kimi-k2.5-free") },
             noReply: true,
             parts: [{ type: "text", text: "hello" }],
@@ -202,7 +202,7 @@ describe("session.prompt agent variant", () => {
 
           const match = await SessionPrompt.prompt({
             sessionID: session.id,
-            agent: "build",
+            agent: "liteai",
             noReply: true,
             parts: [{ type: "text", text: "hello again" }],
           })
@@ -212,7 +212,7 @@ describe("session.prompt agent variant", () => {
 
           const override = await SessionPrompt.prompt({
             sessionID: session.id,
-            agent: "build",
+            agent: "liteai",
             noReply: true,
             variant: "high",
             parts: [{ type: "text", text: "hello third" }],

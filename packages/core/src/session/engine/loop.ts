@@ -5,7 +5,7 @@ import z from "zod"
 import { Bus } from "@/bus"
 import { BackgroundTaskRegistry } from "@/command/background"
 import { PermissionNext } from "@/permission/next"
-import { TaskTool } from "@/tool/task"
+import { AgentTool } from "@/tool/agent"
 import type { Tool } from "@/tool/tool"
 import { fn } from "@/util/fn"
 import { Agent } from "../../agent/agent"
@@ -1163,7 +1163,7 @@ async function processSubtask(input: {
   tracker: PromiseTracker
 }): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
   const { task, lastUser, sessionID, abort, msgs, telemetryTracker, telemetryBatchId, checkpointer, tracker } = input
-  const taskTool = await TaskTool.init()
+  const taskTool = await AgentTool.init()
   const taskModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {
         log.warn("subtask model not available, falling back to parent model", {
@@ -1206,7 +1206,7 @@ async function processSubtask(input: {
     sessionID: assistantMessage.sessionID,
     type: "tool",
     callID: ulid(),
-    tool: TaskTool.id,
+    tool: AgentTool.id,
     state: {
       status: "running",
       input: {
@@ -1231,7 +1231,7 @@ async function processSubtask(input: {
   await Plugin.trigger(
     "tool.execute.before",
     {
-      tool: "task",
+      tool: "agent",
       sessionID,
       callID: part.id,
     },
@@ -1270,7 +1270,7 @@ async function processSubtask(input: {
   const activeSpan = trace.getActiveSpan()
   if (activeSpan) {
     activeSpan.setAttribute("input.value", JSON.stringify(taskArgs))
-    activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", "task")
+    activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", "agent")
     activeSpan.setAttribute(
       "ai.telemetry.metadata.langgraph_step",
       String(telemetryTracker?.getStep(telemetryBatchId) ?? 1),
@@ -1297,7 +1297,7 @@ async function processSubtask(input: {
   await Plugin.trigger(
     "tool.execute.after",
     {
-      tool: "task",
+      tool: "agent",
       sessionID,
       callID: part.id,
       args: taskArgs,

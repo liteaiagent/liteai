@@ -10,9 +10,9 @@ describe("filterToolsForAgent", () => {
   })
 
   test("removes CUSTOM_AGENT_DISALLOWED_TOOLS for custom agents", () => {
-    const tools = ["read", "task", "plan_enter", "write"]
+    const tools = ["read", "agent", "plan_enter", "write"]
     const filtered = filterToolsForAgent(tools, true, false)
-    expect(filtered).not.toContain("task")
+    expect(filtered).not.toContain("agent")
     expect(filtered).not.toContain("plan_enter")
     expect(filtered).toEqual(["read", "write"])
   })
@@ -24,18 +24,18 @@ describe("filterToolsForAgent", () => {
   })
 
   test("filters core tools for async agents", () => {
-    const tools = ["read", "ask_user", "task", "mcp_tool"]
+    const tools = ["read", "ask_user", "agent", "mcp_tool"]
     const filtered = filterToolsForAgent(tools, false, true)
 
     expect(filtered).toContain("read") // async allowed
     expect(filtered).not.toContain("ask_user") // not async allowed
-    expect(filtered).not.toContain("task") // not async allowed
+    expect(filtered).not.toContain("agent") // not async allowed
     expect(filtered).toContain("mcp_tool") // MCP tool allowed
   })
 })
 
 describe("resolveAgentTools", () => {
-  const available = ["read", "write", "edit", "task", "run_command"]
+  const available = ["read", "write", "edit", "agent", "run_command"]
 
   test("returns all available tools if no spec provided", () => {
     const { resolvedTools } = resolveAgentTools(
@@ -55,10 +55,10 @@ describe("resolveAgentTools", () => {
 
   test("extracts allowedAgentTypes from task(type) pattern", () => {
     const { resolvedTools, allowedAgentTypes } = resolveAgentTools(
-      { tools: ["read", "task(explore, plan)", "task"] } as Pick<Agent.AgentDefinition, "tools" | "disallowedTools">,
+      { tools: ["read", "agent(explore, plan)", "agent"] } as Pick<Agent.AgentDefinition, "tools" | "disallowedTools">,
       available,
     )
-    expect(resolvedTools.sort()).toEqual(["read", "task"].sort())
+    expect(resolvedTools.sort()).toEqual(["read", "agent"].sort())
     expect(allowedAgentTypes).toEqual(["explore", "plan"])
   })
 
@@ -70,7 +70,7 @@ describe("resolveAgentTools", () => {
       >,
       available,
     )
-    expect(resolvedTools.sort()).toEqual(["edit", "read", "task"].sort())
+    expect(resolvedTools.sort()).toEqual(["edit", "read", "agent"].sort())
   })
 
   test("disallows tools with wildcard", () => {
@@ -78,7 +78,7 @@ describe("resolveAgentTools", () => {
       { tools: ["*"], disallowedTools: ["wri*"] } as Pick<Agent.AgentDefinition, "tools" | "disallowedTools">,
       available,
     )
-    expect(resolvedTools.sort()).toEqual(["edit", "read", "run_command", "task"].sort())
+    expect(resolvedTools.sort()).toEqual(["edit", "read", "run_command", "agent"].sort())
   })
 })
 

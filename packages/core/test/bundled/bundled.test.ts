@@ -43,7 +43,7 @@ describe("Bundled", () => {
 
   // ----- Agent reads -----
 
-  const EXPECTED_AGENTS = ["plan", "build", "general", "explore", "compaction", "title", "summary"] as const
+  const EXPECTED_AGENTS = ["plan", "liteai", "general", "explore", "compaction", "title", "summary"] as const
 
   for (const name of EXPECTED_AGENTS) {
     test(`agent("${name}") reads file successfully`, async () => {

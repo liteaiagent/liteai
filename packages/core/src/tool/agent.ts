@@ -5,7 +5,7 @@ import { defer } from "@/util/defer"
 import { iife } from "@/util/iife"
 import { Agent } from "../agent/agent"
 import { ForkAgentConfig, isForkSubagentEnabled } from "../agent/fork"
-import DESCRIPTION from "../bundled/prompts/tools/task.txt"
+import DESCRIPTION from "../bundled/prompts/tools/agent.txt"
 import { isCoordinatorMode } from "../coordinator/coordinator-mode"
 import { Provider } from "../provider/provider"
 import { ModelID, ProviderID } from "../provider/schema"
@@ -27,14 +27,14 @@ const parameters = z.object({
   command: z.string().describe("The command that triggered this task").optional(),
 })
 
-export const TaskTool = Tool.define("task", async (ctx) => {
-  const log = Log.create({ service: "agent.task" })
+export const AgentTool = Tool.define("agent", async (ctx) => {
+  const log = Log.create({ service: "agent.agent-tool" })
   const agents = await Agent.list().then((x) => x.filter((a) => a.mode !== "primary"))
 
   // Filter agents by permissions if agent provided
   const caller = ctx?.agent
   const accessibleAgents = caller
-    ? agents.filter((a) => PermissionNext.evaluate("task", a.name, caller.permission).action !== "deny")
+    ? agents.filter((a) => PermissionNext.evaluate("agent", a.name, caller.permission).action !== "deny")
     : agents
 
   const description = DESCRIPTION.replace(
@@ -114,7 +114,7 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       // Skip permission check when user explicitly invoked via @ or command subtask
       if (!ctx.extra?.bypassAgentCheck) {
         await ctx.ask({
-          permission: "task",
+          permission: "agent",
           patterns: [effectiveType],
           always: ["*"],
           metadata: {
@@ -155,9 +155,9 @@ export const TaskTool = Tool.define("task", async (ctx) => {
           output: [
             `task_id: ${session.id} (for resuming to continue this task if needed)`,
             "",
-            "<task_result_error>",
+            "<agent_result_error>",
             `Subagent execution failed: ${errorMsg}`,
-            "</task_result_error>",
+            "</agent_result_error>",
           ].join("\n"),
         }
       }
@@ -172,9 +172,9 @@ export const TaskTool = Tool.define("task", async (ctx) => {
           output: [
             `task_id: ${session.id} (for resuming to continue this task if needed)`,
             "",
-            "<task_result_aborted>",
+            "<agent_result_aborted>",
             "Subagent execution was aborted.",
-            "</task_result_aborted>",
+            "</agent_result_aborted>",
           ].join("\n"),
         }
       }
@@ -191,9 +191,9 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       const output = [
         `task_id: ${session.id} (for resuming to continue this task if needed)`,
         "",
-        "<task_result>",
+        "<agent_result>",
         taskResultContent,
-        "</task_result>",
+        "</agent_result>",
       ].join("\n")
 
       return {

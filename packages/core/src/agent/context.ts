@@ -85,7 +85,7 @@ export interface ParentContext {
 export interface SubagentContext {
   type: "subagent"
   agentId: string
-  /** Agent definition name (e.g., "explore", "build"). */
+  /** Agent definition name (e.g., "explore", "liteai"). */
   agentType: string
   isFork: boolean
   parentSystemPrompt?: string

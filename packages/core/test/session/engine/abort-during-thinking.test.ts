@@ -74,7 +74,7 @@ describe("Abort during AI thinking", () => {
           sessionID,
           role: "user",
           time: { created: Date.now() },
-          agent: "build",
+          agent: "liteai",
           model: { providerID: ProviderID.openai, modelID: ModelID.make("gpt-4") },
         }
         await Session.updateMessage(userMessage)
@@ -243,7 +243,7 @@ describe("Abort during AI thinking", () => {
           sessionID,
           role: "user",
           time: { created: Date.now() },
-          agent: "build",
+          agent: "liteai",
           model: { providerID: ProviderID.openai, modelID: ModelID.make("gpt-4") },
         }
         await Session.updateMessage(userMessage)

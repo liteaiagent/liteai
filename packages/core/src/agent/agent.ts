@@ -31,7 +31,7 @@ function parseBuiltinAgent(raw: string): Config.Agent {
   return AgentSchema.parse(config)
 }
 
-const BUILTIN_AGENT_NAMES = ["plan", "build", "general", "explore", "compaction", "title", "summary"] as const
+const BUILTIN_AGENT_NAMES = ["plan", "liteai", "general", "explore", "compaction", "title", "summary"] as const
 
 /** Load all built-in agents from the unified bundled directory. */
 async function loadBuiltinAgents(): Promise<Record<string, Config.Agent>> {
@@ -246,27 +246,36 @@ export namespace Agent {
     const cfgAgent = mergeDeep(mergeDeep(platformAgents, cfg.agent ?? {}), projectAgents)
 
     for (const [key, value] of Object.entries(cfgAgent)) {
-      log.info("processing agent config", { name: key })
+      // Migration: remap legacy "build" config key to "liteai"
+      const resolvedKey =
+        key === "build"
+          ? (() => {
+              log.warn("migrating legacy agent config key 'build' → 'liteai'", { name: key })
+              return "liteai"
+            })()
+          : key
+
+      log.info("processing agent config", { name: resolvedKey })
       // Hidden built-in agents (compaction, title, summary) are protected system agents.
       // Skip user config entries for them to prevent accidental breakage.
-      if (result[key]?.hidden) {
-        log.warn("ignoring user config for protected hidden agent", { name: key })
+      if (result[resolvedKey]?.hidden) {
+        log.warn("ignoring user config for protected hidden agent", { name: resolvedKey })
         continue
       }
       let isDisabled = !!value.disable
-      if (key === "build" && isDisabled) {
-        log.warn("ignoring disable config for foundational agent", { name: key })
+      if (resolvedKey === "liteai" && isDisabled) {
+        log.warn("ignoring disable config for foundational agent", { name: resolvedKey })
         isDisabled = false
       }
 
-      let item = result[key]
+      let item = result[resolvedKey]
       if (!item) {
         const valRecord = value as Record<string, unknown>
         const rawSource = valRecord.source
         const source = rawSource === "plugin" ? "plugin" : "custom"
 
         const base: Record<string, unknown> = {
-          name: key,
+          name: resolvedKey,
           mode: "all",
           permission: PermissionNext.merge(defaults, user),
           options: {},
@@ -280,7 +289,7 @@ export namespace Agent {
           base.pluginId = valRecord.pluginId
         }
 
-        item = result[key] = base as unknown as AgentDefinition
+        item = result[resolvedKey] = base as unknown as AgentDefinition
       }
       if (value.model) item.model = Provider.parseModel(value.model)
       item.variant = value.variant ?? item.variant
@@ -388,7 +397,16 @@ export namespace Agent {
     const agents = await state()
 
     if (cfg.default_agent) {
-      const agent = agents[cfg.default_agent]
+      // Migration: remap legacy "build" default_agent to "liteai"
+      const resolvedDefault =
+        cfg.default_agent === "build"
+          ? (() => {
+              log.warn("migrating default_agent 'build' → 'liteai'")
+              return "liteai"
+            })()
+          : cfg.default_agent
+
+      const agent = agents[resolvedDefault]
       if (agent && agent.mode !== "subagent" && agent.hidden !== true && agent.enabled !== false) {
         return agent.name
       }
@@ -398,8 +416,8 @@ export namespace Agent {
       (a) => a.mode !== "subagent" && a.hidden !== true && a.enabled !== false,
     )
     if (!primaryVisible) {
-      log.warn("no primary visible agent found, falling back to foundational 'build' agent")
-      return "build"
+      log.warn("no primary visible agent found, falling back to foundational 'liteai' agent")
+      return "liteai"
     }
     return primaryVisible.name
   }

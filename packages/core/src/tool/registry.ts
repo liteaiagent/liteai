@@ -4,6 +4,8 @@ import { Flag } from "@/flag/flag"
 import type { Agent } from "../agent/agent"
 import { Config } from "../config/config"
 import type { ModelID, ProviderID } from "../provider/schema"
+import { AgentTool } from "./agent"
+import { AgentStopTool } from "./agent_stop"
 import { ApplyPatchTool } from "./apply_patch"
 import { AskUserTool } from "./ask_user"
 import { BatchTool } from "./batch"
@@ -20,8 +22,6 @@ import { RunCommandTool } from "./run_command"
 import { SendCommandInputTool } from "./send_command_input"
 import { SendMessageTool } from "./send_message"
 import { SkillTool } from "./skill"
-import { TaskTool } from "./task"
-import { TaskStopTool } from "./task_stop"
 import { TeamCreateTool } from "./team_create"
 import { TeamDeleteTool } from "./team_delete"
 import { TodoWriteTool } from "./todo"
@@ -53,8 +53,8 @@ export namespace ToolRegistry {
       MultiEditTool,
       WriteTool,
       SendMessageTool,
-      TaskTool,
-      TaskStopTool,
+      AgentTool,
+      AgentStopTool,
       TeamCreateTool,
       TeamDeleteTool,
       WebFetchTool,

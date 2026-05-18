@@ -86,7 +86,7 @@ describe("Coordinator Mode", () => {
   describe("applyCoordinatorToolFilter", () => {
     test("strips non-coordinator tools", () => {
       const input = {
-        task: {},
+        agent: {},
         send_message: {},
         read: {}, // Not allowed
         write: {}, // Not allowed
@@ -95,7 +95,7 @@ describe("Coordinator Mode", () => {
 
       const filtered = applyCoordinatorToolFilter(input)
       expect(Object.keys(filtered)).toHaveLength(3)
-      expect(filtered).toHaveProperty("task")
+      expect(filtered).toHaveProperty("agent")
       expect(filtered).toHaveProperty("send_message")
       expect(filtered).toHaveProperty("team_create")
       expect(filtered).not.toHaveProperty("read")
@@ -110,7 +110,7 @@ describe("Coordinator Mode", () => {
 
     test("returns worker context if coordinator mode", () => {
       const result = getCoordinatorUserContext("Coordinator", [])
-      expect(result.workerToolsContext).toContain("Workers spawned via the task tool")
+      expect(result.workerToolsContext).toContain("Workers spawned via the agent tool")
     })
 
     test("includes MCP servers if present", () => {

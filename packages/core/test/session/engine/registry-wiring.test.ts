@@ -4,7 +4,7 @@ import { BackgroundTaskRegistry } from "../../../src/command/background"
 import { MessageID, SessionID } from "../../../src/session/schema"
 
 // Mock the ToolRegistry to return a minimal tool set, avoiding the deep
-// import graph (TaskTool, etc.) that causes initialization failures in test.
+// import graph (AgentTool, etc.) that causes initialization failures in test.
 mock.module("../../../src/tool/registry", () => ({
   ToolRegistry: {
     tools: mock(async () => [
