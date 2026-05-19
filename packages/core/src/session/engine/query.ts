@@ -613,14 +613,6 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       } satisfies EngineEvent.GeneratorResultEvent
     }
 
-    // ── yield_turn detection ──
-    // If the model called yield_turn (and naturally finished streaming), break the loop
-    const calledYieldTurn = toolExecutor.hasToolCall("yield_turn")
-    if (calledYieldTurn) {
-      log.info("queryLoop: yield_turn called, ending session", { sessionID })
-      break
-    }
-
     // ── Exit on fatal error ──
     // After persister classifies a non-retryable error, it sets assistantMessage.error.
     // We must break here to prevent the while(true) from creating a new turn.

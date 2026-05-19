@@ -399,53 +399,6 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       break
     }
 
-    case "plan.state_changed": {
-      const sessionID = event.properties.sessionID as string
-      const planSessionID = event.properties.planSessionID as string | undefined
-      setState((prev) => {
-        // Derive activation state from planSessionID presence
-        const isActivating = planSessionID !== undefined
-
-        // Permission mode save/restore — now redundant (core manages this via
-        // plan_enter/plan_exit) but kept for defensive backward compat.
-        let newPermissionMode = prev.permissionMode[sessionID] ?? "default"
-        let newPrePlan = prev.prePlanPermissionMode[sessionID]
-
-        if (isActivating) {
-          if (newPermissionMode !== "plan") {
-            newPrePlan = newPermissionMode
-          }
-          newPermissionMode = "plan"
-        } else {
-          if (newPermissionMode === "plan") {
-            newPermissionMode = newPrePlan ?? "default"
-          }
-        }
-
-        return {
-          ...prev,
-          plan: {
-            ...prev.plan,
-            [sessionID]: {
-              enabled: isActivating,
-              planSessionID,
-              planFilePath: event.properties.planFilePath as string | undefined,
-              turnsSincePlanReminder: event.properties.turnsSincePlanReminder as number | undefined,
-            },
-          },
-          permissionMode: {
-            ...prev.permissionMode,
-            [sessionID]: newPermissionMode,
-          },
-          prePlanPermissionMode: {
-            ...prev.prePlanPermissionMode,
-            [sessionID]: newPrePlan ?? "",
-          },
-        }
-      })
-      break
-    }
-
     case "plan.approval_requested": {
       const sessionID = event.properties.sessionID as string
       setState((prev) => ({

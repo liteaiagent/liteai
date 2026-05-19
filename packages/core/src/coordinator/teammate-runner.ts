@@ -201,7 +201,7 @@ export async function runInProcessTeammate(config: TeammateRunnerConfig): Promis
                 "<shutdown-request>",
                 `The team lead has requested you shut down. Reason: ${reason}`,
                 "",
-                "If you have completed your work or can safely stop, call the yield_turn tool with a summary of what you accomplished.",
+                "If you have completed your work or can safely stop, finish your response with a summary of what you accomplished.",
                 "If you still have critical work in progress, continue working.",
                 "</shutdown-request>",
               ].join("\n")

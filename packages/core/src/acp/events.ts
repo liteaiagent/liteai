@@ -37,17 +37,6 @@ export class ACPEventStreamer {
     this.eventStarted = true
 
     this.busUnsubscribes.push(
-      Bus.subscribe(Session.Event.PlanStateChanged, async (event) => {
-        if (this.eventAbort.signal.aborted) return
-        const session = this.sessionManager.tryGet(event.properties.sessionID)
-        if (!session) return
-        await this.connection.extNotification("plan.state_changed", event.properties).catch((error) => {
-          log.error("failed to send plan.state_changed to ACP", { error })
-        })
-      }),
-    )
-
-    this.busUnsubscribes.push(
       Bus.subscribe(Session.Event.PlanApprovalRequested, async (event) => {
         if (this.eventAbort.signal.aborted) return
         const session = this.sessionManager.tryGet(event.properties.sessionID)

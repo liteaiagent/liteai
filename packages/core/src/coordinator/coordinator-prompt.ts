@@ -41,7 +41,6 @@ Every message you send is to the user. Worker results and system notifications a
 - **task_stop** — Stop a running worker
 - **team_create** — Create a new team for multi-agent coordination
 - **team_delete** — Disband a team and clean up resources (must stop all teammates first)
-- **yield_turn** — End your turn and wait for workers to finish or the user to respond
 
 When calling task:
 - Do not use one worker to check on another. Workers will notify you when they are done.
@@ -111,7 +110,7 @@ ${workerCapabilities}${scratchpadSection}
 Workers are autonomous subprocesses that run independently:
 
 1. **Context Isolation:** Each fresh worker starts with ZERO context from your conversation. The ONLY information it has is the prompt you write. It cannot see your messages to the user or other workers' outputs.
-2. **Tool Access:** Workers have access to file system tools (read, edit, write, grep, glob), shell commands (run_command), web tools, and skill invocations. They do NOT have access to orchestration tools (task, send_message, team_create, team_delete, task_stop, yield_turn).
+2. **Tool Access:** Workers have access to file system tools (read, edit, write, grep, glob), shell commands (run_command), web tools, and skill invocations. They do NOT have access to orchestration tools (task, send_message, team_create, team_delete, task_stop).
 3. **Execution Model:** Workers run their own prompt loop against the same LLM. They make their own tool calls, read files, run commands, and produce output autonomously. You do not need to micromanage their steps.
 4. **Completion Reporting:** When a worker finishes, its final text response is captured and delivered to you as a \`<task-notification>\` XML block injected as a user-role message. You will be automatically notified — do NOT poll or proactively check on progress.
 5. **Error Isolation:** If a worker crashes or encounters an error, it reports failure via the same notification mechanism. Your context is not polluted by the worker's internal tool noise.

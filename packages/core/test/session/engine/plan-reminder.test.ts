@@ -83,35 +83,6 @@ function createPlanState(overrides?: Partial<PlanModeState>): PlanModeState {
 }
 
 describe("injectPlanAttachment", () => {
-  // ── Active plan mode: MVP reminder injection ──
-  describe("active plan mode", () => {
-    test("injects active plan reminder when plan mode is ACTIVE", async () => {
-      await Instance.provide({
-        directory: projectRoot,
-        fn: async () => {
-          const messages = createTestMessages()
-          const state = createPlanState({ planSessionID: "plan-sess-1" as SessionID, planText: "Some plan" })
-          const result = await injectPlanAttachment({
-            messages,
-            planModeState: state,
-            session: {} as Parameters<typeof injectPlanAttachment>[0]["session"],
-          })
-
-          const lastUser = result.messages.findLast((m) => m.info.role === "user")
-          expect(lastUser).toBeDefined()
-          expect(lastUser?.parts.length).toBe(2) // original + attachment
-
-          const attachment = lastUser?.parts[1]
-          expect(attachment?.type).toBe("text")
-          expect((attachment as { text?: string }).text).toContain("PLAN MODE ACTIVE")
-          expect((attachment as { synthetic?: boolean }).synthetic).toBe(true)
-
-          expect(result.updatedState.turnsSincePlanReminder).toBe(1)
-        },
-      })
-    })
-  })
-
   // ── No-op conditions: reminders must NOT fire ──
   describe("no-op conditions", () => {
     test("returns messages unchanged when planText is falsy (no approved plan yet)", async () => {

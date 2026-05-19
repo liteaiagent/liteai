@@ -34,7 +34,6 @@ const ALL_LITEAI_TOOLS = new Set([
   "todoread",
   "apply_patch", // If it exists
   "batch",
-  "yield_turn",
 ])
 
 export function filterToolsForAgent(tools: string[], isCustomAgent: boolean, isAsync: boolean): string[] {

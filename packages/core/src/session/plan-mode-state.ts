@@ -1,5 +1,4 @@
 import { trace } from "@opentelemetry/api"
-import { Bus } from "@/bus"
 import { Session } from "./index"
 import type { SessionID } from "./schema"
 
@@ -49,8 +48,8 @@ const registry = new Map<SessionID, PlanModeStateRef>()
  * Session-scoped, in-memory plan mode state container.
  *
  * Replaces the previous database-backed `getPlanModeState`/`setPlanModeState`
- * with synchronous memory access. Event emission (`PlanStateChanged`) is
- * handled inline on `planSessionID` transitions via `Bus.publish`.
+ * with synchronous memory access. State transitions are traced via
+ * OpenTelemetry span events for observability.
  *
  * Lifecycle:
  *   - Created by `runSessionInner` in loop.ts
@@ -75,35 +74,21 @@ export class PlanModeStateRef {
     return this._state
   }
 
-  /**
-   * Mutate the plan mode state synchronously.
-   * Emits `PlanStateChanged` via `Bus.publish` when the `planSessionID` field transitions.
-   */
+  /** Mutate the plan mode state synchronously. */
   update(fn: (s: PlanModeState) => PlanModeState): PlanModeState {
     return tracer.startActiveSpan("planModeState.update", (span) => {
       try {
         const prev = this._state
         this._state = fn(prev)
 
-        const wasActive = prev.planSessionID !== undefined
-        const isActive = this._state.planSessionID !== undefined
-
-        span.setAttribute("plan_mode.active.before", wasActive)
-        span.setAttribute("plan_mode.active.after", isActive)
+        span.setAttribute("plan_mode.active.before", prev.planSessionID !== undefined)
+        span.setAttribute("plan_mode.active.after", this._state.planSessionID !== undefined)
         span.setAttribute("plan_mode.turnsSincePlanReminder", this._state.turnsSincePlanReminder)
 
         if (prev.planSessionID !== this._state.planSessionID) {
           span.addEvent("plan_mode.state_transition", {
             from: prev.planSessionID ?? "inactive",
             to: this._state.planSessionID ?? "inactive",
-          })
-          Bus.publish(Session.Event.PlanStateChanged, {
-            sessionID: this.sessionID,
-            // Derived field for backward compat with CLI/ACP consumers
-            active: isActive,
-            planSessionID: this._state.planSessionID,
-            planFilePath: this._state.planFilePath,
-            turnsSincePlanReminder: this._state.turnsSincePlanReminder,
           })
         }
 

@@ -40,18 +40,6 @@ export interface AgentInstanceInfo {
   readonly usage?: { totalTokens: number; toolCalls: number; duration: number }
 }
 
-// ── Plan mode state ──────────────────────────────────────────────────────
-export interface PlanState {
-  /** Whether plan mode is active (derived from `planSessionID !== undefined`). */
-  readonly enabled: boolean
-  /** The child session ID of the active plan subagent, if any. */
-  readonly planSessionID?: string
-  /** File path to the plan file on disk. */
-  readonly planFilePath?: string
-  /** Number of turns since the plan was last reminded to the model. */
-  readonly turnsSincePlanReminder?: number
-}
-
 export interface PlanApprovalRequest {
   readonly sessionID: string
   readonly planText: string
@@ -90,7 +78,6 @@ export interface AppState {
   }
   readonly workspaceList: readonly Workspace[]
   readonly agents: { readonly [agentId: string]: AgentInstanceInfo }
-  readonly plan: { readonly [sessionID: string]: PlanState }
   readonly planApproval: PlanApprovalRequest | null
   /**
    * Note: This uses a loose string type instead of the PermissionMode union.
@@ -99,8 +86,6 @@ export interface AppState {
    * See tui/util/permission-mode.ts for the mapping logic.
    */
   readonly permissionMode: { readonly [sessionID: string]: string }
-  /** Stores the permission mode before entering plan mode, to restore when deactivated. */
-  readonly prePlanPermissionMode: { readonly [sessionID: string]: string }
 }
 
 // ── Default / initial state factory ──────────────────────────────────
@@ -131,10 +116,8 @@ export function getDefaultAppState(): AppState {
     path: { home: "", state: "", config: "", worktree: "", directory: "" },
     workspaceList: [],
     agents: {},
-    plan: {},
     planApproval: null,
     permissionMode: {},
-    prePlanPermissionMode: {},
   }
 }
 

@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import {
@@ -137,68 +136,6 @@ describe("PlanModeState (T047)", () => {
 
   test("PLAN_REMINDER_FULL_INTERVAL is 5", () => {
     expect(PLAN_REMINDER_FULL_INTERVAL).toBe(5)
-  })
-
-  test("PlanModeStateRef.update emits PlanStateChanged on planSessionID transition", async () => {
-    await using tmp = await tmpdir()
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const { session, ref } = await createSessionWithRef()
-
-        let eventReceived = false
-        let eventPayload: Record<string, unknown> | undefined
-
-        const unsub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
-          const props = event.properties as { sessionID: string; active: boolean; planSessionID?: string }
-          if (props.sessionID === session.id) {
-            eventReceived = true
-            eventPayload = event.properties as Record<string, unknown>
-          }
-        })
-
-        // Activate plan mode — should emit event synchronously
-        ref.update((s) => ({ ...s, planSessionID: "plan-child-session" as SessionID }))
-
-        unsub()
-
-        expect(eventReceived).toBe(true)
-        expect(eventPayload?.sessionID).toBe(session.id)
-        expect(eventPayload?.active).toBe(true)
-        expect(eventPayload?.planSessionID).toBe("plan-child-session")
-
-        await Session.remove(session.id)
-      },
-    })
-  })
-
-  test("PlanModeStateRef.update does NOT emit PlanStateChanged when planSessionID is unchanged", async () => {
-    await using tmp = await tmpdir()
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
-        const { session, ref } = await createSessionWithRef()
-
-        let emitCount = 0
-        const sub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
-          const props = event.properties as { sessionID: string }
-          if (props.sessionID === session.id) {
-            emitCount++
-          }
-        })
-
-        // Update counter only — planSessionID stays undefined (default)
-        ref.update((s) => ({
-          ...s,
-          turnsSincePlanReminder: s.turnsSincePlanReminder + 1,
-        }))
-
-        expect(emitCount).toBe(0)
-        sub()
-
-        await Session.remove(session.id)
-      },
-    })
   })
 
   test("PlanModeStateRef.update round-trips planText correctly", async () => {

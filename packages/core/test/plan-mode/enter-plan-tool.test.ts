@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import { createDefaultPlanModeState, PlanModeStateRef } from "../../src/session/plan-mode-state"
@@ -54,7 +53,7 @@ describe("PlanEnterTool", () => {
     }
   }
 
-  test("should be idempotent when already active — no subagent spawn, no event", async () => {
+  test("should be idempotent when already active — no subagent spawn", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
@@ -64,20 +63,10 @@ describe("PlanEnterTool", () => {
           turnsSincePlanReminder: 3,
         })
 
-        let eventEmittedCount = 0
-        const sub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
-          const props = event.properties as { sessionID: string }
-          if (props.sessionID === session.id) {
-            eventEmittedCount++
-          }
-        })
-
         try {
           const instance = await PlanEnterTool.init()
           const result = await instance.execute({}, makeToolContext(session.id))
 
-          // No state change events (planSessionID unchanged)
-          expect(eventEmittedCount).toBe(0)
           expect(result.title).toBe("Already in plan mode")
           expect(result.output).toContain("already active")
 
@@ -86,7 +75,6 @@ describe("PlanEnterTool", () => {
           // Counter must NOT be reset — state is unchanged
           expect(state.turnsSincePlanReminder).toBe(3)
         } finally {
-          sub()
           await Session.remove(session.id)
         }
       },

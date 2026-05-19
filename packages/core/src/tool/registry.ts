@@ -29,7 +29,6 @@ import type { Tool } from "./tool"
 import { WebFetchTool } from "./webfetch"
 import { WebSearchTool } from "./websearch"
 import { WriteTool } from "./write"
-import { YieldTurnTool } from "./yield_turn"
 
 export namespace ToolRegistry {
   const tracer = trace.getTracer("liteai")
@@ -41,7 +40,7 @@ export namespace ToolRegistry {
     const result: Tool.Info[] = [
       InvalidTool,
       ...(question ? [AskUserTool] : []),
-      YieldTurnTool,
+
       RunCommandTool,
       CommandStatusTool,
       SendCommandInputTool,
