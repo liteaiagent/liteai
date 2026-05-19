@@ -56,10 +56,9 @@ interface PlanModeState {
 
 ### 2E. Update plan agent config (`bundled/agents/plan.md`)
 
-- Remove `plan_exit` from `disallowedTools` (it no longer exists as a subagent tool)
+- Ensure `plan_exit` is in `disallowedTools` for the plan agent (it is a root-agent-only tool, not for subagents)
 - Update instructions: "Return your complete implementation plan as your final response. Write the plan to disk using the write tool at the plan file path."
 - Verify the plan agent has the `write` tool available (for writing the plan to disk)
-- Add `question` tool to plan agent? (if interview mode requires asking user)
 
 ### 2F. Ensure `keepHistory: true` default in `TaskTool` → `AgentTool`
 

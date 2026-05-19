@@ -2,10 +2,10 @@
 
 ## Problem
 
-Every `task` tool call creates a fresh session via `Session.create()`. The subagent starts with zero conversation history, meaning:
+Every `agent` tool call creates a fresh session via `Session.create()`. The subagent starts with zero conversation history, meaning:
 
 1. **No KV cache reuse** — the model must re-process system prompt + agent prompt from scratch every call
-2. **No continuity** — if a subagent needs to be resumed, the caller must manually pass `task_id`
+2. **No continuity** — if a subagent needs to be resumed, the caller must manually pass the agent session ID
 3. **Context waste** — for multi-turn subagent interactions (plan subagent exploring code), each turn rebuilds the full prefix
 
 ## Solution

@@ -333,8 +333,9 @@ if (!tool.isConcurrencySafe) {
 
 // Proposed: ONLY catastrophic errors abort siblings
 private shouldAbortSiblings(tool: TrackedTool): boolean {
-  // Bash/command errors may have dependency chains
-  if (tool.toolName === 'run_command') return true
+  // Only abort siblings for run_command if the invocation is NOT concurrency-safe
+  // (i.e., mutating commands). Read-only commands (git log, ls, etc.) are safe.
+  if (tool.toolName === 'run_command') return !tool.isConcurrencySafe
   // Agent errors are isolated — one failing explore shouldn't kill others
   if (tool.toolName === 'agent') return false
   // Write tool errors should abort siblings (filesystem consistency)

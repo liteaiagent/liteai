@@ -339,16 +339,14 @@ Changes from current:
 
 ```diff
  // On approval:
++SessionPrompt.setPermissionMode(ctx.sessionID, "default")
++
  PlanModeStateRef.for(ctx.sessionID).update((s) => ({
    ...s,
-   active: false,
-+  planSessionID: undefined,
-+  planResult: undefined,
+   planSessionID: undefined,
    turnsSincePlanReminder: 0,
    planText: params.plan,
--  workflowType: undefined,
  }))
-+setPermissionMode(ctx.sessionID, "default")
 ```
 
 ### 5.4 PlanModeState Interface Update

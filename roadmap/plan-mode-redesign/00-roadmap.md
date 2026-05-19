@@ -13,7 +13,7 @@
 | [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor redesign, per-tool concurrency, sibling abort |
 | [04-kv-cache.md](./04-kv-cache.md) | Provider cache mechanics, deterministic ordering, cache break detection, reasoning tokens |
 | [05-skills.md](./05-skills.md) | Skill system enhancements, superpowers integration |
-| [plan-mode-redesign-adr.md](../../.gemini/antigravity/brain/5d1636ca-6c08-4f57-814b-658576f5403c/artifacts/plan-mode-redesign-adr.md) | Architecture Decision Record (resolved Q&A) |
+| [plan-mode-redesign-adr.md](./plan-mode-redesign-adr.md) | Architecture Decision Record (resolved Q&A) |
 
 ---
 
@@ -298,7 +298,7 @@ flowchart TD
 | Plan subagent blocking causes timeout | Medium | Add configurable timeout to `plan_enter`. Reuse agent `timeout` config from plan.md |
 | Hard-deny plan permission breaks legitimate read-only commands | Medium | Whitelist safe `run_command` patterns (git log, ls, find, etc.) |
 | `PlanApprovalRequested` event not reaching TUI from plan_exit context | Low | Verify event propagation from tool execution context |
-| Plan agent returns unstructured text, plan_enter can't parse path | Medium | Enforce convention: plan agent must include `<plan_path>...</plan_path>` in response |
+| Plan agent returns unstructured text, plan_enter can't parse path | Medium | Prefer structured JSON output (`{"plan_path":"..."}`) from plan agent; fallback to regex matching project path pattern; only then fallback to XML-like tag. Log/raise clear error if all parsing fails |
 | StreamingToolExecutor redesign breaks existing tool execution | High | Comprehensive test coverage before refactor. Feature flag for new dispatch mode |
 | Reasoning token accumulation inflates prompt cost | Medium | Implement configurable reasoning token budget. Strip reasoning on model switch |
 | Cache break detection false positives | Low | Tune threshold (>2000 token drop). Log-only mode before alerting |
