@@ -298,7 +298,7 @@ flowchart TD
 | Plan subagent blocking causes timeout | Medium | Add configurable timeout to `plan_enter`. Reuse agent `timeout` config from plan.md |
 | Hard-deny plan permission breaks legitimate read-only commands | Medium | Whitelist safe `run_command` patterns (git log, ls, find, etc.) |
 | `PlanApprovalRequested` event not reaching TUI from plan_exit context | Low | Verify event propagation from tool execution context |
-| Plan agent returns unstructured text, plan_enter can't parse path | Medium | Prefer structured JSON output (`{"plan_path":"..."}`) from plan agent; fallback to regex matching project path pattern; only then fallback to XML-like tag. Log/raise clear error if all parsing fails |
+| Plan agent returns unstructured text, plan_enter can't parse path | ~~Medium~~ **Mitigated** | Plan file path is deterministic via `state.planFilePath` — `plan_enter` never parses a path from agent output. Plan text is extracted from the last `text` part of the subagent result. No JSON/regex/XML parsing needed |
 | StreamingToolExecutor redesign breaks existing tool execution | High | Comprehensive test coverage before refactor. Feature flag for new dispatch mode |
 | Reasoning token accumulation inflates prompt cost | Medium | Implement configurable reasoning token budget. Strip reasoning on model switch |
 | Cache break detection false positives | Low | Tune threshold (>2000 token drop). Log-only mode before alerting |

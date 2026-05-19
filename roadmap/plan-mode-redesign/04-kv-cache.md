@@ -161,7 +161,7 @@ forkContextMessages: isForkPath ? toolUseContext.messages : undefined,
 ```typescript
 function resolveTools(agent: Agent, mcpTools: Tool[]): Tool[] {
   const builtins = getBuiltinToolsForAgent(agent)
-  // Locale-neutral comparison — deterministic across runtimes
+  // Fixed English locale for deterministic ordering across runtimes
   const byName = (a: Tool, b: Tool) => a.id.localeCompare(b.id, 'en', { sensitivity: 'variant' })
   return [
     ...builtins.sort(byName),
@@ -365,14 +365,19 @@ The reasoning tokens become part of the cached prefix, so subsequent turns that 
 
 ```typescript
 // In toModelMessages() — enhanced reasoning handling
+// differentModel detects any model change (provider or model ID)
+const differentModel = `${model.providerID}/${model.id}` !== `${msg.info.providerID}/${msg.info.modelID}`
+// differentProvider detects provider-level change (incompatible reasoning formats)
+const differentProvider = model.providerID !== msg.info.providerID
+
 if (part.type === "reasoning") {
   // Strip reasoning when provider changes (incompatible formats)
   if (differentProvider) {
     continue  // skip — reasoning format won't be understood
   }
   
-  // Strip signed thinking blocks when model changes on the same provider
-  if (differentModel && !differentProvider && part.metadata?.thoughtSignature) {
+  // Strip signed thinking blocks when model changes within the same provider
+  if (differentModel && part.metadata?.thoughtSignature) {
     continue  // skip — signed thinking blocks from different model
   }
   
