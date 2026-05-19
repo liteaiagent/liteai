@@ -133,7 +133,7 @@
 - [x] T032 [P] Verify ACP event passthrough in `packages/core/src/acp/events.ts` — confirm `PlanStateChanged` subscriber at L40-48 forwards the updated event payload (including `planSessionID`) without code changes
 - [x] T033 [P] Verify unused prompt files: determine if `packages/core/src/bundled/prompts/misc/plan-workflow.md` and `plan-interview.md` can be removed since they are no longer loaded by `plan_enter` — **REMOVED**
 - [ ] T034 Run quickstart.md verification steps: manual E2E test per `specs/013-plan-mode-lifecycle/quickstart.md`
-- [ ] T035 *(DEFERRED)* [FR-013] Implement `run_command` read-only whitelist for "plan" permission mode: define `isReadOnlyCommand()` helper, enforce in `permission/service.ts`, add tests. Currently all operations are hard-denied in plan mode. The plan subagent runs with independent permissions so this only affects the root session (which is blocked during planning). Low priority.
+- [x] T035 *(N/A)* [FR-013] `run_command` read-only whitelist for "plan" mode — not applicable: `plan_enter` blocks the root agent (cannot invoke tools), plan subagent runs with default permissions (full bash access).
 
 ---
 

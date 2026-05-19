@@ -84,7 +84,7 @@
 **Adapted from**: superpowers:dispatching-parallel-agents
 
 **Key adaptations for LiteAI**:
-- Use LiteAI's `task` tool for dispatch
+- Use LiteAI's `agent` tool for dispatch
 - Reference LiteAI's subagent types (explorer, general, plan)
 - Add verification step using task_id resume
 - Keep decision flowchart, prompt structure guidelines, common mistakes
@@ -121,7 +121,7 @@
 **Adapted from**: superpowers:subagent-driven-development
 
 **Key adaptations for LiteAI**:
-- Use LiteAI's `task` tool with `keepHistory: true`
+- Use LiteAI's `agent` tool with `keepHistory: true`
 - Remove git worktree requirement (not applicable)
 - Keep: fresh subagent per task, spec compliance review, code quality review
 - Keep: DONE/DONE_WITH_CONCERNS/NEEDS_CONTEXT/BLOCKED status handling

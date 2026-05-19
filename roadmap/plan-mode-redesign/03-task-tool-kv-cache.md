@@ -1,4 +1,4 @@
-# Task Tool: KV Cache Optimization
+# Agent Tool: KV Cache Optimization
 
 ## Problem
 
@@ -20,7 +20,7 @@ When `SessionPrompt.runSubagent()` is called, the session should default to pers
 
 ### Changes Required
 
-#### `tool/task.ts`
+#### `tool/agent.ts`
 
 ```diff
  const result = await SessionPrompt.runSubagent({

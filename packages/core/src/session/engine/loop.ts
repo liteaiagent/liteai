@@ -1163,8 +1163,8 @@ async function processSubtask(input: {
   tracker: PromiseTracker
 }): Promise<{ subtaskAssistant: Message.WithParts; syntheticUser?: Message.WithParts }> {
   const { task, lastUser, sessionID, abort, msgs, telemetryTracker, telemetryBatchId, checkpointer, tracker } = input
-  const taskTool = await AgentTool.init()
-  const taskModel = task.model
+  const agentTool = await AgentTool.init()
+  const agentModel = task.model
     ? await Provider.getModel(task.model.providerID, task.model.modelID).catch((e) => {
         log.warn("subtask model not available, falling back to parent model", {
           configured: `${task.model?.providerID}/${task.model?.modelID}`,
@@ -1192,8 +1192,8 @@ async function processSubtask(input: {
       reasoning: 0,
       cache: { read: 0, write: 0 },
     },
-    modelID: taskModel.id,
-    providerID: taskModel.providerID,
+    modelID: agentModel.id,
+    providerID: agentModel.providerID,
     time: {
       created: Date.now(),
     },
@@ -1221,7 +1221,7 @@ async function processSubtask(input: {
     },
   } as Message.ToolPart
   tracker.track(checkpointer.savePart(part))
-  const taskArgs = {
+  const agentArgs = {
     prompt: task.prompt,
     description: task.description,
     subagent_type: task.agent,
@@ -1235,10 +1235,10 @@ async function processSubtask(input: {
       sessionID,
       callID: part.id,
     },
-    { args: taskArgs },
+    { args: agentArgs },
   )
   let executionError: Error | undefined
-  const taskAgent = await Agent.get(task.agent)
+  const agentDef = await Agent.get(task.agent)
   const ctx: Tool.Context = {
     agent: task.agent,
     messageID: assistantMessage.id,
@@ -1262,14 +1262,14 @@ async function processSubtask(input: {
       await PermissionNext.ask({
         ...req,
         sessionID: sessionID,
-        ruleset: taskAgent.permission ?? [],
+        ruleset: agentDef.permission ?? [],
       })
     },
   }
 
   const activeSpan = trace.getActiveSpan()
   if (activeSpan) {
-    activeSpan.setAttribute("input.value", JSON.stringify(taskArgs))
+    activeSpan.setAttribute("input.value", JSON.stringify(agentArgs))
     activeSpan.setAttribute("ai.telemetry.metadata.langgraph_node", "agent")
     activeSpan.setAttribute(
       "ai.telemetry.metadata.langgraph_step",
@@ -1277,7 +1277,7 @@ async function processSubtask(input: {
     )
   }
 
-  const result = await taskTool.execute(taskArgs, ctx).catch((error) => {
+  const result = await agentTool.execute(agentArgs, ctx).catch((error) => {
     executionError = error
     log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
     if (activeSpan) {
@@ -1300,7 +1300,7 @@ async function processSubtask(input: {
       tool: "agent",
       sessionID,
       callID: part.id,
-      args: taskArgs,
+      args: agentArgs,
     },
     result,
   )
