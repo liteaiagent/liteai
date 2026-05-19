@@ -1,5 +1,7 @@
 # Phase 1: Agent Taxonomy & Rename
 
+> ✅ **COMPLETED** — 2026-05-19 | Spec: `specs/012-agent-taxonomy-rename/`
+
 > **Goal**: Clean up naming across the entire codebase. This is a mechanical, low-risk phase that unblocks all subsequent work.
 
 ---
