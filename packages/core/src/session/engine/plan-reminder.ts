@@ -44,9 +44,9 @@ export async function injectPlanAttachment(input: {
   const { messages, planModeState, session } = input
 
   // ── Active plan mode: inject per-turn constraint reminder (MVP pattern) ──
-  // During PLAN phase (active=true), inject <system-reminder> constraints into
+  // During PLAN phase (planSessionID set), inject <system-reminder> constraints into
   // the last user message on every turn using a full/sparse cycle.
-  if (planModeState.active) {
+  if (planModeState.planSessionID !== undefined) {
     return injectActivePlanReminder({ messages, planModeState, session })
   }
 

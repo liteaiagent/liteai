@@ -42,8 +42,10 @@ export interface AgentInstanceInfo {
 
 // ── Plan mode state ──────────────────────────────────────────────────────
 export interface PlanState {
-  /** Whether plan mode is active. */
+  /** Whether plan mode is active (derived from `planSessionID !== undefined`). */
   readonly enabled: boolean
+  /** The child session ID of the active plan subagent, if any. */
+  readonly planSessionID?: string
   /** File path to the plan file on disk. */
   readonly planFilePath?: string
   /** Number of turns since the plan was last reminded to the model. */

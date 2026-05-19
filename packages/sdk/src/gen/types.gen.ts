@@ -1041,6 +1041,7 @@ export type EventPlanStateChanged = {
     properties: {
         sessionID: string;
         active: boolean;
+        planSessionID?: string;
         planFilePath: string;
         turnsSincePlanReminder: number;
     };

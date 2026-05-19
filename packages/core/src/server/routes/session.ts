@@ -548,18 +548,10 @@ export const SessionRoutes = lazy(() =>
         const { sessionID } = c.req.valid("param")
         const { permissionMode } = c.req.valid("json")
 
-        // Plan mode has its own state machine (PlanModeStateRef) — keep it in sync.
-        // PlanModeStateRef.update() emits PlanStateChanged automatically on transitions.
-        const { PlanModeStateRef } = await import("../../session/plan-mode-state")
-        if (PlanModeStateRef.has(sessionID)) {
-          const ref = PlanModeStateRef.for(sessionID)
-          const planActive = ref.get().active
-          if (permissionMode === "plan" && !planActive) {
-            ref.update((s) => ({ ...s, active: true }))
-          } else if (permissionMode !== "plan" && planActive) {
-            ref.update((s) => ({ ...s, active: false }))
-          }
-        }
+        // Plan mode transitions are exclusively managed by plan_enter/plan_exit tools.
+        // This route only toggles the permission mode enum — it does NOT activate/deactivate
+        // plan mode state (planSessionID). Manual cycling to "plan" without a plan subagent
+        // is allowed but does not spawn a subagent or set planSessionID.
 
         SessionPrompt.setPermissionMode(sessionID, permissionMode)
         return c.json({ permissionMode })

@@ -16,10 +16,10 @@
 
 **Purpose**: Foundation-level data model changes that ALL user stories depend on
 
-- [ ] T001 Update `PlanModeState` interface: remove `active` and `workflowType` fields, add `planSessionID: SessionID | undefined` in `packages/core/src/session/plan-mode-state.ts`
-- [ ] T002 Update `createDefaultPlanModeState()` factory: remove `active: false` and `workflowType: undefined`, add `planSessionID: undefined` in `packages/core/src/session/plan-mode-state.ts`
-- [ ] T003 Update `PlanModeStateRef.update()` transition detection: replace `prev.active !== this._state.active` with `prev.planSessionID !== this._state.planSessionID` and update `PlanStateChanged` event emission to include `planSessionID` and derive `active` from `planSessionID !== undefined` in `packages/core/src/session/plan-mode-state.ts`
-- [ ] T004 Update `Session.Event.PlanStateChanged` payload schema: add `planSessionID: SessionID.zod.optional()` while keeping `active: z.boolean()` as a derived field in `packages/core/src/session/index.ts`
+- [x] T001 Update `PlanModeState` interface: remove `active` and `workflowType` fields, add `planSessionID: SessionID | undefined` in `packages/core/src/session/plan-mode-state.ts`
+- [x] T002 Update `createDefaultPlanModeState()` factory: remove `active: false` and `workflowType: undefined`, add `planSessionID: undefined` in `packages/core/src/session/plan-mode-state.ts`
+- [x] T003 Update `PlanModeStateRef.update()` transition detection: replace `prev.active !== this._state.active` with `prev.planSessionID !== this._state.planSessionID` and update `PlanStateChanged` event emission to include `planSessionID` and derive `active` from `planSessionID !== undefined` in `packages/core/src/session/plan-mode-state.ts`
+- [x] T004 Update `Session.Event.PlanStateChanged` payload schema: add `planSessionID: SessionID.zod.optional()` while keeping `active: z.boolean()` as a derived field in `packages/core/src/session/index.ts`
 
 **Checkpoint**: PlanModeState interface is updated. All downstream consumers will see type errors pointing to required migrations.
 
@@ -31,11 +31,11 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 [P] Update `plan-reminder.ts`: replace `planModeState.active` check with `planModeState.planSessionID !== undefined` in `packages/core/src/session/engine/plan-reminder.ts`
-- [ ] T006 [P] Update `stop-drift.ts`: replace `planState.active` check with `planState.planSessionID !== undefined` in `packages/core/src/session/engine/stop-drift.ts`
-- [ ] T007 [P] Update `query.ts`: replace `planModeState.active` checks at L263 and L563 with `planModeState.planSessionID !== undefined` in `packages/core/src/session/engine/query.ts`
-- [ ] T008 Update `server/routes/session.ts` permission-mode route handler: replace `ref.get().active` with `ref.get().planSessionID` check and remove `active: true/false` mutations. Route should no longer toggle plan mode state — only toggle the permission mode enum — at L550-562 in `packages/core/src/server/routes/session.ts`
-- [ ] T009 Run `bun typecheck` to verify all `PlanModeState.active` and `PlanModeState.workflowType` references are resolved across the codebase
+- [x] T005 [P] Update `plan-reminder.ts`: replace `planModeState.active` check with `planModeState.planSessionID !== undefined` in `packages/core/src/session/engine/plan-reminder.ts`
+- [x] T006 [P] Update `stop-drift.ts`: replace `planState.active` check with `planState.planSessionID !== undefined` in `packages/core/src/session/engine/stop-drift.ts`
+- [x] T007 [P] Update `query.ts`: replace `planModeState.active` checks at L263 and L563 with `planModeState.planSessionID !== undefined` in `packages/core/src/session/engine/query.ts`
+- [x] T008 Update `server/routes/session.ts` permission-mode route handler: replace `ref.get().active` with `ref.get().planSessionID` check and remove `active: true/false` mutations. Route should no longer toggle plan mode state — only toggle the permission mode enum — at L550-562 in `packages/core/src/server/routes/session.ts`
+- [x] T009 Run `bun typecheck` to verify all `PlanModeState.active` and `PlanModeState.workflowType` references are resolved across the codebase
 
 **Checkpoint**: Foundation ready — all consumers migrated to `planSessionID`. Zero type errors from PlanModeState changes.
 
@@ -49,14 +49,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Rewrite `PlanEnterTool.execute()` in `packages/core/src/tool/plan.ts`: remove `interviewMode` parameter, remove `Question.ask` approval gate, remove `PlanApprovalRequested` event emission, remove workflow instruction loading (`Bundled.miscPrompt`), replace `state.active` guard with `state.planSessionID !== undefined` guard
-- [ ] T011 [US1] Implement blocking subagent spawn in `PlanEnterTool.execute()`: call `SessionPrompt.setPermissionMode(ctx.sessionID, "plan")`, create child session via `Session.create({ parentID: ctx.sessionID })`, call `SessionPrompt.runSubagent()` with agent `"plan"` and planning context, parse subagent result to extract plan text from output, update `PlanModeStateRef` with `planSessionID` and `planText`, return `{ planFilePath, planText }` in `packages/core/src/tool/plan.ts`
-- [ ] T012 [US1] Implement error recovery in `PlanEnterTool.execute()`: wrap `runSubagent()` call in try/catch, on failure restore permission mode to "default" via `SessionPrompt.setPermissionMode()`, clear `planSessionID` from `PlanModeStateRef`, throw structured error with failure details in `packages/core/src/tool/plan.ts`
-- [ ] T013 [US1] Update `PlanExitTool.execute()` in `packages/core/src/tool/plan.ts`: replace `state.active` guard with `state.planSessionID` or `planText` guard, on approval call `SessionPrompt.setPermissionMode(ctx.sessionID, "default")` to restore write access, update state to clear `planSessionID` and set `planText`, remove `workflowType: undefined` mutation (field deleted)
-- [ ] T014 [US1] Update plan agent config in `packages/core/src/bundled/agents/plan.md`: remove `write` from disallowedTools list (plan agent needs write for plan file), update prompt to instruct subagent to write plan to disk and return full plan text as final response including the plan file path
-- [ ] T015 [P] [US1] Update `plan-enter.txt` tool description in `packages/core/src/bundled/prompts/tools/plan-enter.txt`: remove mention of user approval gate, describe subagent spawn behavior, remove `interviewMode` parameter documentation
-- [ ] T016 [P] [US1] Update `plan-exit.txt` tool description in `packages/core/src/bundled/prompts/tools/plan-exit.txt`: clarify this is the ONLY approval point in the lifecycle, update references to reflect new behavior
-- [ ] T017 [US1] Run `bun typecheck` and `bun lint:fix` to verify zero type errors and formatting compliance after US1 implementation
+- [x] T010 [US1] Rewrite `PlanEnterTool.execute()` in `packages/core/src/tool/plan.ts`: remove `interviewMode` parameter, remove `Question.ask` approval gate, remove `PlanApprovalRequested` event emission, remove workflow instruction loading (`Bundled.miscPrompt`), replace `state.active` guard with `state.planSessionID !== undefined` guard
+- [x] T011 [US1] Implement blocking subagent spawn in `PlanEnterTool.execute()`: call `SessionPrompt.setPermissionMode(ctx.sessionID, "plan")`, create child session via `Session.create({ parentID: ctx.sessionID })`, call `SessionPrompt.runSubagent()` with agent `"plan"` and planning context, parse subagent result to extract plan text from output, update `PlanModeStateRef` with `planSessionID` and `planText`, return `{ planFilePath, planText }` in `packages/core/src/tool/plan.ts`
+- [x] T012 [US1] Implement error recovery in `PlanEnterTool.execute()`: wrap `runSubagent()` call in try/catch, on failure restore permission mode to "default" via `SessionPrompt.setPermissionMode()`, clear `planSessionID` from `PlanModeStateRef`, throw structured error with failure details in `packages/core/src/tool/plan.ts`
+- [x] T013 [US1] Update `PlanExitTool.execute()` in `packages/core/src/tool/plan.ts`: replace `state.active` guard with `state.planSessionID` or `planText` guard, on approval call `SessionPrompt.setPermissionMode(ctx.sessionID, "default")` to restore write access, update state to clear `planSessionID` and set `planText`, remove `workflowType: undefined` mutation (field deleted)
+- [x] T014 [US1] Update plan agent config in `packages/core/src/bundled/agents/plan.md`: remove `write` from disallowedTools list (plan agent needs write for plan file), update prompt to instruct subagent to write plan to disk and return full plan text as final response including the plan file path
+- [x] T015 [P] [US1] Update `plan-enter.txt` tool description in `packages/core/src/bundled/prompts/tools/plan-enter.txt`: remove mention of user approval gate, describe subagent spawn behavior, remove `interviewMode` parameter documentation
+- [x] T016 [P] [US1] Update `plan-exit.txt` tool description in `packages/core/src/bundled/prompts/tools/plan-exit.txt`: clarify this is the ONLY approval point in the lifecycle, update references to reflect new behavior
+- [x] T017 [US1] Run `bun typecheck` and `bun lint:fix` to verify zero type errors and formatting compliance after US1 implementation
 
 **Checkpoint**: End-to-end `plan_enter` → subagent → `plan_exit` → approve flow works. Root session is read-only during planning, single approval dialog, permission restored on approval.
 
@@ -72,10 +72,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Update `PlanState` interface in `packages/cli/src/tui/state/app-state.ts`: add optional `planSessionID?: string` field, consider deriving `enabled` from `planSessionID !== undefined` for consumers
-- [ ] T019 [US2] Update `plan.state_changed` event handler in `packages/cli/src/tui/state/app-state-events.ts` (L402-442): read `planSessionID` from event properties, derive `isActivating` from `event.properties.planSessionID !== undefined` instead of `event.properties.active`, store `planSessionID` in the `PlanState` per-session entry, keep permission mode save/restore logic (`prePlanPermissionMode`)
-- [ ] T020 [US2] Verify `plan.approval_requested` handler in `packages/cli/src/tui/state/app-state-events.ts` (L445-456): confirm no changes needed — event payload is unchanged, handler reads `planText` and `planFilePath` correctly
-- [ ] T021 [US2] Run `bun typecheck` against `packages/cli` to verify TUI state types compile cleanly
+- [x] T018 [US2] Update `PlanState` interface in `packages/cli/src/tui/state/app-state.ts`: add optional `planSessionID?: string` field, consider deriving `enabled` from `planSessionID !== undefined` for consumers
+- [x] T019 [US2] Update `plan.state_changed` event handler in `packages/cli/src/tui/state/app-state-events.ts` (L402-442): read `planSessionID` from event properties, derive `isActivating` from `event.properties.planSessionID !== undefined` instead of `event.properties.active`, store `planSessionID` in the `PlanState` per-session entry, keep permission mode save/restore logic (`prePlanPermissionMode`)
+- [x] T020 [US2] Verify `plan.approval_requested` handler in `packages/cli/src/tui/state/app-state-events.ts` (L445-456): confirm no changes needed — event payload is unchanged, handler reads `planText` and `planFilePath` correctly
+- [x] T021 [US2] Run `bun typecheck` against `packages/cli` to verify TUI state types compile cleanly
 
 **Checkpoint**: CLI correctly handles plan state transitions. Plan mode indicator shows/hides correctly. Approval dialog renders correctly on plan submission.
 
@@ -89,8 +89,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Verify `isRootAgent()` guard in `PlanEnterTool.execute()` prevents subagent invocation — confirm this guard was preserved during the T010-T012 rewrite in `packages/core/src/tool/plan.ts`
-- [ ] T023 [US3] Verify `planSessionID !== undefined` guard in `PlanEnterTool.execute()` prevents re-entry — confirm the guard returns a clear error message when plan mode is already active in `packages/core/src/tool/plan.ts`
+- [x] T022 [US3] Verify `isRootAgent()` guard in `PlanEnterTool.execute()` prevents subagent invocation — confirm this guard was preserved during the T010-T012 rewrite in `packages/core/src/tool/plan.ts`
+- [x] T023 [US3] Verify `planSessionID !== undefined` guard in `PlanEnterTool.execute()` prevents re-entry — confirm the guard returns a clear error message when plan mode is already active in `packages/core/src/tool/plan.ts`
 
 **Checkpoint**: Both guards work correctly. Subagents cannot invoke `plan_enter`. Double-entry returns a clear error.
 
@@ -104,7 +104,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T024 [US4] Verify `SessionPrompt.runSubagent()` call in `PlanEnterTool.execute()` uses the default `keepHistory: true` behavior — confirm the child session created in T011 persists messages via `SqliteCheckpointer.loadHistory()` in `packages/core/src/tool/plan.ts` and `packages/core/src/session/engine/loop.ts`
+- [x] T024 [US4] Verify `SessionPrompt.runSubagent()` call in `PlanEnterTool.execute()` uses the default `keepHistory: true` behavior — confirm the child session created in T011 persists messages via `SqliteCheckpointer.loadHistory()` in `packages/core/src/tool/plan.ts` and `packages/core/src/session/engine/loop.ts`
 
 **Checkpoint**: Plan subagent session history is persisted, enabling KV cache reuse on multi-turn exploration.
 
@@ -114,11 +114,11 @@
 
 **Purpose**: Update all existing plan mode tests to match the new interface and behavior.
 
-- [ ] T025 [P] Rewrite `enter-plan-tool.test.ts` in `packages/core/test/plan-mode/enter-plan-tool.test.ts`: test subagent spawn with permission gating, test re-entry guard (`planSessionID` check), test root-agent-only guard, test error recovery (subagent failure → permission restoration), remove tests for `interviewMode` parameter and `Question.ask` approval gate
-- [ ] T026 [P] Update `exit-plan-tool.test.ts` in `packages/core/test/plan-mode/exit-plan-tool.test.ts`: replace `active: true/false` assertions with `planSessionID` assertions, test `setPermissionMode("default")` is called on approval, test rejection preserves `planSessionID`, remove `workflowType` assertions
-- [ ] T027 [P] Update `plan-mode-state.test.ts` in `packages/core/test/plan-mode/plan-mode-state.test.ts`: remove `active`/`workflowType` field tests, add `planSessionID` transition tests, update `PlanStateChanged` event emission tests to verify `planSessionID` is included and `active` is derived
-- [ ] T028 [P] Update `plan-reminder.test.ts` in `packages/core/test/plan-mode/plan-reminder.test.ts`: replace `active: true` with `planSessionID: "test-session-id"` in test fixtures, verify reminders fire correctly based on `planSessionID !== undefined`
-- [ ] T029 Run scoped tests: `bun test test/plan-mode` — all 4 test files must pass
+- [x] T025 [P] Rewrite `enter-plan-tool.test.ts` in `packages/core/test/plan-mode/enter-plan-tool.test.ts`: test subagent spawn with permission gating, test re-entry guard (`planSessionID` check), test root-agent-only guard, test error recovery (subagent failure → permission restoration), remove tests for `interviewMode` parameter and `Question.ask` approval gate
+- [x] T026 [P] Update `exit-plan-tool.test.ts` in `packages/core/test/plan-mode/exit-plan-tool.test.ts`: replace `active: true/false` assertions with `planSessionID` assertions, test `setPermissionMode("default")` is called on approval, test rejection preserves `planSessionID`, remove `workflowType` assertions
+- [x] T027 [P] Update `plan-mode-state.test.ts` in `packages/core/test/plan-mode/plan-mode-state.test.ts`: remove `active`/`workflowType` field tests, add `planSessionID` transition tests, update `PlanStateChanged` event emission tests to verify `planSessionID` is included and `active` is derived
+- [x] T028 [P] Update `plan-reminder.test.ts` in `packages/core/test/plan-mode/plan-reminder.test.ts`: replace `active: true` with `planSessionID: "test-session-id"` in test fixtures, verify reminders fire correctly based on `planSessionID !== undefined`
+- [x] T029 Run scoped tests: `bun test test/plan-mode` — all 4 test files must pass
 
 **Checkpoint**: All plan mode tests pass with the new interface. Zero test failures in `test/plan-mode/`.
 
@@ -128,10 +128,10 @@
 
 **Purpose**: Final validation and cleanup
 
-- [ ] T030 Run full `bun typecheck` to verify zero type errors across the monorepo
-- [ ] T031 Run `bun lint:fix` to ensure formatting compliance
-- [ ] T032 [P] Verify ACP event passthrough in `packages/core/src/acp/events.ts` — confirm `PlanStateChanged` subscriber at L40-48 forwards the updated event payload (including `planSessionID`) without code changes
-- [ ] T033 [P] Verify unused prompt files: determine if `packages/core/src/bundled/prompts/misc/plan-workflow.md` and `plan-interview.md` can be removed since they are no longer loaded by `plan_enter`
+- [x] T030 Run full `bun typecheck` to verify zero type errors across the monorepo
+- [x] T031 Run `bun lint:fix` to ensure formatting compliance
+- [x] T032 [P] Verify ACP event passthrough in `packages/core/src/acp/events.ts` — confirm `PlanStateChanged` subscriber at L40-48 forwards the updated event payload (including `planSessionID`) without code changes
+- [x] T033 [P] Verify unused prompt files: determine if `packages/core/src/bundled/prompts/misc/plan-workflow.md` and `plan-interview.md` can be removed since they are no longer loaded by `plan_enter` — **REMOVED**
 - [ ] T034 Run quickstart.md verification steps: manual E2E test per `specs/013-plan-mode-lifecycle/quickstart.md`
 
 ---

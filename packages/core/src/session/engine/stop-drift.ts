@@ -47,7 +47,7 @@ export class StopDriftService {
     const planState = this.planModeStateRef.get()
 
     // Only plan mode enforces mandatory tool calls
-    if (!planState.active) {
+    if (planState.planSessionID === undefined) {
       return { drifted: false }
     }
 
