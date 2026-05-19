@@ -234,7 +234,10 @@ export namespace Session {
       "plan.state_changed",
       z.object({
         sessionID: SessionID.zod,
+        /** Derived from `planSessionID !== undefined` for backward compat with CLI/ACP */
         active: z.boolean(),
+        /** The child session ID of the active plan subagent, or undefined when plan mode exits */
+        planSessionID: SessionID.zod.optional(),
         planFilePath: z.string(),
         turnsSincePlanReminder: z.number(),
       }),

@@ -260,7 +260,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
       model: `${lastUser.model.providerID}/${lastUser.model.modelID}`,
       temperature: agent.temperature,
       step,
-      planModeActive: planModeState.active,
+      planModeActive: planModeState.planSessionID !== undefined,
     })
 
     // ── Plan attachment injection (replaces legacy insertPlanReminder) ──
@@ -560,7 +560,7 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     // ── Update in-memory PlanModeState at turn end (T007/FR-006) ──
     // Persist the counter updates from injectPlanAttachment back to the ref.
     // The counter may already have been reset to 0 by injectPlanAttachment (full reminder).
-    if (planModeState.active) {
+    if (planModeState.planSessionID !== undefined) {
       planModeStateRef.update(() => planModeState)
     }
 

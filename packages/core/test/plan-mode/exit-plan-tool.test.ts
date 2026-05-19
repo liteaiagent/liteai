@@ -24,10 +24,13 @@ describe("PlanExitTool", () => {
   })
 
   /** Helper: create session + register a PlanModeStateRef */
-  async function createSessionWithRef(overrides?: Partial<{ active: boolean }>) {
+  async function createSessionWithRef(overrides?: Partial<{ planSessionID: SessionID }>) {
     const session = await Session.create({})
     const initial = createDefaultPlanModeState(session)
-    const ref = new PlanModeStateRef({ ...initial, active: overrides?.active ?? initial.active }, session.id)
+    const ref = new PlanModeStateRef(
+      { ...initial, planSessionID: overrides?.planSessionID ?? initial.planSessionID },
+      session.id,
+    )
     ref.register()
     registeredRefs.push(ref)
     return { session, ref }
@@ -52,7 +55,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const { session } = await createSessionWithRef({ active: true })
+        const { session } = await createSessionWithRef({ planSessionID: "test-plan" as SessionID })
         const instance = await PlanExitTool.init()
         await expect(instance.execute({ plan: "   " }, makeToolContext(session.id))).rejects.toThrow("Plan is empty")
         await Session.remove(session.id)
@@ -65,7 +68,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const { session } = await createSessionWithRef({ active: false })
+        const { session } = await createSessionWithRef()
         const instance = await PlanExitTool.init()
         await expect(instance.execute({ plan: "Test plan" }, makeToolContext(session.id))).rejects.toThrow(
           "not currently active",
@@ -80,7 +83,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const { session, ref } = await createSessionWithRef({ active: true })
+        const { session, ref } = await createSessionWithRef({ planSessionID: "test-plan" as SessionID })
 
         let approvalRequested = false
         const eventPromise = new Promise<void>((resolve, reject) => {
@@ -108,7 +111,7 @@ describe("PlanExitTool", () => {
           expect(approvalRequested).toBe(true)
 
           const state = ref.get()
-          expect(state.active).toBe(false)
+          expect(state.planSessionID).toBeUndefined()
           expect(state.planText).toBe("My awesome plan")
           expect(state.turnsSincePlanReminder).toBe(0)
 
@@ -135,7 +138,7 @@ describe("PlanExitTool", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const { session, ref } = await createSessionWithRef({ active: true })
+        const { session, ref } = await createSessionWithRef({ planSessionID: "test-plan" as SessionID })
 
         const originalAsk = Question.ask
         Question.ask = async () => [["No"]]
@@ -158,7 +161,7 @@ describe("PlanExitTool", () => {
 
           // Plan mode MUST remain active — rejection → revision → re-submission path
           const state = ref.get()
-          expect(state.active).toBe(true)
+          expect(state.planSessionID).toBe("test-plan")
           // planText must NOT be set on rejection
           expect(state.planText).toBeUndefined()
         } finally {

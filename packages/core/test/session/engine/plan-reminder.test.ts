@@ -72,13 +72,12 @@ function createTestMessages(overrides?: {
 
 function createPlanState(overrides?: Partial<PlanModeState>): PlanModeState {
   return {
-    // Default to build-phase state (active=false + planText set) — reminders
+    // Default to build-phase state (planSessionID=undefined + planText set) — reminders
     // must fire in build phase after a plan has been approved.
-    active: false,
     planText: "Approved plan",
     planFilePath: path.join(os.tmpdir(), `test-plan-${crypto.randomUUID()}.md`),
     turnsSincePlanReminder: 0,
-    workflowType: "5phase",
+    planSessionID: undefined,
     ...overrides,
   }
 }
@@ -91,8 +90,7 @@ describe("injectPlanAttachment", () => {
         directory: projectRoot,
         fn: async () => {
           const messages = createTestMessages()
-          // active=true: we are in plan phase — must inject MVP reminder
-          const state = createPlanState({ active: true, planText: "Some plan" })
+          const state = createPlanState({ planSessionID: "plan-sess-1" as SessionID, planText: "Some plan" })
           const result = await injectPlanAttachment({
             messages,
             planModeState: state,
@@ -121,8 +119,8 @@ describe("injectPlanAttachment", () => {
         directory: projectRoot,
         fn: async () => {
           const messages = createTestMessages()
-          // active=false but planText undefined — no plan approved yet
-          const state = createPlanState({ active: false, planText: undefined })
+          // planSessionID=undefined and planText=undefined — no plan approved yet
+          const state = createPlanState({ planSessionID: undefined, planText: undefined })
           const result = await injectPlanAttachment({
             messages,
             planModeState: state,

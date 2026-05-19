@@ -44,10 +44,10 @@ All scoped tests must pass.
 
 ```bash
 # No "task" tool ID in source (excluding comments, test fixtures, and this spec)
-grep -rn '"task"' packages/core/src/ --include="*.ts" | grep -v "// " | grep -v test
+rg '"task"' packages/core/src/ --type ts --glob '!**/*.test.ts' --glob '!**/test/**'
 
 # No "build" agent name in source
-grep -rn '"build"' packages/core/src/agent/ --include="*.ts" | grep -v "// "
+rg '"build"' packages/core/src/ --type ts --type md --glob '!**/*.test.ts'
 
 # No old file names
 ls packages/core/src/tool/task.ts 2>/dev/null && echo "FAIL: task.ts still exists"

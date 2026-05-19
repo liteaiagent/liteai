@@ -1,20 +1,23 @@
 import fs from "node:fs/promises"
 import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { trace } from "@opentelemetry/api"
 import z from "zod"
 import { isRootAgent } from "../agent/context"
-import { Bundled } from "../bundled"
 import ENTER_DESCRIPTION from "../bundled/prompts/tools/plan-enter.txt"
 import EXIT_DESCRIPTION from "../bundled/prompts/tools/plan-exit.txt"
 import { Bus } from "../bus"
 import { Instance } from "../project/instance"
+import type { ModelID, ProviderID } from "../provider/schema"
 import { Question } from "../question"
 import { Session } from "../session"
+import { SessionPrompt } from "../session/engine"
 import { PlanModeStateRef } from "../session/plan-mode-state"
-import { Filesystem } from "../util/filesystem"
+import { MessageID } from "../session/schema"
 import { Tool } from "./tool"
 
 const tracer = trace.getTracer("liteai")
+const log = Log.create({ service: "tool.plan" })
 
 export const PlanExitTool = Tool.define("plan_exit", {
   description: EXIT_DESCRIPTION,
@@ -25,8 +28,13 @@ export const PlanExitTool = Tool.define("plan_exit", {
     return tracer.startActiveSpan("tool.plan_exit.execute", async (span) => {
       try {
         const state = PlanModeStateRef.for(ctx.sessionID).get()
-        if (!state.active) {
-          throw new Error("Cannot exit plan mode: Plan mode is not currently active.")
+
+        // Guard: must be in plan mode (planSessionID set) or have plan text from subagent
+        if (state.planSessionID === undefined && state.planText === undefined) {
+          throw new Error(
+            "Cannot exit plan mode: Plan mode is not currently active. " +
+              "Call plan_enter first to spawn a plan subagent.",
+          )
         }
 
         const planFilePath = state.planFilePath
@@ -69,11 +77,10 @@ export const PlanExitTool = Tool.define("plan_exit", {
         const answer = answers[0]?.[0]
         if (answer !== "Yes") {
           span.addEvent("tool.plan_exit.rejected")
-          // Rejection → revision → re-submission path (spec edge case L113):
+          // Rejection → revision → re-submission path:
           // PlanModeStateRef is NOT mutated — plan mode remains active so the
           // agent can revise the plan and call plan_exit again.
-          // Only an explicit "Yes" is accepted — undefined, empty, or any
-          // other string is treated as rejection per fail-fast protocol.
+          // Permission mode stays "plan" — root session remains read-only.
           throw new Question.RejectedError({
             reason: "User rejected the plan. Continue refining the plan and call plan_exit again when ready.",
           })
@@ -81,12 +88,15 @@ export const PlanExitTool = Tool.define("plan_exit", {
 
         span.addEvent("tool.plan_exit.approved")
 
+        // Restore write permissions — the core lifecycle gate
+        SessionPrompt.setPermissionMode(ctx.sessionID, "default")
+
+        // Clear plan session state and store the approved plan text
         PlanModeStateRef.for(ctx.sessionID).update((s) => ({
           ...s,
-          active: false,
+          planSessionID: undefined,
           turnsSincePlanReminder: 0,
           planText: params.plan,
-          workflowType: undefined,
         }))
 
         return {
@@ -106,113 +116,160 @@ export const PlanExitTool = Tool.define("plan_exit", {
 
 export const PlanEnterTool = Tool.define("plan_enter", {
   description: ENTER_DESCRIPTION,
-  parameters: z.object({
-    interviewMode: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe(
-        "When true, uses the iterative interview workflow (pair-planning with the user via the question tool) instead of the 5-phase subagent workflow. Use interview mode for exploratory or highly interactive planning sessions.",
-      ),
-  }),
-  async execute(params, ctx) {
+  parameters: z.object({}),
+  async execute(_params, ctx) {
     return tracer.startActiveSpan("tool.plan_enter.execute", async (span) => {
       try {
-        // Sub-agents must not be able to activate plan mode (MVP parity:
-        // EnterPlanModeTool.ts:78). Plan mode is a root-level state transition.
+        // Sub-agents must not be able to activate plan mode.
+        // Plan mode is a root-level state transition.
         if (!isRootAgent()) {
           throw new Error("EnterPlanMode tool cannot be used in sub-agent contexts")
         }
 
-        const state = PlanModeStateRef.for(ctx.sessionID).get()
+        const ref = PlanModeStateRef.for(ctx.sessionID)
+        const state = ref.get()
 
-        // ── Already-active guard (FR-014) ──
-        // If plan mode is already active, return a no-op — do NOT mutate state
-        // or emit events. This prevents re-entry amnesia.
-        // Note: state.planFilePath is immutable for the session lifetime (set once
-        // by Session.plan() in createDefaultPlanModeState, never overridden by
-        // update() calls), so using the pre-read state here is safe — no staleness
-        // risk even if other fields (active, planText) are concurrently mutated.
-        if (state.active) {
+        // ── Already-active guard ──
+        // If plan mode is already active (planSessionID set), return a no-op.
+        // This prevents re-entry and duplicate subagent spawns.
+        if (state.planSessionID !== undefined) {
           span.addEvent("tool.plan_enter.already_active")
           const relPlanPath = path.relative(Instance.worktree, state.planFilePath)
           return {
             title: "Already in plan mode",
-            output: `Plan mode is already active. Continue working on the plan at ${relPlanPath}.`,
-            metadata: { planFilePath: state.planFilePath, interviewMode: false },
+            output: `Plan mode is already active (plan session: ${state.planSessionID}). Continue working on the plan at ${relPlanPath}.`,
+            metadata: { planFilePath: state.planFilePath, planSessionID: state.planSessionID },
           }
         }
 
-        // ── User approval gate (ADR-001, FR-002) ──
-        // Ask the user before mutating state — mirrors MVP shouldDefer: true
-        // semantics. On decline, Question.RejectedError propagates up — the
-        // tool result is treated as a rejection and plan mode is never entered.
-        span.addEvent("tool.plan_enter.approval_requested")
-        Bus.publish(Session.Event.PlanApprovalRequested, {
-          sessionID: ctx.sessionID,
-          planText: "",
+        // ── Gate root session to read-only ──
+        span.addEvent("tool.plan_enter.setting_plan_permission")
+        SessionPrompt.setPermissionMode(ctx.sessionID, "plan")
+
+        // ── Spawn blocking plan subagent ──
+        let planSession: Session.Info
+        try {
+          planSession = await Session.create({
+            parentID: ctx.sessionID,
+            title: "Plan subagent",
+          })
+        } catch (e) {
+          // Recovery: restore permissions if session creation fails
+          log.error("failed to create plan subagent session", { error: e, sessionID: ctx.sessionID })
+          SessionPrompt.setPermissionMode(ctx.sessionID, "default")
+          throw new Error(`Failed to create plan subagent session: ${e instanceof Error ? e.message : String(e)}`)
+        }
+
+        // Track the plan session in state
+        ref.update((s) => ({
+          ...s,
+          planSessionID: planSession.id,
+        }))
+
+        const relPlanPath = path.relative(Instance.worktree, state.planFilePath)
+        const planPrompt = [
+          "You are a plan subagent. Your task is to explore the codebase, understand the architecture,",
+          "and create a detailed implementation plan.",
+          "",
+          `Write your final plan to: ${relPlanPath}`,
+          `Absolute path: ${state.planFilePath}`,
+          "",
+          "Instructions:",
+          "1. Use read, glob, grep, and bash (read-only) tools to explore the codebase",
+          "2. Understand existing patterns and architecture",
+          "3. Design a clear, step-by-step implementation plan",
+          `4. Write the plan to ${relPlanPath} using the write tool`,
+          "5. Return the FULL plan text as your final response",
+          "",
+          "Context from the root agent:",
+          ctx.extra?.planContext ?? "No additional context provided.",
+        ].join("\n")
+
+        // Determine model from parent context
+        let model: { modelID: ModelID; providerID: ProviderID } | undefined
+        const parentAssistant = ctx.messages.findLast((m) => m.info.id === ctx.messageID)
+        if (parentAssistant && parentAssistant.info.role === "assistant") {
+          model = {
+            modelID: parentAssistant.info.modelID,
+            providerID: parentAssistant.info.providerID,
+          }
+        }
+
+        if (!model) {
+          // Recovery: restore permissions if we can't determine the model
+          ref.update((s) => ({ ...s, planSessionID: undefined }))
+          SessionPrompt.setPermissionMode(ctx.sessionID, "default")
+          throw new Error("Could not determine parent model for plan subagent")
+        }
+
+        span.addEvent("tool.plan_enter.spawning_subagent", {
+          planSessionID: planSession.id,
           planFilePath: state.planFilePath,
         })
 
-        const answers = await Question.ask({
-          sessionID: ctx.sessionID,
-          questions: [
-            {
-              question:
-                "Approve entering plan mode? The agent will explore the codebase and design an implementation plan before writing any code.",
-              header: "Plan Mode",
-              custom: false,
-              options: [
-                {
-                  label: "Yes",
-                  description:
-                    "Enter plan mode — the agent will design a plan for your approval before making any changes",
-                },
-                { label: "No", description: "Continue in build mode without entering plan mode" },
-              ],
-            },
-          ],
-          tool: ctx.callID ? { messageID: ctx.messageID, callID: ctx.callID } : undefined,
-        })
+        const messageID = MessageID.ascending()
+        const promptParts = await SessionPrompt.resolvePromptParts(planPrompt)
 
-        const answer = answers[0]?.[0]
-        if (answer !== "Yes") {
-          span.addEvent("tool.plan_enter.rejected")
-          throw new Question.RejectedError({
-            reason: "User declined entering plan mode. Continue in build mode.",
+        let result: Awaited<ReturnType<typeof SessionPrompt.runSubagent>>
+        try {
+          result = await SessionPrompt.runSubagent({
+            messageID,
+            sessionID: planSession.id,
+            model: {
+              modelID: model.modelID,
+              providerID: model.providerID,
+            },
+            agent: "plan",
+            parts: promptParts,
           })
+        } catch (e) {
+          // Error recovery: restore permission mode and clear plan session on failure
+          log.error("plan subagent failed", { error: e, sessionID: ctx.sessionID, planSessionID: planSession.id })
+          ref.update((s) => ({ ...s, planSessionID: undefined }))
+          SessionPrompt.setPermissionMode(ctx.sessionID, "default")
+          throw new Error(`Plan subagent failed: ${e instanceof Error ? e.message : String(e)}`)
         }
 
-        span.addEvent("tool.plan_enter.activated")
-        // PlanModeStateRef.update() emits PlanStateChanged via Bus.publish
-        // when the `active` field transitions. No manual Bus.publish needed here.
-        PlanModeStateRef.for(ctx.sessionID).update((s) => ({
+        // Handle subagent error/abort results
+        if (result.status === "error") {
+          const errorMsg = result.error instanceof Error ? result.error.message : String(result.error)
+          log.error("plan subagent returned error", { error: errorMsg, sessionID: ctx.sessionID })
+          ref.update((s) => ({ ...s, planSessionID: undefined }))
+          SessionPrompt.setPermissionMode(ctx.sessionID, "default")
+          throw new Error(`Plan subagent failed: ${errorMsg}`)
+        }
+
+        if (result.status === "aborted") {
+          log.warn("plan subagent was aborted", { sessionID: ctx.sessionID })
+          ref.update((s) => ({ ...s, planSessionID: undefined }))
+          SessionPrompt.setPermissionMode(ctx.sessionID, "default")
+          throw new Error("Plan subagent was aborted")
+        }
+
+        // ── Extract plan text from subagent result ──
+        const completedMessage = result.message
+        const planText =
+          (completedMessage?.parts.findLast((x: { type?: string }) => x.type === "text") as { text?: string })?.text ??
+          ""
+
+        // Store the plan text in state
+        ref.update((s) => ({
           ...s,
-          active: true,
-          turnsSincePlanReminder: 0,
-          workflowType: params.interviewMode ? "interview" : "5phase",
+          planText: planText || undefined,
         }))
 
-        // ── Load workflow instructions (ADR-002, FR-003) ──
-        // Return the 5-phase or interview workflow text as tool result output
-        // so the model receives structured planning instructions in-context.
-        const workflowRaw = params.interviewMode
-          ? await Bundled.miscPrompt("plan-interview")
-          : await Bundled.miscPrompt("plan-workflow")
-
-        const relPlanPath = path.relative(Instance.worktree, state.planFilePath)
-
-        // Inject dynamic plan file info (MVP parity: messages.ts:3223-3225)
-        const planExists = await Filesystem.exists(state.planFilePath)
-        const planFileInfo = planExists
-          ? `A plan file already exists at ${relPlanPath}. You can read it and make incremental edits using the edit tool.`
-          : `No plan file exists yet. You should create your plan at ${relPlanPath} using the write tool.`
-        const workflowText = workflowRaw.replace("{{PLAN_FILE_INFO}}", planFileInfo)
+        span.addEvent("tool.plan_enter.subagent_completed", {
+          planSessionID: planSession.id,
+          planTextLength: planText.length,
+        })
 
         return {
-          title: "Entering plan mode",
-          output: workflowText,
-          metadata: { planFilePath: state.planFilePath, interviewMode: params.interviewMode },
+          title: "Plan completed",
+          output: planText || "Plan subagent completed but returned no plan text. Check the plan file.",
+          metadata: {
+            planFilePath: state.planFilePath,
+            planSessionID: planSession.id,
+          },
         }
       } catch (e) {
         span.recordException(e as Error)

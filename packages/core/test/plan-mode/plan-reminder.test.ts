@@ -7,6 +7,7 @@ import { injectPlanAttachment } from "../../src/session/engine/plan-reminder"
 import type { Message } from "../../src/session/message"
 import type { PlanModeState } from "../../src/session/plan-mode-state"
 import { createDefaultPlanModeState, PLAN_REMINDER_FULL_INTERVAL } from "../../src/session/plan-mode-state"
+import type { SessionID } from "../../src/session/schema"
 import { MessageID, PartID } from "../../src/session/schema"
 import { tmpdir } from "../fixture/fixture"
 
@@ -33,11 +34,11 @@ function createUserMessage(session: Session.Info, text = "hello"): Message.WithP
   }
 }
 
-/** Helper: build-phase state (active=false, planText set) */
+/** Helper: build-phase state (planSessionID=undefined, planText set) */
 function buildPhaseState(session: Session.Info, overrides?: Partial<PlanModeState>): PlanModeState {
   return {
     ...createDefaultPlanModeState(session),
-    active: false,
+    planSessionID: undefined,
     planText: "Approved plan content",
     turnsSincePlanReminder: 0,
     ...overrides,
@@ -51,10 +52,10 @@ describe("injectPlanAttachment", () => {
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        // active=true means we're in plan phase
+        // planSessionID set means we're in plan phase
         const state: PlanModeState = {
           ...createDefaultPlanModeState(session),
-          active: true,
+          planSessionID: "test-plan-session" as SessionID,
           planText: "Some plan",
           planFilePath: path.join(tmp.path, "plan.md"),
           turnsSincePlanReminder: 0,
@@ -91,8 +92,8 @@ describe("injectPlanAttachment", () => {
       directory: tmp.path,
       fn: async () => {
         const session = await Session.create({})
-        // active=false but no planText — no approved plan yet
-        const state = createDefaultPlanModeState(session) // active: false, planText: undefined
+        // planSessionID=undefined and no planText — no approved plan yet
+        const state = createDefaultPlanModeState(session) // planSessionID: undefined, planText: undefined
         const messages = [createUserMessage(session)]
 
         const result = await injectPlanAttachment({

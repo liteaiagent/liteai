@@ -6,18 +6,15 @@ import type { SessionID } from "./schema"
 const tracer = trace.getTracer("liteai")
 
 export interface PlanModeState {
-  /** Whether plan mode is currently active */
-  active: boolean
-  /** Last-known plan text (set by ExitPlanModeTool) */
+  /** The child session ID of the active plan subagent, or undefined when not in plan mode.
+   * Replaces the legacy `active` boolean — plan mode is active iff `planSessionID !== undefined`. */
+  planSessionID: SessionID | undefined
+  /** Last-known plan text (set by plan_exit on approval) */
   planText: string | undefined
   /** Deterministic per-session plan file path */
   planFilePath: string
   /** Turns since last full plan reminder injection. Resets at 5. */
   turnsSincePlanReminder: number
-  /** Which workflow was selected at plan_enter time. Used to select
-   * the correct constraint reinforcement text during active plan mode.
-   * Set by plan_enter, cleared by plan_exit. */
-  workflowType: "interview" | "5phase" | undefined
 }
 
 /** Full plan text injection interval — resets at this value (FR-005). */
@@ -29,11 +26,10 @@ export const PLAN_REMINDER_FULL_INTERVAL = 5
  */
 export function createDefaultPlanModeState(session: Session.Info): PlanModeState {
   return {
-    active: false,
+    planSessionID: undefined,
     planText: undefined,
     planFilePath: Session.plan(session),
     turnsSincePlanReminder: 0,
-    workflowType: undefined,
   }
 }
 
@@ -54,7 +50,7 @@ const registry = new Map<SessionID, PlanModeStateRef>()
  *
  * Replaces the previous database-backed `getPlanModeState`/`setPlanModeState`
  * with synchronous memory access. Event emission (`PlanStateChanged`) is
- * handled inline on `active` transitions via `Bus.publish`.
+ * handled inline on `planSessionID` transitions via `Bus.publish`.
  *
  * Lifecycle:
  *   - Created by `runSessionInner` in loop.ts
@@ -81,7 +77,7 @@ export class PlanModeStateRef {
 
   /**
    * Mutate the plan mode state synchronously.
-   * Emits `PlanStateChanged` via `Bus.publish` when the `active` field transitions.
+   * Emits `PlanStateChanged` via `Bus.publish` when the `planSessionID` field transitions.
    */
   update(fn: (s: PlanModeState) => PlanModeState): PlanModeState {
     return tracer.startActiveSpan("planModeState.update", (span) => {
@@ -89,18 +85,23 @@ export class PlanModeStateRef {
         const prev = this._state
         this._state = fn(prev)
 
-        span.setAttribute("plan_mode.active.before", prev.active)
-        span.setAttribute("plan_mode.active.after", this._state.active)
+        const wasActive = prev.planSessionID !== undefined
+        const isActive = this._state.planSessionID !== undefined
+
+        span.setAttribute("plan_mode.active.before", wasActive)
+        span.setAttribute("plan_mode.active.after", isActive)
         span.setAttribute("plan_mode.turnsSincePlanReminder", this._state.turnsSincePlanReminder)
 
-        if (prev.active !== this._state.active) {
+        if (prev.planSessionID !== this._state.planSessionID) {
           span.addEvent("plan_mode.state_transition", {
-            from: String(prev.active),
-            to: String(this._state.active),
+            from: prev.planSessionID ?? "inactive",
+            to: this._state.planSessionID ?? "inactive",
           })
           Bus.publish(Session.Event.PlanStateChanged, {
             sessionID: this.sessionID,
-            active: this._state.active,
+            // Derived field for backward compat with CLI/ACP consumers
+            active: isActive,
+            planSessionID: this._state.planSessionID,
             planFilePath: this._state.planFilePath,
             turnsSincePlanReminder: this._state.turnsSincePlanReminder,
           })

@@ -44,7 +44,7 @@ Key test files requiring updates:
 - `test/coordinator/coordinator-mode.test.ts`
 - `test/coordinator/swarm-tools.test.ts`
 - `test/plan-mode/enter-plan-tool.test.ts`
-- `test/permission-task.test.ts`
+- `test/permission-task.test.ts` *(does not exist — confirmed absent during implementation, see T039)*
 - `test/bundled/bundled.test.ts`
 - `test/session/engine/registry-wiring.test.ts`
 
@@ -54,7 +54,7 @@ Key test files requiring updates:
 
 ## R2: Complete Inventory of `"build"` Agent Name References
 
-**Decision**: 4 source locations contain `"build"` as an agent name.
+**Decision**: 5 source locations contain `"build"` as an agent name.
 
 **Findings**:
 

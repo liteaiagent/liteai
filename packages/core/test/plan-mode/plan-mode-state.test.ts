@@ -41,7 +41,7 @@ describe("PlanModeState (T047)", () => {
         const session = await Session.create({})
         const state = createDefaultPlanModeState(session)
 
-        expect(state.active).toBe(false)
+        expect(state.planSessionID).toBeUndefined()
         expect(state.planText).toBeUndefined()
         expect(state.turnsSincePlanReminder).toBe(0)
         expect(state.planFilePath).toContain(session.slug)
@@ -59,7 +59,7 @@ describe("PlanModeState (T047)", () => {
         const { session, ref } = await createSessionWithRef()
 
         const state = ref.get()
-        expect(state.active).toBe(false)
+        expect(state.planSessionID).toBeUndefined()
         expect(state.planText).toBeUndefined()
         expect(state.turnsSincePlanReminder).toBe(0)
 
@@ -89,24 +89,24 @@ describe("PlanModeState (T047)", () => {
 
         const result = ref.update((s) => ({
           ...s,
-          active: true,
+          planSessionID: "test-plan-session" as SessionID,
           planText: "Test Plan",
           turnsSincePlanReminder: 3,
         }))
 
-        expect(result.active).toBe(true)
+        expect(result.planSessionID).toBe("test-plan-session")
         expect(result.planText).toBe("Test Plan")
         expect(result.turnsSincePlanReminder).toBe(3)
 
         // Verify in-memory persistence via re-read
         const reRead = ref.get()
-        expect(reRead.active).toBe(true)
+        expect(reRead.planSessionID).toBe("test-plan-session")
         expect(reRead.planText).toBe("Test Plan")
         expect(reRead.turnsSincePlanReminder).toBe(3)
 
         // Verify accessible via static lookup
         const lookedUp = PlanModeStateRef.for(session.id)
-        expect(lookedUp.get().active).toBe(true)
+        expect(lookedUp.get().planSessionID).toBe("test-plan-session")
 
         await Session.remove(session.id)
       },
@@ -119,7 +119,7 @@ describe("PlanModeState (T047)", () => {
       directory: tmp.path,
       fn: async () => {
         const { session, ref } = await createSessionWithRef()
-        ref.update((s) => ({ ...s, active: true }))
+        ref.update((s) => ({ ...s, planSessionID: "test-session" as SessionID }))
 
         for (let i = 1; i <= 6; i++) {
           ref.update((s) => ({
@@ -139,7 +139,7 @@ describe("PlanModeState (T047)", () => {
     expect(PLAN_REMINDER_FULL_INTERVAL).toBe(5)
   })
 
-  test("PlanModeStateRef.update emits PlanStateChanged on active transition", async () => {
+  test("PlanModeStateRef.update emits PlanStateChanged on planSessionID transition", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
@@ -150,7 +150,7 @@ describe("PlanModeState (T047)", () => {
         let eventPayload: Record<string, unknown> | undefined
 
         const unsub = Bus.subscribe(Session.Event.PlanStateChanged, (event) => {
-          const props = event.properties as { sessionID: string; active: boolean }
+          const props = event.properties as { sessionID: string; active: boolean; planSessionID?: string }
           if (props.sessionID === session.id) {
             eventReceived = true
             eventPayload = event.properties as Record<string, unknown>
@@ -158,20 +158,21 @@ describe("PlanModeState (T047)", () => {
         })
 
         // Activate plan mode — should emit event synchronously
-        ref.update((s) => ({ ...s, active: true }))
+        ref.update((s) => ({ ...s, planSessionID: "plan-child-session" as SessionID }))
 
         unsub()
 
         expect(eventReceived).toBe(true)
         expect(eventPayload?.sessionID).toBe(session.id)
         expect(eventPayload?.active).toBe(true)
+        expect(eventPayload?.planSessionID).toBe("plan-child-session")
 
         await Session.remove(session.id)
       },
     })
   })
 
-  test("PlanModeStateRef.update does NOT emit PlanStateChanged when active is unchanged", async () => {
+  test("PlanModeStateRef.update does NOT emit PlanStateChanged when planSessionID is unchanged", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
@@ -186,7 +187,7 @@ describe("PlanModeState (T047)", () => {
           }
         })
 
-        // Update counter only — active stays false (default)
+        // Update counter only — planSessionID stays undefined (default)
         ref.update((s) => ({
           ...s,
           turnsSincePlanReminder: s.turnsSincePlanReminder + 1,
@@ -210,7 +211,7 @@ describe("PlanModeState (T047)", () => {
 
         ref.update((s) => ({
           ...s,
-          active: true,
+          planSessionID: "test-session" as SessionID,
           planText: planContent,
         }))
 

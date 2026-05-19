@@ -1,22 +1,38 @@
-Use this tool when you are in plan mode and have finished writing your plan and are ready for user approval.
+Use this tool when you are in plan mode and have received the plan from plan_enter. This is the ONLY approval point in the planning lifecycle — there is no other dialog.
 
 ## How This Tool Works
 - Pass your complete plan content as the `plan` parameter
 - This tool will save your plan to the plan file and present it to the user for review
-- The user will see the contents of your plan when they review it
+- If the user approves, your session exits plan mode and you can start implementing
+- If the user rejects, you remain in plan mode and can revise the plan
 
 ## When to Use This Tool
-IMPORTANT: Only use this tool when the task requires planning the implementation steps of a task that requires writing code. For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool.
+IMPORTANT: Only use this tool when:
+1. You have already called plan_enter and received a plan from the plan subagent
+2. The task requires planning the implementation steps of a task that requires writing code
+
+For research tasks where you're gathering information, searching files, reading files or in general trying to understand the codebase - do NOT use this tool.
 
 ## Before Using This Tool
 Ensure your plan is complete and unambiguous:
-- If you have unresolved questions about requirements or approach, use the question tool first (in earlier phases)
-- Once your plan is finalized, use THIS tool to request approval
+- Review the plan returned by plan_enter
+- Make any adjustments to the plan text if needed before submitting
+- If the plan is satisfactory, pass it directly to plan_exit
 
-**Important:** Do NOT use the `ask_user` tool to ask "Is this plan okay?" or "Should I proceed?". The `plan_exit` tool explicitly requests user feedback on its own. Using both creates duplicate prompts.
+**Important:** Do NOT use the `ask_user` tool to ask "Is this plan okay?" or "Should I proceed?". The `plan_exit` tool explicitly requests user feedback on its own. Using both creates duplicate prompts. This tool is the SINGLE approval gate.
+
+## What Happens on Approval
+- Your session permission mode is restored to "default" — you can now modify files
+- The plan text is stored for reference during implementation
+- You should start implementing the approved plan
+
+## What Happens on Rejection
+- Your session stays in "plan" mode — you cannot modify files
+- You receive a rejection signal with the user's feedback
+- You should revise the plan and call plan_exit again
 
 ## Examples
 
 1. Initial task: "Search for and understand the implementation of vim mode in the codebase" - Do not use the exit plan mode tool because you are not planning the implementation steps of a task.
-2. Initial task: "Help me implement yank mode for vim" - Use the exit plan mode tool after you have finished planning the implementation steps of the task.
-3. Initial task: "Add a new feature to handle user authentication" - If unsure about auth method (OAuth, JWT, etc.), use the question tool first, then use exit plan mode tool after clarifying the approach.
+2. Initial task: "Help me implement yank mode for vim" - Use the exit plan mode tool after you have received the plan from plan_enter.
+3. Initial task: "Add a new feature to handle user authentication" - Ask clarifying questions BEFORE plan_enter, then use exit plan mode tool after the plan is ready.

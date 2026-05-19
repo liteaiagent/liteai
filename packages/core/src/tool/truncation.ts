@@ -96,7 +96,7 @@ export namespace Truncate {
     await Filesystem.write(filepath, text)
 
     const hint = hasAgentTool(agent)
-      ? `The tool call succeeded but the output was truncated. Full output saved to: ${filepath}\nUse the Agent tool to have explore agent process this file with Grep and Read (with offset/limit). Do NOT read the full file yourself - delegate to save context.`
+      ? `The tool call succeeded but the output was truncated. Full output saved to: ${filepath}\nUse the Agent tool to have the explore agent process this file with Grep and Read (with offset/limit). Do NOT read the full file yourself - delegate to save context.`
       : `The tool call succeeded but the output was truncated. Full output saved to: ${filepath}\nUse Grep to search the full content or Read with offset/limit to view specific sections.`
     const message =
       direction === "head"

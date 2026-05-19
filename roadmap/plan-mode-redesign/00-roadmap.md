@@ -1,6 +1,6 @@
 # Plan Mode Redesign — Master Roadmap
 
-## Status: DRAFT — Awaiting Review
+## Status: IN PROGRESS — Phase 1 ✅ Complete, Phase 2 Active
 
 ---
 
@@ -101,16 +101,16 @@ Root Agent: Implements plan with full tool access
 
 ## Phase Overview
 
-| Phase | Name | Document | Scope |
-|-------|------|----------|-------|
-| **P1** | Agent Taxonomy & Rename | [01-agent-taxonomy.md](./01-agent-taxonomy.md) | `task`→`agent`, `build`→`liteai`, agent roster |
-| **P2** | Plan Mode Lifecycle | [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` rewrite, permission gating |
-| **P3** | yield_turn Removal & State Cleanup | [02-plan-mode.md](./02-plan-mode.md) §3 | Remove deprecated infra |
-| **P4** | Prompt Rewrites | [02-plan-mode.md](./02-plan-mode.md) §4 | System prompt, agent prompts, tool descriptions |
-| **P5** | Tool Concurrency Redesign | [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor rewrite, per-tool method, sibling abort |
-| **P6** | KV Cache Hardening | [04-kv-cache.md](./04-kv-cache.md) | Deterministic ordering, prompt boundary, cache detection, reasoning tokens |
-| **P7** | Skill System Enhancements | [05-skills.md](./05-skills.md) | Superpowers integration, plan workflow skills |
-| **P8** | Verification & Polish | (inline below) | E2E testing, docs |
+| Phase | Name | Document | Scope | Status |
+|-------|------|----------|-------|--------|
+| **P1** | Agent Taxonomy & Rename | [01-agent-taxonomy.md](./01-agent-taxonomy.md) | `task`→`agent`, `build`→`liteai`, agent roster | ✅ **DONE** |
+| **P2** | Plan Mode Lifecycle | [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` rewrite, permission gating | 🔄 **ACTIVE** |
+| **P3** | yield_turn Removal & State Cleanup | [02-plan-mode.md](./02-plan-mode.md) §3 | Remove deprecated infra | ⏳ Blocked on P2 |
+| **P4** | Prompt Rewrites | [02-plan-mode.md](./02-plan-mode.md) §4 | System prompt, agent prompts, tool descriptions | ⏳ Blocked on P3 |
+| **P5** | Tool Concurrency Redesign | [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor rewrite, per-tool method, sibling abort | ⏳ Ready (P1 done) |
+| **P6** | KV Cache Hardening | [04-kv-cache.md](./04-kv-cache.md) | Deterministic ordering, prompt boundary, cache detection, reasoning tokens | ⏳ Blocked on P4+P5 |
+| **P7** | Skill System Enhancements | [05-skills.md](./05-skills.md) | Superpowers integration, plan workflow skills | ⏳ Blocked on P4 |
+| **P8** | Verification & Polish | (inline below) | E2E testing, docs | ⏳ Final |
 
 ---
 
@@ -209,9 +209,9 @@ flowchart TD
     P7B --> P8
 
     %% Styling
-    style P1A fill:#4a9eff,color:#fff
-    style P1B fill:#4a9eff,color:#fff
-    style P1C fill:#4a9eff,color:#fff
+    style P1A fill:#2ed573,color:#fff,stroke:#1e8449,stroke-width:2px
+    style P1B fill:#2ed573,color:#fff,stroke:#1e8449,stroke-width:2px
+    style P1C fill:#2ed573,color:#fff,stroke:#1e8449,stroke-width:2px
     style P2A fill:#ff6b6b,color:#fff
     style P2B fill:#ff6b6b,color:#fff
     style P2C fill:#ff6b6b,color:#fff
