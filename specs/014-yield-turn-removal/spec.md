@@ -40,8 +40,8 @@ As the LiteAI runtime, I need the plan mode state model stripped of legacy field
 1. **Given** `PlanModeState` contains `active` and `workflowType` fields, **When** Phase 3B is completed, **Then** the interface contains only: `planText`, `planFilePath`, `turnsSincePlanReminder`, and `planSessionID`.
 2. **Given** the session engine emits `PlanStateChanged` events, **When** Phase 3B is completed, **Then** zero event emissions or subscriptions for `PlanStateChanged` exist in the codebase.
 3. **Given** `plan-reminder.ts` contains `injectActivePlanReminder()` and an `if (planModeState.active)` branch, **When** Phase 3B is completed, **Then** only the build-phase reminder path remains.
-4. **Given** `stop-drift.ts` contains plan mode drift detection, **When** Phase 3B is completed, **Then** the drift detection logic for plan mode is fully removed.
-5. **Given** `query.ts` contains stop-drift recovery and yield_turn detection, **When** Phase 3B is completed, **Then** those code paths are fully removed.
+4. **Given** `stop-drift.ts` contains the `StopDriftService`, **When** Phase 3B is completed, **Then** `StopDriftService` is retained unchanged — it is P2-era enforcement logic, not legacy infrastructure (FR-006).
+5. **Given** `query.ts` contains yield_turn detection (`calledYieldTurn` check and loop break), **When** Phase 3B is completed, **Then** the `calledYieldTurn` detection is removed while the stop-drift recovery path (which depends on the retained `StopDriftService`) is preserved (FR-007).
 
 ---
 

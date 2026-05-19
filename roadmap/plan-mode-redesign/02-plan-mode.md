@@ -157,7 +157,7 @@ Update references from `Task` tool to `agent` tool. Update agent names.
 ### 4C. Plan agent prompt (`bundled/agents/plan.md`)
 
 - Update instructions for new lifecycle (returns plan text, writes to disk)
-- Remove `plan_exit` from disallowed tools
+- Retain `plan_exit` in disallowed tools (per 2E: only root agent may call plan_exit; subagent filter in `agent/filter.ts` enforces this globally)
 - Consider: should plan agent write plan to disk, or should plan_enter handle it?
 - If interview mode is kept: how does plan agent interact with user? (ask_user tool? bubble permission?)
 

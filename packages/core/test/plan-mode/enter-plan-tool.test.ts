@@ -90,13 +90,9 @@ describe("PlanEnterTool", () => {
     const parsed = instance.parameters.safeParse({})
     expect(parsed.success).toBe(true)
 
-    // Verify interviewMode is no longer accepted
-    const withInterview = instance.parameters.safeParse({ interviewMode: true })
-    // Zod strict mode would reject, but with passthrough it won't — so just check
-    // that the parsed result doesn't have interviewMode as a known field
-    if (withInterview.success) {
-      expect(Object.keys(withInterview.data)).not.toContain("interviewMode")
-    }
+    // Verify interviewMode is rejected by the schema (strict rejects unknown keys)
+    const withInterview = instance.parameters.strict().safeParse({ interviewMode: true })
+    expect(withInterview.success).toBe(false)
   })
 
   // NOTE: Tests for plan_enter's core functionality (subagent spawn, permission gating,

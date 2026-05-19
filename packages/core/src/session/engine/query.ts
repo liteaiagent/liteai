@@ -560,9 +560,11 @@ export async function* queryLoop(params: QueryLoopParams): AsyncGenerator<Engine
     // ── Update in-memory PlanModeState at turn end (T007/FR-006) ──
     // Persist the counter updates from injectPlanAttachment back to the ref.
     // The counter may already have been reset to 0 by injectPlanAttachment (full reminder).
-    if (planModeState.planSessionID !== undefined) {
-      planModeStateRef.update(() => planModeState)
-    }
+    // Always update unconditionally: injectPlanAttachment is a no-op (returns the
+    // same state object) when planText is absent, so this is safe. The previous
+    // planSessionID guard incorrectly prevented counter persistence during build
+    // mode (planText set, planSessionID cleared after plan_exit approval).
+    planModeStateRef.update(() => planModeState)
 
     // ── Yield turn-end: orchestrator flushes persister ──
     yield {
