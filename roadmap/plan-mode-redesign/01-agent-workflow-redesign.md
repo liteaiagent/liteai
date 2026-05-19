@@ -68,19 +68,20 @@ This is a **prompt-level change**, not a tool-level change. The tool itself does
 - The plan subagent works in an isolated session with read-only tools
 - Root agent's context/KV cache is completely untouched
 
-### 3. plan_exit: Merged into plan_enter
+### 3. plan_exit: Restructured as single approval gate
 
-Since plan mode is now entirely within the subagent, there's no separate "exit" step for the root agent. The flow is:
+The original proposal merged `plan_exit` into `plan_enter`. **Actual implementation** kept `plan_exit` as a separate tool — the single approval point:
 
-1. `plan_enter` spawns plan subagent
+1. `plan_enter` spawns plan subagent (no approval)
 2. Plan subagent returns plan text
-3. `plan_enter` writes plan to disk
-4. `plan_enter` fires `PlanApprovalRequested` (TUI preview)
-5. `plan_enter` asks user to approve via `Question.ask()` (SINGLE dialog)
-6. On approval: stores planText for build-phase reminders
-7. On rejection: returns error so agent can revise/re-plan
+3. Root agent calls `plan_exit(planText)`
+4. `plan_exit` writes plan to disk
+5. `plan_exit` fires `PlanApprovalRequested` (TUI preview)
+6. `plan_exit` asks user to approve via `Question.ask()` (SINGLE dialog)
+7. On approval: restores `setPermissionMode("default")`, clears `planSessionID`, stores planText
+8. On rejection: returns error so agent can revise/re-plan
 
-`plan_exit` tool is deleted entirely.
+`plan_exit` tool is restructured, NOT deleted.
 
 ### 4. Task tool defaults to keeping history
 
@@ -108,7 +109,7 @@ Keep:
 
 | File | Action | Scope |
 |------|--------|-------|
-| `tool/plan.ts` | Rewrite | Remove PlanExitTool, rewrite PlanEnterTool |
+| `tool/plan.ts` | Rewrite | Rewrite PlanEnterTool (subagent spawn), restructure PlanExitTool (approval gate) |
 | `tool/task.ts` | Modify | Default keepHistory=true, remove yield_turn parsing |
 | `tool/yield_turn.ts` | Delete | Redundant tool |
 | `session/plan-mode-state.ts` | Simplify | Remove `active`, `workflowType` fields |
@@ -118,7 +119,7 @@ Keep:
 | `bundled/prompts/system/system.md` | Update | Rewrite Section 5 for new workflow |
 | `bundled/agents/plan.md` | Update | Remove plan_exit from disallowed, update instructions |
 | `bundled/prompts/tools/plan-enter.txt` | Rewrite | New description |
-| `bundled/prompts/tools/plan-exit.txt` | Delete | No longer exists |
+| `bundled/prompts/tools/plan-exit.txt` | Update | Updated for new approval-only behavior |
 | `bundled/prompts/tools/yield_turn.txt` | Delete | No longer exists |
 | `bundled/prompts/misc/plan-*.md` | Delete | All 3 plan prompt files |
 | `tool/registry.ts` | Modify | Remove PlanExitTool, YieldTurnTool |

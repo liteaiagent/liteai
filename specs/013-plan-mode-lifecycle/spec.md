@@ -101,7 +101,7 @@ When the plan subagent is spawned, its session history is preserved (`keepHistor
 - **FR-010**: The plan agent configuration MUST be updated to instruct the subagent to write the plan to disk and return the full plan as its final response.
 - **FR-011**: The plan subagent MUST be spawned with `keepHistory: true` to enable KV cache reuse across multi-turn exploration.
 - **FR-012**: On plan subagent timeout or crash, `plan_enter` MUST restore default permission mode and return a structured error to the root agent.
-- **FR-013**: During "plan" permission mode, `run_command` MUST allow read-only commands (git log, ls, find, cat, etc.) and deny write/mutating commands.
+- **FR-013** *(DEFERRED)*: During "plan" permission mode, `run_command` SHOULD allow read-only commands (git log, ls, find, cat, etc.) and deny write/mutating commands. **Current behavior**: all operations are hard-denied. The plan subagent runs in its own session with independent permissions, so this only affects the root session (which is blocked during planning). Implementation deferred to a future phase.
 - **FR-014**: The old approval gate (`Question.ask` in `plan_enter`) and `PlanApprovalRequested` from `plan_enter` MUST be removed — approval lives exclusively in `plan_exit`.
 - **FR-015**: The `interviewMode` parameter MUST be removed from `plan_enter` — the root agent handles all clarification before entering plan mode.
 

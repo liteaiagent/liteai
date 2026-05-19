@@ -1,6 +1,6 @@
 # Implementation Plan: Plan Mode Lifecycle
 
-**Branch**: `013-plan-mode-lifecycle` | **Date**: 2026-05-19 | **Spec**: [spec.md](file:///d:/liteai/specs/013-plan-mode-lifecycle/spec.md)
+**Branch**: `013-plan-mode-lifecycle` | **Date**: 2026-05-19 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/013-plan-mode-lifecycle/spec.md`
 
@@ -24,7 +24,7 @@ Rewrite the plan mode lifecycle from a state-machine toggle to a blocking subage
 
 **Performance Goals**: Non-blocking event loop, minimal memory per session, KV cache reuse for subagent
 
-**Constraints**: Zero backward compatibility (new major release per §0 of core mandates)
+**Constraints**: Breaking interface changes with event-level backward compatibility (PlanModeState drops `active`/`workflowType`; `PlanStateChanged` event retains a derived `active` field for TUI consumers)
 
 **Scale/Scope**: ~17 files touched across `core` + `cli` packages
 
@@ -36,11 +36,11 @@ Constitution is template-only (not customized for this project). No explicit gat
 
 | Mandate | Compliance |
 |---------|------------|
-| §0 Zero backward compat | ✅ Breaking `PlanModeState` interface, removing `active`/`workflowType` |
+| §0 Zero backward compat | ✅ Breaking `PlanModeState` interface; event payload keeps derived `active` for TUI compat |
 | §1 Non-blocking, tenant-isolated | ✅ Subagent runs in own session; root blocks but doesn't spin-wait |
 | §2 Use bun for all operations | ✅ All scripts/tests use bun |
 | §5 No silent fallbacks | ✅ Error recovery in `plan_enter` throws structured errors |
-| §7 Multiple design alternatives | ✅ Evaluated in [research.md](file:///d:/liteai/specs/013-plan-mode-lifecycle/research.md) |
+| §7 Multiple design alternatives | ✅ Evaluated in [research.md](./research.md) |
 | §8 Execution gate | ✅ Plan artifact created before implementation |
 
 ## Project Structure
@@ -160,8 +160,9 @@ packages/core/test/plan-mode/
    f. Return { planFilePath, planText } to root agent
    ```
 7. Error recovery: try/catch around runSubagent, restore permission mode on failure
+8. **Note**: `runSubagent()` does not expose a timeout parameter. Timeout protection is delegated to the underlying LLM provider's request-level timeouts and the session's abort signal. If timeout enforcement is needed at the tool level, wrap the call with `AbortSignal.timeout()` — see risk register.
 
-8. Update `plan-enter.txt` tool description to reflect the new behavior (no approval gate, spawns subagent)
+9. Update `plan-enter.txt` tool description to reflect the new behavior (no approval gate, spawns subagent)
 
 ### Phase D: `plan_exit` Update (Approval Gate)
 
@@ -196,6 +197,8 @@ packages/core/test/plan-mode/
    - Write the plan to disk using the `write` tool
    - Return the full plan text as its final response text
    - Include the plan file path in the response
+
+> **Write Scoping**: The `write` tool is unrestricted at the tool level. Scoping is enforced via the agent prompt (instructs write only to `planFilePath`). The plan subagent runs in an isolated child session — any writes go to its own session, not the root. Runtime path whitelisting would require changes to the write tool's permission model, deferred to a future phase.
 
 ### Phase G: CLI/TUI Updates
 
@@ -263,9 +266,9 @@ packages/core/test/plan-mode/
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Subagent spawn timeout | Root agent stuck in read-only indefinitely | `plan_enter` error recovery restores default permission mode |
+| Subagent spawn timeout | Root agent stuck in read-only indefinitely | `plan_enter` error recovery restores default permission mode; LLM provider request timeouts apply; future: wrap with `AbortSignal.timeout()` |
 | `PlanStateChanged` event payload change breaks TUI | TUI plan mode indicator stops working | Keep `active` as derived field in event payload for backward compat |
-| Plan agent writes to wrong path | Plan file not found by `plan_exit` | Plan file path is deterministic (`Session.plan()`) — agent instructed to use it |
+| Plan agent writes to wrong path | Plan file not found by `plan_exit` | Plan file path is deterministic (`Session.plan()`) — agent instructed to use it; scoping is prompt-level, not runtime-enforced |
 | Concurrent `plan_enter` calls race | Duplicate plan sessions | `planSessionID` guard + root-agent-only check prevent this |
 | CLI `prePlanPermissionMode` logic breaks | Permission mode not restored after plan mode | Permission restoration now handled by core (`setPermissionMode("default")` in `plan_exit`), CLI logic becomes redundant but harmless |
 

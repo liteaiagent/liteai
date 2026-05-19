@@ -28,6 +28,8 @@ New steps:
 - Non-blocking async spawn: Rejected (ADR Q4). Nothing useful to do during planning since root is read-only. Adds complexity with no benefit.
 - Keep approval gate in `plan_enter`: Rejected (design doc §2B). Creates dual-dialog problem. Single approval point in `plan_exit`.
 
+**Permission timeline**: `plan_enter` executes as a tool call within the root session — at that point the root agent still has write permissions. `plan_enter` updates `PlanModeStateRef` (an in-memory registry write, not a tool-level write) and calls `setPermissionMode("plan")` to gate the root session to read-only. The plan subagent runs in a separate child session with its own independent permissions (default mode). After the subagent completes, `plan_exit` is the single approval gate that calls `setPermissionMode("default")` to restore write access.
+
 ## R2: Current `plan_exit` Architecture
 
 **Decision**: Modify `plan_exit` to add `setPermissionMode("default")` on approval. Keep existing approval flow.
@@ -58,7 +60,7 @@ if (permMode === "plan") {
   })
 }
 ```
-This blocks ALL permissions when `permissionMode === "plan"`. The `run_command` read-only exception is NOT yet implemented — the current code denies everything. The design doc says to "evaluate whether to deny or allow read-only commands" (§2A), but this is a Phase 2A subtask we should implement.
+This blocks ALL permissions when `permissionMode === "plan"`. The `run_command` read-only exception is NOT yet implemented — the current code denies everything. FR-013 in spec.md defines the desired behavior (allow read-only commands) but implementation is deferred to a future phase.
 
 **For run_command in plan mode**: The plan subagent runs in its own session with its own permission mode (not "plan"). The root agent is blocked in `plan_enter` and can't call any tools. So the run_command question only applies to the plan subagent, which already has bash tools allowed in its agent config. No change needed for Phase 2.
 

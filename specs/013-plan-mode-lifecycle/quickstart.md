@@ -72,8 +72,8 @@ After implementing, verify with these checks:
 
 ## Key Files to Read First
 
-1. [plan-mode-state.ts](file:///d:/liteai/packages/core/src/session/plan-mode-state.ts) — Start here: the `PlanModeState` interface
-2. [tool/plan.ts](file:///d:/liteai/packages/core/src/tool/plan.ts) — The `plan_enter` and `plan_exit` implementations
-3. [app-state-events.ts](file:///d:/liteai/packages/cli/src/tui/state/app-state-events.ts) — CLI event handlers for plan state changes
-4. [data-model.md](file:///d:/liteai/specs/013-plan-mode-lifecycle/data-model.md) — State transition diagram
-5. [contracts/events-and-tools.md](file:///d:/liteai/specs/013-plan-mode-lifecycle/contracts/events-and-tools.md) — Event and tool contract changes
+1. [plan-mode-state.ts](../../packages/core/src/session/plan-mode-state.ts) — Start here: the `PlanModeState` interface
+2. [tool/plan.ts](../../packages/core/src/tool/plan.ts) — The `plan_enter` and `plan_exit` implementations
+3. [app-state-events.ts](../../packages/cli/src/tui/state/app-state-events.ts) — CLI event handlers for plan state changes
+4. [data-model.md](./data-model.md) — State transition diagram
+5. [contracts/events-and-tools.md](./contracts/events-and-tools.md) — Event and tool contract changes
