@@ -1,4 +1,49 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: en-US
+
 reviews:
+  # Auto-review all PRs
+  auto_review:
+    enabled: true
+    drafts: false
+
+  # Request changes when issues are found
+  request_changes_workflow: true
+
+  # Review profile
+  profile: chill
+
+  # High-level summary in PR comments
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+
+  # Poem in review (disable for professional tone)
+  poem: false
+
+  # Path-based review instructions
+  path_instructions:
+    - path: "packages/core/**"
+      instructions: |
+        This is a multi-tenant, multi-session HTTP/SSE backend.
+        Code must be strictly non-blocking. Check for:
+        - Blocking operations in async contexts
+        - Missing error handling (no silent fallbacks)
+        - Tenant isolation violations
+        - Typed error usage
+    - path: "packages/ui/**"
+      instructions: "React UI components. Check for accessibility, proper hooks usage, and component isolation."
+    - path: "packages/sdk/**"
+      instructions: "Public SDK surface. Check for backward-compatible API changes and proper TypeScript types."
+
+  # Path filters — ignore hidden folders
   path_filters:
-    - "!**/.*/**"
     - "!**/.*"
+    - "!**/.*/**"
+    - "!.github/**"
+    - "!.agents/**"
+    - "!.specify/**"
+    - "!.vscode/**"
+
+chat:
+  auto_reply: true
