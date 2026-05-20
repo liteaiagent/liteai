@@ -56,7 +56,7 @@ z.object({
 ## Bus Event: `PermissionModeChanged`
 
 **Source**: `packages/core/src/session/index.ts` → `Session.Event.PermissionModeChanged`
-**Emitter**: `setPermissionMode()` in `loop.ts`
+**Emitter**: `setPermissionMode()` defined in `loop.ts` (L279), re-exported as `SessionPrompt.setPermissionMode` via `session/engine/namespace.ts`
 **Consumers**: CLI (`app-state-events.ts`), ACP (`events.ts`)
 
 ### Payload Schema (Unchanged)

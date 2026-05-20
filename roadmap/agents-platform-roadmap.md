@@ -12,10 +12,10 @@
 Phase 4: Fork Subagent + Agent Durability ✅  ← Foundation (feature-flagged)
         │
         ▼
-Phase 5: Coordinator Mode + Agent Swarms
+Phase 5: Coordinator Mode + Agent Swarms ✅
         │
         ▼
-Phase 6: Built-in Specialized Agents + Advanced Memory
+Phase 6: Built-in Specialized Agents + Advanced Memory 🔄  ← In Progress
 ```
 
 > **Feature Flag Architecture:** All phases in this roadmap are gated behind feature flags (`FORK_SUBAGENT`, `COORDINATOR_MODE`). These flags are mutually exclusive — fork and coordinator modes cannot be active simultaneously.
@@ -85,7 +85,7 @@ These features layer on top of Phase 2's core sub-agent architecture (context fo
 
 ---
 
-## Phase 5: Coordinator Mode + Agent Swarms
+## Phase 5: Coordinator Mode + Agent Swarms ✅
 
 > **speckit.specify scope:** "Implement coordinator mode (delegating orchestrator with restricted tool pool) and multi-agent swarms with inter-agent messaging, teammate spawning, file-based mailbox protocol, permission synchronization, and task-driven work distribution"
 
@@ -179,7 +179,7 @@ LiteAI currently has only a forward-declaring placeholder (`ForkGateContext.isCo
 
 ---
 
-## Phase 6: Built-in Specialized Agents + Advanced Memory
+## Phase 6: Built-in Specialized Agents + Advanced Memory 🔄
 
 > **speckit.specify scope:** "Implement built-in verification agent with read-only enforcement and adversarial testing protocol, guide agent for user assistance, and project-level agent memory snapshots with sync detection"
 
@@ -229,13 +229,32 @@ liteai_cli_mvp ships several built-in specialized agents beyond the basic explor
 
 ### Files Affected
 
-| File | Action |
-|---|---|
-| *(new)* `agent/built-in/verification.ts` | **New** — Verification agent definition with read-only enforcement and adversarial prompt |
-| *(new)* `agent/built-in/guide.ts` | **New** — Guide agent definition with doc-fetching prompt |
-| *(new)* `agent/memory-snapshot.ts` | **New** — Snapshot sync detection, initialization, replacement |
-| `agent/loader.ts` | **Modify** — Register new built-in agents in priority chain |
-| `agent/agent.ts` | **Modify** — Add `criticalSystemReminder` field enforcement |
+| File | Action | Status |
+|---|---|---|
+| `coordinator/verification-agent.ts` | **New** — Verification agent definition with read-only enforcement and adversarial prompt | ✅ Done |
+| `coordinator/built-in-agents.ts` | **New** — Built-in agent registry with verification profile | ✅ Done |
+| *(new)* `agent/built-in/guide.ts` | **New** — Guide agent definition with doc-fetching prompt | ❌ Not started |
+| *(new)* `agent/memory-snapshot.ts` | **New** — Snapshot sync detection, initialization, replacement | ❌ Not started |
+| `agent/loader.ts` | **Modify** — Register new built-in agents in priority chain | ⚠️ Verification only |
+| `agent/agent.ts` | **Modify** — Add `criticalSystemReminder` field enforcement | ✅ Done |
+
+### Remaining Work
+
+1. **Guide agent** — Lightweight documentation assistant:
+   - Agent definition with read-only tools + WebFetch + WebSearch
+   - Model: haiku (cost-optimized)
+   - Permission mode: `dontAsk`
+   - Dynamic context injection (skills, custom agents, MCP servers, settings)
+   - Re-engagement via SendMessage preference
+   - Register in `built-in-agents.ts`
+
+2. **Agent memory snapshots** — Project-level memory sharing via VCS:
+   - Snapshot directory: `<cwd>/.liteai/agent-memory-snapshots/<agentType>/`
+   - `snapshot.json` metadata with `updatedAt` timestamp
+   - 3-way sync detection: `initialize` / `prompt-update` / `none`
+   - `.snapshot-synced.json` sync marker
+   - `initializeFromSnapshot()`, `replaceFromSnapshot()`, `markSnapshotSynced()`
+   - Current `memory.ts` has rudimentary `checkAgentMemorySnapshot()` and `copyProjectSnapshotToLocal()` but lacks the full protocol
 
 ---
 
@@ -243,12 +262,14 @@ liteai_cli_mvp ships several built-in specialized agents beyond the basic explor
 
 ```
 1. Verify Phase 4 foundation ✅ (typecheck, tests)
-2. speckit.specify → Phase 5 spec
-3. speckit.plan    → Phase 5 plan
-4. speckit.tasks   → Phase 5 tasks
-5. speckit.implement → Phase 5 implementation
-6. Verify Phase 5 (typecheck, tests)
-7. Repeat 2-6 for Phase 6
+2. speckit.specify → Phase 5 spec ✅
+3. speckit.plan    → Phase 5 plan ✅
+4. speckit.tasks   → Phase 5 tasks ✅
+5. speckit.implement → Phase 5 implementation ✅
+6. Verify Phase 5 (typecheck, tests) ✅
+7. Phase 6: Verification agent ✅
+8. Phase 6: Guide agent ← NEXT
+9. Phase 6: Agent memory snapshots
 ```
 
-> **Gate:** Do not begin Phase 5 until Roadmap 1 Phase 3 (`disallowedTools` enforcement) is complete and verified.
+> **Gate:** ~~Do not begin Phase 5 until Roadmap 1 Phase 3 (`disallowedTools` enforcement) is complete and verified.~~ Cleared.

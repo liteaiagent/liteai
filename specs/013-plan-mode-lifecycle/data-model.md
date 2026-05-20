@@ -96,5 +96,7 @@
 
 ## Session Table Impact
 
-- `plan_mode` column (JSON, type `PlanModeState`) — schema evolves automatically since it's `text({ mode: "json" })` (see `session.sql.ts` L36)
-- No migration needed — old persisted rows with `active`/`workflowType` are only read by `createDefaultPlanModeState()` which creates fresh state on session start
+- **`plan_mode` column** (JSON, type `PlanModeState`): stored as `text({ mode: "json" })` in `session.sql.ts` (L36). Drizzle's `text({ mode: "json" })` simply `JSON.parse`/`JSON.stringify`s the value — there is **no automatic runtime type validation or stripping of unknown keys**. Any extra fields persisted by older versions (e.g., `active`, `workflowType`) will survive in the parsed object at runtime.
+- **On session start**: the code path calls `createDefaultPlanModeState()` which constructs a fresh `PlanModeState` with the new shape (`planSessionID: undefined`, no `active`/`workflowType`). This intentionally replaces/resets any persisted plan state for resumed sessions, so legacy fields from older rows are effectively ignored by initialization logic.
+- **No DB migration required**: the column schema is unchanged (still `text({ mode: "json" })`). Old rows with `active`/`workflowType` keys are inert because `createDefaultPlanModeState()` always creates fresh state.
+- **Caveat**: if strict runtime validation is desired (e.g., to actively purge old keys from the JSON or reject malformed state), a validation step using `PlanModeState` schema or a one-time migration must be added separately. This is not required for correctness.

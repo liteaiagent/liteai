@@ -7,9 +7,13 @@
  * at the CLI boundary.
  */
 export function parseModel(model: string): { providerID: string; modelID: string } {
-  const [providerID, ...rest] = model.split("/")
-  return {
-    providerID,
-    modelID: rest.join("/"),
+  if (!model || !model.includes("/")) {
+    throw new Error(`Invalid model format: expected "provider/model", got "${model}"`)
   }
+  const [providerID, ...rest] = model.split("/")
+  const modelID = rest.join("/")
+  if (!providerID || !modelID) {
+    throw new Error(`Invalid model format: expected "provider/model", got "${model}"`)
+  }
+  return { providerID, modelID }
 }

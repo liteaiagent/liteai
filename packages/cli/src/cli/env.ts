@@ -13,9 +13,11 @@ function env(key: string): string | undefined {
   return process.env[`${PREFIX}${key}`]
 }
 
+const TRUTHY_TOKENS: ReadonlySet<string> = new Set(["true", "1", "yes", "y", "on"])
+
 function truthy(key: string): boolean {
   const value = env(key)?.toLowerCase()
-  return value === "true" || value === "1"
+  return value !== undefined && TRUTHY_TOKENS.has(value)
 }
 
 export namespace Env {

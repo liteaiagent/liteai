@@ -45,12 +45,12 @@ export class AgentTaskRegistry {
 
   /**
    * Create and register a new task (status: "pending").
-   * Throws TaskLimitExceededError if runningCount >= maxConcurrentTasks.
+   * Throws TaskLimitExceededError if active tasks (pending + running) >= maxConcurrentTasks.
    */
   register(opts: RegisterOpts): AgentTaskState {
-    const running = this.runningCount()
-    if (running >= this._maxConcurrentTasks) {
-      throw new TaskLimitExceededError(this._maxConcurrentTasks, running)
+    const active = this._activeCount()
+    if (active >= this._maxConcurrentTasks) {
+      throw new TaskLimitExceededError(this._maxConcurrentTasks, active)
     }
 
     const task: AgentTaskState = {
@@ -222,6 +222,7 @@ export class AgentTaskRegistry {
         task.abortController.abort("Instance shutdown — killAll")
         task.status = "killed"
         task.completedAt = Date.now()
+        task.progress.lastActivity = Date.now()
         killed++
       }
     }
@@ -238,6 +239,15 @@ export class AgentTaskRegistry {
   }
 
   // ─── Internal Helpers ───────────────────────────────────────────────
+
+  /** Count of pending + running tasks (used for concurrency limit). */
+  private _activeCount(): number {
+    let count = 0
+    for (const task of this._tasks.values()) {
+      if (task.status === "pending" || task.status === "running") count++
+    }
+    return count
+  }
 
   private _requireTask(taskId: TaskID): AgentTaskState {
     const task = this._tasks.get(taskId)

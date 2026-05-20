@@ -2,6 +2,7 @@ import { Log } from "@liteai/util/log"
 import type { SessionID } from "@/session/schema"
 import type { AgentTaskRegistry } from "./registry"
 import type { TaskID } from "./task"
+import { isTerminalStatus } from "./task"
 
 const log = Log.create({ service: "agent-task-lifecycle" })
 
@@ -75,18 +76,22 @@ export async function runAsyncAgentLifecycle(opts: AsyncAgentLifecycleOpts): Pro
       return
     }
 
-    // 3b. Aborted → "killed" (abort signal was triggered)
+    // 3b. Aborted → handle based on current task status
     if (result.status === "aborted") {
-      // Task may have already been killed by the registry (e.g., via task_stop)
       const task = registry.get(taskId)
-      if (task && task.status === "running") {
-        // Extract partial result if available
+      if (task && !isTerminalStatus(task.status)) {
+        // Task is still pending/running — the abort was triggered but task_stop
+        // hasn't transitioned status yet. Transition to "failed" with partial result.
         const partialResult = result.message?.parts.findLast((x) => x.type === "text") as { text?: string } | undefined
-        registry.complete(taskId, partialResult?.text ?? "(aborted — no result)")
-        // Override to killed after complete (rewrite status)
-        // Actually, kill is the correct status — but we can't call kill() after complete()
-        // because complete() transitions to terminal. We need to handle this edge case.
-        // The abort was triggered externally (task_stop or killAll), which already set status to "killed".
+        try {
+          registry.fail(taskId, partialResult?.text ?? "(aborted — no result)")
+        } catch (_error: unknown) {
+          // Task may have been concurrently killed between our check and the fail() call
+          log.warn("async agent lifecycle: task transitioned during abort handling", { taskId })
+        }
+      } else {
+        // Task is already in a terminal state (killed via task_stop or killAll) — no-op
+        log.info("async agent lifecycle: task already terminal on abort", { taskId, status: task?.status })
       }
       log.info("async agent lifecycle aborted", { taskId, sessionId })
       return

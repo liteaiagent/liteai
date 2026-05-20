@@ -167,7 +167,7 @@ export class TaskLimitExceededError extends Error {
 }
 
 export class TaskNotFoundError extends Error {
-  constructor(public readonly taskId: string) {
+  constructor(public readonly taskId: TaskID) {
     super(`No task found with ID: ${taskId}`)
     this.name = "TaskNotFoundError"
   }

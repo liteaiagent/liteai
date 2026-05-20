@@ -3,7 +3,7 @@
 **Filed**: 2026-05-20
 **Source**: CodeRabbit Finding #4 (agent.ts L127–145)
 **Priority**: High
-**Status**: Proposed — reference architecture analyzed
+**Status**: ✅ Implemented — commit `2c081a22` (2026-05-20)
 
 ## Problem Statement
 
@@ -291,6 +291,21 @@ The coordinator system prompt teaches the LLM about `<task-notification>`:
 3. Design the notification XML schema
 4. Prompt engineering: parent LLM must understand async results arrive as
    `<task-notification>` messages, not as tool call results
+
+## Known Limitations
+
+> [!WARNING]
+> **Background tasks are lost on restart.** `TaskRegistry` (and `LocalAgentTask`
+> state) is purely in-memory. If the process restarts, all running background
+> agent tasks are silently dropped — no WAL, no session-DB extension, no
+> recovery. `CorrectionInjector` will not inject notifications for tasks that
+> were in-flight at crash time.
+>
+> **Planned mitigation** (not yet scheduled): Extend session persistence to
+> record task lifecycle transitions (`register`/`update`/`complete`/`fail`)
+> alongside messages, or implement a lightweight write-ahead log for
+> `TaskRegistry` state so tasks can be reconstructed on restart. Track under
+> a future roadmap item once the core async dispatch is stable.
 
 ## Risks
 

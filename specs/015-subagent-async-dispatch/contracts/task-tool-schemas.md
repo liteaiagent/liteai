@@ -46,13 +46,17 @@ Description: <description>
 </agent_launched>
 ```
 
+> **ID semantics:** In sync mode `task_id == session_id` (both reference the same session). In async mode the two diverge:
+> - `task_id` — the background task identifier. Use this for status queries (`agent_get`) and to correlate incoming `<task-notification>` updates.
+> - `session_id` — the original interactive session identifier. Use this to resume or reattach to the subagent session (e.g., passing `task_id` in a subsequent sync `agent` call).
+
 ---
 
-## New Tool: `task_get`
+## Tool: `agent_get`
 
 ### Description
 
-Query the status, progress, and result of a background task by its ID.
+Query the status, progress, and result of a background agent by its task ID.
 
 ### Schema
 
@@ -105,11 +109,11 @@ No task found with ID: <taskID>
 
 ---
 
-## New Tool: `task_list`
+## Tool: `agent_list`
 
 ### Description
 
-List all background tasks and their current statuses.
+List all background agents and their current statuses.
 
 ### Schema
 
@@ -141,15 +145,11 @@ No background tasks found.
 
 ---
 
-## Modified Tool: `agent_stop` → `task_stop`
+## Tool: `agent_stop`
 
-### Rename Rationale
+### Naming Note
 
-The existing `agent_stop` tool name is misleading — it stops *tasks*, not agents. Rename to `task_stop` for consistency with the `task_get`/`task_list` family.
-
-> [!NOTE]
-> The rename is a clean break (Constitution Principle I — zero backward compatibility).
-> The old `agent_stop` ID is dropped entirely.
+The original spec proposed renaming `agent_stop` → `task_stop` for consistency with `task_get`/`task_list`. This rename was **not implemented** — the tool family uses `agent_*` naming (`agent_get`, `agent_list`, `agent_stop`) to align with the 012-agent-taxonomy-rename. The parameter name `task_id` is retained because it refers to a task ID, not an agent name.
 
 ### Schema
 
@@ -228,3 +228,37 @@ Partial result:
 ### Coexistence with Command Notifications
 
 Both command notifications (from `BackgroundTaskRegistry`) and agent notifications (from `AgentTaskRegistry`) use the `<task-notification>` wrapper. They are injected in the same call site at the turn boundary. If both registries have pending notifications, they are combined into a single `<task-notification>` message.
+
+**Combined notification example** (one agent task + one command task):
+
+```xml
+<task-notification>
+The following background task(s) have completed:
+
+Task ID: task_01JWRX_agent_abc
+Agent: explore
+Status: completed
+Description: Research API patterns
+Result:
+```
+Found 3 viable patterns: Strategy, Mediator, and Observer…
+```
+
+Usage:
+  Tool uses: 12
+  Tokens: 45000
+  Duration: 32s
+
+Task ID: task_01JWRX_cmd_def
+Type: command
+Status: completed
+Command: bun test test/sessions
+Output:
+```
+14 tests passed, 0 failed (8.2s)
+```
+
+</task-notification>
+```
+
+Entries are separated by a blank line. Each entry starts with `Task ID:` and includes fields appropriate to its source registry (`Agent`/`Result` for agent tasks, `Type`/`Command`/`Output` for command tasks).

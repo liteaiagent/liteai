@@ -365,23 +365,20 @@ The reasoning tokens become part of the cached prefix, so subsequent turns that 
 
 ```typescript
 // In toModelMessages() — enhanced reasoning handling
-// differentModel detects any model change (provider or model ID)
-const differentModel = `${model.providerID}/${model.id}` !== `${msg.info.providerID}/${msg.info.modelID}`
 // differentProvider detects provider-level change (incompatible reasoning formats)
 const differentProvider = model.providerID !== msg.info.providerID
 
 if (part.type === "reasoning") {
-  // Strip reasoning when provider changes (incompatible formats)
+  // Strip ALL reasoning when provider changes (incompatible formats,
+  // and signed thinking blocks are API-key/provider-bound)
   if (differentProvider) {
     continue  // skip — reasoning format won't be understood
   }
   
-  // Strip signed thinking blocks when model changes within the same provider
-  if (differentModel && part.metadata?.thoughtSignature) {
-    continue  // skip — signed thinking blocks from different model
-  }
-  
-  // Keep reasoning for same model (cache benefit + API requirement)
+  // Within the same provider: keep reasoning (including signed thinking blocks).
+  // Signed blocks (part.metadata?.thoughtSignature) are provider-scoped, not
+  // model-scoped — they remain valid across model switches within the same
+  // provider (e.g., Sonnet → Opus on the same Anthropic API key).
   assistantMessage.parts.push({
     type: "reasoning",
     text: part.text,

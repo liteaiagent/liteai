@@ -19,7 +19,6 @@ Current LiteAI skills (from `.agent/skills/`):
 | `speckit-checklist` | Generate custom checklist | Usable anywhere |
 | `speckit-constitution` | Create/update project constitution | Pre-planning setup |
 | `speckit-taskstoissues` | Convert tasks to GitHub issues | Post-plan action |
-| `ui-ux-pro-max` | UI/UX design intelligence | Plan or implementation |
 
 **Actions**:
 - Audit each skill for compatibility with new plan workflow

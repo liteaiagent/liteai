@@ -20,6 +20,17 @@ import { Skill } from "../skill"
 import { Truncate } from "../tool/truncation"
 import { AgentLoader } from "./loader"
 
+const agentLog = Log.create({ service: "agent" })
+
+/** Remap legacy "build" agent key to "liteai". Logs a warning on migration. */
+function migrateLegacyAgentKey(key: string): string {
+  if (key === "build") {
+    agentLog.warn("migrating legacy agent config key 'build' → 'liteai'", { name: key })
+    return "liteai"
+  }
+  return key
+}
+
 /**
  * Parse a bundled agent .md file (raw string with YAML frontmatter) into a
  * Config.Agent object. Uses gray-matter — the same mechanism as user-defined
@@ -247,13 +258,7 @@ export namespace Agent {
 
     for (const [key, value] of Object.entries(cfgAgent)) {
       // Migration: remap legacy "build" config key to "liteai"
-      const resolvedKey =
-        key === "build"
-          ? (() => {
-              log.warn("migrating legacy agent config key 'build' → 'liteai'", { name: key })
-              return "liteai"
-            })()
-          : key
+      const resolvedKey = migrateLegacyAgentKey(key)
 
       log.info("processing agent config", { name: resolvedKey })
       // Hidden built-in agents (compaction, title, summary) are protected system agents.
@@ -398,13 +403,7 @@ export namespace Agent {
 
     if (cfg.default_agent) {
       // Migration: remap legacy "build" default_agent to "liteai"
-      const resolvedDefault =
-        cfg.default_agent === "build"
-          ? (() => {
-              log.warn("migrating default_agent 'build' → 'liteai'")
-              return "liteai"
-            })()
-          : cfg.default_agent
+      const resolvedDefault = migrateLegacyAgentKey(cfg.default_agent)
 
       const agent = agents[resolvedDefault]
       if (agent && agent.mode !== "subagent" && agent.hidden !== true && agent.enabled !== false) {

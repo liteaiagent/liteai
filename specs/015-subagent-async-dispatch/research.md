@@ -85,18 +85,18 @@ The reference architecture (Claude Code) uses independent abort controllers for 
 
 - **Parent cancellation should NOT kill background agents** — the parent may be cancelled and restarted while background agents continue their work.
 - **Background agents survive parent session lifecycle** — a background agent may outlive the parent's current loop iteration.
-- **Explicit cancellation via `task_stop`** — the LLM or user must explicitly cancel background agents.
+- **Explicit cancellation via `agent_stop`** — the LLM or user must explicitly cancel background agents.
 
 However, the existing `createSubagentContext()` at [context.ts:L218-L228](file:///d:/liteai/packages/core/src/agent/context.ts#L218-L228) always creates a child `AbortController` linked to the parent. For async dispatch, we need to bypass this and create a truly independent controller.
 
 ### Design
 
-`runAsyncAgentLifecycle()` creates its own `AbortController` and passes it through the context. The `AgentTaskRegistry` holds a reference to this controller for explicit cancellation via `task_stop`. On parent session cleanup, the registry is NOT disposed (unlike `BackgroundTaskRegistry.disposeAll()` which is called in the defer block).
+`runAsyncAgentLifecycle()` creates its own `AbortController` and passes it through the context. The `AgentTaskRegistry` holds a reference to this controller for explicit cancellation via `agent_stop`. On parent session cleanup, the registry is NOT disposed (unlike `BackgroundTaskRegistry.disposeAll()` which is called in the defer block).
 
 ### Key Difference from Sync Path
 
 - **Sync**: `ctx.abort.addEventListener("abort", cancel)` at [agent.ts:L132](file:///d:/liteai/packages/core/src/tool/agent.ts#L132) links parent abort → subagent cancel
-- **Async**: AbortController is independent, stored in TaskRegistry, only triggered by explicit `task_stop` or `killAll()`
+- **Async**: AbortController is independent, stored in TaskRegistry, only triggered by explicit `agent_stop` or `killAll()`
 
 ---
 
@@ -154,7 +154,7 @@ const shouldRunAsync =
 
 The coordinator's system prompt (not in this codebase yet, constructed in `query.ts`) should document the `<task-notification>` format so the LLM understands async results arrive as user messages.
 
-Add `task_get`, `task_list`, and `task_stop` to `COORDINATOR_ALLOWED_TOOLS` so the coordinator can manage its worker pool.
+Add `agent_get`, `agent_list`, and `agent_stop` to `COORDINATOR_ALLOWED_TOOLS` so the coordinator can manage its worker pool.
 
 ---
 

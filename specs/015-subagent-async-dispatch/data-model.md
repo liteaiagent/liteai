@@ -37,7 +37,7 @@ stateDiagram-v2
     pending --> running: lifecycle starts
     running --> completed: subagent finishes successfully
     running --> failed: subagent throws or returns error
-    running --> killed: explicit cancellation via task_stop
+    running --> killed: explicit cancellation via agent_stop
     completed --> [*]
     failed --> [*]
     killed --> [*]
@@ -110,7 +110,7 @@ Per-instance in-memory registry. Scoped via `Instance.state()` (same pattern as 
 | runningCount | `() → number` | Count of currently running tasks |
 | killAll | `() → void` | Abort all running tasks (used on instance shutdown) |
 
-**Concurrency Limit**: `register()` throws `TaskLimitExceededError` if `runningCount() >= maxConcurrentTasks` (default: 10).
+**Concurrency Limit**: `register()` throws `TaskLimitExceededError` if the count of **active** tasks (pending + running) `>= maxConcurrentTasks` (default: 10). This prevents both excess pending registrations and excess running tasks. `runningCount()` returns only running tasks; the internal `_activeCount()` method is used for the concurrency check.
 
 **Parent Scoping**: Unlike `BackgroundTaskRegistry` (session-scoped), `AgentTaskRegistry` is instance-scoped because background agents outlive their parent session's current loop iteration. The `parentSessionId` field enables filtering notifications per parent.
 

@@ -60,7 +60,7 @@ if (permMode === "plan") {
   })
 }
 ```
-This blocks ALL permissions when `permissionMode === "plan"`. The `run_command` read-only exception is NOT yet implemented — the current code denies everything. FR-013 in spec.md defines the desired behavior (allow read-only commands) but implementation is deferred to a future phase.
+This blocks ALL permissions when `permissionMode === "plan"`. The `run_command` read-only exception is NOT yet implemented — the current code denies everything. FR-013 in spec.md is marked N/A: `plan_enter` blocks the root agent so no tools (including `run_command`) can be invoked on the root session during planning. The plan subagent runs in its own session with default (unrestricted) permissions, so it already has full `bash` access. No whitelist or special handling is needed for Phase 2.
 
 **For run_command in plan mode**: The plan subagent runs in its own session with its own permission mode (not "plan"). The root agent is blocked in `plan_enter` and can't call any tools. So the run_command question only applies to the plan subagent, which already has bash tools allowed in its agent config. No change needed for Phase 2.
 

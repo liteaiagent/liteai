@@ -83,7 +83,7 @@ When the plan subagent is spawned, its session history is preserved (`keepHistor
 - What happens when the user's TUI disconnects during the plan approval dialog?
   - The system should preserve the plan state. When the user reconnects, the plan should still be available for review.
 - How does `run_command` behave during plan mode?
-  - Read-only commands (git log, ls, find, cat, etc.) are allowed. Write commands are denied.
+  - Not applicable: `plan_enter` blocks the root agent, so the root session cannot invoke `run_command` (or any tool) while the plan subagent is running. The plan subagent runs in its own child session with default (unrestricted) permissions and has full bash access. See FR-013.
 
 ## Requirements *(mandatory)*
 
@@ -131,5 +131,4 @@ When the plan subagent is spawned, its session history is preserved (`keepHistor
 - The plan subagent has access to the `write` tool for writing the plan file to disk, even though the root session is in "plan" (read-only) mode — the subagent runs in its own session with separate permissions.
 - The TUI already supports rendering `PlanApprovalRequested` events — no TUI changes are required for this phase.
 - The `Question.ask()` API for approval dialogs is stable and does not need modification.
-- Read-only command classification for `run_command` in plan mode will use a whitelist approach based on command patterns (e.g., `git log`, `ls`, `find`, `cat`), not a full shell parser.
 - Old plan mode state machine fields (`active`, `workflowType`) have no downstream consumers outside the files being modified — removal is safe.

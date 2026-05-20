@@ -143,6 +143,11 @@ TDD for skill documentation. Useful once the skill system is mature. Not urgent 
 
 ## Integration with New Workflow
 
+> [!NOTE]
+> **Skill Legend:**
+> - 🔄 **Reuse as-is**: speckit-clarify, speckit-tasks, speckit-analyze (existing Speckit skills)
+> - 🆕 **New — requires implementation**: systematic-debugging, verification-before-completion, parallel-dispatch, explore-and-research, subagent-execution
+
 ```
 User: Complex prompt
   │
@@ -155,22 +160,22 @@ System Prompt Section 5: Complexity Assessment
   ├─ Complex → Enter workflow:
   │    │
   │    ▼
-  │    [OPTIONAL] Ask clarifying questions (speckit-clarify pattern)
+  │    [OPTIONAL] Ask clarifying questions (speckit-clarify pattern) 🔄
   │    │
   │    ▼
-  │    [OPTIONAL] explore-and-research skill → explorer agent
+  │    [OPTIONAL] explore-and-research skill → explorer agent 🆕
   │    │
   │    ▼
   │    plan_enter (subagent) → plan written → user approves
   │    │
   │    ▼
-  │    [OPTIONAL] speckit-tasks skill → task breakdown
+  │    [OPTIONAL] speckit-tasks skill → task breakdown 🔄
   │    │
   │    ▼
-  │    subagent-execution skill → task-per-subagent with review
+  │    subagent-execution skill → task-per-subagent with review 🆕
   │    │
   │    ▼
-  │    verification-before-completion skill → final check
+  │    verification-before-completion skill → final check 🆕
   │
   ▼
 Done
@@ -178,7 +183,12 @@ Done
 
 ## Implementation Order
 
-1. **Phase 1**: Core workflow redesign (01-agent-workflow-redesign.md) — no new skills needed
-2. **Phase 2**: systematic-debugging + verification-before-completion — highest-impact standalone skills
-3. **Phase 3**: explore-and-research + subagent-execution — workflow-dependent skills
-4. **Phase 4**: parallel-dispatch — optimization skill
+> [!NOTE]
+> These sub-phases fall under **Roadmap Phase P7 (Skill System Enhancements)** —
+> see [00-roadmap.md](./00-roadmap.md) and [05-skills.md](./05-skills.md) for the
+> canonical phase numbering.
+
+1. **P7-A**: Core workflow redesign ([01-agent-workflow-redesign.md](./01-agent-workflow-redesign.md)) — no new skills needed
+2. **P7-B**: systematic-debugging + verification-before-completion — highest-impact standalone skills
+3. **P7-C**: explore-and-research + subagent-execution — workflow-dependent skills
+4. **P7-D**: parallel-dispatch — optimization skill

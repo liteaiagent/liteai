@@ -160,7 +160,7 @@ packages/core/test/plan-mode/
    f. Return { planFilePath, planText } to root agent
    ```
 7. Error recovery: try/catch around runSubagent, restore permission mode on failure
-8. **Note**: `runSubagent()` does not expose a timeout parameter. Timeout protection is delegated to the underlying LLM provider's request-level timeouts and the session's abort signal. If timeout enforcement is needed at the tool level, wrap the call with `AbortSignal.timeout()` — see risk register.
+8. **Note**: `runSubagent()` does not expose a timeout parameter. Timeout protection is delegated to the underlying LLM provider's request-level timeouts and the session's abort signal. See the "Subagent spawn timeout" entry in the risk register for current mitigations and planned enhancements.
 
 9. Update `plan-enter.txt` tool description to reflect the new behavior (no approval gate, spawns subagent)
 
@@ -198,7 +198,7 @@ packages/core/test/plan-mode/
    - Return the full plan text as its final response text
    - Include the plan file path in the response
 
-> **Write Scoping**: The `write` tool is unrestricted at the tool level. Scoping is enforced via the agent prompt (instructs write only to `planFilePath`). The plan subagent runs in an isolated child session — any writes go to its own session, not the root. Runtime path whitelisting would require changes to the write tool's permission model, deferred to a future phase.
+> **Write Scoping Risk**: The `write` tool is unrestricted at the tool level. Scoping is enforced only via the agent prompt (instructs write only to `planFilePath`), which is **not a reliable security boundary** — a malicious or confused plan subagent could write to arbitrary paths outside `planFilePath`. The plan subagent runs in an isolated child session, which limits blast radius to its own session context, but does not prevent filesystem writes. **Mitigations** (deferred to a future phase): (1) runtime path whitelisting in the write tool's permission model to restrict writes to `planFilePath`, (2) enforce write-tool permission checks at the tool layer rather than relying on prompt instructions, (3) consider session-level filesystem sandboxing for subagents. See the "Write tool prompt-only scoping" entry in the risk register.
 
 ### Phase G: CLI/TUI Updates
 
@@ -266,9 +266,10 @@ packages/core/test/plan-mode/
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Subagent spawn timeout | Root agent stuck in read-only indefinitely | `plan_enter` error recovery restores default permission mode; LLM provider request timeouts apply; future: wrap with `AbortSignal.timeout()` |
+| Subagent spawn timeout | Root agent stuck in read-only indefinitely | `plan_enter` error recovery restores default permission mode; LLM provider request timeouts apply; session abort signal propagates cancellation. **Future**: add `AbortSignal.timeout()` wrapper around `runSubagent()` for tool-level timeout enforcement |
 | `PlanStateChanged` event payload change breaks TUI | TUI plan mode indicator stops working | Keep `active` as derived field in event payload for backward compat |
 | Plan agent writes to wrong path | Plan file not found by `plan_exit` | Plan file path is deterministic (`Session.plan()`) — agent instructed to use it; scoping is prompt-level, not runtime-enforced |
+| Write tool prompt-only scoping | A malicious or confused plan subagent could write to arbitrary filesystem paths outside `planFilePath`, since the `write` tool has no runtime path restriction — scoping relies entirely on the agent prompt | (1) Add runtime path whitelisting/allowlist to the write tool's permission checks, restricting plan subagent writes to `planFilePath` only; (2) enforce write-tool permission checks at the tool layer; (3) isolate subagent sessions with filesystem sandboxing; (4) scheduled for a future hardening phase |
 | Concurrent `plan_enter` calls race | Duplicate plan sessions | `planSessionID` guard + root-agent-only check prevent this |
 | CLI `prePlanPermissionMode` logic breaks | Permission mode not restored after plan mode | Permission restoration now handled by core (`setPermissionMode("default")` in `plan_exit`), CLI logic becomes redundant but harmless |
 

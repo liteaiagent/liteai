@@ -53,7 +53,7 @@ Tasks are tracked in the instance-scoped `AgentTaskRegistry`. Each task owns an 
 
 ```json
 {
-  "name": "task_get",
+  "name": "agent_get",
   "input": { "task_id": "task_01JWRX..." }
 }
 ```
@@ -62,7 +62,7 @@ Tasks are tracked in the instance-scoped `AgentTaskRegistry`. Each task owns an 
 
 ```json
 {
-  "name": "task_list",
+  "name": "agent_list",
   "input": { "status_filter": "running" }
 }
 ```
@@ -71,7 +71,7 @@ Tasks are tracked in the instance-scoped `AgentTaskRegistry`. Each task owns an 
 
 ```json
 {
-  "name": "task_stop",
+  "name": "agent_stop",
   "input": { "task_id": "task_01JWRX..." }
 }
 ```
@@ -107,8 +107,8 @@ In coordinator mode, ALL agent dispatches are forced to background:
 | File | Change |
 |------|--------|
 | `tool/agent.ts` | Add `run_in_background` param, dual-mode dispatch |
-| `tool/agent_stop.ts` | Rename to `task_stop`, use `AgentTaskRegistry` |
-| `tool/registry.ts` | Register `task_get`, `task_list`, `task_stop` |
+| `tool/agent_stop.ts` | Use `AgentTaskRegistry` for new async dispatch path |
+| `tool/registry.ts` | Register `agent_get`, `agent_list`, `agent_stop` |
 | `session/engine/correction-injector.ts` | Extend to drain agent task notifications |
 | `session/engine/loop.ts` | Wire `AgentTaskRegistry` into session lifecycle |
 | `agent/context.ts` | Add `AgentTaskState` to `AppState.tasks` union |

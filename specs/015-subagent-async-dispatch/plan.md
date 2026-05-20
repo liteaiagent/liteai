@@ -1,6 +1,6 @@
 # Implementation Plan: Async Subagent Dispatch
 
-**Branch**: `015-subagent-async-dispatch` | **Date**: 2026-05-20 | **Spec**: [spec.md](file:///d:/liteai/specs/015-subagent-async-dispatch/spec.md)
+**Branch**: `015-subagent-async-dispatch` | **Date**: 2026-05-20 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/015-subagent-async-dispatch/spec.md`
 
@@ -8,7 +8,7 @@
 
 Currently, `AgentTool.execute` blocks the parent session's execution loop for the entire duration of a subagent run via `await SessionPrompt.runSubagent(...)`. This feature introduces a dual-mode execution model — synchronous (default) and asynchronous (fire-and-forget) — so the parent LLM can dispatch subagents as independent background tasks and receive results via `<task-notification>` messages at turn boundaries.
 
-The design adds a new `TaskRegistry` in `packages/core/src/task/`, refactors `AgentTool` to support a `run_in_background` parameter, extends the existing `CorrectionInjector` notification pipeline, and introduces task management tools (`task_get`, `task_list`, `task_stop`).
+The design adds a new `TaskRegistry` in `packages/core/src/task/`, refactors `AgentTool` to support a `run_in_background` parameter, extends the existing `CorrectionInjector` notification pipeline, and introduces task management tools (`agent_get`, `agent_list`, `agent_stop`).
 
 **Reference Architecture**: [D:\claude-code\src\tools\AgentTool](file:///d:/claude-code/src/tools/AgentTool) — Claude Code's dual-mode agent dispatch model. Key reference files:
 - [AgentTool.tsx](file:///d:/claude-code/src/tools/AgentTool/AgentTool.tsx) — `shouldRunAsync` gate (L567), async path (L686-L764), sync path (L765-L1050)
@@ -79,8 +79,8 @@ packages/core/src/
 ├── tool/
 │   ├── agent.ts                   # [MODIFY] Add run_in_background, dual-mode dispatch
 │   ├── agent_stop.ts              # [MODIFY] Refactor to use AgentTaskRegistry
-│   ├── task_get.ts                # [NEW] task_get tool — query task status/result
-│   ├── task_list.ts               # [NEW] task_list tool — list all tasks
+│   ├── agent_get.ts               # agent_get tool — query task status/result
+│   ├── agent_list.ts              # agent_list tool — list all tasks
 │   ├── registry.ts                # [MODIFY] Register new tools
 │   └── index.ts                   # [MODIFY] Re-export new tools
 │

@@ -62,7 +62,11 @@ export const AgentListTool = Tool.define("agent_list", {
       const duration = getDurationString(task)
       // Truncate task ID for readability
       const shortId = task.taskId.length > 16 ? `${task.taskId.slice(0, 16)}...` : task.taskId
-      lines.push(`| ${shortId} | ${task.agentName} | ${task.status} | ${task.description} | ${duration} |`)
+      // Sanitize fields to prevent pipe chars and newlines from breaking the markdown table
+      const sanitize = (s: string) => s.replace(/\|/g, "\\|").replace(/[\r\n]+/g, " ")
+      lines.push(
+        `| ${shortId} | ${sanitize(task.agentName)} | ${task.status} | ${sanitize(task.description)} | ${duration} |`,
+      )
     }
 
     // Summary line

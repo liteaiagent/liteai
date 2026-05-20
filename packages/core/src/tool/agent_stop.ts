@@ -51,6 +51,29 @@ export const AgentStopTool = Tool.define("agent_stop", {
     const agentTask = agentRegistry.get(rawId as TaskID)
 
     if (agentTask) {
+      // Ownership check: callers can only stop tasks spawned by their own session.
+      // Uses the same parent session resolution as agent_list for consistency.
+      const callerSessionId =
+        agentCtx.type === "root"
+          ? agentCtx.sessionId
+          : agentCtx.type === "subagent"
+            ? agentCtx.parentSessionId
+            : undefined
+      if (!callerSessionId) {
+        return {
+          title: "Context error",
+          metadata: { success: false } as Record<string, unknown>,
+          output: `Cannot resolve caller session for agent context type: ${agentCtx.type}`,
+        }
+      }
+      if (agentTask.parentSessionId !== callerSessionId) {
+        return {
+          title: "Permission denied",
+          metadata: { success: false } as Record<string, unknown>,
+          output: `Cannot stop agent ${rawId}: it belongs to a different session.`,
+        }
+      }
+
       if (isTerminalStatus(agentTask.status)) {
         return {
           title: "Agent not running",

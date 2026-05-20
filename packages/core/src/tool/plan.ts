@@ -19,6 +19,34 @@ import { Tool } from "./tool"
 const tracer = trace.getTracer("liteai")
 const log = Log.create({ service: "tool.plan" })
 
+/**
+ * Consolidates repeated plan-enter error recovery:
+ * 1. Clears planSessionID from PlanModeStateRef
+ * 2. Restores root session permission mode to "default"
+ * 3. Optionally removes the orphaned plan subagent session
+ *
+ * Catches its own errors so callers can rely on it not throwing.
+ */
+async function recoverPlanState(
+  sessionID: Parameters<typeof SessionPrompt.setPermissionMode>[0],
+  ref: ReturnType<typeof PlanModeStateRef.for>,
+  planSessionId?: string,
+): Promise<void> {
+  try {
+    ref.update((s) => ({ ...s, planSessionID: undefined }))
+    SessionPrompt.setPermissionMode(sessionID, "default")
+    if (planSessionId) {
+      await Session.remove(planSessionId as Parameters<typeof Session.remove>[0])
+    }
+  } catch (recoveryErr) {
+    log.error("plan state recovery failed", {
+      recoveryError: recoveryErr,
+      sessionID,
+      planSessionID: planSessionId,
+    })
+  }
+}
+
 export const PlanExitTool = Tool.define("plan_exit", {
   description: EXIT_DESCRIPTION,
   parameters: z.object({
@@ -156,16 +184,10 @@ export const PlanEnterTool = Tool.define("plan_enter", {
         } catch (e) {
           // Recovery: restore permissions if session creation fails
           log.error("failed to create plan subagent session", { error: e, sessionID: ctx.sessionID })
-          const originalError = new Error(`Failed to create plan subagent session: ${e instanceof Error ? e.message : String(e)}`)
-          try {
-            SessionPrompt.setPermissionMode(ctx.sessionID, "default")
-          } catch (recoveryErr) {
-            log.error("recovery failed: could not restore permission mode after session creation failure", {
-              recoveryError: recoveryErr,
-              originalError: e,
-              sessionID: ctx.sessionID,
-            })
-          }
+          const originalError = new Error(
+            `Failed to create plan subagent session: ${e instanceof Error ? e.message : String(e)}`,
+          )
+          await recoverPlanState(ctx.sessionID, ref)
           throw originalError
         }
 
@@ -207,17 +229,7 @@ export const PlanEnterTool = Tool.define("plan_enter", {
         if (!model) {
           // Recovery: restore permissions and clean up session if we can't determine the model
           const originalError = new Error("Could not determine parent model for plan subagent")
-          try {
-            ref.update((s) => ({ ...s, planSessionID: undefined }))
-            SessionPrompt.setPermissionMode(ctx.sessionID, "default")
-            await Session.remove(planSession.id)
-          } catch (recoveryErr) {
-            log.error("recovery failed: could not restore state after model resolution failure", {
-              recoveryError: recoveryErr,
-              sessionID: ctx.sessionID,
-              planSessionID: planSession.id,
-            })
-          }
+          await recoverPlanState(ctx.sessionID, ref, planSession.id)
           throw originalError
         }
 
@@ -245,18 +257,7 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           // Error recovery: restore permission mode, clear plan session, and remove orphaned session
           log.error("plan subagent failed", { error: e, sessionID: ctx.sessionID, planSessionID: planSession.id })
           const originalError = new Error(`Plan subagent failed: ${e instanceof Error ? e.message : String(e)}`)
-          try {
-            ref.update((s) => ({ ...s, planSessionID: undefined }))
-            SessionPrompt.setPermissionMode(ctx.sessionID, "default")
-            await Session.remove(planSession.id)
-          } catch (recoveryErr) {
-            log.error("recovery failed: could not restore state after subagent execution failure", {
-              recoveryError: recoveryErr,
-              originalError: e,
-              sessionID: ctx.sessionID,
-              planSessionID: planSession.id,
-            })
-          }
+          await recoverPlanState(ctx.sessionID, ref, planSession.id)
           throw originalError
         }
 
@@ -265,34 +266,14 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           const errorMsg = result.error instanceof Error ? result.error.message : String(result.error)
           log.error("plan subagent returned error", { error: errorMsg, sessionID: ctx.sessionID })
           const originalError = new Error(`Plan subagent failed: ${errorMsg}`)
-          try {
-            ref.update((s) => ({ ...s, planSessionID: undefined }))
-            SessionPrompt.setPermissionMode(ctx.sessionID, "default")
-            await Session.remove(planSession.id)
-          } catch (recoveryErr) {
-            log.error("recovery failed: could not clean up after subagent error result", {
-              recoveryError: recoveryErr,
-              sessionID: ctx.sessionID,
-              planSessionID: planSession.id,
-            })
-          }
+          await recoverPlanState(ctx.sessionID, ref, planSession.id)
           throw originalError
         }
 
         if (result.status === "aborted") {
           log.warn("plan subagent was aborted", { sessionID: ctx.sessionID })
           const originalError = new Error("Plan subagent was aborted")
-          try {
-            ref.update((s) => ({ ...s, planSessionID: undefined }))
-            SessionPrompt.setPermissionMode(ctx.sessionID, "default")
-            await Session.remove(planSession.id)
-          } catch (recoveryErr) {
-            log.error("recovery failed: could not clean up after subagent abort", {
-              recoveryError: recoveryErr,
-              sessionID: ctx.sessionID,
-              planSessionID: planSession.id,
-            })
-          }
+          await recoverPlanState(ctx.sessionID, ref, planSession.id)
           throw originalError
         }
 

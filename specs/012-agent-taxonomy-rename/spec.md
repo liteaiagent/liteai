@@ -91,7 +91,7 @@ When LiteAI is running in coordinator mode (multi-agent orchestration), the coor
 - **FR-005**: System MUST update the `defaultAgent()` fallback to return `"liteai"` instead of `"build"`.
 - **FR-006**: System MUST update the foundational agent guard to check for `"liteai"` instead of `"build"`.
 - **FR-007**: System MUST update all tool filter sets (e.g., `ALL_LITEAI_TOOLS`) to reference `"agent"` and `"agent_stop"` instead of `"task"` and `"task_stop"`.
-- **FR-008**: System MUST update all bundled prompt text files to use "agent" terminology: rename `task.txt` → `agent.txt` and `task_stop.txt` → `agent_stop.txt`.
+- **FR-008**: System MUST update all bundled prompt text files to use "agent" terminology: rename `task.txt` → `agent.txt`. Note: `task_stop.txt` does not exist as a bundled prompt file — the `agent_stop` tool has its description inline in the tool definition, so no prompt file rename is needed for it.
 - **FR-009**: System MUST update coordinator mode references (coordinator prompt, coordinator mode config, teammate runner) to use `"agent"` instead of `"task"`.
 - **FR-010**: System MUST update all ACP (Agent Communication Protocol) event references that use task-based naming to agent-based naming.
 - **FR-011**: System MUST provide migration logic that remaps `default_agent: "build"` to `"liteai"` during configuration loading.

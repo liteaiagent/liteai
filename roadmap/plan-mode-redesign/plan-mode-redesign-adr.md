@@ -352,6 +352,9 @@ Changes from current:
 ### 5.4 PlanModeState Interface Update
 
 ```typescript
+// SessionResult is exported from session/engine (see session/engine/loop/checkpointer.ts)
+import type { SessionResult } from "./session/engine"
+
 export interface PlanModeState {
   // REMOVED: active: boolean — no longer a state machine
   // REMOVED: workflowType: "interview" | "5phase" | undefined
@@ -450,32 +453,36 @@ flowchart TD
 
 ## 7. Implementation Order
 
-### Phase 1: Rename `task` → `agent` (Mechanical)
+> [!NOTE]
+> These steps are internal to the Plan Mode ADR and do not map to the broader
+> roadmap phases (P1–P8) defined in [00-roadmap.md](./00-roadmap.md).
+
+### Step 1: Rename `task` → `agent` (Mechanical)
 - File renames, import updates, tool ID changes
 - Update all references in coordinator, filter, registry
 - Update bundled prompts
 
-### Phase 2: Rename `build` → `liteai` (Mechanical)
+### Step 2: Rename `build` → `liteai` (Mechanical)
 - Agent config rename
 - Update BUILTIN_AGENT_NAMES and fallback guards
 - Update all references
 
-### Phase 3: Plan Mode Lifecycle Tools
+### Step 3: Plan Mode Lifecycle Tools
 - Rewrite `plan_enter` (non-blocking, permission switch)
 - Create `plan_status` (new tool)
 - Modify `plan_exit` (permission restore)
 - Update `PlanModeState` interface
 
-### Phase 4: yield_turn Removal
+### Step 4: yield_turn Removal
 - Delete tool, prompts, all references
 
-### Phase 5: State/Event Cleanup
+### Step 5: State/Event Cleanup
 - Remove `PlanStateChanged` event
 - Simplify `plan-mode-state.ts`
 - Remove plan reminder injection for active mode
 - Remove stop-drift plan detection
 
-### Phase 6: System Prompt Updates
+### Step 6: System Prompt Updates
 - Update Section 5 in `system.md`
 - Update plan agent prompt
 - Update tool descriptions

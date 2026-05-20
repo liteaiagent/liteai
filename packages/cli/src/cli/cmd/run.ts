@@ -14,7 +14,9 @@ import { UI } from "../ui"
 import { cmd } from "./cmd"
 
 function toolInput(part: ToolPart): Record<string, unknown> {
-  return part.state.input
+  const state = part.state
+  if (!state || !("input" in state) || typeof state.input !== "object" || state.input === null) return {}
+  return state.input as Record<string, unknown>
 }
 
 function toolMetadata(part: ToolPart): Record<string, unknown> {
@@ -189,13 +191,24 @@ function run_command(part: ToolPart) {
 }
 
 function todo(part: ToolPart) {
-  const todos = toolInput(part).todos as Array<{ status: string; content: string }>
+  const raw = toolInput(part).todos
+  const items = Array.isArray(raw)
+    ? raw.filter(
+        (item): item is { status: string; content: string } =>
+          typeof item === "object" &&
+          item !== null &&
+          typeof item.status === "string" &&
+          typeof item.content === "string",
+      )
+    : []
   block(
     {
       icon: "#",
       title: "Todos",
     },
-    todos.map((item) => `${item.status === "completed" ? "[x]" : "[ ]"} ${item.content}`).join("\n"),
+    items.length > 0
+      ? items.map((item) => `${item.status === "completed" ? "[x]" : "[ ]"} ${item.content}`).join("\n")
+      : "(no todo items)",
   )
 }
 

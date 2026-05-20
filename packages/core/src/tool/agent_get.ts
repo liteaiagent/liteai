@@ -24,6 +24,13 @@ export const AgentGetTool = Tool.define("agent_get", {
         output: "No agent execution context found. Cannot query agents outside of an agent context.",
       }
     }
+    if (agentCtx.type === "teammate") {
+      return {
+        title: "Permission denied",
+        metadata: { success: false } as Record<string, unknown>,
+        output: "Teammates cannot query agents. Only the primary agent can manage agent lifecycle.",
+      }
+    }
 
     const rawId = params.task_id.trim()
     if (rawId.length === 0) {
@@ -38,6 +45,29 @@ export const AgentGetTool = Tool.define("agent_get", {
     const task = registry.get(rawId as TaskID)
 
     if (!task) {
+      return {
+        title: "Agent not found",
+        metadata: { success: false } as Record<string, unknown>,
+        output: `No background agent found with task ID: ${rawId}`,
+      }
+    }
+
+    // Ownership check: callers can only query tasks from their own session.
+    // Uses the same parent session resolution as agent_stop for consistency.
+    const callerSessionId =
+      agentCtx.type === "root"
+        ? agentCtx.sessionId
+        : agentCtx.type === "subagent"
+          ? agentCtx.parentSessionId
+          : undefined
+    if (!callerSessionId) {
+      return {
+        title: "Context error",
+        metadata: { success: false } as Record<string, unknown>,
+        output: `Cannot resolve caller session for agent context type: ${agentCtx.type}`,
+      }
+    }
+    if (task.parentSessionId !== callerSessionId) {
       return {
         title: "Agent not found",
         metadata: { success: false } as Record<string, unknown>,
