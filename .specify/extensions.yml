@@ -47,7 +47,7 @@ hooks:
   - extension: git
     command: speckit.git.commit
     enabled: true
-    optional: false
+    optional: true
     prompt: Commit outstanding changes before implementation?
     description: Auto-commit before implementation
     condition: null
@@ -111,7 +111,7 @@ hooks:
   - extension: git
     command: speckit.git.commit
     enabled: true
-    optional: true
+    optional: false
     prompt: Commit task changes?
     description: Auto-commit after task generation
     condition: null

@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
-at specs/014-yield-turn-removal/plan.md
+at specs/015-subagent-async-dispatch/plan.md
 <!-- SPECKIT END -->
