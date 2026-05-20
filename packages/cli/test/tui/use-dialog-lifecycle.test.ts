@@ -81,4 +81,73 @@ describe("useDialogLifecycle", () => {
 
     expect(lastKeybindingsCall?.options).toMatchObject({ context: "Select" })
   })
+
+  it("works with custom context names (DiffDialog)", () => {
+    const onClose = mock()
+    useDialogLifecycle({ contextName: "DiffDialog", onClose })
+
+    expect(lastContextRegistration).toEqual({ name: "DiffDialog", isActive: true })
+    expect(lastKeybindingsCall?.options).toMatchObject({ context: "DiffDialog" })
+  })
+
+  it("works with Settings context", () => {
+    const onClose = mock()
+    useDialogLifecycle({ contextName: "Settings", onClose })
+
+    expect(lastContextRegistration).toEqual({ name: "Settings", isActive: true })
+    expect(lastKeybindingsCall?.options).toMatchObject({ context: "Settings" })
+  })
+
+  it("handles rapid open/close cycles without stale handler leak", () => {
+    const onClose1 = mock()
+    const onClose2 = mock()
+
+    // First lifecycle
+    useDialogLifecycle({ contextName: "Select", onClose: onClose1 })
+    const firstHandler = lastKeybindingsCall?.handlers["select:cancel"]
+
+    // Second lifecycle (simulating re-open with different handler)
+    useDialogLifecycle({ contextName: "Select", onClose: onClose2 })
+    const secondHandler = lastKeybindingsCall?.handlers["select:cancel"]
+
+    // Only the second handler should be registered now
+    secondHandler?.()
+    expect(onClose2).toHaveBeenCalledTimes(1)
+    // First handler ref is stale — it still works if called, but the important
+    // thing is useKeybindings received the new handler
+    expect(firstHandler).not.toBe(secondHandler)
+  })
+
+  it("toggles isActive from true to false", () => {
+    const onClose = mock()
+
+    // Active
+    useDialogLifecycle({ contextName: "Select", onClose, isActive: true })
+    expect(lastContextRegistration).toEqual({ name: "Select", isActive: true })
+    expect(lastKeybindingsCall?.options).toMatchObject({ isActive: true })
+
+    // Deactivated
+    useDialogLifecycle({ contextName: "Select", onClose, isActive: false })
+    expect(lastContextRegistration).toEqual({ name: "Select", isActive: false })
+    expect(lastKeybindingsCall?.options).toMatchObject({ isActive: false })
+  })
+
+  it("defaults isActive to true when not specified", () => {
+    const onClose = mock()
+    useDialogLifecycle({ contextName: "Select", onClose })
+
+    expect(lastContextRegistration?.isActive).toBe(true)
+    expect(lastKeybindingsCall?.options).toMatchObject({ isActive: true })
+  })
+
+  it("preventCloseOn receives no arguments", () => {
+    const onClose = mock()
+    const preventCloseOn = mock(() => false)
+    useDialogLifecycle({ contextName: "Select", onClose, preventCloseOn })
+
+    lastKeybindingsCall?.handlers["select:cancel"]()
+
+    // Verify preventCloseOn was called with no arguments
+    expect(preventCloseOn).toHaveBeenCalledWith()
+  })
 })

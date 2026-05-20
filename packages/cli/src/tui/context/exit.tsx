@@ -2,11 +2,15 @@ import { useApp } from "@liteai/ink"
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react"
 import { win32FlushInputBuffer } from "../../cli/cmd/tui/win32"
 import { FormatError, FormatUnknownError } from "../../cli/error"
+import { type ExitSummaryData, formatExitSummary } from "../util/exit-summary"
 export type Exit = ((reason?: unknown) => Promise<void>) & {
   message: {
     set: (value?: string) => () => void
     clear: () => void
     get: () => string | undefined
+  }
+  stats: {
+    set: (value: ExitSummaryData) => void
   }
 }
 
@@ -29,6 +33,8 @@ export function ExitProvider({ children, onExit }: { children?: React.ReactNode;
   // Keep message in a ref so the exit callback reads the latest value
   const messageRef = useRef<string | undefined>(undefined)
   messageRef.current = message
+  // Stats snapshot for exit summary — set by session components before exit
+  const statsRef = useRef<ExitSummaryData | undefined>(undefined)
 
   const exitFn = useCallback(
     async (reason?: unknown) => {
@@ -62,6 +68,17 @@ export function ExitProvider({ children, onExit }: { children?: React.ReactNode;
         process.stdout.write(`${text}\n`)
       }
 
+      // Write exit summary AFTER inkExit() — summary must land on main buffer
+      // (alternate screen has already been exited by inkExit). This follows
+      // Claude Code's cleanupTerminalModes() → printResumeHint() ordering.
+      const stats = statsRef.current
+      if (stats) {
+        const summary = formatExitSummary(stats)
+        if (summary) {
+          process.stdout.write(summary)
+        }
+      }
+
       await onExit?.()
     },
     [inkExit, onExit],
@@ -84,7 +101,16 @@ export function ExitProvider({ children, onExit }: { children?: React.ReactNode;
     [message],
   )
 
-  const value = useMemo(() => Object.assign(exitFn, { message: store }), [exitFn, store])
+  const statsStore = useMemo(
+    () => ({
+      set: (value: ExitSummaryData) => {
+        statsRef.current = value
+      },
+    }),
+    [],
+  )
+
+  const value = useMemo(() => Object.assign(exitFn, { message: store, stats: statsStore }), [exitFn, store, statsStore])
 
   return <ExitContext.Provider value={value}>{children}</ExitContext.Provider>
 }

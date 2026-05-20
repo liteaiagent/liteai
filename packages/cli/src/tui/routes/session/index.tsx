@@ -18,9 +18,11 @@ import { TodoTray } from "../../components/todo-tray"
 import { TokenWarning } from "../../components/token-warning"
 import { TranscriptSearch } from "../../components/transcript-search"
 import { isCompactEligible } from "../../constants/compact-allowlist"
+import { useExit } from "../../context/exit"
+import { useLocal } from "../../context/local"
 import { MessageCursorContext } from "../../context/message-cursor"
 import { useModalPane } from "../../context/modal-pane"
-import { usePromptRef } from "../../context/prompt"
+import { usePromptRef } from "../../context/prompt-ref"
 import { useRoute } from "../../context/route"
 import { useSDK } from "../../context/sdk"
 import { useSession } from "../../context/session"
@@ -282,6 +284,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
 
   return (
     <StatsProvider>
+      <ExitStatsSync />
       <SessionProvider
         value={{
           sessionID,
@@ -358,6 +361,34 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
 
 import { useCompactCircuitBreaker } from "../../hooks/use-compact-circuit-breaker"
 import { useQueueProcessor } from "../../hooks/use-queue-processor"
+
+/**
+ * Headless component that continuously syncs session stats into the exit
+ * handler's statsRef. Must be rendered inside both `StatsProvider` (for stats)
+ * and `ExitProvider` (for exit.stats.set). The snapshot is always fresh when
+ * exit fires — no need to capture on demand.
+ */
+function ExitStatsSync(): null {
+  const stats = useStats()
+  const exit = useExit()
+  const local = useLocal()
+  const session = useSession()
+
+  useEffect(() => {
+    const model = local.model.current()
+    exit.stats.set({
+      modelID: model ? `${model.providerID}/${model.modelID}` : undefined,
+      turnCount: stats.turnCount,
+      toolCalls: stats.toolCalls,
+      contextUtilization: stats.contextUtilization,
+      totalCost: stats.totalCost,
+      durationMs: stats.duration,
+      sessionID: session.sessionID,
+    })
+  }, [stats, exit, local, session])
+
+  return null
+}
 
 /**
  * SessionLayoutBridge — wires ModalPaneContext into SessionLayout's `modal` slot.

@@ -25,6 +25,10 @@ export const TuiOptions = z.object({
     .min(100)
     .optional()
     .describe("Character count above which tool output is saved to a file instead of rendered inline (default: 5000)"),
+  alternate_screen: z
+    .boolean()
+    .optional()
+    .describe("Use alternate screen buffer (default: true). Set to false for tmux -CC or terminal recording tools"),
 })
 
 export const TuiInfo = z

@@ -66,7 +66,7 @@ gantt
 | **2** | [Component Migration](./phase-2-migration.md) | Migrate 12+ dialog components to standard primitives, eliminate raw `useInput` | Medium-High | ✅ Done |
 | **3** | [Focus & Navigation](./phase-3-focus.md) | Centralize focus management, modal stack semantics, nested escape chains, eliminate BlankSession split | Medium | ✅ Done |
 | **4** | [Visual Design & UX](./phase-4-visual.md) | Message Trail pattern, Plan Mode, Command Palette, Shell rendering, Todo tray | High | ✅ Done |
-| **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse, alternate screen (keep as default — required for sidebar/session-list layout) | Low-Medium | 🟡 Not Started |
+| **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse, alternate screen (keep as default — required for sidebar/session-list layout) | Low-Medium | ✅ Done |
 
 ---
 
@@ -170,4 +170,4 @@ These decisions are settled from prior analysis and should not be revisited:
 | Escape-to-close coverage | Inconsistent | 100% via `useDialogLifecycle` |
 | Visual consistency | 3+ wrapper patterns | 1 (`DialogPane`) |
 | Rendering code paths (boot vs session) | 2 divergent | 1 unified (`SessionRoute`) | ✅ Done |
-| Context provider nesting | 15 wrappers | ~10 wrappers |
+| Context provider nesting | 15 wrappers | ~10 wrappers | 14 (PromptRef eliminated, D6 partial) |

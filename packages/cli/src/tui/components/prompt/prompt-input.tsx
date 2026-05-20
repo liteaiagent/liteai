@@ -34,7 +34,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import stripAnsi from "strip-ansi"
 import { useExit } from "../../context/exit"
 import { useModalPane } from "../../context/modal-pane"
-import { usePromptRef } from "../../context/prompt"
+import { usePromptRef } from "../../context/prompt-ref"
 import { useRoute } from "../../context/route"
 import { useSDK } from "../../context/sdk"
 import { useSession } from "../../context/session"

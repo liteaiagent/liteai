@@ -1,5 +1,6 @@
-import { AlternateScreen, Box, useInput } from "@liteai/ink"
-import { useCallback, useEffect, useSyncExternalStore } from "react"
+import { AlternateScreen, Box } from "@liteai/ink"
+import type React from "react"
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react"
 import type { TuiConfig } from "../cli/config/tui"
 import { GlobalExitHandler } from "./components/global-exit-handler"
 import { type Args, ArgsProvider } from "./context/args"
@@ -7,15 +8,15 @@ import { ExitProvider } from "./context/exit"
 import { KVProvider } from "./context/kv"
 import { LocalProvider } from "./context/local"
 import { ModalPaneProvider } from "./context/modal-pane"
-import { PromptRefProvider } from "./context/prompt"
 import { RouteProvider, useRoute } from "./context/route"
 import { type EventSource, SDKProvider } from "./context/sdk"
 import { SessionProvider } from "./context/session"
 import { ThemeProvider } from "./context/theme"
 import { ToastProvider, useToast } from "./context/toast"
-import { TuiConfigProvider } from "./context/tui-config"
+import { TuiConfigProvider, useTuiConfig } from "./context/tui-config"
 import { useIdleWindowTitle } from "./hooks/use-window-title"
 import { KeybindingSetup } from "./keybindings/keybinding-setup"
+import { useKeybindings } from "./keybindings/use-keybinding"
 import { SessionRoute } from "./routes/session"
 import { useAppState } from "./state"
 import { AppStateProvider } from "./state/app-state-context"
@@ -71,28 +72,37 @@ function AppContent() {
     }
   }, [route.data, toast])
 
-  useInput((input, key) => {
-    if (key.ctrl && input === "w") {
-      SessionTabStore.closeActiveTab()
-      const state = SessionTabStore.getSnapshot()
-      if (state.activeTabId) {
-        route.navigate({ type: "session", sessionID: state.activeTabId })
-      } else {
-        // Last tab closed — navigate to boot state (lazy session creation on next submit)
-        route.navigate({ type: "session" })
-      }
-      return
+  // Tab management via keybinding system (rebindable by users)
+  const tabHandlers = useMemo(() => {
+    const handlers: Record<string, () => void> = {
+      "global:closeTab": () => {
+        SessionTabStore.closeActiveTab()
+        const state = SessionTabStore.getSnapshot()
+        if (state.activeTabId) {
+          route.navigate({ type: "session", sessionID: state.activeTabId })
+        } else {
+          // Last tab closed — navigate to boot state (lazy session creation on next submit)
+          route.navigate({ type: "session" })
+        }
+      },
     }
 
-    if (key.meta && input >= "1" && input <= "9") {
-      const idx = parseInt(input, 10) - 1
-      if (idx >= 0 && idx < tabs.length) {
-        const targetId = tabs[idx]
-        SessionTabStore.setActiveTab(targetId)
-        route.navigate({ type: "session", sessionID: targetId })
+    // Register tab switch handlers (meta+1 through meta+9)
+    for (let i = 1; i <= 9; i++) {
+      handlers[`global:tab${i}`] = () => {
+        const idx = i - 1
+        if (idx >= 0 && idx < tabs.length) {
+          const targetId = tabs[idx]
+          SessionTabStore.setActiveTab(targetId)
+          route.navigate({ type: "session", sessionID: targetId })
+        }
       }
     }
-  })
+
+    return handlers
+  }, [route, tabs])
+
+  useKeybindings(tabHandlers, { context: "Global" })
 
   // Boot state: no session yet — single SessionRoute with undefined sessionID.
   // SessionRoute renders Logo + Tips when messages.length === 0.
@@ -116,6 +126,29 @@ function AppContent() {
       ))}
     </>
   )
+}
+
+/**
+ * Conditionally wraps children in `<AlternateScreen>` based on:
+ * 1. `tui.alternate_screen` config (explicit user override)
+ * 2. Auto-detection of tmux -CC (control mode — no alt screen support)
+ */
+function ConditionalAlternateScreen({ children }: { children: React.ReactNode }) {
+  const config = useTuiConfig()
+
+  const useAltScreen = useMemo(() => {
+    // Explicit user override
+    if (config.alternate_screen === false) return false
+
+    // tmux control mode (-CC) — detected via TERM_PROGRAM=tmux + LC_TERMINAL=iTerm2
+    // In this mode, the terminal multiplexer manages windows and alt-screen breaks layout
+    if (process.env.TERM_PROGRAM === "tmux" && process.env.LC_TERMINAL === "iTerm2") return false
+
+    return true
+  }, [config.alternate_screen])
+
+  if (!useAltScreen) return <>{children}</>
+  return <AlternateScreen>{children}</AlternateScreen>
 }
 
 export function App(props: AppProps) {
@@ -152,13 +185,11 @@ export function App(props: AppProps) {
                       <AppStateProvider>
                         <LocalProvider>
                           <RouteProvider>
-                            <PromptRefProvider>
-                              <SessionProvider>
-                                <AlternateScreen>
-                                  <AppContent />
-                                </AlternateScreen>
-                              </SessionProvider>
-                            </PromptRefProvider>
+                            <SessionProvider>
+                              <ConditionalAlternateScreen>
+                                <AppContent />
+                              </ConditionalAlternateScreen>
+                            </SessionProvider>
                           </RouteProvider>
                         </LocalProvider>
                       </AppStateProvider>

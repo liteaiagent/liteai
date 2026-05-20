@@ -18,6 +18,19 @@
       "recommended": true,
       "correctness": {
         "noUnusedImports": "error"
+      },
+      "style": {
+        "noRestrictedImports": {
+          "level": "warn",
+          "options": {
+            "paths": {
+              "@liteai/ink": {
+                "importNames": ["useInput"],
+                "message": "useInput is restricted. Use useKeybindings or useSelectList instead. Exceptions: base-text-input, keybinding-setup, scroll-handler, prompt-input, use-keybinding, use-delayed-escape-close, dialog-provider."
+              }
+            }
+          }
+        }
       }
     }
   },
