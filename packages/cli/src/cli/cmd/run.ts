@@ -5,20 +5,6 @@ import { Agent } from "@liteai/core/agent/agent"
 import { Flag } from "@liteai/core/flag/flag"
 import { Provider } from "@liteai/core/provider/provider"
 import { Server } from "@liteai/core/server/server"
-import type { CodeSearchTool } from "@liteai/core/tool/codesearch"
-import type { EditTool } from "@liteai/core/tool/edit"
-import type { GlobTool } from "@liteai/core/tool/glob"
-import type { GrepTool } from "@liteai/core/tool/grep"
-import type { ListTool } from "@liteai/core/tool/ls"
-import type { ReadTool } from "@liteai/core/tool/read"
-import type { RunCommandTool } from "@liteai/core/tool/run_command"
-import type { SkillTool } from "@liteai/core/tool/skill"
-import type { AgentTool } from "@liteai/core/tool/agent"
-import type { TodoWriteTool } from "@liteai/core/tool/todo"
-import type { Tool } from "@liteai/core/tool/tool"
-import type { WebFetchTool } from "@liteai/core/tool/webfetch"
-import type { WebSearchTool } from "@liteai/core/tool/websearch"
-import type { WriteTool } from "@liteai/core/tool/write"
 import { createLiteaiClient, type LiteaiClient, type ToolPart } from "@liteai/sdk"
 import { Fs as Filesystem } from "@liteai/util/fs"
 import { Locale } from "@liteai/util/locale"
@@ -27,19 +13,12 @@ import { bootstrap } from "../bootstrap"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
 
-type ToolProps<T extends Tool.Info> = {
-  input: Tool.InferParameters<T>
-  metadata: Tool.InferMetadata<T>
-  part: ToolPart
+function toolInput(part: ToolPart): Record<string, unknown> {
+  return part.state.input
 }
 
-function props<T extends Tool.Info>(part: ToolPart): ToolProps<T> {
-  const state = part.state
-  return {
-    input: state.input as Tool.InferParameters<T>,
-    metadata: ("metadata" in state ? state.metadata : {}) as Tool.InferMetadata<T>,
-    part,
-  }
+function toolMetadata(part: ToolPart): Record<string, unknown> {
+  return ("metadata" in part.state ? part.state.metadata : {}) as Record<string, unknown>
 }
 
 type Inline = {
@@ -73,11 +52,13 @@ function fallback(part: ToolPart) {
   })
 }
 
-function glob(info: ToolProps<typeof GlobTool>) {
-  const root = info.input.path ?? ""
-  const title = `Glob "${info.input.pattern}"`
+function glob(part: ToolPart) {
+  const input = toolInput(part)
+  const meta = toolMetadata(part)
+  const root = (input.path as string) ?? ""
+  const title = `Glob "${input.pattern}"`
   const suffix = root ? `in ${normalizePath(root)}` : ""
-  const num = info.metadata.count
+  const num = meta.count as number | undefined
   const description =
     num === undefined ? suffix : `${suffix}${suffix ? " · " : ""}${num} ${num === 1 ? "match" : "matches"}`
   inline({
@@ -87,11 +68,13 @@ function glob(info: ToolProps<typeof GlobTool>) {
   })
 }
 
-function grep(info: ToolProps<typeof GrepTool>) {
-  const root = info.input.path ?? ""
-  const title = `Grep "${info.input.pattern}"`
+function grep(part: ToolPart) {
+  const input = toolInput(part)
+  const meta = toolMetadata(part)
+  const root = (input.path as string) ?? ""
+  const title = `Grep "${input.pattern}"`
   const suffix = root ? `in ${normalizePath(root)}` : ""
-  const num = info.metadata.matches
+  const num = meta.matches as number | undefined
   const description =
     num === undefined ? suffix : `${suffix}${suffix ? " · " : ""}${num} ${num === 1 ? "match" : "matches"}`
   inline({
@@ -101,17 +84,19 @@ function grep(info: ToolProps<typeof GrepTool>) {
   })
 }
 
-function list(info: ToolProps<typeof ListTool>) {
-  const dir = info.input.path ? normalizePath(info.input.path) : ""
+function list(part: ToolPart) {
+  const input = toolInput(part)
+  const dir = input.path ? normalizePath(input.path as string) : ""
   inline({
     icon: "→",
     title: dir ? `List ${dir}` : "List",
   })
 }
 
-function read(info: ToolProps<typeof ReadTool>) {
-  const file = normalizePath(info.input.filePath)
-  const pairs = Object.entries(info.input).filter(([key, value]) => {
+function read(part: ToolPart) {
+  const input = toolInput(part)
+  const file = normalizePath(input.filePath as string)
+  const pairs = Object.entries(input).filter(([key, value]) => {
     if (key === "filePath") return false
     return typeof value === "string" || typeof value === "number" || typeof value === "boolean"
   })
@@ -123,26 +108,28 @@ function read(info: ToolProps<typeof ReadTool>) {
   })
 }
 
-function write(info: ToolProps<typeof WriteTool>) {
+function write(part: ToolPart) {
   block(
     {
       icon: "←",
-      title: `Write ${normalizePath(info.input.filePath)}`,
+      title: `Write ${normalizePath(toolInput(part).filePath as string)}`,
     },
-    info.part.state.status === "completed" ? info.part.state.output : undefined,
+    part.state.status === "completed" ? part.state.output : undefined,
   )
 }
 
-function webfetch(info: ToolProps<typeof WebFetchTool>) {
+function webfetch(part: ToolPart) {
   inline({
     icon: "%",
-    title: `WebFetch ${info.input.url}`,
+    title: `WebFetch ${toolInput(part).url}`,
   })
 }
 
-function edit(info: ToolProps<typeof EditTool>) {
-  const title = normalizePath(info.input.filePath)
-  const diff = info.metadata.diff
+function edit(part: ToolPart) {
+  const input = toolInput(part)
+  const meta = toolMetadata(part)
+  const title = normalizePath(input.filePath as string)
+  const diff = meta.diff as string | undefined
   block(
     {
       icon: "←",
@@ -152,62 +139,63 @@ function edit(info: ToolProps<typeof EditTool>) {
   )
 }
 
-function codesearch(info: ToolProps<typeof CodeSearchTool>) {
+function codesearch(part: ToolPart) {
   inline({
     icon: "◇",
-    title: `Exa Code Search "${info.input.query}"`,
+    title: `Exa Code Search "${toolInput(part).query}"`,
   })
 }
 
-function websearch(info: ToolProps<typeof WebSearchTool>) {
+function websearch(part: ToolPart) {
   inline({
     icon: "◈",
-    title: `Exa Web Search "${info.input.query}"`,
+    title: `Exa Web Search "${toolInput(part).query}"`,
   })
 }
 
-function task(info: ToolProps<typeof AgentTool>) {
-  const input = info.part.state.input
-  const status = info.part.state.status
+function renderAgent(part: ToolPart) {
+  const input = toolInput(part)
+  const status = part.state.status
   const subagent =
     typeof input.subagent_type === "string" && input.subagent_type.trim().length > 0 ? input.subagent_type : "unknown"
-  const agent = Locale.titlecase(subagent)
+  const agentName = Locale.titlecase(subagent)
   const desc =
     typeof input.description === "string" && input.description.trim().length > 0 ? input.description : undefined
   const icon = status === "error" ? "✗" : status === "running" ? "•" : "✓"
-  const name = desc ?? `${agent} Task`
+  const name = desc ?? `${agentName} Task`
   inline({
     icon,
     title: name,
-    description: desc ? `${agent} Agent` : undefined,
+    description: desc ? `${agentName} Agent` : undefined,
   })
 }
 
-function skill(info: ToolProps<typeof SkillTool>) {
+function skill(part: ToolPart) {
   inline({
     icon: "→",
-    title: `Skill "${info.input.name}"`,
+    title: `Skill "${toolInput(part).name}"`,
   })
 }
 
-function run_command(info: ToolProps<typeof RunCommandTool>) {
-  const output = info.part.state.status === "completed" ? info.part.state.output?.trim() : undefined
+function run_command(part: ToolPart) {
+  const output = part.state.status === "completed" ? part.state.output?.trim() : undefined
   block(
     {
       icon: "$",
-      title: `${info.input.command}`,
+      title: `${toolInput(part).command}`,
     },
     output,
   )
 }
 
-function todo(info: ToolProps<typeof TodoWriteTool>) {
+function todo(part: ToolPart) {
+  const todos = toolInput(part).todos as Array<{ status: string; content: string }>
   block(
     {
       icon: "#",
       title: "Todos",
     },
-    info.input.todos.map((item) => `${item.status === "completed" ? "[x]" : "[ ]"} ${item.content}`).join("\n"),
+    todos.map((item) => `${item.status === "completed" ? "[x]" : "[ ]"} ${item.content}`).join("\n"),
   )
 }
 
@@ -409,19 +397,19 @@ export const RunCommand = cmd({
 
       function tool(part: ToolPart) {
         try {
-          if (part.tool === "run_command") return run_command(props<typeof RunCommandTool>(part))
-          if (part.tool === "glob") return glob(props<typeof GlobTool>(part))
-          if (part.tool === "grep") return grep(props<typeof GrepTool>(part))
-          if (part.tool === "list") return list(props<typeof ListTool>(part))
-          if (part.tool === "read") return read(props<typeof ReadTool>(part))
-          if (part.tool === "write") return write(props<typeof WriteTool>(part))
-          if (part.tool === "webfetch") return webfetch(props<typeof WebFetchTool>(part))
-          if (part.tool === "edit") return edit(props<typeof EditTool>(part))
-          if (part.tool === "codesearch") return codesearch(props<typeof CodeSearchTool>(part))
-          if (part.tool === "websearch") return websearch(props<typeof WebSearchTool>(part))
-          if (part.tool === "agent") return task(props<typeof AgentTool>(part))
-          if (part.tool === "todowrite") return todo(props<typeof TodoWriteTool>(part))
-          if (part.tool === "skill") return skill(props<typeof SkillTool>(part))
+          if (part.tool === "run_command") return run_command(part)
+          if (part.tool === "glob") return glob(part)
+          if (part.tool === "grep") return grep(part)
+          if (part.tool === "list") return list(part)
+          if (part.tool === "read") return read(part)
+          if (part.tool === "write") return write(part)
+          if (part.tool === "webfetch") return webfetch(part)
+          if (part.tool === "edit") return edit(part)
+          if (part.tool === "codesearch") return codesearch(part)
+          if (part.tool === "websearch") return websearch(part)
+          if (part.tool === "agent") return renderAgent(part)
+          if (part.tool === "todowrite") return todo(part)
+          if (part.tool === "skill") return skill(part)
           return fallback(part)
         } catch {
           return fallback(part)
@@ -481,7 +469,7 @@ export const RunCommand = cmd({
               args.format !== "json"
             ) {
               if (toggles.get(part.id) === true) continue
-              task(props<typeof AgentTool>(part))
+              renderAgent(part)
               toggles.set(part.id, true)
             }
 
