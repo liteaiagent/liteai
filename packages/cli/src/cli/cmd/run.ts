@@ -13,7 +13,7 @@ import type { ListTool } from "@liteai/core/tool/ls"
 import type { ReadTool } from "@liteai/core/tool/read"
 import type { RunCommandTool } from "@liteai/core/tool/run_command"
 import type { SkillTool } from "@liteai/core/tool/skill"
-import type { TaskTool } from "@liteai/core/tool/task"
+import type { AgentTool } from "@liteai/core/tool/agent"
 import type { TodoWriteTool } from "@liteai/core/tool/todo"
 import type { Tool } from "@liteai/core/tool/tool"
 import type { WebFetchTool } from "@liteai/core/tool/webfetch"
@@ -166,7 +166,7 @@ function websearch(info: ToolProps<typeof WebSearchTool>) {
   })
 }
 
-function task(info: ToolProps<typeof TaskTool>) {
+function task(info: ToolProps<typeof AgentTool>) {
   const input = info.part.state.input
   const status = info.part.state.status
   const subagent =
@@ -419,7 +419,7 @@ export const RunCommand = cmd({
           if (part.tool === "edit") return edit(props<typeof EditTool>(part))
           if (part.tool === "codesearch") return codesearch(props<typeof CodeSearchTool>(part))
           if (part.tool === "websearch") return websearch(props<typeof WebSearchTool>(part))
-          if (part.tool === "task") return task(props<typeof TaskTool>(part))
+          if (part.tool === "agent") return task(props<typeof AgentTool>(part))
           if (part.tool === "todowrite") return todo(props<typeof TodoWriteTool>(part))
           if (part.tool === "skill") return skill(props<typeof SkillTool>(part))
           return fallback(part)
@@ -476,12 +476,12 @@ export const RunCommand = cmd({
 
             if (
               part.type === "tool" &&
-              part.tool === "task" &&
+              part.tool === "agent" &&
               part.state.status === "running" &&
               args.format !== "json"
             ) {
               if (toggles.get(part.id) === true) continue
-              task(props<typeof TaskTool>(part))
+              task(props<typeof AgentTool>(part))
               toggles.set(part.id, true)
             }
 

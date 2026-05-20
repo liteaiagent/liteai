@@ -11676,35 +11676,6 @@
         },
         "required": ["type", "properties"]
       },
-      "Event.plan.state_changed": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "const": "plan.state_changed"
-          },
-          "properties": {
-            "type": "object",
-            "properties": {
-              "sessionID": {
-                "type": "string",
-                "pattern": "^ses.*"
-              },
-              "active": {
-                "type": "boolean"
-              },
-              "planFilePath": {
-                "type": "string"
-              },
-              "turnsSincePlanReminder": {
-                "type": "number"
-              }
-            },
-            "required": ["sessionID", "active", "planFilePath", "turnsSincePlanReminder"]
-          }
-        },
-        "required": ["type", "properties"]
-      },
       "Event.plan.approval_requested": {
         "type": "object",
         "properties": {
@@ -12035,9 +12006,6 @@
           },
           {
             "$ref": "#/components/schemas/Event.session.error"
-          },
-          {
-            "$ref": "#/components/schemas/Event.plan.state_changed"
           },
           {
             "$ref": "#/components/schemas/Event.plan.approval_requested"

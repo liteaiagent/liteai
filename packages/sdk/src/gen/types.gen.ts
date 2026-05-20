@@ -1036,17 +1036,6 @@ export type EventSessionError = {
     };
 };
 
-export type EventPlanStateChanged = {
-    type: 'plan.state_changed';
-    properties: {
-        sessionID: string;
-        active: boolean;
-        planSessionID?: string;
-        planFilePath: string;
-        turnsSincePlanReminder: number;
-    };
-};
-
 export type EventPlanApprovalRequested = {
     type: 'plan.approval_requested';
     properties: {
@@ -1110,7 +1099,7 @@ export type EventPtyDeleted = {
     };
 };
 
-export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanStateChanged | EventPlanApprovalRequested | EventPermissionModeChanged | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
+export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanApprovalRequested | EventPermissionModeChanged | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
 
 export type GlobalEvent = {
     directory: string;
