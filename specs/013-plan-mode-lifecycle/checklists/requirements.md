@@ -32,5 +32,5 @@
 ## Notes
 
 - All items pass validation. Spec is ready for `/speckit-clarify` or `/speckit-plan`.
-- The spec draws heavily from the existing design document at `roadmap/plan-mode-redesign/02-plan-mode.md`, which provides implementation-level detail that this spec intentionally abstracts away.
+- The spec draws heavily from the existing design document at `roadmap/core-roadmap/02-plan-mode.md`, which provides implementation-level detail that this spec intentionally abstracts away.
 - Phase 1 (Agent Taxonomy & Rename) is a hard dependency — must be verified complete before implementation.

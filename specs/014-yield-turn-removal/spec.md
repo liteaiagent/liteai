@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Phase 3 of plan-mode-redesign roadmap — Remove all deprecated yield_turn infrastructure, clean up obsolete plan mode state fields, and delete legacy prompt files rendered unnecessary by the new blocking subagent-driven planning architecture."
+**Input**: User description: "Phase 3 of core-roadmap roadmap — Remove all deprecated yield_turn infrastructure, clean up obsolete plan mode state fields, and delete legacy prompt files rendered unnecessary by the new blocking subagent-driven planning architecture."
 
 ## User Scenarios & Testing *(mandatory)*
 

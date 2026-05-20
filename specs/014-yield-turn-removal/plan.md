@@ -10,7 +10,7 @@
 
 Systematically remove all deprecated `yield_turn` tool infrastructure and associated
 legacy plan mode state emissions from `packages/core`. This is Phase 3 of the
-plan-mode-redesign roadmap. The blocking subagent architecture from Phase 2 fully
+core-roadmap roadmap. The blocking subagent architecture from Phase 2 fully
 supersedes `yield_turn`, making it dead code. The cleanup eliminates dead code paths,
 removes stale event definitions, and deletes obsolete prompt files — establishing a
 clean baseline for Phase 4 (Prompt Rewrites) and Phase 6 (KV Cache Hardening).

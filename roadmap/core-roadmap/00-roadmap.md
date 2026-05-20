@@ -1,6 +1,9 @@
-# Plan Mode Redesign — Master Roadmap
+# LiteAI — Master Roadmap
 
 ## Status: IN PROGRESS — Phase 1 ✅ Complete, Phase 2 Active
+
+> Consolidates: core-roadmap (formerly plan-mode-redesign), agents-platform-roadmap (remaining), project-scoped-persistence.
+> Evaluation source: [implementation_plan.md](file:///C:/Users/ahmed/.gemini/antigravity-ide/brain/5e568eb2-2564-4dee-8e06-fe06e4cb49cb/implementation_plan.md) — Memory/Knowledge/History evaluation of Claude Code + Gemini CLI.
 
 ---
 
@@ -13,7 +16,14 @@
 | [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor redesign, per-tool concurrency, sibling abort |
 | [04-kv-cache.md](./04-kv-cache.md) | Provider cache mechanics, deterministic ordering, cache break detection, reasoning tokens |
 | [05-skills.md](./05-skills.md) | Skill system enhancements, superpowers integration |
-| [plan-mode-redesign-adr.md](./plan-mode-redesign-adr.md) | Architecture Decision Record (resolved Q&A) |
+| [architecture-decisions.md](./architecture-decisions.md) | Architecture Decision Record (resolved Q&A) |
+| [06-guide-agent.md](./06-guide-agent.md) | Guide agent definition (from agents-platform Phase 6) |
+| [07-project-registry.md](./07-project-registry.md) | Project directory scaffold & registry |
+| [08-unified-memory.md](./08-unified-memory.md) | Unified memory system (CC/GC hybrid design) |
+| [09-memory-tools.md](./09-memory-tools.md) | `save_memory` tool, permissions, prompt integration |
+| [10-conversation-history.md](./10-conversation-history.md) | Summarization, history index, cross-session injection, full recall |
+| [11-background-intelligence.md](./11-background-intelligence.md) | In-session memory extraction, post-session skills extraction, inbox CLI |
+| [12-context-polish.md](./12-context-polish.md) | Context instructions v2, session export, content replacement |
 
 ---
 
@@ -111,6 +121,21 @@ Root Agent: Implements plan with full tool access
 | **P6** | KV Cache Hardening | [04-kv-cache.md](./04-kv-cache.md) | Deterministic ordering, prompt boundary, cache detection, reasoning tokens | ⏳ Blocked on P4+P5 |
 | **P7** | Skill System Enhancements | [05-skills.md](./05-skills.md) | Superpowers integration, plan workflow skills | ⏳ Blocked on P4 |
 | **P8** | Verification & Polish | (inline below) | E2E testing, docs | ⏳ Final |
+| | | | | |
+| **P9** | Guide Agent | [06-guide-agent.md](./06-guide-agent.md) | Read-only doc assistant, cheapest model | ⏳ Blocked on P4 |
+| **P10A** | Project Registry | [07-project-registry.md](./07-project-registry.md) | Project ID, directory scaffold, `~/.liteai/projects/<id>/` | ⏳ Blocked on P4 |
+| **P10B** | Unified Memory System | [08-unified-memory.md](./08-unified-memory.md) | MEMORY.md index + topic files, 4-type taxonomy, prompt injection | ⏳ Blocked on P10A |
+| **P10C** | Memory Tools & Integration | [09-memory-tools.md](./09-memory-tools.md) | `save_memory` tool, diff confirmation, sanitization, permissions | ⏳ Blocked on P10B |
+| **P11A** | Summarization Pipeline | [10-conversation-history.md](./10-conversation-history.md) §1 | Background summary agent, lightweight model | ⏳ Blocked on P10C |
+| **P11B** | History Index & Injection | [10-conversation-history.md](./10-conversation-history.md) §2–3 | `index.jsonl`, cross-session prompt injection | ⏳ Blocked on P11A |
+| **P11C** | Full Conversation Recall | [10-conversation-history.md](./10-conversation-history.md) §4 | `recall_conversation()` from DB | ⏳ Blocked on P11B |
+| **P12A** | In-Session Memory Extraction | [11-background-intelligence.md](./11-background-intelligence.md) §1 | Forked agent at query-loop end (CC pattern) | ⏳ Blocked on P10C+P6 |
+| **P12B** | Post-Session Skills Extraction | [11-background-intelligence.md](./11-background-intelligence.md) §2 | Background agent, skill inbox (GC pattern, simplified) | ⏳ Blocked on P12A |
+| **P12C** | Skills Inbox CLI | [11-background-intelligence.md](./11-background-intelligence.md) §3 | `/skills inbox`, accept, reject, edit | ⏳ Blocked on P12B |
+| **P13A** | Context Instructions v2 | [12-context-polish.md](./12-context-polish.md) §1 | `.liteai/rules/*.md`, JIT loading, `AGENTS.local.md` | ⏳ Blocked on P11C |
+| **P13B** | Session Export | [12-context-polish.md](./12-context-polish.md) §2 | `/export` command, API endpoint | ⏳ Blocked on P11C |
+| **P13C** | Content Replacement | [12-context-polish.md](./12-context-polish.md) §3 | Large tool results → compressed summary in context | ⏳ Blocked on P11C |
+| **P14** | Container Architecture | — | Container-per-user, orchestrator service | ⏳ **Deferred** |
 
 ---
 
@@ -155,6 +180,22 @@ flowchart TD
     P7B["P7B: New skills from superpowers"]
 
     P8["P8: Verification & Polish"]
+
+    %% New phases (sequential after P4)
+    P9["P9: Guide Agent"]
+    P10A["P10A: Project Registry"]
+    P10B["P10B: Unified Memory"]
+    P10C["P10C: Memory Tools"]
+    P11A["P11A: Summarization Pipeline"]
+    P11B["P11B: History Index & Injection"]
+    P11C["P11C: Full Recall"]
+    P12A["P12A: Memory Extraction"]
+    P12B["P12B: Skills Extraction"]
+    P12C["P12C: Skills Inbox"]
+    P13A["P13A: Context v2"]
+    P13B["P13B: Session Export"]
+    P13C["P13C: Content Replace"]
+    P14["P14: Containers"]
 
     %% Phase 1 → Phase 2
     P1A --> P2B
@@ -208,52 +249,120 @@ flowchart TD
     P6E --> P8
     P7B --> P8
 
-    %% Styling
+    %% P9-P14: Sequential after P4 (Prompt Rewrites)
+    P4A --> P9
+    P4A --> P10A
+    P10A --> P10B --> P10C
+    P10C --> P11A --> P11B --> P11C
+    P10C --> P12A
+    P6E --> P12A
+    P12A --> P12B --> P12C
+    P11C --> P13A
+    P11C --> P13B
+    P11C --> P13C
+    P12C --> P14
+
+    %% Styling — completed
     style P1A fill:#2ed573,color:#fff,stroke:#1e8449,stroke-width:2px
     style P1B fill:#2ed573,color:#fff,stroke:#1e8449,stroke-width:2px
     style P1C fill:#2ed573,color:#fff,stroke:#1e8449,stroke-width:2px
+
+    %% Styling — active (P2)
     style P2A fill:#ff6b6b,color:#fff
     style P2B fill:#ff6b6b,color:#fff
     style P2C fill:#ff6b6b,color:#fff
     style P2D fill:#ff6b6b,color:#fff
     style P2E fill:#ff6b6b,color:#fff
     style P2F fill:#ff6b6b,color:#fff
+
+    %% Styling — blocked (P3)
     style P3A fill:#ffa502,color:#fff
     style P3B fill:#ffa502,color:#fff
     style P3C fill:#ffa502,color:#fff
+
+    %% Styling — P4 (prompt rewrites)
     style P4A fill:#2ed573,color:#fff
     style P4B fill:#2ed573,color:#fff
     style P4C fill:#2ed573,color:#fff
     style P4D fill:#2ed573,color:#fff
     style P4E fill:#2ed573,color:#fff
     style P4F fill:#2ed573,color:#fff
+
+    %% Styling — P5 (tool concurrency)
     style P5A fill:#e056fd,color:#fff
     style P5B fill:#e056fd,color:#fff
     style P5C fill:#e056fd,color:#fff
     style P5D fill:#e056fd,color:#fff
+
+    %% Styling — P6 (KV cache)
     style P6A fill:#ff4757,color:#fff
     style P6B fill:#ff4757,color:#fff
     style P6C fill:#ff4757,color:#fff
     style P6D fill:#ff4757,color:#fff
     style P6E fill:#ff4757,color:#fff
+
+    %% Styling — P7 (skills)
     style P7A fill:#a55eea,color:#fff
     style P7B fill:#a55eea,color:#fff
+
+    %% Styling — P8 (verification)
     style P8 fill:#1e90ff,color:#fff
+
+    %% Styling — P9 (guide agent)
+    style P9 fill:#00d2d3,color:#fff
+
+    %% Styling — P10 (persistence foundation)
+    style P10A fill:#0abde3,color:#fff
+    style P10B fill:#0abde3,color:#fff
+    style P10C fill:#0abde3,color:#fff
+
+    %% Styling — P11 (conversation history)
+    style P11A fill:#10ac84,color:#fff
+    style P11B fill:#10ac84,color:#fff
+    style P11C fill:#10ac84,color:#fff
+
+    %% Styling — P12 (background intelligence)
+    style P12A fill:#f9ca24,color:#000
+    style P12B fill:#f9ca24,color:#000
+    style P12C fill:#f9ca24,color:#000
+
+    %% Styling — P13 (polish)
+    style P13A fill:#eb4d4b,color:#fff
+    style P13B fill:#eb4d4b,color:#fff
+    style P13C fill:#eb4d4b,color:#fff
+
+    %% Styling — P14 (deferred)
+    style P14 fill:#9b59b6,color:#fff
+```
+
+### Execution Order
+
+All new phases (P9-P14) execute **sequentially after P4** (Prompt Rewrites). P5-P8 can proceed in parallel on their existing tracks.
+
+```
+P1 ✅ → P2 🔄 → P3 → P4 → ┬─ P9 (Guide Agent)
+                            ├─ P10A → P10B → P10C → ┬─ P11A → P11B → P11C → P13{A,B,C}
+                            │                       └─ P12A → P12B → P12C → P14 (deferred)
+                            ├─ P5 → P6 → P8
+                            └─ P7
 ```
 
 ### Parallelism Opportunities
 
-| Parallel Track | Phases | Notes |
-|----------------|--------|-------|
-| **Track A: Plan Mode** | P1 → P2 → P3 → P4 | Sequential critical path |
-| **Track B: Tool Concurrency** | P1A → P5A → P5B → P5C → P5D | Can start after rename, independent of plan mode |
-| **Track C: KV Cache** | P5A → P6A, P4A → P6B → P6C, P6D (standalone) | Depends on both Track A and B for full integration |
-| **Track D: Skills** | P7A → P7B | Fully independent, can start any time |
+| Track | Phases | Notes |
+|-------|--------|-------|
+| **A: Plan Mode** | P1 → P2 → P3 → P4 | Sequential critical path |
+| **B: Tool Concurrency** | P1A → P5A → P5B → P5C → P5D | Can start after rename |
+| **C: KV Cache** | P5A → P6A, P4A → P6B → P6C, P6D | Depends on A + B |
+| **D: Skills** | P7A → P7B | Fully independent |
+| **E: Guide Agent** | P4 → P9 | After prompt rewrites |
+| **F: Persistence** | P4 → P10A → P10B → P10C | After prompt rewrites |
+| **G: History** | P10C → P11A → P11B → P11C | Depends on F |
+| **H: Intelligence** | P10C + P6E → P12A → P12B → P12C | Depends on F + C |
+| **I: Polish** | P11C → P13{A,B,C} | After history complete |
+| **J: Infra** | P12C → P14 | Deferred |
 
-**Critical paths:**
-- Plan mode: P1 → P2 → P3 → P4 → P8
-- Parallel agents: P1A → P5A → P5B → P5C → P5D → P6E → P8
-- Cache hardening: P5A → P6A + P4A → P6B → P6C → P8
+**Critical path:** P1 → P2 → P3 → P4 → P10A → P10B → P10C → P11A → P11B → P11C → P13
 
 ---
 
@@ -283,7 +392,7 @@ flowchart TD
 
 ### 8C. Documentation
 
-- Update `roadmap/plan-mode-redesign/` with final implementation notes
+- Update `roadmap/core-roadmap/` with final implementation notes
 - Update any user-facing docs referencing "task" tool or "build" agent
 - Clean up or archive superseded roadmap files
 
@@ -302,6 +411,12 @@ flowchart TD
 | StreamingToolExecutor redesign breaks existing tool execution | High | Comprehensive test coverage before refactor. Feature flag for new dispatch mode |
 | Reasoning token accumulation inflates prompt cost | Medium | Implement configurable reasoning token budget. Strip reasoning on model switch |
 | Cache break detection false positives | Low | Tune threshold (>2000 token drop). Log-only mode before alerting |
+| Memory index bloat (MEMORY.md exceeds 25KB) | Medium | Hard cap at 200 lines / 25KB; overflow into topic files (CC pattern) |
+| Background extraction races (concurrent writes to memory) | Medium | Append-only writes or file-level locking; extraction skips if agent already wrote (CC mutual exclusion) |
+| Skills extraction false positives | Low | Confidence threshold; auto-expire stale inbox entries |
+| `index.jsonl` unbounded growth | Low | Only load last 50; older entries remain on disk, not in memory |
+| Legacy per-agent memory removal | High | No adapters (v-Next mandate). Clean break from `AgentMemory` namespace |
+| Prompt injection via stored memories | Medium | GC's XML bracket sanitization + newline collapse applied on all `save_memory` inputs |
 
 ---
 
@@ -317,6 +432,26 @@ flowchart TD
 | **Q6: Tool concurrency model** | **Per-tool method, not static Set** | Matches Claude Code. Input-aware (e.g., bash read-only = safe). See [03-tool-concurrency.md](./03-tool-concurrency.md) |
 | **Q7: Sibling abort scope** | **Narrow to catastrophic errors only** | Only bash/command errors abort siblings, not all non-read tools. See [03-tool-concurrency.md](./03-tool-concurrency.md) |
 | **Q8: KV cache scope** | **ALL agents, not just explore** | Fork-path cache sharing applies to plan, explore, general — any agent inheriting parent prefix. See [04-kv-cache.md](./04-kv-cache.md) |
+| **Q9: Memory storage model** | **CC index + topic files via GC dedicated tool** | Hybrid: CC's MEMORY.md + topic files for organization; GC's `save_memory` tool for observability/validation |
+| **Q10: Memory type taxonomy** | **CC's `user/feedback/project/reference`** | Eval-validated 4-type system. Adopted verbatim from Claude Code |
+| **Q11: Memory save mechanism** | **Dedicated `save_memory` tool** | GC pattern — structured input, observable, diff confirmation. CC's prompt-driven approach lacks validation |
+| **Q12: Memory relevance recall** | **LLM side-query on frontmatter manifest** | CC pattern — Sonnet selects ≤5 topic files per query. Avoids loading all memory into prompt |
+| **Q13: Background memory extraction** | **Forked agent at query-loop end** | CC pattern — shares parent cache, cursor-based, mutual exclusion with main agent |
+| **Q14: Conversation history recall** | **Cross-session summary injection into prompt** | Neither CC nor GC does this. LiteAI original design. `index.jsonl` with last 50 entries |
+| **Q15: Execution order for P9-P14** | **Sequential after P4** | User confirmed: work in sequence, not parallel with plan mode |
+| **Q16: Guide agent model** | **Cheapest available model (hard-coded)** | Cost-optimized doc lookup doesn't need full reasoning |
+| **Q17: VCS memory snapshots** | **Dropped** | Subsumed by unified memory (P10B). Team memory sharing deferred to future roadmap |
+
+---
+
+## Superseded Roadmaps
+
+The following roadmaps are now consolidated into this document. They are retained as reference archives:
+
+| Document | Status | What Was Merged |
+|----------|--------|----------------|
+| [agents-platform-roadmap.md](../archive/agents-platform-roadmap.md) | ✅ Phases 4–5 complete, Phase 6 partial | Guide agent → P9. Memory snapshots → dropped. Verification agent → ✅ already done |
+| [project-scoped-persistence/](../archive/project-scoped-persistence/) | Architecture + detailed phase docs | Phases 1–5 → P10–P14. Detailed docs (03-phase1a, 04-phase1b, 05-phase1c) preserved as reference |
 
 ---
 
@@ -325,3 +460,5 @@ flowchart TD
 1. **Async SubagentTaskRegistry**: Claude Code equivalent of `registerAsyncAgent()` for background subagent lifecycle tracking. Needed only if we move to non-blocking subagent spawning.
 2. **Structured subagent output**: Typed return schema (like Gemini's `complete_task` tool with output schema). Currently subagent results are raw text.
 3. **Per-model cache management**: `saveCacheSafeParams` is per-session, not per-model. Model changes within a session invalidate cache. Acceptable for now.
+4. **Team memory sharing (VCS snapshots)**: Export project memory to `.liteai/` in-repo for team sharing via git. Deferred — LiteAI is single-user in this release.
+5. **Container-per-user orchestration (P14)**: Multi-user hosting via container isolation. Deferred until P12 is complete and validated.
