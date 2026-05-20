@@ -17,19 +17,39 @@ export const AgentStopTool = Tool.define("agent_stop", {
   // _ctx is required by the Tool.execute signature but unused here
   async execute(params, _ctx) {
     const agentCtx = AgentExecutionContext.getStore()
-    if (!agentCtx) throw new Error("No agent context found")
-    if (agentCtx.type === "teammate") throw new Error("Teammates cannot stop tasks")
+    if (!agentCtx) {
+      return {
+        title: "No agent context",
+        metadata: { success: false } as Record<string, unknown>,
+        output: "No agent execution context found. Cannot stop tasks outside of an agent context.",
+      }
+    }
+    if (agentCtx.type === "teammate") {
+      return {
+        title: "Permission denied",
+        metadata: { success: false } as Record<string, unknown>,
+        output: "Teammates cannot stop tasks. Only the primary agent can manage task lifecycle.",
+      }
+    }
 
     // H-1: Input validation — reject empty task_id
     const rawId = params.task_id.trim()
     if (rawId.length === 0) {
-      throw new Error("task_id is required and must not be empty")
+      return {
+        title: "Invalid input",
+        metadata: { success: false } as Record<string, unknown>,
+        output: "task_id is required and must not be empty.",
+      }
     }
 
     // H-3: Validate task_id format before casting to SessionID
     const parseResult = SessionID.zod.safeParse(rawId)
     if (!parseResult.success) {
-      throw new Error(`Invalid task_id format: "${rawId}" is not a valid session ID`)
+      return {
+        title: "Invalid task_id",
+        metadata: { success: false, validation: parseResult.error.issues } as Record<string, unknown>,
+        output: `Invalid task_id format: "${rawId}" is not a valid session ID.`,
+      }
     }
     const taskSessionId = parseResult.data
 
