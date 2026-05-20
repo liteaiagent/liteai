@@ -55,7 +55,7 @@ export namespace Shell {
         const bash = path.join(git, "..", "..", "bin", "bash.exe")
         if (Filesystem.stat(bash)?.size) return bash
       }
-      return process.env.COMSPEC || "cmd.exe"
+      return process.env.COMSPEC || process.env.ComSpec || "cmd.exe"
     }
     if (process.platform === "darwin") return "/bin/zsh"
     const bash = which("bash")

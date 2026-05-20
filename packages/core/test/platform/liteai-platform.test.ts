@@ -1,18 +1,15 @@
-import { afterAll, beforeAll, expect, test } from "bun:test"
+import { expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
 import { Agent } from "../../src/agent/agent"
+import * as Platform from "../../src/platform"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
-let prev: string | undefined
-beforeAll(() => {
-  prev = process.env.LITEAI_PLATFORM
-  delete process.env.LITEAI_PLATFORM
-})
-afterAll(() => {
-  if (prev !== undefined) process.env.LITEAI_PLATFORM = prev
-})
+/** Wrap Instance.provide inside a Platform.withOverride(null, …) scope (no platform). */
+function withNoPlatform<R>(input: { directory: string; fn: () => R }): Promise<R> {
+  return Platform.withOverride(null, () => Instance.provide(input))
+}
 
 test("does NOT discover from .claude/agents/ directory when platform is unset", async () => {
   await using tmp = await tmpdir({
@@ -32,7 +29,7 @@ You are a code reviewer.
     },
   })
 
-  await Instance.provide({
+  await withNoPlatform({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("reviewer")
@@ -59,7 +56,7 @@ You are a worker.
     },
   })
 
-  await Instance.provide({
+  await withNoPlatform({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("worker")

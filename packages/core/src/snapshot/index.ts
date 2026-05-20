@@ -55,7 +55,12 @@ export namespace Snapshot {
     const cfg = await Config.get()
     if (cfg.snapshot === false) return
     const git = gitdir()
-    if (await fs.mkdir(git, { recursive: true })) {
+    await fs.mkdir(git, { recursive: true })
+    const headExists = await fs
+      .stat(path.join(git, "HEAD"))
+      .then(() => true)
+      .catch(() => false)
+    if (!headExists) {
       await Process.run(["git", "init"], {
         env: {
           ...process.env,

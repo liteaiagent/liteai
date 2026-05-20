@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import { Brand } from "@/brand"
 
 import {
@@ -9,62 +9,51 @@ import {
 } from "../../src/coordinator/coordinator-mode"
 
 describe("Coordinator Mode", () => {
-  let originalEnv: Record<string, string | undefined>
+  let originalEnv: typeof process.env
 
   beforeEach(() => {
-    originalEnv = { ...process.env }
+    originalEnv = process.env
+    process.env = { ...originalEnv }
   })
 
   afterEach(() => {
-    process.env = { ...originalEnv }
+    process.env = originalEnv
   })
 
   describe("isCoordinatorMode", () => {
     test("respects sessionMode over flag when provided", () => {
       // Flag is true, but session is Normal
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: true },
-      }))
+      process.env[`${Brand.env}COORDINATOR_MODE`] = "true"
       expect(isCoordinatorMode("Normal")).toBe(false)
 
       // Flag is false, but session is Coordinator
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: false },
-      }))
+      delete process.env[`${Brand.env}COORDINATOR_MODE`]
       expect(isCoordinatorMode("Coordinator")).toBe(true)
     })
 
     test("falls back to flag when sessionMode is undefined", () => {
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: true },
-      }))
+      process.env[`${Brand.env}COORDINATOR_MODE`] = "true"
       expect(isCoordinatorMode(undefined)).toBe(true)
     })
   })
 
   describe("matchSessionMode", () => {
     test("syncs undefined session mode to flag", () => {
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: true },
-      }))
+      process.env[`${Brand.env}COORDINATOR_MODE`] = "true"
       const result = matchSessionMode(undefined)
       expect(result.resolvedMode).toBe("Coordinator")
       expect(result.warning).toBeUndefined()
     })
 
     test("returns session mode without warning if aligned with flag", () => {
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: true },
-      }))
+      process.env[`${Brand.env}COORDINATOR_MODE`] = "true"
       const result = matchSessionMode("Coordinator")
       expect(result.resolvedMode).toBe("Coordinator")
       expect(result.warning).toBeUndefined()
     })
 
     test("returns warning and syncs env var if drift detected (session=Coordinator, flag=false)", () => {
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: false },
-      }))
+      delete process.env[`${Brand.env}COORDINATOR_MODE`]
       const result = matchSessionMode("Coordinator")
       expect(result.resolvedMode).toBe("Coordinator")
       expect(result.warning).toContain("Entered coordinator mode")
@@ -72,9 +61,6 @@ describe("Coordinator Mode", () => {
     })
 
     test("returns warning and syncs env var if drift detected (session=Normal, flag=true)", () => {
-      mock.module("@/flag/flag", () => ({
-        Flag: { LITEAI_COORDINATOR_MODE: true },
-      }))
       process.env[`${Brand.env}COORDINATOR_MODE`] = "true"
       const result = matchSessionMode("Normal")
       expect(result.resolvedMode).toBe("Normal")

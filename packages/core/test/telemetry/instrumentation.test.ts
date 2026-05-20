@@ -1,5 +1,29 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test"
 
+// Mock the config loader to prevent filesystem I/O from getGlobal() during
+// initializeTelemetry. The real loader reads/writes config files and creates
+// directories, which is both slow and non-deterministic in a test environment.
+mock.module("../../src/config/loader", () => ({
+  getGlobal: async () => ({}),
+}))
+
+// Mock @langfuse/otel to prevent LangfuseSpanProcessor from opening network
+// connections. The production code has hardcoded fallback Langfuse keys, so
+// the Langfuse branch always executes regardless of OTEL_TRACES_EXPORTER.
+mock.module("@langfuse/otel", () => ({
+  LangfuseSpanProcessor: class MockLangfuseSpanProcessor {
+    constructor() {}
+    onStart() {}
+    onEnd() {}
+    shutdown() {
+      return Promise.resolve()
+    }
+    forceFlush() {
+      return Promise.resolve()
+    }
+  },
+}))
+
 import {
   applyConfigToEnv,
   flushTelemetry,
@@ -19,6 +43,10 @@ describe("instrumentation", () => {
     // Clear all telemetry env vars for a clean slate each test
     delete process.env.LITEAI_TELEMETRY_DISABLED
     delete process.env.LITEAI_ENABLE_TELEMETRY
+    // Clear Langfuse env vars to avoid any env-based initialization paths
+    delete process.env.LANGFUSE_PUBLIC_KEY
+    delete process.env.LANGFUSE_SECRET_KEY
+    delete process.env.LANGFUSE_BASE_URL
     spyOn(perfetto, "initializePerfettoTracing").mockImplementation(() => {})
   })
 

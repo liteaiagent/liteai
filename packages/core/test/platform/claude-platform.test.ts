@@ -1,22 +1,18 @@
-import { afterAll, beforeAll, expect, test } from "bun:test"
+import { expect, test } from "bun:test"
 import { Agent } from "../../src/agent/agent"
 import { PermissionNext } from "../../src/permission/next"
+import * as Platform from "../../src/platform"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
-
-let prev: string | undefined
-beforeAll(() => {
-  prev = process.env.LITEAI_PLATFORM
-  process.env.LITEAI_PLATFORM = "claude"
-})
-afterAll(() => {
-  if (prev !== undefined) process.env.LITEAI_PLATFORM = prev
-  else delete process.env.LITEAI_PLATFORM
-})
 
 function evalPerm(agent: Agent.Info | undefined, permission: string): PermissionNext.Action | undefined {
   if (!agent) return undefined
   return PermissionNext.evaluate(permission, "*", agent.permission).action
+}
+
+/** Wrap Instance.provide inside a Platform.withOverride("claude", …) scope. */
+function withClaude<R>(input: { directory: string; fn: () => R }): Promise<R> {
+  return Platform.withOverride("claude", () => Instance.provide(input))
 }
 
 // --- permissionMode ---
@@ -32,7 +28,7 @@ test("permissionMode dontAsk allows all tools", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -55,7 +51,7 @@ test("permissionMode bypassPermissions allows all tools", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -77,7 +73,7 @@ test("permissionMode plan allows read-only tools and denies others", async () =>
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -103,7 +99,7 @@ test("permissionMode acceptEdits allows edit and write", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -125,7 +121,7 @@ test("permissionMode default has no extra permission effect", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -150,7 +146,7 @@ test("tools as comma-separated string sets allowed tools", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -175,7 +171,7 @@ test("tools as array sets allowed tools", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -198,7 +194,7 @@ test("tools as record filters by truthy values", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -223,7 +219,7 @@ test("disallowedTools as comma-separated string denies tools", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -246,7 +242,7 @@ test("disallowedTools as array denies tools", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -271,7 +267,7 @@ test("tools overrides permissionMode", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -297,7 +293,7 @@ test("maxTurns maps to steps", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -319,7 +315,7 @@ test("steps takes precedence over maxTurns", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")
@@ -352,7 +348,7 @@ test("Claude Code frontmatter fields are parsed in config", async () => {
       },
     },
   })
-  await Instance.provide({
+  await withClaude({
     directory: tmp.path,
     fn: async () => {
       const agent = await Agent.get("my_agent")

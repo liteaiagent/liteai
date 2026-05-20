@@ -24,7 +24,7 @@ CRITICAL INSTRUCTIONS: DO NOT EVER TAKE THE PATH OF LEAST RESISTANCE, Always eva
 - **No File Dumping:** You are strictly forbidden from dumping the typecheck output to a temporary text file (e.g., `> errors.txt`) to read it. You must capture the console stream directly in memory.
 - **Allowed Output Capture:** You must capture the COMPLETE output. Do not use commands that truncate (e.g., `tail` or `head`). To prevent Windows shell errors and capture the full buffer, you are authorized to use stream merging (e.g., `bun typecheck 2>&1 | Out-String` in PowerShell), provided the output remains entirely un-truncated.
 - **Linting:** Always run `bun lint:fix` after making modifications to ensure formatting compliance.
-- **Testing Scope:** A full `bun test` run takes ~30 minutes. NEVER run the global test suite. You MUST run scoped tests mapped directly to the files or domains you are modifying (e.g., `bun test test/sessions`). If no scope is specified, infer from modified files.
+- **Testing Scope:** Run scoped tests mapped directly to the files or domains you are modifying (e.g., `bun test test/sessions`).
 
 ## 3. Variable & Linter Policy
 - **Unused Variables:** If you encounter an unused variable warning, DO NOT blindly remove it or instantly prefix it with `_` to suppress the linter. 

@@ -1,21 +1,10 @@
-import { afterAll, beforeAll, expect, test } from "bun:test"
+import { expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import path from "node:path"
+import * as Platform from "../../src/platform"
 import { Instance } from "../../src/project/instance"
 import { Skill } from "../../src/skill"
 import { tmpdir } from "../fixture/fixture"
-
-let prevPlatform: string | undefined
-
-beforeAll(() => {
-  prevPlatform = process.env.LITEAI_PLATFORM
-  process.env.LITEAI_PLATFORM = "standard"
-})
-
-afterAll(() => {
-  if (prevPlatform !== undefined) process.env.LITEAI_PLATFORM = prevPlatform
-  else delete process.env.LITEAI_PLATFORM
-})
 
 async function createGlobalSkill(homeDir: string) {
   const skillDir = path.join(homeDir, ".agents", "skills", "global-test-skill")
@@ -32,6 +21,11 @@ description: A global skill from ~/.agents/skills for testing.
 This skill is loaded from the global home directory.
 `,
   )
+}
+
+/** Wrap Instance.provide inside a Platform.withOverride("standard", …) scope. */
+function withStandard<R>(input: { directory: string; fn: () => R }): Promise<R> {
+  return Platform.withOverride("standard", () => Instance.provide(input))
 }
 
 test("discovers skills from .agents/skills/ directory", async () => {
@@ -52,7 +46,7 @@ description: A skill in the .agents/skills directory.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()
@@ -71,7 +65,7 @@ test("discovers global skills from ~/.agents/skills/ directory", async () => {
 
   try {
     await createGlobalSkill(tmp.path)
-    await Instance.provide({
+    await withStandard({
       directory: tmp.path,
       fn: async () => {
         const skills = await Skill.all()
@@ -115,7 +109,7 @@ description: A skill in the .agents/skills directory.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()

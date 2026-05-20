@@ -14,7 +14,6 @@ import * as Platform from "@/platform"
 import { Instance } from "@/project/instance"
 import { Session } from "@/session"
 import { Filesystem } from "@/util/filesystem"
-import { lazy } from "@/util/lazy"
 export namespace AgentLoader {
   const log = Log.create({ service: "agent:loader" })
 
@@ -169,30 +168,43 @@ export namespace AgentLoader {
     return result
   }
 
-  // Module-level cache: global platform agents don't change per instance
-  const globalPlatformAgentsCache = lazy(async () => {
-    if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<
-      string,
-      z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
-    > = {}
-    for (const dir of Platform.dirs()) {
-      const root = path.join(Global.Path.home, dir)
-      if (!(await Filesystem.isDir(root))) continue
-      Object.assign(result, await scanAgents(root, "global"))
-    }
-    return result
-  })
+  type AgentRecord = Record<
+    string,
+    z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
+  >
 
-  export async function loadPlatformAgents(): Promise<
-    Record<string, z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }>
-  > {
+  /**
+   * Per-platform-id cache for global platform agents.
+   * Keyed by the active platform ID (or `"__none__"` when no platform is active)
+   * so that parallel async contexts using different platform overrides each get
+   * their own cached result without cross-contamination.
+   */
+  const globalPlatformAgentsByPlatform = new Map<string, Promise<AgentRecord>>()
+
+  function globalPlatformAgents(): Promise<AgentRecord> {
+    if (Flag.LITEAI_DISABLE_AGENTS) return Promise.resolve({})
+    const platformId = Platform.active()?.id ?? "__none__"
+    const existing = globalPlatformAgentsByPlatform.get(platformId)
+    if (existing) return existing
+
+    const promise = (async (): Promise<AgentRecord> => {
+      const result: AgentRecord = {}
+      for (const dir of Platform.dirs()) {
+        const root = path.join(Global.Path.home, dir)
+        if (!(await Filesystem.isDir(root))) continue
+        Object.assign(result, await scanAgents(root, "global"))
+      }
+      return result
+    })()
+
+    globalPlatformAgentsByPlatform.set(platformId, promise)
+    return promise
+  }
+
+  export async function loadPlatformAgents(): Promise<AgentRecord> {
     if (Flag.LITEAI_DISABLE_AGENTS) return {}
-    const result: Record<
-      string,
-      z.infer<typeof Agent> & { source: "custom" | "plugin"; filePath?: string; pluginId?: string }
-    > = {
-      ...(await globalPlatformAgentsCache()),
+    const result: AgentRecord = {
+      ...(await globalPlatformAgents()),
     }
 
     for await (const root of Filesystem.up({
@@ -207,6 +219,6 @@ export namespace AgentLoader {
   }
 
   export function resetCache() {
-    globalPlatformAgentsCache.reset()
+    globalPlatformAgentsByPlatform.clear()
   }
 }

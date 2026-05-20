@@ -3,12 +3,12 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { Flag } from "../../src/flag/flag"
+import * as Platform from "../../src/platform"
 import { Instance } from "../../src/project/instance"
 import { Skill } from "../../src/skill"
 import { tmpdir } from "../fixture/fixture"
 
 let prevExternalSkills: boolean
-let prevPlatform: string | undefined
 let prevTestHome: string | undefined
 let fileTestHome: string
 
@@ -16,9 +16,6 @@ beforeAll(async () => {
   prevExternalSkills = Flag.LITEAI_DISABLE_SKILLS
   // @ts-expect-error - Mutating namespace property for testing external skills
   Flag.LITEAI_DISABLE_SKILLS = false
-
-  prevPlatform = process.env.LITEAI_PLATFORM
-  process.env.LITEAI_PLATFORM = "standard"
 
   prevTestHome = process.env.LITEAI_TEST_HOME
   fileTestHome = await fs.mkdtemp(path.join(os.tmpdir(), "liteai-skill-test-"))
@@ -29,12 +26,6 @@ afterAll(async () => {
   // @ts-expect-error - Restore original state
   Flag.LITEAI_DISABLE_SKILLS = prevExternalSkills
 
-  if (prevPlatform !== undefined) {
-    process.env.LITEAI_PLATFORM = prevPlatform
-  } else {
-    delete process.env.LITEAI_PLATFORM
-  }
-
   if (prevTestHome !== undefined) {
     process.env.LITEAI_TEST_HOME = prevTestHome
   } else {
@@ -43,6 +34,11 @@ afterAll(async () => {
 
   await fs.rm(fileTestHome, { recursive: true, force: true }).catch(() => {})
 })
+
+/** Wrap Instance.provide inside a Platform.withOverride("standard", …) scope. */
+function withStandard<R>(input: { directory: string; fn: () => R }): Promise<R> {
+  return Platform.withOverride("standard", () => Instance.provide(input))
+}
 
 test("discovers skills from .liteai/skill/ directory", async () => {
   await using tmp = await tmpdir({
@@ -64,7 +60,7 @@ Instructions here.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()
@@ -98,7 +94,7 @@ description: Skill for dirs test.
   process.env.LITEAI_TEST_HOME = tmp.path
 
   try {
-    await Instance.provide({
+    await withStandard({
       directory: tmp.path,
       fn: async () => {
         const dirs = await Skill.dirs()
@@ -140,7 +136,7 @@ description: Second test skill.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()
@@ -165,7 +161,7 @@ Just some content without YAML frontmatter.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()
@@ -178,7 +174,7 @@ Just some content without YAML frontmatter.
 test("returns empty array when no skills exist", async () => {
   await using tmp = await tmpdir({ git: true })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()
@@ -207,7 +203,7 @@ description: A skill in the .agents/skills directory.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skills = await Skill.all()
@@ -240,7 +236,7 @@ This skill is loaded from the global home directory.
 `,
     )
 
-    await Instance.provide({
+    await withStandard({
       directory: tmp.path,
       fn: async () => {
         const skills = await Skill.all()
@@ -295,7 +291,7 @@ description: A skill in the .liteai/skills directory.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const dirs = await Skill.dirs()
@@ -329,7 +325,7 @@ agent: Explore
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skill = await Skill.get("advanced-skill")
@@ -367,7 +363,7 @@ allowed_tools: Bash
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skill = await Skill.get("snake-skill")
@@ -407,7 +403,7 @@ disable-model-invocation: true
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const model = await Skill.available(undefined, "model")
@@ -448,7 +444,7 @@ user-invocable: false
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const user = await Skill.available(undefined, "user")
@@ -504,7 +500,7 @@ description: Only basic fields.
     },
   })
 
-  await Instance.provide({
+  await withStandard({
     directory: tmp.path,
     fn: async () => {
       const skill = await Skill.get("basic-skill")

@@ -6,6 +6,15 @@ import { MessageID, SessionID } from "../../src/session/schema"
 import { WriteTool } from "../../src/tool/write"
 import { tmpdir } from "../fixture/fixture"
 
+const createTmpDir = (options?: Parameters<typeof tmpdir>[0]) =>
+  tmpdir({
+    ...options,
+    config: {
+      lsp: false,
+      ...options?.config,
+    },
+  })
+
 const ctx = {
   sessionID: SessionID.make("ses_test-write-session"),
   messageID: MessageID.make(""),
@@ -20,7 +29,7 @@ const ctx = {
 describe("tool.write", () => {
   describe("new file creation", () => {
     test("writes content to new file", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "newfile.txt")
 
       await Instance.provide({
@@ -45,7 +54,7 @@ describe("tool.write", () => {
     })
 
     test("creates parent directories if needed", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "nested", "deep", "file.txt")
 
       await Instance.provide({
@@ -67,7 +76,7 @@ describe("tool.write", () => {
     })
 
     test("handles relative paths by resolving to instance directory", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
 
       await Instance.provide({
         directory: tmp.path,
@@ -90,7 +99,7 @@ describe("tool.write", () => {
 
   describe("existing file overwrite", () => {
     test("overwrites existing file content", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "existing.txt")
       await fs.writeFile(filepath, "old content", "utf-8")
 
@@ -120,7 +129,7 @@ describe("tool.write", () => {
     })
 
     test("returns diff in metadata for existing files", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "file.txt")
       await fs.writeFile(filepath, "old", "utf-8")
 
@@ -149,7 +158,7 @@ describe("tool.write", () => {
 
   describe("file permissions", () => {
     test("sets file permissions when writing sensitive data", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "sensitive.json")
 
       await Instance.provide({
@@ -176,7 +185,7 @@ describe("tool.write", () => {
 
   describe("content types", () => {
     test("writes JSON content", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "data.json")
       const data = { key: "value", nested: { array: [1, 2, 3] } }
 
@@ -199,7 +208,7 @@ describe("tool.write", () => {
     }, 30_000)
 
     test("writes binary-safe content", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "binary.bin")
       const content = "Hello\x00World\x01\x02\x03"
 
@@ -222,7 +231,7 @@ describe("tool.write", () => {
     }, 30_000)
 
     test("writes empty content", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "empty.txt")
 
       await Instance.provide({
@@ -247,7 +256,7 @@ describe("tool.write", () => {
     }, 30_000)
 
     test("writes multi-line content", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "multiline.txt")
       const lines = ["Line 1", "Line 2", "Line 3", ""].join("\n")
 
@@ -270,7 +279,7 @@ describe("tool.write", () => {
     })
 
     test("handles different line endings", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "crlf.txt")
       const content = "Line 1\r\nLine 2\r\nLine 3"
 
@@ -295,7 +304,7 @@ describe("tool.write", () => {
 
   describe("error handling", () => {
     test("throws error when OS denies write access", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const readonlyPath = path.join(tmp.path, "readonly.txt")
 
       // Create a read-only file
@@ -325,7 +334,7 @@ describe("tool.write", () => {
 
   describe("title generation", () => {
     test("returns relative path as title", async () => {
-      await using tmp = await tmpdir()
+      await using tmp = await createTmpDir()
       const filepath = path.join(tmp.path, "src", "components", "Button.tsx")
       await fs.mkdir(path.dirname(filepath), { recursive: true })
 
