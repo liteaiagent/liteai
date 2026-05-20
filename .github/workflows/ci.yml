@@ -29,3 +29,12 @@ jobs:
 
       - name: Run lint
         run: bun run lint
+
+      - name: Run fast tests
+        working-directory: packages/core
+        run: bun run test:fast
+
+      - name: Run CLI tests
+        working-directory: packages/cli
+        run: bun run test
+

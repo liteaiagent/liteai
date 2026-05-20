@@ -16,6 +16,7 @@
     "lint:fix": "biome check --write",
     "lint:format": "biome format --write",
     "test": "bun test --timeout 30000",
+    "test:fast": "bun test --timeout 10000 --path-ignore-patterns \"**/*.slow.test.ts\"",
     "test:cov": "bun test --coverage --coverage-reporter=lcov --coverage-dir=./coverage --timeout 30000"
   },
   "exports": {

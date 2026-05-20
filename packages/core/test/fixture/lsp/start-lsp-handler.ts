@@ -2,7 +2,7 @@
 /**
  * Minimal entrypoint for integration-testing the LSP handler.
  *
- * Spawned as a subprocess by lsp-handler-integration.test.ts.
+ * Spawned as a subprocess by lsp-handler.slow.test.ts.
  * It initializes just enough of core (Log) and starts the LSP handler.
  * No HTTP server, no DB, no hosted mode — just LSP on stdio.
  */
