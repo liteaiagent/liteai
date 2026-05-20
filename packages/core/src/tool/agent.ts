@@ -1,6 +1,8 @@
 import { Log } from "@liteai/util/log"
 import z from "zod"
 import { PermissionNext } from "@/permission/next"
+import { runAsyncAgentLifecycle } from "@/task/lifecycle"
+import { TaskID, TaskLimitExceededError } from "@/task/task"
 import { defer } from "@/util/defer"
 import { iife } from "@/util/iife"
 import { Agent } from "../agent/agent"
@@ -25,6 +27,12 @@ const parameters = z.object({
     )
     .optional(),
   command: z.string().describe("The command that triggered this task").optional(),
+  run_in_background: z
+    .boolean()
+    .describe(
+      "If true, launch the agent as a background task and return immediately. Results will arrive as a <task-notification> message when the agent completes.",
+    )
+    .optional(),
 })
 
 export const AgentTool = Tool.define("agent", async (ctx) => {
@@ -108,7 +116,7 @@ export const AgentTool = Tool.define("agent", async (ctx) => {
         metadata: {
           sessionId: session.id,
           model,
-        },
+        } as Record<string, unknown>,
       })
 
       // Skip permission check when user explicitly invoked via @ or command subtask
@@ -124,14 +132,102 @@ export const AgentTool = Tool.define("agent", async (ctx) => {
         })
       }
 
-      const messageID = MessageID.ascending()
+      // ── Decision gate: sync vs async dispatch ──
+      // Modeled after Claude Code's shouldRunAsync at AgentTool.tsx L567
+      const shouldRunAsync = params.run_in_background === true || isCoordinatorMode(parentSession.sessionMode)
 
+      const messageID = MessageID.ascending()
+      const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
+
+      // ── Async dispatch path ──
+      // Fire-and-forget: parent receives immediate acknowledgment,
+      // subagent runs in background, result delivered via <task-notification>.
+      if (shouldRunAsync) {
+        const registry = SessionPrompt.agentTaskRegistry()
+        const taskId = TaskID.ascending()
+
+        // Register the task — throws TaskLimitExceededError if concurrency limit reached
+        try {
+          registry.register({
+            taskId,
+            sessionId: session.id as unknown as import("@/session/schema").SessionID,
+            parentSessionId: ctx.sessionID as unknown as import("@/session/schema").SessionID,
+            agentName: agent.name,
+            description: params.description,
+            abortController: new AbortController(),
+          })
+        } catch (e) {
+          if (e instanceof TaskLimitExceededError) {
+            return {
+              title: params.description,
+              metadata: { sessionId: session.id, model } as Record<string, unknown>,
+              output: [
+                `<agent_launch_error>`,
+                `Cannot launch background agent: ${e.message}`,
+                `Wait for running tasks to complete or stop a running task with task_stop before launching new ones.`,
+                `</agent_launch_error>`,
+              ].join("\n"),
+            }
+          }
+          throw e
+        }
+
+        // Fire-and-forget the async lifecycle (detached promise — parent doesn't await)
+        // The AbortController is independent (NOT linked to parent) — T010
+        void runAsyncAgentLifecycle({
+          taskId,
+          sessionId: session.id as unknown as import("@/session/schema").SessionID,
+          registry,
+          runSubagent: () =>
+            SessionPrompt.runSubagent({
+              messageID,
+              sessionID: session.id,
+              model: {
+                modelID: model.modelID,
+                providerID: model.providerID,
+              },
+              agent: agent.name,
+              parts: promptParts,
+            }),
+        })
+
+        log.info("async agent dispatched", {
+          taskId,
+          sessionId: session.id,
+          agent: agent.name,
+          description: params.description,
+        })
+
+        // Return immediate acknowledgment per contracts/task-tool-schemas.md
+        return {
+          title: params.description,
+          metadata: {
+            sessionId: session.id,
+            taskId,
+            model,
+            async: true,
+          } as Record<string, unknown>,
+          output: [
+            `task_id: ${taskId}`,
+            `session_id: ${session.id}`,
+            `agent: ${agent.name}`,
+            "",
+            "<agent_launched>",
+            "Background task launched successfully. You will receive a <task-notification> when it completes.",
+            `Status: running`,
+            `Description: ${params.description}`,
+            "</agent_launched>",
+          ].join("\n"),
+        }
+      }
+
+      // ── Sync dispatch path (default — unchanged) ──
+      // Parent abort → subagent cancel linkage (T010: only for sync path)
       function cancel() {
         SessionPrompt.cancel(session.id)
       }
       ctx.abort.addEventListener("abort", cancel)
       using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
-      const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
 
       const result = await SessionPrompt.runSubagent({
         messageID,
@@ -151,7 +247,7 @@ export const AgentTool = Tool.define("agent", async (ctx) => {
           metadata: {
             sessionId: session.id,
             model,
-          },
+          } as Record<string, unknown>,
           output: [
             `task_id: ${session.id} (for resuming to continue this task if needed)`,
             "",
@@ -168,7 +264,7 @@ export const AgentTool = Tool.define("agent", async (ctx) => {
           metadata: {
             sessionId: session.id,
             model,
-          },
+          } as Record<string, unknown>,
           output: [
             `task_id: ${session.id} (for resuming to continue this task if needed)`,
             "",
@@ -196,7 +292,7 @@ export const AgentTool = Tool.define("agent", async (ctx) => {
         metadata: {
           sessionId: session.id,
           model,
-        },
+        } as Record<string, unknown>,
         output,
       }
     },

@@ -5,6 +5,7 @@ import z from "zod"
 import { Bus } from "@/bus"
 import { BackgroundTaskRegistry } from "@/command/background"
 import { PermissionNext } from "@/permission/next"
+import { AgentTaskRegistry } from "@/task/registry"
 import { AgentTool } from "@/tool/agent"
 import type { Tool } from "@/tool/tool"
 import { fn } from "@/util/fn"
@@ -75,6 +76,26 @@ const _state = Instance.state(
     }
   },
 )
+
+/**
+ * Instance-scoped AgentTaskRegistry.
+ *
+ * Unlike BackgroundTaskRegistry (session-scoped, disposed on session end),
+ * the agent task registry is instance-scoped because background agents can
+ * outlive their parent session's current loop iteration. On instance shutdown,
+ * all running agent tasks are killed.
+ */
+const _agentTaskRegistry = Instance.state(
+  () => new AgentTaskRegistry(),
+  async (current) => {
+    current.killAll()
+  },
+)
+
+/** Get the instance-scoped agent task registry. */
+export function agentTaskRegistry(): AgentTaskRegistry {
+  return _agentTaskRegistry()
+}
 
 export function state() {
   return _state()
@@ -191,7 +212,8 @@ export const runSubagent = fn(PromptInput, async (input) => {
   })
 
   const checkpointer = new SqliteCheckpointer()
-  return await runSession({ sessionID, session, abort, registry, checkpointer, tracker })
+  const agentRegistry = agentTaskRegistry()
+  return await runSession({ sessionID, session, abort, registry, agentRegistry, checkpointer, tracker })
 })
 
 export function start(sessionID: SessionID) {
@@ -428,6 +450,7 @@ async function runSession(input: {
   session: Session.Info
   abort: AbortSignal
   registry: BackgroundTaskRegistry
+  agentRegistry: AgentTaskRegistry
   checkpointer: Checkpointer
   tracker: PromiseTracker
   stepModeRef?: { current: boolean }
@@ -457,7 +480,7 @@ async function runSession(input: {
     async (sessionSpan) => {
       let caughtError: unknown
       try {
-        const result = await runSessionInner({ ...input, initialHistory })
+        const result = await runSessionInner({ ...input, initialHistory, agentRegistry: input.agentRegistry })
 
         // Use SessionResult.message for output span — no DB read.
         // The result already contains the completed assistant message with parts.
@@ -491,6 +514,7 @@ async function runSessionInner(input: {
   session: Session.Info
   abort: AbortSignal
   registry: BackgroundTaskRegistry
+  agentRegistry: AgentTaskRegistry
   checkpointer: Checkpointer
   tracker: PromiseTracker
   stepModeRef?: { current: boolean }
@@ -740,6 +764,7 @@ async function runSessionInner(input: {
             {
               const lastUser = findLastUserFromBuffer(msgsBuffer.current)
               if (lastUser) {
+                // Inject command task notifications
                 await correctionInjector
                   .injectNotifications({
                     registry: input.registry,
@@ -749,6 +774,18 @@ async function runSessionInner(input: {
                   .catch((e: unknown) => {
                     // Notification injection failure must NOT crash the engine loop.
                     log.error("runSession: injectTaskNotifications failed", { error: e, sessionID })
+                  })
+
+                // Inject agent task notifications (from background subagents)
+                await correctionInjector
+                  .injectAgentTaskNotifications({
+                    registry: input.agentRegistry,
+                    parentSessionId: sessionID,
+                    lastUser,
+                    msgsBuffer,
+                  })
+                  .catch((e: unknown) => {
+                    log.error("runSession: injectAgentTaskNotifications failed", { error: e, sessionID })
                   })
               }
             }
@@ -1077,7 +1114,17 @@ export const loop = fn(LoopInput, async (input) => {
   // Delegate to the event-sourced orchestrator
   const checkpointer = new SqliteCheckpointer()
   const stepModeRef = input.stepMode ? { current: true } : undefined
-  const result = await runSession({ sessionID, session, abort, registry, checkpointer, tracker, stepModeRef })
+  const agentRegistry = agentTaskRegistry()
+  const result = await runSession({
+    sessionID,
+    session,
+    abort,
+    registry,
+    agentRegistry,
+    checkpointer,
+    tracker,
+    stepModeRef,
+  })
 
   const queued = state()[sessionID]?.callbacks ?? []
   switch (result.status) {

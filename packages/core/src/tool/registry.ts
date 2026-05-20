@@ -5,6 +5,8 @@ import type { Agent } from "../agent/agent"
 import { Config } from "../config/config"
 import type { ModelID, ProviderID } from "../provider/schema"
 import { AgentTool } from "./agent"
+import { AgentGetTool } from "./agent_get"
+import { AgentListTool } from "./agent_list"
 import { AgentStopTool } from "./agent_stop"
 import { ApplyPatchTool } from "./apply_patch"
 import { AskUserTool } from "./ask_user"
@@ -54,6 +56,8 @@ export namespace ToolRegistry {
       SendMessageTool,
       AgentTool,
       AgentStopTool,
+      AgentGetTool,
+      AgentListTool,
       TeamCreateTool,
       TeamDeleteTool,
       WebFetchTool,

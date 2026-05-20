@@ -11,6 +11,7 @@ export namespace Identifier {
     part: "prt",
     pty: "pty",
     tool: "tool",
+    task: "tsk",
     trace: "trc",
     workspace: "wrk",
   } as const

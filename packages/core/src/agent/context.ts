@@ -3,6 +3,7 @@ import type { Config } from "@/config/config"
 import type { TeammateTaskState } from "@/coordinator/teammate-types"
 import type { MCP } from "@/mcp"
 import type { Provider } from "@/provider/provider"
+import type { AgentTaskInfo } from "@/task/task"
 import type { Agent } from "./agent"
 import type { CacheSafeParams } from "./fork"
 
@@ -33,7 +34,7 @@ export interface AppState {
   /** Name-to-agentId registry for background agents. */
   agentNameRegistry?: Record<string, string>
   /** Tasks/state tracking for background agents and in-process teammates. */
-  tasks?: Record<string, BackgroundTaskState | TeammateTaskState>
+  tasks?: Record<string, BackgroundTaskState | TeammateTaskState | AgentTaskInfo>
   /** Team context for coordinator/swarm mode. */
   teamContext?: {
     teamName: string

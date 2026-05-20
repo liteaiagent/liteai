@@ -11,6 +11,7 @@ export namespace SessionPrompt {
   export const LoopInput = Loop.LoopInput
   export const prompt = Loop.prompt
   export const runSubagent = Loop.runSubagent
+  export const agentTaskRegistry = Loop.agentTaskRegistry
   export const resumeStepMode = Loop.resumeStepMode
   export const setPermissionMode = Loop.setPermissionMode
   export const PromptInput = Loop.PromptInput

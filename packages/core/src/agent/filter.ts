@@ -20,6 +20,8 @@ export const ASYNC_AGENT_ALLOWED_TOOLS = [
   "tool_search",
   "enter_worktree",
   "exit_worktree",
+  "agent_get",
+  "agent_list",
 ]
 
 // Deduplication via Set is intentional and overlaps between ALL_AGENT_DISALLOWED_TOOLS

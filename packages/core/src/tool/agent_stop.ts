@@ -1,18 +1,21 @@
 import z from "zod"
+import type { TaskID } from "@/task/task"
+import { isTerminalStatus } from "@/task/task"
 import { AgentExecutionContext, type AppState } from "../agent/context"
 import { SessionPrompt } from "../session/engine"
 import { SessionID } from "../session/schema"
 import { Tool } from "./tool"
 
 const parameters = z.object({
-  task_id: z.string().describe("The ID of the background task to stop"),
+  task_id: z.string().describe("The ID of the background agent or task to stop"),
 })
 
 export const AgentStopTool = Tool.define("agent_stop", {
-  description: `Stop a running background task by its ID.
-- Takes a task_id parameter identifying the task to stop
+  description: `Stop a running background agent or task by its ID.
+- Takes a task_id parameter identifying the agent/task to stop
+- Works with both agent task IDs (from run_in_background) and session IDs (from legacy tasks)
 - Returns a success or failure status
-- Use this tool when you need to terminate a long-running task`,
+- Use this tool when you need to terminate a long-running agent`,
   parameters,
   // _ctx is required by the Tool.execute signature but unused here
   async execute(params, _ctx) {
@@ -21,14 +24,14 @@ export const AgentStopTool = Tool.define("agent_stop", {
       return {
         title: "No agent context",
         metadata: { success: false } as Record<string, unknown>,
-        output: "No agent execution context found. Cannot stop tasks outside of an agent context.",
+        output: "No agent execution context found. Cannot stop agents outside of an agent context.",
       }
     }
     if (agentCtx.type === "teammate") {
       return {
         title: "Permission denied",
         metadata: { success: false } as Record<string, unknown>,
-        output: "Teammates cannot stop tasks. Only the primary agent can manage task lifecycle.",
+        output: "Teammates cannot stop agents. Only the primary agent can manage agent lifecycle.",
       }
     }
 
@@ -42,13 +45,38 @@ export const AgentStopTool = Tool.define("agent_stop", {
       }
     }
 
+    // ── Try AgentTaskRegistry first (new async dispatch path) ──
+    // Agent task IDs have the "tsk_" prefix from TaskID.ascending()
+    const agentRegistry = SessionPrompt.agentTaskRegistry()
+    const agentTask = agentRegistry.get(rawId as TaskID)
+
+    if (agentTask) {
+      if (isTerminalStatus(agentTask.status)) {
+        return {
+          title: "Agent not running",
+          metadata: { success: false } as Record<string, unknown>,
+          output: `Agent ${rawId} is not running (status: ${agentTask.status})`,
+        }
+      }
+
+      // Kill the agent task via the registry (triggers independent AbortController)
+      agentRegistry.kill(rawId as TaskID)
+
+      return {
+        title: `Stopped agent ${rawId}`,
+        metadata: { success: true, task_id: rawId, task_type: "agent_task" } as Record<string, unknown>,
+        output: `Successfully stopped background agent: ${rawId} (${agentTask.agentName}: ${agentTask.description})`,
+      }
+    }
+
+    // ── Fall back to AppState-based tasks (legacy session-scoped path) ──
     // H-3: Validate task_id format before casting to SessionID
     const parseResult = SessionID.zod.safeParse(rawId)
     if (!parseResult.success) {
       return {
-        title: "Invalid task_id",
-        metadata: { success: false, validation: parseResult.error.issues } as Record<string, unknown>,
-        output: `Invalid task_id format: "${rawId}" is not a valid session ID.`,
+        title: "Not found",
+        metadata: { success: false } as Record<string, unknown>,
+        output: `No agent or task found with ID: ${rawId}`,
       }
     }
     const taskSessionId = parseResult.data
@@ -61,15 +89,15 @@ export const AgentStopTool = Tool.define("agent_stop", {
 
     if (!task) {
       return {
-        title: "Task not found",
+        title: "Not found",
         metadata: { success: false } as Record<string, unknown>,
-        output: `No task found with ID: ${rawId}`,
+        output: `No agent or task found with ID: ${rawId}`,
       }
     }
 
     if (task.status !== "running") {
       return {
-        title: "Task not running",
+        title: "Not running",
         metadata: { success: false } as Record<string, unknown>,
         output: `Task ${rawId} is not running (status: ${task.status})`,
       }
@@ -92,7 +120,7 @@ export const AgentStopTool = Tool.define("agent_stop", {
 
     return {
       title: `Stopped task ${rawId}`,
-      metadata: { success: true, task_id: rawId } as Record<string, unknown>,
+      metadata: { success: true, task_id: rawId, task_type: "legacy_task" } as Record<string, unknown>,
       output: `Successfully stopped task: ${rawId}`,
     }
   },

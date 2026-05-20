@@ -76,6 +76,8 @@ const COORDINATOR_ALLOWED_TOOLS = new Set([
   "agent",
   "send_message",
   "agent_stop",
+  "agent_get",
+  "agent_list",
   "team_create",
   "team_delete",
   STRUCTURED_OUTPUT_TOOL_NAME,
@@ -98,7 +100,15 @@ export function applyCoordinatorToolFilter(tools: Record<string, unknown>): Reco
  * Tools that are internal to the coordinator/swarm system and should NOT
  * be listed in the worker capabilities context.
  */
-const INTERNAL_COORDINATOR_TOOLS = new Set(["agent", "send_message", "agent_stop", "team_create", "team_delete"])
+const INTERNAL_COORDINATOR_TOOLS = new Set([
+  "agent",
+  "send_message",
+  "agent_stop",
+  "agent_get",
+  "agent_list",
+  "team_create",
+  "team_delete",
+])
 
 /**
  * Build the worker capabilities context string for the coordinator's
