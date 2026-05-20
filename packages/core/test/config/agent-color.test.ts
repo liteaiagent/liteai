@@ -51,8 +51,8 @@ test("Agent.get includes color from config", async () => {
     fn: async () => {
       const plan = await AgentSvc.get("plan-explore")
       expect(plan?.color).toBe("#A855F7")
-      const build = await AgentSvc.get("build")
-      expect(build?.color).toBe("accent")
+      const liteai = await AgentSvc.get("liteai")
+      expect(liteai?.color).toBe("accent")
     },
   })
 })

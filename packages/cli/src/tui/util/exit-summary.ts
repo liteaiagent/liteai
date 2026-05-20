@@ -80,12 +80,6 @@ export function formatDuration(milliseconds: number): string {
   if (minutes > 0) parts.push(`${minutes}m`)
   if (seconds > 0) parts.push(`${seconds}s`)
 
-  if (parts.length === 0) {
-    if (hours > 0) return `${hours}h`
-    if (minutes > 0) return `${minutes}m`
-    return `${seconds}s`
-  }
-
   return parts.join(" ")
 }
 

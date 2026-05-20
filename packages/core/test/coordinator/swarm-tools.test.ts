@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
 import { type AppState, type RootAgentContext, runWithAgentContext } from "../../src/agent/context"
+import { Instance } from "../../src/project/instance"
+import { tmpdir } from "../fixture/fixture"
 
 // ─── Shared test helpers ────────────────────────────────────────────────────
 
@@ -271,19 +273,27 @@ describe("AgentStopTool", () => {
     const { ctx } = createMockRootContext()
     const toolCtx = createMockToolCtx()
 
-    await expect(runWithAgentContext(ctx, () => execute({ task_id: "" }, toolCtx))).rejects.toThrow(
-      "task_id is required and must not be empty",
-    )
+    const result = await runWithAgentContext(ctx, () => execute({ task_id: "" }, toolCtx))
+    expect(result.metadata.success).toBe(false)
+    expect(result.output).toContain("task_id is required and must not be empty")
   })
 
   test("H-3: rejects invalid task_id format", async () => {
-    const { AgentStopTool } = await import("../../src/tool/agent_stop")
-    const execute = await initTool(AgentStopTool)
-    const { ctx } = createMockRootContext()
-    const toolCtx = createMockToolCtx()
+    // Instance.provide required: AgentStopTool accesses SessionPrompt.agentTaskRegistry()
+    // which depends on Instance context
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const { AgentStopTool } = await import("../../src/tool/agent_stop")
+        const execute = await initTool(AgentStopTool)
+        const { ctx } = createMockRootContext()
+        const toolCtx = createMockToolCtx()
 
-    await expect(
-      runWithAgentContext(ctx, () => execute({ task_id: "not-a-valid-session-id" }, toolCtx)),
-    ).rejects.toThrow("Invalid task_id format")
+        const result = await runWithAgentContext(ctx, () => execute({ task_id: "not-a-valid-session-id" }, toolCtx))
+        expect(result.metadata.success).toBe(false)
+        expect(result.output).toContain("No agent or task found")
+      },
+    })
   })
 })

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Three hooks + two components. This is the entire investment. Every future dialog composes from these.
+Two hooks + two components. This is the entire investment. Every future dialog composes from these.
 
 ---
 

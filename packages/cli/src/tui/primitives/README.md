@@ -100,7 +100,7 @@ with a default Ink rendering.
 | `items` | `T[]` | Items to render |
 | `onSelect` | `(item: T) => void` | Selection callback |
 | `onCancel` | `() => void` | Cancel callback (Escape) |
-| `renderItem` | `(props: RenderItemProps<T>) => ReactNode` | Custom item renderer |
+| `renderItem` | `(item: SelectItem<T>, ctx: RenderContext) => ReactNode` | Custom item renderer |
 | `pageSize` | `number` | Visible item count |
 | `showNumbers` | `boolean` | Digit shortcut overlay |
 | `contextName` | `KeybindingContextName` | Override context (default: "Select") |
@@ -137,7 +137,36 @@ and footer hint pills.
 
 ---
 
+## Types
+
+### `RenderContext`
+
+Passed as the second argument to custom `renderItem` functions in `SelectList`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `isActive` | `boolean` | Whether this item is the currently highlighted item |
+| `titleColor` | `string` | Computed foreground color (contrast-safe against active background) |
+| `index` | `number` | The item's position in the full (unsliced) list |
+
+### `FooterHint`
+
+A key-label pair for auto-rendered footer hint bars in `DialogPane`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `key` | `string` | Key name displayed to the user (e.g., `"Enter"`, `"Esc"`) |
+| `label` | `string` | Action description (e.g., `"Select"`, `"Close"`) |
+
+---
+
 ## Composition Patterns
+
+> **Note:** The individual hook/component examples above use `./` imports (local
+> perspective within the primitives directory). The composition examples below use
+> `../primitives/` — they are written from the perspective of a consumer in a
+> sibling directory (e.g., `components/`). Adjust the import prefix to match your
+> file's location.
 
 ### Full Dialog Example
 
@@ -179,6 +208,8 @@ function MyDialog({ items, onClose }: { items: Item[]; onClose: () => void }) {
 ### Using with ModalPaneProvider
 
 ```tsx
+import { useModalPane } from "../context/modal-pane"
+
 const modalPane = useModalPane()
 
 // Open a dialog

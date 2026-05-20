@@ -1,6 +1,6 @@
 import { createWriteStream, existsSync, realpathSync, statSync } from "node:fs"
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname, join, resolve as pathResolve, relative } from "node:path"
+import { dirname, isAbsolute, join, resolve as pathResolve, relative } from "node:path"
 import { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
 import { lookup } from "mime-types"
@@ -135,7 +135,11 @@ export namespace Fs {
   }
 
   export function contains(parent: string, child: string) {
-    return !relative(parent, child).startsWith("..")
+    const rel = relative(parent, child)
+    // On Windows, cross-drive relative paths are absolute (e.g. "D:\\other").
+    // An absolute relative path means the paths share no common root.
+    if (isAbsolute(rel)) return false
+    return !rel.startsWith("..")
   }
 
   export async function findUp(target: string, start: string, stop?: string) {

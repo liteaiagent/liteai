@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { formatDuration, formatExitSummary } from "../../src/tui/util/exit-summary"
 import type { ExitSummaryData } from "../../src/tui/util/exit-summary"
+import { formatDuration, formatExitSummary } from "../../src/tui/util/exit-summary"
 
 describe("formatDuration", () => {
   test("returns 0s for zero or negative", () => {

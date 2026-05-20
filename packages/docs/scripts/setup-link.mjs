@@ -9,8 +9,8 @@
  */
 
 import { execSync } from "node:child_process";
-import { existsSync, lstatSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, lstatSync, mkdirSync, readdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
 const scriptDir = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
 const projectRoot = resolve(scriptDir, "..");
@@ -39,6 +39,11 @@ if (existsSync(contentDir)) {
 		// If we can't stat it, remove and recreate
 	}
 }
+
+// Ensure the parent directory exists (src/content/ has no tracked files
+// since the symlinked docs/ subfolder is gitignored, so on a fresh clone
+// this directory won't exist)
+mkdirSync(dirname(contentDir), { recursive: true });
 
 // Create the appropriate link type
 if (process.platform === "win32") {

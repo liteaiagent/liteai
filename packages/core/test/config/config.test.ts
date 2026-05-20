@@ -130,7 +130,8 @@ test("ignores legacy tui keys in liteai config", async () => {
       const config = await Config.get()
       expect(config.model).toBe("test/model")
       expect((config as Record<string, unknown>).theme).toBeUndefined()
-      expect((config as Record<string, unknown>).tui).toBeUndefined()
+      // tui parses to {} after unknown keys are stripped — scroll_speed is gone
+      expect((config.tui as Record<string, unknown> | undefined)?.scroll_speed).toBeUndefined()
     },
   })
 })

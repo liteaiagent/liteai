@@ -101,7 +101,7 @@ The user is **absolutely right** about:
 
 ## The Proposed Middle Ground
 
-Instead of a central class, invest in **3 standard primitives + 1 protocol**:
+Instead of a central class, invest in **4 standard primitives + 1 protocol**:
 
 | Primitive | Type | Purpose | Test Coverage |
 |-----------|------|---------|---------------|
@@ -115,5 +115,4 @@ Instead of a central class, invest in **3 standard primitives + 1 protocol**:
 | No raw `useInput` in dialogs | Lint rule or code review gate |
 | All dialogs use `useDialogLifecycle` | Convention + test helper |
 | All selection lists use `useSelectList` | Convention |
-
 See [04-proposed-primitives.md](./04-proposed-primitives.md) for API designs.
