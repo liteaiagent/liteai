@@ -1,6 +1,5 @@
 import { EOL } from "node:os"
 import path from "node:path"
-import { Flag } from "@liteai/core/flag/flag"
 import { Session } from "@liteai/core/session/index"
 import { SessionID } from "@liteai/core/session/schema"
 import { Fs as Filesystem } from "@liteai/util/fs"
@@ -9,6 +8,7 @@ import { Process } from "@liteai/util/process"
 import { which } from "@liteai/util/which"
 import type { Argv } from "yargs"
 import { bootstrap } from "../bootstrap"
+import { Env } from "../env"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
 
@@ -24,8 +24,8 @@ function pagerCmd(): string[] {
     if (Filesystem.stat(lessOnPath)?.size) return [lessOnPath, ...lessOptions]
   }
 
-  if (Flag.LITEAI_GIT_BASH_PATH) {
-    const less = path.join(Flag.LITEAI_GIT_BASH_PATH, "..", "..", "usr", "bin", "less.exe")
+  if (Env.GIT_BASH_PATH) {
+    const less = path.join(Env.GIT_BASH_PATH, "..", "..", "usr", "bin", "less.exe")
     if (Filesystem.stat(less)?.size) return [less, ...lessOptions]
   }
 

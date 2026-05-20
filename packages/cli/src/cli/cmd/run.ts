@@ -2,14 +2,14 @@ import { EOL } from "node:os"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { Agent } from "@liteai/core/agent/agent"
-import { Flag } from "@liteai/core/flag/flag"
-import { Provider } from "@liteai/core/provider/provider"
 import { Server } from "@liteai/core/server/server"
 import { createLiteaiClient, type LiteaiClient, type ToolPart } from "@liteai/sdk"
 import { Fs as Filesystem } from "@liteai/util/fs"
 import { Locale } from "@liteai/util/locale"
 import type { Argv } from "yargs"
 import { bootstrap } from "../bootstrap"
+import { Env } from "../env"
+import { parseModel } from "../parse-model"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
 
@@ -372,7 +372,7 @@ export const RunCommand = cmd({
       const projID = directory ?? process.cwd()
       const cfg = await sdk.project.config.get({ projectID: projID })
       if (!cfg.data) return
-      if (cfg.data.share !== "auto" && !Flag.LITEAI_AUTO_SHARE && !args.share) return
+      if (cfg.data.share !== "auto" && !Env.AUTO_SHARE && !args.share) return
       const res = await sdk.project.session.share({ sessionID, projectID: projID }).catch((error) => {
         if (error instanceof Error && error.message.includes("disabled")) {
           UI.println(`${UI.Style.TEXT_DANGER_BOLD}!  ${error.message}`)
@@ -631,7 +631,7 @@ export const RunCommand = cmd({
           variant: args.variant,
         })
       } else {
-        const model = args.model ? Provider.parseModel(args.model) : undefined
+        const model = args.model ? parseModel(args.model) : undefined
         await sdk.project.session.prompt({
           sessionID,
           projectID: projID,

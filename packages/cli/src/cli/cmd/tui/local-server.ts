@@ -1,6 +1,5 @@
 import { GlobalBus } from "@liteai/core/bus/global"
 import { Config } from "@liteai/core/config/config"
-import { Flag } from "@liteai/core/flag/flag"
 import { InstanceBootstrap } from "@liteai/core/project/bootstrap"
 import { Instance } from "@liteai/core/project/instance"
 import { Runtime } from "@liteai/core/runtime"
@@ -8,6 +7,7 @@ import { Server } from "@liteai/core/server/server"
 import type { Event } from "@liteai/sdk"
 import { Log } from "@liteai/util/log"
 import type { EventSource } from "../../../tui/context/sdk"
+import { Env } from "../../env"
 import { upgrade } from "../../upgrade"
 
 export async function bootLocalServer() {
@@ -18,9 +18,9 @@ export async function bootLocalServer() {
 }
 
 function getAuthorizationHeader(): string | undefined {
-  const password = Flag.LITEAI_SERVER_PASSWORD
+  const password = Env.SERVER_PASSWORD
   if (!password) return undefined
-  const username = Flag.LITEAI_SERVER_USERNAME ?? "liteai"
+  const username = Env.SERVER_USERNAME ?? "liteai"
   return `Basic ${btoa(`${username}:${password}`)}`
 }
 

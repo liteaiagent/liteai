@@ -1,7 +1,7 @@
-import { Flag } from "@liteai/core/flag/flag"
 import { Runtime } from "@liteai/core/runtime"
 import { Server } from "@liteai/core/server/server"
 import { Log } from "@liteai/util/log"
+import { Env } from "../env"
 import { resolveNetworkOptions, withNetworkOptions } from "../network"
 import { cmd } from "./cmd"
 
@@ -10,7 +10,7 @@ export const ServeCommand = cmd({
   builder: (yargs) => withNetworkOptions(yargs),
   describe: "starts a headless liteai server",
   handler: async (args) => {
-    if (!Flag.LITEAI_SERVER_PASSWORD) {
+    if (!Env.SERVER_PASSWORD) {
       console.log("Warning: LITEAI_SERVER_PASSWORD is not set; server is unsecured.")
     }
 

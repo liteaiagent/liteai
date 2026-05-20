@@ -3,15 +3,15 @@ import path from "node:path"
 import { Brand } from "@liteai/core/brand"
 import { Config } from "@liteai/core/config/config"
 import { ConfigPaths } from "@liteai/core/config/paths"
-import { Flag } from "@liteai/core/flag/flag"
 import { Global } from "@liteai/core/global/index"
 import { Instance } from "@liteai/core/project/instance"
-import { Filesystem } from "@liteai/core/util/filesystem"
+import { Fs } from "@liteai/util/fs"
 import { Log } from "@liteai/util/log"
 import { applyEdits, modify } from "jsonc-parser"
 import { mergeDeep, unique } from "remeda"
 import type z from "zod"
 import type { KeybindingContextName } from "../../tui/keybindings/types"
+import { Env } from "../env"
 import { TuiInfo } from "./tui-schema"
 
 export namespace TuiConfig {
@@ -45,7 +45,7 @@ export namespace TuiConfig {
   }
 
   function customPath() {
-    return Flag.LITEAI_TUI_CONFIG
+    return Env.TUI_CONFIG
   }
 
   const state = Instance.state(async () => {
@@ -73,7 +73,7 @@ export namespace TuiConfig {
     }
 
     for (const dir of unique(directories)) {
-      if (!dir.endsWith(Brand.dir) && dir !== Flag.LITEAI_CONFIG_DIR) continue
+      if (!dir.endsWith(Brand.dir) && dir !== Env.CONFIG_DIR) continue
       for (const file of ConfigPaths.fileInDirectory(dir, "tui")) {
         result = mergeInfo(result, await loadFile(file))
       }
@@ -149,7 +149,7 @@ export namespace TuiConfig {
       // Fallback: write to local tui.json if core config is unavailable.
       log.warn("failed to write to settings.json, falling back to tui.json", { error })
       const filepath = path.join(Global.Path.config, "tui.json")
-      const before = await Filesystem.readText(filepath).catch((err: NodeJS.ErrnoException) => {
+      const before = await Fs.readText(filepath).catch((err: NodeJS.ErrnoException) => {
         if (err.code === "ENOENT") return "{}"
         throw err
       })
@@ -163,7 +163,7 @@ export namespace TuiConfig {
         updated = applyEdits(updated, edits)
       }
 
-      await Filesystem.write(filepath, updated)
+      await Fs.write(filepath, updated)
       log.info("persisted tui config to tui.json (fallback)", { filepath, keys: Object.keys(patch) })
     }
   }
