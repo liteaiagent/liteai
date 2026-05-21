@@ -299,7 +299,7 @@ export async function runAgent(input: RunAgentInput): Promise<Agent.RunAgentResu
     const effectivePermissionMode = forkContext
       ? resolveForkedPermissionMode(agentDef.permissionMode, parentContext?.getAppState?.()?.permissionMode)
       : undefined
-    if (effectivePermissionMode && subContext) {
+    if (effectivePermissionMode) {
       // Overwrite the default 'bubble' with the composed permission mode
       subContext.prunedUserContext = {
         ...subContext.prunedUserContext,

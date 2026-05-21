@@ -93,10 +93,6 @@ export function ScrollView(props: ScrollViewProps) {
   }
 
   onMount(() => {
-    if (local.viewportRef) {
-      local.viewportRef(viewportRef)
-    }
-
     const observer = new ResizeObserver(() => {
       updateThumb()
     })
@@ -198,7 +194,7 @@ export function ScrollView(props: ScrollViewProps) {
 
   return (
     <div
-      ref={rootRef}
+      ref={(el) => (rootRef = el)}
       class={`scroll-view ${local.class || ""}`}
       style={local.style}
       onPointerEnter={() => setState("isHovered", true)}
@@ -207,7 +203,10 @@ export function ScrollView(props: ScrollViewProps) {
     >
       {/* Viewport */}
       <section
-        ref={viewportRef}
+        ref={(el) => {
+          viewportRef = el
+          local.viewportRef?.(el)
+        }}
         class="scroll-view__viewport"
         onScroll={(e) => {
           updateThumb()
@@ -232,7 +231,7 @@ export function ScrollView(props: ScrollViewProps) {
       {/* Thumb Overlay */}
       <Show when={showThumb()}>
         <div
-          ref={thumbRef}
+          ref={(el) => (thumbRef = el)}
           onPointerDown={onThumbPointerDown}
           class="scroll-view__thumb"
           data-visible={isHovered() || isDragging()}

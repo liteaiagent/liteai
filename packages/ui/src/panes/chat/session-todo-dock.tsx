@@ -283,7 +283,7 @@ function TodoList(props: { todos: Todo[]; open: boolean }) {
     <div class="relative">
       <div
         class="px-3 pb-11 flex flex-col gap-1.5 max-h-42 overflow-y-auto no-scrollbar"
-        ref={scrollRef}
+        ref={(el) => (scrollRef = el)}
         style={{ "overflow-anchor": "none" }}
         onScroll={(e) => {
           setStore("stuck", e.currentTarget.scrollTop > 0)

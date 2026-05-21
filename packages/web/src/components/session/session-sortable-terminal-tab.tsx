@@ -148,7 +148,7 @@ export function SortableTerminalTab(props: { terminal: LocalPTY; onClose?: () =>
         <Show when={store.editing}>
           <div class="absolute inset-0 flex items-center px-3 bg-muted z-10 pointer-events-auto">
             <input
-              ref={input}
+              ref={(el) => (input = el)}
               type="text"
               value={store.title}
               onInput={(e) => setStore("title", e.currentTarget.value)}
