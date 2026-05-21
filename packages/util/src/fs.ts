@@ -129,9 +129,7 @@ export namespace Fs {
   }
 
   export function overlaps(a: string, b: string) {
-    const relA = relative(a, b)
-    const relB = relative(b, a)
-    return !relA || !relA.startsWith("..") || !relB || !relB.startsWith("..")
+    return contains(a, b) || contains(b, a)
   }
 
   export function contains(parent: string, child: string) {
