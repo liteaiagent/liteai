@@ -8,26 +8,9 @@ import { CompactSummary } from "../../components/compact-summary"
 import { Markdown } from "../../components/markdown"
 import { useTheme } from "../../context/theme.tsx"
 import { selectPermissions, useAppState } from "../../state"
+import { mapToolPartToDisplayStatus } from "../../utils/tool-display-status"
 import { useSessionContext } from "./ctx"
-import {
-  ApplyPatch,
-  CodeSearch,
-  CommandStatus,
-  Edit,
-  GenericTool,
-  Glob,
-  Grep,
-  List,
-  Question,
-  Read,
-  RunCommand,
-  SendCommandInput,
-  Skill,
-  Task,
-  WebFetch,
-  WebSearch,
-  Write,
-} from "./tools"
+import { UnifiedToolView } from "./tools"
 
 // biome-ignore lint/suspicious/noExplicitAny: Part subtype narrowing happens at call site via discriminated union; the mapping boundary intentionally accepts the broad Part type
 export const PART_MAPPING: Record<string, React.FC<any>> = {
@@ -73,7 +56,7 @@ function ReasoningPartView({ part, message }: { last: boolean; part: ReasoningPa
     return (
       <Box paddingLeft={3} marginTop={1}>
         <Text color={theme.textMuted as Color} italic>
-          ▼ Thinking{displayTitle} ({formattedTokens} tokens)
+          ▶ Thinking{displayTitle} ({formattedTokens} tokens)
         </Text>
       </Box>
     )
@@ -118,6 +101,8 @@ function TextPartView({ part }: { last: boolean; part: TextPart; message: Assist
 function ToolPartView({ part, message }: { last: boolean; part: ToolPart; message: AssistantMessage }) {
   const permissions = useAppState(selectPermissions(message.sessionID))
 
+  const status = mapToolPartToDisplayStatus(part, permissions)
+
   const toolprops = {
     metadata: part.state.status === "pending" ? {} : (part.state.metadata ?? {}),
     input: part.state.input ?? {},
@@ -127,42 +112,5 @@ function ToolPartView({ part, message }: { last: boolean; part: ToolPart; messag
     part: part,
   }
 
-  switch (part.tool) {
-    case "run_command":
-      return <RunCommand {...toolprops} />
-    case "command_status":
-      return <CommandStatus {...toolprops} />
-    case "send_command_input":
-      return <SendCommandInput {...toolprops} />
-    case "glob":
-      return <Glob {...toolprops} />
-    case "read":
-      return <Read {...toolprops} />
-    case "grep":
-      return <Grep {...toolprops} />
-    case "list":
-      return <List {...toolprops} />
-    case "webfetch":
-      return <WebFetch {...toolprops} />
-    case "codesearch":
-      return <CodeSearch {...toolprops} />
-    case "websearch":
-      return <WebSearch {...toolprops} />
-    case "write":
-      return <Write {...toolprops} />
-    case "edit":
-      return <Edit {...toolprops} />
-    case "task":
-      return <Task {...toolprops} />
-    case "apply_patch":
-      return <ApplyPatch {...toolprops} />
-    case "todowrite":
-      return null
-    case "ask_user":
-      return <Question {...toolprops} />
-    case "skill":
-      return <Skill {...toolprops} />
-    default:
-      return <GenericTool {...toolprops} />
-  }
+  return <UnifiedToolView toolprops={toolprops} status={status} />
 }

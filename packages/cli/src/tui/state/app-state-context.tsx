@@ -136,12 +136,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const bootstrap = useCallback(() => bootstrapAction(ctx), [ctx])
 
   // Session error toast — wired into the event handler via onSessionError
-  // Extract descriptive message from NamedError discriminated union shape:
-  // { name: "UnknownError", data: { message: "Model not found: ..." } }
+  // SSE error events arrive with a flat shape: { name?: string; message?: string }
+  // NOT nested as { data: { message } } — that shape only exists on message.error
   const onSessionError = useCallback(
     (_sessionID: string, error: unknown) => {
-      const err = error as { name?: string; data?: { message?: string } } | undefined
-      const message = err?.data?.message ?? "Session encountered an error"
+      const err = error as { name?: string; message?: string } | undefined
+      const message = err?.message ?? "Session encountered an error"
       toastShow({ variant: "error", message, duration: 5000 })
     },
     [toastShow],
