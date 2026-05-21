@@ -16,13 +16,13 @@ const VARIANT_COLORS: Record<ToastVariant, Color> = {
   error: "ansi:red",
 }
 
-/** Render a single toast notification with icon and themed styling. */
+/** Render a single toast notification with icon and themed styling — inline text, no borders. */
 function ToastEntry({ toast }: { toast: ToastItem }): React.ReactNode {
   const color = VARIANT_COLORS[toast.variant]
   const icon = VARIANT_ICONS[toast.variant]
 
   return (
-    <Box key={toast.id} flexDirection="row" paddingX={1} paddingY={0} borderStyle="round" borderColor={color}>
+    <Box key={toast.id} paddingX={1}>
       <Text color={color}>
         {icon} {toast.title ? <Text bold>{toast.title}: </Text> : null}
         {toast.message}

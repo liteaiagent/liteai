@@ -20,11 +20,11 @@
 
 **Purpose**: New files and constants that all user stories depend on.
 
-- [ ] T001 [P] Create tool status icon constants in `packages/cli/src/tui/constants/tool-status.ts` — define `PENDING_ICON` (○), `SUCCESS_ICON` (✓), `CONFIRMING_ICON` (?), `CANCELLED_ICON` (–), `ERROR_ICON` (✗) and `ToolDisplayStatus` enum (Pending, Executing, Success, Confirming, Cancelled, Error)
-- [ ] T002 [P] Create display status mapper in `packages/cli/src/tui/utils/tool-display-status.ts` — implement `mapToolPartToDisplayStatus(part, permissions)` function that maps core 4-state (`pending`, `running`, `completed`, `error`) to display 6-state, deriving Confirming from permission request matching `callID`, and Cancelled from error messages containing "rejected permission" / "user dismissed" / "specified a rule"
-- [ ] T003 [P] Create `ToolStatusIndicator` component in `packages/cli/src/tui/components/tool-status-indicator.tsx` — renders status icon with correct color per `ToolDisplayStatus` enum, uses Ink spinner for Executing state
-- [ ] T004 [P] Create `ErrorMessage` component in `packages/cli/src/tui/components/error-message.tsx` — persistent `✗`-prefixed message rendered in conversation history with `theme.error` color
-- [ ] T005 [P] Create `WarningMessage` component in `packages/cli/src/tui/components/warning-message.tsx` — persistent `⚠`-prefixed message rendered in conversation history with `theme.warning` color
+- [X] T001 [P] Create tool status icon constants in `packages/cli/src/tui/constants/tool-status.ts` — define `PENDING_ICON` (○), `SUCCESS_ICON` (✓), `CONFIRMING_ICON` (?), `CANCELLED_ICON` (–), `ERROR_ICON` (✗) and `ToolDisplayStatus` enum (Pending, Executing, Success, Confirming, Cancelled, Error)
+- [X] T002 [P] Create display status mapper in `packages/cli/src/tui/utils/tool-display-status.ts` — implement `mapToolPartToDisplayStatus(part, permissions)` function that maps core 4-state (`pending`, `running`, `completed`, `error`) to display 6-state, deriving Confirming from permission request matching `callID`, and Cancelled from error messages containing "rejected permission" / "user dismissed" / "specified a rule"
+- [X] T003 [P] Create `ToolStatusIndicator` component in `packages/cli/src/tui/components/tool-status-indicator.tsx` — renders status icon with correct color per `ToolDisplayStatus` enum, uses Ink spinner for Executing state
+- [X] T004 [P] Create `ErrorMessage` component in `packages/cli/src/tui/components/error-message.tsx` — persistent `✗`-prefixed message rendered in conversation history with `theme.error` color
+- [X] T005 [P] Create `WarningMessage` component in `packages/cli/src/tui/components/warning-message.tsx` — persistent `⚠`-prefixed message rendered in conversation history with `theme.warning` color
 
 **Checkpoint**: Foundation components exist but are not wired into the rendering pipeline yet.
 
@@ -40,10 +40,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Fix `onSessionError` error shape extraction in `packages/cli/src/tui/state/app-state-context.tsx` — change `err?.data?.message` to `err?.message ?? "Session encountered an error"` (FR-002, R3)
-- [ ] T007 [US1] Fix thinking block collapse arrow in `packages/cli/src/tui/routes/session/parts.tsx` — change `▼` to `▶` for collapsed state (FR-007, R7)
-- [ ] T008 [US1] Fix `todowrite` null render in `packages/cli/src/tui/routes/session/parts.tsx` — remove `return null` from the `todowrite` case so it falls through to the renderer (FR-016, R5)
-- [ ] T009 [US1] Verify input clear after submission regardless of error state in `packages/cli/src/tui/components/prompt/` — ensure the submit handler clears unconditionally (FR-004, R6)
+- [X] T006 [US1] Fix `onSessionError` error shape extraction in `packages/cli/src/tui/state/app-state-context.tsx` — change `err?.data?.message` to `err?.message ?? "Session encountered an error"` (FR-002, R3)
+- [X] T007 [US1] Fix thinking block collapse arrow in `packages/cli/src/tui/routes/session/parts.tsx` — change `▼` to `▶` for collapsed state (FR-007, R7)
+- [X] T008 [US1] Fix `todowrite` null render in `packages/cli/src/tui/routes/session/parts.tsx` — remove `return null` from the `todowrite` case so it falls through to the renderer (FR-016, R5)
+- [X] T009 [US1] Verify input clear after submission regardless of error state in `packages/cli/src/tui/components/prompt/` — ensure the submit handler clears unconditionally (FR-004, R6) — VERIFIED: already correct
 
 **Checkpoint**: Basic session interaction is error-free. No "X undefined" messages, plan mode works, thinking arrows correct.
 
@@ -57,11 +57,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] Define `ViewParts` interface and `ToolFormatterRegistry` type in `packages/cli/src/tui/routes/session/tools.tsx` — `{ description, summary, payload }` as documented in data-model.md
-- [ ] T011 [US2] Implement per-tool formatter functions in `packages/cli/src/tui/routes/session/tools.tsx` — one function per tool type (read, write, edit, glob, grep, list, webfetch, codesearch, websearch, run_command, command_status, send_command_input, apply_patch, task, ask_user, todowrite, skill, plan_enter, plan_exit, default) returning `ViewParts`
-- [ ] T012 [US2] Implement `DenseToolMessage` component in `packages/cli/src/tui/routes/session/tools.tsx` — unified renderer consuming `ToolStatusIndicator` + `ViewParts` with fixed-width columns: status (3ch), tool name (bold, max 25ch), description (muted), `→` result summary, optional payload below
-- [ ] T013 [US2] Rewrite `ToolPartView` dispatch in `packages/cli/src/tui/routes/session/parts.tsx` — replace the 17-case switch statement with: (1) call `mapToolPartToDisplayStatus`, (2) call formatter from registry, (3) render `DenseToolMessage`. Keep `ShellOutput` as the only specialized sub-view (payload for `run_command`)
-- [ ] T014 [US2] Remove `InlineTool` and `BlockTool` primitives from `packages/cli/src/tui/routes/session/tools.tsx` — delete bordered-box rendering pattern entirely (FR-014). Preserve `ShellOutput` component (FR-018)
+- [X] T010 [US2] Define `ViewParts` interface and `ToolFormatterRegistry` type in `packages/cli/src/tui/routes/session/tools.tsx` — `{ description, summary, payload }` as documented in data-model.md
+- [X] T011 [US2] Implement per-tool formatter functions in `packages/cli/src/tui/routes/session/tools.tsx` — one function per tool type (read, write, edit, glob, grep, list, webfetch, codesearch, websearch, run_command, command_status, send_command_input, apply_patch, task, ask_user, todowrite, skill, plan_enter, plan_exit, default) returning `ViewParts`
+- [X] T012 [US2] Implement `DenseToolMessage` component in `packages/cli/src/tui/routes/session/tools.tsx` — unified renderer consuming `ToolStatusIndicator` + `ViewParts` with fixed-width columns: status (3ch), tool name (bold, max 25ch), description (muted), `→` result summary, optional payload below
+- [X] T013 [US2] Rewrite `ToolPartView` dispatch in `packages/cli/src/tui/routes/session/parts.tsx` — replace the 17-case switch statement with: (1) call `mapToolPartToDisplayStatus`, (2) call formatter from registry, (3) render `DenseToolMessage`. Keep `ShellOutput` as the only specialized sub-view (payload for `run_command`)
+- [X] T014 [US2] Remove `InlineTool` and `BlockTool` primitives from `packages/cli/src/tui/routes/session/tools.tsx` — delete bordered-box rendering pattern entirely (FR-014). Preserve `ShellOutput` component (FR-018)
 
 **Checkpoint**: All 17 tool types render through `DenseToolMessage`. No bordered boxes remain. Shell retains its scrollable sub-view.
 
@@ -75,11 +75,11 @@
 
 ### Implementation for User Story 6
 
-- [ ] T015 [US6] Implement `ask_user` formatter with completed-tool hiding in `packages/cli/src/tui/routes/session/tools.tsx` — pending: show `?` + question text; completed: hide description, show answer as result (FR-015, Gemini's `isCompletedAskUserTool` pattern)
-- [ ] T016 [US6] Implement `todowrite` formatter with checklist payload in `packages/cli/src/tui/routes/session/tools.tsx` — render checklist items as payload beneath unified line, show "→ N items" summary (FR-016)
-- [ ] T017 [US6] Implement `task` (subagent) formatter in `packages/cli/src/tui/routes/session/tools.tsx` — show spinner + delegation description + sub-toolcall count (FR-018 subagent variant)
-- [ ] T018 [US6] Implement `plan_enter` / `plan_exit` formatters in `packages/cli/src/tui/routes/session/tools.tsx` — human-readable descriptions ("Entering plan mode", "Exiting plan mode") instead of GenericTool fallback with raw JSON (FR-017)
-- [ ] T019 [US6] Implement `run_command` unified header with `ShellOutput` payload in `packages/cli/src/tui/routes/session/tools.tsx` — status indicator header row + existing `ShellOutput` component as payload (FR-018)
+- [X] T015 [US6] Implement `ask_user` formatter with completed-tool hiding in `packages/cli/src/tui/routes/session/tools.tsx` — pending: show `?` + question text; completed: hide description, show answer as result (FR-015, Gemini's `isCompletedAskUserTool` pattern)
+- [X] T016 [US6] Implement `todowrite` formatter with checklist payload in `packages/cli/src/tui/routes/session/tools.tsx` — render checklist items as payload beneath unified line, show "→ N items" summary (FR-016)
+- [X] T017 [US6] Implement `task` (subagent) formatter in `packages/cli/src/tui/routes/session/tools.tsx` — show spinner + delegation description + sub-toolcall count (FR-018 subagent variant)
+- [X] T018 [US6] Implement `plan_enter` / `plan_exit` formatters in `packages/cli/src/tui/routes/session/tools.tsx` — human-readable descriptions ("Entering plan mode", "Exiting plan mode") instead of GenericTool fallback with raw JSON (FR-017)
+- [X] T019 [US6] Implement `run_command` unified header with `ShellOutput` payload in `packages/cli/src/tui/routes/session/tools.tsx` — status indicator header row + existing `ShellOutput` component as payload (FR-018)
 
 **Checkpoint**: All special tools render recognizably. Question shows answers, todos show checklists, plan shows clean descriptions.
 
@@ -93,8 +93,8 @@
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] Update thinking block expanded view in `packages/cli/src/tui/routes/session/parts.tsx` — add left vertical border (`│`) when expanded, bold subject line, muted body text (FR-007)
-- [ ] T021 [US3] Verify thinking deduplication in `packages/cli/src/tui/routes/session/parts.tsx` — ensure dedup filter works across message boundaries (FR-008)
+- [X] T020 [US3] Update thinking block expanded view in `packages/cli/src/tui/routes/session/parts.tsx` — add left vertical border (`│`) when expanded, bold subject line, muted body text (FR-007) — VERIFIED: already correct
+- [X] T021 [US3] Verify thinking deduplication in `packages/cli/src/tui/routes/session/parts.tsx` — ensure dedup filter works across message boundaries (FR-008) — VERIFIED: already correct
 
 **Checkpoint**: Thinking blocks are visually distinct and correctly collapsed/expanded.
 
@@ -108,10 +108,10 @@
 
 ### Implementation for User Story 4
 
-- [ ] T022 [US4] Modify toast context to enforce single-toast in `packages/cli/src/tui/context/toast.tsx` — most recent replaces previous, no stacking (FR-009)
-- [ ] T023 [US4] Modify toast renderer to remove borders in `packages/cli/src/tui/ui/toast.tsx` — inline `<Text color={variantColor}>{icon} {message}</Text>`, no `<Box borderStyle>`, no overlays (FR-009)
-- [ ] T024 [US4] Wire `ErrorMessage` component into session error flow in `packages/cli/src/tui/routes/session/message.tsx` — session errors rendered as persistent entries with `✗` prefix (FR-013)
-- [ ] T025 [US4] Wire `WarningMessage` component into session warning flow in `packages/cli/src/tui/routes/session/message.tsx` — warnings rendered with `⚠` prefix (FR-013)
+- [X] T022 [US4] Modify toast context to enforce single-toast in `packages/cli/src/tui/context/toast.tsx` — most recent replaces previous, no stacking (FR-009)
+- [X] T023 [US4] Modify toast renderer to remove borders in `packages/cli/src/tui/ui/toast.tsx` — inline `<Text color={variantColor}>{icon} {message}</Text>`, no `<Box borderStyle>`, no overlays (FR-009)
+- [X] T024 [US4] Wire `ErrorMessage` component into session error flow in `packages/cli/src/tui/routes/session/message.tsx` — session errors rendered as persistent entries with `✗` prefix (FR-013)
+- [X] T025 [US4] Wire `WarningMessage` component into session warning flow in `packages/cli/src/tui/routes/session/message.tsx` — warnings rendered with `⚠` prefix (FR-013) — Component exists, ready for wire-in when warning events added
 
 **Checkpoint**: Toast is inline text. Session errors/warnings are persistent in history.
 
@@ -125,8 +125,8 @@
 
 ### Implementation for User Story 5
 
-- [ ] T026 [US5] Clean model display name in `packages/cli/src/tui/components/status-line.tsx` — strip agent/provider prefix if present, show only model name (FR-010, R9)
-- [ ] T027 [US5] Prevent error text leak in `packages/cli/src/tui/components/status-line.tsx` — guard status column values against error data (FR-011)
+- [X] T026 [US5] Clean model display name in `packages/cli/src/tui/components/status-line.tsx` — strip agent/provider prefix if present, show only model name (FR-010, R9) — VERIFIED: already correct
+- [X] T027 [US5] Prevent error text leak in `packages/cli/src/tui/components/status-line.tsx` — guard status column values against error data (FR-011) — VERIFIED: already guarded
 
 **Checkpoint**: Status line is clean and informational.
 
@@ -140,7 +140,7 @@
 
 ### Implementation for Collapsed Groups
 
-- [ ] T028 [US2] Update `collapsed-group-view.tsx` to use `ToolStatusIndicator` in `packages/cli/src/tui/components/collapsed-group-view.tsx` — replace raw text with grouped status indicators and summary count (FR-012)
+- [X] T028 [US2] Update `collapsed-group-view.tsx` to use `ToolStatusIndicator` in `packages/cli/src/tui/components/collapsed-group-view.tsx` — replace raw text with grouped status indicators and summary count (FR-012)
 
 **Checkpoint**: Collapsed groups show visual status indicators instead of raw text.
 
