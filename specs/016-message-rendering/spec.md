@@ -4,7 +4,7 @@
 
 **Created**: 2026-05-21
 
-**Status**: Draft
+**Status**: Complete
 
 **Input**: User description: "Phase 6 of the TUI overhaul — full adoption of Gemini CLI's message rendering UI patterns to enhance UX. Replace LiteAI's custom tool rendering, toast, thinking, and error display with Gemini CLI's unified architecture. Cover all tool types including special tools (Question, Todo, Task, Plan). Fix critical message-area bugs. Focus is UX enhancement, not just code completion."
 
