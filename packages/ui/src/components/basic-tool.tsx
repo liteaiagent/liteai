@@ -199,7 +199,7 @@ export function BasicTool(props: BasicToolProps) {
       </Collapsible.Trigger>
       <Show when={props.animated && props.children && !props.hideDetails}>
         <div
-          ref={contentRef}
+          ref={(el) => (contentRef = el)}
           data-slot="collapsible-content"
           data-animated
           style={{

@@ -116,17 +116,22 @@ export function Tooltip(props: TooltipProps) {
           }}
         >
           <KobalteTooltip.Trigger
-            ref={ref}
-            as={"div"}
-            data-component="tooltip-trigger"
-            class={local.class}
-            onPointerDownCapture={arm}
-            onKeyDownCapture={(event: KeyboardEvent) => {
-              if (event.key !== "Enter" && event.key !== " ") return
-              arm()
-            }}
-            onPointerLeave={leave}
-            onFocusOut={() => requestAnimationFrame(() => drop())}
+            {...({
+              ref: (el: HTMLDivElement) => {
+                ref = el
+              },
+              as: "div",
+              "data-component": "tooltip-trigger",
+              class: local.class,
+              onPointerDownCapture: arm,
+              onKeyDownCapture: (event: KeyboardEvent) => {
+                if (event.key !== "Enter" && event.key !== " ") return
+                arm()
+              },
+              onPointerLeave: leave,
+              onFocusOut: () => requestAnimationFrame(() => drop()),
+              // biome-ignore lint/suspicious/noExplicitAny: polymorphic Kobalte trigger has package-specific typing mismatches on capture events, bypass is required
+            } as any)}
           >
             {local.children}
           </KobalteTooltip.Trigger>

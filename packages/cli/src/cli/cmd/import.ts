@@ -147,12 +147,6 @@ export const ImportCommand = cmd({
         }
       }
 
-      if (!exportData) {
-        process.stdout.write(`Failed to read session data`)
-        process.stdout.write(EOL)
-        return
-      }
-
       const info = Session.Info.parse({
         ...exportData.info,
         projectID: Instance.project.id,

@@ -163,14 +163,14 @@ function VariantF(props: { active: boolean; text: string }) {
 
   return (
     <span
-      ref={containerRef}
+      ref={(el) => (containerRef = el)}
       style={{
         display: "grid",
         color: props.active ? "var(--text-weak, #888)" : "var(--text-strong, #eee)",
         transition: "color 220ms ease",
       }}
     >
-      <span ref={baseRef} style={{ "grid-area": "1 / 1" }}>
+      <span ref={(el) => (baseRef = el)} style={{ "grid-area": "1 / 1" }}>
         {props.text}
       </span>
       <span

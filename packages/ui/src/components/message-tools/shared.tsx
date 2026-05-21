@@ -27,10 +27,14 @@ export function ShellSubmessage(props: { text: string; animate?: boolean }) {
 
   return (
     <span data-component="shell-submessage">
-      <span ref={widthRef} data-slot="shell-submessage-width" style={{ width: props.animate ? "0px" : undefined }}>
+      <span
+        ref={(el) => (widthRef = el)}
+        data-slot="shell-submessage-width"
+        style={{ width: props.animate ? "0px" : undefined }}
+      >
         <span data-slot="basic-tool-tool-subtitle">
           <span
-            ref={valueRef}
+            ref={(el) => (valueRef = el)}
             data-slot="shell-submessage-value"
             style={props.animate ? { opacity: 0, filter: "blur(2px)" } : undefined}
           >

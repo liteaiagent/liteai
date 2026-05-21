@@ -69,9 +69,9 @@ export function TextStrikethrough(props: {
       data-component="text-strikethrough"
       class={props.class}
       style={{ display: "grid", ...props.style }}
-      ref={containerRef}
+      ref={(el) => (containerRef = el)}
     >
-      <span ref={baseRef} style={{ "grid-area": "1 / 1", "clip-path": baseClip() }}>
+      <span ref={(el) => (baseRef = el)} style={{ "grid-area": "1 / 1", "clip-path": baseClip() }}>
         {props.text}
       </span>
       <span

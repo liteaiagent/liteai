@@ -115,18 +115,16 @@ function renderColorDiff(original: string, modified: string, width: number, them
 
   rendered = rendered.trimEnd()
 
-  if (innerCache) {
-    if (innerCache.size >= INNER_CACHE_MAX) {
-      const firstInner = innerCache.keys().next().value
-      if (firstInner !== undefined) innerCache.delete(firstInner)
-    }
-    innerCache.set(modified, {
-      rendered,
-      width,
-      theme,
-      dim,
-    })
+  if (innerCache.size >= INNER_CACHE_MAX) {
+    const firstInner = innerCache.keys().next().value
+    if (firstInner !== undefined) innerCache.delete(firstInner)
   }
+  innerCache.set(modified, {
+    rendered,
+    width,
+    theme,
+    dim,
+  })
 
   return rendered
 }
