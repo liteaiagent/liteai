@@ -56,8 +56,11 @@ export function mapToolPartToDisplayStatus(
 
     case "error": {
       const error = part.state.error
-      if (error && CANCELLED_PATTERNS.some((pattern) => error.includes(pattern))) {
-        return ToolDisplayStatus.Cancelled
+      if (error) {
+        const normalized = error.toLowerCase()
+        if (CANCELLED_PATTERNS.some((pattern) => normalized.includes(pattern))) {
+          return ToolDisplayStatus.Cancelled
+        }
       }
       return ToolDisplayStatus.Error
     }
