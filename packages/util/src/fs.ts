@@ -23,9 +23,9 @@ export namespace Fs {
     return statSync(p, { throwIfNoEntry: false }) ?? undefined
   }
 
-  export async function size(p: string): Promise<number> {
+  export function size(p: string): Promise<number> {
     const s = stat(p)?.size ?? 0
-    return typeof s === "bigint" ? Number(s) : s
+    return Promise.resolve(typeof s === "bigint" ? Number(s) : s)
   }
 
   export async function readText(p: string): Promise<string> {
