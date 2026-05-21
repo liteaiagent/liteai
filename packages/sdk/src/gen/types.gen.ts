@@ -84,6 +84,7 @@ export type PermissionRequest = {
     };
     agentId?: string;
     agentName?: string;
+    rootSessionID?: string;
 };
 
 export type EventPermissionAsked = {
@@ -145,6 +146,8 @@ export type QuestionRequest = {
         messageID: string;
         callID: string;
     };
+    agentName?: string;
+    rootSessionID?: string;
 };
 
 export type EventQuestionAsked = {
@@ -1045,6 +1048,15 @@ export type EventPlanApprovalRequested = {
     };
 };
 
+export type EventPlanApprovalResolved = {
+    type: 'plan.approval_resolved';
+    properties: {
+        sessionID: string;
+        approved: boolean;
+        feedback?: string;
+    };
+};
+
 export type EventPermissionModeChanged = {
     type: 'permission_mode.changed';
     properties: {
@@ -1099,7 +1111,7 @@ export type EventPtyDeleted = {
     };
 };
 
-export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanApprovalRequested | EventPermissionModeChanged | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
+export type Event = EventInstallationUpdated | EventInstallationUpdateAvailable | EventWorkspaceReady | EventWorkspaceFailed | EventProjectUpdated | EventServerInstanceDisposed | EventPermissionAsked | EventPermissionReplied | EventQuestionAsked | EventQuestionReplied | EventQuestionRejected | EventServerConnected | EventServerHeartbeat | EventGlobalDisposed | EventMcpToolsChanged | EventMcpBrowserOpenFailed | EventMcpAuthRequired | EventCommandExecuted | EventLspClientDiagnostics | EventLspUpdated | EventMessageUpdated | EventMessageRemoved | EventMessagePartUpdated | EventMessagePartDelta | EventMessagePartRemoved | EventAgentUpdated | EventSessionStatus | EventSessionIdle | EventSessionCheckpoint | EventSessionCompacted | EventFileEdited | EventFileWatcherUpdated | EventWorktreeReady | EventWorktreeFailed | EventAgentSpawned | EventAgentCompleted | EventAgentProgress | EventAgentTerminalNotification | EventLiteaiCacheEvictionHint | EventTeammateSpawned | EventTeammateIdle | EventTeammateActive | EventTeammateKilled | EventTodoUpdated | EventSessionCreated | EventSessionUpdated | EventSessionDeleted | EventSessionDiff | EventSessionError | EventPlanApprovalRequested | EventPlanApprovalResolved | EventPermissionModeChanged | EventVcsBranchUpdated | EventPtyCreated | EventPtyUpdated | EventPtyExited | EventPtyDeleted;
 
 export type GlobalEvent = {
     directory: string;
@@ -3891,6 +3903,39 @@ export type ProjectSessionSetPermissionModeResponses = {
 };
 
 export type ProjectSessionSetPermissionModeResponse = ProjectSessionSetPermissionModeResponses[keyof ProjectSessionSetPermissionModeResponses];
+
+export type ProjectSessionPlanResolveData = {
+    body?: {
+        approved: boolean;
+        feedback?: string;
+    };
+    path: {
+        sessionID: string;
+        projectID: string;
+    };
+    query?: {
+        workspace?: string;
+    };
+    url: '/project/{projectID}/session/{sessionID}/plan/resolve';
+};
+
+export type ProjectSessionPlanResolveErrors = {
+    /**
+     * Bad request
+     */
+    400: BadRequestError;
+};
+
+export type ProjectSessionPlanResolveError = ProjectSessionPlanResolveErrors[keyof ProjectSessionPlanResolveErrors];
+
+export type ProjectSessionPlanResolveResponses = {
+    /**
+     * Plan approval resolved
+     */
+    200: boolean;
+};
+
+export type ProjectSessionPlanResolveResponse = ProjectSessionPlanResolveResponses[keyof ProjectSessionPlanResolveResponses];
 
 export type ProjectSessionUnshareData = {
     body?: never;

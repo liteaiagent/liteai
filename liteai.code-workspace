@@ -9,24 +9,12 @@
 			"path": "packages/core"
 		},
 		{
-			"name": "web",
-			"path": "packages/web"
-		},
-		{
 			"name": "script",
 			"path": "packages/script"
 		},
 		{
-			"name": "ui",
-			"path": "packages/ui"
-		},
-		{
 			"name": "util",
 			"path": "packages/util"
-		},
-		{
-			"name": "vscode",
-			"path": "packages/vscode"
 		},
 		{
 			"name": "sdk",
@@ -35,10 +23,6 @@
 		{
 			"name": "cli",
 			"path": "packages/cli"
-		},
-		{
-			"name": "storybook",
-			"path": "packages/storybook"
 		},
 		{
 			"name": "ink",

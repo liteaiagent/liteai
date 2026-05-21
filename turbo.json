@@ -18,10 +18,6 @@
     "liteai#test": {
       "dependsOn": ["^build"],
       "outputs": []
-    },
-    "@liteai/web#test": {
-      "dependsOn": ["^build"],
-      "outputs": []
     }
   }
 }
