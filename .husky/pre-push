@@ -19,3 +19,5 @@ if (process.versions.bun !== expectedBunVersion) {
 '
 bun lint
 bun typecheck
+bun --cwd packages/core test:fast
+bun --cwd packages/cli test

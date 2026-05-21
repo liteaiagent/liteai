@@ -297,6 +297,21 @@ export function setPermissionMode(
 }
 
 /**
+ * Merge fields into a session's mutable AppState.
+ * Enables callers (e.g., plan_enter) to pre-seed rootSessionID, agentName,
+ * or other context before the session loop reads from AppState.
+ */
+export function patchSessionAppState(sessionID: SessionID, patch: Partial<import("../../agent/context").AppState>) {
+  const s = state()
+  const entry = s[sessionID]
+  if (!entry) {
+    log.info("patchSessionAppState: session not active, no-op", { sessionID })
+    return
+  }
+  entry.appState = { ...entry.appState, ...patch }
+}
+
+/**
  * Safely abort an AbortController, swallowing any errors thrown by
  * abort event listeners added by providers.
  *

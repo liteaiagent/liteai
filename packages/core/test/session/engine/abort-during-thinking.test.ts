@@ -1,5 +1,6 @@
-import { afterAll, describe, expect, test } from "bun:test"
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test"
 import path from "node:path"
+import { Agent } from "../../../src/agent/agent"
 import { Instance } from "../../../src/project/instance"
 import { ProjectTable } from "../../../src/project/project.sql"
 import { ModelID, ProviderID } from "../../../src/provider/schema"
@@ -14,6 +15,21 @@ import { tmpdir } from "../../fixture/fixture"
 
 describe("Abort during AI thinking", () => {
   const originalStream = LLM.stream
+
+  // Mock Agent.get to return a minimal agent definition.
+  // On Linux CI, the lazy Instance.state() callback in agent.ts triggers a
+  // circular module initialization issue (PermissionNext.fromConfig is undefined).
+  // By mocking Agent.get, we prevent that code path from ever executing.
+  beforeAll(() => {
+    spyOn(Agent, "get").mockResolvedValue({
+      name: "liteai",
+      mode: "all",
+      permission: [],
+      options: {},
+      native: true,
+      source: "builtIn",
+    } as unknown as Awaited<ReturnType<typeof Agent.get>>)
+  })
 
   afterAll(() => {
     LLM.stream = originalStream

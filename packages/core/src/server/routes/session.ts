@@ -558,6 +558,50 @@ export const SessionRoutes = lazy(() =>
       },
     )
     .post(
+      "/:sessionID/plan/resolve",
+      describeRoute({
+        summary: "Resolve plan approval",
+        description:
+          "Approve or reject a plan proposed by the plan_exit tool. The plan_exit tool blocks until this endpoint is called.",
+        operationId: "project.session.plan.resolve",
+        responses: {
+          200: {
+            description: "Plan approval resolved",
+            content: {
+              "application/json": {
+                schema: resolver(z.boolean()),
+              },
+            },
+          },
+          ...errors(400),
+        },
+      }),
+      validator(
+        "param",
+        z.object({
+          sessionID: SessionID.zod,
+        }),
+      ),
+      validator(
+        "json",
+        z.object({
+          approved: z.boolean(),
+          feedback: z.string().optional(),
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const { approved, feedback } = c.req.valid("json")
+        const { Bus } = await import("../../bus")
+        Bus.publish(Session.Event.PlanApprovalResolved, {
+          sessionID,
+          approved,
+          feedback,
+        })
+        return c.json(true)
+      },
+    )
+    .post(
       "/:sessionID/share",
       describeRoute({
         summary: "Share session",

@@ -3,6 +3,7 @@ import { Box, Text } from "@liteai/ink"
 import type { AssistantMessage as AssistantMessageInfo, Part, UserMessage as UserMessageInfo } from "@liteai/sdk"
 import { Locale } from "@liteai/util/locale"
 import { useMemo } from "react"
+import { ErrorMessage } from "../../components/error-message"
 import { useLocal } from "../../context/local"
 import { useMessageCursorContext } from "../../context/message-cursor"
 import { useTheme } from "../../context/theme"
@@ -119,19 +120,11 @@ export function AssistantMessageContent({
       )}
 
       {message.error && message.error.name !== "MessageAbortedError" && (
-        <Box
-          borderStyle="single"
-          borderLeft
-          borderTop={false}
-          borderRight={false}
-          borderBottom={false}
-          paddingLeft={2}
-          marginTop={1}
-          borderColor={theme.error as Color}
-          flexDirection="column"
-        >
-          <Text color={theme.textMuted as Color}>{(message.error.data as { message?: string })?.message ?? ""}</Text>
-          <ErrorRecoveryHint error={message.error} messageId={message.id} />
+        <Box flexDirection="column">
+          <ErrorMessage message={(message.error.data as { message?: string })?.message ?? "An error occurred"} />
+          <Box paddingLeft={3}>
+            <ErrorRecoveryHint error={message.error} messageId={message.id} />
+          </Box>
         </Box>
       )}
 

@@ -28,6 +28,7 @@
  */
 
 import fs from "node:fs/promises"
+// biome-ignore lint/style/noRestrictedImports: prompt-input is an exception — uses useInput directly
 import { Box, type Color, TerminalSizeContext, useInput } from "@liteai/ink"
 import type { Command, FilePartInput } from "@liteai/sdk"
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"

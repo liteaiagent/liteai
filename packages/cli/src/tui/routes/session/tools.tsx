@@ -8,16 +8,16 @@ import { Fs as Filesystem } from "@liteai/util/fs"
 import type React from "react"
 import { useEffect, useMemo, useState } from "react"
 import stripAnsi from "strip-ansi"
-import ThemedBox from "../../components/design-system/ThemedBox"
 import { ShellOutput } from "../../components/shell-output"
 import { StructuredDiff } from "../../components/structured-diff"
+import { ToolStatusIndicator } from "../../components/tool-status-indicator"
 import { COMPACT_DIFF_MAX_LINES } from "../../constants/compact-diff"
+import { ToolDisplayStatus } from "../../constants/tool-status"
 import { useTheme } from "../../context/theme"
 import { useTuiConfig } from "../../context/tui-config"
 import { useElapsedTime } from "../../hooks/use-elapsed-time"
 import { useOutputFile } from "../../hooks/use-output-file"
-import { selectMessages, selectPermissions, useAppActions, useAppState } from "../../state"
-import { Spinner } from "../../ui/spinner"
+import { selectMessages, useAppActions, useAppState } from "../../state"
 import { shortenPath } from "../../util/output-file"
 import { useSessionContext } from "./ctx"
 import { formatInput, normalizePath } from "./utils"
@@ -173,6 +173,22 @@ function extractToolTiming(part?: ToolPart): { startTime?: number; endTime?: num
 }
 
 // ---------------------------------------------------------------------------
+// ViewParts — the output of every tool formatter function
+// ---------------------------------------------------------------------------
+
+/**
+ * Unified output from every tool formatter. Consumed by DenseToolMessage.
+ */
+export interface ViewParts {
+  /** Muted text after tool name (e.g., file path, command, query) */
+  description?: React.ReactNode
+  /** Result summary with → prefix (e.g., "→ 5 matches") */
+  summary?: React.ReactNode
+  /** Expandable content below the tool line (diff, shell output, Q&A) */
+  payload?: React.ReactNode
+}
+
+// ---------------------------------------------------------------------------
 // ToolProps — base props for all tool render components
 // ---------------------------------------------------------------------------
 
@@ -185,174 +201,9 @@ export type ToolProps<T extends Tool.Info = Tool.Info> = {
   part: ToolPart
 }
 
-export function GenericTool(props: ToolProps) {
-  const { theme } = useTheme()
-  const ctx = useSessionContext()
-  const output = useMemo(() => props.output?.trim() ?? "", [props.output])
-  const { savedPath } = useOutputFile({
-    output,
-    sessionID: ctx.sessionID,
-    callID: props.part.callID,
-  })
-  const [expanded, setExpanded] = useState(false)
-  const lines = useMemo(() => output.split("\n"), [output])
-  const max = 3
-  const overflow = lines.length > max
-  const limited = useMemo(() => {
-    if (expanded || !overflow) return output
-    return [...lines.slice(0, max), "…"].join("\n")
-  }, [expanded, overflow, output, lines])
-
-  if (props.output && ctx.showGenericToolOutput) {
-    if (savedPath) {
-      const preview = lines.slice(0, 50).join("\n")
-      return (
-        <BlockTool
-          title={`# ${props.tool} ${formatInput(props.input as Record<string, unknown>)}`}
-          part={props.part}
-          {...extractToolTiming(props.part)}
-        >
-          <Box gap={1} flexDirection="column">
-            {preview && <Text color={theme.text as Color}>{preview}</Text>}
-            <Text color={theme.textMuted as Color}>
-              ── Full output ({output.length.toLocaleString()} chars): {shortenPath(savedPath)}
-            </Text>
-          </Box>
-        </BlockTool>
-      )
-    }
-
-    return (
-      <BlockTool
-        title={`# ${props.tool} ${formatInput(props.input as Record<string, unknown>)}`}
-        part={props.part}
-        onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
-        {...extractToolTiming(props.part)}
-      >
-        <Box gap={1} flexDirection="column">
-          <Text color={theme.text as Color}>{limited}</Text>
-          {overflow && (
-            <Text color={theme.textMuted as Color}>{expanded ? "Click to collapse" : "Click to expand"}</Text>
-          )}
-        </Box>
-      </BlockTool>
-    )
-  }
-
-  return (
-    <InlineTool
-      icon="⚙"
-      pending="Writing command..."
-      complete={true}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      {props.tool} {formatInput(props.input as Record<string, unknown>)}
-    </InlineTool>
-  )
-}
-
-function InlineTool(props: {
-  icon: string
-  iconColor?: Color
-  complete: unknown
-  pending: string
-  spinner?: boolean
-  children: React.ReactNode
-  part: ToolPart
-  onClick?: () => void
-  startTime?: number
-  endTime?: number
-}) {
-  const { theme } = useTheme()
-  const ctx = useSessionContext()
-  const permissions = useAppState(selectPermissions(ctx.sessionID))
-  const [hover, _setHover] = useState(false)
-
-  const timing = useElapsedTime({ startTime: props.startTime ?? null, endTime: props.endTime })
-  const timingSuffix = timing.formatted ? ` (${timing.formatted})` : ""
-
-  const permission = useMemo(() => {
-    return permissions.some((x) => x.tool?.callID === props.part.callID)
-  }, [permissions, props.part.callID])
-
-  const fg = useMemo(() => {
-    if (permission) return theme.warning
-    if (hover && props.onClick) return theme.text
-    if (props.complete) return theme.textMuted
-    return theme.text
-  }, [permission, hover, props.onClick, props.complete, theme])
-
-  const error = props.part.state.status === "error" ? props.part.state.error : undefined
-  const config = useTuiConfig()
-  const displayError = error && config.errorVerbosity === "low" ? error.split("\n")[0] : error
-  const denied =
-    error?.includes("rejected permission") || error?.includes("specified a rule") || error?.includes("user dismissed")
-
-  return (
-    <Box paddingLeft={3} flexDirection="column">
-      <Box gap={1}>
-        {props.spinner ? (
-          <Box flexDirection="row" gap={1}>
-            <Spinner />
-            <Text color={fg as Color}>
-              {props.children}
-              {timingSuffix}
-            </Text>
-          </Box>
-        ) : (
-          <Text color={fg as Color}>
-            {props.complete ? <Text color={(props.iconColor || fg) as Color}>{props.icon}</Text> : `~ ${props.pending}`}{" "}
-            {props.children}
-            {timingSuffix}
-          </Text>
-        )}
-      </Box>
-      {displayError && !denied && <Text color={theme.error as Color}>{displayError}</Text>}
-    </Box>
-  )
-}
-
-function BlockTool(props: {
-  title: string
-  children: React.ReactNode
-  onClick?: () => void
-  part?: ToolPart
-  key?: React.Key
-  spinner?: boolean
-  startTime?: number
-  endTime?: number
-}) {
-  const { theme } = useTheme()
-  const config = useTuiConfig()
-  const [_hover, _setHover] = useState(false)
-  const error = props.part?.state.status === "error" ? props.part.state.error : undefined
-  const displayError = error && config.errorVerbosity === "low" ? error.split("\n")[0] : error
-
-  const timing = useElapsedTime({ startTime: props.startTime ?? null, endTime: props.endTime })
-  const suffix = timing.formatted ? ` (${props.spinner ? "running… " : ""}${timing.formatted})` : ""
-
-  return (
-    <ThemedBox borderStyle="single" paddingLeft={2} marginTop={1} flexDirection="column" gap={1}>
-      {props.spinner ? (
-        <Box flexDirection="row" gap={1}>
-          <Spinner />
-          <Text color={theme.textMuted as Color}>
-            {props.title.replace(/^# /, "")}
-            {suffix}
-          </Text>
-        </Box>
-      ) : (
-        <Text color={theme.textMuted as Color}>
-          {props.title}
-          {suffix}
-        </Text>
-      )}
-      {props.children}
-      {displayError && <Text color={theme.error as Color}>{displayError}</Text>}
-    </ThemedBox>
-  )
-}
+// ---------------------------------------------------------------------------
+// Helper components
+// ---------------------------------------------------------------------------
 
 function Diagnostics({ diagnostics, filePath }: { diagnostics?: Record<string, unknown[]>; filePath: string }) {
   const { theme } = useTheme()
@@ -390,7 +241,7 @@ function computeDiffStats(diff?: string) {
     else if (line.startsWith("-") && !line.startsWith("---")) removed++
   }
   if (added === 0 && removed === 0) return ""
-  return ` +${added}/-${removed}`
+  return `+${added}/-${removed}`
 }
 
 function truncateDiff(diff: string, maxLines: number): string {
@@ -399,18 +250,247 @@ function truncateDiff(diff: string, maxLines: number): string {
   return `${lines.slice(0, maxLines).join("\n")}\n… (${lines.length - maxLines} more lines)`
 }
 
-export function RunCommand(props: ToolProps) {
+// ---------------------------------------------------------------------------
+// DenseToolMessage — unified rendering for ALL tool calls
+// ---------------------------------------------------------------------------
+
+/**
+ * Unified tool call renderer adapted from Gemini CLI's DenseToolMessage.
+ *
+ * Layout: [status indicator (2ch)] [bold name (max 25ch)] [muted description] → [result summary]
+ * Optional: expandable payload beneath the tool line
+ */
+export function DenseToolMessage({
+  status,
+  toolName,
+  viewParts,
+  part,
+  strikethrough,
+}: {
+  status: ToolDisplayStatus
+  toolName: string
+  viewParts: ViewParts
+  part: ToolPart
+  strikethrough?: boolean
+}) {
+  const { theme } = useTheme()
+  const config = useTuiConfig()
+  const timing = useElapsedTime({
+    startTime: extractToolTiming(part).startTime ?? null,
+    endTime: extractToolTiming(part).endTime,
+  })
+  const timingSuffix = timing.formatted ? ` (${timing.formatted})` : ""
+
+  const error = part.state.status === "error" ? part.state.error : undefined
+  const displayError = error && config.errorVerbosity === "low" ? error.split("\n")[0] : error
+
+  // Don't show error text for cancelled tools (already indicated by status icon + strikethrough)
+  const isCancelled = status === ToolDisplayStatus.Cancelled
+  const showError = displayError && !isCancelled
+
+  // Truncate tool name to 25 characters
+  const displayName = toolName.length > 25 ? `${toolName.slice(0, 24)}…` : toolName
+
+  return (
+    <Box paddingLeft={3} flexDirection="column">
+      <Box gap={1}>
+        <ToolStatusIndicator status={status} />
+        <Text>
+          <Text bold color={strikethrough ? (theme.textMuted as Color) : undefined} strikethrough={strikethrough}>
+            {displayName}
+          </Text>
+          {viewParts.description && <Text color={theme.textMuted as Color}> {viewParts.description}</Text>}
+          {viewParts.summary && <Text color={theme.textMuted as Color}> → {viewParts.summary}</Text>}
+          {timingSuffix && <Text color={theme.textMuted as Color}>{timingSuffix}</Text>}
+        </Text>
+      </Box>
+      {showError && <Text color={theme.error as Color}>{displayError}</Text>}
+      {viewParts.payload && (
+        <Box paddingLeft={3} marginTop={0}>
+          {viewParts.payload}
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Per-tool formatter functions — each returns ViewParts
+// ---------------------------------------------------------------------------
+
+function getReadViewParts(
+  input: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+  _output: string | undefined,
+  part: ToolPart,
+): ViewParts {
+  const inp = typed<ReadInput>(input)
+  const meta = typed<ReadMetadata>(metadata)
+  const loaded =
+    part.state.status === "completed" && Array.isArray(meta.loaded)
+      ? meta.loaded.filter((p): p is string => typeof p === "string")
+      : []
+
+  return {
+    description: normalizePath(inp.filePath),
+    summary: loaded.length > 1 ? `${loaded.length} files loaded` : undefined,
+  }
+}
+
+function getWriteViewParts(
+  input: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+  _output: string | undefined,
+  _part: ToolPart,
+): ViewParts {
+  const inp = typed<WriteInput>(input)
+  const meta = typed<WriteMetadata>(metadata)
+  const isComplete = meta.diagnostics !== undefined
+
+  const viewParts: ViewParts = {
+    description: normalizePath(inp.filePath),
+  }
+
+  if (isComplete) {
+    viewParts.summary = "Accepted"
+    // Show code content as payload for compact view
+    if (inp.content && inp.content.split("\n").length <= COMPACT_DIFF_MAX_LINES) {
+      viewParts.payload = (
+        <Box flexDirection="column">
+          <StructuredDiff modifiedContent={truncateDiff(inp.content, COMPACT_DIFF_MAX_LINES)} />
+          <Diagnostics diagnostics={meta.diagnostics} filePath={inp.filePath ?? ""} />
+        </Box>
+      )
+    }
+  }
+
+  return viewParts
+}
+
+function getEditViewParts(input: Record<string, unknown>, metadata: Record<string, unknown>): ViewParts {
+  const inp = typed<EditInput>(input)
+  const meta = typed<EditMetadata>(metadata)
+  const hasDiff = meta.diff !== undefined
+
+  const viewParts: ViewParts = {
+    description: normalizePath(inp.filePath),
+  }
+
+  if (hasDiff) {
+    const stats = computeDiffStats(meta.diff)
+    viewParts.summary = `Accepted${stats ? ` (${stats})` : ""}`
+    if (meta.diff) {
+      viewParts.payload = (
+        <Box flexDirection="column">
+          <StructuredDiff modifiedContent={truncateDiff(meta.diff, COMPACT_DIFF_MAX_LINES)} />
+          <Diagnostics diagnostics={meta.diagnostics} filePath={inp.filePath ?? ""} />
+        </Box>
+      )
+    }
+  }
+
+  return viewParts
+}
+
+function getGlobViewParts(input: Record<string, unknown>, metadata: Record<string, unknown>): ViewParts {
+  const inp = typed<GlobInput>(input)
+  const meta = typed<GlobMetadata>(metadata)
+  return {
+    description: <>{`"${inp.pattern ?? ""}"${inp.path ? ` in ${normalizePath(inp.path)}` : ""}`}</>,
+    summary: meta.count !== undefined ? `${meta.count} ${meta.count === 1 ? "match" : "matches"}` : undefined,
+  }
+}
+
+function getGrepViewParts(input: Record<string, unknown>, metadata: Record<string, unknown>): ViewParts {
+  const inp = typed<GrepInput>(input)
+  const meta = typed<GrepMetadata>(metadata)
+  return {
+    description: <>{`"${inp.pattern ?? ""}"${inp.path ? ` in ${normalizePath(inp.path)}` : ""}`}</>,
+    summary: meta.matches !== undefined ? `${meta.matches} ${meta.matches === 1 ? "match" : "matches"}` : undefined,
+  }
+}
+
+function getListViewParts(input: Record<string, unknown>): ViewParts {
+  const inp = typed<ListInput>(input)
+  return { description: normalizePath(inp.path) }
+}
+
+function getWebFetchViewParts(input: Record<string, unknown>): ViewParts {
+  const inp = typed<WebFetchInput>(input)
+  return { description: inp.url }
+}
+
+function getCodeSearchViewParts(input: Record<string, unknown>, metadata: Record<string, unknown>): ViewParts {
+  const inp = typed<CodeSearchInput>(input)
+  const meta = typed<CodeSearchMetadata>(metadata)
+  return {
+    description: `"${inp.query ?? ""}"`,
+    summary: meta.results !== undefined ? `${meta.results} results` : undefined,
+  }
+}
+
+function getWebSearchViewParts(input: Record<string, unknown>, metadata: Record<string, unknown>): ViewParts {
+  const inp = typed<WebSearchInput>(input)
+  const meta = typed<WebSearchMetadata>(metadata)
+  return {
+    description: `"${inp.query ?? ""}"`,
+    summary: meta.numResults !== undefined ? `${meta.numResults} results` : undefined,
+  }
+}
+
+function getSkillViewParts(input: Record<string, unknown>): ViewParts {
+  const inp = typed<SkillInput>(input)
+  return { description: `"${inp.name ?? ""}"` }
+}
+
+function getPlanEnterViewParts(): ViewParts {
+  return { description: "Entering plan mode" }
+}
+
+function getPlanExitViewParts(): ViewParts {
+  return { description: "Exiting plan mode" }
+}
+
+function getGenericViewParts(
+  input: Record<string, unknown>,
+  _metadata: Record<string, unknown>,
+  output: string | undefined,
+): ViewParts {
+  const viewParts: ViewParts = {
+    description: formatInput(input),
+  }
+  if (output) {
+    const trimmed = output.trim()
+    const lines = trimmed.split("\n")
+    if (lines.length <= 3) {
+      viewParts.summary = trimmed
+    } else {
+      viewParts.summary = `${lines.length} lines`
+    }
+  }
+  return viewParts
+}
+
+// ---------------------------------------------------------------------------
+// Special tool components — need hooks / state, so they render as components
+// ---------------------------------------------------------------------------
+
+/**
+ * RunCommand — retains its specialized ShellOutput sub-view as payload.
+ * The header row uses the unified DenseToolMessage pattern.
+ */
+export function RunCommandView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
   const { theme } = useTheme()
   const directory = useAppState((s) => s.path.directory)
   const ctx = useSessionContext()
-  const input = typed<RunCommandInput>(props.input as Record<string, unknown>)
-  const metadata = typed<RunCommandMetadata>(props.metadata as Record<string, unknown>)
-  const running = props.part.state.status === "running"
+  const input = typed<RunCommandInput>(toolprops.input as Record<string, unknown>)
+  const metadata = typed<RunCommandMetadata>(toolprops.metadata as Record<string, unknown>)
+  const running = toolprops.part.state.status === "running"
   const output = useMemo(() => stripAnsi(metadata.output?.trim() ?? ""), [metadata])
   const { savedPath } = useOutputFile({
     output,
     sessionID: ctx.sessionID,
-    callID: props.part.callID,
+    callID: toolprops.part.callID,
   })
   const [expanded, setExpanded] = useState(false)
   const lines = useMemo(() => output.split("\n"), [output])
@@ -428,69 +508,69 @@ export function RunCommand(props: ToolProps) {
     return match ? absolute.replace(home, "~") : absolute
   }, [input.cwd, directory])
 
-  // Extract exit code from tool output (run_command returns JSON with exit_code)
   const exitCode = useMemo(() => {
     if (running) return undefined
-    if (props.part.state.status === "error") return 1
-    // Try to extract from output — typical format: "exit_code": N or exitCode: N
-    const raw = props.output ?? ""
+    if (toolprops.part.state.status === "error") return 1
+    const raw = toolprops.output ?? ""
     const match = raw.match(/"?exit_?[Cc]ode"?\s*:\s*(\d+)/)
-    return match ? parseInt(match[1], 10) : props.part.state.status === "completed" ? 0 : undefined
-  }, [running, props.part.state.status, props.output])
+    return match ? parseInt(match[1], 10) : toolprops.part.state.status === "completed" ? 0 : undefined
+  }, [running, toolprops.part.state.status, toolprops.output])
 
-  // Compute duration from tool part timing
   const durationMs = useMemo(() => {
-    const timing = extractToolTiming(props.part)
+    const timing = extractToolTiming(toolprops.part)
     if (timing.startTime && timing.endTime) return timing.endTime - timing.startTime
     return undefined
-  }, [props.part])
+  }, [toolprops.part])
 
-  const toolError = props.part.state.status === "error" ? props.part.state.error : undefined
+  const toolError = toolprops.part.state.status === "error" ? toolprops.part.state.error : undefined
 
+  const cmdDisplay = input.command ?? ""
+  const cwdSuffix = dir ? ` in ${dir}` : ""
+
+  // If we have output, show ShellOutput as the payload
   if (metadata.output !== undefined) {
-    // Compact mode: single-line inline rendering
-    if (ctx?.isToolCompact(props.tool)) {
-      if (savedPath) {
-        return (
-          <InlineTool icon="$" pending="" complete={input.command} part={props.part} {...extractToolTiming(props.part)}>
-            Ran {input.command} (output: {shortenPath(savedPath)})
-          </InlineTool>
-        )
-      }
+    // Compact mode: inline summary
+    if (ctx?.isToolCompact(toolprops.tool)) {
       return (
-        <InlineTool icon="$" pending="" complete={input.command} part={props.part} {...extractToolTiming(props.part)}>
-          Ran {input.command}
-        </InlineTool>
+        <DenseToolMessage
+          status={status}
+          toolName="run_command"
+          viewParts={{
+            description: cmdDisplay,
+            summary: savedPath ? `output: ${shortenPath(savedPath)}` : "completed",
+          }}
+          part={toolprops.part}
+        />
       )
     }
 
-    // Large output saved to file — show preview inside BlockTool
+    // Large output saved to file — show preview
     if (savedPath) {
       const preview = lines.slice(0, 50).join("\n")
-      const title = useMemo(() => {
-        const desc = input.description ?? "Shell"
-        const wd = dir
-        if (!wd) return `# ${desc}`
-        return `# ${desc} in ${wd}`
-      }, [input, dir])
-
       return (
-        <BlockTool title={title} part={props.part} spinner={running} {...extractToolTiming(props.part)}>
-          <Box flexDirection="column" gap={1}>
-            <Text color={theme.text as Color}>$ {input.command}</Text>
-            {preview && <Text color={theme.text as Color}>{preview}</Text>}
-            <Text color={theme.textMuted as Color}>
-              ── Full output ({output.length.toLocaleString()} chars): {shortenPath(savedPath)}
-            </Text>
-          </Box>
-        </BlockTool>
+        <DenseToolMessage
+          status={status}
+          toolName="run_command"
+          viewParts={{
+            description: `${cmdDisplay}${cwdSuffix}`,
+            summary: `${output.length.toLocaleString()} chars`,
+            payload: (
+              <Box flexDirection="column" gap={1}>
+                <Text color={theme.text as Color}>$ {cmdDisplay}</Text>
+                {preview && <Text color={theme.text as Color}>{preview}</Text>}
+                <Text color={theme.textMuted as Color}>── Full output: {shortenPath(savedPath)}</Text>
+              </Box>
+            ),
+          }}
+          part={toolprops.part}
+        />
       )
     }
 
-    // Standard bordered shell output
+    // Standard shell output — use ShellOutput sub-view as payload
     return (
       <ShellOutput
-        command={input.command ?? ""}
+        command={cmdDisplay}
         cwd={dir}
         output={output}
         running={running}
@@ -503,265 +583,27 @@ export function RunCommand(props: ToolProps) {
     )
   }
 
+  // Pending state — no output yet
   return (
-    <InlineTool
-      icon="$"
-      pending="Writing command..."
-      complete={input.command}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      {input.command}
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="run_command"
+      viewParts={{ description: cmdDisplay }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function Write(props: ToolProps) {
-  const { theme } = useTheme()
-  const ctx = useSessionContext()
-  const input = typed<WriteInput>(props.input as Record<string, unknown>)
-  const metadata = typed<WriteMetadata>(props.metadata as Record<string, unknown>)
-  const code = input.content ?? ""
-
-  if (metadata.diagnostics !== undefined) {
-    if (ctx?.isToolCompact(props.tool)) {
-      return (
-        <Box flexDirection="column">
-          <InlineTool
-            icon="←"
-            pending=""
-            complete={input.filePath}
-            part={props.part}
-            {...extractToolTiming(props.part)}
-          >
-            Wrote {normalizePath(input.filePath)}
-          </InlineTool>
-          {code && code.split("\n").length <= COMPACT_DIFF_MAX_LINES && (
-            <Box paddingLeft={6} marginTop={0}>
-              <StructuredDiff modifiedContent={truncateDiff(code, COMPACT_DIFF_MAX_LINES)} />
-            </Box>
-          )}
-        </Box>
-      )
-    }
-
-    return (
-      <BlockTool
-        title={`# Wrote ${normalizePath(input.filePath)}`}
-        part={props.part}
-        {...extractToolTiming(props.part)}
-      >
-        <Box flexDirection="column">
-          <Text color={theme.text as Color}>{code}</Text>
-        </Box>
-        <Diagnostics diagnostics={metadata.diagnostics} filePath={input.filePath ?? ""} />
-      </BlockTool>
-    )
-  }
-
-  return (
-    <InlineTool
-      icon="←"
-      pending="Preparing write..."
-      complete={input.filePath}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Write {normalizePath(input.filePath)}
-    </InlineTool>
-  )
-}
-
-export function Read(props: ToolProps) {
-  const { theme } = useTheme()
-  const input = typed<ReadInput>(props.input as Record<string, unknown>)
-  const metadata = typed<ReadMetadata>(props.metadata as Record<string, unknown>)
-  const running = props.part.state.status === "running"
-  const loaded = useMemo(() => {
-    if (props.part.state.status !== "completed") return []
-    const value = metadata.loaded
-    if (!value || !Array.isArray(value)) return []
-    return value.filter((p): p is string => typeof p === "string")
-  }, [props.part.state.status, metadata])
-
-  return (
-    <Box flexDirection="column">
-      <InlineTool
-        icon="→"
-        pending="Reading file..."
-        complete={input.filePath}
-        spinner={running}
-        part={props.part}
-        {...extractToolTiming(props.part)}
-      >
-        Read {normalizePath(input.filePath)} {formatInput({ ...props.input } as Record<string, unknown>, ["filePath"])}
-      </InlineTool>
-      {loaded.map((filepath, i) => (
-        <Box key={i} paddingLeft={6}>
-          <Text color={theme.textMuted as Color}>↳ Loaded {normalizePath(filepath)}</Text>
-        </Box>
-      ))}
-    </Box>
-  )
-}
-
-export function Edit(props: ToolProps) {
-  const ctx = useSessionContext()
-  const input = typed<EditInput>(props.input as Record<string, unknown>)
-  const metadata = typed<EditMetadata>(props.metadata as Record<string, unknown>)
-
-  if (metadata.diff !== undefined) {
-    if (ctx?.isToolCompact(props.tool)) {
-      const stats = computeDiffStats(metadata.diff)
-      return (
-        <Box flexDirection="column">
-          <InlineTool
-            icon="←"
-            pending=""
-            complete={input.filePath}
-            part={props.part}
-            {...extractToolTiming(props.part)}
-          >
-            Edit {normalizePath(input.filePath)}
-            {stats}
-          </InlineTool>
-          {metadata.diff && (
-            <Box paddingLeft={6} marginTop={0}>
-              <StructuredDiff modifiedContent={truncateDiff(metadata.diff, COMPACT_DIFF_MAX_LINES)} />
-            </Box>
-          )}
-        </Box>
-      )
-    }
-
-    return (
-      <BlockTool title={`← Edit ${normalizePath(input.filePath)}`} part={props.part} {...extractToolTiming(props.part)}>
-        <Box paddingLeft={1}>
-          <StructuredDiff key={props.part.id} modifiedContent={metadata.diff} />
-        </Box>
-        <Diagnostics diagnostics={metadata.diagnostics} filePath={input.filePath ?? ""} />
-      </BlockTool>
-    )
-  }
-
-  return (
-    <InlineTool
-      icon="←"
-      pending="Preparing edit..."
-      complete={input.filePath}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Edit {normalizePath(input.filePath)} {formatInput({ replaceAll: input.replaceAll } as Record<string, unknown>)}
-    </InlineTool>
-  )
-}
-
-export function Glob(props: ToolProps) {
-  const input = typed<GlobInput>(props.input as Record<string, unknown>)
-  const metadata = typed<GlobMetadata>(props.metadata as Record<string, unknown>)
-  return (
-    <InlineTool
-      icon="✱"
-      pending="Finding files..."
-      complete={input.pattern}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Glob "{input.pattern}" {input.path ? `in ${normalizePath(input.path)}` : ""}
-      {metadata.count !== undefined && ` (${metadata.count} ${metadata.count === 1 ? "match" : "matches"})`}
-    </InlineTool>
-  )
-}
-
-export function Grep(props: ToolProps) {
-  const input = typed<GrepInput>(props.input as Record<string, unknown>)
-  const metadata = typed<GrepMetadata>(props.metadata as Record<string, unknown>)
-  return (
-    <InlineTool
-      icon="✱"
-      pending="Searching content..."
-      complete={input.pattern}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Grep "{input.pattern}" {input.path ? `in ${normalizePath(input.path)}` : ""}
-      {metadata.matches !== undefined && ` (${metadata.matches} ${metadata.matches === 1 ? "match" : "matches"})`}
-    </InlineTool>
-  )
-}
-
-export function List(props: ToolProps) {
-  const input = typed<ListInput>(props.input as Record<string, unknown>)
-  const dir = input.path ? normalizePath(input.path) : ""
-  return (
-    <InlineTool
-      icon="→"
-      pending="Listing directory..."
-      complete={input.path !== undefined}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      List {dir}
-    </InlineTool>
-  )
-}
-
-export function WebFetch(props: ToolProps) {
-  const input = typed<WebFetchInput>(props.input as Record<string, unknown>)
-  return (
-    <InlineTool
-      icon="%"
-      pending="Fetching from the web..."
-      complete={input.url}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      WebFetch {input.url}
-    </InlineTool>
-  )
-}
-
-export function CodeSearch(props: ToolProps) {
-  const input = typed<CodeSearchInput>(props.input as Record<string, unknown>)
-  const metadata = typed<CodeSearchMetadata>(props.metadata as Record<string, unknown>)
-  return (
-    <InlineTool
-      icon="◇"
-      pending="Searching code..."
-      complete={input.query}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Code Search "{input.query}" {metadata.results !== undefined && `(${metadata.results} results)`}
-    </InlineTool>
-  )
-}
-
-export function WebSearch(props: ToolProps) {
-  const input = typed<WebSearchInput>(props.input as Record<string, unknown>)
-  const metadata = typed<WebSearchMetadata>(props.metadata as Record<string, unknown>)
-  return (
-    <InlineTool
-      icon="◈"
-      pending="Searching web..."
-      complete={input.query}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Web Search "{input.query}" {metadata.numResults !== undefined && `(${metadata.numResults} results)`}
-    </InlineTool>
-  )
-}
-
-export function Task(props: ToolProps) {
+/**
+ * TaskView — needs hooks for session sync and tool count.
+ */
+export function TaskView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
   const {
     session: { sync: syncSession },
   } = useAppActions()
   const partsMap = useAppState((s) => s.part)
-  const input = typed<TaskInput>(props.input as Record<string, unknown>)
-  const metadata = typed<TaskMetadata>(props.metadata as Record<string, unknown>)
-  const running = props.part.state.status === "running"
+  const input = typed<TaskInput>(toolprops.input as Record<string, unknown>)
+  const metadata = typed<TaskMetadata>(toolprops.metadata as Record<string, unknown>)
   const sessionID = metadata.sessionId
 
   const messages = useAppState(selectMessages(sessionID ?? ""))
@@ -777,283 +619,423 @@ export function Task(props: ToolProps) {
   }, [messages, partsMap])
 
   return (
-    <InlineTool
-      icon="│"
-      spinner={running}
-      complete={input.description}
-      pending="Delegating..."
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Task {input.description} {toolCount > 0 && `(${toolCount} toolcalls)`}
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="task"
+      viewParts={{
+        description: input.description,
+        summary: toolCount > 0 ? `${toolCount} toolcalls` : undefined,
+      }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function Question(props: ToolProps) {
-  const { theme } = useTheme()
-  const input = typed<QuestionInput>(props.input as Record<string, unknown>)
-  const metadata = typed<QuestionMetadata>(props.metadata as Record<string, unknown>)
+/**
+ * QuestionView — FR-015: completed questions hide description, show answer.
+ */
+export function QuestionView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
+  const input = typed<QuestionInput>(toolprops.input as Record<string, unknown>)
+  const metadata = typed<QuestionMetadata>(toolprops.metadata as Record<string, unknown>)
   const questions = input.questions ?? []
   const answers = metadata.answers
 
   if (answers) {
+    // Completed: hide description, show answer as summary (FR-015)
+    const answerText = answers.map((a) => a.join(", ")).join("; ")
     return (
-      <BlockTool title="# Questions" part={props.part} {...extractToolTiming(props.part)}>
-        <Box flexDirection="column" gap={1}>
-          {questions.map((q, i) => (
-            <Box key={i} flexDirection="column">
-              <Text color={theme.textMuted as Color}>{q.question}</Text>
-              <Text color={theme.text as Color}>{answers[i]?.join(", ") || "(no answer)"}</Text>
-            </Box>
-          ))}
-        </Box>
-      </BlockTool>
+      <DenseToolMessage
+        status={status}
+        toolName="ask_user"
+        viewParts={{
+          summary: answerText || "(no answer)",
+        }}
+        part={toolprops.part}
+      />
     )
   }
 
+  // Pending: show question text as description
   return (
-    <InlineTool
-      icon="→"
-      pending="Asking questions..."
-      complete={questions.length > 0}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Asked {questions.length} question{questions.length !== 1 ? "s" : ""}
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="ask_user"
+      viewParts={{
+        description:
+          questions.length > 0 ? `${questions.length} question${questions.length !== 1 ? "s" : ""}` : undefined,
+      }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function Skill(props: ToolProps) {
-  const input = typed<SkillInput>(props.input as Record<string, unknown>)
+/**
+ * TodoWriteView — FR-016: render checklist items as payload.
+ */
+function TodoWriteView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
+  const metadata = typed<TodoWriteMetadata>(toolprops.metadata as Record<string, unknown>)
+  const todos = metadata.todos ?? []
+
   return (
-    <InlineTool
-      icon="→"
-      pending="Loading skill..."
-      complete={input.name}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Skill "{input.name}"
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="todowrite"
+      viewParts={{
+        description: "Todos",
+        summary: todos.length > 0 ? `${todos.length} items` : "No todos",
+        payload:
+          todos.length > 0 ? (
+            <Box flexDirection="column">
+              {todos.map((todo, i) => (
+                <Box key={i} gap={1}>
+                  <Text>[{todo.status === "done" ? "x" : " "}]</Text>
+                  <Text>{todo.content}</Text>
+                </Box>
+              ))}
+            </Box>
+          ) : undefined,
+      }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function CommandStatus(props: ToolProps) {
+/**
+ * CommandStatusView — needs output file hook.
+ */
+function CommandStatusView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
   const { theme } = useTheme()
-  const input = typed<CommandStatusInput>(props.input as Record<string, unknown>)
-  const metadata = typed<CommandStatusMetadata>(props.metadata as Record<string, unknown>)
-  const running = props.part.state.status === "running"
-  const output = stripAnsi((props.output || metadata.output || "") as string)
+  const input = typed<CommandStatusInput>(toolprops.input as Record<string, unknown>)
+  const metadata = typed<CommandStatusMetadata>(toolprops.metadata as Record<string, unknown>)
+  const output = stripAnsi((toolprops.output || metadata.output || "") as string)
   const ctx = useSessionContext()
   const { savedPath } = useOutputFile({
     output,
     sessionID: ctx.sessionID,
-    callID: props.part.callID,
+    callID: toolprops.part.callID,
   })
-  const [expanded, setExpanded] = useState(false)
+  // expanded state is read-only — Ink Text lacks onClick, so the expand/collapse hint is visual-only
+  const [expanded, _setExpanded] = useState(false)
   const lines = output.split("\n")
   const overflow = lines.length > 10
   const limited = expanded || !overflow ? output : [...lines.slice(0, 10), "…"].join("\n")
+  const cmdId = metadata.commandId || input.CommandId || "unknown"
 
-  if (metadata.output !== undefined || props.output) {
-    if (ctx?.isToolCompact(props.tool)) {
+  if (metadata.output !== undefined || toolprops.output) {
+    if (ctx?.isToolCompact(toolprops.tool)) {
       return (
-        <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
-          Status: {metadata.commandId || input.CommandId || "unknown"}
-        </InlineTool>
+        <DenseToolMessage
+          status={status}
+          toolName="command_status"
+          viewParts={{ description: cmdId }}
+          part={toolprops.part}
+        />
       )
     }
 
     if (savedPath) {
       const preview = lines.slice(0, 50).join("\n")
       return (
-        <BlockTool
-          title={`# Status: ${metadata.commandId || input.CommandId || "unknown"}`}
-          part={props.part}
-          spinner={running}
-          {...extractToolTiming(props.part)}
-        >
-          <Box flexDirection="column" gap={1}>
-            <Text color={theme.text as Color}>{metadata.status === "running" ? "Running" : "Completed"}</Text>
-            {preview && <Text color={theme.text as Color}>{preview}</Text>}
-            <Text color={theme.textMuted as Color}>
-              ── Full output ({output.length.toLocaleString()} chars): {shortenPath(savedPath)}
-            </Text>
-          </Box>
-        </BlockTool>
+        <DenseToolMessage
+          status={status}
+          toolName="command_status"
+          viewParts={{
+            description: cmdId,
+            summary: `${output.length.toLocaleString()} chars`,
+            payload: (
+              <Box flexDirection="column" gap={1}>
+                <Text color={theme.text as Color}>{metadata.status === "running" ? "Running" : "Completed"}</Text>
+                {preview && <Text color={theme.text as Color}>{preview}</Text>}
+                <Text color={theme.textMuted as Color}>── Full output: {shortenPath(savedPath)}</Text>
+              </Box>
+            ),
+          }}
+          part={toolprops.part}
+        />
       )
     }
 
     return (
-      <BlockTool
-        title={`# Status: ${metadata.commandId || input.CommandId || "unknown"}`}
-        part={props.part}
-        spinner={running}
-        onClick={overflow ? () => setExpanded((prev) => !prev) : undefined}
-        {...extractToolTiming(props.part)}
-      >
-        <Box flexDirection="column" gap={1}>
-          <Text color={theme.text as Color}>{metadata.status === "running" ? "Running" : "Completed"}</Text>
-          {output && <Text color={theme.text as Color}>{limited}</Text>}
-          {overflow && (
-            <Text color={theme.textMuted as Color}>{expanded ? "Click to collapse" : "Click to expand"}</Text>
-          )}
-        </Box>
-      </BlockTool>
+      <DenseToolMessage
+        status={status}
+        toolName="command_status"
+        viewParts={{
+          description: cmdId,
+          payload: output ? (
+            <Box flexDirection="column" gap={1}>
+              <Text color={theme.text as Color}>{metadata.status === "running" ? "Running" : "Completed"}</Text>
+              {output && <Text color={theme.text as Color}>{limited}</Text>}
+              {overflow && (
+                <Text color={theme.textMuted as Color}>{expanded ? "Click to collapse" : "Click to expand"}</Text>
+              )}
+            </Box>
+          ) : undefined,
+        }}
+        part={toolprops.part}
+      />
     )
   }
 
   return (
-    <InlineTool
-      icon="⚙"
-      pending="Checking status..."
-      complete={input.CommandId}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Status: {metadata.commandId || input.CommandId || "unknown"}
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="command_status"
+      viewParts={{ description: cmdId }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function SendCommandInput(props: ToolProps) {
+/**
+ * SendCommandInputView — needs output file hook.
+ */
+function SendCommandInputView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
   const { theme } = useTheme()
-  const input = typed<SendCommandInputInput>(props.input as Record<string, unknown>)
-  const metadata = typed<SendCommandInputMetadata>(props.metadata as Record<string, unknown>)
-  const running = props.part.state.status === "running"
-  const output = stripAnsi((props.output || metadata.output || "") as string)
-
+  const input = typed<SendCommandInputInput>(toolprops.input as Record<string, unknown>)
+  const metadata = typed<SendCommandInputMetadata>(toolprops.metadata as Record<string, unknown>)
+  const output = stripAnsi((toolprops.output || metadata.output || "") as string)
   const text = input.Terminate ? "Sending terminate signal" : "Sending input"
-  const ctx = useSessionContext()
+  const cmdId = metadata.commandId || input.CommandId || "unknown"
 
-  if (metadata.output !== undefined || props.output) {
-    if (ctx?.isToolCompact(props.tool)) {
-      return (
-        <InlineTool icon="⚙" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
-          {text}: {metadata.commandId || input.CommandId || "unknown"}
-        </InlineTool>
-      )
-    }
-
+  if (metadata.output !== undefined || toolprops.output) {
     return (
-      <BlockTool title={`# ${text}`} part={props.part} spinner={running} {...extractToolTiming(props.part)}>
-        <Box flexDirection="column" gap={1}>
-          {output && <Text color={theme.text as Color}>{output}</Text>}
-        </Box>
-      </BlockTool>
+      <DenseToolMessage
+        status={status}
+        toolName="send_command_input"
+        viewParts={{
+          description: `${text}: ${cmdId}`,
+          payload: output ? (
+            <Box flexDirection="column" gap={1}>
+              <Text color={theme.text as Color}>{output}</Text>
+            </Box>
+          ) : undefined,
+        }}
+        part={toolprops.part}
+      />
     )
   }
 
   return (
-    <InlineTool
-      icon="⚙"
-      pending="Sending input..."
-      complete={input.CommandId}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      {text}: {metadata.commandId || input.CommandId || "unknown"}
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="send_command_input"
+      viewParts={{ description: `${text}: ${cmdId}` }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function ApplyPatch(props: ToolProps) {
+/**
+ * ApplyPatchView — needs compact diff rendering.
+ */
+function ApplyPatchView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
   const { theme } = useTheme()
-  const ctx = useSessionContext()
-  const metadata = typed<ApplyPatchMetadata>(props.metadata as Record<string, unknown>)
+  const metadata = typed<ApplyPatchMetadata>(toolprops.metadata as Record<string, unknown>)
   const files = metadata.files ?? []
 
   if (files.length > 0) {
-    if (ctx?.isToolCompact(props.tool)) {
-      const fileNames = files.map((f) => path.basename(f.relativePath)).join(", ")
-      return (
-        <Box flexDirection="column">
-          <InlineTool icon="←" pending="" complete={true} part={props.part} {...extractToolTiming(props.part)}>
-            Patch {files.length} file{files.length === 1 ? "" : "s"}: {fileNames}
-          </InlineTool>
-          <Box paddingLeft={6} marginTop={0} flexDirection="column">
-            {files.map((f, i) => {
-              if (!f.diff) return null
-              // Naive budget per file: 15 lines total, divided among files with diffs
-              const budget = Math.max(3, Math.floor(COMPACT_DIFF_MAX_LINES / files.length))
-              return (
-                <Box key={i} flexDirection="column">
-                  <StructuredDiff modifiedContent={truncateDiff(f.diff, budget)} />
-                </Box>
-              )
-            })}
-          </Box>
-        </Box>
-      )
-    }
+    const fileNames = files.map((f) => path.basename(f.relativePath)).join(", ")
+    const budget = Math.max(3, Math.floor(COMPACT_DIFF_MAX_LINES / files.length))
 
     return (
-      <Box flexDirection="column">
-        {files.map((file, i) => (
-          <BlockTool
-            key={i}
-            title={
-              file.type === "delete"
-                ? `# Deleted ${file.relativePath}`
-                : file.type === "add"
-                  ? `# Created ${file.relativePath}`
-                  : `← Patched ${file.relativePath}`
-            }
-            part={props.part}
-            {...extractToolTiming(props.part)}
-          >
-            {file.type !== "delete" ? (
-              <StructuredDiff modifiedContent={file.diff ?? ""} />
-            ) : (
-              <Text color={theme.error as Color}>-{file.deletions} lines</Text>
-            )}
-          </BlockTool>
-        ))}
-      </Box>
+      <DenseToolMessage
+        status={status}
+        toolName="apply_patch"
+        viewParts={{
+          description: `${files.length} file${files.length === 1 ? "" : "s"}: ${fileNames}`,
+          payload: (
+            <Box flexDirection="column">
+              {files.map((f, i) => {
+                if (f.type === "delete") {
+                  return (
+                    <Text key={i} color={theme.error as Color}>
+                      Deleted {f.relativePath} (-{f.deletions} lines)
+                    </Text>
+                  )
+                }
+                if (!f.diff) return null
+                return (
+                  <Box key={i} flexDirection="column">
+                    <Text color={theme.textMuted as Color}>
+                      {f.type === "add" ? "Created" : "Patched"} {f.relativePath}
+                    </Text>
+                    <StructuredDiff modifiedContent={truncateDiff(f.diff, budget)} />
+                  </Box>
+                )
+              })}
+            </Box>
+          ),
+        }}
+        part={toolprops.part}
+      />
     )
   }
 
   return (
-    <InlineTool
-      icon="%"
-      pending="Preparing patch..."
-      complete={false}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Patch
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName="apply_patch"
+      viewParts={{ description: "Preparing patch…" }}
+      part={toolprops.part}
+    />
   )
 }
 
-export function TodoWrite(props: ToolProps) {
-  const metadata = typed<TodoWriteMetadata>(props.metadata as Record<string, unknown>)
-  const todos = metadata.todos ?? []
-  if (todos.length > 0) {
+/**
+ * GenericToolView — fallback with output file support.
+ */
+function GenericToolView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
+  const { theme } = useTheme()
+  const ctx = useSessionContext()
+  const output = useMemo(() => toolprops.output?.trim() ?? "", [toolprops.output])
+  const { savedPath } = useOutputFile({
+    output,
+    sessionID: ctx.sessionID,
+    callID: toolprops.part.callID,
+  })
+  const lines = useMemo(() => output.split("\n"), [output])
+
+  if (output && ctx.showGenericToolOutput) {
+    if (savedPath) {
+      const preview = lines.slice(0, 50).join("\n")
+      return (
+        <DenseToolMessage
+          status={status}
+          toolName={toolprops.tool}
+          viewParts={{
+            description: formatInput(toolprops.input as Record<string, unknown>),
+            summary: `${output.length.toLocaleString()} chars`,
+            payload: (
+              <Box gap={1} flexDirection="column">
+                {preview && <Text color={theme.text as Color}>{preview}</Text>}
+                <Text color={theme.textMuted as Color}>── Full output: {shortenPath(savedPath)}</Text>
+              </Box>
+            ),
+          }}
+          part={toolprops.part}
+        />
+      )
+    }
+
+    const max = 3
+    const overflow = lines.length > max
+    const limited = overflow ? [...lines.slice(0, max), "…"].join("\n") : output
     return (
-      <BlockTool title="# Todos" part={props.part} {...extractToolTiming(props.part)}>
-        <Box flexDirection="column">
-          {todos.map((todo, i) => (
-            <Box key={i} gap={1}>
-              <Text>[{todo.status === "done" ? "x" : " "}]</Text>
-              <Text>{todo.content}</Text>
+      <DenseToolMessage
+        status={status}
+        toolName={toolprops.tool}
+        viewParts={{
+          description: formatInput(toolprops.input as Record<string, unknown>),
+          payload: (
+            <Box gap={1} flexDirection="column">
+              <Text color={theme.text as Color}>{limited}</Text>
             </Box>
-          ))}
-        </Box>
-      </BlockTool>
+          ),
+        }}
+        part={toolprops.part}
+      />
     )
   }
+
   return (
-    <InlineTool
-      icon="⚙"
-      pending="Updating todos..."
-      complete={false}
-      part={props.part}
-      {...extractToolTiming(props.part)}
-    >
-      Updating todos...
-    </InlineTool>
+    <DenseToolMessage
+      status={status}
+      toolName={toolprops.tool}
+      viewParts={getGenericViewParts(
+        toolprops.input as Record<string, unknown>,
+        toolprops.metadata as Record<string, unknown>,
+        toolprops.output,
+      )}
+      part={toolprops.part}
+    />
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Unified tool dispatcher — replaces the old switch statement in parts.tsx
+// ---------------------------------------------------------------------------
+
+/**
+ * Renders any tool call through the unified DenseToolMessage pattern.
+ * Stateless tools use pure formatter functions; stateful tools use dedicated components.
+ */
+export function UnifiedToolView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
+  const strikethrough = status === ToolDisplayStatus.Cancelled
+
+  // Special tools that need React hooks / state — render as components
+  switch (toolprops.tool) {
+    case "run_command":
+      return <RunCommandView toolprops={toolprops} status={status} />
+    case "task":
+      return <TaskView toolprops={toolprops} status={status} />
+    case "ask_user":
+      return <QuestionView toolprops={toolprops} status={status} />
+    case "todowrite":
+      return <TodoWriteView toolprops={toolprops} status={status} />
+    case "command_status":
+      return <CommandStatusView toolprops={toolprops} status={status} />
+    case "send_command_input":
+      return <SendCommandInputView toolprops={toolprops} status={status} />
+    case "apply_patch":
+      return <ApplyPatchView toolprops={toolprops} status={status} />
+  }
+
+  // Pure formatter tools — use formatter functions + DenseToolMessage
+  const input = toolprops.input as Record<string, unknown>
+  const metadata = toolprops.metadata as Record<string, unknown>
+  const output = toolprops.output
+
+  let viewParts: ViewParts
+
+  switch (toolprops.tool) {
+    case "read":
+      viewParts = getReadViewParts(input, metadata, output, toolprops.part)
+      break
+    case "write":
+      viewParts = getWriteViewParts(input, metadata, output, toolprops.part)
+      break
+    case "edit":
+      viewParts = getEditViewParts(input, metadata)
+      break
+    case "glob":
+      viewParts = getGlobViewParts(input, metadata)
+      break
+    case "grep":
+      viewParts = getGrepViewParts(input, metadata)
+      break
+    case "list":
+      viewParts = getListViewParts(input)
+      break
+    case "webfetch":
+      viewParts = getWebFetchViewParts(input)
+      break
+    case "codesearch":
+      viewParts = getCodeSearchViewParts(input, metadata)
+      break
+    case "websearch":
+      viewParts = getWebSearchViewParts(input, metadata)
+      break
+    case "skill":
+      viewParts = getSkillViewParts(input)
+      break
+    case "plan_enter":
+      viewParts = getPlanEnterViewParts()
+      break
+    case "plan_exit":
+      viewParts = getPlanExitViewParts()
+      break
+    default:
+      // Fall through to GenericToolView for unknown tools (needs hooks)
+      return <GenericToolView toolprops={toolprops} status={status} />
+  }
+
+  return (
+    <DenseToolMessage
+      status={status}
+      toolName={toolprops.tool}
+      viewParts={viewParts}
+      part={toolprops.part}
+      strikethrough={strikethrough}
+    />
   )
 }

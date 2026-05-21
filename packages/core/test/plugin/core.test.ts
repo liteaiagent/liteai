@@ -122,8 +122,10 @@ describe("plugin.env", () => {
   test("data normalizes plugin id", () => {
     const dir = data("my@plugin/name")
     expect(dir).toContain("my_plugin_name")
-    expect(dir).not.toContain("@")
-    expect(dir).not.toContain("/")
+    // Check only the basename — the full path contains OS path separators
+    const basename = path.basename(dir)
+    expect(basename).not.toContain("@")
+    expect(basename).not.toContain("/")
   })
 
   test("expand replaces plugin vars", () => {

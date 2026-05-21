@@ -196,7 +196,7 @@
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.25.3",
     "typescript": "^5.8.3",
-    "vite": "8.0.3",
+    "vite": "8.0.5",
     "vite-plugin-solid": "2.11.11"
   },
   "dependencies": {

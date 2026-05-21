@@ -7,6 +7,7 @@
  */
 
 import type { InputEvent, Key } from "@liteai/ink"
+// biome-ignore lint/style/noRestrictedImports: keybinding-setup is an exception — uses useInput directly
 import { useInput, useSelection } from "@liteai/ink"
 import type React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"

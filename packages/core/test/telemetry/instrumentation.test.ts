@@ -12,7 +12,6 @@ mock.module("../../src/config/loader", () => ({
 // the Langfuse branch always executes regardless of OTEL_TRACES_EXPORTER.
 mock.module("@langfuse/otel", () => ({
   LangfuseSpanProcessor: class MockLangfuseSpanProcessor {
-    constructor() {}
     onStart() {}
     onEnd() {}
     shutdown() {

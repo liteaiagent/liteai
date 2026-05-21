@@ -35,7 +35,8 @@ export function ToastProvider({ children }: { children?: React.ReactNode }) {
     const duration = options.duration ?? 3000
     const id = Math.random().toString(36).substring(2, 9)
 
-    setToasts((prev) => [...prev, { ...options, id }])
+    // Single-toast policy: replace any existing toasts (no stacking)
+    setToasts([{ ...options, id }])
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))

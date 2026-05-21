@@ -68,12 +68,14 @@ export function PermissionPrompt({ request }: { request: PermissionRequest }) {
 
   const header = getPermissionHeader(request)
   const detail = getPermissionDetail(request)
+  const agentName = (request as PermissionRequest & { agentName?: string }).agentName
 
   return (
     <ThemedBox borderStyle="round" borderColor={theme.warning as Color} padding={1} flexDirection="column" gap={1}>
       <Box gap={1}>
         <Text color={theme.warning as Color}>{header.icon}</Text>
         <Text bold>{header.label}</Text>
+        {agentName && <Text color={theme.primary as Color}>[{agentName}]</Text>}
       </Box>
 
       <Box paddingLeft={2} flexDirection="column">

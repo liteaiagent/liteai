@@ -156,7 +156,7 @@ test("diffFull with multiple line additions", async () => {
       const before = await Snapshot.track()
       if (!before) throw new Error("expected before")
 
-      await Filesystem.write(`${tmp.path}/multi.txt`, "line1\nline2\nline3")
+      await Filesystem.write(`${tmp.path}/multi.txt`, "line1\nline2\nline3\n")
 
       const after = await Snapshot.track()
       if (!after) throw new Error("expected after")
@@ -167,7 +167,7 @@ test("diffFull with multiple line additions", async () => {
       const multiDiff = diffs[0]
       expect(multiDiff.file).toBe("multi.txt")
       expect(multiDiff.before).toBe("")
-      expect(multiDiff.after).toBe("line1\nline2\nline3")
+      expect(multiDiff.after).toBe("line1\nline2\nline3\n")
       expect(multiDiff.additions).toBe(3)
       expect(multiDiff.deletions).toBe(0)
     },

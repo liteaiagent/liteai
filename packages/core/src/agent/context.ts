@@ -29,6 +29,9 @@ export interface BackgroundTaskState {
 export interface AppState {
   shouldAvoidPermissionPrompts?: boolean
   permissionMode?: Agent.Info["permissionMode"]
+  /** Root session ID for bubble mode. When set, permission/question prompts
+   *  are routed to this session's UI instead of the current child session. */
+  rootSessionID?: string
   /** Per-agent activity descriptions from the periodic summarization loop. */
   agentSummaries?: Record<string, string>
   /** Name-to-agentId registry for background agents. */
@@ -88,6 +91,8 @@ export interface SubagentContext {
   agentId: string
   /** Agent definition name (e.g., "explore", "liteai"). */
   agentType: string
+  /** Human-readable agent name for HITL prompt badge display. */
+  agentName?: string
   isFork: boolean
   parentSystemPrompt?: string
   cacheSafeParams?: CacheSafeParams
@@ -189,6 +194,9 @@ export interface SubagentContextOverrides {
   execController?: ExecController
   cwd?: string
   contentReplacementState?: Record<string, unknown>
+  /** When true, sets permissionMode='bubble' and rootSessionID on the
+   *  subagent's AppState so that HITL prompts surface to the root session. */
+  bubbleMode?: boolean
 }
 
 export const AgentExecutionContext = new AsyncLocalStorage<AgentContext>()
@@ -239,6 +247,12 @@ export function createSubagentContext(
     if (agent.background) {
       independentState.shouldAvoidPermissionPrompts = true
     }
+    // Bubble mode: set permissionMode and rootSessionID so permission
+    // requests are routed to the root session's UI instead of auto-denied.
+    if (overrides?.bubbleMode) {
+      independentState.permissionMode = "bubble"
+      independentState.rootSessionID = parent.sessionId
+    }
   }
 
   const getAppState = () => {
@@ -285,6 +299,7 @@ export function createSubagentContext(
     type: "subagent",
     agentId,
     agentType: agent.name || "unknown",
+    agentName: overrides?.bubbleMode ? agent.name || "unknown" : undefined,
     isFork: overrides?.isFork ?? false,
     parentSystemPrompt: overrides?.parentSystemPrompt,
     cacheSafeParams: overrides?.cacheSafeParams,

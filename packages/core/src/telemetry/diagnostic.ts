@@ -28,6 +28,10 @@ export class DiagnosticLogExporter implements LogRecordExporter {
     readonly _label: string /* intentionally unused: maintained for constructor compatibility with factories */,
   ) {}
 
+  async forceFlush(): Promise<void> {
+    return this.inner.forceFlush?.()
+  }
+
   export(logsBatch: ReadableLogRecord[], resultCallback: (result: { code: number; error?: Error }) => void): void {
     this.inner.export(logsBatch, (result) => {
       resultCallback(result)

@@ -5,6 +5,7 @@ import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { MessageID, SessionID } from "@/session/schema"
 import { InstanceState } from "@/util/instance-state"
+import { AgentExecutionContext } from "../agent/context"
 import { QuestionID } from "./schema"
 
 const log = Log.create({ service: "question" })
@@ -41,6 +42,10 @@ export const Request = z
         callID: z.string(),
       })
       .optional(),
+    agentName: z.string().optional(),
+    /** Root session ID for bubble mode routing. When set, the CLI shows
+     *  this question in the root session's UI, not the child's. */
+    rootSessionID: SessionID.zod.optional(),
   })
   .meta({ ref: "QuestionRequest" })
 export type Request = z.infer<typeof Request>
@@ -122,11 +127,22 @@ export class QuestionService extends ServiceMap.Service<QuestionService, Questio
         log.info("asking", { id, questions: input.questions.length })
 
         const deferred = yield* Deferred.make<Answer[], RejectedError>()
+
+        // ── Populate rootSessionID and agentName from execution context ──
+        // For bubble mode, these fields route the question prompt to the
+        // root session's UI and display the subagent name as a badge.
+        const ctx = AgentExecutionContext.getStore()
+        const appState = ctx?.type === "root" || ctx?.type === "subagent" ? ctx.getAppState() : undefined
+        const rootSessionID = appState?.rootSessionID as string | undefined
+        const agentName = ctx && "agentName" in ctx ? (ctx as { agentName: string }).agentName : undefined
+
         const info: Request = {
           id,
           sessionID: input.sessionID,
           questions: input.questions,
           tool: input.tool,
+          ...(rootSessionID && { rootSessionID: rootSessionID as SessionID }),
+          ...(agentName && { agentName }),
         }
         pending.set(id, { info, deferred })
         Bus.publish(Event.Asked, info)

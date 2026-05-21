@@ -179,6 +179,8 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
 
   if (!question) return null
 
+  const agentName = (request as QuestionRequest & { agentName?: string }).agentName
+
   return (
     <ThemedBox borderStyle="round" borderColor={theme.accent as Color} padding={1} flexDirection="column" gap={1}>
       {/* Header with counter */}
@@ -186,6 +188,7 @@ export function QuestionPrompt({ request }: { request: QuestionRequest }) {
         <Text bold color={theme.accent as Color}>
           {headerText}
         </Text>
+        {agentName && <Text color={theme.primary as Color}>[{agentName}]</Text>}
         {/* Progress dots for multi-question */}
         {totalQuestions > 1 && (
           <Text color={theme.textMuted as Color}>

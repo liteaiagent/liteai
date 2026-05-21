@@ -2,7 +2,6 @@ import { afterEach, describe, expect, test } from "bun:test"
 import fs from "node:fs/promises"
 import { Bus } from "../../src/bus"
 import { Instance } from "../../src/project/instance"
-import { Question } from "../../src/question"
 import { Session } from "../../src/session"
 import { createDefaultPlanModeState, PlanModeStateRef } from "../../src/session/plan-mode-state"
 import { MessageID, type SessionID } from "../../src/session/schema"
@@ -78,35 +77,32 @@ describe("PlanExitTool", () => {
     })
   })
 
-  test("should write to disk, request approval, and return plan-in-context output on Yes", async () => {
+  test("should write to disk, request approval, and return plan-in-context output on approval", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const { session, ref } = await createSessionWithRef({ planSessionID: "test-plan" as SessionID })
 
+        // Listen for the approval request and auto-approve via Bus event.
+        // plan_exit now uses waitForPlanApproval (Bus-based), NOT Question.ask.
         let approvalRequested = false
-        const eventPromise = new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error("Timeout waiting for approval request event")), 2000)
-          const sub = Bus.subscribe(Session.Event.PlanApprovalRequested, (event) => {
-            const props = event.properties as { sessionID: string; planText: string; planFilePath: string }
-            if (props.sessionID === session.id) {
-              approvalRequested = true
-              expect(props.planText).toBe("My awesome plan")
-              sub()
-              clearTimeout(timeout)
-              resolve()
-            }
-          })
+        const sub = Bus.subscribe(Session.Event.PlanApprovalRequested, (event) => {
+          const props = event.properties as { sessionID: string; planText: string; planFilePath: string }
+          if (props.sessionID === session.id) {
+            approvalRequested = true
+            expect(props.planText).toBe("My awesome plan")
+            // Simulate CLI resolving the approval
+            Bus.publish(Session.Event.PlanApprovalResolved, {
+              sessionID: session.id,
+              approved: true,
+            })
+          }
         })
-
-        const originalAsk = Question.ask
-        Question.ask = async () => [["Yes"]]
 
         try {
           const instance = await PlanExitTool.init()
-          const executePromise = instance.execute({ plan: "My awesome plan" }, makeToolContext(session.id))
-          const [result] = await Promise.all([executePromise, eventPromise])
+          const result = await instance.execute({ plan: "My awesome plan" }, makeToolContext(session.id))
 
           expect(approvalRequested).toBe(true)
 
@@ -126,36 +122,44 @@ describe("PlanExitTool", () => {
           const writtenPlan = await fs.readFile(state.planFilePath, "utf-8")
           expect(writtenPlan).toBe("My awesome plan")
         } finally {
-          Question.ask = originalAsk
+          sub()
           await Session.remove(session.id)
         }
       },
     })
   })
 
-  test("should throw RejectedError on No — plan mode remains active (revision path)", async () => {
+  test("should throw error on rejection — plan mode remains active (revision path)", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const { session, ref } = await createSessionWithRef({ planSessionID: "test-plan" as SessionID })
 
-        const originalAsk = Question.ask
-        Question.ask = async () => [["No"]]
+        // Listen for the approval request and auto-reject via Bus event.
+        const sub = Bus.subscribe(Session.Event.PlanApprovalRequested, (event) => {
+          const props = event.properties as { sessionID: string }
+          if (props.sessionID === session.id) {
+            Bus.publish(Session.Event.PlanApprovalResolved, {
+              sessionID: session.id,
+              approved: false,
+              feedback: "Needs more detail on error handling",
+            })
+          }
+        })
 
         try {
           const instance = await PlanExitTool.init()
-          const act = () => instance.execute({ plan: "My awesome plan" }, makeToolContext(session.id))
 
           let caught = false
           try {
-            await act()
+            await instance.execute({ plan: "My awesome plan" }, makeToolContext(session.id))
           } catch (e: unknown) {
             caught = true
-            const err = e as Error & { _tag: string }
+            const err = e as Error
             // Rejection message must guide the agent to revise and re-submit
             expect(err.message).toContain("rejected")
-            expect(err._tag).toBe("QuestionRejectedError")
+            expect(err.message).toContain("Needs more detail on error handling")
           }
           expect(caught).toBe(true)
 
@@ -165,7 +169,39 @@ describe("PlanExitTool", () => {
           // planText must NOT be set on rejection
           expect(state.planText).toBeUndefined()
         } finally {
-          Question.ask = originalAsk
+          sub()
+          await Session.remove(session.id)
+        }
+      },
+    })
+  })
+
+  test("should throw error on rejection without feedback", async () => {
+    await using tmp = await tmpdir()
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const { session, ref } = await createSessionWithRef({ planSessionID: "test-plan" as SessionID })
+
+        const sub = Bus.subscribe(Session.Event.PlanApprovalRequested, (event) => {
+          const props = event.properties as { sessionID: string }
+          if (props.sessionID === session.id) {
+            Bus.publish(Session.Event.PlanApprovalResolved, {
+              sessionID: session.id,
+              approved: false,
+            })
+          }
+        })
+
+        try {
+          const instance = await PlanExitTool.init()
+          await expect(instance.execute({ plan: "Test plan" }, makeToolContext(session.id))).rejects.toThrow("rejected")
+
+          // Plan mode stays active for revision
+          const state = ref.get()
+          expect(state.planSessionID).toBe("test-plan")
+        } finally {
+          sub()
           await Session.remove(session.id)
         }
       },

@@ -68,8 +68,12 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
 
     case "permission.asked": {
       const request = event.properties as unknown as PermissionRequest
+      // Bubble mode: use rootSessionID (if set by a subagent) so the prompt
+      // appears in the root session's UI instead of the child session's.
+      const displaySessionID =
+        (request as PermissionRequest & { rootSessionID?: string }).rootSessionID ?? request.sessionID
       setState((prev) => {
-        const requests = prev.permission[request.sessionID] || []
+        const requests = prev.permission[displaySessionID] || []
         const match = Binary.search(requests as PermissionRequest[], request.id, (r: PermissionRequest) => r.id)
         const nextReqs = [...requests]
         if (match.found) {
@@ -77,7 +81,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
         } else {
           nextReqs.splice(match.index, 0, request)
         }
-        return { ...prev, permission: { ...prev.permission, [request.sessionID]: nextReqs } }
+        return { ...prev, permission: { ...prev.permission, [displaySessionID]: nextReqs } }
       })
       break
     }
@@ -102,8 +106,12 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
 
     case "question.asked": {
       const request = event.properties as unknown as QuestionRequest
+      // Bubble mode: use rootSessionID (if set by a subagent) so the question
+      // appears in the root session's UI instead of the child session's.
+      const displaySessionID =
+        (request as QuestionRequest & { rootSessionID?: string }).rootSessionID ?? request.sessionID
       setState((prev) => {
-        const requests = prev.question[request.sessionID] || []
+        const requests = prev.question[displaySessionID] || []
         const match = Binary.search(requests as QuestionRequest[], request.id, (r: QuestionRequest) => r.id)
         const nextReqs = [...requests]
         if (match.found) {
@@ -111,7 +119,7 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
         } else {
           nextReqs.splice(match.index, 0, request)
         }
-        return { ...prev, question: { ...prev.question, [request.sessionID]: nextReqs } }
+        return { ...prev, question: { ...prev.question, [displaySessionID]: nextReqs } }
       })
       break
     }

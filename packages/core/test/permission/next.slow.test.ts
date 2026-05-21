@@ -25,7 +25,8 @@ async function waitForPending(count: number) {
     if (list.length === count) return list
     await Bun.sleep(0)
   }
-  return PermissionNext.list()
+  const finalList = await PermissionNext.list()
+  throw new Error(`waitForPending: expected ${count} pending request(s) but found ${finalList.length} after 20 retries`)
 }
 
 // fromConfig tests

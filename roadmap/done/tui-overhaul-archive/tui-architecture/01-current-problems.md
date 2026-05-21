@@ -86,4 +86,4 @@ d:\liteai\packages\cli\src\tui\components\base-text-input.tsx
 d:\liteai\packages\cli\src\tui\app.tsx
 ```
 
-**18 files** with raw `useInput` — most should migrate to `useKeybindings` with proper context registration.
+**17 files** with raw `useInput` — most should migrate to `useKeybindings` with proper context registration.

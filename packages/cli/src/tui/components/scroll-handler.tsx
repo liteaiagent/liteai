@@ -1,4 +1,5 @@
 import type { ScrollBoxHandle } from "@liteai/ink"
+// biome-ignore lint/style/noRestrictedImports: scroll-handler is an exception — uses useInput directly
 import { useInput } from "@liteai/ink"
 import type React from "react"
 import { useRef } from "react"

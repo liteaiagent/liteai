@@ -266,6 +266,8 @@ test("patch with invalid hash", async () => {
       expect(patch.hash).toBe("invalid-hash-12345")
     },
   })
+  // Extended timeout: git walks the full object graph when resolving an invalid hash,
+  // which can be significantly slower than normal diff operations on CI runners.
 }, 90_000)
 
 test("revert non-existent file", async () => {
