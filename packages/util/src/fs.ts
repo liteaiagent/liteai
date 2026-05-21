@@ -1,5 +1,5 @@
 import { createWriteStream, existsSync, realpathSync, statSync } from "node:fs"
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises"
+import { access, chmod, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve as pathResolve, relative } from "node:path"
 import { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
@@ -8,7 +8,12 @@ import { Glob } from "./glob"
 
 export namespace Fs {
   export async function exists(p: string): Promise<boolean> {
-    return existsSync(p)
+    try {
+      await access(p)
+      return true
+    } catch {
+      return false
+    }
   }
 
   export async function isDir(p: string): Promise<boolean> {
@@ -23,9 +28,9 @@ export namespace Fs {
     return statSync(p, { throwIfNoEntry: false }) ?? undefined
   }
 
-  export async function size(p: string): Promise<number> {
+  export function size(p: string): Promise<number> {
     const s = stat(p)?.size ?? 0
-    return typeof s === "bigint" ? Number(s) : s
+    return Promise.resolve(typeof s === "bigint" ? Number(s) : s)
   }
 
   export async function readText(p: string): Promise<string> {
@@ -129,9 +134,7 @@ export namespace Fs {
   }
 
   export function overlaps(a: string, b: string) {
-    const relA = relative(a, b)
-    const relB = relative(b, a)
-    return !relA || !relA.startsWith("..") || !relB || !relB.startsWith("..")
+    return contains(a, b) || contains(b, a)
   }
 
   export function contains(parent: string, child: string) {
