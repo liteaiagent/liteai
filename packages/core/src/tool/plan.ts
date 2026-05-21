@@ -8,12 +8,11 @@ import ENTER_DESCRIPTION from "../bundled/prompts/tools/plan-enter.txt"
 import EXIT_DESCRIPTION from "../bundled/prompts/tools/plan-exit.txt"
 import { Bus } from "../bus"
 import { Instance } from "../project/instance"
-import type { ModelID, ProviderID } from "../provider/schema"
-import { Question } from "../question"
+import { ModelID, ProviderID } from "../provider/schema"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/engine"
 import { PlanModeStateRef } from "../session/plan-mode-state"
-import { MessageID } from "../session/schema"
+import { MessageID, type SessionID } from "../session/schema"
 import { Tool } from "./tool"
 
 const tracer = trace.getTracer("liteai")
@@ -45,6 +44,21 @@ async function recoverPlanState(
       planSessionID: planSessionId,
     })
   }
+}
+
+/**
+ * Waits for the CLI to resolve a plan approval request via PlanApprovalResolved event.
+ * Returns the user's decision (approved/rejected with optional feedback).
+ */
+function waitForPlanApproval(sessionID: SessionID): Promise<{ approved: boolean; feedback?: string }> {
+  return new Promise((resolve) => {
+    const unsub = Bus.subscribe(Session.Event.PlanApprovalResolved, (evt) => {
+      if (evt.properties.sessionID === sessionID) {
+        unsub()
+        resolve({ approved: evt.properties.approved, feedback: evt.properties.feedback })
+      }
+    })
+  })
 }
 
 export const PlanExitTool = Tool.define("plan_exit", {
@@ -79,39 +93,44 @@ export const PlanExitTool = Tool.define("plan_exit", {
         }
 
         span.addEvent("tool.plan_exit.approval_requested")
+
+        // Read rootSessionID from execution context (set by plan_enter via bubble mode).
+        // The approval event must target the root session so the CLI shows the dialog
+        // in the user's visible session, not in the invisible subagent session.
+        const { AgentExecutionContext } = await import("../agent/context")
+        const execCtx = AgentExecutionContext.getStore()
+        const appState =
+          execCtx?.type === "root"
+            ? execCtx.getAppState()
+            : execCtx?.type === "subagent"
+              ? execCtx.getAppState()
+              : undefined
+        const rootSessionID = (appState?.rootSessionID as string | undefined) ?? ctx.sessionID
+
         Bus.publish(Session.Event.PlanApprovalRequested, {
-          sessionID: ctx.sessionID,
+          sessionID: rootSessionID as typeof ctx.sessionID,
           planText: params.plan,
           planFilePath,
         })
 
-        const relPlanPath = path.relative(Instance.worktree, planFilePath)
-        const answers = await Question.ask({
-          sessionID: ctx.sessionID,
-          questions: [
-            {
-              question: `Plan at ${relPlanPath} is complete. Exit plan mode and start implementing?`,
-              header: "Plan Approval",
-              custom: false,
-              options: [
-                { label: "Yes", description: "Approve plan and start implementing" },
-                { label: "No", description: "Continue refining the plan" },
-              ],
-            },
-          ],
-          tool: ctx.callID ? { messageID: ctx.messageID, callID: ctx.callID } : undefined,
-        })
+        // Wait for the CLI to resolve via PlanApprovalResolved event.
+        // This replaces the previous Question.ask() call that caused a
+        // dual-dialog bug (both QuestionPrompt and PlanReview rendering).
+        const resolution = await waitForPlanApproval(rootSessionID as typeof ctx.sessionID)
 
-        const answer = answers[0]?.[0]
-        if (answer !== "Yes") {
+        const relPlanPath = path.relative(Instance.worktree, planFilePath)
+
+        if (!resolution.approved) {
           span.addEvent("tool.plan_exit.rejected")
           // Rejection → revision → re-submission path:
           // PlanModeStateRef is NOT mutated — plan mode remains active so the
           // agent can revise the plan and call plan_exit again.
           // Permission mode stays "plan" — root session remains read-only.
-          throw new Question.RejectedError({
-            reason: "User rejected the plan. Continue refining the plan and call plan_exit again when ready.",
-          })
+          throw new Error(
+            resolution.feedback
+              ? `User rejected the plan: ${resolution.feedback}. Continue refining the plan and call plan_exit again when ready.`
+              : "User rejected the plan. Continue refining the plan and call plan_exit again when ready.",
+          )
         }
 
         span.addEvent("tool.plan_exit.approved")
@@ -216,7 +235,7 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           ctx.extra?.planContext ?? "No additional context provided.",
         ].join("\n")
 
-        // Determine model from parent context
+        // Determine model from parent context (mirrors agent.ts pattern)
         let model: { modelID: ModelID; providerID: ProviderID } | undefined
         const parentAssistant = ctx.messages.findLast((m) => m.info.id === ctx.messageID)
         if (parentAssistant && parentAssistant.info.role === "assistant") {
@@ -224,10 +243,25 @@ export const PlanEnterTool = Tool.define("plan_enter", {
             modelID: parentAssistant.info.modelID,
             providerID: parentAssistant.info.providerID,
           }
+        } else if (ctx.extra?.model && typeof ctx.extra.model === "object") {
+          // Fallback: ctx.extra.model is set by the streaming loop before tool
+          // execution — use it when the assistant message isn't committed yet.
+          const m = ctx.extra.model as { api?: { id?: unknown }; id?: unknown; providerID?: unknown }
+          const modelIdStr = m.api?.id || m.id
+          if (typeof modelIdStr !== "string" || !modelIdStr || typeof m.providerID !== "string" || !m.providerID) {
+            const originalError = new Error(
+              "Could not determine parent model for plan subagent: invalid ctx.extra.model",
+            )
+            await recoverPlanState(ctx.sessionID, ref, planSession.id)
+            throw originalError
+          }
+          model = {
+            modelID: ModelID.make(modelIdStr),
+            providerID: ProviderID.make(m.providerID),
+          }
         }
 
         if (!model) {
-          // Recovery: restore permissions and clean up session if we can't determine the model
           const originalError = new Error("Could not determine parent model for plan subagent")
           await recoverPlanState(ctx.sessionID, ref, planSession.id)
           throw originalError
@@ -243,7 +277,9 @@ export const PlanEnterTool = Tool.define("plan_enter", {
 
         let result: Awaited<ReturnType<typeof SessionPrompt.runSubagent>>
         try {
-          result = await SessionPrompt.runSubagent({
+          // Start the subagent promise — this synchronously calls start()
+          // which creates the session state entry with appState: {}.
+          const subagentPromise = SessionPrompt.runSubagent({
             messageID,
             sessionID: planSession.id,
             model: {
@@ -253,6 +289,16 @@ export const PlanEnterTool = Tool.define("plan_enter", {
             agent: "plan",
             parts: promptParts,
           })
+
+          // Set bubble mode and rootSessionID on the plan subagent session BEFORE
+          // the session inner loop starts. This is race-free because start() is
+          // synchronous and JS doesn't yield until the first await inside runSubagent.
+          SessionPrompt.patchSessionAppState(planSession.id, {
+            permissionMode: "bubble",
+            rootSessionID: ctx.sessionID,
+          })
+
+          result = await subagentPromise
         } catch (e) {
           // Error recovery: restore permission mode, clear plan session, and remove orphaned session
           log.error("plan subagent failed", { error: e, sessionID: ctx.sessionID, planSessionID: planSession.id })

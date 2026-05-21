@@ -1,3 +1,4 @@
+// biome-ignore lint/style/noRestrictedImports: use-delayed-escape-close is an exception — uses useInput directly
 import { useInput } from "@liteai/ink"
 import { useEffect, useState } from "react"
 

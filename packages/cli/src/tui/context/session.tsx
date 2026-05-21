@@ -138,6 +138,39 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const cmdName = spaceIndex === -1 ? trimmed.slice(1) : trimmed.slice(1, spaceIndex)
         const cmdArgs = spaceIndex === -1 ? "" : trimmed.slice(spaceIndex + 1)
 
+        // ── /plan: CLI-only toggle — not a user message ──────────
+        // Toggles permission mode between "plan" ↔ "default" via the
+        // setPermissionMode endpoint. This is equivalent to Shift+Tab
+        // cycling to/from plan mode, but explicit.
+        if (cmdName === "plan") {
+          const { permissionModeSymbol, permissionModeTitle } = await import("../util/permission-mode")
+
+          // Compute next mode from current state inside the updater to avoid
+          // needing a stale closure or a separate store reference.
+          let next: "default" | "plan" = "plan"
+          setState((prev) => {
+            const current = prev.permissionMode[activeSessionID] ?? "default"
+            next = current === "plan" ? "default" : "plan"
+            return {
+              ...prev,
+              permissionMode: { ...prev.permissionMode, [activeSessionID]: next },
+            }
+          })
+
+          void sdk.client.project.session.setPermissionMode({
+            projectID: sdk.projectID,
+            sessionID: activeSessionID,
+            permissionMode: next,
+          })
+
+          toast.show({
+            variant: "info",
+            message: `${permissionModeSymbol(next)} ${permissionModeTitle(next)}`,
+            duration: 2000,
+          })
+          return
+        }
+
         const matched = commands.find((c) => c.name === cmdName)
         if (matched) {
           try {

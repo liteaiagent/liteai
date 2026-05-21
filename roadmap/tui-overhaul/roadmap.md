@@ -67,6 +67,7 @@ gantt
 | **3** | [Focus & Navigation](./phase-3-focus.md) | Centralize focus management, modal stack semantics, nested escape chains, eliminate BlankSession split | Medium | ✅ Done |
 | **4** | [Visual Design & UX](./phase-4-visual.md) | Message Trail pattern, Plan Mode, Command Palette, Shell rendering, Todo tray | High | ✅ Done |
 | **5** | [Polish & Verification](./phase-5-polish.md) | Full verification pass, edge cases, performance, lint enforcement, provider tree collapse, alternate screen (keep as default — required for sidebar/session-list layout) | Low-Medium | ✅ Done |
+| **6** | [Message Rendering & Error Resilience](./phase-6-message-rendering.md) | Port Gemini CLI message patterns (unified tool indicator, inline toast, thinking display), fix plan_enter, error handling, status line | High | 🔲 Planned |
 
 ---
 
@@ -155,6 +156,7 @@ These decisions are settled from prior analysis and should not be revisited:
 | [Phase 3: Focus & Navigation](./phase-3-focus.md) | Focus arbiter, modal stack push/pop semantics, nested escape chains, BlankSession elimination |
 | [Phase 4: Visual Design & UX](./phase-4-visual.md) | Screen-by-screen visual blueprints: Message Trail, Plan Mode, Command Palette, Shell, Todo, Question Tool |
 | [Phase 5: Polish & Verification](./phase-5-polish.md) | Verification test matrix, lint rule enforcement, performance, documentation, provider tree collapse |
+| [Phase 6: Message Rendering & Error Resilience](./phase-6-message-rendering.md) | Gemini CLI pattern port: unified tool indicator, inline toast, thinking display, plan_enter fix, error handling |
 | [Design Reference](./design/) | Consolidated design artifacts (architecture audit, reference comparison, visual blueprints) |
 
 ---

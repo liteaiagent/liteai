@@ -55,6 +55,9 @@ export const Request = z
       .optional(),
     agentId: z.string().optional(),
     agentName: z.string().optional(),
+    /** Root session ID for bubble mode routing. When set, the CLI shows
+     *  this permission request in the root session's UI, not the child's. */
+    rootSessionID: SessionID.zod.optional(),
   })
   .meta({
     ref: "PermissionRequest",
@@ -200,7 +203,7 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
           }
         }
 
-        if (appState?.shouldAvoidPermissionPrompts) {
+        if (appState?.shouldAvoidPermissionPrompts && permMode !== "bubble") {
           // ── Phase 4: Teammate Permission Bridge Path ──
           // If a permission bridge is registered and this is a teammate context,
           // try classifier pre-approval first, then forward to the leader bridge
@@ -294,10 +297,18 @@ export class PermissionService extends ServiceMap.Service<PermissionService, Per
           })
         }
 
+        // ── Populate rootSessionID and agentName from execution context ──
+        // For bubble mode, these fields route the permission prompt to the
+        // root session's UI and display the subagent name as a badge.
+        const rootSessionID = appState?.rootSessionID as string | undefined
+        const agentName = ctx && "agentName" in ctx ? (ctx as { agentName: string }).agentName : undefined
+
         const id = request.id ?? PermissionID.ascending()
         const info: Request = {
           id,
           ...request,
+          ...(rootSessionID && { rootSessionID: rootSessionID as import("@/session/schema").SessionID }),
+          ...(agentName && { agentName }),
         }
         log.info("asking", { id, permission: info.permission, patterns: info.patterns })
 

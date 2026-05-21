@@ -5,6 +5,7 @@
  */
 
 import type { InputEvent, Key } from "@liteai/ink"
+// biome-ignore lint/style/noRestrictedImports: use-keybinding is an exception — uses useInput directly
 import { useInput } from "@liteai/ink"
 import { useCallback, useEffect } from "react"
 import { useOptionalKeybindingContext } from "./keybinding-context"

@@ -11,11 +11,13 @@ import type { Color } from "@liteai/ink"
 import { Box, Text } from "@liteai/ink"
 import { useState } from "react"
 import ThemedBox from "../components/design-system/ThemedBox"
+import { useSDK } from "../context/sdk"
 import { useTheme } from "../context/theme"
 import { useRegisterKeybindingContext } from "../keybindings/keybinding-context"
 import { useKeybindings } from "../keybindings/use-keybinding"
 
 interface PlanReviewProps {
+  sessionID: string
   planText: string
   planFilePath: string
   onApprove: () => void
@@ -24,11 +26,32 @@ interface PlanReviewProps {
 
 type PlanAction = "approve" | "reject"
 
-export function PlanReview({ planText, planFilePath, onApprove, onReject }: PlanReviewProps) {
+export function PlanReview({ sessionID, planText, planFilePath, onApprove, onReject }: PlanReviewProps) {
+  const sdk = useSDK()
   const { theme } = useTheme()
   const [selected, setSelected] = useState<PlanAction>("approve")
 
   const actions: PlanAction[] = ["approve", "reject"]
+
+  const resolvePlan = (approved: boolean) => {
+    // Call the plan.resolve endpoint — uses raw fetch since the SDK
+    // is auto-generated and doesn't have this method yet.
+    sdk
+      .fetch(
+        `${sdk.url}/project/${encodeURIComponent(sdk.projectID)}/session/${encodeURIComponent(sessionID)}/plan/resolve`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ approved }),
+        },
+      )
+      .catch(() => {
+        // Best-effort — the plan_exit tool will time out if this fails
+      })
+
+    if (approved) onApprove()
+    else onReject()
+  }
 
   useRegisterKeybindingContext("Select")
   useKeybindings(
@@ -42,11 +65,10 @@ export function PlanReview({ planText, planFilePath, onApprove, onReject }: Plan
         setSelected(actions[(idx + 1) % actions.length])
       },
       "select:accept": () => {
-        if (selected === "approve") onApprove()
-        else onReject()
+        resolvePlan(selected === "approve")
       },
       "select:cancel": () => {
-        onReject()
+        resolvePlan(false)
       },
     },
     { context: "Select" },

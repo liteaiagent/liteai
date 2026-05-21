@@ -10,6 +10,7 @@
  * - HighlightedInput → inline ANSI rendering
  */
 
+// biome-ignore lint/style/noRestrictedImports: base-text-input is an exception — uses useInput directly as a low-level primitive
 import { Ansi, Box, Text, useInput } from "@liteai/ink"
 import type React from "react"
 import { useTheme } from "../context/theme"

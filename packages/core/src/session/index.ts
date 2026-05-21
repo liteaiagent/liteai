@@ -238,6 +238,14 @@ export namespace Session {
         planFilePath: z.string(),
       }),
     ),
+    PlanApprovalResolved: BusEvent.define(
+      "plan.approval_resolved",
+      z.object({
+        sessionID: SessionID.zod,
+        approved: z.boolean(),
+        feedback: z.string().optional(),
+      }),
+    ),
     PermissionModeChanged: BusEvent.define(
       "permission_mode.changed",
       z.object({

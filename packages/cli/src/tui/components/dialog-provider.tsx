@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process"
+// biome-ignore lint/style/noRestrictedImports: dialog-provider is an exception — uses useInput directly
 import { Box, type Color, type InputEvent, type Key, Text, useInput } from "@liteai/ink"
 import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@liteai/sdk"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"

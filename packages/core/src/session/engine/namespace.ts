@@ -14,6 +14,7 @@ export namespace SessionPrompt {
   export const agentTaskRegistry = Loop.agentTaskRegistry
   export const resumeStepMode = Loop.resumeStepMode
   export const setPermissionMode = Loop.setPermissionMode
+  export const patchSessionAppState = Loop.patchSessionAppState
   export const PromptInput = Loop.PromptInput
   export type PromptInput = Loop.PromptInput
   export const resolvePromptParts = Message.resolvePromptParts
