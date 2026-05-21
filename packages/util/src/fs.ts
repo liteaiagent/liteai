@@ -1,5 +1,5 @@
 import { createWriteStream, existsSync, realpathSync, statSync } from "node:fs"
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises"
+import { access, chmod, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve as pathResolve, relative } from "node:path"
 import { Readable } from "node:stream"
 import { pipeline } from "node:stream/promises"
@@ -8,7 +8,12 @@ import { Glob } from "./glob"
 
 export namespace Fs {
   export async function exists(p: string): Promise<boolean> {
-    return existsSync(p)
+    try {
+      await access(p)
+      return true
+    } catch {
+      return false
+    }
   }
 
   export async function isDir(p: string): Promise<boolean> {
