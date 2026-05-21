@@ -1,10 +1,6 @@
 import fs from "node:fs/promises"
 import path from "node:path"
-import { Log } from "@liteai/util/log"
-import * as lockfile from "proper-lockfile"
 import { Global } from "../global"
-
-const logger = Log.create({ service: "coordinator.mailbox" })
 
 export interface TeammateMessage {
   from: string
@@ -28,6 +24,36 @@ function sanitizePathComponent(name: string): string {
 /** Resolve teams base directory directly from Global.Path.root. */
 function getTeamsDir(): string {
   return path.join(Global.Path.root, "teams")
+}
+
+// ---------------------------------------------------------------------------
+// In-process async mutex (promise-chaining).
+//
+// All mailbox writes originate from the same Node.js process, so cross-process
+// filesystem locking (proper-lockfile) is unnecessary and unreliable on CI's
+// tmpfs. This mutex guarantees strict FIFO ordering with zero filesystem
+// overhead and eliminates the partial-read race condition that caused CI
+// failures when proper-lockfile's symlink-based locks were used.
+// ---------------------------------------------------------------------------
+const mutexes = new Map<string, Promise<void>>()
+
+async function withMutex<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const prev = mutexes.get(key) ?? Promise.resolve()
+  let release!: () => void
+  const next = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  mutexes.set(key, next)
+
+  try {
+    await prev
+    return await fn()
+  } finally {
+    release()
+    if (mutexes.get(key) === next) {
+      mutexes.delete(key)
+    }
+  }
 }
 
 /**
@@ -79,39 +105,20 @@ export async function readUnreadMessages(agentName: string, teamName: string): P
 
 /**
  * Writes a message to a teammate's mailbox.
- * Uses proper-lockfile to safely append to the JSON array concurrently.
+ * Uses an in-process async mutex to safely serialize concurrent writes.
  */
 export async function writeToMailbox(recipientName: string, message: TeammateMessage, teamName: string): Promise<void> {
   const inboxDir = await ensureInboxDir(teamName)
   const inboxPath = path.join(inboxDir, `${sanitizePathComponent(recipientName)}.json`)
 
-  // Ensure file exists before locking (proper-lockfile requires the file to exist)
-  try {
-    await fs.access(inboxPath)
-  } catch {
-    // Try to create it atomically. If it fails, another process beat us to it, which is fine.
+  await withMutex(inboxPath, async () => {
+    // Ensure file exists — inside the mutex so only one caller creates it.
     try {
-      await fs.writeFile(inboxPath, "[]", { flag: "wx" })
-    } catch (e: unknown) {
-      if (e instanceof Error && "code" in e && e.code !== "EEXIST") throw e
-      // Non-Error thrown or EEXIST — another process created it first, which is fine.
-      if (!(e instanceof Error)) throw e
+      await fs.access(inboxPath)
+    } catch {
+      await fs.writeFile(inboxPath, "[]", "utf-8")
     }
-  }
 
-  let releaseLock: () => Promise<void>
-  try {
-    // Retry up to 10 times, starting at 5ms delay up to 100ms
-    releaseLock = await lockfile.lock(inboxPath, {
-      retries: { retries: 50, minTimeout: 10, maxTimeout: 200 },
-    })
-  } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : String(error)
-    logger.error("failed to acquire mailbox lock", { recipientName, teamName, error: errMsg })
-    throw new Error(`Could not acquire lock for mailbox ${recipientName}: ${errMsg}`)
-  }
-
-  try {
     const raw = await fs.readFile(inboxPath, "utf-8")
     let messages: TeammateMessage[]
     try {
@@ -126,9 +133,7 @@ export async function writeToMailbox(recipientName: string, message: TeammateMes
     }
     messages.push(message)
     await fs.writeFile(inboxPath, JSON.stringify(messages, null, 2), "utf-8")
-  } finally {
-    await releaseLock()
-  }
+  })
 }
 
 /**
@@ -137,20 +142,15 @@ export async function writeToMailbox(recipientName: string, message: TeammateMes
 export async function markMessagesAsRead(agentName: string, teamName: string): Promise<void> {
   const inboxPath = getInboxPath(agentName, teamName)
 
-  let releaseLock: () => Promise<void>
-  try {
-    releaseLock = await lockfile.lock(inboxPath, {
-      retries: { retries: 50, minTimeout: 10, maxTimeout: 200 },
-    })
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return
-    const errMsg = error instanceof Error ? error.message : String(error)
-    logger.error("failed to acquire lock to mark read", { agentName, teamName, error: errMsg })
-    throw new Error(`Failed to acquire lock for mailbox ${agentName}: ${errMsg}`)
-  }
+  await withMutex(inboxPath, async () => {
+    let raw: string
+    try {
+      raw = await fs.readFile(inboxPath, "utf-8")
+    } catch (error: unknown) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return
+      throw error
+    }
 
-  try {
-    const raw = await fs.readFile(inboxPath, "utf-8")
     let messages: TeammateMessage[]
     try {
       messages = JSON.parse(raw)
@@ -173,9 +173,7 @@ export async function markMessagesAsRead(agentName: string, teamName: string): P
     if (changed) {
       await fs.writeFile(inboxPath, JSON.stringify(messages, null, 2), "utf-8")
     }
-  } finally {
-    await releaseLock()
-  }
+  })
 }
 
 /**
@@ -184,20 +182,15 @@ export async function markMessagesAsRead(agentName: string, teamName: string): P
 export async function markMessageAsReadByIndex(agentName: string, teamName: string, index: number): Promise<void> {
   const inboxPath = getInboxPath(agentName, teamName)
 
-  let releaseLock: () => Promise<void>
-  try {
-    releaseLock = await lockfile.lock(inboxPath, {
-      retries: { retries: 50, minTimeout: 10, maxTimeout: 200 },
-    })
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return
-    const errMsg = error instanceof Error ? error.message : String(error)
-    logger.error("failed to acquire lock to mark read by index", { agentName, teamName, error: errMsg })
-    throw new Error(`Failed to acquire lock for mailbox ${agentName}: ${errMsg}`)
-  }
+  await withMutex(inboxPath, async () => {
+    let raw: string
+    try {
+      raw = await fs.readFile(inboxPath, "utf-8")
+    } catch (error: unknown) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return
+      throw error
+    }
 
-  try {
-    const raw = await fs.readFile(inboxPath, "utf-8")
     let messages: TeammateMessage[]
     try {
       messages = JSON.parse(raw)
@@ -213,9 +206,7 @@ export async function markMessageAsReadByIndex(agentName: string, teamName: stri
       messages[index].read = true
       await fs.writeFile(inboxPath, JSON.stringify(messages, null, 2), "utf-8")
     }
-  } finally {
-    await releaseLock()
-  }
+  })
 }
 
 /**
@@ -224,23 +215,15 @@ export async function markMessageAsReadByIndex(agentName: string, teamName: stri
 export async function clearMailbox(agentName: string, teamName: string): Promise<void> {
   const inboxPath = getInboxPath(agentName, teamName)
 
-  let releaseLock: () => Promise<void>
-  try {
-    releaseLock = await lockfile.lock(inboxPath, {
-      retries: { retries: 50, minTimeout: 10, maxTimeout: 200 },
-    })
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") return
-    const errMsg = error instanceof Error ? error.message : String(error)
-    logger.error("failed to acquire lock to clear mailbox", { agentName, teamName, error: errMsg })
-    throw new Error(`Failed to acquire lock for mailbox ${agentName}: ${errMsg}`)
-  }
-
-  try {
+  await withMutex(inboxPath, async () => {
+    try {
+      await fs.access(inboxPath)
+    } catch (error: unknown) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return
+      throw error
+    }
     await fs.writeFile(inboxPath, "[]", "utf-8")
-  } finally {
-    await releaseLock()
-  }
+  })
 }
 
 /**
