@@ -44,7 +44,9 @@ describe("pty", () => {
           expect(pick(log, id)).toEqual(["created", "exited", "deleted"])
         } finally {
           for (const fn of off) fn()
-          await Pty.remove(id)
+          await Pty.remove(id).catch(() => {
+            // Ignore — PTY may already have been removed in the try block
+          })
         }
       },
     })
@@ -75,7 +77,9 @@ describe("pty", () => {
           expect(pick(log, id)).toEqual(["created", "exited", "deleted"])
         } finally {
           for (const fn of off) fn()
-          await Pty.remove(id)
+          await Pty.remove(id).catch(() => {
+            // Ignore — PTY may already have been removed in the try block
+          })
         }
       },
     })

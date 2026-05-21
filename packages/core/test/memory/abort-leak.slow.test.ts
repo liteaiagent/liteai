@@ -64,7 +64,7 @@ describe("memory: abort controller leak", () => {
     const controllers: AbortController[] = []
 
     Bun.gc(true)
-    Bun.sleepSync(100)
+    await new Promise((r) => setTimeout(r, 100))
     const baseline = getHeapMB()
 
     for (let i = 0; i < ITERATIONS; i++) {
@@ -84,7 +84,7 @@ describe("memory: abort controller leak", () => {
     }
 
     Bun.gc(true)
-    Bun.sleepSync(100)
+    await new Promise((r) => setTimeout(r, 100))
     const after = getHeapMB()
     const oldGrowth = after - baseline
 
@@ -95,7 +95,7 @@ describe("memory: abort controller leak", () => {
 
     // Test NEW pattern: bind
     Bun.gc(true)
-    Bun.sleepSync(100)
+    await new Promise((r) => setTimeout(r, 100))
     const baseline2 = getHeapMB()
     const handlers2: (() => void)[] = []
     const timers2: Timer[] = []
@@ -114,7 +114,7 @@ describe("memory: abort controller leak", () => {
     }
 
     Bun.gc(true)
-    Bun.sleepSync(100)
+    await new Promise((r) => setTimeout(r, 100))
     const after2 = getHeapMB()
     const newGrowth = after2 - baseline2
 

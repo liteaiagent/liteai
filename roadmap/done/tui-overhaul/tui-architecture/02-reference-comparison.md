@@ -65,8 +65,8 @@ Split into:
 ### Claude Code — `Select` + `use-select-navigation`
 
 Split into:
-- **`use-select-navigation` (hook)**: 16K. Full navigation state machine with type-ahead, group-aware movement, cancellation.
-- **`Select` (component)**: 30K. Renders options with highlighting, descriptions, grouping. Supports cancel via Esc.
+- **`use-select-navigation` (hook)**: File Size: 16K. Full navigation state machine with type-ahead, group-aware movement, cancellation.
+- **`Select` (component)**: File Size: 30K. Renders options with highlighting, descriptions, grouping. Supports cancel via Esc.
 
 ```tsx
 // Usage pattern

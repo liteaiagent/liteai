@@ -132,8 +132,7 @@ export class QuestionService extends ServiceMap.Service<QuestionService, Questio
         // For bubble mode, these fields route the question prompt to the
         // root session's UI and display the subagent name as a badge.
         const ctx = AgentExecutionContext.getStore()
-        const appState =
-          ctx?.type === "root" ? ctx.getAppState() : ctx?.type === "subagent" ? ctx.getAppState() : undefined
+        const appState = ctx?.type === "root" || ctx?.type === "subagent" ? ctx.getAppState() : undefined
         const rootSessionID = appState?.rootSessionID as string | undefined
         const agentName = ctx && "agentName" in ctx ? (ctx as { agentName: string }).agentName : undefined
 

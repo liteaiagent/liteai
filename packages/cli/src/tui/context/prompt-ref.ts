@@ -38,6 +38,10 @@ const _ref: { current: PromptRef | undefined } = { current: undefined }
  * Thread-safe for single-process Node: only one Ink app instance
  * exists at a time. The ref is read imperatively — no React renders
  * are triggered by changes.
+ *
+ * Limitation: multiple Ink app instances in the same process will share
+ * this singleton. If multi-instance support is ever needed, consider
+ * replacing with AsyncLocalStorage for per-app isolation.
  */
 export const promptRef: PromptRefContextValue = {
   get current() {

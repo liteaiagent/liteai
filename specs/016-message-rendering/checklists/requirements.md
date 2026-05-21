@@ -3,7 +3,7 @@
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-05-21
 **Updated**: 2026-05-21 (full rewrite with Gemini CLI adoption)
-**Feature**: [spec.md](file:///d:/liteai/specs/016-message-rendering/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

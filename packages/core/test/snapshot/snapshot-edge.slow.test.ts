@@ -71,6 +71,9 @@ test("unicode filenames", async () => {
   })
 }, 30_000)
 
+// Skipped: git's Unicode filename handling (core.quotePath, NFC/NFD normalization)
+// varies across platforms and CI environments, making the restore assertion
+// non-deterministic. Re-enable when Snapshot normalizes quoted git paths.
 test.skip("unicode filenames modification and restore", async () => {
   await using tmp = await bootstrap()
   await Instance.provide({
@@ -227,7 +230,13 @@ test("circular symlinks", async () => {
       if (!before) throw new Error("expected snapshot")
 
       // Create circular symlink
-      await fs.symlink(`${tmp.path}/circular`, `${tmp.path}/circular`, "dir").catch(() => {})
+      // Create circular symlink — may fail with expected platform/filesystem errors
+      await fs.symlink(`${tmp.path}/circular`, `${tmp.path}/circular`, "dir").catch((err: NodeJS.ErrnoException) => {
+        // EEXIST (already exists), EPERM (Windows restrictions), ENOENT (target doesn't exist)
+        // are expected when creating a self-referencing symlink on various platforms.
+        if (err.code === "EEXIST" || err.code === "EPERM" || err.code === "ENOENT") return
+        throw err
+      })
 
       const patch = await Snapshot.patch(before)
       expect(patch.files.length).toBeGreaterThanOrEqual(0) // Should not crash

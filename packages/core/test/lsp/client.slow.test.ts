@@ -39,8 +39,10 @@ describe("LSPClient interop", () => {
     if (activeClient) {
       try {
         await activeClient.shutdown()
-      } catch {
-        // Shutdown may fail if the test itself errored before full init
+      } catch (err) {
+        // Shutdown may fail if the test itself errored before full init —
+        // log but don't rethrow so other cleanup (force-kill) can proceed.
+        console.error("activeClient.shutdown failed during test cleanup", err)
       }
       activeClient = undefined
     }

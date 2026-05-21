@@ -49,11 +49,23 @@ async function recoverPlanState(
 /**
  * Waits for the CLI to resolve a plan approval request via PlanApprovalResolved event.
  * Returns the user's decision (approved/rejected with optional feedback).
+ *
+ * Rejects with a timeout error if no response is received within `timeoutMs`
+ * (default: 10 minutes) to prevent leaked Bus subscriptions.
  */
-function waitForPlanApproval(sessionID: SessionID): Promise<{ approved: boolean; feedback?: string }> {
-  return new Promise((resolve) => {
+function waitForPlanApproval(
+  sessionID: SessionID,
+  timeoutMs = 10 * 60 * 1000,
+): Promise<{ approved: boolean; feedback?: string }> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      unsub()
+      reject(new Error(`Plan approval timeout for session ${sessionID} after ${timeoutMs}ms`))
+    }, timeoutMs)
+
     const unsub = Bus.subscribe(Session.Event.PlanApprovalResolved, (evt) => {
       if (evt.properties.sessionID === sessionID) {
+        clearTimeout(timer)
         unsub()
         resolve({ approved: evt.properties.approved, feedback: evt.properties.feedback })
       }
@@ -99,12 +111,7 @@ export const PlanExitTool = Tool.define("plan_exit", {
         // in the user's visible session, not in the invisible subagent session.
         const { AgentExecutionContext } = await import("../agent/context")
         const execCtx = AgentExecutionContext.getStore()
-        const appState =
-          execCtx?.type === "root"
-            ? execCtx.getAppState()
-            : execCtx?.type === "subagent"
-              ? execCtx.getAppState()
-              : undefined
+        const appState = execCtx?.type === "root" || execCtx?.type === "subagent" ? execCtx.getAppState() : undefined
         const rootSessionID = (appState?.rootSessionID as string | undefined) ?? ctx.sessionID
 
         Bus.publish(Session.Event.PlanApprovalRequested, {

@@ -45,8 +45,10 @@ export function PlanReview({ sessionID, planText, planFilePath, onApprove, onRej
           body: JSON.stringify({ approved }),
         },
       )
-      .catch(() => {
-        // Best-effort — the plan_exit tool will time out if this fails
+      .catch((err: unknown) => {
+        // Best-effort — log so auth/network failures are visible, but
+        // don't block the UI. The plan_exit tool will time out if needed.
+        console.error("plan_exit resolve request failed", err)
       })
 
     if (approved) onApprove()

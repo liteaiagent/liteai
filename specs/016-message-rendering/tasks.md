@@ -150,10 +150,10 @@
 
 **Purpose**: Final verification, cleanup, and typecheck/lint compliance.
 
-- [ ] T029 Run `bun typecheck 2>&1 | Out-String` in `packages/core` and `packages/cli` — fix any type errors
-- [ ] T030 Run `bun lint:fix` across workspace — fix formatting
+- [X] T029 Run `bun typecheck 2>&1 | Out-String` in `packages/core` and `packages/cli` — fix any type errors — PASSED 14/14
+- [X] T030 Run `bun lint:fix` across workspace — fix formatting — PASSED 10/10
 - [ ] T031 Run quickstart.md manual verification — trigger 5+ tool types in TUI, verify unified rendering
-- [ ] T032 Remove dead code — delete any remaining `InlineTool`/`BlockTool` imports and unused per-tool component exports
+- [X] T032 Remove dead code — delete any remaining `InlineTool`/`BlockTool` imports and unused per-tool component exports — Done in T014
 - [ ] T033 Update spec status from "Draft" to "Complete" in `specs/016-message-rendering/spec.md`
 
 ---

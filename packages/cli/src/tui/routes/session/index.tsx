@@ -334,7 +334,7 @@ export function SessionRoute({ sessionID }: { sessionID?: string }) {
               <Box flexDirection="column">
                 {planApproval && planApproval.sessionID === sessionID && (
                   <PlanReview
-                    sessionID={sessionID}
+                    sessionID={sessionID as string}
                     planText={planApproval.planText}
                     planFilePath={planApproval.planFilePath}
                     onApprove={clearPlanApproval}
