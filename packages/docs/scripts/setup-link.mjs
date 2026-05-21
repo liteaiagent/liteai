@@ -19,8 +19,8 @@ const docsDir = resolve(projectRoot, "..", "..", "docs");
 
 // Verify the canonical docs/ directory exists
 if (!existsSync(docsDir)) {
-	console.error(`✗ docs/ directory not found at ${docsDir}`);
-	process.exit(1);
+	console.warn(`⚠ docs/ directory not found at ${docsDir} — skipping link setup`);
+	process.exit(0);
 }
 
 // Check if link already exists and is valid
@@ -46,13 +46,19 @@ if (existsSync(contentDir)) {
 mkdirSync(dirname(contentDir), { recursive: true });
 
 // Create the appropriate link type
-if (process.platform === "win32") {
-	// Windows: use directory junction (no admin required)
-	execSync(`mklink /J "${contentDir}" "${docsDir}"`, { stdio: "inherit" });
-} else {
-	// Linux/Mac: use relative symlink for portability
-	const relativeTarget = "../../../../docs";
-	execSync(`ln -s "${relativeTarget}" "${contentDir}"`, { stdio: "inherit" });
+try {
+	if (process.platform === "win32") {
+		// Windows: use directory junction (no admin required)
+		execSync(`mklink /J "${contentDir}" "${docsDir}"`, { stdio: "inherit" });
+	} else {
+		// Linux/Mac: use relative symlink for portability
+		const relativeTarget = "../../../../docs";
+		execSync(`ln -s "${relativeTarget}" "${contentDir}"`, { stdio: "inherit" });
+	}
+	console.log("✓ Created docs content link");
+} catch (err) {
+	// Non-fatal: the docs symlink is a dev convenience for the Astro docs site,
+	// not a build requirement. CI environments may lack the directory hierarchy.
+	console.warn(`⚠ Failed to create docs content link: ${err.message}`);
+	console.warn("  This is non-fatal — docs site features will be unavailable.");
 }
-
-console.log("✓ Created docs content link");
