@@ -32,10 +32,19 @@ async function generatePKCE(): Promise<PkceCodes> {
 
 function generateRandomString(length: number): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
-  const bytes = crypto.getRandomValues(new Uint8Array(length))
-  return Array.from(bytes)
-    .map((b) => chars[b % chars.length])
-    .join("")
+  const limit = 256 - (256 % chars.length) // 198 (which is 3 * 66)
+  let result = ""
+  while (result.length < length) {
+    const bytes = crypto.getRandomValues(new Uint8Array(length - result.length))
+    for (let i = 0; i < bytes.length; i++) {
+      const b = bytes[i]
+      if (b < limit) {
+        result += chars[b % chars.length]
+        if (result.length === length) break
+      }
+    }
+  }
+  return result
 }
 
 function base64UrlEncode(buffer: ArrayBuffer): string {

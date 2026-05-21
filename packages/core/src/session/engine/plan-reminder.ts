@@ -3,7 +3,6 @@ import path from "node:path"
 import { Log } from "@liteai/util/log"
 import { trace } from "@opentelemetry/api"
 import { Instance } from "../../project/instance"
-import { Filesystem } from "../../util/filesystem"
 import type { Session } from ".."
 import type { Message } from "../message"
 import type { PlanModeState } from "../plan-mode-state"
@@ -63,19 +62,15 @@ export async function injectPlanAttachment(input: {
 
       if (isFullReminderTurn) {
         // ── T013: Full plan text injection every Nth turn (FR-005) ──
-        const planExists = await Filesystem.exists(planFilePath)
-        if (planExists) {
-          const stat = await fs.stat(planFilePath)
+        let handle: fs.FileHandle | undefined
+        try {
+          handle = await fs.open(planFilePath, "r")
+          const stat = await handle.stat()
           if (stat.size > MAX_PLAN_FILE_SIZE) {
             // File exceeds threshold — read only the first N bytes to avoid unbounded memory use
-            const handle = await fs.open(planFilePath, "r")
-            try {
-              const buf = Buffer.alloc(MAX_PLAN_FILE_SIZE)
-              const { bytesRead } = await handle.read(buf, 0, MAX_PLAN_FILE_SIZE, 0)
-              reminderText = `${buf.toString("utf-8", 0, bytesRead)}\n... [truncated]`
-            } finally {
-              await handle.close()
-            }
+            const buf = Buffer.alloc(MAX_PLAN_FILE_SIZE)
+            const { bytesRead } = await handle.read(buf, 0, MAX_PLAN_FILE_SIZE, 0)
+            reminderText = `${buf.toString("utf-8", 0, bytesRead)}\n... [truncated]`
             updatedCounter = 0
             span.setAttribute("plan_reminder.type", "truncated")
             span.setAttribute("plan_reminder.plan_size", stat.size)
@@ -86,7 +81,9 @@ export async function injectPlanAttachment(input: {
               threshold: MAX_PLAN_FILE_SIZE,
             })
           } else {
-            const planContent = await fs.readFile(planFilePath, "utf-8")
+            const buf = Buffer.alloc(stat.size)
+            const { bytesRead } = await handle.read(buf, 0, stat.size, 0)
+            const planContent = buf.toString("utf-8", 0, bytesRead)
             reminderText = planContent
             updatedCounter = 0
             span.setAttribute("plan_reminder.type", "full")
@@ -97,21 +94,36 @@ export async function injectPlanAttachment(input: {
               planSize: planContent.length,
             })
           }
-        } else {
-          // Plan file is missing — we intentionally keep attempting full-text injection
-          // on subsequent turns when the file is absent. The counter is capped to
-          // prevent unbounded numeric growth while preserving the retry semantics.
-          reminderText = `No plan file exists yet at ${relativePath}`
-          updatedCounter = Math.min(planModeState.turnsSincePlanReminder + 1, MAX_PLAN_REMINDER_COUNTER)
-          span.setAttribute("plan_reminder.type", "sparse_fallback")
-          log.info("full plan text requested but file missing, falling back to sparse", {
-            sessionID: userMessage.info.sessionID,
-            planFilePath: relativePath,
-          })
+        } catch (error) {
+          if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+            // Plan file is missing — we intentionally keep attempting full-text injection
+            // on subsequent turns when the file is absent. The counter is capped to
+            // prevent unbounded numeric growth while preserving the retry semantics.
+            reminderText = `No plan file exists yet at ${relativePath}`
+            updatedCounter = Math.min(planModeState.turnsSincePlanReminder + 1, MAX_PLAN_REMINDER_COUNTER)
+            span.setAttribute("plan_reminder.type", "sparse_fallback")
+            log.info("full plan text requested but file missing, falling back to sparse", {
+              sessionID: userMessage.info.sessionID,
+              planFilePath: relativePath,
+            })
+          } else {
+            throw error
+          }
+        } finally {
+          if (handle) {
+            await handle.close()
+          }
         }
       } else {
         // ── T012: Sparse reminder injection (FR-004) ──
-        const planExists = await Filesystem.exists(planFilePath)
+        let planExists = false
+        try {
+          await fs.access(planFilePath, fs.constants.F_OK)
+          planExists = true
+        } catch {
+          planExists = false
+        }
+
         if (planExists) {
           reminderText = `Plan at ${relativePath}, staying on track?`
         } else {

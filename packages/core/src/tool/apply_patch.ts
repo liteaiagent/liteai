@@ -1,5 +1,6 @@
 import * as fs from "node:fs/promises"
 import * as path from "node:path"
+import { Log } from "@liteai/util/log"
 import { createTwoFilesPatch, diffLines } from "diff"
 import z from "zod"
 import DESCRIPTION from "../bundled/prompts/tools/apply_patch.txt"
@@ -91,13 +92,15 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
         }
 
         case "update": {
-          // Check if file exists for update
-          const stats = await fs.stat(filePath).catch(() => null)
-          if (!stats || stats.isDirectory()) {
-            throw new Error(`apply_patch verification failed: Failed to read file to update: ${filePath}`)
+          let oldContent: string
+          try {
+            oldContent = await fs.readFile(filePath, "utf-8")
+          } catch (error) {
+            Log.Default.error(`Failed to read file to update: ${filePath}`, { error })
+            throw new Error(
+              `apply_patch verification failed: Failed to read file to update: ${filePath}. Error: ${error instanceof Error ? error.message : String(error)}`,
+            )
           }
-
-          const oldContent = await fs.readFile(filePath, "utf-8")
           let newContent = oldContent
 
           // Apply the update chunks to get new content
@@ -136,9 +139,13 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
         }
 
         case "delete": {
-          const contentToDelete = await fs.readFile(filePath, "utf-8").catch((error) => {
+          let contentToDelete: string
+          try {
+            contentToDelete = await fs.readFile(filePath, "utf-8")
+          } catch (error) {
+            Log.Default.error(`Failed to read file to delete: ${filePath}`, { error })
             throw new Error(`apply_patch verification failed: ${error}`)
-          })
+          }
           const deleteDiff = trimDiff(createTwoFilesPatch(filePath, filePath, contentToDelete, ""))
 
           const deletions = contentToDelete.split("\n").length

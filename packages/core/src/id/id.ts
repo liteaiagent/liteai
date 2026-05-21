@@ -47,10 +47,17 @@ export namespace Identifier {
 
   function randomBase62(length: number): string {
     const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    const limit = 248 // 4 * 62 = 248
     let result = ""
-    const bytes = randomBytes(length)
-    for (let i = 0; i < length; i++) {
-      result += chars[bytes[i] % 62]
+    while (result.length < length) {
+      const bytes = randomBytes(length - result.length)
+      for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i]
+        if (b < limit) {
+          result += chars[b % 62]
+          if (result.length === length) break
+        }
+      }
     }
     return result
   }

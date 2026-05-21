@@ -62,8 +62,8 @@ export const Clangd: Info = {
     } = await releaseResponse.json()
 
     const tag = release.tag_name
-    if (!tag) {
-      log.error("clangd release did not include a tag name")
+    if (!tag || typeof tag !== "string" || !/^[a-zA-Z0-9.\-_]+$/.test(tag)) {
+      log.error("clangd release did not include a valid tag name", { tag })
       return
     }
     const platform = process.platform
@@ -96,6 +96,10 @@ export const Clangd: Info = {
     }
 
     const name = asset.name
+    if (!name || typeof name !== "string" || !/^[a-zA-Z0-9.\-_]+$/.test(name)) {
+      log.error("clangd release asset name is invalid", { name })
+      return
+    }
     const downloadResponse = await fetch(asset.browser_download_url)
     if (!downloadResponse.ok) {
       log.error("Failed to download clangd")

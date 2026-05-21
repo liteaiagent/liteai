@@ -6,10 +6,18 @@ export namespace Rpc {
 
   export function listen(rpc: Definition) {
     self.onmessage = async (evt) => {
+      if (typeof self !== "undefined" && self.location && evt.origin && evt.origin !== self.location.origin) {
+        return
+      }
       const parsed = JSON.parse(evt.data)
       if (parsed.type === "rpc.request") {
-        const result = await rpc[parsed.method](parsed.input)
-        postMessage(JSON.stringify({ type: "rpc.result", result, id: parsed.id }))
+        const method = parsed.method
+        if (typeof method === "string" && typeof rpc[method] === "function" && Object.hasOwn(rpc, method)) {
+          const result = await rpc[method](parsed.input)
+          postMessage(JSON.stringify({ type: "rpc.result", result, id: parsed.id }))
+        } else {
+          throw new Error(`Forbidden RPC method invocation: ${method}`)
+        }
       }
     }
   }

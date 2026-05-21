@@ -13,7 +13,7 @@
 
 import { execFile } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import { readFileSync } from "node:fs"
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import { basename, extname, isAbsolute, join } from "node:path"
 import { Log } from "@liteai/util/log"
 
@@ -42,58 +42,121 @@ const IMAGE_EXTENSION_REGEX = /\.(png|jpe?g|gif|webp)$/i
 
 type SupportedPlatform = "darwin" | "linux" | "win32"
 
-// ─── Shell helpers ───────────────────────────────────────────────────────────
+// ─── Direct execution helpers ────────────────────────────────────────────────
 
-function execShell(command: string): Promise<{ exitCode: number; stdout: string }> {
+function execDirect(
+  file: string,
+  args: string[],
+  options: { maxBuffer?: number } = {},
+): Promise<{ exitCode: number; stdout: string; stdoutBuffer?: Buffer }> {
   return new Promise((resolve) => {
-    const shell = process.platform === "win32" ? "cmd" : "/bin/sh"
-    const shellFlag = process.platform === "win32" ? "/c" : "-c"
-    execFile(shell, [shellFlag, command], { encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 }, (error, stdout) => {
-      resolve({
-        exitCode: error ? ((error as NodeJS.ErrnoException).code ? 1 : 1) : 0,
-        stdout: stdout ?? "",
-      })
-    })
+    execFile(
+      file,
+      args,
+      { encoding: "buffer", maxBuffer: options.maxBuffer ?? 10 * 1024 * 1024 },
+      (error, stdout, _stderr) => {
+        resolve({
+          exitCode: error ? (error.code ? 1 : 1) : 0,
+          stdout: stdout ? stdout.toString("utf-8") : "",
+          stdoutBuffer: stdout || undefined,
+        })
+      },
+    )
   })
 }
 
-function getClipboardCommands() {
-  const platform = process.platform as SupportedPlatform
-
+function getScreenshotPath(): string {
+  const platform = process.platform
   const baseTmpDir = process.env.LITEAI_TMPDIR ?? (platform === "win32" ? (process.env.TEMP ?? "C:\\Temp") : "/tmp")
+  return join(baseTmpDir, "liteai_cli_latest_screenshot.png")
+}
 
-  const screenshotFilename = "liteai_cli_latest_screenshot.png"
-  const screenshotPath = join(baseTmpDir, screenshotFilename)
-
-  const commands: Record<
-    SupportedPlatform,
-    { checkImage: string; saveImage: string; getPath: string; deleteFile: string }
-  > = {
-    darwin: {
-      checkImage: `osascript -e 'the clipboard as «class PNGf»'`,
-      saveImage: `osascript -e 'set png_data to (the clipboard as «class PNGf»)' -e 'set fp to open for access POSIX file "${screenshotPath}" with write permission' -e 'write png_data to fp' -e 'close access fp'`,
-      getPath: `osascript -e 'get POSIX path of (the clipboard as «class furl»)'`,
-      deleteFile: `rm -f "${screenshotPath}"`,
-    },
-    linux: {
-      checkImage:
-        'xclip -selection clipboard -t TARGETS -o 2>/dev/null | grep -E "image/(png|jpeg|jpg|gif|webp|bmp)" || wl-paste -l 2>/dev/null | grep -E "image/(png|jpeg|jpg|gif|webp|bmp)"',
-      saveImage: `xclip -selection clipboard -t image/png -o > "${screenshotPath}" 2>/dev/null || wl-paste --type image/png > "${screenshotPath}" 2>/dev/null || xclip -selection clipboard -t image/bmp -o > "${screenshotPath}" 2>/dev/null || wl-paste --type image/bmp > "${screenshotPath}"`,
-      getPath: "xclip -selection clipboard -t text/plain -o 2>/dev/null || wl-paste 2>/dev/null",
-      deleteFile: `rm -f "${screenshotPath}"`,
-    },
-    win32: {
-      checkImage: 'powershell -NoProfile -Command "(Get-Clipboard -Format Image) -ne $null"',
-      saveImage: `powershell -NoProfile -Command "$img = Get-Clipboard -Format Image; if ($img) { $img.Save('${screenshotPath.replace(/\\/g, "\\\\")}', [System.Drawing.Imaging.ImageFormat]::Png) }"`,
-      getPath: 'powershell -NoProfile -Command "Get-Clipboard"',
-      deleteFile: `del /f "${screenshotPath}"`,
-    },
+async function checkImageDirect(): Promise<boolean> {
+  const platform = process.platform
+  if (platform === "darwin") {
+    const res = await execDirect("osascript", ["-e", "the clipboard as «class PNGf»"])
+    return res.exitCode === 0
   }
-
-  return {
-    commands: commands[platform] ?? commands.linux,
-    screenshotPath,
+  if (platform === "win32") {
+    const res = await execDirect("powershell", ["-NoProfile", "-Command", "(Get-Clipboard -Format Image) -ne $null"])
+    return res.exitCode === 0 && res.stdout.trim().toLowerCase() === "true"
   }
+  // linux: try xclip targets then wl-paste list
+  const xclipTargets = await execDirect("xclip", ["-selection", "clipboard", "-t", "TARGETS", "-o"])
+  if (xclipTargets.exitCode === 0 && /image\/(png|jpeg|jpg|gif|webp|bmp)/i.test(xclipTargets.stdout)) {
+    return true
+  }
+  const wlPasteTargets = await execDirect("wl-paste", ["-l"])
+  return wlPasteTargets.exitCode === 0 && /image\/(png|jpeg|jpg|gif|webp|bmp)/i.test(wlPasteTargets.stdout)
+}
+
+async function saveImageDirect(screenshotPath: string): Promise<boolean> {
+  const platform = process.platform
+  if (platform === "darwin") {
+    const res = await execDirect("osascript", [
+      "-e",
+      "set png_data to (the clipboard as «class PNGf»)",
+      "-e",
+      `set fp to open for access POSIX file "${screenshotPath}" with write permission`,
+      "-e",
+      "write png_data to fp",
+      "-e",
+      "close access fp",
+    ])
+    return res.exitCode === 0
+  }
+  if (platform === "win32") {
+    const res = await execDirect("powershell", [
+      "-NoProfile",
+      "-Command",
+      `$img = Get-Clipboard -Format Image; if ($img) { $img.Save('${screenshotPath.replace(/\\/g, "\\\\")}', [System.Drawing.Imaging.ImageFormat]::Png) }`,
+    ])
+    return res.exitCode === 0
+  }
+  // linux
+  let res = await execDirect("xclip", ["-selection", "clipboard", "-t", "image/png", "-o"])
+  if (res.exitCode === 0 && res.stdoutBuffer && res.stdoutBuffer.length > 0) {
+    writeFileSync(screenshotPath, res.stdoutBuffer)
+    return true
+  }
+  res = await execDirect("wl-paste", ["--type", "image/png"])
+  if (res.exitCode === 0 && res.stdoutBuffer && res.stdoutBuffer.length > 0) {
+    writeFileSync(screenshotPath, res.stdoutBuffer)
+    return true
+  }
+  res = await execDirect("xclip", ["-selection", "clipboard", "-t", "image/bmp", "-o"])
+  if (res.exitCode === 0 && res.stdoutBuffer && res.stdoutBuffer.length > 0) {
+    writeFileSync(screenshotPath, res.stdoutBuffer)
+    return true
+  }
+  res = await execDirect("wl-paste", ["--type", "image/bmp"])
+  if (res.exitCode === 0 && res.stdoutBuffer && res.stdoutBuffer.length > 0) {
+    writeFileSync(screenshotPath, res.stdoutBuffer)
+    return true
+  }
+  return false
+}
+
+async function getImagePathFromClipboardDirect(): Promise<string | null> {
+  const platform = process.platform
+  if (platform === "darwin") {
+    const res = await execDirect("osascript", ["-e", "get POSIX path of (the clipboard as «class furl»)"])
+    return res.exitCode === 0 && res.stdout ? res.stdout.trim() : null
+  }
+  if (platform === "win32") {
+    const res = await execDirect("powershell", ["-NoProfile", "-Command", "Get-Clipboard"])
+    return res.exitCode === 0 && res.stdout ? res.stdout.trim() : null
+  }
+  // linux
+  const xclipRes = await execDirect("xclip", ["-selection", "clipboard", "-t", "text/plain", "-o"])
+  if (xclipRes.exitCode === 0 && xclipRes.stdout) {
+    return xclipRes.stdout.trim()
+  }
+  const wlPasteRes = await execDirect("wl-paste", [])
+  if (wlPasteRes.exitCode === 0 && wlPasteRes.stdout) {
+    return wlPasteRes.stdout.trim()
+  }
+  return null
 }
 
 // ─── Image format detection ──────────────────────────────────────────────────
@@ -182,13 +245,8 @@ export function asImageFilePath(text: string): string | null {
 // ─── Clipboard operations ────────────────────────────────────────────────────
 
 async function getImagePathFromClipboard(): Promise<string | null> {
-  const { commands } = getClipboardCommands()
   try {
-    const result = await execShell(commands.getPath)
-    if (result.exitCode !== 0 || !result.stdout) {
-      return null
-    }
-    return result.stdout.trim()
+    return await getImagePathFromClipboardDirect()
   } catch (e) {
     Log.Default.error("[image-paste] Failed to get clipboard path", { error: e })
     return null
@@ -202,15 +260,15 @@ async function getImagePathFromClipboard(): Promise<string | null> {
  * Note: Image resizing via `sharp` is deferred — returns raw buffer as base64.
  */
 export async function getImageFromClipboard(): Promise<ImageWithDimensions | null> {
-  const { commands, screenshotPath } = getClipboardCommands()
+  const screenshotPath = getScreenshotPath()
   try {
-    const checkResult = await execShell(commands.checkImage)
-    if (checkResult.exitCode !== 0) {
+    const isImage = await checkImageDirect()
+    if (!isImage) {
       return null
     }
 
-    const saveResult = await execShell(commands.saveImage)
-    if (saveResult.exitCode !== 0) {
+    const saved = await saveImageDirect(screenshotPath)
+    if (!saved) {
       return null
     }
 
@@ -218,8 +276,12 @@ export async function getImageFromClipboard(): Promise<ImageWithDimensions | nul
     const base64Image = imageBuffer.toString("base64")
     const mediaType = detectImageFormatFromBase64(base64Image)
 
-    // Cleanup (fire-and-forget)
-    void execShell(commands.deleteFile)
+    // Cleanup (native unlink)
+    try {
+      unlinkSync(screenshotPath)
+    } catch {
+      // ignore
+    }
 
     return { base64: base64Image, mediaType }
   } catch {

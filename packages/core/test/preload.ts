@@ -9,6 +9,7 @@ import path from "node:path"
 // Set XDG env vars FIRST, before any src/ imports
 const dir = path.join(os.tmpdir(), `liteai-test-data-${crypto.randomUUID()}`)
 
+process.env.LITEAI_TEST_DIR = dir
 process.env.XDG_DATA_HOME = path.join(dir, "share")
 process.env.XDG_CACHE_HOME = path.join(dir, "cache")
 process.env.XDG_CONFIG_HOME = path.join(dir, "config")
@@ -60,7 +61,7 @@ beforeAll(async () => {
   await fs.writeFile(path.join(cacheDir, "version"), "14")
 
   const { Log } = await import("@liteai/util/log")
-  await Log.init({ dir: require("node:os").tmpdir(), print: false, dev: true, level: "DEBUG" })
+  await Log.init({ dir: path.join(dir, "logs"), print: false, dev: true, level: "DEBUG" })
 
   const { Project } = await import("../src/project/project")
   await Project.fromDirectory(path.join(import.meta.dir, ".."))

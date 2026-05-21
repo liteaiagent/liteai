@@ -26,7 +26,7 @@ test("set cleans up pre-existing trailing-slash entry", async () => {
     token: "new",
   })
   const data = await Auth.all()
-  const keys = Object.keys(data).filter((k) => k.includes("example.com"))
+  const keys = Object.keys(data).filter((k) => k === "https://example.com" || k === "https://example.com/")
   expect(keys).toEqual(["https://example.com"])
   const entry = data["https://example.com"]
   expect(entry).toBeDefined()

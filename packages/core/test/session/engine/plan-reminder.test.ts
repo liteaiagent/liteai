@@ -70,12 +70,14 @@ function createTestMessages(overrides?: {
   return messages
 }
 
+const getTestDir = () => process.env.LITEAI_TEST_DIR ?? os.tmpdir()
+
 function createPlanState(overrides?: Partial<PlanModeState>): PlanModeState {
   return {
     // Default to build-phase state (planSessionID=undefined + planText set) — reminders
     // must fire in build phase after a plan has been approved.
     planText: "Approved plan",
-    planFilePath: path.join(os.tmpdir(), `test-plan-${crypto.randomUUID()}.md`),
+    planFilePath: path.join(getTestDir(), `test-plan-${crypto.randomUUID()}.md`),
     turnsSincePlanReminder: 0,
     planSessionID: undefined,
     ...overrides,
@@ -111,7 +113,7 @@ describe("injectPlanAttachment", () => {
       await Instance.provide({
         directory: projectRoot,
         fn: async () => {
-          const planPath = path.join(os.tmpdir(), `test-plan-${crypto.randomUUID()}.md`)
+          const planPath = path.join(getTestDir(), `test-plan-${crypto.randomUUID()}.md`)
           await fs.mkdir(path.dirname(planPath), { recursive: true })
           await fs.writeFile(planPath, "# My Plan\n\nStep 1")
 
@@ -147,7 +149,7 @@ describe("injectPlanAttachment", () => {
       await Instance.provide({
         directory: projectRoot,
         fn: async () => {
-          const nonExistentPath = path.join(os.tmpdir(), `no-such-plan-${crypto.randomUUID()}.md`)
+          const nonExistentPath = path.join(getTestDir(), `no-such-plan-${crypto.randomUUID()}.md`)
           const messages = createTestMessages()
           const state = createPlanState({ turnsSincePlanReminder: 1, planFilePath: nonExistentPath })
           const result = await injectPlanAttachment({
@@ -171,7 +173,7 @@ describe("injectPlanAttachment", () => {
       await Instance.provide({
         directory: projectRoot,
         fn: async () => {
-          const planPath = path.join(os.tmpdir(), `test-plan-${crypto.randomUUID()}.md`)
+          const planPath = path.join(getTestDir(), `test-plan-${crypto.randomUUID()}.md`)
           const planContent = "# Detailed Plan\n\n## Phase 1\n- Task A\n- Task B\n\n## Phase 2\n- Task C"
           await fs.mkdir(path.dirname(planPath), { recursive: true })
           await fs.writeFile(planPath, planContent)
@@ -206,7 +208,7 @@ describe("injectPlanAttachment", () => {
       await Instance.provide({
         directory: projectRoot,
         fn: async () => {
-          const nonExistentPath = path.join(os.tmpdir(), `no-such-plan-${crypto.randomUUID()}.md`)
+          const nonExistentPath = path.join(getTestDir(), `no-such-plan-${crypto.randomUUID()}.md`)
           const messages = createTestMessages()
           const state = createPlanState({
             turnsSincePlanReminder: PLAN_REMINDER_FULL_INTERVAL,
@@ -239,7 +241,7 @@ describe("injectPlanAttachment", () => {
           const originalLength = messages[0].parts.length
           const state = createPlanState({
             turnsSincePlanReminder: 0,
-            planFilePath: path.join(os.tmpdir(), `no-plan-${crypto.randomUUID()}.md`),
+            planFilePath: path.join(getTestDir(), `no-plan-${crypto.randomUUID()}.md`),
           })
           const result = await injectPlanAttachment({
             messages,

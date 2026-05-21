@@ -112,14 +112,16 @@ export async function writeToMailbox(recipientName: string, message: TeammateMes
   const inboxPath = path.join(inboxDir, `${sanitizePathComponent(recipientName)}.json`)
 
   await withMutex(inboxPath, async () => {
-    // Ensure file exists — inside the mutex so only one caller creates it.
+    let raw: string
     try {
-      await fs.access(inboxPath)
-    } catch {
-      await fs.writeFile(inboxPath, "[]", "utf-8")
+      raw = await fs.readFile(inboxPath, "utf-8")
+    } catch (error: unknown) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+        raw = "[]"
+      } else {
+        throw error
+      }
     }
-
-    const raw = await fs.readFile(inboxPath, "utf-8")
     let messages: TeammateMessage[]
     try {
       messages = JSON.parse(raw)
@@ -216,13 +218,19 @@ export async function clearMailbox(agentName: string, teamName: string): Promise
   const inboxPath = getInboxPath(agentName, teamName)
 
   await withMutex(inboxPath, async () => {
+    let handle: fs.FileHandle | null = null
     try {
-      await fs.access(inboxPath)
+      handle = await fs.open(inboxPath, "r+")
+      await handle.truncate(0)
+      await handle.write("[]", 0, "utf-8")
     } catch (error: unknown) {
       if (error instanceof Error && "code" in error && error.code === "ENOENT") return
       throw error
+    } finally {
+      if (handle) {
+        await handle.close()
+      }
     }
-    await fs.writeFile(inboxPath, "[]", "utf-8")
   })
 }
 

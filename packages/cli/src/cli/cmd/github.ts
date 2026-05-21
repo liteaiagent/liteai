@@ -827,6 +827,15 @@ export const GithubRunCommand = cmd({
           const filename = path.basename(url)
 
           // Download image
+          const parsedUrl = new URL(url)
+          if (
+            parsedUrl.hostname !== "github.com" &&
+            parsedUrl.hostname !== "github-production-user-asset-6210df.s3.amazonaws.com"
+          ) {
+            console.error(`Forbidden image host: ${parsedUrl.hostname}`)
+            continue
+          }
+
           const res = await fetch(url, {
             headers: {
               Authorization: `Bearer ${appToken}`,
@@ -834,7 +843,7 @@ export const GithubRunCommand = cmd({
             },
           })
           if (!res.ok) {
-            console.error(`Failed to download image: ${url}`)
+            console.error(`Failed to download image: ${url.replace(/[\r\n]/g, "")}`)
             continue
           }
 
