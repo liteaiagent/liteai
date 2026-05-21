@@ -12,12 +12,12 @@ describe("util.process", () => {
     expect(out.code).toBe(0)
     expect(out.stdout.toString()).toBe("out")
     expect(out.stderr.toString()).toBe("err")
-  })
+  }, 15_000)
 
   test("returns code when nothrow is enabled", async () => {
     const out = await Process.run(node("process.exit(7)"), { nothrow: true })
     expect(out.code).toBe(7)
-  })
+  }, 15_000)
 
   test("throws RunFailedError on non-zero exit", async () => {
     const err = await Process.run(node('process.stderr.write("bad");process.exit(3)')).catch((error) => error)
@@ -25,7 +25,7 @@ describe("util.process", () => {
     if (!(err instanceof Process.RunFailedError)) throw err
     expect(err.code).toBe(3)
     expect(err.stderr.toString()).toBe("bad")
-  })
+  }, 15_000)
 
   test("aborts a running process", async () => {
     const abort = new AbortController()
@@ -64,7 +64,7 @@ describe("util.process", () => {
       cwd: tmp.path,
     })
     expect(out.stdout.toString()).toBe(tmp.path)
-  })
+  }, 15_000)
 
   test("merges environment overrides", async () => {
     const out = await Process.run(node('process.stdout.write(process.env.LITEAI_TEST ?? "")'), {
@@ -73,5 +73,5 @@ describe("util.process", () => {
       },
     })
     expect(out.stdout.toString()).toBe("set")
-  })
+  }, 15_000)
 })

@@ -16,9 +16,9 @@
   "dependencies": {
     "zod": "catalog:",
     "glob": "13.0.5",
-    "minimatch": "10.0.3",
+    "minimatch": "10.2.3",
     "which": "6.0.1",
-    "@opentelemetry/api-logs": "0.214.0",
+    "@opentelemetry/api-logs": "0.217.0",
     "mime-types": "3.0.2"
   },
   "devDependencies": {

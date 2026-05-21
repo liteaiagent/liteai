@@ -47,30 +47,46 @@ async function recoverPlanState(
 }
 
 /**
- * Waits for the CLI to resolve a plan approval request via PlanApprovalResolved event.
- * Returns the user's decision (approved/rejected with optional feedback).
+ * Prepares a deferred listener for `PlanApprovalResolved` that MUST be set up
+ * **before** `PlanApprovalRequested` is published. This prevents a race
+ * condition where a synchronous subscriber on the Requested event publishes
+ * Resolved before this listener exists.
+ *
+ * Usage:
+ * ```ts
+ * const approval = preparePlanApprovalListener(sessionID)
+ * Bus.publish(Session.Event.PlanApprovalRequested, { ... })
+ * const result = await approval.promise
+ * ```
  *
  * Rejects with a timeout error if no response is received within `timeoutMs`
  * (default: 10 minutes) to prevent leaked Bus subscriptions.
  */
-function waitForPlanApproval(
+function preparePlanApprovalListener(
   sessionID: SessionID,
   timeoutMs = 10 * 60 * 1000,
-): Promise<{ approved: boolean; feedback?: string }> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      unsub()
-      reject(new Error(`Plan approval timeout for session ${sessionID} after ${timeoutMs}ms`))
-    }, timeoutMs)
-
-    const unsub = Bus.subscribe(Session.Event.PlanApprovalResolved, (evt) => {
-      if (evt.properties.sessionID === sessionID) {
-        clearTimeout(timer)
-        unsub()
-        resolve({ approved: evt.properties.approved, feedback: evt.properties.feedback })
-      }
-    })
+): { promise: Promise<{ approved: boolean; feedback?: string }> } {
+  let resolve!: (value: { approved: boolean; feedback?: string }) => void
+  let reject!: (reason: Error) => void
+  const promise = new Promise<{ approved: boolean; feedback?: string }>((res, rej) => {
+    resolve = res
+    reject = rej
   })
+
+  const timer = setTimeout(() => {
+    unsub()
+    reject(new Error(`Plan approval timeout for session ${sessionID} after ${timeoutMs}ms`))
+  }, timeoutMs)
+
+  const unsub = Bus.subscribe(Session.Event.PlanApprovalResolved, (evt) => {
+    if (evt.properties.sessionID === sessionID) {
+      clearTimeout(timer)
+      unsub()
+      resolve({ approved: evt.properties.approved, feedback: evt.properties.feedback })
+    }
+  })
+
+  return { promise }
 }
 
 export const PlanExitTool = Tool.define("plan_exit", {
@@ -114,16 +130,19 @@ export const PlanExitTool = Tool.define("plan_exit", {
         const appState = execCtx?.type === "root" || execCtx?.type === "subagent" ? execCtx.getAppState() : undefined
         const rootSessionID = (appState?.rootSessionID as string | undefined) ?? ctx.sessionID
 
+        // CRITICAL: Subscribe to PlanApprovalResolved BEFORE publishing
+        // PlanApprovalRequested. A synchronous subscriber on the Requested
+        // event (e.g. CLI auto-approve) may publish Resolved in the same
+        // tick. If we subscribed after, we'd miss it and hang forever.
+        const approval = preparePlanApprovalListener(rootSessionID as typeof ctx.sessionID)
+
         Bus.publish(Session.Event.PlanApprovalRequested, {
           sessionID: rootSessionID as typeof ctx.sessionID,
           planText: params.plan,
           planFilePath,
         })
 
-        // Wait for the CLI to resolve via PlanApprovalResolved event.
-        // This replaces the previous Question.ask() call that caused a
-        // dual-dialog bug (both QuestionPrompt and PlanReview rendering).
-        const resolution = await waitForPlanApproval(rootSessionID as typeof ctx.sessionID)
+        const resolution = await approval.promise
 
         const relPlanPath = path.relative(Instance.worktree, planFilePath)
 

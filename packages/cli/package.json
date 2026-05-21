@@ -48,7 +48,7 @@
     "@liteai/ink": "workspace:*",
     "@liteai/sdk": "workspace:*",
     "@liteai/util": "workspace:*",
-    "@modelcontextprotocol/sdk": "1.25.2",
+    "@modelcontextprotocol/sdk": "1.26.0",
     "@octokit/graphql": "9.0.2",
     "@octokit/rest": "catalog:",
     "@octokit/webhooks-types": "7.6.1",
