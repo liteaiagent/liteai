@@ -36,9 +36,11 @@ describe("plugin.registry", () => {
 
   test("dataPath normalizes special characters", () => {
     const result = Registry.dataPath("foo@bar/baz")
-    expect(result).not.toContain("@")
-    expect(result).not.toContain("/")
-    expect(result).toContain("foo_bar_baz")
+    // Check only the basename — the full path contains OS path separators
+    const basename = path.basename(result)
+    expect(basename).not.toContain("@")
+    expect(basename).not.toContain("/")
+    expect(basename).toBe("foo_bar_baz")
   })
 
   test("enabled extracts enabledPlugins from config", () => {
@@ -164,9 +166,9 @@ describe("plugin.config", () => {
 // ---------------------------------------------------------------------------
 describe("plugin.scopes", () => {
   test("scope determines settings file", () => {
-    // Verify the scope types match the plan's definition
-    const scopes: Registry.Scope[] = ["user", "project", "local"]
-    expect(scopes).toHaveLength(3)
+    // Verify the scope types match the current definition
+    const scopes: Registry.Scope[] = ["user", "project"]
+    expect(scopes).toHaveLength(2)
   })
 
   test("Entry type has all required fields", () => {

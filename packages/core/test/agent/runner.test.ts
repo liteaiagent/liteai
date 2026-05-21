@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test"
+import { AgentMeta } from "../../src/agent/agent-meta"
 import { AgentMemory } from "../../src/agent/memory"
 import { MCP } from "../../src/mcp/index"
 import { Instance } from "../../src/project/instance"
@@ -34,6 +35,12 @@ beforeEach(() => {
   spyOn(SkillLoader, "resolveSkillName").mockResolvedValue(undefined)
   spyOn(SkillLoader, "registerInvokedSkill").mockImplementation(() => {})
   spyOn(SkillLoader, "clearInvokedSkillsForAgent").mockImplementation(() => {})
+
+  // AgentMeta.write is dynamically imported in runner.ts but resolves from
+  // the same module cache — a static import + spyOn intercepts it.
+  // Without this mock, it attempts to mkdir+writeFile to /fake/dir which
+  // fails on Linux CI (EACCES).
+  spyOn(AgentMeta, "write").mockResolvedValue(undefined)
 })
 
 import type { Agent } from "../../src/agent/agent"
