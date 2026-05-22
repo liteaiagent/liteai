@@ -3,6 +3,7 @@ import path from "node:path"
 import { Log } from "@liteai/util/log"
 import { trace } from "@opentelemetry/api"
 import z from "zod"
+import { defer } from "@/util/defer"
 import { isRootAgent } from "../agent/context"
 import ENTER_DESCRIPTION from "../bundled/prompts/tools/plan-enter.txt"
 import EXIT_DESCRIPTION from "../bundled/prompts/tools/plan-exit.txt"
@@ -293,6 +294,14 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           throw originalError
         }
 
+        ctx.metadata({
+          title: "Planning",
+          metadata: {
+            sessionId: planSession.id,
+            model,
+          } as Record<string, unknown>,
+        })
+
         span.addEvent("tool.plan_enter.spawning_subagent", {
           planSessionID: planSession.id,
           planFilePath: state.planFilePath,
@@ -303,6 +312,13 @@ export const PlanEnterTool = Tool.define("plan_enter", {
 
         let result: Awaited<ReturnType<typeof SessionPrompt.runSubagent>>
         try {
+          // Parent abort -> subagent cancel linkage
+          function cancel() {
+            SessionPrompt.cancel(planSession.id)
+          }
+          ctx.abort.addEventListener("abort", cancel)
+          using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
+
           // Start the subagent promise — this synchronously calls start()
           // which creates the session state entry with appState: {}.
           const subagentPromise = SessionPrompt.runSubagent({

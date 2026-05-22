@@ -100,14 +100,26 @@ function useLoadingStartTime(isLoading: boolean): number | null {
   return isLoading ? startTimeRef.current : null
 }
 
-function WorkingBanner({ startTime }: { startTime: number }) {
+function WorkingBanner({ startTime, agentName, modelID }: { startTime: number; agentName?: string; modelID?: string }) {
   const { theme } = useTheme()
   const { formatted } = useElapsedTime({ startTime, interval: 1000 })
 
   return (
     <Box flexDirection="row" flexShrink={1} gap={0} paddingLeft={1}>
       <Text color={theme.primary as Color}>⠿ </Text>
-      <Text color={theme.primary as Color}>Thinking</Text>
+      {agentName ? (
+        <>
+          <Text color={theme.primary as Color}>{agentName}</Text>
+          {modelID ? (
+            <>
+              <Text color={theme.textMuted as Color}> · </Text>
+              <Text color={theme.textMuted as Color}>{modelID}</Text>
+            </>
+          ) : null}
+        </>
+      ) : (
+        <Text color={theme.primary as Color}>Thinking</Text>
+      )}
       <Text color={theme.textMuted as Color}>… {formatted}</Text>
     </Box>
   )
@@ -120,6 +132,10 @@ interface TipBannerProps {
   readonly isLoading: boolean
   /** Whether the message cursor is active (arrow-key navigation mode). */
   readonly cursorModeActive: boolean
+  /** The name of the active agent. */
+  readonly agentName?: string
+  /** The ID of the active model. */
+  readonly modelID?: string
 }
 
 /**
@@ -128,7 +144,7 @@ interface TipBannerProps {
  * - While idle:         `● Tip: Use ctrl+p to open…`
  * - During cursor mode: hidden
  */
-export function TipBanner({ isLoading, cursorModeActive }: TipBannerProps) {
+export function TipBanner({ isLoading, cursorModeActive, agentName, modelID }: TipBannerProps) {
   const { theme } = useTheme()
   const tipParts = useTip()
   const startTime = useLoadingStartTime(isLoading)
@@ -136,7 +152,7 @@ export function TipBanner({ isLoading, cursorModeActive }: TipBannerProps) {
   if (cursorModeActive) return null
 
   if (isLoading && startTime !== null) {
-    return <WorkingBanner startTime={startTime} />
+    return <WorkingBanner startTime={startTime} agentName={agentName} modelID={modelID} />
   }
 
   return (

@@ -1,4 +1,5 @@
 import { Box, type ScrollBoxHandle, TerminalSizeContext } from "@liteai/ink"
+import { Locale } from "@liteai/util/locale"
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { CommandPalette } from "../../components/command-palette"
 import { DialogMemory } from "../../components/dialog-memory"
@@ -430,6 +431,7 @@ function SessionBottom({
   const sessionStatus = useAppState(selectSessionStatus(sessionID))
   const sdk = useSDK()
   const breaker = useCompactCircuitBreaker(3)
+  const messages = useAppState(selectMessages(sessionID))
 
   useQueueProcessor({
     sessionStatus: sessionStatus?.type ?? "idle",
@@ -441,11 +443,21 @@ function SessionBottom({
     void breaker.withCircuitBreaker(() => sdk.client.project.session.summarize({ sessionID, projectID: sdk.projectID }))
   }, [breaker, sdk, sessionID])
 
+  const lastMessage = messages.at(-1)
+  const isAssistant = lastMessage?.role === "assistant"
+  const agentName = isAssistant ? Locale.titlecase(lastMessage.mode) : undefined
+  const modelID = isAssistant ? lastMessage.modelID : undefined
+
   return (
     <Box flexDirection="column" width="100%" flexShrink={0}>
       <TokenWarning utilization={stats.contextUtilization} onAutoCompact={handleAutoCompact} />
       {cursorContext && <MessageActionsBar ctx={cursorContext} />}
-      <TipBanner isLoading={session.isLoading} cursorModeActive={!!cursorContext} />
+      <TipBanner
+        isLoading={session.isLoading}
+        cursorModeActive={!!cursorContext}
+        agentName={agentName}
+        modelID={modelID}
+      />
       <PromptInput
         debug={false}
         verbose={false}

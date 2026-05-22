@@ -443,10 +443,6 @@ function getSkillViewParts(input: Record<string, unknown>): ViewParts {
   return { description: `"${inp.name ?? ""}"` }
 }
 
-function getPlanEnterViewParts(): ViewParts {
-  return { description: "Entering plan mode" }
-}
-
 function getPlanExitViewParts(): ViewParts {
   return { description: "Exiting plan mode" }
 }
@@ -624,6 +620,48 @@ export function TaskView({ toolprops, status }: { toolprops: ToolProps; status: 
       toolName="task"
       viewParts={{
         description: input.description,
+        summary: toolCount > 0 ? `${toolCount} toolcalls` : undefined,
+      }}
+      part={toolprops.part}
+    />
+  )
+}
+
+interface PlanEnterMetadata {
+  planSessionID?: string
+  sessionId?: string
+  planFilePath?: string
+}
+
+/**
+ * PlanEnterView — stateful component that tracks plan subagent progress.
+ */
+export function PlanEnterView({ toolprops, status }: { toolprops: ToolProps; status: ToolDisplayStatus }) {
+  const {
+    session: { sync: syncSession },
+  } = useAppActions()
+  const partsMap = useAppState((s) => s.part)
+  const metadata = typed<PlanEnterMetadata>(toolprops.metadata as Record<string, unknown>)
+  const sessionID = metadata.planSessionID || metadata.sessionId
+
+  const messages = useAppState(selectMessages(sessionID ?? ""))
+
+  useEffect(() => {
+    if (sessionID && !messages?.length) {
+      syncSession(sessionID)
+    }
+  }, [sessionID, messages?.length, syncSession])
+
+  const toolCount = useMemo(() => {
+    return messages.flatMap((msg) => (partsMap[msg.id] ?? []).filter((p) => p.type === "tool")).length
+  }, [messages, partsMap])
+
+  return (
+    <DenseToolMessage
+      status={status}
+      toolName="plan_enter"
+      viewParts={{
+        description: "Entering plan mode",
         summary: toolCount > 0 ? `${toolCount} toolcalls` : undefined,
       }}
       part={toolprops.part}
@@ -978,6 +1016,8 @@ export function UnifiedToolView({ toolprops, status }: { toolprops: ToolProps; s
       return <SendCommandInputView toolprops={toolprops} status={status} />
     case "apply_patch":
       return <ApplyPatchView toolprops={toolprops} status={status} />
+    case "plan_enter":
+      return <PlanEnterView toolprops={toolprops} status={status} />
   }
 
   // Pure formatter tools — use formatter functions + DenseToolMessage
@@ -1017,9 +1057,6 @@ export function UnifiedToolView({ toolprops, status }: { toolprops: ToolProps; s
       break
     case "skill":
       viewParts = getSkillViewParts(input)
-      break
-    case "plan_enter":
-      viewParts = getPlanEnterViewParts()
       break
     case "plan_exit":
       viewParts = getPlanExitViewParts()
