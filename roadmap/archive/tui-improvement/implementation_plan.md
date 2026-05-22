@@ -76,8 +76,7 @@ Remove the full bordered box. Instead:
 2. Show command output below with a left-only border (vertical gutter), indented. Similar to Gemini's `borderLeft: true, borderTop: false, borderRight: false, borderBottom: false`.
 3. The header becomes: `$ command` inside the gutter, output lines below, and the `exit N ─── Xs` as a right-aligned footer inside the gutter.
 
-```
-   ✓ run_command $ node -v && python --version
+```text
    │ v24.15.0
    │ Python 3.13.13
    │                                             exit 0 ─── 1.0s
@@ -94,7 +93,7 @@ Update `RunCommandView` to always use `DenseToolMessage` with the shell output a
 
 ### Current Behavior
 The `todowrite` tool renders a full checklist as `DenseToolMessage` payload in the messages area ([tools.tsx:TodoWriteView](file:///d:/liteai/packages/cli/src/tui/routes/session/tools.tsx#L675-L701)):
-```
+```text
 ✓ todowrite Todos → 6 items
       [ ] Design the Snake game architecture and UI layout
       [ ] Create index.html...
@@ -115,7 +114,7 @@ if (typeof resultDisplay === 'object' && 'todos' in resultDisplay) {
 
 #### [MODIFY] [tools.tsx:TodoWriteView](file:///d:/liteai/packages/cli/src/tui/routes/session/tools.tsx#L675-L701)
 Remove the payload. The `DenseToolMessage` should only show the header line:
-```
+```text
 ✓ todowrite Todos → 6 items
 ```
 No checklist items in the messages area. The `TodoTray` at the bottom already handles this.
@@ -126,7 +125,7 @@ No checklist items in the messages area. The `TodoTray` at the bottom already ha
 
 ### Current Behavior
 Below the last tool call in the messages area, there's a line:
-```
+```text
 ■ Liteai · gemini-3.5-flash
 ```
 
@@ -134,7 +133,7 @@ This appears to be rendered somewhere in the message stream (possibly as part of
 
 ### LiteAI Status Bar Already Has Model Info
 The [StatusLine](file:///d:/liteai/packages/cli/src/tui/components/status-line.tsx#L68-L82) already displays `model` and `provider` columns:
-```
+```text
 model                 provider
 Gemini 3.5 Flash ■    Google
 ```
@@ -189,7 +188,7 @@ The current behavior is actually correct — `TipBanner` already shows `WorkingB
 
 **Proposed state machine for TipBanner visibility:**
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │ State              │ TipBanner shows         │
 ├─────────────────────────────────────────────┤
@@ -205,7 +204,7 @@ The current behavior is actually correct — `TipBanner` already shows `WorkingB
 > The confusion is NOT about hiding the tip — it's about **two separate timers** being visible at once. The plan_enter DenseToolMessage already shows `(2m 1s)` in the message area. The TipBanner separately shows `Thinking… 2m 16s`. The user sees TWO timing indicators that differ.
 
 **Fix**: When a tool is currently running (status === "running") AND it's the last tool in the messages, the TipBanner's thinking indicator should display the **tool name** instead of generic "Thinking":
-```
+```text
 ⠿ plan_enter Entering plan mode… 2m 16s
 ```
 This way, the two indicators complement each other instead of competing.

@@ -55,7 +55,12 @@ export namespace SkillLoader {
       allowed_tools: md.data["allowed-tools"] ?? md.data.allowed_tools,
     })
 
-    if (!parsed.success) return undefined
+    if (!parsed.success) {
+      const message = `Invalid skill frontmatter in ${match}`
+      Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
+      log.warn(message, { skill: match, issues: parsed.error.issues })
+      return undefined
+    }
 
     return {
       ...parsed.data,

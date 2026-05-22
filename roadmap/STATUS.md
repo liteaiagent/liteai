@@ -99,7 +99,7 @@ Items currently in progress or immediately next:
 
 ## Directory Structure
 
-```
+```text
 roadmap/
 ├── STATUS.md              ← YOU ARE HERE (single source of truth)
 ├── roadmap.json           ← Active roadmap pointer

@@ -43,15 +43,18 @@ mock.module("@liteai/util/log", () => {
       shutdown: async () => {},
       file: () => "",
       channelFiles: () => [],
-      create: () => ({
-        error: () => {},
-        info: () => {},
-        warn: () => {},
-        debug: () => {},
-        time: () => ({ stop: () => {}, [Symbol.dispose]: () => {} }),
-        tag: () => ({}),
-        clone: () => ({}),
-      }),
+      create: () => {
+        const logger: Record<string, unknown> = {
+          error: () => {},
+          info: () => {},
+          warn: () => {},
+          debug: () => {},
+          time: () => ({ stop: () => {}, [Symbol.dispose]: () => {} }),
+          tag: () => logger,
+          clone: () => logger,
+        }
+        return logger
+      },
       Default: {
         error: () => {},
         info: () => {},

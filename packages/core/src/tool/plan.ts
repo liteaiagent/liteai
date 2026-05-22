@@ -316,7 +316,10 @@ export const PlanEnterTool = Tool.define("plan_enter", {
           function cancel() {
             SessionPrompt.cancel(planSession.id)
           }
-          ctx.abort.addEventListener("abort", cancel)
+          if (ctx.abort.aborted) {
+            throw new Error("Parent session already aborted before starting plan subagent")
+          }
+          ctx.abort.addEventListener("abort", cancel, { once: true })
           using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
 
           // Start the subagent promise — this synchronously calls start()

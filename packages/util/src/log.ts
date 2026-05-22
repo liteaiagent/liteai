@@ -187,9 +187,17 @@ export namespace Log {
       options.dir,
       options.dev ? "liteai.log" : `${new Date().toISOString().split(".")[0].replace(/:/g, "")}.log`,
     )
-    await fs.mkdir(options.dir, { recursive: true }).catch(() => {})
+    try {
+      await fs.mkdir(options.dir, { recursive: true })
+    } catch (err) {
+      process.stderr.write(`[Log init mkdir error] ${err instanceof Error ? err.stack || err.message : err}\n`)
+      return
+    }
     await fs.truncate(logpath).catch(() => {})
     const stream = createWriteStream(logpath, { flags: "a" })
+    stream.on("error", (err) => {
+      process.stderr.write(`[Log stream error] ${err.stack || err.message || err}\n`)
+    })
     openStreams.add(stream)
     write = (msg: string) => {
       if (options.print) {
@@ -218,6 +226,9 @@ export namespace Log {
       const file = path.join(options.dir, `${ch}.log`)
       await fs.truncate(file).catch(() => {})
       const s = createWriteStream(file, { flags: "a" })
+      s.on("error", (err) => {
+        process.stderr.write(`[Log channel stream error:${ch}] ${err.stack || err.message || err}\n`)
+      })
       openStreams.add(s)
       channels.set(ch, streamWriter(s))
     }
