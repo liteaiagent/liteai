@@ -31,24 +31,39 @@ mock.module("../../../src/cli/ui", () => ({
   },
 }))
 
-mock.module("@liteai/util/log", () => ({
-  Log: {
-    init: async () => {},
-    create: () => ({
-      error: () => {},
-      info: () => {},
-      warn: () => {},
-      debug: () => {},
-      time: () => ({ stop: () => {} }),
-    }),
-    Default: {
-      error: () => {},
-      info: () => {},
-      warn: () => {},
-      debug: () => {},
+mock.module("@liteai/util/log", () => {
+  const z = require("zod")
+  return {
+    Log: {
+      context: { getStore: () => undefined, run: (_s: unknown, fn: () => unknown) => fn() },
+      Level: z.enum(["DEBUG", "INFO", "WARN", "ERROR"]),
+      CHANNELS: [] as string[],
+      SUPPRESSED: [] as string[],
+      init: async () => {},
+      shutdown: async () => {},
+      file: () => "",
+      channelFiles: () => [],
+      create: () => {
+        const logger: Record<string, unknown> = {
+          error: () => {},
+          info: () => {},
+          warn: () => {},
+          debug: () => {},
+          time: () => ({ stop: () => {}, [Symbol.dispose]: () => {} }),
+          tag: () => logger,
+          clone: () => logger,
+        }
+        return logger
+      },
+      Default: {
+        error: () => {},
+        info: () => {},
+        warn: () => {},
+        debug: () => {},
+      },
     },
-  },
-}))
+  }
+})
 
 mock.module("@liteai/util/timeout", () => ({
   withTimeout: <T>(input: Promise<T>) => input,
@@ -74,12 +89,43 @@ mock.module("../../../src/cli/config/tui", () => ({
   },
 }))
 
+mock.module("../../../src/cli/cmd/tui/local-server", () => ({
+  bootLocalServer: async () => {},
+  localRpc: {
+    checkUpgrade: async () => {},
+    reload: async () => {},
+    shutdown: async () => {},
+  },
+  createLocalFetch: () => async () => new Response(),
+  createLocalEventSource: () => ({
+    on: () => () => {},
+    setWorkspace: () => {},
+  }),
+}))
+
+mock.module("@liteai/core/project/project", () => ({
+  Project: {
+    fromDirectory: async () => ({ project: { id: "test-project" } }),
+  },
+}))
+
 mock.module("@liteai/core/project/instance", () => ({
   Instance: {
     provide: async (input: { directory: string; fn: () => Promise<unknown> | unknown }) => {
       seen.inst.push(input.directory)
       return input.fn()
     },
+    get directory() {
+      return ""
+    },
+    state: <S>(init: () => S) => {
+      let cached: S | undefined
+      return () => {
+        if (!cached) cached = init()
+        return cached
+      }
+    },
+    disposeAll: async () => {},
   },
 }))
 

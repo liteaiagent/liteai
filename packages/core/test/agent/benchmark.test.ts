@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test"
+import os from "node:os"
+import path from "node:path"
+import { Log } from "@liteai/util/log"
 import type { Agent } from "../../src/agent/agent"
+import { AgentMeta } from "../../src/agent/agent-meta"
 import { runAgent } from "../../src/agent/runner"
 import { Instance } from "../../src/project/instance"
 import { Provider } from "../../src/provider/provider"
 import { SessionPrompt } from "../../src/session/engine"
 import { Session } from "../../src/session/index"
+import { SidechainTranscript } from "../../src/session/transcript"
 
 const orgDirectory = Object.getOwnPropertyDescriptor(Instance, "directory")
 const orgWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
@@ -16,8 +21,37 @@ describe("Agent Spawn Benchmark", () => {
     originalEnv = process.env
     process.env = { ...originalEnv }
 
-    Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
-    Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
+    spyOn(Log, "create").mockReturnValue({
+      debug: () => {},
+      info: () => {},
+      error: () => {},
+      warn: () => {},
+      tag: function () {
+        return this
+      },
+      clone: function () {
+        return this
+      },
+      time: () => ({ stop: () => {}, [Symbol.dispose]: () => {} }),
+    } as unknown as Log.Logger)
+
+    spyOn(Log.Default, "info").mockImplementation(() => {})
+    spyOn(Log.Default, "debug").mockImplementation(() => {})
+    spyOn(Log.Default, "error").mockImplementation(() => {})
+    spyOn(Log.Default, "warn").mockImplementation(() => {})
+
+    const fakeDir = path.join(os.tmpdir(), "liteai-fake-benchmark-dir")
+    const tmpBenchmark = path.join(os.tmpdir(), "liteai-tmp-benchmark")
+
+    Object.defineProperty(Instance, "directory", { get: () => fakeDir, configurable: true })
+    Object.defineProperty(Instance, "worktree", { get: () => fakeDir, configurable: true })
+
+    spyOn(AgentMeta, "write").mockResolvedValue(undefined)
+    spyOn(SidechainTranscript, "create").mockReturnValue({
+      getPath: () => path.join(os.tmpdir(), "liteai-fake-path"),
+      recordMessage: async () => {},
+      recordChain: async () => {},
+    } as unknown as ReturnType<typeof SidechainTranscript.create>)
 
     const { MCP } = require("../../src/mcp/index")
     spyOn(MCP, "status").mockResolvedValue({})
@@ -37,7 +71,7 @@ describe("Agent Spawn Benchmark", () => {
       },
       parts: [{ type: "text", text: "Benchmarked task result" }],
     } as unknown as Awaited<ReturnType<typeof SessionPrompt.prompt>>)
-    spyOn(Session, "get").mockResolvedValue({ directory: "/tmp/benchmark" } as unknown as Awaited<
+    spyOn(Session, "get").mockResolvedValue({ directory: tmpBenchmark } as unknown as Awaited<
       ReturnType<typeof Session.get>
     >)
     spyOn(Session, "createNext").mockResolvedValue({ id: "sub-123" } as unknown as Awaited<

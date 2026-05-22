@@ -111,6 +111,8 @@ export namespace Log {
     return msg
   }
 
+  const openStreams = new Set<WriteStream>()
+
   let write: (msg: string) => number | Promise<number> = (msg) => {
     process.stderr.write(colorize(msg))
     return msg.length
@@ -118,7 +120,18 @@ export namespace Log {
 
   function streamWriter(stream: WriteStream) {
     return (msg: string) => {
-      stream.write(msg, () => {})
+      if (stream.destroyed) return
+      try {
+        stream.write(msg, (err) => {
+          if (err) {
+            process.stderr.write(`[Log channel stream write error] ${err.stack || err.message || err}\n`)
+          }
+        })
+      } catch (err) {
+        process.stderr.write(
+          `[Log channel streamWriter error] ${err instanceof Error ? err.stack || err.message : err}\n`,
+        )
+      }
     }
   }
 
@@ -140,7 +153,32 @@ export namespace Log {
     write(msg)
   }
 
+  export async function shutdown() {
+    write = (msg) => {
+      process.stderr.write(colorize(msg))
+      return msg.length
+    }
+    channels.clear()
+
+    const closePromises = [...openStreams].map((s) => {
+      return new Promise<void>((resolve) => {
+        if (s.destroyed) {
+          resolve()
+          return
+        }
+        s.end(() => {
+          s.destroy()
+          resolve()
+        })
+      })
+    })
+    await Promise.all(closePromises)
+    openStreams.clear()
+  }
+
   export async function init(options: Options) {
+    await shutdown()
+
     if (options.level) level = options.level
     logdir = options.dir
     cleanup(options.dir)
@@ -149,17 +187,37 @@ export namespace Log {
       options.dir,
       options.dev ? "liteai.log" : `${new Date().toISOString().split(".")[0].replace(/:/g, "")}.log`,
     )
+    try {
+      await fs.mkdir(options.dir, { recursive: true })
+    } catch (err) {
+      process.stderr.write(`[Log init mkdir error] ${err instanceof Error ? err.stack || err.message : err}\n`)
+      return
+    }
     await fs.truncate(logpath).catch(() => {})
     const stream = createWriteStream(logpath, { flags: "a" })
+    stream.on("error", (err) => {
+      process.stderr.write(`[Log stream error] ${err.stack || err.message || err}\n`)
+    })
+    openStreams.add(stream)
     write = (msg: string) => {
       if (options.print) {
         process.stderr.write(colorize(msg))
       }
-      return new Promise<number>((resolve, reject) => {
-        stream.write(msg, (err) => {
-          if (err) reject(err)
-          else resolve(msg.length)
-        })
+      if (stream.destroyed) {
+        return Promise.resolve(0)
+      }
+      return new Promise<number>((resolve) => {
+        try {
+          stream.write(msg, (err) => {
+            if (err) {
+              process.stderr.write(`[Log stream write error] ${err.stack || err.message || err}\n`)
+            }
+            resolve(msg.length)
+          })
+        } catch (err) {
+          process.stderr.write(`[Log write error] ${err instanceof Error ? err.stack || err.message : err}\n`)
+          resolve(0)
+        }
       })
     }
 
@@ -168,6 +226,10 @@ export namespace Log {
       const file = path.join(options.dir, `${ch}.log`)
       await fs.truncate(file).catch(() => {})
       const s = createWriteStream(file, { flags: "a" })
+      s.on("error", (err) => {
+        process.stderr.write(`[Log channel stream error:${ch}] ${err.stack || err.message || err}\n`)
+      })
+      openStreams.add(s)
       channels.set(ch, streamWriter(s))
     }
   }

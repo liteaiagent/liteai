@@ -1,6 +1,6 @@
 # LiteAI — Master Roadmap
 
-## Status: IN PROGRESS — Phase 1 ✅ Complete, Phase 2 Active
+## Status: IN PROGRESS — Phases 1–4 ✅ Complete, Phase 5 Next
 
 > Consolidates: core-roadmap (formerly plan-mode-redesign), agents-platform-roadmap (remaining), project-scoped-persistence.
 > Evaluation source: [implementation_plan.md](file:///C:/Users/ahmed/.gemini/antigravity-ide/brain/5e568eb2-2564-4dee-8e06-fe06e4cb49cb/implementation_plan.md) — Memory/Knowledge/History evaluation of Claude Code + Gemini CLI.
@@ -9,21 +9,21 @@
 
 ## Design Documents Index
 
-| Document | Scope |
-|----------|-------|
-| [01-agent-taxonomy.md](./01-agent-taxonomy.md) | `task` → `agent` rename, `build` → `liteai` rename, agent roster |
-| [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` lifecycle, permission gating, plan subagent |
-| [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor redesign, per-tool concurrency, sibling abort |
-| [04-kv-cache.md](./04-kv-cache.md) | Provider cache mechanics, deterministic ordering, cache break detection, reasoning tokens |
-| [05-skills.md](./05-skills.md) | Skill system enhancements, superpowers integration |
-| [architecture-decisions.md](./architecture-decisions.md) | Architecture Decision Record (resolved Q&A) |
-| [06-guide-agent.md](./06-guide-agent.md) | Guide agent definition (from agents-platform Phase 6) |
-| [07-project-registry.md](./07-project-registry.md) | Project directory scaffold & registry |
-| [08-unified-memory.md](./08-unified-memory.md) | Unified memory system (CC/GC hybrid design) |
-| [09-memory-tools.md](./09-memory-tools.md) | `save_memory` tool, permissions, prompt integration |
-| [10-conversation-history.md](./10-conversation-history.md) | Summarization, history index, cross-session injection, full recall |
-| [11-background-intelligence.md](./11-background-intelligence.md) | In-session memory extraction, post-session skills extraction, inbox CLI |
-| [12-context-polish.md](./12-context-polish.md) | Context instructions v2, session export, content replacement |
+| Document | Scope | Status |
+|----------|-------|--------|
+| [01-agent-taxonomy.md](./01-agent-taxonomy.md) | `task` → `agent` rename, `build` → `liteai` rename, agent roster | ✅ Written |
+| [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` lifecycle, permission gating, plan subagent | ✅ Written |
+| [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor redesign, per-tool concurrency, sibling abort | ✅ Written |
+| [04-kv-cache.md](./04-kv-cache.md) | Provider cache mechanics, deterministic ordering, cache break detection, reasoning tokens | ✅ Written |
+| [05-skills.md](./05-skills.md) | Skill system enhancements, superpowers integration | ✅ Written |
+| [architecture-decisions.md](./architecture-decisions.md) | Architecture Decision Record (resolved Q&A) | ✅ Written |
+| 06-guide-agent.md | Guide agent definition (from agents-platform Phase 6) | ⬜ NOT YET WRITTEN |
+| 07-project-registry.md | Project directory scaffold & registry | ⬜ NOT YET WRITTEN |
+| 08-unified-memory.md | Unified memory system (CC/GC hybrid design) | ⬜ NOT YET WRITTEN |
+| 09-memory-tools.md | `save_memory` tool, permissions, prompt integration | ⬜ NOT YET WRITTEN |
+| 10-conversation-history.md | Summarization, history index, cross-session injection, full recall | ⬜ NOT YET WRITTEN |
+| 11-background-intelligence.md | In-session memory extraction, post-session skills extraction, inbox CLI | ⬜ NOT YET WRITTEN |
+| 12-context-polish.md | Context instructions v2, session export, content replacement | ⬜ NOT YET WRITTEN |
 
 ---
 
@@ -111,31 +111,31 @@ Root Agent: Implements plan with full tool access
 
 ## Phase Overview
 
-| Phase | Name | Document | Scope | Status |
-|-------|------|----------|-------|--------|
-| **P1** | Agent Taxonomy & Rename | [01-agent-taxonomy.md](./01-agent-taxonomy.md) | `task`→`agent`, `build`→`liteai`, agent roster | ✅ **DONE** |
-| **P2** | Plan Mode Lifecycle | [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` rewrite, permission gating | 🔄 **ACTIVE** |
-| **P3** | yield_turn Removal & State Cleanup | [02-plan-mode.md](./02-plan-mode.md) §3 | Remove deprecated infra | ⏳ Blocked on P2 |
-| **P4** | Prompt Rewrites | [02-plan-mode.md](./02-plan-mode.md) §4 | System prompt, agent prompts, tool descriptions | ⏳ Blocked on P3 |
-| **P5** | Tool Concurrency Redesign | [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor rewrite, per-tool method, sibling abort | ⏳ Ready (P1 done) |
-| **P6** | KV Cache Hardening | [04-kv-cache.md](./04-kv-cache.md) | Deterministic ordering, prompt boundary, cache detection, reasoning tokens | ⏳ Blocked on P4+P5 |
-| **P7** | Skill System Enhancements | [05-skills.md](./05-skills.md) | Superpowers integration, plan workflow skills | ⏳ Blocked on P4 |
-| **P8** | Verification & Polish | (inline below) | E2E testing, docs | ⏳ Final |
+| Phase | Name | Design Doc | Spec | Status |
+|-------|------|------------|------|--------|
+| **P1** | Agent Taxonomy & Rename | [01-agent-taxonomy.md](./01-agent-taxonomy.md) | [012-agent-taxonomy-rename](../../specs/012-agent-taxonomy-rename/) ✅ | ✅ **DONE** |
+| **P2** | Plan Mode Lifecycle | [02-plan-mode.md](./02-plan-mode.md) | [013-plan-mode-lifecycle](../../specs/013-plan-mode-lifecycle/) 🔄 | ✅ **DONE** |
+| **P3** | yield_turn Removal & State Cleanup | [02-plan-mode.md](./02-plan-mode.md) §3 | [014-yield-turn-removal](../../specs/014-yield-turn-removal/) ✅ | ✅ **DONE** |
+| **P4** | Prompt Rewrites | [02-plan-mode.md](./02-plan-mode.md) §4 | [001-unified-system-prompt](../../specs/001-unified-system-prompt/) ✅ | ✅ **DONE** |
+| **P5** | Tool Concurrency Redesign | [03-tool-concurrency.md](./03-tool-concurrency.md) | — | ⏳ Ready |
+| **P6** | KV Cache Hardening | [04-kv-cache.md](./04-kv-cache.md) | — | ⏳ Blocked on P5 |
+| **P7** | Skill System Enhancements | [05-skills.md](./05-skills.md) | — | ⏳ Blocked on P4 |
+| **P8** | Verification & Polish | (inline below) | — | ⏳ Final |
 | | | | | |
-| **P9** | Guide Agent | [06-guide-agent.md](./06-guide-agent.md) | Read-only doc assistant, cheapest model | ⏳ Blocked on P4 |
-| **P10A** | Project Registry | [07-project-registry.md](./07-project-registry.md) | Project ID, directory scaffold, `~/.liteai/projects/<id>/` | ⏳ Blocked on P4 |
-| **P10B** | Unified Memory System | [08-unified-memory.md](./08-unified-memory.md) | MEMORY.md index + topic files, 4-type taxonomy, prompt injection | ⏳ Blocked on P10A |
-| **P10C** | Memory Tools & Integration | [09-memory-tools.md](./09-memory-tools.md) | `save_memory` tool, diff confirmation, sanitization, permissions | ⏳ Blocked on P10B |
-| **P11A** | Summarization Pipeline | [10-conversation-history.md](./10-conversation-history.md) §1 | Background summary agent, lightweight model | ⏳ Blocked on P10C |
-| **P11B** | History Index & Injection | [10-conversation-history.md](./10-conversation-history.md) §2–3 | `index.jsonl`, cross-session prompt injection | ⏳ Blocked on P11A |
-| **P11C** | Full Conversation Recall | [10-conversation-history.md](./10-conversation-history.md) §4 | `recall_conversation()` from DB | ⏳ Blocked on P11B |
-| **P12A** | In-Session Memory Extraction | [11-background-intelligence.md](./11-background-intelligence.md) §1 | Forked agent at query-loop end (CC pattern) | ⏳ Blocked on P10C+P6 |
-| **P12B** | Post-Session Skills Extraction | [11-background-intelligence.md](./11-background-intelligence.md) §2 | Background agent, skill inbox (GC pattern, simplified) | ⏳ Blocked on P12A |
-| **P12C** | Skills Inbox CLI | [11-background-intelligence.md](./11-background-intelligence.md) §3 | `/skills inbox`, accept, reject, edit | ⏳ Blocked on P12B |
-| **P13A** | Context Instructions v2 | [12-context-polish.md](./12-context-polish.md) §1 | `.liteai/rules/*.md`, JIT loading, `AGENTS.local.md` | ⏳ Blocked on P11C |
-| **P13B** | Session Export | [12-context-polish.md](./12-context-polish.md) §2 | `/export` command, API endpoint | ⏳ Blocked on P11C |
-| **P13C** | Content Replacement | [12-context-polish.md](./12-context-polish.md) §3 | Large tool results → compressed summary in context | ⏳ Blocked on P11C |
-| **P14** | Container Architecture | — | Container-per-user, orchestrator service | ⏳ **Deferred** |
+| **P9** | Guide Agent | 06-guide-agent.md ⬜ | — | ⏳ Blocked on P4 |
+| **P10A** | Project Registry | 07-project-registry.md ⬜ | — | ⏳ Blocked on P4 |
+| **P10B** | Unified Memory System | 08-unified-memory.md ⬜ | — | ⏳ Blocked on P10A |
+| **P10C** | Memory Tools & Integration | 09-memory-tools.md ⬜ | — | ⏳ Blocked on P10B |
+| **P11A** | Summarization Pipeline | 10-conversation-history.md ⬜ §1 | — | ⏳ Blocked on P10C |
+| **P11B** | History Index & Injection | 10-conversation-history.md ⬜ §2–3 | — | ⏳ Blocked on P11A |
+| **P11C** | Full Conversation Recall | 10-conversation-history.md ⬜ §4 | — | ⏳ Blocked on P11B |
+| **P12A** | In-Session Memory Extraction | 11-background-intelligence.md ⬜ §1 | — | ⏳ Blocked on P10C+P6 |
+| **P12B** | Post-Session Skills Extraction | 11-background-intelligence.md ⬜ §2 | — | ⏳ Blocked on P12A |
+| **P12C** | Skills Inbox CLI | 11-background-intelligence.md ⬜ §3 | — | ⏳ Blocked on P12B |
+| **P13A** | Context Instructions v2 | 12-context-polish.md ⬜ §1 | — | ⏳ Blocked on P11C |
+| **P13B** | Session Export | 12-context-polish.md ⬜ §2 | — | ⏳ Blocked on P11C |
+| **P13C** | Content Replacement | 12-context-polish.md ⬜ §3 | — | ⏳ Blocked on P11C |
+| **P14** | Container Architecture | — | — | ⏳ **Deferred** |
 
 ---
 

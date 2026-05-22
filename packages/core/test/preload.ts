@@ -70,5 +70,7 @@ beforeAll(async () => {
 afterAll(async () => {
   const { Database } = await import("../src/storage/db")
   Database.close()
+  const { Log } = await import("@liteai/util/log")
+  await Log.shutdown().catch(() => undefined)
   await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined)
 })

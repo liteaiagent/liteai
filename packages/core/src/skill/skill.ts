@@ -1,45 +1,13 @@
-import { NamedError } from "@liteai/util/error"
-import z from "zod"
 import type { Agent } from "@/agent/agent"
 import { PermissionNext } from "@/permission/next"
 import { Instance } from "../project/instance"
+import { SkillSchema } from "./schema"
 
 export namespace Skill {
-  export const Info = z.object({
-    name: z.string(),
-    description: z.string(),
-    location: z.string(),
-    content: z.string(),
-    argument_hint: z.string().optional(),
-    disable_model_invocation: z.boolean().optional(),
-    user_invocable: z.boolean().optional(),
-    allowed_tools: z.string().optional(),
-    model: z.string().optional(),
-    context: z.enum(["fork"]).optional(),
-    agent: z.string().optional(),
-    hooks: z.record(z.string(), z.unknown()).optional(),
-    native: z.boolean().optional(),
-    enabled: z.boolean().optional(),
-  })
-  export type Info = z.infer<typeof Info>
-
-  export const InvalidError = NamedError.create(
-    "SkillInvalidError",
-    z.object({
-      path: z.string(),
-      message: z.string().optional(),
-      issues: z.custom<z.core.$ZodIssue[]>().optional(),
-    }),
-  )
-
-  export const NameMismatchError = NamedError.create(
-    "SkillNameMismatchError",
-    z.object({
-      path: z.string(),
-      expected: z.string(),
-      actual: z.string(),
-    }),
-  )
+  export const Info = SkillSchema.Info
+  export type Info = SkillSchema.Info
+  export const InvalidError = SkillSchema.InvalidError
+  export const NameMismatchError = SkillSchema.NameMismatchError
 
   export const state = Instance.state(async () => {
     return (await import("./loader")).SkillLoader.load()

@@ -14,7 +14,7 @@ import { Instance } from "@/project/instance"
 import { Session } from "@/session"
 import { Filesystem } from "@/util/filesystem"
 import { Discovery } from "./discovery"
-import { Skill } from "./skill"
+import { SkillSchema } from "./schema"
 
 const log = Log.create({ service: "skill:loader" })
 
@@ -23,7 +23,7 @@ const CONFIG_SKILL_PATTERN = "{skill,skills}/**/SKILL.md"
 const SKILL_PATTERN = "**/SKILL.md"
 
 export namespace SkillLoader {
-  export async function parseSkill(match: string): Promise<Skill.Info | undefined> {
+  export async function parseSkill(match: string): Promise<SkillSchema.Info | undefined> {
     const md = await ConfigMarkdown.parse(match).catch((err) => {
       const message = ConfigMarkdown.FrontmatterError.isInstance(err)
         ? err.data.message
@@ -35,7 +35,7 @@ export namespace SkillLoader {
 
     if (!md) return undefined
 
-    const parsed = Skill.Info.pick({
+    const parsed = SkillSchema.Info.pick({
       name: true,
       description: true,
       argument_hint: true,
@@ -55,17 +55,22 @@ export namespace SkillLoader {
       allowed_tools: md.data["allowed-tools"] ?? md.data.allowed_tools,
     })
 
-    if (!parsed.success) return undefined
+    if (!parsed.success) {
+      const message = `Invalid skill frontmatter in ${match}`
+      Bus.publish(Session.Event.Error, { error: new NamedError.Unknown({ message }).toObject() })
+      log.warn(message, { skill: match, issues: parsed.error.issues })
+      return undefined
+    }
 
     return {
       ...parsed.data,
       location: match,
       content: md.content,
-    } as Skill.Info
+    } as SkillSchema.Info
   }
 
-  export async function load(): Promise<{ skills: Record<string, Skill.Info>; dirs: string[] }> {
-    const skills: Record<string, Skill.Info> = {}
+  export async function load(): Promise<{ skills: Record<string, SkillSchema.Info>; dirs: string[] }> {
+    const skills: Record<string, SkillSchema.Info> = {}
     const dirs = new Set<string>()
 
     const addSkill = async (match: string, source: string) => {
@@ -198,7 +203,7 @@ export namespace SkillLoader {
       if (!skills[skill.name]) {
         log.info("loaded plugin skill", { name: skill.name, path: skill.location })
         dirs.add(path.dirname(skill.location))
-        skills[skill.name] = skill as Skill.Info
+        skills[skill.name] = skill as SkillSchema.Info
       }
     }
 
@@ -215,8 +220,8 @@ export namespace SkillLoader {
 
   export async function resolveSkillName(
     name: string,
-    allSkills?: Record<string, Skill.Info>,
-  ): Promise<Skill.Info | undefined> {
+    allSkills?: Record<string, SkillSchema.Info>,
+  ): Promise<SkillSchema.Info | undefined> {
     const loaded = allSkills ?? (await load()).skills
 
     // Strategy 1: Exact match

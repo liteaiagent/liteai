@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest, spyOn } from "bun:test"
+import os from "node:os"
+import path from "node:path"
+import { Log } from "@liteai/util/log"
 import { AgentMeta } from "../../src/agent/agent-meta"
 import { AgentMemory } from "../../src/agent/memory"
 import { MCP } from "../../src/mcp/index"
@@ -7,11 +10,33 @@ import { SessionPrompt } from "../../src/session/engine"
 import { SidechainTranscript } from "../../src/session/transcript"
 import { SkillLoader } from "../../src/skill/loader"
 
+const fakeDir = path.join(os.tmpdir(), "liteai-fake-runner-dir")
+const fakePath = path.join(os.tmpdir(), "liteai-fake-runner-path")
+
 let promptImpl: (() => Promise<unknown>) | undefined
 
 beforeEach(() => {
+  spyOn(Log, "create").mockReturnValue({
+    debug: () => {},
+    info: () => {},
+    error: () => {},
+    warn: () => {},
+    tag: function () {
+      return this
+    },
+    clone: function () {
+      return this
+    },
+    time: () => ({ stop: () => {}, [Symbol.dispose]: () => {} }),
+  } as unknown as Log.Logger)
+
+  spyOn(Log.Default, "info").mockImplementation(() => {})
+  spyOn(Log.Default, "debug").mockImplementation(() => {})
+  spyOn(Log.Default, "error").mockImplementation(() => {})
+  spyOn(Log.Default, "warn").mockImplementation(() => {})
+
   spyOn(SidechainTranscript, "create").mockReturnValue({
-    getPath: () => "/fake/path",
+    getPath: () => fakePath,
     recordMessage: async () => {},
     recordChain: async () => {},
   } as unknown as ReturnType<typeof SidechainTranscript.create>)
@@ -78,7 +103,7 @@ describe("runAgent", () => {
       providerID: "test-provider",
       modelID: "test-model",
     } as unknown as Awaited<ReturnType<typeof Provider.defaultModel>>)
-    spyOn(Session, "get").mockResolvedValue({ directory: "/fake/dir" } as unknown as Awaited<
+    spyOn(Session, "get").mockResolvedValue({ directory: fakeDir } as unknown as Awaited<
       ReturnType<typeof Session.get>
     >)
     spyOn(Session, "createNext").mockResolvedValue({ id: "fake_child_1" } as unknown as Awaited<
@@ -87,8 +112,8 @@ describe("runAgent", () => {
 
     originalDir = Object.getOwnPropertyDescriptor(Instance, "directory")
     originalWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
-    Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
-    Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
+    Object.defineProperty(Instance, "directory", { get: () => fakeDir, configurable: true })
+    Object.defineProperty(Instance, "worktree", { get: () => fakeDir, configurable: true })
   })
 
   afterEach(() => {
@@ -165,7 +190,7 @@ describe("runAgentByName", () => {
       providerID: "test-provider",
       modelID: "test-model",
     } as unknown as Awaited<ReturnType<typeof Provider.defaultModel>>)
-    spyOn(Session, "get").mockResolvedValue({ directory: "/fake/dir" } as unknown as Awaited<
+    spyOn(Session, "get").mockResolvedValue({ directory: fakeDir } as unknown as Awaited<
       ReturnType<typeof Session.get>
     >)
     spyOn(Session, "createNext").mockResolvedValue({ id: "fake_child_1" } as unknown as Awaited<
@@ -174,8 +199,8 @@ describe("runAgentByName", () => {
 
     originalDir = Object.getOwnPropertyDescriptor(Instance, "directory")
     originalWorktree = Object.getOwnPropertyDescriptor(Instance, "worktree")
-    Object.defineProperty(Instance, "directory", { get: () => "/fake/dir", configurable: true })
-    Object.defineProperty(Instance, "worktree", { get: () => "/fake/dir", configurable: true })
+    Object.defineProperty(Instance, "directory", { get: () => fakeDir, configurable: true })
+    Object.defineProperty(Instance, "worktree", { get: () => fakeDir, configurable: true })
   })
 
   afterEach(() => {
