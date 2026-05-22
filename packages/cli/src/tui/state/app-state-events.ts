@@ -50,16 +50,27 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
       break
 
     case "permission.replied": {
-      const sessionID = event.properties.sessionID
       const requestID = event.properties.requestID
       setState((prev) => {
-        const requests = prev.permission[sessionID]
-        if (!requests) return prev
-        const match = Binary.search(requests as PermissionRequest[], requestID, (r: PermissionRequest) => r.id)
-        if (match.found) {
-          const nextReqs = [...requests]
-          nextReqs.splice(match.index, 1)
-          return { ...prev, permission: { ...prev.permission, [sessionID]: nextReqs } }
+        let foundSessionID: string | undefined
+        let foundIndex = -1
+        let foundRequests: readonly PermissionRequest[] | undefined
+
+        for (const [sid, requests] of Object.entries(prev.permission)) {
+          if (!requests) continue
+          const match = Binary.search(requests as PermissionRequest[], requestID, (r: PermissionRequest) => r.id)
+          if (match.found) {
+            foundSessionID = sid
+            foundIndex = match.index
+            foundRequests = requests
+            break
+          }
+        }
+
+        if (foundSessionID && foundRequests) {
+          const nextReqs = [...foundRequests]
+          nextReqs.splice(foundIndex, 1)
+          return { ...prev, permission: { ...prev.permission, [foundSessionID]: nextReqs } }
         }
         return prev
       })
@@ -88,16 +99,27 @@ export function handleAppStateEvent(event: Event, ctx: EventContext) {
 
     case "question.replied":
     case "question.rejected": {
-      const sessionID = event.properties.sessionID
       const requestID = event.properties.requestID
       setState((prev) => {
-        const requests = prev.question[sessionID]
-        if (!requests) return prev
-        const match = Binary.search(requests as QuestionRequest[], requestID, (r: QuestionRequest) => r.id)
-        if (match.found) {
-          const nextReqs = [...requests]
-          nextReqs.splice(match.index, 1)
-          return { ...prev, question: { ...prev.question, [sessionID]: nextReqs } }
+        let foundSessionID: string | undefined
+        let foundIndex = -1
+        let foundRequests: readonly QuestionRequest[] | undefined
+
+        for (const [sid, requests] of Object.entries(prev.question)) {
+          if (!requests) continue
+          const match = Binary.search(requests as QuestionRequest[], requestID, (r: QuestionRequest) => r.id)
+          if (match.found) {
+            foundSessionID = sid
+            foundIndex = match.index
+            foundRequests = requests
+            break
+          }
+        }
+
+        if (foundSessionID && foundRequests) {
+          const nextReqs = [...foundRequests]
+          nextReqs.splice(foundIndex, 1)
+          return { ...prev, question: { ...prev.question, [foundSessionID]: nextReqs } }
         }
         return prev
       })

@@ -544,7 +544,8 @@ export const RunCommand = cmd({
 
           if (event.type === "permission.asked") {
             const permission = event.properties
-            if (permission.sessionID !== sessionID) continue
+            const isTargetSession = permission.sessionID === sessionID || permission.rootSessionID === sessionID
+            if (!isTargetSession) continue
             UI.println(
               `${UI.Style.TEXT_WARNING_BOLD}!`,
               UI.Style.TEXT_NORMAL +

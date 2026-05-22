@@ -114,7 +114,7 @@ Root Agent: Implements plan with full tool access
 | Phase | Name | Document | Scope | Status |
 |-------|------|----------|-------|--------|
 | **P1** | Agent Taxonomy & Rename | [01-agent-taxonomy.md](./01-agent-taxonomy.md) | `task`→`agent`, `build`→`liteai`, agent roster | ✅ **DONE** |
-| **P2** | Plan Mode Lifecycle | [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` rewrite, permission gating | 🔄 **ACTIVE** |
+| **P2** | Plan Mode Lifecycle | [02-plan-mode.md](./02-plan-mode.md) | `plan_enter`/`plan_exit` rewrite, permission gating | ✅ **DONE** |
 | **P3** | yield_turn Removal & State Cleanup | [02-plan-mode.md](./02-plan-mode.md) §3 | Remove deprecated infra | ⏳ Blocked on P2 |
 | **P4** | Prompt Rewrites | [02-plan-mode.md](./02-plan-mode.md) §4 | System prompt, agent prompts, tool descriptions | ⏳ Blocked on P3 |
 | **P5** | Tool Concurrency Redesign | [03-tool-concurrency.md](./03-tool-concurrency.md) | StreamingToolExecutor rewrite, per-tool method, sibling abort | ⏳ Ready (P1 done) |
